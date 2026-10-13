@@ -26,7 +26,7 @@ These live in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty
 
 | Core ADR | Title | Status in core | What it gives this repository |
 |---|---|---|---|
-| `4.x/2026-10-12-2` | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; #645 is GA-gating; epic #6099 |
+| `4.x/2026-10-12-2` | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; the import-move precondition (formerly #645, now carried by epic #6099) is GA-gating |
 | `4.x/2026-10-03-1` | Replace charter reads and writes through a staged Java service strangler | **Proposed** | The stages, the hexagonal shape, the write gates, the service boundary |
 | `4.x/2026-10-01-2` | A mission status read API replaces the CLI-bundled dashboard | Accepted | The sibling Java service: stack, binding, contract conventions, release model |
 | `4.x/2026-10-06-2` | Charter offering, active charter and activation presets | Accepted | The domain vocabulary; presets as pack data; no aliases or shims |

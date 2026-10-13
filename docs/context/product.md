@@ -35,7 +35,7 @@ Spec Kitty Inc. names three product lines (core `docs/context/product-lines.md`)
 |---|---|---|
 | **Build Kitty** | open-core producer | The free CLI, its event ledger, and the Mission Status Read API |
 | **Brain Kitty** | open-core producer | Governance and doctrine: **the charter** (this repository), the open Charter Packs, doc-kitty |
-| **Team Kitty** | consumer ("Multiplayer Mode") | UIs and integrations that read the producers across public contracts |
+| **Team Kitty** | consumer ("Multiplayer Mode") | UI surfaces (mission-ui, the pack composer) that read the Mission Status Read API across its public contract. The hosted product behind the name is not actively supported; nothing in this repository builds toward it |
 
 The charter is a **producer**. Consumers reach it only across its published contract,
 never through its internals.
@@ -44,14 +44,14 @@ never through its internals.
 
 | Part | Purpose | State |
 |---|---|---|
-| `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO | planned |
+| `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO (pending ADR-0002) | planned |
 | The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | planned |
 | Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
-| The Python charter package | Today's `src/charter/` from core, consumed through `charter.offering.api`, as the conformance oracle while Java takes over | likely moves here first; to be decided against a rewrite-and-replace approach |
+| The Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), consumed through `charter.offering.api`, as the conformance oracle while Java takes over | likely moves here first; to be decided against a rewrite-and-replace approach |
 | `docs/` | This documentation | bootstrapped |
 
-CLI callers keep reaching the charter through the Python seam `charter.offering.api` while the strangler runs. That
-seam is the single entry point for CLI callers. Behind it, the answer moves from the
+CLI callers reach the charter through the Python seam `charter.offering.api` while the
+strangler runs. That seam becomes the single entry point for CLI callers. Behind it, the answer moves from the
 Python implementation to this service, stage by stage
 ([Strangler transition](/architecture/strangler-transition/)).
 
@@ -71,6 +71,8 @@ Python implementation to this service, stage by stage
 - **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
   authored in `spec-kitty-open-packs`. The charter loads and resolves packs; it does not
   own their text.
-- **Not hosted.** The service is local and scoped to one worktree. A remote deployment is a
-  backlog idea (core `docs/architecture/charter-backend-service-future.md`), not a goal of
-  this repository.
+- **Not hosted.** The service is local and scoped to one worktree. A remote deployment is
+  not a goal of this repository. Core's `docs/architecture/charter-backend-service-future.md`
+  still lists the whole runtime service as backlog and keeps in-process resolution as the
+  permanent fallback; [ADR-0001](/adr/0001-java-service-with-openapi-contract/) supersedes
+  that for this repository, and core needs to reconcile the page.

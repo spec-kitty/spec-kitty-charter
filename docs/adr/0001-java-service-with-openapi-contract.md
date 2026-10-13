@@ -23,6 +23,9 @@ how the charter, the event router and the product direction fit together.
 Core ADR `2026-10-12-2` moves the charter into this repository as an external contract
 package, consumed only through `charter.offering.api`. It does not say what language the
 extracted charter is in, and this repository's first README described a Python package.
+D-4 of that ADR explicitly scopes it to packaging and repository topology and keeps the
+runtime service a separate track. This record joins the two tracks in one repository, which
+core must ratify.
 
 Core ADR `2026-10-03-1` (still Proposed in core) describes a different end state: a
 per-worktree Java service that takes over charter reads, then writes, behind a Python seam.
@@ -44,7 +47,7 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
    and generates the DTOs its seam, CLI and runtime use. No charter response shape is
    hand-written on either side.
 3. **Python remains the seam and, for now, the implementation.** `charter.offering.api`
-   stays the only entry point for CLI callers. The Python charter keeps answering until
+   becomes the only entry point for CLI callers. The Python charter keeps answering until
    the strangler stages move each read, then each write, to Java. Whether that Python code
    first moves into this repository as a package (the likely path) or stays in core until
    Java replaces it is not decided by this record
@@ -81,11 +84,14 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
 
 ## Alternatives considered
 
-### Option A: Extract the Python charter as-is
+### Option A: Python package as the permanent end state
 
-Release the existing Python code from this repository as a wheel. Rejected by the operator's
-direction: it gives the charter a repository but keeps the per-process cold read and offers
-no path to a shared REST/MCP authority.
+Release the existing Python code from this repository as a wheel, and stop there. Rejected
+as the end state only, by the operator's direction: it gives the charter a repository but
+keeps the per-process cold read and offers no path to a shared REST/MCP authority.
+Releasing the Python charter from this repository as an interim step remains the likely
+path (decision 3) and is what core ADR `2026-10-12-2` D-3 and epic spec-kitty#6099 require
+for 4.0.0 GA.
 
 ### Option B: Python compiler, Java projection server
 
@@ -98,4 +104,5 @@ carry two runtimes.
 - Core ADR `4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md`
 - Core ADR `4.x/2026-10-03-1-charter-read-write-service-strangler.md`
 - Core ADR `4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md`
-- spec-kitty#645, spec-kitty#6099
+- spec-kitty#6099, and spec-kitty#645 (closed as not planned on 2026-10-13; it tracked the
+  import-move precondition)

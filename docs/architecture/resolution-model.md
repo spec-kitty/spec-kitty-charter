@@ -27,6 +27,8 @@ The service reads only configured inputs, never directory presence:
 | Org packs | each directory under `charter_packs.org.packs` in `.kittify/config.yaml` | `pack.yaml` (`pack_level: org`), `org-charter.yaml`, one `drg/fragment.yaml` |
 | Project pack | `.kittify/charter-packs/` | `pack_level: project` |
 | Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys and `mission_type_activations` |
+| Mission type | the request (`--mission-type` in the CLI) or the mission's `meta.json` | keys the action grain: action nodes are `action:<mission-type>/<action>` |
+| Load depth | the request | first load (bootstrap) or a later, compact load; see Writes |
 
 The retired `doctrine.org.packs` key and the `.kittify/doctrine/` root are not read: core's
 charter-pack cutover removes every read-side fallback after a one-time upgrade migration
@@ -64,8 +66,8 @@ flowchart LR
 
 Activation is a **plan, then commit**: planning validates and never mutates; committing
 writes only after the plan succeeds. Applying a preset over customised lists is refused
-without `--force`, and the applied preset name is not persisted. Three write paths exist
-in core today, and each is a separate operation to migrate
+without `--force`, and the applied preset name is not persisted. Three YAML write paths
+exist in core today, and each is a separate operation to migrate
 ([Strangler transition](/architecture/strangler-transition/)):
 
 - activation commit (`commit_plan`, which picks `.kittify/config.yaml` or `charter.yaml`);
@@ -73,11 +75,19 @@ in core today, and each is a separate operation to migrate
 - compile (`write_compiled_charter`, refreshing only the derived `catalog` and `metadata`
   sections).
 
+A fourth, non-YAML write exists: the context read itself records first-load state in
+`.kittify/charter/context-state.json` (`--mark-loaded`), and its answer differs between a
+first load and a later one. Default here: that state stays in the Python seam, and the
+service takes the load depth as a request parameter
+([open questions](/plans/open-questions/), question 12).
+
 ## Rules the domain inherits
 
 - **Derive, do not restate.** Kind vocabulary, plurals and per-kind facts come from one
-  authority. Core's single authority is the `ArtifactKind` enum; in Java they come from the
-  contract's kind schema, generated, not hand-copied.
+  authority. Core's single authority is the `ArtifactKind` enum. The contract publishes the
+  kind table as data (a fixture or a schema extension); the Java domain's own kind type is
+  checked against it by a conformance test, not imported from generated code, because the
+  domain imports no generated types.
 - **Fail loud.** A dropped artifact, an unresolved edge, an unresolved profile or a stale
   input is a named refusal or a visible diagnostic, never a quiet empty answer. This is the
   lesson of the charter-resolution program (core `docs/plans/charter-resolution/`).

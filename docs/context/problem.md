@@ -15,12 +15,14 @@ related:
 
 ## The charter is tangled into the CLI
 
-The charter lives at `src/charter/` in the core CLI. It already has a curated public
-surface, `charter.offering.api`, and it depends only on `kernel`. But the rest of the CLI
-does not use that surface: about 129 files in `specify_cli`, `runtime` and `glossary` import
-charter internals directly (`charter.drg`, `charter.activation.pack_context`,
-`charter.bundle`, `charter.activation.charter_yaml_io`, the compiler, the resolver, and more;
-core ADR `2026-10-03-1` counts them by module).
+The charter lives at `src/charter/` in the core CLI and depends only on `kernel`. It has a
+curated manifest, `charter.offering.api`, but that manifest exports 11 offering symbols and
+runtime code is currently forbidden to import it directly. It is not yet the seam the
+strangler needs: it fronts no context read and no write path. Meanwhile about 130 files in
+`specify_cli`, `runtime` and `glossary` import charter internals directly (`charter.drg`,
+`charter.activation.pack_context`, `charter.bundle`, `charter.activation.charter_yaml_io`,
+the compiler, the resolver, and more; core ADR `2026-10-03-1` counts the imports by
+module).
 
 As long as that holds:
 
@@ -31,8 +33,9 @@ As long as that holds:
 
 Core ADR `2026-10-12-2` (Accepted) decides that the charter becomes an external contract
 package in its own repository, like `spec-kitty-events` and `spec-kitty-tracker`. Its
-precondition, moving those imports onto `charter.offering.api` (spec-kitty#645), is part of
-the 4.0.0 GA gate. The mechanics ride with epic spec-kitty#6099.
+precondition, moving those imports onto `charter.offering.api`, is part of the 4.0.0 GA
+gate. It was tracked as spec-kitty#645, which was closed as not planned on 2026-10-13; the
+import move and the extraction mechanics are now carried by epic spec-kitty#6099.
 
 ## Every read starts from nothing
 

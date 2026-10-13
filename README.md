@@ -15,10 +15,10 @@ repository holds the agreed direction, the target design and the decisions; code
 
 | Part | What it is | State |
 |---|---|---|
-| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter DTO | planned |
+| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter DTO (authored here pending ADR-0002) | planned |
 | Java service | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only | planned |
 | Conformance corpus | Fixtures the Python and Java implementations must both pass | planned |
-| Python charter package | Today's `src/charter/` from core, behind `charter.offering.api` | likely moves here first; to be decided |
+| Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), behind `charter.offering.api` | likely moves here first; to be decided |
 | [`docs/`](docs/README.md) | Context, architecture, decisions and plans | bootstrapped |
 
 ## How it fits
@@ -26,7 +26,7 @@ repository holds the agreed direction, the target design and the decisions; code
 - **Contract first.** The service generates its server interfaces from the contract. The
   core ingests a pinned release of the same contract and generates the DTOs its CLI and its
   `next` state machine use. Neither side imports the other's code.
-- **Staged behind one seam.** The Python seam `charter.offering.api` stays the only entry
+- **Staged behind one seam.** The Python seam `charter.offering.api` becomes the only entry
   point for CLI callers. Behind it, reads move
   to the Java service first (shadow, then authoritative with a loud fallback), and writes
   move later, one operation at a time. The Python charter likely moves into this
@@ -40,8 +40,10 @@ repository holds the agreed direction, the target design and the decisions; code
 
 - Core ADR `2026-10-12-2`: the charter becomes an external contract package in its own
   repository. Its precondition, moving about 129 internal imports onto
-  `charter.offering.api` ([spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645)),
-  gates 4.0.0 GA. Epic: [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
+  `charter.offering.api`, gates 4.0.0 GA. It was tracked as
+  [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) until that issue was
+  closed as not planned on 2026-10-13; the import move is now carried by epic
+  [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
 - Core ADR `2026-10-03-1` (Proposed): a staged Java service strangler for charter reads
   and writes.
 - [ADR-0001](docs/adr/0001-java-service-with-openapi-contract.md): the charter is a Java

@@ -13,19 +13,23 @@ related:
 
 # Strangler transition
 
-> **State:** stage 0. The seam `charter.offering.api` exists in core, but about 129 callers
-> still bypass it (spec-kitty#645, GA-gating).
+> **State:** stage 0. `charter.offering.api` exists in core as an 11-symbol offering manifest
+> that runtime code is currently forbidden to import directly. The seam core ADR
+> `2026-10-03-1` needs, one that fronts the context read and the three write paths in
+> `charter.activation`, does not exist yet. Building it and moving about 130 importing files
+> onto it is stage 1.
 
 The stages come from core ADR `2026-10-03-1` ("Staged ownership"). It is still **Proposed**
 in core; this repository treats it as the plan, and [open questions](/plans/open-questions/)
-tracks its acceptance.
+tracks its acceptance. The stages are written for either answer to question 2 there (whether
+the Python charter moves here first).
 
 ## Stages
 
 | Stage | Production reads | Production writes | Evidence to enter |
 |---|---|---|---|
 | 0. Current | Python | Python | — |
-| 1. Callers on the seam | Python, behind the seam | Python, behind the seam | Callers outside `charter` import no charter internals; a ratchet holds the count at zero (#645) |
+| 1. Callers on the seam | Python, behind the seam | Python, behind the seam | Callers outside `charter` import no charter internals; a ratchet holds the count at zero |
 | 2. Read shadow | Python; Java compared out of band | Python | Contract and fixture equivalence |
 | 3. Java authoritative | Java; loud, observable Python fallback | Python | Conformance is a blocking gate; freshness and failure behaviour proven |
 | 4. Java reads complete | Java only | Python | Fallback-retirement criteria met |
@@ -79,7 +83,10 @@ participated.
 
 ## Relation to the 4.0.0 gate
 
-Stage 1 (#645) gates 4.0.0 GA (core ADR `2026-10-12-2`, D-2). Stages 2 onward do not: core
-ADR `2026-10-03-1` places them in 4.x evolution. This repository can build the contract,
-the domain and the conformance corpus in parallel with #645, but nothing here answers a
+Stage 1 is the import-move precondition of core ADR `2026-10-12-2` (D-2), and it gates 4.0.0
+GA. It was tracked as spec-kitty#645 until that issue was closed as not planned on
+2026-10-13; the import move is now in the scope of epic spec-kitty#6099, which still names
+#645 as its precondition, so core has to re-home it. Stages 2 onward do not gate GA: core
+ADR `2026-10-03-1` places them in 4.x evolution. This repository can build the contract, the
+domain and the conformance corpus in parallel with stage 1, but nothing here answers a
 production read before stage 1 is done.

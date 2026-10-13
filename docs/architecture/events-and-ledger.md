@@ -12,18 +12,25 @@ related:
 
 # Events and the ledger
 
+> **State:** direction stated by the operator on 2026-10-13, not recorded in a core ADR.
+> Today status events are appended by `specify_cli.status` (`emit_status_transition`) from
+> several commands. The row has no versioned schema of its own, although `spec-kitty-events`
+> already defines the transition payload and reduces the rows.
+
 ## The model around the charter
 
 The operator's direction of 2026-10-13:
 
-- **Events are created by the runtime's `next` transitions.** The runtime is the producer.
+- **Events are created by the runtime** (target: its `next` transitions). The runtime is the
+  producer.
 - **Pub, ledger, sub.** Producers append to the event ledger; subscribers read from it.
-  Subscribers live in the integration package (event-router).
+  Subscribers live in the integration package (event-router), which that direction names.
 - **Producers and consumers do not know each other.** They agree only on the contracts in
   `spec-kitty-events`.
 - **Ledger rows get a versioned row schema in spec-kitty-events.** Today the rows the core
-  writes (for example `kitty-specs/<mission>/status.events.jsonl`) are local Python shapes,
-  not package contracts; the decision makes the row itself a versioned contract.
+  writes (for example `kitty-specs/<mission>/status.events.jsonl`) have no versioned row
+  schema, although the package already defines their transition payload; the decision makes
+  the row itself a versioned contract.
 - **The ledger may become on by default,** with a retention period and cleanup policy, since
   the CLI plans to offer ledger-backed services (traceability, dashboards) to integration
   points. That is being considered, not decided.
@@ -64,4 +71,4 @@ Rules that follow:
 Keeping the charter off the ledger keeps the service a pure, rebuildable read model of files
 on disk. It has no event history to migrate, no ordering semantics to honour and no
 retention policy of its own. Its state is always derivable from the packs and the active
-charter, which is what makes the per-worktree, fingerprint-and-rebuild lifecycle possible.
+charter, plus the request's mission type and load depth, which is what makes the per-worktree, fingerprint-and-rebuild lifecycle possible.

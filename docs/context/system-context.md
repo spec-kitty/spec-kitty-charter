@@ -56,8 +56,9 @@ flowchart LR
 
 There are two families of contracts and they must not mix:
 
-- **The charter contract** (this repository, `contracts/charter/`) describes the request and
-  response shapes of governance reads and, later, writes. Charter DTOs come only from here.
+- **The charter contract** (this repository, `contracts/charter/`, pending ADR-0002)
+  describes the request and response shapes of governance reads and, later, writes. Charter
+  DTOs come only from there.
 - **spec-kitty-events** describes what is published to the ledger: the event envelope, typed
   payloads and, by the operator's decision of 2026-10-13, a versioned schema for the ledger
   row itself.
@@ -71,11 +72,11 @@ the change, not by the charter service. See [Events and the ledger](/architectur
 
 - **spec-kitty (core).** Owns the CLI, the runtime and its `next` state machine, the
   event ledger and the Python seam. Owns the GA gate this extraction is part of.
-- **spec-kitty-open-packs.** Source home of the built-in and internal pack content,
-  vendored into core at release (core #3504). Its CI registers only packs that declare
+- **spec-kitty-open-packs.** Designated source home of the built-in and internal pack
+  content, to be vendored into core at release (core #3504, not built yet). Its CI registers only packs that declare
   `pack_level: org`.
 - **spec-kitty-events.** The event contract package. Producers and consumers depend on it,
   not on each other.
-- **event-router (integration package).** The subscriber side of pub, ledger, sub.
-  Proprietary; outside the scope of this repository.
+- **event-router (integration package).** The subscriber side of pub, ledger, sub, named in
+  the operator's direction of 2026-10-13. Outside the scope of this repository.
 - **doc-kitty.** The docs toolkit whose convention this `docs/` tree follows.

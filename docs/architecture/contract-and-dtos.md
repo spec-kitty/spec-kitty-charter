@@ -25,7 +25,7 @@ The service is built against the same document.
 
 ```mermaid
 flowchart LR
-  spec["contracts/charter/openapi.yaml<br/>OpenAPI 3.1, split files<br/><b>source of record</b>"]
+  spec["contracts/charter/openapi.yaml<br/>OpenAPI 3.1, split files<br/><b>source of record</b><br/><i>pending ADR-0002</i>"]
   bundle["released bundle<br/>single-file, versioned"]
   javagen["Java generation<br/>server interfaces + DTOs<br/>charter-api module"]
   core["spec-kitty core<br/>pinned, checksummed copy"]
@@ -43,7 +43,8 @@ flowchart LR
   (`charter-api`). Controllers implement the generated interfaces, so a contract change that
   the code does not follow fails the build.
 - **The core** ingests a released bundle of the contract (pinned and checksummed, the way
-  core already vendors built-in packs) and generates Python DTOs from it. The seam
+  core ADR `2026-08-16-2` plans to vendor built-in packs; core #3504, not built yet) and
+  generates Python DTOs from it. The seam
   `charter.offering.api` returns those DTOs; the CLI and the runtime consume them. No Python
   code hand-writes a charter response shape.
 - **Neither side imports the other.** Python and Java agree by contract and by fixtures, not

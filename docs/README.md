@@ -45,5 +45,7 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - Event contracts: [`spec-kitty/spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events)
 - Open Charter Packs: [`spec-kitty/spec-kitty-open-packs`](https://github.com/spec-kitty/spec-kitty-open-packs)
 - Docs toolkit: [`spec-kitty/doc-kitty`](https://github.com/spec-kitty/doc-kitty)
-- Extraction epic: [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099);
-  its precondition: [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645)
+- Extraction epic: [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
+  It carries the import-move precondition, formerly
+  [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) (closed as not
+  planned on 2026-10-13)

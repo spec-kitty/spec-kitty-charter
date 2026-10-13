@@ -40,8 +40,8 @@ charter is different: its producer is moving here.
 2. Shared vocabulary (`Problem`, `PageInfo`, `PageCursor`) is reused from core's `_shared/`
    by vendoring a pinned copy, not redefined.
 3. Each contract release publishes a single-file bundle and the fixture corpus. The core
-   vendors a pinned, checksummed release, the way it vendors built-in pack content, and
-   generates its Python DTOs from it.
+   vendors a pinned, checksummed release, the way core ADR `2026-08-16-2` plans to vendor
+   built-in pack content (core #3504, not built yet), and generates its Python DTOs from it.
 4. Core's contract tooling (layout, lint, breaking-change checks) runs here in CI against
    this module. Until it is packaged for reuse, this repository runs a pinned copy.
 
@@ -59,6 +59,10 @@ charter is different: its producer is moving here.
 
 ### Risks
 
+- This record depends on [open questions](/plans/open-questions/), question 2. Under core
+  ADR `2026-10-01-2` D-11 a contract stays beside the conformance oracle it is proven
+  against. If the Python charter stays in core, so should the contract until Python reads
+  retire.
 - If the operator prefers core's `contracts/` as the single home for every OpenAPI module,
   this record is withdrawn and the service vendors the contract from core instead. Both work;
   what matters is that exactly one repository authors it.

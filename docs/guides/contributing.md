@@ -17,7 +17,8 @@ kind: How-To
 
 ## Contract first
 
-A change to what the service returns starts in `contracts/charter/`. The order is: contract
+A change to what the service returns starts in `contracts/charter/` (authored here pending
+[ADR-0002](/adr/0002-contract-source-of-record/)). The order is: contract
 and fixtures, then the generated code, then the implementation. A pull request that changes
 a response shape without a contract change is incomplete. See
 [Contract and DTOs](/architecture/contract-and-dtos/).
@@ -26,7 +27,9 @@ a response shape without a contract change is incomplete. See
 
 While the Python charter still answers in core, a behaviour change needs a fixture that both
 implementations pass. If the Python behaviour is wrong, fix it in core first, with the
-fixture, so the two never disagree on purpose.
+fixture, so the two never disagree on purpose. This assumes the Python charter stays in
+core; if it moves here first ([open questions](/plans/open-questions/), question 2), the
+fix lands in the Python package here.
 
 ## Documentation
 

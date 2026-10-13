@@ -30,8 +30,8 @@ daemon started on first use, or one per command) is a deferred decision.
 
 ## Binding and access
 
-- Binds to `127.0.0.1` only and checks the `Host` header, as the Mission Status service
-  does. A loopback-only transport is not "fixed" by forcing HTTPS.
+- Binds to `127.0.0.1` only and checks the `Host` and `Origin` headers, as the Mission
+  Status service does. A loopback-only transport is not "fixed" by forcing HTTPS.
 - Every request carries a capability credential scoped to the worktree.
 - No secrets in responses.
 - The MCP adapter does not ship until a decision defines who may call it and how; the

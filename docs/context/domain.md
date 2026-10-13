@@ -38,8 +38,8 @@ names the project's activated set as a whole.
 
 | Term | Meaning |
 |---|---|
-| **Pack level** | `built-in`, `org` or `project`, declared as `pack_level` in every pack's `pack.yaml` (ADR `2026-10-11-2`). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`) or that lacks the field (`PACK_LEVEL_MISSING`). |
-| **Built-in pack** | The pack that ships with Spec Kitty. Its source home is `spec-kitty-open-packs`; it is vendored into consumer installs byte-identical. |
+| **Pack level** | `built-in`, `org` or `project`, declared as `pack_level` in every pack's `pack.yaml` (ADR `2026-10-11-2`). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`) or that lacks the field (`PACK_LEVEL_MISSING`). In core today only org packs are refused at load; see [Resolution model](/architecture/resolution-model/). |
+| **Built-in pack** | The pack that ships with Spec Kitty. Its designated source home is `spec-kitty-open-packs`, to be vendored into consumer installs byte-identical (core ADR `2026-08-16-2`; the vendoring pipeline, core #3504, is not built yet). |
 | **Org pack** | A pack listed under `charter_packs.org.packs` in `.kittify/config.yaml`. It carries `org-charter.yaml` and a single `drg/fragment.yaml`. |
 | **Project pack** | The pack under `.kittify/charter-packs/`. |
 | **`parent_pack`** | A pack's declared parent. A pack with no parent is a *root pack*, which is why the level is not called "root". |
@@ -64,7 +64,7 @@ contract").
 | Term | Meaning |
 |---|---|
 | **Plan / commit activation** | Activation is planned (validated, non-mutating) and then committed. Config is never written when the plan fails. |
-| **Action-scoped context** | The guidance for one workflow action (specify, plan, implement, review, merge), as `spec-kitty charter context --action <name>` returns it today. |
+| **Action-scoped context** | The guidance for one action of one mission type, as `spec-kitty charter context --action <name>` returns it today. Action nodes in the DRG are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review. |
 | **Profile resolution** | `(profile_id, action)` in, the resolved profile with its lineage and overlays applied plus compact context out (core `docs/architecture/profile-load-reliability.md` §4.2). Fail loud: an unresolved profile is an error, never an unprofiled agent. |
 
 ## Words to avoid

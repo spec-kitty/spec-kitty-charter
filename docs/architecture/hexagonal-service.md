@@ -33,12 +33,13 @@ Amendment 2026-10-03):
 | `charter-domain` | nothing outside the JDK | Charter meaning and invariants: packs, artifacts, the DRG, layers, activation state, resolution services, repository **ports** |
 | `charter-read-app` | domain | Read use cases: action-scoped context, profile resolution, graph queries, pack and activation listings |
 | `charter-write-app` | domain | Write use cases, one per migrated operation (activation commit, charter document save, compile) |
-| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` |
-| `adapter-in-rest` | read-app, write-app, `charter-api`, Spring | REST controllers that map transport DTOs to use-case inputs and back |
+| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here pending ADR-0002) |
+| `adapter-in-rest` | read-app, `charter-api`, Spring | REST controllers for the read use cases; they map transport DTOs to use-case inputs and back |
+| `adapter-in-write` | write-app, `charter-api`, Spring | REST controllers for migrated write operations. Later; kept apart so the read path gains no dependency on the write application |
 | `adapter-in-mcp` | read-app | MCP tools over the same read use cases. Planned; ships only after its authorisation decision |
 | `adapter-out-yaml` | domain | Lossless YAML document models, source fingerprints, and implementations of the repository ports |
 | `charter-service` | everything above | Spring Boot wiring, configuration, loopback binding and credential checks |
-| `charter-conformance` | read-app, fixtures | Runs the shared fixture corpus against the service |
+| `charter-conformance` | read-app, write-app (later), fixtures | Runs the shared fixture corpus against the service |
 
 ## The rule
 

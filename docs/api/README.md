@@ -24,7 +24,7 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 
 | Operation | Answers | Today in core |
 |---|---|---|
-| Action-scoped context | The guidance for one action (specify, plan, implement, review, merge) in the active charter | `spec-kitty charter context --action <name>` |
+| Action-scoped context | The guidance for one action of one mission type in the active charter (action nodes are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review). The request carries the mission type and the load depth | `spec-kitty charter context --action <name> --mission-type <type>` |
 | Profile resolution | `(profile_id, action)` to the resolved profile with lineage and overlays, plus compact context | `spec-kitty agent profile show`, profile-load contract |
 | Active charter | The project's activations per kind and mission type, with the source of each (preset, project, org requirement) | `spec-kitty charter` status commands |
 | Pack listing | Configured packs, their levels, versions and presets | `spec-kitty charter pack list` |
