@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.22.0",
   "description": "The spec-kitty-charter documentation site, built from ../docs with the published @spec-kitty/doc-toolkit.",
   "engines": {
     "node": ">=22"

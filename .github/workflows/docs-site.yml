@@ -35,36 +35,33 @@ jobs:
     defaults:
       run:
         working-directory: site
-    env:
-      # Job-wide, not only on the install step: pnpm 11 re-checks the lockfile
-      # against GitHub Packages before every `pnpm run`, and setup-node's
-      # placeholder token gets a 401 there.
-      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - name: Enable corepack
-        run: corepack enable
       - name: Set up Node 22 with the GitHub Packages registry
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
       - name: Install
-        # No lockfile is committed yet (see docs/guides/docsite.md); the toolkit
-        # itself is pinned exactly in package.json.
-        run: pnpm install --no-frozen-lockfile
+        # Exactly what site/package-lock.json records, so a build on main uses the
+        # same dependencies as the pull request check did.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm ci
       - name: Validate frontmatter and source links
-        run: pnpm run validate
+        run: npm run validate
       - name: Build
         # Most pages are drafts during the bootstrap, so drafts are published
         # (as noindex pages) rather than dropped.
         env:
           DK_PUBLISH_DRAFTS: 'on'
-        run: pnpm run build
+        run: npm run build
       - name: Check links in the built site
-        run: pnpm run check:built-links
+        run: npm run check:built-links
       - name: Upload the Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1

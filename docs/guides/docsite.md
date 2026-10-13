@@ -18,11 +18,10 @@ does it lives in `site/`; it owns no content and reads `../docs` directly.
 
 ## Build locally
 
-You need Node 22 or later, pnpm (`corepack enable`), and a GitHub token with the
-`read:packages` scope, because the toolkit is published to GitHub Packages.
+You need Node 22 or later (npm comes with it) and a GitHub token with the `read:packages`
+scope, because the toolkit is published to GitHub Packages.
 
-1. Put the token in your **user-level** `~/.npmrc` (pnpm ignores a token in the project
-   file):
+1. Put the token in your **user-level** `~/.npmrc`, never in the project file:
 
    ```ini
    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
@@ -32,14 +31,16 @@ You need Node 22 or later, pnpm (`corepack enable`), and a GitHub token with the
 
    ```sh
    cd site
-   pnpm install
-   pnpm run validate            # frontmatter and source links in ../docs
-   pnpm run build               # writes site/dist
-   pnpm run check:built-links   # every link in the built site resolves under the base
-   pnpm run preview
+   npm ci                      # installs exactly what package-lock.json records
+   npm run validate            # frontmatter and source links in ../docs
+   npm run build               # writes site/dist
+   npm run check:built-links   # every link in the built site resolves under the base
+   npm run preview
    ```
 
-`site/.npmrc` maps the `@spec-kitty` scope to GitHub Packages and holds no secret.
+`site/.npmrc` maps the `@spec-kitty` scope to GitHub Packages and every other package to the
+public npm registry. It holds no secret. Because the registry is set there, a default
+registry in your own `~/.npmrc` (a company proxy, for example) does not apply to this site.
 
 ## Writing links
 
@@ -54,7 +55,8 @@ full GitHub URLs.
 `.github/workflows/docs-site.yml` runs on every pull request that touches `docs/` or `site/`,
 and on pushes to `main`:
 
-1. install from GitHub Packages with the workflow's own token (`packages: read`);
+1. `npm ci`, reading the toolkit from GitHub Packages with the workflow's own token
+   (`packages: read`);
 2. `validate`, `build` and `check:built-links`, as above;
 3. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
    `https://spec-kitty.github.io/spec-kitty-charter/`.
@@ -69,12 +71,11 @@ bootstrap. Set `DK_PUBLISH_DRAFTS=off` in the workflow once that changes.
 - **Package access.** The workflow's token already reads `@spec-kitty/doc-toolkit`. If that
   ever turns into a `401` or `403` at install, check the package's *Manage Actions access*
   list for `spec-kitty-charter`.
-- **The token is job-wide.** pnpm 11 checks GitHub Packages again before every `pnpm run`,
-  so `NODE_AUTH_TOKEN` is set for the whole build job, not only the install step.
 
-## Not done yet
+## Dependencies and the lockfile
 
-- **No lockfile is committed.** The first lockfile has to be resolved against GitHub
-  Packages; CI installs with `--no-frozen-lockfile` until one is committed. The toolkit
-  itself is pinned exactly. Commit `site/pnpm-lock.yaml` from a successful install, remove
-  it from `site/.gitignore`, and switch CI to `--frozen-lockfile`.
+`site/package-lock.json` is committed and CI installs with `npm ci`, so the site on `main`
+is built from the same dependency versions its pull request was checked with.
+
+To change a dependency, edit `site/package.json`, run `npm install` in `site/`, and commit
+the updated lockfile with it.
