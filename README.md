@@ -18,6 +18,7 @@ repository holds the agreed direction, the target design and the decisions; code
 | `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter DTO | planned |
 | Java service | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only | planned |
 | Conformance corpus | Fixtures the Python and Java implementations must both pass | planned |
+| Python charter package | Today's `src/charter/` from core, behind `charter.offering.api` | likely moves here first; to be decided |
 | [`docs/`](docs/README.md) | Context, architecture, decisions and plans | bootstrapped |
 
 ## How it fits

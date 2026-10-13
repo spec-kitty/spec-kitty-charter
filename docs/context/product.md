@@ -47,9 +47,10 @@ never through its internals.
 | `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO | planned |
 | The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | planned |
 | Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
+| The Python charter package | Today's `src/charter/` from core, consumed through `charter.offering.api`, as the conformance oracle while Java takes over | likely moves here first; to be decided against a rewrite-and-replace approach |
 | `docs/` | This documentation | bootstrapped |
 
-The core CLI keeps the Python seam `charter.offering.api` while the strangler runs. That
+CLI callers keep reaching the charter through the Python seam `charter.offering.api` while the strangler runs. That
 seam is the single entry point for CLI callers. Behind it, the answer moves from the
 Python implementation to this service, stage by stage
 ([Strangler transition](../architecture/strangler-transition.md)).

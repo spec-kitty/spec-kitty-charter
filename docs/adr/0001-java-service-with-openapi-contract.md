@@ -44,8 +44,11 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
    and generates the DTOs its seam, CLI and runtime use. No charter response shape is
    hand-written on either side.
 3. **Python remains the seam and, for now, the implementation.** `charter.offering.api`
-   stays in the core as the only entry point for CLI callers. The Python charter keeps
-   answering until the strangler stages move each read, then each write, to Java.
+   stays the only entry point for CLI callers. The Python charter keeps answering until
+   the strangler stages move each read, then each write, to Java. Whether that Python code
+   first moves into this repository as a package (the likely path) or stays in core until
+   Java replaces it is not decided by this record
+   ([open questions](../plans/open-questions.md), question 2).
 4. **This repository adopts core ADR `2026-10-03-1` as its plan** for stages, gates and
    service boundary, and records any divergence from it as its own ADR (the first is
    [ADR-0002](./0002-contract-source-of-record.md)).
@@ -69,9 +72,10 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
 
 ### Risks
 
-- Core ADR `2026-10-12-2` D-3 speaks of the charter *package* moving here. If the Python
-  implementation does not move (see [open questions](../plans/open-questions.md)), that
-  wording needs an amendment in core so the two records agree.
+- If the Python charter moves here first, this repository carries two implementations
+  for the whole strangler and needs a Python build beside the Gradle one. If instead it is
+  rewritten and replaced, core ADR `2026-10-12-2` D-3 (the charter *package* moves here)
+  needs an amendment so the two records agree.
 - Core ADR `2026-10-03-1` is still Proposed. If it changes before acceptance, this record's
   point 4 follows it.
 

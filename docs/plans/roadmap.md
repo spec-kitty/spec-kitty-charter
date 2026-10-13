@@ -28,6 +28,14 @@ Each step ends in something checkable. Steps 1 to 5 can run in parallel with the
 After step 7 the [strangler stages](../architecture/strangler-transition.md) take over:
 Java authoritative, then Java reads complete, then write migration one operation at a time.
 
+## Before step 6: decide how Python reaches this repository
+
+The likely path is to move the Python charter here first as a package (core ADR
+`2026-10-12-2` D-3), so the strangler runs inside this repository. The alternative is to
+rewrite in Java and replace the charter in core, so the Python code never moves. Choose by
+which is safer and more economical ([open questions](./open-questions.md), question 2).
+Steps 1 to 5 do not depend on the answer.
+
 ## Also needed, outside this repository
 
 - **Core:** accept or amend ADR `2026-10-03-1`, and amend ADR `2026-10-12-2` so it names the
