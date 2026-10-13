@@ -24,7 +24,7 @@ Core ADR `2026-10-03-1` places the charter's OpenAPI document at `contracts/char
 breaking-change and release checks. That was written before the charter had a repository of
 its own.
 
-[ADR-0001](./0001-java-service-with-openapi-contract.md) makes the contract the single
+[ADR-0001](/adr/0001-java-service-with-openapi-contract/) makes the contract the single
 source of charter DTOs and has the core *ingest* it. The question is which repository
 authors it.
 

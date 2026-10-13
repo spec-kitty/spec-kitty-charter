@@ -57,7 +57,7 @@ Rules that follow:
   payloads, and spec-kitty-events does not define charter responses.
 - A governance change (an activation, a preset applied) is an event only if the runtime that
   made the change emits it, through spec-kitty-events. Whether it should is an
-  [open question](../plans/open-questions.md).
+  [open question](/plans/open-questions/).
 
 ## Why this matters for the design
 

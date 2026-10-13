@@ -10,6 +10,7 @@ kind: Hub
 # Changelog
 
 Notable changes, newest first. The reasoning behind decisions lives in the
-[decision records](../adr/).
+[decision records](/adr/).
 
-- [2026-10-13 — Bootstrap: Java direction, architecture and context](./2026-10-13-bootstrap-architecture-and-context.md)
+- [2026-10-13 — Docsite build and Pages deploy](/changelog/2026-10-13-docsite-pipeline/)
+- [2026-10-13 — Bootstrap: Java direction, architecture and context](/changelog/2026-10-13-bootstrap-architecture-and-context/)

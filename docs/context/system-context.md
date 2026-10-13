@@ -65,7 +65,7 @@ There are two families of contracts and they must not mix:
 Charter DTOs never go into spec-kitty-events, and event shapes never go into the charter
 contract. If a governance change ever needs to be published as an event (for example an
 activation), that event is defined in spec-kitty-events and emitted by the runtime that made
-the change, not by the charter service. See [Events and the ledger](../architecture/events-and-ledger.md).
+the change, not by the charter service. See [Events and the ledger](/architecture/events-and-ledger/).
 
 ## Neighbours in detail
 

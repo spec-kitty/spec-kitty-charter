@@ -9,8 +9,10 @@ kind: Hub
 
 # Guides
 
-- [Contributing](./contributing.md) — how work lands in this repository while it is being
+- [Contributing](/guides/contributing/) — how work lands in this repository while it is being
   bootstrapped.
+- [Building the docsite](/guides/docsite/) — building and checking the doc-kitty site
+  locally, and what CI publishes.
 
 Consumer how-tos (depending on a contract release, running the service locally) will be
 added when there is something to depend on and run.

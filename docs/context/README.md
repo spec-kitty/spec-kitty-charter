@@ -14,10 +14,10 @@ CLI. This repository is where it becomes a Java service with an OpenAPI contract
 on its own. This section explains why, what the charter owns, and who talks to it. Read it
 before the architecture.
 
-- [Product](./product.md) — what the charter is for, where it sits in the product lines,
+- [Product](/context/product/) — what the charter is for, where it sits in the product lines,
   and what this repository will hold.
-- [Problem](./problem.md) — why the charter leaves the CLI, and why it becomes Java.
-- [Domain](./domain.md) — the charter vocabulary: Charter Pack, activation preset,
+- [Problem](/context/problem/) — why the charter leaves the CLI, and why it becomes Java.
+- [Domain](/context/domain/) — the charter vocabulary: Charter Pack, activation preset,
   active charter, pack level, DRG and the rest.
-- [System context](./system-context.md) — the systems around the charter: the core CLI
+- [System context](/context/system-context/) — the systems around the charter: the core CLI
   and runtime, the packs, the event contracts and the integration package.

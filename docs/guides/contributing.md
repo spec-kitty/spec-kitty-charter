@@ -20,7 +20,7 @@ kind: How-To
 A change to what the service returns starts in `contracts/charter/`. The order is: contract
 and fixtures, then the generated code, then the implementation. A pull request that changes
 a response shape without a contract change is incomplete. See
-[Contract and DTOs](../architecture/contract-and-dtos.md).
+[Contract and DTOs](/architecture/contract-and-dtos/).
 
 ## Both implementations, one answer
 
@@ -30,17 +30,19 @@ fixture, so the two never disagree on purpose.
 
 ## Documentation
 
-- Follow the doc-kitty convention ([ADR-0003](../adr/0003-docs-follow-doc-kitty.md)):
+- Follow the doc-kitty convention ([ADR-0003](/adr/0003-docs-follow-doc-kitty/)):
   frontmatter on every page, `README.md` as each section's index, sections registered in
   `docs/_meta/sections.yaml`.
 - Say what exists. A page describing planned work says so at the top.
-- Use the charter vocabulary in [Domain](../context/domain.md) and Spec Kitty's terminology
+- Use the charter vocabulary in [Domain](/context/domain/) and Spec Kitty's terminology
   canon (Mission, not "feature").
 - Record a decision as an ADR under `docs/adr/`; add a dated page under `docs/changelog/`
   for notable changes.
 
 ## Quality gates
 
-None run yet. When the Gradle build lands, it brings: contract layout and lint checks, the
+The docsite workflow checks every change to `docs/`: frontmatter, source links, a full
+build and the links in the built site ([Building the docsite](/guides/docsite/)). When the
+Gradle build lands, it brings: contract layout and lint checks, the
 breaking-change check, unit tests, the dependency-direction test and the conformance corpus.
 This page will list the commands then.

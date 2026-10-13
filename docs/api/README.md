@@ -18,7 +18,7 @@ related:
 
 The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schemas and
 `Problem` bodies for refusals. How it is versioned and generated is in
-[Contract and DTOs](../architecture/contract-and-dtos.md).
+[Contract and DTOs](/architecture/contract-and-dtos/).
 
 ## Planned read surface
 
@@ -35,7 +35,7 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 ## Planned write surface (later)
 
 Write operations come only after the read stages, one at a time: activation plan and commit,
-charter document save, compile. See [Strangler transition](../architecture/strangler-transition.md).
+charter document save, compile. See [Strangler transition](/architecture/strangler-transition/).
 
 ## Transports
 

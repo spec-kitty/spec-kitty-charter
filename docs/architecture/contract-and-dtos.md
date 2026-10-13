@@ -8,7 +8,7 @@ kind: Explanation
 related:
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
-  - api/README
+  - api
 ---
 
 # Contract and DTOs
@@ -50,7 +50,7 @@ flowchart LR
   by sharing code.
 
 Where the contract is authored is decided in
-[ADR-0002](../adr/0002-contract-source-of-record.md) (Proposed): here, in this repository,
+[ADR-0002](/adr/0002-contract-source-of-record/) (Proposed): here, in this repository,
 with core consuming releases. Core ADR `2026-10-03-1` placed it in core's `contracts/`; that
 placement predates the charter getting its own repository.
 

@@ -1,0 +1,6 @@
+# Makes site/ its own pnpm workspace root, so an install here never walks up into
+# another workspace.
+packages: []
+allowBuilds:
+  esbuild: true
+  sharp: true

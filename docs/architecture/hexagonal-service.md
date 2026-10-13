@@ -24,7 +24,7 @@ Amendment 2026-10-03):
 - **Build:** Gradle multi-project, with strict dependency verification like core's
   `contracts/` build.
 - **Distribution:** a GraalVM native binary per OS is the sibling's model. Whether the charter
-  ships native or as a JVM artifact is a deferred decision ([open questions](../plans/open-questions.md)).
+  ships native or as a JVM artifact is a deferred decision ([open questions](/plans/open-questions/)).
 
 ## Modules
 

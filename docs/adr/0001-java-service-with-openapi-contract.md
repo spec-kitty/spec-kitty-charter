@@ -48,10 +48,10 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
    the strangler stages move each read, then each write, to Java. Whether that Python code
    first moves into this repository as a package (the likely path) or stays in core until
    Java replaces it is not decided by this record
-   ([open questions](../plans/open-questions.md), question 2).
+   ([open questions](/plans/open-questions/), question 2).
 4. **This repository adopts core ADR `2026-10-03-1` as its plan** for stages, gates and
    service boundary, and records any divergence from it as its own ADR (the first is
-   [ADR-0002](./0002-contract-source-of-record.md)).
+   [ADR-0002](/adr/0002-contract-source-of-record/)).
 
 ## Consequences
 

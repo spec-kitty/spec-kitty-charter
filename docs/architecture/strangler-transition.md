@@ -17,7 +17,7 @@ related:
 > still bypass it (spec-kitty#645, GA-gating).
 
 The stages come from core ADR `2026-10-03-1` ("Staged ownership"). It is still **Proposed**
-in core; this repository treats it as the plan, and [open questions](../plans/open-questions.md)
+in core; this repository treats it as the plan, and [open questions](/plans/open-questions/)
 tracks its acceptance.
 
 ## Stages

@@ -57,7 +57,7 @@ answer until the old one retires.
 ## Why Java, and why a contract
 
 The operator chose Java for the charter (2026-10-13, recorded in
-[ADR-0001](../adr/0001-java-service-with-openapi-contract.md)). That follows the direction
+[ADR-0001](/adr/0001-java-service-with-openapi-contract/)). That follows the direction
 core ADR `2026-10-03-1` proposed (a per-worktree Java read service, writes later) and matches
 the Mission Status Read API service (core ADR `2026-10-01-2`): Java 25, Spring Boot 4, one
 Gradle build, contract-first OpenAPI 3.1.

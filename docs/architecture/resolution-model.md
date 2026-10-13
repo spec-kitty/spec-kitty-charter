@@ -66,7 +66,7 @@ Activation is a **plan, then commit**: planning validates and never mutates; com
 writes only after the plan succeeds. Applying a preset over customised lists is refused
 without `--force`, and the applied preset name is not persisted. Three write paths exist
 in core today, and each is a separate operation to migrate
-([Strangler transition](./strangler-transition.md)):
+([Strangler transition](/architecture/strangler-transition/)):
 
 - activation commit (`commit_plan`, which picks `.kittify/config.yaml` or `charter.yaml`);
 - the charter document save (`charter_yaml_io`, preserving authored sections);

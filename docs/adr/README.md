@@ -10,14 +10,14 @@ kind: Hub
 # Decision Records
 
 Decisions taken in this repository. Records are numbered `NNNN-<slug>.md` and copied from
-[the template](./template.md), as in doc-kitty. A record is immutable once accepted; a later
+[the template](/adr/template/), as in doc-kitty. A record is immutable once accepted; a later
 decision supersedes it rather than editing it.
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
-| [0001](./0001-java-service-with-openapi-contract.md) | ADR-0001: The charter is a Java service built against an OpenAPI contract | Accepted | 2026-10-13 |
-| [0002](./0002-contract-source-of-record.md) | ADR-0002: This repository is the source of record for the charter contract | Proposed | 2026-10-13 |
-| [0003](./0003-docs-follow-doc-kitty.md) | ADR-0003: Documentation follows the doc-kitty convention | Accepted | 2026-10-13 |
+| [0001](/adr/0001-java-service-with-openapi-contract/) | ADR-0001: The charter is a Java service built against an OpenAPI contract | Accepted | 2026-10-13 |
+| [0002](/adr/0002-contract-source-of-record/) | ADR-0002: This repository is the source of record for the charter contract | Proposed | 2026-10-13 |
+| [0003](/adr/0003-docs-follow-doc-kitty/) | ADR-0003: Documentation follows the doc-kitty convention | Accepted | 2026-10-13 |
 
 ## Core decisions this repository builds on
 

@@ -52,7 +52,9 @@ repository holds the agreed direction, the target design and the decisions; code
 ## Documentation
 
 The [`docs/`](docs/README.md) tree follows the
-[doc-kitty](https://github.com/spec-kitty/doc-kitty) convention:
+[doc-kitty](https://github.com/spec-kitty/doc-kitty) convention and is published from
+`main` to <https://spec-kitty.github.io/spec-kitty-charter/> (build setup:
+[Building the docsite](docs/guides/docsite.md)):
 
 - [Context](docs/context/) — why, what the charter owns, and the systems around it.
 - [Architecture](docs/architecture/) — the target design.

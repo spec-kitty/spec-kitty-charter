@@ -27,7 +27,7 @@ convention for a `docs/` tree that it can render into a site with feeds and an a
   api, guides, changelog.
 - Every page carries frontmatter: `title`, `description`, `doc_status`, `updated`, and
   `type` and `kind` where they help.
-- ADRs are numbered `NNNN-<slug>.md` from [the template](./template.md).
+- ADRs are numbered `NNNN-<slug>.md` from [the template](/adr/template/).
 - Notable changes get a dated page under `changelog/`.
 - The former `development/` section folds into `guides/` (contributor how-tos), since
   doc-kitty has no separate development section.
@@ -41,8 +41,11 @@ convention for a `docs/` tree that it can render into a site with feeds and an a
 
 ### Negative
 
-- No build or frontmatter check runs in this repository yet; the convention is held by
-  review until one is added.
+- Pages link to each other with root-absolute routes (`/section/page/`), which the
+  toolkit base-prefixes; `.md`-relative links do not survive a based deployment. GitHub's
+  file view does not follow those routes.
+- The convention is enforced by the docsite workflow (frontmatter, source links, built
+  links); see [Building the docsite](/guides/docsite/).
 
 ## References
 

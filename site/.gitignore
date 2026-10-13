@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.astro/
+# Not committed yet: the first lockfile must be resolved against GitHub Packages.
+# See docs/guides/docsite.md.
+pnpm-lock.yaml

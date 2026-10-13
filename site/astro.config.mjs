@@ -1,0 +1,27 @@
+// @ts-check
+import { defineConfig } from 'astro/config';
+import { defineDocKittyIntegrations } from '@spec-kitty/doc-toolkit/config';
+import { specKittyTheme } from '@spec-kitty/doc-toolkit/themes/spec-kitty/index.ts';
+
+// The docs tree lives at the repository root (../docs); this site/ project only
+// renders it. GitHub Pages serves a project site under /<repo>, so BASE is that
+// path. SITE and BASE can be overridden for a local preview at the domain root.
+const SITE = process.env.DK_SITE ?? 'https://spec-kitty.github.io';
+const BASE = process.env.DK_BASE ?? '/spec-kitty-charter';
+
+export default defineConfig({
+  site: SITE,
+  base: BASE,
+  integrations: defineDocKittyIntegrations({
+    title: 'spec-kitty-charter',
+    description: 'The Spec Kitty charter: a Java service and its OpenAPI contract, the Brain Kitty governance producer.',
+    // MUST equal the site `base` above.
+    base: BASE,
+    theme: specKittyTheme,
+    markua: true,
+    // Diagrams render client-side; no PlantUML or Chromium needed at build time.
+    diagrams: false,
+    // MUST match the loader in src/content.config.ts.
+    indexBasename: ['README'],
+  }),
+});

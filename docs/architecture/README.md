@@ -11,7 +11,7 @@ kind: Hub
 
 This section describes the **target design** of the charter service. doc-kitty's
 convention keeps architecture pages in the present tense and puts future work under
-[Plans](../plans/). This repository has no code yet, so each page here states the design as
+[Plans](/plans/). This repository has no code yet, so each page here states the design as
 agreed and marks what exists today. When code lands, the pages move to describing it.
 
 The design is grounded in three core ADRs and this repository's own records:
@@ -22,27 +22,27 @@ The design is grounded in three core ADRs and this repository's own records:
   writes later, one operation at a time;
 - core ADR `2026-10-01-2` (Accepted) — the Mission Status Read API, the sibling Java service
   whose stack, binding and release practice the charter follows;
-- [ADR-0001](../adr/0001-java-service-with-openapi-contract.md) and
-  [ADR-0002](../adr/0002-contract-source-of-record.md) in this repository.
+- [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and
+  [ADR-0002](/adr/0002-contract-source-of-record/) in this repository.
 
 ## The map
 
-- [Overview](./overview.md) — containers and the main flows. Read this first.
+- [Overview](/architecture/overview/) — containers and the main flows. Read this first.
 
 ## Component detail
 
-- [Hexagonal service](./hexagonal-service.md) — the Gradle modules and the inward
+- [Hexagonal service](/architecture/hexagonal-service/) — the Gradle modules and the inward
   dependency rule.
-- [Contract and DTOs](./contract-and-dtos.md) — the OpenAPI contract, how the core and the
+- [Contract and DTOs](/architecture/contract-and-dtos/) — the OpenAPI contract, how the core and the
   service generate from it, and how it is versioned.
-- [Resolution model](./resolution-model.md) — what the domain computes: layer merge,
+- [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
-- [Service lifecycle](./service-lifecycle.md) — per-worktree scope, loopback binding,
+- [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,
   credentials, freshness and fallback.
-- [Events and the ledger](./events-and-ledger.md) — why the charter publishes no events,
+- [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,
   and where it meets the pub, ledger, sub model.
 
 ## Transition
 
-- [Strangler transition](./strangler-transition.md) — the stages from Python-only to
+- [Strangler transition](/architecture/strangler-transition/) — the stages from Python-only to
   Java-only, the evidence each one needs, and the point of no return.

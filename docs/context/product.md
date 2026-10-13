@@ -53,7 +53,7 @@ never through its internals.
 CLI callers keep reaching the charter through the Python seam `charter.offering.api` while the strangler runs. That
 seam is the single entry point for CLI callers. Behind it, the answer moves from the
 Python implementation to this service, stage by stage
-([Strangler transition](../architecture/strangler-transition.md)).
+([Strangler transition](/architecture/strangler-transition/)).
 
 ## Who uses it
 
@@ -67,7 +67,7 @@ Python implementation to this service, stage by stage
 ## What it is not
 
 - **Not an event producer.** The charter does not write to the event ledger. Events come
-  from the runtime's `next` transitions; see [System context](./system-context.md).
+  from the runtime's `next` transitions; see [System context](/context/system-context/).
 - **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
   authored in `spec-kitty-open-packs`. The charter loads and resolves packs; it does not
   own their text.
