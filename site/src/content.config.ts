@@ -16,11 +16,11 @@ export const collections = {
     schema: docKittyDocsSchema(),
   }),
   bibliography: defineCollection({
-    loader: docKittyBibliographyLoader(),
+    loader: docKittyBibliographyLoader({ path: '../docs/_meta/bibliography.yaml' }),
     schema: docKittyBibliographySchema(),
   }),
   tools: defineCollection({
-    loader: docKittyToolsLoader(),
+    loader: docKittyToolsLoader({ path: '../docs/_meta/tools.yaml' }),
     schema: docKittyToolsSchema(),
   }),
 };

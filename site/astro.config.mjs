@@ -17,6 +17,9 @@ export default defineConfig({
     description: 'The Spec Kitty charter: a Java service and its OpenAPI contract, the Brain Kitty governance producer.',
     // MUST equal the site `base` above.
     base: BASE,
+    // MUST equal the loader `base` in src/content.config.ts. Without it the toolkit
+    // looks for site/docs, ignores docs/_meta/sections.yaml and lists drafts in the sitemap.
+    docsDir: '../docs',
     theme: specKittyTheme,
     markua: true,
     // Diagrams render client-side; no PlantUML or Chromium needed at build time.
