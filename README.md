@@ -26,10 +26,12 @@ repository holds the agreed direction, the target design and the decisions; code
 - **Contract first.** The service generates its server interfaces from the contract. The
   core ingests a pinned release of the same contract and generates the DTOs its CLI and its
   `next` state machine use. Neither side imports the other's code.
-- **A strangler, not a rewrite-and-swap.** In the core, the Python seam
-  `charter.offering.api` stays the only entry point for CLI callers. Behind it, reads move
+- **Staged behind one seam.** The Python seam `charter.offering.api` stays the only entry
+  point for CLI callers. Behind it, reads move
   to the Java service first (shadow, then authoritative with a loud fallback), and writes
-  move later, one operation at a time.
+  move later, one operation at a time. The Python charter likely moves into this
+  repository first; whether a rewrite-and-replace is safer or cheaper is still to be
+  decided.
 - **Not an event producer.** Events come from the runtime's `next` transitions and follow
   the [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
   charter answers questions; it does not write to the ledger.
