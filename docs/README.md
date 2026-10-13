@@ -28,6 +28,8 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Context](/context/) — why the charter is being extracted and rewritten, the
   vocabulary it owns, and the systems around it. **Start with
   [the product](/context/product/).**
+- [Glossary](/glossary/) — the charter, governance and product-line terms, imported from
+  the core glossary.
 - [Architecture](/architecture/) — the target design: containers, the hexagonal service,
   the contract and its generated DTOs, the strangler stages and the service lifecycle.
 - [Decision Records](/adr/) — decisions taken in this repository, and the core ADRs

@@ -50,6 +50,27 @@ base path (`/spec-kitty-charter`). A `.md`-relative link builds but 404s on the 
 site; `check:built-links` fails on it. Links outside `docs/` (code, the repository root) use
 full GitHub URLs.
 
+## Glossary
+
+The [Glossary](/glossary/) section is generated. Its terms are copied from the core
+repository's glossary (`docs/context/charter.md`, `governance.md` and `product-lines.md` in
+`spec-kitty/spec-kitty`), which stays the authority for them.
+
+- `site/.contextive/definitions.yaml` holds the imported terms.
+- Every build writes `docs/glossary/` from that file and links each term where it is first
+  used in a section of a page. Do not edit either by hand.
+
+To change a term, change it in the core glossary. Then, with a checkout of the core
+repository, import again from this repository's root and rebuild:
+
+```sh
+python3 site/tools/import_core_glossary.py /path/to/spec-kitty
+cd site && npm run build
+```
+
+Commit `site/.contextive/definitions.yaml` and `docs/glossary/` together. To stop a term
+from being linked on one page, set `glossary_autolink: false` in that page's frontmatter.
+
 ## What CI runs
 
 `.github/workflows/docs-site.yml` runs on every pull request that touches `docs/` or `site/`,

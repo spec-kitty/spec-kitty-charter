@@ -10,6 +10,12 @@ sections:
     type: Context
     purpose: Why the charter module exists, the vocabulary it owns, and the systems around it.
 
+  - id: glossary
+    label: Glossary
+    order: 15
+    type: Glossary
+    purpose: The charter vocabulary, imported from the core glossary. Generated; do not edit.
+
   - id: architecture
     label: Architecture
     order: 20
