@@ -23,6 +23,6 @@ related:
 - **Links** between pages are now root-absolute routes, so they work under the Pages base
   path.
 
-Two settings are needed once, outside the repository: Actions read access to the toolkit
-package, and Pages set to deploy from GitHub Actions. See
+One setting is needed once, outside the repository: Pages set to deploy from GitHub
+Actions. See
 [Building the docsite](/guides/docsite/).

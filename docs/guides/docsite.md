@@ -64,14 +64,13 @@ bootstrap. Set `DK_PUBLISH_DRAFTS=off` in the workflow once that changes.
 
 ## One-time settings
 
-Two settings live outside the repository and need an administrator:
-
-- **Package access.** The workflow's token can read `@spec-kitty/doc-toolkit` only if the
-  package grants this repository access: in the package's settings on GitHub, under
-  *Manage Actions access*, add `spec-kitty-charter` with the Read role. Without it the
-  install step fails with `403` or `404`.
 - **Pages source.** In this repository's *Settings → Pages*, set the source to
-  *GitHub Actions*.
+  *GitHub Actions*. Until then the deploy job on `main` fails.
+- **Package access.** The workflow's token already reads `@spec-kitty/doc-toolkit`. If that
+  ever turns into a `401` or `403` at install, check the package's *Manage Actions access*
+  list for `spec-kitty-charter`.
+- **The token is job-wide.** pnpm 11 checks GitHub Packages again before every `pnpm run`,
+  so `NODE_AUTH_TOKEN` is set for the whole build job, not only the install step.
 
 ## Not done yet
 
