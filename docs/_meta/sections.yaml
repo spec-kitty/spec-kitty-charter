@@ -1,0 +1,48 @@
+# Authored section registry for this docs tree, following doc-kitty's convention
+# (doc-kitty ADR-0004 and docs/architecture/section-registry.md in spec-kitty/doc-kitty).
+# It decouples display (label, order, feeds) and section type from the folder layout.
+# Reserved, non-content: a doc-kitty build excludes it from the docs collection.
+version: 1
+sections:
+  - id: context
+    label: Context
+    order: 10
+    type: Context
+    purpose: Why the charter module exists, the vocabulary it owns, and the systems around it.
+
+  - id: architecture
+    label: Architecture
+    order: 20
+    type: Architecture
+    purpose: The target design of the Java charter service and its contract.
+
+  - id: adr
+    label: Decision Records
+    order: 30
+    type: ADR
+    purpose: The immutable log of decisions taken in this repository.
+
+  - id: plans
+    label: Plans
+    order: 40
+    type: Plan
+    purpose: The bootstrap roadmap and the questions still open.
+    feeds: [sitemap, llms, agent]
+
+  - id: api
+    label: API
+    order: 50
+    type: API
+    purpose: The charter OpenAPI contract and the DTOs generated from it.
+
+  - id: guides
+    label: Guides
+    order: 90
+    type: Guide
+    purpose: Task-oriented how-tos for contributors and consumers.
+
+  - id: changelog
+    label: Changelog
+    order: 120
+    type: Changelog
+    purpose: What changed and when, newest first.

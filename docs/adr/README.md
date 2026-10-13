@@ -1,0 +1,36 @@
+---
+title: Decision Records
+description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
+doc_status: active
+updated: 2026-10-13
+type: ADR
+kind: Hub
+---
+
+# Decision Records
+
+Decisions taken in this repository. Records are numbered `NNNN-<slug>.md` and copied from
+[the template](./template.md), as in doc-kitty. A record is immutable once accepted; a later
+decision supersedes it rather than editing it.
+
+| ID | Title | Status | Date |
+|----|-------|--------|------|
+| [0001](./0001-java-service-with-openapi-contract.md) | ADR-0001: The charter is a Java service built against an OpenAPI contract | Accepted | 2026-10-13 |
+| [0002](./0002-contract-source-of-record.md) | ADR-0002: This repository is the source of record for the charter contract | Proposed | 2026-10-13 |
+| [0003](./0003-docs-follow-doc-kitty.md) | ADR-0003: Documentation follows the doc-kitty convention | Accepted | 2026-10-13 |
+
+## Core decisions this repository builds on
+
+These live in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty) under
+`docs/adr/`. They are not copied here.
+
+| Core ADR | Title | Status in core | What it gives this repository |
+|---|---|---|---|
+| `4.x/2026-10-12-2` | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; #645 is GA-gating; epic #6099 |
+| `4.x/2026-10-03-1` | Replace charter reads and writes through a staged Java service strangler | **Proposed** | The stages, the hexagonal shape, the write gates, the service boundary |
+| `4.x/2026-10-01-2` | A mission status read API replaces the CLI-bundled dashboard | Accepted | The sibling Java service: stack, binding, contract conventions, release model |
+| `4.x/2026-10-06-2` | Charter offering, active charter and activation presets | Accepted | The domain vocabulary; presets as pack data; no aliases or shims |
+| `4.x/2026-10-11-2` | A Charter Pack declares its level in `pack.yaml` | Accepted | `pack_level` and its refusal codes |
+| `3.x/2026-05-16-1` | Doctrine layer merge semantics | Accepted | How built-in, org and project layers merge |
+| `3.x/2026-08-02-1` | Charter wheel assessment | Accepted | The earlier, deferred wheel split that 2026-10-12-2 extends |
+| `3.x/2026-04-25-1` | Shared package boundary | Accepted | How external contract packages are consumed |

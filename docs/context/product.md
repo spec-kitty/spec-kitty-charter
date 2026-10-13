@@ -1,0 +1,75 @@
+---
+title: Product
+description: What the charter service is for, where it sits in the Brain, Build and Team Kitty product lines, and what this repository will hold.
+doc_status: active
+updated: 2026-10-13
+type: Context
+kind: Explanation
+related:
+  - context/problem
+  - context/system-context
+  - adr/0001-java-service-with-openapi-contract
+---
+
+# Product
+
+## What the charter is for
+
+Spec Kitty runs Missions from specification through review. At every step the agent doing
+the work needs to know which rules apply: the directives, tactics, styleguides, procedures,
+agent profiles and glossary that govern this project. The **charter** answers that
+question. It takes the Charter Packs a project draws from (the built-in pack, its
+organisation's packs and its own project pack), applies what the project has activated, and
+returns the guidance for one action.
+
+Without a single answer to "what governs this step?", authored governance drops silently
+somewhere between the pack and the agent. Spec Kitty's charter-resolution program
+(`docs/plans/charter-resolution/` in the core repository) documents exactly that class of
+defect. The charter exists to make that answer one, derived, and loud when it fails.
+
+## Where it sits
+
+Spec Kitty Inc. names three product lines (core `docs/context/product-lines.md`):
+
+| Line | Side | What it is |
+|---|---|---|
+| **Build Kitty** | open-core producer | The free CLI, its event ledger, and the Mission Status Read API |
+| **Brain Kitty** | open-core producer | Governance and doctrine: **the charter** (this repository), the open Charter Packs, doc-kitty |
+| **Team Kitty** | consumer ("Multiplayer Mode") | UIs and integrations that read the producers across public contracts |
+
+The charter is a **producer**. Consumers reach it only across its published contract,
+never through its internals.
+
+## What this repository will hold
+
+| Part | Purpose | State |
+|---|---|---|
+| `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO | planned |
+| The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | planned |
+| Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
+| `docs/` | This documentation | bootstrapped |
+
+The core CLI keeps the Python seam `charter.offering.api` while the strangler runs. That
+seam is the single entry point for CLI callers. Behind it, the answer moves from the
+Python implementation to this service, stage by stage
+([Strangler transition](../architecture/strangler-transition.md)).
+
+## Who uses it
+
+- **The Spec Kitty runtime** (the CLI commands and the `next` state machine) asks the
+  charter for action-scoped guidance, through DTOs generated from the contract.
+- **Agent harnesses** may read guidance directly through the MCP adapter, without starting
+  a CLI process per question (planned; its authorisation is an open decision).
+- **Pack authors** validate and assemble Charter Packs against the same rules the
+  service applies.
+
+## What it is not
+
+- **Not an event producer.** The charter does not write to the event ledger. Events come
+  from the runtime's `next` transitions; see [System context](./system-context.md).
+- **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
+  authored in `spec-kitty-open-packs`. The charter loads and resolves packs; it does not
+  own their text.
+- **Not hosted.** The service is local and scoped to one worktree. A remote deployment is a
+  backlog idea (core `docs/architecture/charter-backend-service-future.md`), not a goal of
+  this repository.

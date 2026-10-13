@@ -1,0 +1,46 @@
+---
+title: Contributing
+description: How work lands in spec-kitty-charter during the bootstrap — branches and pull requests, documentation rules, the contract-first order, and where decisions go.
+doc_status: draft
+updated: 2026-10-13
+type: Guide
+kind: How-To
+---
+
+# Contributing
+
+## Branches and pull requests
+
+- Work on a topic branch and open a pull request against `main`. Never push to `main`.
+- Open pull requests as drafts; the operator merges.
+- Review is advisory today (see `.github/CODEOWNERS`); nothing on GitHub enforces it.
+
+## Contract first
+
+A change to what the service returns starts in `contracts/charter/`. The order is: contract
+and fixtures, then the generated code, then the implementation. A pull request that changes
+a response shape without a contract change is incomplete. See
+[Contract and DTOs](../architecture/contract-and-dtos.md).
+
+## Both implementations, one answer
+
+While the Python charter still answers in core, a behaviour change needs a fixture that both
+implementations pass. If the Python behaviour is wrong, fix it in core first, with the
+fixture, so the two never disagree on purpose.
+
+## Documentation
+
+- Follow the doc-kitty convention ([ADR-0003](../adr/0003-docs-follow-doc-kitty.md)):
+  frontmatter on every page, `README.md` as each section's index, sections registered in
+  `docs/_meta/sections.yaml`.
+- Say what exists. A page describing planned work says so at the top.
+- Use the charter vocabulary in [Domain](../context/domain.md) and Spec Kitty's terminology
+  canon (Mission, not "feature").
+- Record a decision as an ADR under `docs/adr/`; add a dated page under `docs/changelog/`
+  for notable changes.
+
+## Quality gates
+
+None run yet. When the Gradle build lands, it brings: contract layout and lint checks, the
+breaking-change check, unit tests, the dependency-direction test and the conformance corpus.
+This page will list the commands then.
