@@ -35,6 +35,11 @@ jobs:
     defaults:
       run:
         working-directory: site
+    env:
+      # Job-wide, not only on the install step: pnpm 11 re-checks the lockfile
+      # against GitHub Packages before every `pnpm run`, and setup-node's
+      # placeholder token gets a 401 there.
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -47,8 +52,6 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
       - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # No lockfile is committed yet (see docs/guides/docsite.md); the toolkit
         # itself is pinned exactly in package.json.
         run: pnpm install --no-frozen-lockfile
