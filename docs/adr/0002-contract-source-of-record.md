@@ -14,8 +14,8 @@ related:
 
 ## Status
 
-**Proposed** — 2026-10-13. Needs the operator's ruling, because it changes where core ADR
-`2026-10-03-1` puts the contract.
+**Proposed** — 2026-10-13. Decider: pending (operator). Needs the operator's ruling, because
+it changes where core ADR `2026-10-03-1` puts the contract.
 
 ## Context
 
@@ -37,9 +37,11 @@ charter is different: its producer is moving here.
 1. The charter contract is authored here, in `contracts/charter/`, as a module that follows
    core's `contracts/README.md` conventions exactly (split files, plain relative `$ref`s,
    `_index.yaml` lists, `/api/v1` server prefix, its own `info.version` and `CHANGELOG.md`).
+   "Charter contract" here means all five parts listed in
+   [Contract and DTOs](/architecture/contract-and-dtos/), not only the OpenAPI document.
 2. Shared vocabulary (`Problem`, `PageInfo`, `PageCursor`) is reused from core's `_shared/`
    by vendoring a pinned copy, not redefined.
-3. Each contract release publishes a single-file bundle and the fixture corpus. The core
+3. Each contract release publishes a single-file bundle and the conformance corpus. The core
    vendors a pinned, checksummed release, the way core ADR `2026-08-16-2` plans to vendor
    built-in pack content (core #3504, not built yet), and generates its Python DTOs from it.
 4. Core's contract tooling (layout, lint, breaking-change checks) runs here in CI against
@@ -64,7 +66,7 @@ charter is different: its producer is moving here.
   against. If the Python charter stays in core, so should the contract until Python reads
   retire.
 - If the operator prefers core's `contracts/` as the single home for every OpenAPI module,
-  this record is withdrawn and the service vendors the contract from core instead. Both work;
+  this record is rejected and the service vendors the contract from core instead. Both work;
   what matters is that exactly one repository authors it.
 
 ## Alternatives considered

@@ -15,7 +15,7 @@ repository holds the agreed direction, the target design and the decisions; code
 
 | Part | What it is | State |
 |---|---|---|
-| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter DTO (authored here pending ADR-0002) | planned |
+| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter data transfer object (DTO); authored here pending ADR-0002 | planned |
 | Java service | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only | planned |
 | Conformance corpus | Fixtures the Python and Java implementations must both pass | planned |
 | Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), behind `charter.offering.api` | likely moves here first; to be decided |
@@ -27,20 +27,19 @@ repository holds the agreed direction, the target design and the decisions; code
   core ingests a pinned release of the same contract and generates the DTOs its CLI and its
   `next` state machine use. Neither side imports the other's code.
 - **Staged behind one seam.** The Python seam `charter.offering.api` becomes the only entry
-  point for CLI callers. Behind it, reads move
-  to the Java service first (shadow, then authoritative with a loud fallback), and writes
-  move later, one operation at a time. The Python charter likely moves into this
+  point for CLI callers. Behind it, reads move to the Java service first (shadow, then
+  authoritative with a loud fallback), and writes move later, one operation at a time. The Python charter likely moves into this
   repository first; whether a rewrite-and-replace is safer or cheaper is still to be
   decided.
 - **Not an event producer.** Events come from the runtime's `next` transitions and follow
   the [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
-  charter answers questions; it does not write to the ledger.
+  charter service answers questions; it does not write to the ledger.
 
 ## Governing decisions
 
 - Core ADR `2026-10-12-2`: the charter becomes an external contract package in its own
-  repository. Its precondition, moving about 129 internal imports onto
-  `charter.offering.api`, gates 4.0.0 GA. It was tracked as
+  repository. Its precondition, moving the charter-internal imports of about 130 files onto
+  `charter.offering.api`, gates 4.0.0 general availability (GA). It was tracked as
   [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) until that issue was
   closed as not planned on 2026-10-13; the import move is now carried by epic
   [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
@@ -63,7 +62,7 @@ The [`docs/`](docs/README.md) tree follows the
 - [Decision Records](docs/adr/) — decisions here, and the core ADRs they build on.
 - [Plans](docs/plans/) — the bootstrap roadmap and open questions.
 - [API](docs/api/) — the planned contract surface.
-- [Guides](docs/guides/) — contributing.
+- [Guides](docs/guides/) — contributing and building the docsite.
 - [Changelog](docs/changelog/) — notable changes.
 
 ## License

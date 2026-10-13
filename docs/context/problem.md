@@ -28,11 +28,12 @@ As long as that holds:
 
 - the charter cannot be released or versioned on its own;
 - open-core consumers cannot depend on governance without depending on the whole CLI;
-- no other implementation can sit behind the charter, because there is nothing to sit
-  behind.
+- no other implementation can replace the Python one, because callers do not go through a
+  single surface.
 
 Core ADR `2026-10-12-2` (Accepted) decides that the charter becomes an external contract
-package in its own repository, like `spec-kitty-events` and `spec-kitty-tracker`. Its
+package (core's term for a package consumed only through its public surface) in its own
+repository, like `spec-kitty-events` and `spec-kitty-tracker`. Its
 precondition, moving those imports onto `charter.offering.api`, is part of the 4.0.0 GA
 gate. It was tracked as spec-kitty#645, which was closed as not planned on 2026-10-13; the
 import move and the extraction mechanics are now carried by epic spec-kitty#6099.
@@ -52,9 +53,9 @@ and MCP is hard when the answer is computed inside one CLI invocation.
 The charter-resolution program in core found that authored org and project doctrine loads,
 validates and reports healthy, then reaches no agent. Its root cause is that canonical facts
 (kind vocabulary, recursion policy, name versus id) are restated by hand in several places,
-and every divergence fails green. A rewrite that restates the same facts a third time would
+and every divergence passes the checks unnoticed. A rewrite that restates the same facts a third time would
 make this worse. The rewrite therefore has to be **contract-first** and **conformance-gated**:
-one published contract, one fixture corpus, two implementations that must give the same
+one published contract, one conformance corpus, two implementations that must give the same
 answer until the old one retires.
 
 ## Why Java, and why a contract
@@ -62,7 +63,7 @@ answer until the old one retires.
 The operator chose Java for the charter (2026-10-13, recorded in
 [ADR-0001](/adr/0001-java-service-with-openapi-contract/)). That follows the direction
 core ADR `2026-10-03-1` proposed (a per-worktree Java read service, writes later) and matches
-the Mission Status Read API service (core ADR `2026-10-01-2`): Java 25, Spring Boot 4, one
+the Mission Status Read API (core ADR `2026-10-01-2`): Java 25, Spring Boot 4, one
 Gradle build, contract-first OpenAPI 3.1.
 
 The OpenAPI contract is what keeps two languages honest. The core ingests it and generates

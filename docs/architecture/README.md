@@ -40,7 +40,7 @@ The design is grounded in three core ADRs and this repository's own records:
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,
   credentials, freshness and fallback.
 - [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,
-  and where it meets the pub, ledger, sub model.
+  and where it meets the publish, ledger, subscribe model.
 
 ## Transition
 

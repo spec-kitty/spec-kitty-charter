@@ -19,13 +19,14 @@ Spec Kitty runs Missions from specification through review. At every step the ag
 the work needs to know which rules apply: the directives, tactics, styleguides, procedures,
 agent profiles and glossary that govern this project. The **charter** answers that
 question. It takes the Charter Packs a project draws from (the built-in pack, its
-organisation's packs and its own project pack), applies what the project has activated, and
+organization's packs and its own project pack), applies what the project has activated, and
 returns the guidance for one action.
 
 Without a single answer to "what governs this step?", authored governance drops silently
 somewhere between the pack and the agent. Spec Kitty's charter-resolution program
 (`docs/plans/charter-resolution/` in the core repository) documents exactly that class of
-defect. The charter exists to make that answer one, derived, and loud when it fails.
+defect. The charter exists so that there is one answer, derived from one source, and a failure to
+produce it is reported.
 
 ## Where it sits
 
@@ -58,18 +59,18 @@ Python implementation to this service, stage by stage
 ## Who uses it
 
 - **The Spec Kitty runtime** (the CLI commands and the `next` state machine) asks the
-  charter for action-scoped guidance, through DTOs generated from the contract.
+  charter for action-scoped context, through DTOs generated from the contract.
 - **Agent harnesses** may read guidance directly through the MCP adapter, without starting
-  a CLI process per question (planned; its authorisation is an open decision).
+  a CLI process per question (planned; its authorization is an open decision).
 - **Pack authors** validate and assemble Charter Packs against the same rules the
   service applies.
 
 ## What it is not
 
-- **Not an event producer.** The charter does not write to the event ledger. Events come
+- **Not an event producer.** The charter service does not write to the event ledger. Events come
   from the runtime's `next` transitions; see [System context](/context/system-context/).
 - **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
-  authored in `spec-kitty-open-packs`. The charter loads and resolves packs; it does not
+  authored in `spec-kitty-open-packs`. The charter service loads and resolves packs; it does not
   own their text.
 - **Not hosted.** The service is local and scoped to one worktree. A remote deployment is
   not a goal of this repository. Core's `docs/architecture/charter-backend-service-future.md`

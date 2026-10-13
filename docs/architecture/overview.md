@@ -29,7 +29,7 @@ related:
 flowchart TB
   subgraph core["spec-kitty core (Python)"]
     direction TB
-    cli["CLI commands<br/>and runtime next FSM"]
+    cli["CLI commands<br/>and runtime next state machine"]
     seam["charter seam<br/>charter.offering.api"]
     dtos["generated DTOs<br/>from contracts/charter"]
     pyimpl["Python charter<br/>read + write paths<br/><i>exists; retires in stages</i>"]
@@ -69,12 +69,12 @@ flowchart TB
 asks the seam for action-scoped context, passing the mission type and the load depth. The
 seam holds an endpoint and a credential the launcher gave it, calls `GET /api/v1/...` on the
 worktree's service, and receives a response
-that deserialises into the generated DTO. The service answers from a warm active graph it
+that deserializes into the generated DTO. The service answers from a warm active graph it
 built from source fingerprints. If the service is stale or unreachable, the seam falls back
 to the Python implementation **loudly**: the fallback is visible in diagnostics and
 telemetry and never silently picks a second answer.
 
-**A shadow read.** Before Java is authoritative, Python answers and the Java answer is
+**A read shadow.** Before Java is authoritative, Python answers and the Java answer is
 compared out of band against the same inputs. Differences are reported, not served.
 
 **A write (late stages).** Python holds the single write lock until a write operation

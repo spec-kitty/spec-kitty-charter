@@ -31,7 +31,7 @@ the Python charter moves here first).
 | 0. Current | Python | Python | — |
 | 1. Callers on the seam | Python, behind the seam | Python, behind the seam | Callers outside `charter` import no charter internals; a ratchet holds the count at zero |
 | 2. Read shadow | Python; Java compared out of band | Python | Contract and fixture equivalence |
-| 3. Java authoritative | Java; loud, observable Python fallback | Python | Conformance is a blocking gate; freshness and failure behaviour proven |
+| 3. Java authoritative | Java; loud, observable Python fallback | Python | Conformance is a blocking gate; freshness and failure behavior proven |
 | 4. Java reads complete | Java only | Python | Fallback-retirement criteria met |
 | 5. Write migration | Java | Python or Java, per operation | Codec identity, mapping identity, confined mutation, negative-fixture equivalence |
 | 6. End state | Java | Java | Every write operation migrated |
@@ -43,14 +43,15 @@ fallback. The fallback must never silently choose a second answer.
 
 Python reads retire only when all of these hold:
 
-- the supported fixture corpus passes;
-- stale and unavailable service behaviour is proven by tests;
+- the supported conformance corpus passes;
+- the behavior of a stale or unavailable service is proven by tests;
 - cross-OS packaging is supported;
 - an agreed observation period finds no unresolved semantic divergence.
 
 ## Stepping back
 
-Each stage can step back one stage until the point of no return:
+Stages 1 to 3 can each step back one stage. After stage 4, only a single write operation
+can step back:
 
 - **Callers on the seam:** move a caller back to its direct import.
 - **Read shadow:** turn the comparison off; Python already answers.

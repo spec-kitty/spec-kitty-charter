@@ -26,7 +26,7 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 ## Sections
 
 - [Context](/context/) — why the charter is being extracted and rewritten, the
-  vocabulary it owns, and the systems around it. **Start with
+  vocabulary it uses, and the systems around it. **Start with
   [the product](/context/product/).**
 - [Glossary](/glossary/) — the charter, governance and product-line terms, imported from
   the core glossary.

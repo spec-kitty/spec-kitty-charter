@@ -8,7 +8,7 @@ sections:
     label: Context
     order: 10
     type: Context
-    purpose: Why the charter module exists, the vocabulary it owns, and the systems around it.
+    purpose: Why the charter service exists, the vocabulary it uses, and the systems around it.
 
   - id: glossary
     label: Glossary

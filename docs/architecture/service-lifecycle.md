@@ -31,7 +31,8 @@ daemon started on first use, or one per command) is a deferred decision.
 ## Binding and access
 
 - Binds to `127.0.0.1` only and checks the `Host` and `Origin` headers, as the Mission
-  Status service does. A loopback-only transport is not "fixed" by forcing HTTPS.
+  Status service does. Loopback-only HTTP is intended; do not change it to HTTPS in response
+  to a static-analysis finding.
 - Every request carries a capability credential scoped to the worktree.
 - No secrets in responses.
 - The MCP adapter does not ship until a decision defines who may call it and how; the
@@ -48,7 +49,7 @@ daemon started on first use, or one per command) is a deferred decision.
 
 ## Failure and fallback
 
-| Situation | Behaviour |
+| Situation | Behavior |
 |---|---|
 | Service not running or unreachable | The seam falls back to Python (until Python reads retire), and says so in diagnostics and telemetry |
 | Service answers for another worktree | Refused: identity is checked on every call |

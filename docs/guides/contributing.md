@@ -12,7 +12,7 @@ kind: How-To
 ## Branches and pull requests
 
 - Work on a topic branch and open a pull request against `main`. Never push to `main`.
-- Open pull requests as drafts; the operator merges.
+- Open pull requests as drafts; the operator (the repository owner, Stijn Dejongh) merges.
 - Review is advisory today (see `.github/CODEOWNERS`); nothing on GitHub enforces it.
 
 ## Contract first
@@ -25,8 +25,8 @@ a response shape without a contract change is incomplete. See
 
 ## Both implementations, one answer
 
-While the Python charter still answers in core, a behaviour change needs a fixture that both
-implementations pass. If the Python behaviour is wrong, fix it in core first, with the
+While the Python charter still answers in core, a behavior change needs a fixture that both
+implementations pass. If the Python behavior is wrong, fix it in core first, with the
 fixture, so the two never disagree on purpose. This assumes the Python charter stays in
 core; if it moves here first ([open questions](/plans/open-questions/), question 2), the
 fix lands in the Python package here.

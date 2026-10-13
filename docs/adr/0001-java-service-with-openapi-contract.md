@@ -32,7 +32,7 @@ per-worktree Java service that takes over charter reads, then writes, behind a P
 Read together, the two records left open whether this repository is the permanent Python
 home of the charter or the home of its Java replacement.
 
-The operator settled it: the charter solution is Java, with an OpenAPI spec ingested in the
+The operator settled it: the charter's target implementation is Java, with an OpenAPI spec ingested in the
 core, used to generate DTOs that runtime execution (the CLI, the state machine) uses.
 
 ## Decision
@@ -63,7 +63,7 @@ core, used to generate DTOs that runtime execution (the CLI, the state machine) 
 - One reading of the new repository: it is the Java charter and its contract, not a
   permanent Python package.
 - The same contract serves the CLI, agent harnesses (MCP) and any future consumer.
-- Two languages are held to one answer by a contract and a fixture corpus instead of
+- Two languages are held to one answer by a contract and a conformance corpus instead of
   shared code.
 
 ### Negative

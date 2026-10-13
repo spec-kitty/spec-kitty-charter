@@ -24,7 +24,7 @@ decides. A ruling becomes an ADR here or in core.
 | 4 | **Does `kernel` ship first?** The charter depends on `kernel`; core ADR `2026-10-12-2` leaves this to epic #6099. | Relevant if the Python charter moves first (question 2): the package needs `kernel` from somewhere. Irrelevant to the Java service, which depends on no Python | Epic #6099 |
 | 5 | **Native binary or JVM artifact?** | Follow the Mission Status service (GraalVM native per OS) unless reflection-heavy YAML or MCP libraries make native impractical | Implementation ADR |
 | 6 | **Which YAML codec** can pass codec identity (comments, anchors, scalar styles, null spellings)? | Undecided; a spike before any write migration | Implementation ADR |
-| 7 | **MCP adapter authorisation.** | Not shipped until decided; expected to reuse loopback + Host check + worktree token | Operator |
+| 7 | **MCP adapter authorization.** | Not shipped until decided; expected to reuse loopback + Host check + worktree token | Operator |
 | 8 | **Launcher shape.** Daemon on first use, or one process per command? | Daemon on first use, stopped with the worktree | Core, `specify_cli` |
 | 9 | **Do governance changes become ledger events?** An activation or an applied preset is not recorded on the ledger today. | No; if wanted, the runtime emits it through spec-kitty-events, never the charter service | Operator |
 | 10 | **Does a runtime event cite which governance applied** (pack ids, versions, artifact URNs) for traceability? | Worth doing once the ledger-row schema exists; the identifiers come from this contract | Operator, with spec-kitty-events |

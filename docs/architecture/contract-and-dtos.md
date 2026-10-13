@@ -30,7 +30,7 @@ flowchart LR
   javagen["Java generation<br/>server interfaces + DTOs<br/>charter-api module"]
   core["spec-kitty core<br/>pinned, checksummed copy"]
   pygen["Python generation<br/>DTOs for the seam,<br/>CLI and runtime"]
-  fixtures["conformance fixtures"]
+  fixtures["conformance corpus"]
 
   spec --> bundle
   spec --> javagen
@@ -57,8 +57,8 @@ placement predates the charter getting its own repository.
 
 ## What the contract carries
 
-Following core ADR `2026-10-03-1` ("Cross-language contract"), the contract is more than an
-OpenAPI file:
+Following core ADR `2026-10-03-1` ("Cross-language contract"), the **charter contract** is
+the OpenAPI document plus four more parts:
 
 1. the versioned **OpenAPI 3.1** document and the **YAML document schemas** of the inputs
    (pack descriptor, org charter, DRG fragment and graph shards, artifact files,
@@ -67,7 +67,7 @@ OpenAPI file:
 3. **canonical identifiers and diagnostics**: refusal codes such as `PACK_LEVEL_MISMATCH`
    are part of the contract, not implementation detail;
 4. **fixtures**: positive, negative, provenance and conflict cases;
-5. **expected results**: action-scoped guidance and graph-query answers for each fixture.
+5. **expected results**: action-scoped context and graph-query answers for each fixture.
 
 Items 2 to 5 are what let two implementations give one answer.
 
@@ -92,7 +92,7 @@ The contract follows core's `contracts/README.md` so the same tooling can check 
 - A breaking-change check compares each release with the previous one; a breaking change
   needs a new major version and a core-side migration of its DTO consumers.
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same
-  change, and the conformance fixtures of that release must pass against the Python
+  change, and the conformance corpus of that release must pass against the Python
   implementation while it still answers.
 
 ## Generator choice

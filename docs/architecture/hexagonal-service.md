@@ -17,7 +17,7 @@ related:
 
 ## Stack
 
-The charter service follows the Mission Status Read API service (core ADR `2026-10-01-2`,
+The charter service follows the Mission Status Read API (core ADR `2026-10-01-2`,
 Amendment 2026-10-03):
 
 - **Runtime:** Java 25, Spring Boot 4, Spring MVC on virtual threads.
@@ -36,10 +36,10 @@ Amendment 2026-10-03):
 | `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here pending ADR-0002) |
 | `adapter-in-rest` | read-app, `charter-api`, Spring | REST controllers for the read use cases; they map transport DTOs to use-case inputs and back |
 | `adapter-in-write` | write-app, `charter-api`, Spring | REST controllers for migrated write operations. Later; kept apart so the read path gains no dependency on the write application |
-| `adapter-in-mcp` | read-app | MCP tools over the same read use cases. Planned; ships only after its authorisation decision |
+| `adapter-in-mcp` | read-app | MCP tools over the same read use cases. Planned; ships only after its authorization decision |
 | `adapter-out-yaml` | domain | Lossless YAML document models, source fingerprints, and implementations of the repository ports |
 | `charter-service` | everything above | Spring Boot wiring, configuration, loopback binding and credential checks |
-| `charter-conformance` | read-app, write-app (later), fixtures | Runs the shared fixture corpus against the service |
+| `charter-conformance` | read-app, write-app (later), fixtures | Runs the conformance corpus against the service |
 
 ## The rule
 
@@ -62,7 +62,7 @@ An ArchUnit (or equivalent) test pins this direction, so the rule is a gate, not
 
 ## Three models, kept apart
 
-| Model | Optimised for | Lives in |
+| Model | Optimized for | Lives in |
 |---|---|---|
 | **API models** (transport DTOs) | Consumers: versioned, closed REST/JSON/MCP shapes | `charter-api`, generated |
 | **Domain models** | Charter meaning and invariants | `charter-domain` |

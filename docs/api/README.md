@@ -40,6 +40,6 @@ charter document save, compile. See [Strangler transition](/architecture/strangl
 ## Transports
 
 - **REST** over loopback, for the core's seam.
-- **MCP**, for agent harnesses, after its authorisation decision.
+- **MCP**, for agent harnesses, after its authorization decision.
 
 Both call the same read application. Neither implements resolution on its own.

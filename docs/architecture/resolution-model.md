@@ -12,9 +12,9 @@ related:
 
 # Resolution model
 
-> **State:** the behaviour below exists today in core's Python charter. The Java domain must
+> **State:** the behavior below exists today in core's Python charter. The Java domain must
 > reproduce it, fixture for fixture, before it answers anything in production. Where core's
-> behaviour is known to be wrong, the fix lands in Python first (with a fixture), so the two
+> behavior is known to be wrong, the fix lands in Python first (with a fixture), so the two
 > implementations never disagree on purpose.
 
 ## Inputs
@@ -26,7 +26,7 @@ The service reads only configured inputs, never directory presence:
 | Built-in pack | the pack root the CLI resolves for `built-in` | sharded `*.graph.yaml` plus a generated `pack-manifest.yaml`; `pack_level: built-in` |
 | Org packs | each directory under `charter_packs.org.packs` in `.kittify/config.yaml` | `pack.yaml` (`pack_level: org`), `org-charter.yaml`, one `drg/fragment.yaml` |
 | Project pack | `.kittify/charter-packs/` | `pack_level: project` |
-| Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys and `mission_type_activations` |
+| Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys, `activated_kinds` and `mission_type_activations` |
 | Mission type | the request (`--mission-type` in the CLI) or the mission's `meta.json` | keys the action grain: action nodes are `action:<mission-type>/<action>` |
 | Load depth | the request | first load (bootstrap) or a later, compact load; see Writes |
 
@@ -52,20 +52,20 @@ flowchart LR
    load, and the Java service should check every level).
 2. **Merge.** The three layers merge into one graph under core ADR `2026-05-16-1`. Edge
    endpoints resolve to `<kind>:<id>` URNs or to bare ids the fragment declares; anything
-   else is an `unresolved_edge_endpoint` conflict. Org `drg/fragment.yaml` edges reach the
-   same graph cascade reads, not a separate diagnostic path (the charter-resolution
-   program's M2 fix).
+   else is an `unresolved_edge_endpoint` conflict. Edges from an org pack's `drg/fragment.yaml`
+   land in the same graph that cascade reads; they are not kept on a separate,
+   diagnostic-only path (a defect the charter-resolution program fixed).
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
    is an allowlist. Org `required_<kind>` lists apply where the kind is org-requirable, and
-   union into the selection where it is selection-overlayable.
+   union into the charter's `selected_<kind>` list where it is selection-overlayable.
 4. **Answer.** Action-scoped context, profile resolution with `specializes_from` lineage and
    `enhances` / `overrides` applied, graph queries and listings.
 
 ## Writes
 
 Activation is a **plan, then commit**: planning validates and never mutates; committing
-writes only after the plan succeeds. Applying a preset over customised lists is refused
+writes only after the plan succeeds. Applying a preset over customized lists is refused
 without `--force`, and the applied preset name is not persisted. Three YAML write paths
 exist in core today, and each is a separate operation to migrate
 ([Strangler transition](/architecture/strangler-transition/)):

@@ -31,18 +31,18 @@ The operator's direction of 2026-10-13:
   writes (for example `kitty-specs/<mission>/status.events.jsonl`) have no versioned row
   schema, although the package already defines their transition payload; the decision makes
   the row itself a versioned contract.
-- **The ledger may become on by default,** with a retention period and cleanup policy, since
-  the CLI plans to offer ledger-backed services (traceability, dashboards) to integration
-  points. That is being considered, not decided.
+- **Serving the ledger to integration points may be switched on by default,** with a
+  retention period and cleanup policy, since the CLI plans to offer ledger-backed services
+  (traceability, dashboards). That is being considered, not decided.
 
 ## Where the charter fits
 
-The charter is **not** a producer in that model. It answers questions; it does not record
+The charter service is **not** a producer in that model. It answers questions; it does not record
 what happened. A governed step looks like this:
 
 ```mermaid
 sequenceDiagram
-  participant FSM as runtime next FSM (core)
+  participant FSM as runtime next state machine (core)
   participant Seam as charter seam (core)
   participant Svc as charter service
   participant Ledger as event ledger
@@ -69,6 +69,6 @@ Rules that follow:
 ## Why this matters for the design
 
 Keeping the charter off the ledger keeps the service a pure, rebuildable read model of files
-on disk. It has no event history to migrate, no ordering semantics to honour and no
+on disk. It has no event history to migrate, no ordering semantics to honor and no
 retention policy of its own. Its state is always derivable from the packs and the active
 charter, plus the request's mission type and load depth, which is what makes the per-worktree, fingerprint-and-rebuild lifecycle possible.
