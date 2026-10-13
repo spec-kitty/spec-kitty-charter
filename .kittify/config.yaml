@@ -1,0 +1,18 @@
+project:
+  uuid: b419ff4a-d044-49f5-82a4-72132f63814f
+  slug: spec-kitty-charter
+  node_id: 6ad7860a01ff
+  build_id: a8292d9f-027b-573b-87c1-2970fc67d3d3
+mission_type_activations:
+- software-dev
+- documentation
+- research
+- plan
+vcs:
+  type: git
+agents:
+  available:
+  - claude
+  - codex
+  auto_commit: true
+  lint_on_edit: false
