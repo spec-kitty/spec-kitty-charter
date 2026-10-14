@@ -24,17 +24,17 @@ Why the charter service publishes no events, where it meets Spec Kitty's publish
 Core ADR
 [`4.x/2026-10-13-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-13-2-the-event-ledger-is-the-publication-seam-default-on-with-local-retention.md) (Accepted) makes the ledger the publication seam,
 on by default. The operator's clarification of 2026-10-14, recorded in core ADR
-[`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md) (in review), gives the CLI one canonical event writer.
+[`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/pull/6217) (in review in core PR #6217), gives the CLI one canonical event writer.
 Today status events are still appended by `specify_cli.status` (`emit_status_transition`)
 from several commands, as local rows.
 
 ## The model around the charter
 
-- **One canonical event writer.** The core CLI has a single event writer, the event bridge.
+- **One canonical event writer.** The core CLI has a single event writer, the event bridge (`EventBridge`).
   It writes only events compatible with the published `spec-kitty-events` contract, at the
   latest version. Every event carries its contract version in the envelope's
   `schema_version` field, so a consumer knows what it receives and can accept one version
-  or several. The CLI's internal lifecycle events are retired in favor of these canonical
+  or several. The CLI's internal lifecycle events are being retired in favor of these canonical
   events (operator, 2026-10-14).
 - **The runtime calls it.** The runtime state machine calls the event bridge's entrypoints
   when a work package transitions or the Mission state advances. It knows nothing else

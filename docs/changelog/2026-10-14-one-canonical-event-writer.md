@@ -8,6 +8,9 @@ kind: Changelog
 related:
   - architecture/events-and-ledger
   - context/system-context
+  - context/product
+  - plans/open-questions
+  - plans/roadmap
 ---
 
 # 2026-10-14 — Events go through the core's one canonical event writer
@@ -18,7 +21,7 @@ related:
   clarification of 2026-10-14: the core CLI has one canonical event writer that the runtime
   calls, and it writes only `spec-kitty-events` contract events at the latest version, each
   carrying its `schema_version`. Recorded in core ADR
-  [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md)
+  [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/pull/6217)
   (in review).
 - The same page cites core ADR `4.x/2026-10-13-2` (Accepted): the ledger is the publication
   seam, on by default, so "ledger by default" is no longer described as under consideration.
