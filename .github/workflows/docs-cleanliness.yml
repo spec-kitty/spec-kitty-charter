@@ -144,7 +144,16 @@ jobs:
           curl -fsSL -o "$RUNNER_TEMP/plantuml.jar" "$url"
           echo "PLANTUML_JAR=$RUNNER_TEMP/plantuml.jar" >> "$GITHUB_ENV"
       - name: Render and compare the diagrams
+        env:
+          PLANTUML_RENDER_DIR: ${{ runner.temp }}/rendered-diagrams
         run: python scripts/docs/check_docs.py plantuml
+      - name: Upload the CI renders (to diagnose a mismatch)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rendered-diagrams
+          path: ${{ runner.temp }}/rendered-diagrams
+          if-no-files-found: ignore
 
   external-links:
     name: External links (non-gating)
