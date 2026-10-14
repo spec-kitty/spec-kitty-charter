@@ -50,6 +50,7 @@ on the answer.
 - **Core:** reconcile `docs/architecture/charter-backend-service-future.md`, which still
   lists the runtime service as backlog.
 - **Core:** a fixture export that turns the Python charter's answers into corpus files.
-- **spec-kitty-events:** the versioned ledger-row schema (operator decision of 2026-10-13).
-  Not a dependency of this repository, but the runtime events that cite charter identifiers
-  will use it.
+- **Core and spec-kitty-events:** the one canonical event writer (core ADR
+  `4.x/2026-10-14-1`, in review), which writes only spec-kitty-events contract events, each
+  with its `schema_version`. Not a dependency of this repository, but the events that cite
+  charter identifiers will go through it.

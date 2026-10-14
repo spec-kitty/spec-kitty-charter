@@ -29,7 +29,7 @@ flowchart LR
   core["<b>spec-kitty core</b><br/>CLI · runtime next state machine<br/>Python seam charter.offering.api"]
   agents["agent harnesses<br/><i>MCP, planned</i>"]
   ledger[("event ledger<br/>append-only JSONL")]
-  events(["spec-kitty-events<br/>contracts, incl. versioned ledger rows"])
+  events(["spec-kitty-events<br/>contracts, each event versioned"])
   router["integration package<br/>event-router<br/><i>subscribers</i>"]
   mstatus["Mission Status Read API<br/><i>Java, planned</i>"]
   ui["mission-ui, pack composer"]
@@ -39,8 +39,8 @@ flowchart LR
   contract -->|DTOs generated into| core
   core -->|REST via seam| charter
   agents -.->|MCP| charter
-  core -->|next transitions append to| ledger
-  ledger -->|rows follow| events
+  core -->|one canonical writer appends to| ledger
+  ledger -->|events follow| events
   router -->|subscribes, using| events
   mstatus -->|reads| ledger
   ui -->|reads| mstatus
@@ -53,7 +53,7 @@ flowchart LR
 | Charter service | Charter Packs on disk | The pack schemas (`pack.yaml`, `org-charter.yaml`, DRG fragments, artifact YAML) | Read-only during the read stages. Writes stay in Python until each write operation migrates. |
 | Core CLI and runtime | Charter service | **The charter OpenAPI contract** | CLI callers go through the Python seam `charter.offering.api`, which calls the service over loopback REST. They never bypass the seam. |
 | Agent harnesses | Charter service | The same contract, over MCP | Planned. Must not ship before its authorization decision (core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)). |
-| Runtime | Event ledger | **spec-kitty-events** | The runtime's `next` transitions append events. The charter service appends none. |
+| Runtime | Event ledger | **spec-kitty-events** | The runtime calls the core's one canonical event writer, which appends contract events, each with its `schema_version`. The charter service appends none. |
 | Integration package | Event ledger | **spec-kitty-events** | Subscribers. They know the contracts, not the producers. |
 | UIs | Mission Status Read API | The Mission Status Read API's OpenAPI contract | Pull, read-only. |
 
@@ -64,14 +64,14 @@ There are two families of contracts and they must not mix:
 - **The charter contract** (this repository, `contracts/charter/`, pending ADR-0002)
   describes the request and response shapes of governance reads and, later, writes. Charter
   DTOs come only from there.
-- **spec-kitty-events** describes what is appended to the ledger: the event envelope, typed
-  payloads and, by the operator's decision of 2026-10-13, a versioned schema for the ledger
-  row itself.
+- **spec-kitty-events** describes what is appended to the ledger: the event envelope, with
+  its `schema_version`, and the typed payloads. The core's one canonical event writer
+  appends only these (operator, 2026-10-14).
 
 Charter DTOs never go into spec-kitty-events, and event shapes never go into the charter
 contract. If a governance change ever needs to be published as an event (for example an
-activation), that event is defined in spec-kitty-events and emitted by the runtime that made
-the change, not by the charter service. See [Events and the ledger](/architecture/events-and-ledger/).
+activation), that event is defined in spec-kitty-events and emitted by the core's one
+canonical event writer, not by the charter service. See [Events and the ledger](/architecture/events-and-ledger/).
 
 ## Neighbors in detail
 
