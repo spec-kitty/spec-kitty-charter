@@ -2,7 +2,8 @@
 #
 # IMPORTED. Do not edit by hand. The terms are copied from the Spec Kitty core glossary
 # (spec-kitty/spec-kitty, docs/context/charter.md, governance.md and product-lines.md)
-# at core commit 9b9bf5c8ff. The core glossary is the authority: change a term there, then
+# at core commit 9b9bf5c8ff, imported on 2026-10-14. The core glossary is the
+# authority: change a term there, then
 # run site/tools/import_core_glossary.py again. See docs/guides/docsite.md.
 #
 # doc-kitty builds docs/glossary/ from this file and links the terms across the docs.

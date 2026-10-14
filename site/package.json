@@ -9,10 +9,12 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && python3 tools/import_core_glossary.py --finalize",
+    "build:astro": "astro build",
     "preview": "astro preview",
     "validate": "dockitty-validate-frontmatter ../docs && dockitty-check-links ../docs",
-    "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-charter --site https://spec-kitty.github.io"
+    "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-charter --site https://spec-kitty.github.io",
+    "check:docs": "python3 ../scripts/docs/check_docs.py all"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.2.0",
