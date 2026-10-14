@@ -70,7 +70,9 @@ def run(name: str, root: Path, today: dt.date = TODAY) -> list[cd.Finding]:
 
 def rewrite(root: Path, rel: str, old: str, new: str) -> None:
     f = root / rel
-    f.write_text(f.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+    text = f.read_text(encoding="utf-8")
+    assert old in text, f"rewrite: {old!r} not found in {rel}; the test would pass vacuously"
+    f.write_text(text.replace(old, new), encoding="utf-8")
 
 
 @pytest.mark.parametrize("name", cd.ALL)
@@ -91,8 +93,10 @@ def test_frontmatter_reports_missing_key_short_description_and_dangling_audience
 
 
 def test_audience_accepts_profile_slug_form(root: Path) -> None:
-    rewrite(root, "docs/guides/one.md", "audience: 'docs/context/audience/dev.md'", "audience:\n- profile: dev\n  guidance_text: x")
+    rewrite(root, "docs/guides/one.md", "audience: docs/context/audience/dev.md", "audience:\n- profile: dev\n  guidance_text: x")
     assert run("frontmatter", root) == []
+    rewrite(root, "docs/guides/one.md", "profile: dev", "profile: nobody")
+    assert any("nobody" in f.message for f in run("frontmatter", root))
 
 
 def test_related_must_resolve(root: Path) -> None:
