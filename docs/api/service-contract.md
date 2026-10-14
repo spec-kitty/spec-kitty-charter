@@ -4,7 +4,7 @@ description: The designed OpenAPI 3.1 contract of the charter service — planne
 doc_status: draft
 updated: 2026-10-14
 type: API
-kind: Explanation
+kind: Reference
 related:
   - architecture/contract-and-dtos
   - adr/0002-contract-source-of-record
