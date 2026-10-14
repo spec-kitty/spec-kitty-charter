@@ -2,7 +2,7 @@
 title: Architecture
 description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Architecture
 kind: Hub
 ---
@@ -28,6 +28,15 @@ The design is grounded in three core ADRs and this repository's own records:
 ## The map
 
 - [Overview](/architecture/overview/) — containers and the main flows. Read this first.
+
+## The charter model
+
+- [Logical model](/architecture/logical-model/) — the charter components and how they relate:
+  charter, Charter Packs and pack levels, artifact kinds, the DRG, activation and profiles.
+- [Descriptors](/architecture/descriptors/) — every descriptor file: purpose, fields, naming,
+  location and DRG links.
+- [Descriptor schemas](/architecture/descriptor-schemas/) — entity diagrams of the descriptor
+  schemas.
 
 ## Component detail
 

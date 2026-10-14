@@ -20,7 +20,7 @@ sections:
     label: Architecture
     order: 20
     type: Architecture
-    purpose: The target design of the Java charter service and its contract.
+    purpose: The logical model and descriptors of the charter components, and the target design of the Java charter service and its contract.
 
   - id: adr
     label: Decision Records
@@ -39,7 +39,7 @@ sections:
     label: API
     order: 50
     type: API
-    purpose: The charter OpenAPI contract and the DTOs generated from it.
+    purpose: The designed public API of the extracted charter — Python package surface and service contract. Not implemented yet.
 
   - id: guides
     label: Guides
