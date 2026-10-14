@@ -62,7 +62,7 @@ rules:
     ci: Docs checks / Orphan pages
     severity: error
   - id: internal-links
-    rule: Internal links are root-absolute routes that resolve; anchors exist; no absolute GitHub links to this repository's own docs.
+    rule: Internal links are root-absolute routes that resolve; anchors exist; no absolute GitHub links to this repository's own docs. The imported glossary is link-checked too, but keeps core's relative link style.
     check: check_docs.py links
     ci: Docs checks / Links and anchors
     severity: error

@@ -136,7 +136,7 @@ red run names what failed:
 - **Markdown lint** and **Spellcheck**, with pinned tool versions;
 - **PlantUML diagrams are current**, with the pinned jar and Java 21;
 - **External links**, with lychee. It is not required: remote sites flake, so it reports but
-  never blocks a pull request. It also runs weekly.
+  never blocks a pull request. It also runs weekly, together with the freshness check, so a page that goes stale on its own is noticed.
 
 `.github/workflows/docs-site.yml` builds and publishes the site:
 
