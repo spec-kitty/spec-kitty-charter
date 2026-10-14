@@ -16,7 +16,9 @@ related:
 > charter package is designed to export. **The code is still to be added to this
 > repository.** It is derived from core's `charter.offering.api`
 > (`src/charter/offering/api.py` in `spec-kitty/spec-kitty`), where these symbols exist
-> today, and from core ADR `2026-10-12-2` D-1.
+> today, and from core ADR `2026-10-12-2` D-1. What the package returns, core's own types or
+> generated DTOs, is an [open question](/api/#open-question-what-the-python-package-returns);
+> this page describes today's core types.
 
 ## Entry point
 
@@ -34,7 +36,8 @@ from charter.offering.api import (
 `__all__` lists every public symbol, sorted. Anything not in `__all__` is internal, even when
 importable. In core today this module serves the charter facades; core's runtime
 (`specify_cli`) may not import it directly yet. Core ADR `2026-10-12-2` makes it the only
-entry point for every caller once the import move (epic spec-kitty#6099) is done.
+entry point for every caller once the import move is done (D-2; spec-kitty#645, closed as not planned on 2026-10-13, tracked
+it before epic spec-kitty#6099 took it over).
 
 ## Artifact kinds
 
@@ -49,7 +52,9 @@ entry point for every caller once the import move (epic spec-kitty#6099) is done
 `activatable`, `org_requirable`, `selection_overlayable`, `has_layered_repository`,
 `effective_when_absent` (`"all"` or `"required"`) and `operator_token`. Class methods:
 `from_plural(plural)` and `from_operator_token(token)`; the latter raises
-`MissionTypeNotAnArtifactKind` for `mission-type`.
+`MissionTypeNotAnArtifactKind` for `mission-type`. Every kind has an operator token; which
+tokens the activation commands accept (`CHARTER_KIND_TOKENS`) is in the
+[Artifact kinds table](/architecture/logical-model/#artifact-kinds).
 
 ## Assets
 
@@ -89,18 +94,25 @@ returned with provenance; neither is enforced over the other.
 ## Gaps in today's surface
 
 The designed package exposes the [logical model](/architecture/logical-model/), but core's
-`charter.offering.api` covers only kinds, assets and model routing. These reads exist in core
+`charter.offering.api` covers only kinds, assets and model routing. These operations exist in core
 behind other modules and have no public entry point yet:
 
-| Read | Where it lives in core today |
+| Operation | Where it lives in core today |
 |---|---|
 | Action-scoped context | `charter.activation` (`spec-kitty charter context --action <name>`) |
 | Profile resolution | `charter.activation.profile_resolution`, `AgentProfileRepository` |
-| Activation plan and commit | `charter.activation.activation_engine` (`plan_activation`, `commit_plan`) |
-| Graph queries | `charter.offering.drg` (`DRGGraph`, `NodeKind`, `Relation`) |
-| Pack diagnostics | `spec-kitty doctor charter-packs --json` |
+| Active charter | `charter.activation` (CLI: `spec-kitty charter` status commands) |
+| Pack listing | CLI only today (`spec-kitty charter pack list`) |
+| Artifact lookup | `charter.offering` repositories; only `AssetRepository` is public |
+| Graph query | `charter.offering.drg` (`DRGGraph`, `NodeKind`, `Relation`) |
+| Diagnostics | `AgentProfileRepository.skipped_profiles` (`charter.offering.agent_profiles.repository`) and the DRG merge counts, surfaced by the CLI only (`spec-kitty doctor charter-packs --json`) |
+
+The activation plan and commit (`plan_activation`, `commit_plan` in
+`charter.activation.activation_engine`) is the planned write surface; it also has no public
+entry point yet.
 
 Adding them to the public surface is part of the import-move precondition (core ADR
-`2026-10-12-2` D-2, epic spec-kitty#6099). Each addition is a minor version; see
-[Versioning and compatibility](/api/compatibility/). The same reads are the operations of the
+`2026-10-12-2` D-2; spec-kitty#645, closed as not planned, is now in the scope of epic
+spec-kitty#6099). Each addition is a minor version; see
+[Versioning and compatibility](/api/compatibility/). The reads above are the operations of the
 [service contract](/api/service-contract/).
