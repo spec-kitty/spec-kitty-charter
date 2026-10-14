@@ -30,9 +30,8 @@ a response shape without a contract change is incomplete. See
 
 While the Python charter still answers in core, a behavior change needs a fixture that both
 implementations pass. If the Python behavior is wrong, fix it in core first, with the
-fixture, so the two never disagree on purpose. This assumes the Python charter stays in
-core; if it moves here first ([open questions](/plans/open-questions/), question 2), the
-fix lands in the Python package here.
+fixture, so the two never disagree on purpose. Where the fix lands depends on
+[open question 2](/plans/open-questions/).
 
 ## Documentation
 

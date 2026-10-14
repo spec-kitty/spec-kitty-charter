@@ -18,16 +18,12 @@ audience:
 
 # Strangler transition
 
-> **State:** stage 0. `charter.offering.api` exists in core as an 11-symbol offering manifest
-> that runtime code is currently forbidden to import directly. The seam core ADR
-> `2026-10-03-1` needs, one that fronts the context read and the three write paths in
-> `charter.activation`, does not exist yet. Building it and moving about 130 importing files
-> onto it is stage 1.
-
 The stages come from core ADR `2026-10-03-1` ("Staged ownership"). It is still **Proposed**
 in core; this repository treats it as the plan, and [open questions](/plans/open-questions/)
-tracks its acceptance. The stages are written for either answer to question 2 there (whether
-the Python charter moves here first).
+tracks its acceptance. The stages are written for either answer to
+[question 2](/plans/open-questions/).
+
+> **Status:** design only; this repository is at stage 0. [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 
 ## Stages
 

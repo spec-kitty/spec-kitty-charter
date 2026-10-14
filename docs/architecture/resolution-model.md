@@ -17,10 +17,9 @@ audience:
 
 # Resolution model
 
-> **State:** the behavior below exists today in core's Python charter. The Java domain must
-> reproduce it, fixture for fixture, before it answers anything in production. Where core's
-> behavior is known to be wrong, the fix lands in Python first (with a fixture), so the two
-> implementations never disagree on purpose.
+What the charter domain computes from its inputs: layer merge, activation, cascade, action-scoped context and profile resolution, and the fail-loud rules it keeps.
+
+> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. [What the labels mean](/#status).
 
 ## Inputs
 

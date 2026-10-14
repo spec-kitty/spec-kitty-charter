@@ -18,16 +18,12 @@ audience:
 
 # Logical model
 
-> **State:** this model describes what core's Python charter (`src/charter/` in
-> [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)) implements today. No
-> charter code lives in this repository yet. The Java domain and the extracted package must
-> reproduce this model; where they diverge, core is the reference until this repository's
-> contract becomes the source of record.
-
 This page names the parts of the charter and how they relate. The file formats that carry
 them are in [Descriptors](/architecture/descriptors/); what the domain computes from them is
 in [Resolution model](/architecture/resolution-model/). Terms follow the
 [Glossary](/glossary/) and [Domain](/context/domain/).
+
+> **Status:** exists in core, which stays the reference until this repository's contract is the source of record. [What the labels mean](/#status).
 
 ## The model at a glance
 

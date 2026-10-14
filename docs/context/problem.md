@@ -24,7 +24,7 @@ audience:
 
 The charter lives at `src/charter/` in the core CLI and depends only on `kernel`. It has a
 curated manifest, `charter.offering.api`, but that manifest exports 11 offering symbols and
-runtime code is currently forbidden to import it directly. It is not yet the seam the
+core's rules still bar runtime code from importing it directly. It is not yet the seam the
 strangler needs: it fronts no context read and no write path. Meanwhile about 130 files in
 `specify_cli`, `runtime` and `glossary` import charter internals directly (`charter.drg`,
 `charter.activation.pack_context`, `charter.bundle`, `charter.activation.charter_yaml_io`,

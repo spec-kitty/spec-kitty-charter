@@ -16,13 +16,9 @@ audience:
 
 # Service contract
 
-> **Designed API — not implemented here.** No contract and no service code exist in this
-> repository yet. Every operation below is a proposal until it is in
-> `contracts/charter/openapi.yaml`. The surface is derived from the reads core's Python
-> charter answers today (`charter.activation` and `charter.offering` in
-> `spec-kitty/spec-kitty`), from core ADR `2026-10-03-1` and from
-> [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and
-> [ADR-0002](/adr/0002-contract-source-of-record/).
+The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR `2026-10-03-1`, [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
+
+> **Designed API.** Not implemented; see the [API overview](/api/).
 
 The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schemas and
 `Problem` bodies for refusals. How it is laid out, generated and versioned is in

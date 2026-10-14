@@ -55,7 +55,7 @@ never through its internals.
 | `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO (pending ADR-0002) | planned |
 | The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | planned |
 | Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
-| The Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), consumed through `charter.offering.api`, as the conformance oracle while Java takes over | likely moves here first; to be decided against a rewrite-and-replace approach |
+| The Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), consumed through `charter.offering.api`, as the conformance oracle while Java takes over | open; see [question 2](/plans/open-questions/) |
 | `docs/` | This documentation | bootstrapped |
 
 CLI callers reach the charter through the Python seam `charter.offering.api` while the

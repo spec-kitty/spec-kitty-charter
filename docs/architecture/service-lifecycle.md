@@ -17,8 +17,9 @@ audience:
 
 # Service lifecycle
 
-> **State:** design only, from core ADR `2026-10-03-1` ("Service boundary") and the sibling
-> model in core ADR `2026-10-01-2`.
+How the service runs: one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints and backed by a loud fallback.
+
+> **Status:** design only, from core ADR `2026-10-03-1` ("Service boundary") and the sibling model in core ADR `2026-10-01-2`. [What the labels mean](/#status).
 
 ## One service per worktree
 

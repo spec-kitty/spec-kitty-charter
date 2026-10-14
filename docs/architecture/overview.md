@@ -18,17 +18,13 @@ audience:
 
 # Overview
 
-> **State:** design only. Nothing in this diagram exists in this repository yet. In core,
-> `charter.offering.api` exists as an 11-symbol offering manifest that runtime code is
-> currently forbidden to import directly. The seam core ADR `2026-10-03-1` needs, one that
-> fronts the context read and the three write paths in `charter.activation`, does not exist
-> yet. Building it is the import-move precondition (formerly spec-kitty#645, now carried by epic spec-kitty#6099).
->
-> The diagram shows the case where the Python charter stays in core. If it moves here first
-> ([open questions](/plans/open-questions/), question 2), the seam and its generated DTOs
-> move with the package.
+The containers of the charter service and the main flows between them: the Python seam in core, the Java service, its adapters and the pack inputs. Read this first, then the page for the part you are building. The state of `charter.offering.api` in core today is described in [Problem](/context/problem/).
+
+> **Status:** design only; nothing in the diagram exists in this repository yet. [What the labels mean](/#status).
 
 ## Containers
+
+The diagram draws the seam in core; where the Python charter ends up is [open question 2](/plans/open-questions/).
 
 ```mermaid
 flowchart TB
@@ -89,8 +85,8 @@ before it answers again.
 
 ## What the seam owns, and what it does not
 
-- The seam is code under `src/charter/` in core (or in this repository, if the Python
-  charter moves here first). Its only service-facing code is a transport client.
+- The seam is code under `src/charter/` in core (where it sits is
+  [open question 2](/plans/open-questions/)). Its only service-facing code is a transport client.
 - It does **not** start, stop or locate the service. Launch and lifecycle live in
   `specify_cli`, which hands the seam an endpoint and a credential, so `charter` gains no
   outbound edge to `specify_cli` and core's enforced import chain

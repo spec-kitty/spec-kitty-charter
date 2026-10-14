@@ -16,17 +16,13 @@ audience:
 
 # Descriptors
 
-> **State:** these descriptors exist today in core (`packs/built-in/`, `packs/internal/` and
-> project `.kittify/` trees of [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)),
-> validated by the YAML schemas in core's `src/charter/offering/schemas/` and by Pydantic
-> models in `src/charter/offering/`. This repository holds no descriptor schemas yet; when
-> the charter contract lands here, these become part of it.
-
 A **descriptor** is a YAML file that declares one charter component. This page lists each
-descriptor kind. The concepts behind them are in [Logical model](/architecture/logical-model/);
+descriptor kind. Core validates them with the YAML schemas in its `src/charter/offering/schemas/` and the Pydantic models in its `src/charter/offering/` (core is [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)); when the charter contract lands here, they become part of it. The concepts behind them are in [Logical model](/architecture/logical-model/);
 entity diagrams of the schemas are in [Descriptor schemas](/architecture/descriptor-schemas/).
 "Required" lists the fields core's schema requires; "key fields" adds the ones most
 descriptors carry.
+
+> **Status:** exists in core; this repository holds no descriptor schemas yet. [What the labels mean](/#status).
 
 ## Where descriptors live
 

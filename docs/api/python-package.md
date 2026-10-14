@@ -15,15 +15,9 @@ audience:
 
 # Python package API
 
-> **Designed API — not implemented here.** This page describes the surface the extracted
-> charter package is designed to export. **The code is still to be added to this
-> repository.** It is derived from core's `charter.offering.api`
-> (`src/charter/offering/api.py` in `spec-kitty/spec-kitty`), where these symbols exist
-> today, and from core ADR `2026-10-12-2` D-1.
->
-> The designed return types are the DTOs generated from the OpenAPI contract
-> ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)). The core types listed on this
-> page are today's shapes, transitional: the generated DTOs replace them.
+The in-process public surface the extracted charter package is designed to export: entry point, types, operations and errors. It derives from `charter.offering.api` in core (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)), where these symbols exist today, and from core ADR `2026-10-12-2` D-1. The designed return types are the DTOs generated from the OpenAPI contract ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the core types listed on this page are today's transitional shapes, which the generated DTOs replace.
+
+> **Designed API.** Not implemented; see the [API overview](/api/).
 
 ## Entry point
 
@@ -39,8 +33,7 @@ from charter.offering.api import (
 
 `charter.offering.api` is the single, enumerable manifest of the public surface: its
 `__all__` lists every public symbol, sorted. Anything not in `__all__` is internal, even when
-importable. In core today this module serves the charter facades; core's runtime
-(`specify_cli`) may not import it directly yet. Core ADR `2026-10-12-2` makes it the only
+importable. How far core's runtime uses it today is in [Problem](/context/problem/). Core ADR `2026-10-12-2` makes it the only
 entry point for every caller once the import move is done (D-2; spec-kitty#645, closed as not planned on 2026-10-13, tracked
 it before epic spec-kitty#6099 took it over).
 

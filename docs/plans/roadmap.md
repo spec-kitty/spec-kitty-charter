@@ -30,7 +30,7 @@ the scope of epic spec-kitty#6099.
 | 3 | **Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at both load depths. Expected results are produced by core's Python charter. | The corpus runs against Python in core and is published with the contract | 1, a core-side export script |
 | 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. | The first corpus slice passes against Java | 2, 3 |
 | 5 | **Org and project layers.** Extend corpus and domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. | Corpus slice passes on both implementations | 4 |
-| 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam returns them. (If the Python charter moves here first, the seam and its DTO generation move with it.) | Core's seam tests pass on generated DTOs | the seam work, 1 |
+| 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam returns them. (Where the seam lives depends on [open question 2](/plans/open-questions/).) | Core's seam tests pass on generated DTOs | the seam work, 1 |
 | 7 | **Read shadow.** The launcher starts the service per worktree; the seam compares Java with Python out of band. | Differences are reported in diagnostics; none is unexplained on the corpus | 4 to 6, the launcher |
 
 After step 7 the [strangler stages](/architecture/strangler-transition/) take over:
@@ -38,11 +38,8 @@ Java authoritative, then Java reads complete, then write migration one operation
 
 ## Before step 6: decide how Python reaches this repository
 
-The likely path is to move the Python charter here first as a package (core ADR
-`2026-10-12-2` D-3), so the strangler runs inside this repository. The alternative is to
-rewrite in Java and replace the charter in core, so the Python code never moves. Choose by
-which is safer and more economical ([open questions](/plans/open-questions/), question 2).
-Steps 1 to 5 do not depend on the answer.
+Step 6 needs [open question 2](/plans/open-questions/) answered. Steps 1 to 5 do not depend
+on the answer.
 
 ## Also needed, outside this repository
 
