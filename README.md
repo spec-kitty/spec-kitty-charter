@@ -1,3 +1,5 @@
+<p align="center"><img src="site/src/assets/brain-kitty.png" alt="Brain Kitty" width="160"></p>
+
 # spec-kitty-charter
 
 The **charter** of Spec Kitty: the governance authority of the Brain Kitty product line.
