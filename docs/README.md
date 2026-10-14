@@ -2,7 +2,7 @@
 title: spec-kitty-charter documentation
 description: Documentation home for the Java charter service and its OpenAPI contract, the Brain Kitty governance producer of Spec Kitty.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 kind: Hub
 ---
 
@@ -31,11 +31,14 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Glossary](/glossary/) — the charter, governance and product-line terms, imported from
   the core glossary.
 - [Architecture](/architecture/) — the target design: containers, the hexagonal service,
-  the contract and its generated DTOs, the strangler stages and the service lifecycle.
+  the contract and its generated DTOs, the strangler stages and the service lifecycle. The
+  [logical model](/architecture/logical-model/) and the [descriptors](/architecture/descriptors/)
+  describe the charter components themselves.
 - [Decision Records](/adr/) — decisions taken in this repository, and the core ADRs
   they build on.
 - [Plans](/plans/) — the bootstrap roadmap and the open questions.
-- [API](/api/) — the charter OpenAPI contract (planned) and how DTOs are generated.
+- [API](/api/) — the designed public API: the Python package surface and the service
+  contract. Designed only; no code exists here yet.
 - [Guides](/guides/) — contributing to this repository.
 - [Changelog](/changelog/) — dated record of notable changes.
 
