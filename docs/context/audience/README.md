@@ -26,6 +26,8 @@ everything to everyone.
 | [Pack author and doctrine curator](/context/audience/pack-author/) | outside, writes the inputs | Which descriptor files exist, what their fields mean, and how packs resolve |
 | [Governance lead](/context/audience/governance-lead/) | outside, adopts what is produced | Governance that reaches every agent, or fails loudly |
 | [Evaluator](/context/audience/evaluator/) | outside, decides on adoption | Boundaries, status and trade-offs stated plainly |
+| [Individual developer](/context/audience/individual-developer/) | outside, adopts what is produced | Their own rules in force across agent sessions, with little setup |
+| [Non-engineer developer](/context/audience/non-engineer-developer/) | outside, adopts what is produced | Good practice applied for them, explained without engineering jargon |
 | [Contract consumer](/context/audience/contract-consumer/) | outside, calls the charter | A stable, versioned surface and a predictable error model |
 
 The group is the delivery boundary of this repository, as in the

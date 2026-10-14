@@ -16,6 +16,10 @@ audience:
     guidance_text: Read this for where the charter sits among the product lines.
   - profile: governance-lead
     guidance_text: Read this to learn what the charter does for a team and where it sits.
+  - profile: individual-developer
+    guidance_text: Read this to learn what the charter does for your own projects.
+  - profile: non-engineer-developer
+    guidance_text: Start here; this page explains the charter without engineering detail.
 ---
 
 # Product
