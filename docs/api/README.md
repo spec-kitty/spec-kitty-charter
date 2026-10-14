@@ -1,45 +1,42 @@
 ---
 title: API
-description: The charter OpenAPI contract — planned surface, where it will live, and how the service and the core generate DTOs from it.
+description: The designed public API of the extracted charter — Python package surface and service contract. Designed only; no code exists here yet.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: API
 kind: Hub
 related:
   - architecture/contract-and-dtos
+  - architecture/logical-model
+  - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
 ---
 
 # API
 
-> **State:** no contract exists yet. This page lists the surface the first releases are
-> expected to cover so that the contract work has a target. Every operation below is a
-> proposal until it is in `contracts/charter/openapi.yaml`.
+> **Designed API — not implemented here.** Everything in this section describes the API the
+> extracted charter is designed to expose. **No charter code exists in this repository
+> yet.** The package surface is derived from core's `charter.offering.api`
+> (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty));
+> the service contract is derived from core ADR `2026-10-03-1`,
+> [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and
+> [ADR-0002](/adr/0002-contract-source-of-record/). Names and shapes may change until code
+> and a released contract land here.
 
-The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schemas and
-`Problem` bodies for refusals. How it is versioned and generated is in
-[Contract and DTOs](/architecture/contract-and-dtos/).
+The charter has two public surfaces, one per stage of the extraction:
 
-## Planned read surface
+| Surface | Kind | Consumers | Basis |
+|---|---|---|---|
+| [Python package](/api/python-package/) | in-process Python API, versioned by wheel semver and `py.typed` | the CLI's charter facades, open-core consumers | core ADR `2026-10-12-2` D-1: callers use only `charter.offering.api` |
+| [Service contract](/api/service-contract/) | OpenAPI 3.1 over loopback REST, later MCP | the core's seam (through generated DTOs), agent harnesses | ADR-0001, ADR-0002, core ADR `2026-10-03-1` |
 
-| Operation | Answers | Today in core |
-|---|---|---|
-| Action-scoped context | The guidance for one action of one mission type in the active charter (action nodes are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review). The request carries the mission type and the load depth | `spec-kitty charter context --action <name> --mission-type <type>` |
-| Profile resolution | `(profile_id, action)` to the resolved profile with lineage and overlays, plus compact context | `spec-kitty agent profile show`, profile-load contract |
-| Active charter | The project's activations per kind and mission type, with the source of each (preset, project, org requirement) | `spec-kitty charter` status commands |
-| Pack listing | Configured packs, their levels, versions and presets | `spec-kitty charter pack list` |
-| Artifact lookup | One artifact by URN, with provenance (which pack and layer) | charter offering API |
-| Graph query | Edges and closures over the active DRG | `charter.drg` callers |
-| Diagnostics | Load and merge refusals, skipped profiles, unresolved edges | `spec-kitty doctor charter-packs --json` |
+Both expose the same [logical model](/architecture/logical-model/). While both exist, they
+must give one answer for the same inputs; the conformance corpus in
+[Contract and DTOs](/architecture/contract-and-dtos/) is what holds them to it.
 
-## Planned write surface (later)
-
-Write operations come only after the read stages, one at a time: activation plan and commit,
-charter document save, compile. See [Strangler transition](/architecture/strangler-transition/).
-
-## Transports
-
-- **REST** over loopback, for the core's seam.
-- **MCP**, for agent harnesses, after its authorization decision.
-
-Both call the same read application. Neither implements resolution on its own.
+- [Python package](/api/python-package/) — the curated symbol set, its types, operations and
+  errors.
+- [Service contract](/api/service-contract/) — the planned read and write operations, the
+  error model and the transports.
+- [Versioning and compatibility](/api/compatibility/) — how each surface is versioned and
+  what a consumer can rely on.
