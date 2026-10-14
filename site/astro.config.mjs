@@ -23,8 +23,9 @@ export default defineConfig({
     // Brain Kitty brand mark (olive bow tie) over the Spec Kitty theme.
     theme: { extends: specKittyTheme, assets: { logo: './src/assets/brain-kitty.png' } },
     markua: true,
-    // Diagrams render client-side; no PlantUML or Chromium needed at build time.
-    diagrams: false,
+    // Mermaid fences render in the browser (doc-kitty's client renderer); no PlantUML
+    // or Chromium is needed at build time. PlantUML diagrams are committed as SVGs.
+    diagrams: true,
     // MUST match the loader in src/content.config.ts.
     indexBasename: ['README'],
   }),
