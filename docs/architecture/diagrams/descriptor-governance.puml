@@ -10,7 +10,7 @@ title Pack, DRG and charter configuration schemas
 
 class PackDescriptor <<pack.yaml>> {
   + pack_id : string [ULID]
-  - pack_version : string
+  - pack_version : string [required iff pack_level=built-in]
   - parent_pack : string
   + name : string
   + pack_level : PackTier
@@ -67,6 +67,13 @@ class OrgCharterPolicy <<org-charter.yaml>> {
     required_glossary_packs, required_assets,
     required_skills : string[] = []
   - skill_namespace : string
+  - governance_policies : GovernancePolicy[] = []
+  - activations : ActivationEntry[] = []
+}
+class GovernancePolicy {
+  + field : string
+  + value : string|bool
+  - enforcement : string = "advisory"
 }
 class GovernanceCharterConfig <<project charter>> {
   - selected_paradigms, selected_directives,
@@ -82,6 +89,7 @@ class GovernanceCharterConfig <<project charter>> {
 }
 PackDescriptor --> "0..1" DRGGraph : pack_drg
 PackDescriptor --> "0..1" OrgCharterPolicy : active_charter
+OrgCharterPolicy *-- "*" GovernancePolicy
 DRGGraph *-- "*" DRGNode
 DRGGraph *-- "*" DRGEdge
 DRGNode --> NodeKind
