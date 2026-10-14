@@ -111,6 +111,7 @@ def test_freshness_flags_stale_active_but_not_durable_or_changelog(root: Path) -
     rewrite(root, "docs/guides/README.md", "2026-10-01", "2025-01-01")
     rewrite(root, "docs/guides/README.md", "doc_status: active", "doc_status: 'durable'")
     rewrite(root, "docs/changelog/2026-10-01-a.md", "2026-10-01", "2020-01-01")
+    rewrite(root, "docs/context/README.md", "type: Guide", "type: [Guide]")  # a malformed type must not crash
     found = run("freshness", root)
     assert [f.path for f in found] == ["docs/guides/one.md"]
 
@@ -127,6 +128,12 @@ def test_adr_gap_duplicate_and_unlisted(root: Path) -> None:
     assert "gap in numbering: no ADR 0003" in messages
     assert "ADR number 0002 used by" in messages
     assert "not listed" in messages
+    (root / "docs/adr/Notes.md").write_text(page("Notes", type="ADR"), encoding="utf-8")
+    (root / "docs/adr/0003-third.md").write_text(page("Third", type="ADR"), encoding="utf-8")
+    rewrite(root, "docs/adr/README.md", "# ADRs\n", "# ADRs\n\nSee 0003-third in prose.\n")
+    messages = [f"{f.path}: {f.message}" for f in run("adr", root)]
+    assert "docs/adr/Notes.md: filename must be NNNN-kebab-slug.md" in messages
+    assert "docs/adr/0003-third.md: not listed in docs/adr/README.md" in messages  # a prose mention is not a listing
 
 
 def test_changelog_filename_listing_order_and_length(root: Path) -> None:
@@ -141,6 +148,7 @@ def test_changelog_filename_listing_order_and_length(root: Path) -> None:
 
 
 def test_terms_flags_forbidden_terms_but_not_code_urls_or_allowlisted(root: Path) -> None:
+    rewrite(root, "docs/_meta/terminology.yaml", "avoid: []", "avoid:")  # an empty list key loads as None
     rewrite(root, "docs/guides/one.md", "Setup\n\nSee", f"Setup\n\nA feature and a {RETIRED}. `feature` https://x.test/feature See")
     found = run("terms", root)
     assert sorted(f.message.split("`")[1] for f in found) == ["feature", "retired"]
@@ -175,6 +183,10 @@ def test_links_broken_anchor_relative_md_and_self_github_link(root: Path) -> Non
     for needle in ("`/nope/` does not resolve", "`#nowhere`", "relative page link", "#zzz", "own docs"):
         assert needle in messages
     assert "example.org" not in messages
+    (root / "docs/glossary").mkdir()
+    (root / "docs/glossary/index.md").write_text(page("Glossary", "[ok](./index.md) [gone](./missing/)\n"), encoding="utf-8")
+    glossary = [f.message for f in run("links", root) if f.path == "docs/glossary/index.md"]
+    assert glossary == ["`./missing/` does not exist"]  # generated pages are link-checked, in core's relative style
 
 
 def test_links_allow_github_url_of_a_non_page_file(root: Path) -> None:

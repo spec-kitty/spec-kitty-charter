@@ -56,6 +56,7 @@ SLA_BY_TYPE: dict[str, int | None] = {"ADR": 365, "Changelog": None}
 
 CHANGELOG_ENTRY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 CHANGELOG_MAX_CHARS = 3000
+ADR_NON_ENTRIES = ("README.md", "template.md")
 ADR_RE = re.compile(r"^(\d{4})-[a-z0-9][a-z0-9-]*\.md$")
 
 FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n?", re.DOTALL)
@@ -316,7 +317,8 @@ def check_freshness(tree: Tree, today: dt.date) -> list[Finding]:
             out.append(Finding("freshness", page.rel, f"`updated: {updated}` is in the future"))
             continue
         status = meta.get("doc_status")
-        sla = SLA_BY_TYPE[meta["type"]] if meta.get("type") in SLA_BY_TYPE else SLA_DAYS.get(status)
+        doc_type = meta.get("type")
+        sla = SLA_BY_TYPE[doc_type] if isinstance(doc_type, str) and doc_type in SLA_BY_TYPE else SLA_DAYS.get(status)
         if status in ("superseded", "durable"):
             sla = None
         age = (today - updated).days
@@ -337,14 +339,17 @@ def check_adr(tree: Tree, _today: dt.date) -> list[Finding]:
     readme = adr_dir / "README.md"
     if not readme.is_file():
         return [Finding("adr", "docs/adr/README.md", "ADR index is missing")]
-    index = readme.read_text(encoding="utf-8")
+    listed = re.findall(r"\(/adr/([^)/]+)/?\)", readme.read_text(encoding="utf-8"))
     numbers: dict[int, list[str]] = {}
     for p in sorted(adr_dir.glob("*.md")):
+        if p.name in ADR_NON_ENTRIES:
+            continue
         m = ADR_RE.match(p.name)
         if not m:
+            out.append(Finding("adr", f"docs/adr/{p.name}", "filename must be NNNN-kebab-slug.md"))
             continue
         numbers.setdefault(int(m.group(1)), []).append(p.name)
-        if p.stem not in index:
+        if p.stem not in listed:
             out.append(Finding("adr", f"docs/adr/{p.name}", "not listed in docs/adr/README.md"))
     for n, names in numbers.items():
         if len(names) > 1:
@@ -409,8 +414,8 @@ def check_terms(tree: Tree, _today: dt.date) -> list[Finding]:
     cfg = load_yaml(tree.docs / "_meta" / "terminology.yaml")
     if not isinstance(cfg, dict):
         return [Finding("terms", "docs/_meta/terminology.yaml", "terminology file is missing or not a mapping")]
-    rules = [("forbidden", r) for r in cfg.get("forbidden", [])]
-    rules += [("avoid", r) for r in cfg.get("avoid", []) + glossary_aliases(tree)]
+    rules = [("forbidden", r) for r in cfg.get("forbidden") or []]
+    rules += [("avoid", r) for r in (cfg.get("avoid") or []) + glossary_aliases(tree)]
     allow = cfg.get("allow", []) or []
     out: list[Finding] = []
     for page in tree.pages():
@@ -489,8 +494,6 @@ def check_links(tree: Tree, _today: dt.date) -> list[Finding]:
         return anchor_cache[path]
 
     for page in tree.pages():
-        if tree.is_generated(page):
-            continue
         for lineno, line in body_lines(page):
             for m in SELF_GITHUB_RE.finditer(line):
                 if re.search(r"\.(?!md$)[A-Za-z0-9]+$", m.group(0)):
@@ -519,6 +522,10 @@ def _check_target(tree: Tree, page: Page, lineno: int, target: str, anchors: Cal
             return [] if asset.is_file() else bad(f"`{target}` does not resolve to a page or file")
     else:
         resolved = (page.path.parent / path).resolve()
+        if tree.is_generated(page) and (resolved.suffix == ".md" or resolved.is_dir()):
+            # The glossary is copied from core with its own relative links: they must resolve,
+            # but their style is core's, not ours.
+            return [] if resolved.exists() else bad(f"`{target}` does not exist")
         if resolved.suffix == ".md" or resolved.is_dir():
             return bad(f"`{target}` is a relative page link; use a root-absolute route such as /architecture/overview/")
         return [] if resolved.is_file() else bad(f"`{target}` does not exist")
