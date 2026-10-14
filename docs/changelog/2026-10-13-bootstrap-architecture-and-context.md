@@ -2,7 +2,7 @@
 title: "Bootstrap: Java direction, architecture and context"
 description: The docs tree moves to the doc-kitty convention and gains the context, target architecture, decision records and plans for the Java charter service.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 type: Changelog
 kind: Changelog
 related:

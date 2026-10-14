@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Plan
 kind: Planning
 related:

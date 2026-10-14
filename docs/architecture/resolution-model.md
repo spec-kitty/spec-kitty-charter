@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Architecture
 kind: Explanation
 related:

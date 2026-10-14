@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — one per worktree, loopback only, a capability credential, source fingerprints for freshness, and a loud fallback.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Architecture
 kind: Explanation
 related:

@@ -2,7 +2,7 @@
 title: Hexagonal service
 description: The Gradle modules of the Java charter service and the rule that infrastructure depends inward on a plain-Java domain.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Architecture
 kind: Explanation
 related:
