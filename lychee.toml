@@ -17,5 +17,6 @@ exclude = [
 accept = [200, 206, 429]
 max_retries = 3
 timeout = 20
-max_concurrency = 8
+max_concurrency = 2
+retry_wait_time = 10
 no_progress = true
