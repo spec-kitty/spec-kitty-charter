@@ -24,3 +24,4 @@ before the architecture.
   active charter, pack level, DRG and the rest.
 - [System context](/context/system-context/) — the systems around the charter: the core CLI
   and runtime, the packs, the event contracts and the integration package.
+- [Audiences](/context/audience/) — who reads these docs and what each reader needs.
