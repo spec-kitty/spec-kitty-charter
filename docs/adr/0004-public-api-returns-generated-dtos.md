@@ -10,6 +10,11 @@ related:
   - adr/0002-contract-source-of-record
   - architecture/contract-and-dtos
   - api/python-package
+audience:
+  - profile: contract-consumer
+    guidance_text: Read this to learn which types the charter API returns in your client language.
+  - profile: core-maintainer
+    guidance_text: Read this for the core follow-up on the seam's return types.
 ---
 
 # ADR-0004: The public API returns DTOs generated from the OpenAPI contract
