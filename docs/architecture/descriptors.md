@@ -29,14 +29,17 @@ descriptors carry.
 
 | Pack level | Root | Per-kind directory | Graph |
 |---|---|---|---|
-| `built-in` | `packs/built-in/` | `<plural>/` (for example `directives/`, `agent_profiles/`) | one `<kind>.graph.yaml` per node kind at the pack root |
+| `built-in` | `packs/built-in/` | `<plural>/` (for example `directives/`, `agent_profiles/`) | one `<kind>.graph.yaml` shard per node kind that has built-in nodes, at the pack root |
 | `org` | the configured pack path | `<plural>/` | one `drg/fragment.yaml` |
 | `project` | `.kittify/charter-packs/` | `directive/`, `tactic/`, `styleguide/`, `procedure/` (singular); every other kind plural | project fragment |
 
 The singular project directories for four kinds are a deliberate asymmetry, declared once in
 core's `PROJECT_KIND_DIRS`. Built-in step contracts live under
 `packs/built-in/missions/built_in_step_contracts/`, and `mission_step_contract`, `template`
-and `anti_pattern` have no built-in content directory of their own.
+and `anti_pattern` have no built-in content directory of their own. "Content directory" means
+the directory of a kind's layered repository; for example `packs/built-in/templates/` exists
+but is not a content directory in this sense. Per-kind facts are in the
+[Artifact kinds table](/architecture/logical-model/#artifact-kinds).
 
 ## Pack-level descriptors
 
@@ -64,7 +67,7 @@ each with `id`, `kind`, `path`, `content_hash` and `provenance_path`. Core regen
 
 ### `<kind>.graph.yaml` — built-in graph shard
 
-One file per node kind at the built-in pack root (`directive.graph.yaml`,
+One shard per node kind that has built-in nodes, at the built-in pack root (`directive.graph.yaml`,
 `action.graph.yaml`, `mission_type.graph.yaml`, …).
 
 | Field | Meaning |
@@ -97,7 +100,7 @@ What an org pack enforces on every project that registers it.
 |---|---|
 | `org_name` | the organization |
 | `skill_namespace` | prefix for rendered skills; lowercase ASCII, starts with a letter, at most 32 characters; `spk-`, `spec-kitty-` and `spec-kitty.` are reserved |
-| `required_<plural>` | per org-requirable kind, the artifact ids that are always in force (for example `required_directives`, `required_skills`) |
+| `required_<plural>` | per org-requirable kind, for example `required_directives` and `required_skills`; semantics in [Artifact kinds](/architecture/logical-model/#artifact-kinds) |
 
 ### `presets/<name>.yaml` — activation preset
 
@@ -106,7 +109,7 @@ A named set of activations a pack ships. Schema: `activation-preset.schema.yaml`
 | Field | Meaning |
 |---|---|
 | `name`, `description` | required |
-| `activated_<plural>` | allowlist per kind; an absent key leaves the kind unrestricted |
+| `activated_<plural>` | per-kind allowlist; absent-key behavior is in [Artifact kinds](/architecture/logical-model/#artifact-kinds) |
 | `activated_kinds` | optional kind gate |
 | `mission_type_activations` | mission types the preset activates |
 

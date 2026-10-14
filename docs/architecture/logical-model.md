@@ -124,26 +124,27 @@ level from directory presence.
 
 An **artifact** is one governance unit with a kind and an id. The kinds are the members of
 core's `ArtifactKind` enum (`charter.offering.artifact_kinds`), the single authority for
-kind facts. The Java domain checks its own kind type against the same facts; it does not
-restate them.
+kind facts. This table is the single home in these docs for per-kind facts; the descriptor pages link
+here instead of restating them. The Java domain checks its own kind type against the same
+facts; it does not restate them.
 
-| Kind | Operator token | Activatable | Org-requirable | Selection-overlayable | In force when key absent |
-|---|---|---|---|---|---|
-| `directive` | `directive` | yes | yes | yes | all |
-| `tactic` | `tactic` | yes | yes | yes | all |
-| `styleguide` | `styleguide` | yes | yes | yes | all |
-| `toolguide` | `toolguide` | yes | yes | yes | all |
-| `paradigm` | `paradigm` | yes | yes | yes | all |
-| `procedure` | `procedure` | yes | yes | yes | all |
-| `agent_profile` | `agent-profile` | yes | yes | yes | all |
-| `mission_step_contract` | `mission-step-contract` | yes | yes | yes | all |
-| `glossary_pack` | `glossary-pack` | yes | yes | no | all |
-| `skill` | `skill` | yes | yes | no | required |
-| `anti_pattern` | (none) | yes | no | no | all |
-| `asset` | (none) | no | yes | no | all |
-| `template` | (none) | no | no | no | all |
+| Kind | Operator token | In `CHARTER_KIND_TOKENS` | Activatable | Org-requirable | Selection-overlayable | In force when key absent |
+|---|---|---|---|---|---|---|
+| `directive` | `directive` | yes | yes | yes | yes | all |
+| `tactic` | `tactic` | yes | yes | yes | yes | all |
+| `styleguide` | `styleguide` | yes | yes | yes | yes | all |
+| `toolguide` | `toolguide` | yes | yes | yes | yes | all |
+| `paradigm` | `paradigm` | yes | yes | yes | yes | all |
+| `procedure` | `procedure` | yes | yes | yes | yes | all |
+| `agent_profile` | `agent-profile` | yes | yes | yes | yes | all |
+| `mission_step_contract` | `mission-step-contract` | yes | yes | yes | yes | all |
+| `glossary_pack` | `glossary-pack` | yes | yes | yes | no | all |
+| `skill` | `skill` | yes | yes | yes | no | required |
+| `anti_pattern` | `anti-pattern` | no | yes | no | no | all |
+| `asset` | `asset` | no | no | yes | no | all |
+| `template` | `template` | no | no | no | no | all |
 
-- **Activatable**: the kind can appear in an `activated_<kind>` list. `template` and `asset`
+- **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
 - **Org-requirable**: an org pack may declare `required_<plural>` for the kind.
 - **Selection-overlayable**: an org `required_<plural>` list also unions into the charter's
@@ -151,9 +152,15 @@ restate them.
 - **In force when key absent**: with no activation key, `all` means every available artifact
   of the kind is in force; `required` (only `skill`) means only the org packs' required
   skills are.
-- `anti_pattern` has no operator token because an anti-pattern is a re-kinded node inside
-  another kind's graph fragment, never a standalone file. `mission-type` is an operator token
-  but not an artifact kind; it routes to the mission-type path.
+- **Operator token**: `ArtifactKind.operator_token`, accepted by `ArtifactKind.from_operator_token`. Every
+  artifact kind has one, `anti-pattern`, `asset` and `template` included.
+- **In `CHARTER_KIND_TOKENS`**: the hand-authorable set of tokens the charter activation
+  commands accept. It drops `template`, `asset` and `anti_pattern` and adds `mission-type`.
+  An anti-pattern is a re-kinded node inside another kind's graph fragment, never a
+  standalone file, so it is activatable but not hand-authorable.
+- `mission-type` is in `CHARTER_KIND_TOKENS` but is not an artifact kind;
+  `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
+  mission-type path.
 
 ## The Doctrine Reference Graph (DRG)
 
@@ -170,7 +177,7 @@ The DRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it 
 |---|---|---|
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
 | `mission_type` | `mission_type:software-dev` | A mission type. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
-| `glossary_scope` / `glossary` | `glossary:<id>` | Glossary scoping and vocabulary targets. |
+| `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations
 

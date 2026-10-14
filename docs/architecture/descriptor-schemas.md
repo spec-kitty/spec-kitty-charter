@@ -18,14 +18,18 @@ core `spec-kitty` repository. They are derived from the schema and model sources
 in each section, not designed here. Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
 
+These diagrams are derived from [Descriptors](/architecture/descriptors/); where the two
+disagree, that page wins. For `pack.yaml`, core's `src/charter/diagrams/pack-descriptor-model.puml`
+is authoritative and the view here is derived from it.
+
 ## Kinds, containment and edges
 
 ![Charter descriptor kinds](diagrams/descriptor-kinds-overview.svg)
 
 A Charter Pack (`pack.yaml`) ships descriptor files, an optional DRG fragment and an
 optional org charter. DRG nodes refer to descriptors by URN `<kind>:<id>`. An org
-charter's `required_<plural>` lists union into the project charter's `selected_<plural>`
-lists for the selection-overlayable kinds. The edge counts come from
+charter's `required_<plural>` lists overlay the project charter's `selected_<plural>`
+lists; which kinds do is in the [Artifact kinds table](/architecture/logical-model/#artifact-kinds). The edge counts come from
 `packs/built-in/*.graph.yaml`.
 
 Sources: `src/charter/offering/artifact_kinds.py`, `src/charter/offering/drg/models.py`,
