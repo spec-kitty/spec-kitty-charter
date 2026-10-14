@@ -254,6 +254,9 @@ def check_frontmatter(tree: Tree, _today: dt.date) -> list[Finding]:
             continue
         meta = page.meta
         for key in REQUIRED_KEYS:
+            # doc-kitty forbids `type` on the bundle-root README (the site home).
+            if key == "type" and page.rel == "docs/README.md":
+                continue
             if meta.get(key) in (None, "", []):
                 out.append(Finding("frontmatter", page.rel, f"missing required key `{key}`"))
         desc = meta.get("description")

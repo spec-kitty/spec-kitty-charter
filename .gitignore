@@ -36,3 +36,4 @@
 .worktrees/
 kitty-ops/ops-index.jsonl
 kitty-specs/*/.kittify/dossiers/
+__pycache__/
