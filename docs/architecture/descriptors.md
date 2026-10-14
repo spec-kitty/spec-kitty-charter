@@ -26,6 +26,8 @@ descriptors carry.
 
 ## Where descriptors live
 
+The `built-in` root and the other `packs/` paths are paths in core, `spec-kitty/spec-kitty`.
+
 | Pack level | Root | Per-kind directory | Graph |
 |---|---|---|---|
 | `built-in` | `packs/built-in/` | `<plural>/` (for example `directives/`, `agent_profiles/`) | one `<kind>.graph.yaml` shard per node kind that has built-in nodes, at the pack root |
@@ -33,14 +35,14 @@ descriptors carry.
 | `project` | `.kittify/charter-packs/` | `directive/`, `tactic/`, `styleguide/`, `procedure/` (singular); every other kind plural | project fragment |
 
 Where each level is configured: `built-in` ships with Spec Kitty (source home moving to
-`spec-kitty-open-packs`, core ADR `2026-08-16-2`) and uses sharded graph files plus a generated
+`spec-kitty-open-packs`, core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md)) and uses sharded graph files plus a generated
 `pack-manifest.yaml`; `org` packs are listed under `charter_packs.org.packs` in
 `.kittify/config.yaml` (core's `packs/internal/` is an org pack that never ships to
 consumers); the `project` pack sits under `.kittify/charter-packs/`.
 
 The singular project directories for four kinds are a deliberate asymmetry, declared once in
 core's `PROJECT_KIND_DIRS`. Built-in step contracts live under
-`packs/built-in/missions/built_in_step_contracts/`, and `mission_step_contract`, `template`
+core's `packs/built-in/missions/built_in_step_contracts/`, and `mission_step_contract`, `template`
 and `anti_pattern` have no built-in content directory of their own. "Content directory" means
 the directory of a kind's layered repository; for example `packs/built-in/templates/` exists
 but is not a content directory in this sense. Per-kind facts are in the
@@ -58,7 +60,7 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_version` | semantic version of the pack content (built-in) |
 | `name` | human handle |
 | `parent_pack` | parent pack, or `null` for a root pack |
-| `pack_level` | `built-in`, `org` or `project` (core ADR `2026-10-11-2`); a mismatch with where the pack is configured refuses with `PACK_LEVEL_MISMATCH`, a missing value with `PACK_LEVEL_MISSING` |
+| `pack_level` | `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `PACK_LEVEL_MISMATCH`, a missing value with `PACK_LEVEL_MISSING` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 
@@ -215,7 +217,7 @@ Terms a pack contributes.
 
 ### Pack skill — `*.skill.yaml` plus body
 
-A shared, parameterized entry point (core ADR `2026-09-27-1`). Schema: `skill.schema.yaml`.
+A shared, parameterized entry point (core ADR [`2026-09-27-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-09-27-1-pack-skills-share-commands-through-charter-packs.md)). Schema: `skill.schema.yaml`.
 
 - **Required:** `schema_version` (`"1.0"`), `id`, `title`, `description`, `form`.
 - **Key fields:** `triggers`, `body_path` (prompt form, for example `<id>.skill.md`),

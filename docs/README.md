@@ -70,7 +70,7 @@ these labels:
 - **Designed API.** The public surface the extracted charter is designed to expose. No package
   or contract has been released from this repository.
 
-The governing decisions are core ADR `2026-10-12-2` (the charter gets its own repository),
-core ADR `2026-10-03-1` (a staged Java service strangler) and this repository's
+The governing decisions are core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter gets its own repository),
+core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (a staged Java service strangler) and this repository's
 [ADR-0001](/adr/0001-java-service-with-openapi-contract/) (Java, contract-first). Where the
 Python charter lives while the strangler runs is [open question 2](/plans/open-questions/).

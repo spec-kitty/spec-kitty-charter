@@ -15,7 +15,7 @@ audience:
 
 # Python package API
 
-The in-process public surface the extracted charter package is designed to export: entry point, types, operations and errors. It derives from `charter.offering.api` in core (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)), where these symbols exist today, and from core ADR `2026-10-12-2` D-1. The designed return types are the DTOs generated from the OpenAPI contract ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the core types listed on this page are today's transitional shapes, which the generated DTOs replace.
+The in-process public surface the extracted charter package is designed to export: entry point, types, operations and errors. It derives from `charter.offering.api` in core (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)), where these symbols exist today, and from core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) D-1. The designed return types are the DTOs generated from the OpenAPI contract ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the core types listed on this page are today's transitional shapes, which the generated DTOs replace.
 
 > **Designed API.** Not implemented; see the [API overview](/api/).
 

@@ -36,7 +36,7 @@ The service reads only configured inputs, never directory presence:
 
 The retired `doctrine.org.packs` key and the `.kittify/doctrine/` root are not read: core's
 charter-pack cutover removes every read-side fallback after a one-time upgrade migration
-(core ADR `2026-10-06-2` §7). The Java service starts on the cut-over vocabulary.
+(core ADR [`2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md) §7). The Java service starts on the cut-over vocabulary.
 
 ## Pipeline
 
@@ -52,9 +52,9 @@ flowchart LR
 
 1. **Load.** Each pack's `pack.yaml` is read and its `pack_level` checked against where it
    is configured. A mismatch refuses with `PACK_LEVEL_MISMATCH`, a missing field with
-   `PACK_LEVEL_MISSING` (core ADR `2026-10-11-2`; in core today only org packs are checked at
+   `PACK_LEVEL_MISSING` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md) (a pack declares its level); in core today only org packs are checked at
    load, and the Java service should check every level).
-2. **Merge.** The three layers merge into one graph under core ADR `2026-05-16-1`. Edge
+2. **Merge.** The three layers merge into one graph under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Edge
    endpoints resolve to `<kind>:<id>` URNs or to bare ids the fragment declares; anything
    else is an `unresolved_edge_endpoint` conflict. Edges from an org pack's `drg/fragment.yaml`
    land in the same graph that cascade reads; they are not kept on a separate,

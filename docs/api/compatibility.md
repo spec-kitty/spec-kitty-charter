@@ -16,7 +16,7 @@ audience:
 
 # Versioning and compatibility
 
-How the designed charter package and service contract are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR `2026-10-12-2`, core ADR `2026-10-03-1` and [Contract and DTOs](/architecture/contract-and-dtos/).
+How the designed charter package and service contract are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter moves to its own repository), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/).
 
 > **Designed API.** Not implemented; see the [API overview](/api/).
 

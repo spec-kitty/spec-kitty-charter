@@ -19,7 +19,7 @@ audience:
 
 How the service runs: one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints and backed by a loud fallback.
 
-> **Status:** design only, from core ADR `2026-10-03-1` ("Service boundary") and the sibling model in core ADR `2026-10-01-2`. [What the labels mean](/#status).
+> **Status:** design only, from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Service boundary") and the sibling model in core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API). [What the labels mean](/#status).
 
 ## One service per worktree
 
