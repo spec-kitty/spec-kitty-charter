@@ -1,0 +1,106 @@
+# Documentation rules and the live check that enforces each (docs/guides/docsite.md explains
+# how to run them). Every rule names its check; a rule with `check: none` is not enforced by a
+# tool, and says why. Add the rule here in the same change that adds the check.
+#
+# Checks are subcommands of `python3 scripts/docs/check_docs.py <name>` unless stated.
+# CI: .github/workflows/docs-cleanliness.yml (job or step named in `ci`), and docs-site.yml.
+version: 1
+rules:
+  - id: frontmatter-required-keys
+    rule: Every page has title, description, doc_status, updated, type, kind and audience.
+    check: check_docs.py frontmatter
+    ci: Docs checks / Frontmatter
+    severity: error
+  - id: description-length
+    rule: description is 50-180 characters.
+    check: check_docs.py frontmatter
+    ci: Docs checks / Frontmatter
+    severity: error
+  - id: doc-status-vocabulary
+    rule: doc_status is one of draft, active, deprecated, superseded, durable; updated is an ISO date.
+    check: check_docs.py frontmatter
+    ci: Docs checks / Frontmatter
+    severity: error
+  - id: audience-resolves
+    rule: Every audience entry resolves to a persona page under docs/context/audience/ (a repo path, or a profile slug).
+    check: check_docs.py frontmatter
+    ci: Docs checks / Frontmatter
+    severity: error
+  - id: frontmatter-schema
+    rule: Frontmatter passes the doc-kitty schema (types, kinds, section registry).
+    check: npm run validate (dockitty-validate-frontmatter)
+    ci: Docs site / Validate frontmatter and source links
+    severity: error
+  - id: related-resolves
+    rule: Every related entry is a docs-root slug of an existing page.
+    check: check_docs.py related
+    ci: Docs checks / Related references resolve
+    severity: error
+  - id: freshness-sla
+    rule: "updated is within the SLA of its doc_status: draft 90 days, active 180, deprecated 365; ADRs 365; superseded, durable and changelog entries are exempt. Dates in the future are errors."
+    check: check_docs.py freshness
+    ci: Docs checks / Freshness SLA
+    severity: error
+  - id: adr-index
+    rule: Every docs/adr/NNNN-*.md is listed in docs/adr/README.md; numbers are unique and have no gaps.
+    check: check_docs.py adr
+    ci: Docs checks / ADR index
+    severity: error
+  - id: changelog-style
+    rule: Changelog entries are named YYYY-MM-DD-slug.md, listed newest first in docs/changelog/README.md, and stay under 3000 characters.
+    check: check_docs.py changelog
+    ci: Docs checks / Changelog style
+    severity: error
+  - id: terminology
+    rule: No forbidden or non-canonical terms (the Mission canon, the two retired terms, glossary aliases) outside docs/_meta/terminology.yaml allow entries.
+    check: check_docs.py terms
+    ci: Docs checks / Terminology and glossary alignment
+    severity: error
+  - id: no-orphans
+    rule: Every page is linked from the README.md hub of its own directory, and every directory has one.
+    check: check_docs.py orphans
+    ci: Docs checks / Orphan pages
+    severity: error
+  - id: internal-links
+    rule: Internal links are root-absolute routes that resolve; anchors exist; no absolute GitHub links to this repository's own docs.
+    check: check_docs.py links
+    ci: Docs checks / Links and anchors
+    severity: error
+  - id: built-links
+    rule: Every link in the built site resolves under the base path.
+    check: npm run check:built-links
+    ci: Docs site / Check links in the built site
+    severity: error
+  - id: external-links
+    rule: External links respond. Remote sites flake, so this reports but never blocks.
+    check: lychee (lychee.toml)
+    ci: External links (non-gating)
+    severity: warning
+  - id: markdown-lint
+    rule: Markdown follows the markdownlint rules in .markdownlint-cli2.jsonc.
+    check: markdownlint-cli2
+    ci: Markdown lint
+    severity: error
+  - id: spelling
+    rule: Prose is spelled correctly; project words live in docs/_meta/spelling-words.txt.
+    check: cspell (cspell.json)
+    ci: Spellcheck
+    severity: error
+  - id: diagrams-current
+    rule: Each docs/architecture/diagrams/*.puml has a committed SVG that matches a render with the pinned PlantUML.
+    check: check_docs.py plantuml
+    ci: PlantUML diagrams are current
+    severity: error
+  - id: glossary-imported
+    rule: docs/glossary/ and site/.contextive/definitions.yaml are generated from the core glossary and carry its commit (source_ref); not hand-edited.
+    check: check_docs.py frontmatter (the generated pages carry full frontmatter); the core commit is recorded, not compared
+    ci: Docs checks / Frontmatter
+    severity: error
+  - id: glossary-matches-core
+    rule: The imported glossary is current with the core glossary.
+    check: none
+    reason: Needs a checkout of the core repository; re-import with site/tools/import_core_glossary.py when core changes a term.
+  - id: docs-follow-code
+    rule: A page changes in the same change as the behaviour it describes.
+    check: none
+    reason: Review judgment; the freshness SLA is only the backstop for pages nobody touched.

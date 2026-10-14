@@ -1,0 +1,20 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "files": ["docs/**/*.md"],
+  "ignorePaths": [
+    "docs/glossary/**",
+    "docs/_meta/**"
+  ],
+  "dictionaryDefinitions": [
+    { "name": "project-words", "path": "./docs/_meta/spelling-words.txt", "addWords": true }
+  ],
+  "dictionaries": ["project-words"],
+  "ignoreRegExpList": [
+    "/^\\s*(```|~~~)[\\s\\S]*?^\\s*\\1/gm",
+    "/`[^`\\n]+`/g",
+    "/https?:\\/\\/\\S+/g",
+    "/\\]\\([^)]*\\)/g",
+    "/\\{#[A-Za-z0-9_-]+\\}/g"
+  ]
+}

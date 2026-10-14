@@ -1,0 +1,3 @@
+# Dependencies of scripts/docs/check_docs.py and its tests; pinned.
+PyYAML==6.0.2
+pytest==8.4.1
