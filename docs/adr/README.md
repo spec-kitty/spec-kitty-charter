@@ -2,7 +2,7 @@
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 type: ADR
 kind: Hub
 audience:

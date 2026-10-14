@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 type: Guide
 kind: How-To
 related:

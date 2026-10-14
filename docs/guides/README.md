@@ -2,7 +2,7 @@
 title: Guides
 description: Task-oriented how-tos for contributors to the charter service and, later, for its consumers.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Guide
 kind: Hub
 audience:

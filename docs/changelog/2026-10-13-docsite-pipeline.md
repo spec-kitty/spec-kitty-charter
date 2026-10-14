@@ -2,7 +2,7 @@
 title: Docsite build and Pages deploy
 description: The docs tree is now built into a doc-kitty site by CI on every docs pull request and published to GitHub Pages from main.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 type: Changelog
 kind: Changelog
 related:

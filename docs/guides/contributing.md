@@ -2,7 +2,7 @@
 title: Contributing to spec-kitty-charter
 description: How work lands in spec-kitty-charter during the bootstrap — branches and pull requests, documentation rules, the contract-first order, and where decisions go.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Guide
 kind: How-To
 audience:

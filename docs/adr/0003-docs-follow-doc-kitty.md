@@ -2,7 +2,7 @@
 title: "ADR-0003: Documentation follows the doc-kitty convention"
 description: The docs tree uses doc-kitty's structure — README-as-index sections registered in _meta/sections.yaml, frontmatter on every page, numbered ADRs and a dated changelog.
 doc_status: active
-updated: 2026-10-13
+updated: 2026-10-14
 type: ADR
 kind: ADR
 audience:

@@ -2,7 +2,7 @@
 title: Plans
 description: Forward-looking work for the charter service — the bootstrap roadmap and the questions still open.
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-14
 type: Plan
 kind: Hub
 audience:
