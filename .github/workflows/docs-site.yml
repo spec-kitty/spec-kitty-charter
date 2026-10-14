@@ -59,6 +59,8 @@ jobs:
         # (as noindex pages) rather than dropped.
         env:
           DK_PUBLISH_DRAFTS: 'on'
+          # Render Mermaid in the browser; the build needs no Chromium.
+          DK_DIAGRAM_BUILD_RENDER: client
         run: npm run build
       - name: Check links in the built site
         run: npm run check:built-links
