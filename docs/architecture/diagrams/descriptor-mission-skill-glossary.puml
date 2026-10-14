@@ -47,7 +47,7 @@ ContractStep *-- "0..1" DelegatesTo
 
 class PackSkill <<skill.schema.yaml>> {
   + schema_version : "1.0"
-  + id : string [<=64] ~ ^[a-z][a-z0-9]*[-[a-z0-9]+]*$
+  + id : string [<=64] ~ id pattern (see note)
   + title : string
   + description : string
   + form : prompt | wrapper
@@ -99,4 +99,8 @@ class GlossaryTerm {
   - banned_synonyms : string[]
 }
 GlossaryPack *-- "1..*" GlossaryTerm
+note right of PackSkill
+  id pattern (skill.schema.yaml:21):
+  ""^(?!.*<U+005C>n)[a-z][a-z0-9]*(-[a-z0-9]+)*$""
+end note
 @enduml

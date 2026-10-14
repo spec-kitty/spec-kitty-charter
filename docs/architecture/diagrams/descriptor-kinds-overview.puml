@@ -55,7 +55,7 @@ PD "1" *-- "0..1" OC : active_charter
 PD "1" o-- "*" kinds : ships
 FRAG ..> kinds : DRGNode.urn = kind:id
 OC ..> kinds : requires (org_requirable kinds)
-GC ..> kinds : selects (selection_overlayable kinds)
+GC ..> kinds : selects (selected_* covers 10 kinds)
 OC ..> GC : required ids union into selected_*
 
 ' DRG edges (DRGEdge.relation) — top kind pairs counted in packs/built-in/*.graph.yaml
@@ -66,7 +66,8 @@ Directive --> Tactic : suggests (49)
 Tactic --> Directive : suggests (57)
 Procedure --> Tactic : requires (45)
 Paradigm --> Directive : requires (35)
-Directive --> Directive : requires / in_tension_with / reconciles_tension
+Directive --> Directive : requires (17) / in_tension_with (1) / reconciles_tension (2)
+Directive --> Tactic : in_tension_with (1) / reconciles_tension (1)
 AgentProfile --> AgentProfile : specializes_from (5)
 Tactic --> Procedure : refines (2)
 ' Model-level links (fields, not built-in DRG edges)
