@@ -1,0 +1,26 @@
+import { defineCollection } from 'astro:content';
+import {
+  docKittyDocsSchema,
+  docKittyDocsLoader,
+  docKittyBibliographySchema,
+  docKittyBibliographyLoader,
+  docKittyToolsSchema,
+  docKittyToolsLoader,
+} from '@spec-kitty/doc-toolkit/schema';
+
+export const collections = {
+  docs: defineCollection({
+    // The content root is the repository's docs/ tree, one level up from site/.
+    // `indexBasename` MUST match astro.config.mjs.
+    loader: docKittyDocsLoader({ base: '../docs', indexBasename: ['README'] }),
+    schema: docKittyDocsSchema(),
+  }),
+  bibliography: defineCollection({
+    loader: docKittyBibliographyLoader({ path: '../docs/_meta/bibliography.yaml' }),
+    schema: docKittyBibliographySchema(),
+  }),
+  tools: defineCollection({
+    loader: docKittyToolsLoader({ path: '../docs/_meta/tools.yaml' }),
+    schema: docKittyToolsSchema(),
+  }),
+};

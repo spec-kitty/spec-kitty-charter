@@ -1,0 +1,46 @@
+---
+title: "ADR-NNNN: Title"
+description: Blank ADR to copy for a new decision record.
+doc_status: draft
+updated: 2026-10-13
+type: Template
+kind: ADR
+---
+
+# ADR-NNNN: Title
+
+## Status
+
+Proposed | Accepted | Deprecated | Superseded by ADR-XXXX
+
+## Context
+
+What situation, problem, or constraint requires a decision?
+
+## Decision
+
+What did we decide to do?
+
+## Consequences
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Risks
+
+-
+
+## Alternatives considered
+
+### Option A: Name
+
+Why this was not chosen.
+
+## References
+
+-

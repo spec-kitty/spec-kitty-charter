@@ -1,51 +1,69 @@
 # spec-kitty-charter
 
-The **charter offering module** in the Brain Kitty product line. It provides
-retrieval of charter packs to the Build Kitty surfaces, exposed through the
-module's public API `charter.offering.api`.
+The **charter** of Spec Kitty: the governance authority of the Brain Kitty product line.
+It resolves Charter Packs (built-in, org and project) and a project's active charter into
+the guidance that Spec Kitty's runtime acts on at each step of a Mission.
 
-## Status: early extraction — under active redesign
+This repository is where the charter becomes a **Java service built against an OpenAPI
+contract**, released and versioned on its own.
 
-This repository is the canonical landing zone for the charter module, which is
-being **extracted and re-designed out of the Spec Kitty core CLI** so it can be
-released and versioned on its own, exactly as `spec-kitty-events` and
-`spec-kitty-tracker` already are. Today the charter still ships inside the core
-CLI wheel; this repository is where its independent form is taking shape.
+## Status: bootstrap, no code yet
 
-The direction is recorded in the core repository's ADR
-`2026-10-12-2` (charter-extraction-to-its-own-repository), which extends the
-charter-wheel assessment (`2026-08-02-1`) and the shared-package-boundary
-decision (`2026-04-25-1`).
+The charter still runs as Python inside the core CLI
+([`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty), `src/charter/`). This
+repository holds the agreed direction, the target design and the decisions; code follows.
 
-Because the module is mid-extraction, treat everything here as provisional:
-the public surface is `charter.offering.api`, but version numbers, install
-instructions, and the final package shape are not settled yet and are
-deliberately not published in this README.
+| Part | What it is | State |
+|---|---|---|
+| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter data transfer object (DTO); authored here pending ADR-0002 | planned |
+| Java service | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only | planned |
+| Conformance corpus | Fixtures the Python and Java implementations must both pass | planned |
+| Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), behind `charter.offering.api` | likely moves here first; to be decided |
+| [`docs/`](docs/README.md) | Context, architecture, decisions and plans | bootstrapped |
 
-## What this module does
+## How it fits
 
-- Holds the charter offering — governance and doctrine packs — for the Brain
-  Kitty product line.
-- Retrieves charter packs and serves them to the Build Kitty surfaces that
-  consume governance.
-- Is consumed only across its public contract boundary (`charter.offering.api`),
-  never by reaching into its internals.
+- **Contract first.** The service generates its server interfaces from the contract. The
+  core ingests a pinned release of the same contract and generates the DTOs its CLI and its
+  `next` state machine use. Neither side imports the other's code.
+- **Staged behind one seam.** The Python seam `charter.offering.api` becomes the only entry
+  point for CLI callers. Behind it, reads move to the Java service first (shadow, then
+  authoritative with a loud fallback), and writes move later, one operation at a time. The Python charter likely moves into this
+  repository first; whether a rewrite-and-replace is safer or cheaper is still to be
+  decided.
+- **Not an event producer.** Events come from the runtime's `next` transitions and follow
+  the [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
+  charter service answers questions; it does not write to the ledger.
+
+## Governing decisions
+
+- Core ADR `2026-10-12-2`: the charter becomes an external contract package in its own
+  repository. Its precondition, moving the charter-internal imports of about 130 files onto
+  `charter.offering.api`, gates 4.0.0 general availability (GA). It was tracked as
+  [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) until that issue was
+  closed as not planned on 2026-10-13; the import move is now carried by epic
+  [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
+- Core ADR `2026-10-03-1` (Proposed): a staged Java service strangler for charter reads
+  and writes.
+- [ADR-0001](docs/adr/0001-java-service-with-openapi-contract.md): the charter is a Java
+  service built against an OpenAPI contract.
+- [ADR-0002](docs/adr/0002-contract-source-of-record.md) (Proposed): this repository is
+  the source of record for that contract.
 
 ## Documentation
 
-Project documentation lives under [`docs/`](docs/index.md) and follows the
-Spec Kitty common-docs conventions. Start at the
-[documentation landing page](docs/index.md), then branch into:
+The [`docs/`](docs/README.md) tree follows the
+[doc-kitty](https://github.com/spec-kitty/doc-kitty) convention and is published from
+`main` to <https://spec-kitty.github.io/spec-kitty-charter/> (build setup:
+[Building the docsite](docs/guides/docsite.md)):
 
-- [Architecture](docs/architecture/index.md) — why the module exists and how it
-  is structured.
-- [Guides](docs/guides/index.md) — task-oriented how-tos for consumers.
-- [Development](docs/development/index.md) — contributor and maintainer how-tos
-  and reference policy.
-- [API reference](docs/api/index.md) — the `charter.offering.api` public
-  surface.
-- [Decision records](docs/adr/index.md) — architecture decision records for
-  this module.
+- [Context](docs/context/) — why, what the charter owns, and the systems around it.
+- [Architecture](docs/architecture/) — the target design.
+- [Decision Records](docs/adr/) — decisions here, and the core ADRs they build on.
+- [Plans](docs/plans/) — the bootstrap roadmap and open questions.
+- [API](docs/api/) — the planned contract surface.
+- [Guides](docs/guides/) — contributing and building the docsite.
+- [Changelog](docs/changelog/) — notable changes.
 
 ## License
 
