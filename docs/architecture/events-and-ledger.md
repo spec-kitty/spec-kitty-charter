@@ -8,6 +8,11 @@ kind: Explanation
 related:
   - context/system-context
   - architecture/contract-and-dtos
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this to know why the service writes no events.
+  - profile: core-maintainer
+    guidance_text: Read this for the boundary between the charter contract and the event contracts.
 ---
 
 # Events and the ledger

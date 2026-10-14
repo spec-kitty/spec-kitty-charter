@@ -5,6 +5,9 @@ doc_status: active
 updated: 2026-10-13
 type: Context
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this section before the architecture.
 ---
 
 # Context

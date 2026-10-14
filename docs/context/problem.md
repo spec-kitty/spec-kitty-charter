@@ -9,6 +9,13 @@ related:
   - context/product
   - adr/0001-java-service-with-openapi-contract
   - architecture/strangler-transition
+audience:
+  - profile: core-maintainer
+    guidance_text: Read this for why the charter leaves the CLI and why it becomes a Java service.
+  - profile: charter-service-contributor
+    guidance_text: Read this for the reasons behind the design before you question it.
+  - profile: evaluator
+    guidance_text: Read this for the case for the extraction, with its limits stated.
 ---
 
 # Problem

@@ -9,6 +9,9 @@ related:
   - architecture/contract-and-dtos
   - adr/0002-contract-source-of-record
   - api/compatibility
+audience:
+  - profile: contract-consumer
+    guidance_text: Read this for the planned operations, the error model and the transports of the service.
 ---
 
 # Service contract

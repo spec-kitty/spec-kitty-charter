@@ -8,6 +8,9 @@ kind: Changelog
 related:
   - guides/docsite
   - adr/0003-docs-follow-doc-kitty
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed on this date.
 ---
 
 # 2026-10-13 — Docsite build and Pages deploy

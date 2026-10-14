@@ -8,6 +8,9 @@ kind: Explanation
 related:
   - architecture/overview
   - architecture/contract-and-dtos
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the Gradle modules and the dependency rule you must keep.
 ---
 
 # Hexagonal service

@@ -9,6 +9,11 @@ related:
   - architecture/overview
   - architecture/events-and-ledger
   - architecture/contract-and-dtos
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the systems around the service and the contract each edge uses.
+  - profile: core-maintainer
+    guidance_text: Read this for which contract each core interaction uses.
 ---
 
 # System context

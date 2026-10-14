@@ -5,6 +5,9 @@ doc_status: active
 updated: 2026-10-13
 type: ADR
 kind: ADR
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the rules a documentation page in this repository must follow.
 ---
 
 # ADR-0003: Documentation follows the doc-kitty convention

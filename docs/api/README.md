@@ -11,6 +11,9 @@ related:
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
   - adr/0004-public-api-returns-generated-dtos
+audience:
+  - profile: contract-consumer
+    guidance_text: Read this to find which public surface to call and how far to trust it.
 ---
 
 # API

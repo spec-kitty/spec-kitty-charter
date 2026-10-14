@@ -8,6 +8,13 @@ kind: Glossary
 tags: [glossary]
 related:
   - architecture/resolution-model
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the vocabulary the Java domain must use unchanged.
+  - profile: pack-author
+    guidance_text: Read this for the pack and activation terms you write against.
+  - profile: governance-lead
+    guidance_text: Read this for the pack, level and activation terms a team decides with.
 ---
 
 # Domain

@@ -4,6 +4,13 @@ description: Documentation home for the Java charter service and its OpenAPI con
 doc_status: active
 updated: 2026-10-14
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Start here to find the section that answers your question, and the one status note that applies to every page.
+  - profile: core-maintainer
+    guidance_text: Use the section list to find the plans and decisions that need core action.
+  - profile: governance-lead
+    guidance_text: Read this for what the charter is and which section answers your question.
 ---
 
 # spec-kitty-charter documentation

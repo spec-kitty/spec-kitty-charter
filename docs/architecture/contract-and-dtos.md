@@ -9,6 +9,11 @@ related:
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
   - api
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what the contract carries and how both sides generate from it.
+  - profile: contract-consumer
+    guidance_text: Read this for how a consumer gets its DTOs and what a release promises.
 ---
 
 # Contract and DTOs

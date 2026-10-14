@@ -9,6 +9,9 @@ related:
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
   - adr/0003-docs-follow-doc-kitty
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed on this date.
 ---
 
 # 2026-10-13 — Bootstrap: Java direction, architecture and context

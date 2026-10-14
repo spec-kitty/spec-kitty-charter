@@ -8,6 +8,11 @@ kind: Explanation
 related:
   - architecture/overview
   - architecture/strangler-transition
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for scope, binding, freshness and fallback of the running service.
+  - profile: contract-consumer
+    guidance_text: Read this to know how the service is reached and what happens when it is stale.
 ---
 
 # Service lifecycle

@@ -9,6 +9,9 @@ related:
   - architecture/overview
   - architecture/contract-and-dtos
   - architecture/resolution-model
+audience:
+  - profile: pack-author
+    guidance_text: Read this for entity diagrams of the descriptor schemas and their edges.
 ---
 
 # Descriptor schemas

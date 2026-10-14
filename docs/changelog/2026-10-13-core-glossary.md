@@ -8,6 +8,9 @@ kind: Changelog
 related:
   - guides/docsite
   - context/domain
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed on this date.
 ---
 
 # 2026-10-13 — Glossary imported from the core repository

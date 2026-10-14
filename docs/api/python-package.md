@@ -8,6 +8,9 @@ kind: Explanation
 related:
   - api/compatibility
   - architecture/logical-model
+audience:
+  - profile: contract-consumer
+    guidance_text: "Read this for the in-process surface: symbols, types, operations and errors."
 ---
 
 # Python package API

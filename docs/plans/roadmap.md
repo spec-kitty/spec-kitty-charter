@@ -8,6 +8,11 @@ kind: Planning
 related:
   - architecture/strangler-transition
   - plans/open-questions
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the next checkable step and what it depends on.
+  - profile: core-maintainer
+    guidance_text: Read this for the work needed outside this repository.
 ---
 
 # Roadmap
