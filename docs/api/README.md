@@ -34,7 +34,7 @@ The charter has two public surfaces, one per stage of the extraction:
 | [Python package](/api/python-package/) | in-process Python API, versioned by wheel semver and `py.typed` | the CLI's charter facades, open-core consumers | core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) D-1: callers use only `charter.offering.api` |
 | [Service contract](/api/service-contract/) | OpenAPI 3.1 over loopback REST, later MCP | the core's seam (through generated DTOs, per [ADR-0004](/adr/0004-public-api-returns-generated-dtos/)), agent harnesses | ADR-0001, ADR-0002, core ADR `2026-10-03-1` |
 
-### Decision: the API returns generated DTOs
+## Decision: the API returns generated DTOs
 
 [ADR-0004](/adr/0004-public-api-returns-generated-dtos/) (Accepted, 2026-10-14) settles it:
 the public API returns DTOs generated from the OpenAPI contract, generated per client
