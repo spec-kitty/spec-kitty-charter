@@ -16,8 +16,8 @@ audience:
 # spec-kitty-charter documentation
 
 Documentation for **spec-kitty-charter**: the Java charter service and the OpenAPI
-contract it is built against. The charter is the governance authority of the Brain Kitty
-product line. It resolves Charter Packs (built-in, org and project) into the guidance that
+contract it is built against. The charter is the governance authority of the
+[Brain Kitty](/glossary/product-lines/#brain-kitty) product line. It resolves Charter Packs (built-in, org and project) into the guidance that
 Spec Kitty's runtime acts on.
 
 This tree follows the [doc-kitty](https://github.com/spec-kitty/doc-kitty) convention:

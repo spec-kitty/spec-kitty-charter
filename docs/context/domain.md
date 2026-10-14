@@ -1,5 +1,5 @@
 ---
-title: Domain
+title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
 updated: 2026-10-13
@@ -47,11 +47,11 @@ The charter has two sides, matching core's package split `src/charter/offering/`
 
 | Term | Meaning |
 |---|---|
-| **Charter offering** | Everything offered to a project: the Charter Packs it can draw from (the built-in pack and each configured org pack) plus the project layer. |
-| **Charter Pack** | A distributable bundle of interconnected charter components (artifacts and their DRG edges) together with optional activation presets (`presets/<name>.yaml`). An org pack may also enforce activations (`required_<kind>` in `org-charter.yaml`). |
-| **Activation preset** | A named set of activations a Charter Pack ships, applied with `spec-kitty charter activate --pack <pack> --preset <preset>`. The built-in pack ships `default` (no per-kind restriction, so it cannot drift) and `minimal`. Presets are pack data; there is no code registry. |
-| **Active charter** | What a project has activated: its `activated_<kind>` keys, `activated_kinds` and `mission_type_activations`. |
-| **Charter Bundle** | The materialized `.kittify/charter/` tree. |
+| **Charter offering** | [Glossary](/glossary/charter/#charter-offering). |
+| **Charter Pack** | [Glossary](/glossary/charter/#charter-pack). |
+| **Activation preset** | [Glossary](/glossary/charter/#activation-preset). Presets are pack data; the Java domain keeps no code registry of them. |
+| **Active charter** | [Glossary](/glossary/charter/#active-charter). |
+| **Charter Bundle** | [Glossary](/glossary/charter/#charter-bundle). |
 
 "Active" still describes one artifact's state ("an active directive"); **active charter**
 names the project's activated set as a whole.
@@ -60,7 +60,7 @@ names the project's activated set as a whole.
 
 | Term | Meaning |
 |---|---|
-| **Pack level** | `built-in`, `org` or `project`, declared as `pack_level` in every pack's `pack.yaml` (core ADR `2026-10-11-2`). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`) or that lacks the field (`PACK_LEVEL_MISSING`). In core today only org packs are refused at load; see [Resolution model](/architecture/resolution-model/). |
+| **Pack level** | [Glossary](/glossary/governance/#pack-level). Implementations check every level; core today refuses only org packs at load (see [Resolution model](/architecture/resolution-model/)). |
 | **Built-in pack** | The pack that ships with Spec Kitty. Its designated source home is `spec-kitty-open-packs`, to be vendored into consumer installs byte-identical (core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md) (open-packs as the built-in source); the vendoring pipeline, core #3504, is not built yet). |
 | **Org pack** | A pack listed under `charter_packs.org.packs` in `.kittify/config.yaml`. It carries `org-charter.yaml` and a single `drg/fragment.yaml`. |
 | **Project pack** (core glossary: *Project layer*) | The project's own charter components under `.kittify/charter-packs/`, `pack_level: project`. It ships no presets. |
@@ -78,7 +78,7 @@ contract").
 
 | Term | Meaning |
 |---|---|
-| **Artifact kind** | One of the kinds the core `ArtifactKind` enum defines: `directive`, `tactic`, `styleguide`, `toolguide`, `paradigm`, `procedure`, `agent_profile`, `mission_step_contract`, `glossary_pack`, `skill`, `anti_pattern`, plus `template` and `asset`, which are not charter-activatable. The enum also carries each kind's plural, whether it is activatable, org-requirable and selection-overlayable, and what is in force when its activation key is absent. It is the single authority; the Java domain derives from the same facts and must not restate them. |
+| **Artifact kind** | One of the members of core's `ArtifactKind` enum, which is the single authority for each kind's facts. The kinds and their facts are tabulated in the [Logical model](/architecture/logical-model/#artifact-kinds). The Java domain derives from the same facts and does not restate them. |
 | **DRG** | The Doctrine Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, and others). An edge endpoint is a URN `<kind>:<id>` or a bare id the fragment's own nodes declare; anything else is refused at merge time (`unresolved_edge_endpoint`). |
 | **`specializes_from`** | Profile lineage, declared as a DRG edge between two `agent_profile` nodes, never as a per-profile field. |
 | **`enhances` / `overrides`** | `enhances` merges fields and keeps the action sequence and step inputs and outputs; `overrides` replaces in full. Silently dropping steps is refused. |

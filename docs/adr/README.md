@@ -17,7 +17,7 @@ audience:
 # Decision Records
 
 Decisions taken in this repository. Records are numbered `NNNN-<slug>.md` and copied from
-[the template](/adr/template/), as in doc-kitty. A record is immutable once accepted; a later
+[the template](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/_meta/templates/adr.template), as in doc-kitty. A record is immutable once accepted; a later
 decision supersedes it rather than editing it.
 
 | ID | Title | Status | Date |
