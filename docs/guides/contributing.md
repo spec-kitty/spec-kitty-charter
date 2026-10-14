@@ -5,6 +5,9 @@ doc_status: draft
 updated: 2026-10-13
 type: Guide
 kind: How-To
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this before you open a pull request.
 ---
 
 # Contributing

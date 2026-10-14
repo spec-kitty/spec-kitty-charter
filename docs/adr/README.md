@@ -5,6 +5,13 @@ doc_status: active
 updated: 2026-10-13
 type: ADR
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Find the decisions taken here and the core decisions they build on.
+  - profile: core-maintainer
+    guidance_text: See which core decisions this repository builds on and where it asks core to rule.
+  - profile: evaluator
+    guidance_text: Read this to see which decisions are taken, proposed or inherited from core.
 ---
 
 # Decision Records

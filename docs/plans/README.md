@@ -5,6 +5,11 @@ doc_status: draft
 updated: 2026-10-13
 type: Plan
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Find the roadmap and the open questions.
+  - profile: core-maintainer
+    guidance_text: Find what is planned and what is waiting for a core ruling.
 ---
 
 # Plans

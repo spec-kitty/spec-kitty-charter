@@ -9,6 +9,11 @@ related:
   - plans/roadmap
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
+audience:
+  - profile: core-maintainer
+    guidance_text: Read this to rule on the questions that are core's to decide.
+  - profile: charter-service-contributor
+    guidance_text: Read this for the default to work from while a question is open.
 ---
 
 # Open questions

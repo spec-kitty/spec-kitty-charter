@@ -8,6 +8,11 @@ kind: ADR
 related:
   - adr/0001-java-service-with-openapi-contract
   - architecture/contract-and-dtos
+audience:
+  - profile: core-maintainer
+    guidance_text: Read this to rule on where the charter contract is authored and how core ingests it.
+  - profile: charter-service-contributor
+    guidance_text: Read this for where the contract lives and which tooling checks it.
 ---
 
 # ADR-0002: This repository is the source of record for the charter contract

@@ -9,6 +9,11 @@ related:
   - context/system-context
   - architecture/hexagonal-service
   - architecture/contract-and-dtos
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this first for the containers and the main flows of a governed read.
+  - profile: core-maintainer
+    guidance_text: Read this to see where the seam and the launcher sit in core.
 ---
 
 # Overview

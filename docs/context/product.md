@@ -9,6 +9,13 @@ related:
   - context/problem
   - context/system-context
   - adr/0001-java-service-with-openapi-contract
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this to learn what the charter is for and what this repository will hold.
+  - profile: core-maintainer
+    guidance_text: Read this for where the charter sits among the product lines.
+  - profile: governance-lead
+    guidance_text: Read this to learn what the charter does for a team and where it sits.
 ---
 
 # Product

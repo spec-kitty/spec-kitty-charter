@@ -9,6 +9,9 @@ related:
   - architecture/logical-model
   - architecture/descriptor-schemas
   - architecture/resolution-model
+audience:
+  - profile: pack-author
+    guidance_text: Read this to find the file, fields and naming of each descriptor you author.
 ---
 
 # Descriptors

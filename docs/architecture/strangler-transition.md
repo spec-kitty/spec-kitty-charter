@@ -9,6 +9,11 @@ related:
   - architecture/overview
   - architecture/contract-and-dtos
   - plans/roadmap
+audience:
+  - profile: core-maintainer
+    guidance_text: Read this for the stages, the evidence each needs and the point of no return.
+  - profile: charter-service-contributor
+    guidance_text: Read this for what may be built in parallel and what waits for the seam.
 ---
 
 # Strangler transition

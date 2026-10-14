@@ -8,6 +8,11 @@ kind: Explanation
 related:
   - context/domain
   - architecture/contract-and-dtos
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the behavior the domain must reproduce, step by step.
+  - profile: pack-author
+    guidance_text: Read this to predict how your packs load, merge and activate.
 ---
 
 # Resolution model

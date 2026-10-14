@@ -5,6 +5,9 @@ doc_status: draft
 updated: 2026-10-14
 type: Architecture
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Use this map to find the design page for the part you are building.
 ---
 
 # Architecture

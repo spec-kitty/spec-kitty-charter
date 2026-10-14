@@ -8,6 +8,9 @@ kind: How-To
 related:
   - adr/0003-docs-follow-doc-kitty
   - guides/contributing
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this to build, check and publish the documentation site.
 ---
 
 # Building the docsite

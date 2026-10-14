@@ -9,6 +9,11 @@ related:
   - context/domain
   - architecture/descriptors
   - architecture/resolution-model
+audience:
+  - profile: pack-author
+    guidance_text: Read this for the parts of the charter and how they relate.
+  - profile: charter-service-contributor
+    guidance_text: Read this for the model the Java domain must reproduce.
 ---
 
 # Logical model

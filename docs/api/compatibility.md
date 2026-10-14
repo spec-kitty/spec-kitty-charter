@@ -9,6 +9,9 @@ related:
   - api/python-package
   - api/service-contract
   - architecture/contract-and-dtos
+audience:
+  - profile: contract-consumer
+    guidance_text: Read this to learn which changes are minor, which are major, and which release to pin.
 ---
 
 # Versioning and compatibility

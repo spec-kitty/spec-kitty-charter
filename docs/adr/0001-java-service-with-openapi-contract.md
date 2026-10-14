@@ -9,6 +9,11 @@ related:
   - adr/0002-contract-source-of-record
   - architecture/contract-and-dtos
   - architecture/strangler-transition
+audience:
+  - profile: core-maintainer
+    guidance_text: "Read this to see what core is asked to ratify: a Java target behind the existing Python seam."
+  - profile: charter-service-contributor
+    guidance_text: Read this for the stack, the contract-first rule and the Python-first question that bound your work.
 ---
 
 # ADR-0001: The charter is a Java service built against an OpenAPI contract

@@ -5,6 +5,9 @@ doc_status: draft
 updated: 2026-10-13
 type: Guide
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Find the how-to for the task in front of you.
 ---
 
 # Guides

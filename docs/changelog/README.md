@@ -5,6 +5,9 @@ doc_status: active
 updated: 2026-10-14
 type: Changelog
 kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed and when.
 ---
 
 # Changelog
