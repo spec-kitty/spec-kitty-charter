@@ -16,9 +16,11 @@ related:
 > charter package is designed to export. **The code is still to be added to this
 > repository.** It is derived from core's `charter.offering.api`
 > (`src/charter/offering/api.py` in `spec-kitty/spec-kitty`), where these symbols exist
-> today, and from core ADR `2026-10-12-2` D-1. What the package returns, core's own types or
-> generated DTOs, is an [open question](/api/#open-question-what-the-python-package-returns);
-> this page describes today's core types.
+> today, and from core ADR `2026-10-12-2` D-1.
+>
+> The designed return types are the DTOs generated from the OpenAPI contract
+> ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)). The core types listed on this
+> page are today's shapes, transitional: the generated DTOs replace them.
 
 ## Entry point
 

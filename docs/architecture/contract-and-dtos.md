@@ -46,8 +46,9 @@ flowchart LR
   core ADR `2026-08-16-2` plans to vendor built-in packs; core #3504, not built yet) and
   generates Python DTOs from it. The seam
   `charter.offering.api` returns those DTOs; the CLI and the runtime consume them. No Python
-  code hand-writes a charter response shape. Whether core's `charter.offering.api` really
-  returns these DTOs is an [open question](/api/#open-question-what-the-python-package-returns).
+  code hand-writes a charter response shape. This is decided in [ADR-0004](/adr/0004-public-api-returns-generated-dtos/): the
+  contract generates DTOs per client language (Python here, Java for the service, others as
+  needed).
 - **Neither side imports the other.** Python and Java agree by contract and by fixtures, not
   by sharing code.
 
