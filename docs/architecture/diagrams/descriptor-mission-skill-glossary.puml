@@ -1,0 +1,102 @@
+@startuml descriptor-mission-skill-glossary
+' Sources:
+'   src/charter/offering/missions/step_contracts.py   (MissionStepContract; no JSON schema file)
+'   src/charter/offering/schemas/skill.schema.yaml + pack_skills/models.py (PackSkill)
+'   src/charter/offering/glossary_packs/models.py     (GlossaryPack; no JSON schema file)
+' Notation: + required, - optional (Pydantic default shown after =).
+!include _style.iuml
+title Mission-step contract, pack skill and glossary pack descriptor schemas
+
+class MissionStepContract <<step_contracts.py>> {
+  + id : string
+  + schema_version : string
+  + action : string
+  + mission : string
+  + steps : ContractStep[1..]
+  - gates : GateBinding[] = []
+}
+class ContractStep {
+  + id : string
+  + description : string
+  - command : string
+  - inputs : StepInput[] = []
+  - delegates_to : DelegatesTo
+  - guidance : string
+}
+class StepInput {
+  + flag : string
+  + source : string
+  - optional : bool = false
+}
+class DelegatesTo {
+  + kind : ArtifactKind
+  + candidates : string[1..]
+}
+class GateBinding {
+  + on_transition : string
+  + handler : string
+  - handler_kind : mission_step_contract | asset = mission_step_contract
+  + schema_version : string
+  - fail_open : bool = true
+  - provenance : string
+}
+MissionStepContract *-- "1..*" ContractStep
+MissionStepContract *-- "*" GateBinding
+ContractStep *-- "*" StepInput
+ContractStep *-- "0..1" DelegatesTo
+
+class PackSkill <<skill.schema.yaml>> {
+  + schema_version : "1.0"
+  + id : string [<=64] ~ ^[a-z][a-z0-9]*[-[a-z0-9]+]*$
+  + title : string
+  + description : string
+  + form : prompt | wrapper
+  - body_path : string [required iff form=prompt]
+  - expands_to : SkillExpansion [required iff form=wrapper]
+  - triggers : string[] = []
+  - parameters : SkillParameter[] = []
+  - invocation : SkillInvocation
+  - tools : string[] = ["*"]
+  - version : string = "1.0.0"
+  - maintainers : string[]
+  - overrides : string
+  - enhances : string
+}
+class SkillExpansion {
+  + target : string ~ builtin:... | cli:spec-kitty ...
+  - args : string
+}
+class SkillParameter {
+  + name : string
+  - required : bool = false
+  - description : string
+  - default : string
+}
+class SkillInvocation {
+  - user_invocable : bool = true
+  - model_invocable : bool = true
+  - side_effects : string[]
+}
+PackSkill *-- "0..1" SkillExpansion
+PackSkill *-- "*" SkillParameter
+PackSkill *-- "0..1" SkillInvocation
+
+class GlossaryPack <<glossary_packs/models.py>> {
+  + id : string
+  + provenance : string
+  + terms : GlossaryTerm[1..]
+  - description : string
+}
+class GlossaryTerm {
+  + surface : string
+  + definition : string
+  + confidence : float
+  + status : string
+  - see_also : string[]
+  - introduced_in_mission : string
+  - synonyms_to_avoid : string[]
+  - aliases : string[]
+  - banned_synonyms : string[]
+}
+GlossaryPack *-- "1..*" GlossaryTerm
+@enduml

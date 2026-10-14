@@ -1,0 +1,89 @@
+@startuml descriptor-kinds-overview
+' Entity view of the charter descriptor kinds and how they relate.
+' Sources (core repo spec-kitty, read-only):
+'   src/charter/offering/artifact_kinds.py         (ArtifactKind)
+'   src/charter/offering/drg/models.py             (NodeKind, Relation, DRGNode, DRGEdge)
+'   src/charter/offering/packs/pack_descriptor.py  (PackDescriptor, pack.yaml)
+'   src/charter/activation/org_charter.py          (OrgCharterPolicy, org-charter.yaml)
+'   src/charter/activation/schemas.py              (GovernanceCharterConfig selected_*)
+'   packs/built-in/*.graph.yaml                    (edge relations in use)
+!include _style.iuml
+title Charter descriptor kinds — containment, selection and DRG edges
+
+package "Charter Pack (pack.yaml)" as pack {
+  entity "PackDescriptor" as PD <<authored>> {
+    pack_id
+    name
+    pack_level : PackTier
+    parent_pack : ref?
+    active_charter : path?
+    pack_drg : path?
+  }
+  entity "PackManifest" as PM <<generated>>
+  entity "DRG fragment\n(*.graph.yaml | drg/fragment.yaml)" as FRAG {
+    schema_version = "1.0"
+    nodes : DRGNode[]
+    edges : DRGEdge[]
+  }
+  entity "OrgCharterPolicy\n(org-charter.yaml)" as OC {
+    required_<plural> : id[]
+    skill_namespace
+  }
+}
+
+package "Descriptor kinds (one YAML file per artifact)" as kinds {
+  entity Directive
+  entity Tactic
+  entity Paradigm
+  entity Styleguide
+  entity Toolguide
+  entity Procedure
+  entity AgentProfile
+  entity MissionStepContract
+  entity GlossaryPack
+  entity PackSkill
+  entity "Template / Asset" as TA <<not activatable>>
+}
+
+entity "GovernanceCharterConfig\n(project charter)" as GC {
+  selected_<plural> : id[]
+}
+
+PD "1" *-- "1" PM : sibling
+PD "1" *-- "0..1" FRAG : pack_drg
+PD "1" *-- "0..1" OC : active_charter
+PD "1" o-- "*" kinds : ships
+FRAG ..> kinds : DRGNode.urn = kind:id
+OC ..> kinds : requires (org_requirable kinds)
+GC ..> kinds : selects (selection_overlayable kinds)
+OC ..> GC : required ids union into selected_*
+
+' DRG edges (DRGEdge.relation) — top kind pairs counted in packs/built-in/*.graph.yaml
+Tactic --> Tactic : suggests (123)
+AgentProfile --> Directive : requires (101) / suggests (40)
+AgentProfile --> Tactic : requires (50)
+Directive --> Tactic : suggests (49)
+Tactic --> Directive : suggests (57)
+Procedure --> Tactic : requires (45)
+Paradigm --> Directive : requires (35)
+Directive --> Directive : requires / in_tension_with / reconciles_tension
+AgentProfile --> AgentProfile : specializes_from (5)
+Tactic --> Procedure : refines (2)
+' Model-level links (fields, not built-in DRG edges)
+MissionStepContract ..> AgentProfile : steps[].delegates_to\n(kind + candidates)
+PackSkill ..> PackSkill : enhances / overrides (fields)
+
+note bottom of kinds
+  Relation enum (drg/models.py): requires, suggests, applies, scope,
+  vocabulary, instantiates, replaces, delegates_to, specializes_from,
+  enhances, overrides, refines, in_tension_with, reconciles_tension, rejects.
+  Edges shown are the dominant observed pairs, not exhaustive. Built-in totals:
+  suggests 475, requires 355, scope 201 (action/mission_type -> doctrine),
+  rejects 15 (-> anti_pattern), instantiates 11 (action -> template).
+  No delegates_to / enhances / overrides edges occur in built-in data.
+end note
+legend right
+  <<authored>> hand-edited; <<generated>> machine-written.
+  Solid diamond = file containment; dashed = id/URN reference.
+endlegend
+@enduml

@@ -1,0 +1,157 @@
+@startuml descriptor-doctrine-kinds
+' Field-level schemas of the six doctrine descriptor kinds.
+' Sources: src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml
+' Notation: + required, - optional. All top-level objects are additionalProperties:false.
+!include _style.iuml
+title Doctrine descriptor schemas (directive, tactic, paradigm, styleguide, toolguide, procedure)
+
+class Directive <<directive.schema.yaml>> {
+  + id : string ~ ^[A-Z][A-Z0-9_-]*$
+  + schema_version : "1.0"
+  + title : string
+  + intent : string
+  + enforcement : Enforcement
+  - scope : string
+  - procedures : string[]
+  - integrity_rules : string[]
+  - validation_criteria : string[]
+  - explicit_allowances : string[1..] [required if lenient-adherence]
+  - references : Reference[]
+}
+enum Enforcement {
+  required
+  lenient-adherence
+  advisory
+}
+class Reference <<directive/paradigm/procedure_reference>> {
+  + type : RefKind
+  + id : string
+  - when : string [directive only]
+  - reason : string [directive, procedure]
+}
+enum RefKind {
+  directive, tactic, styleguide, toolguide,
+  paradigm, procedure, agent_profile,
+  mission_step_contract, template
+}
+
+class Tactic <<tactic.schema.yaml>> {
+  + id : string ~ ^[a-z][a-z0-9-]*$
+  + schema_version : "1.0"
+  + name : string
+  + steps : TacticStep[1..]
+  - purpose : string
+  - failure_modes : string[]
+  - applies_to_languages : string[]
+  - references : TacticReference[1..]
+  - notes : string
+}
+class TacticStep {
+  + title : string
+  - description : string
+  - examples : string[1..]
+  - references : TacticReference[1..]
+}
+class TacticReference {
+  + name : string
+  + type : RefKind minus agent_profile, mission_step_contract
+  + id : string
+  + when : string
+}
+
+class Paradigm <<paradigm.schema.yaml>> {
+  + schema_version : "1.0"
+  + id : string ~ ^[a-z][a-z0-9-]*$
+  + name : string
+  + summary : string
+  - directive_refs : string[] ~ ^DIRECTIVE_\d{3}$
+  - references : Reference[]
+}
+
+class Toolguide <<toolguide.schema.yaml>> {
+  + id : string ~ ^[a-z][a-z0-9-]*$
+  + schema_version : "1.0"
+  + tool : string
+  + title : string
+  + guide_path : string ~ relative *.md
+  + summary : string
+  - commands : string[]
+  - applies_to_languages : string[]
+  - last_updated : string
+  - references : string[]
+}
+
+class Procedure <<procedure.schema.yaml>> {
+  + schema_version : "1.0"
+  + id : string ~ ^[a-z][a-z0-9-]*$
+  + name : string
+  + purpose : string
+  + entry_condition : string
+  + exit_condition : string
+  + steps : ProcedureStep[1..]
+  - anti_patterns : AntiPattern[]
+  - applies_to_languages : string[]
+  - notes : string
+  - references : Reference[]
+}
+class ProcedureStep {
+  + title : string
+  - description : string
+  - actor : human | agent | system = agent
+  - on_success : string
+  - on_failure : string
+}
+class "AntiPattern (procedure)" as PAP {
+  + name : string
+  + description : string
+}
+
+class Styleguide <<styleguide.schema.yaml>> {
+  + id : string ~ ^[a-z][a-z0-9-]*$
+  + schema_version : "1.0"
+  + title : string
+  + scope : StyleScope
+  + principles : string[1..]
+  - patterns : Pattern[1..]
+  - anti_patterns : StyleAntiPattern[1..]
+  - tooling : map<string,string>
+  - quality_test : string
+  - applies_to_languages : string[]
+  - references : string[]
+  - structural_lint_config : StructuralLintConfig
+}
+enum StyleScope {
+  code, docs, architecture,
+  testing, operations, glossary
+}
+class Pattern {
+  + name : string
+  + description : string
+  - bad_example : string
+  - good_example : string
+}
+class StyleAntiPattern {
+  + name, description,
+    bad_example, good_example : string
+}
+class StructuralLintConfig {
+  - curated_complete_sections, point_in_time_patterns,
+    point_in_time_markers, frontmatter_required_fields, ...
+  [docs structural-lint options; all optional]
+}
+
+Directive --> Enforcement
+Directive *-- "*" Reference
+Paradigm *-- "*" Reference
+Procedure *-- "*" Reference
+Reference --> RefKind
+Tactic *-- "1..*" TacticStep
+Tactic *-- "*" TacticReference
+TacticStep *-- "*" TacticReference
+Procedure *-- "1..*" ProcedureStep
+Procedure *-- "*" PAP
+Styleguide --> StyleScope
+Styleguide *-- "*" Pattern
+Styleguide *-- "*" StyleAntiPattern
+Styleguide *-- "0..1" StructuralLintConfig
+@enduml
