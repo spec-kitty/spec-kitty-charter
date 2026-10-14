@@ -11,6 +11,9 @@ related:
   - context/product
   - plans/open-questions
   - plans/roadmap
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed on this date.
 ---
 
 # 2026-10-14 — Events go through the core's one canonical event writer
