@@ -1,0 +1,27 @@
+// markdownlint-cli2 config for the docs tree (check: "Markdown lint" in docs-cleanliness.yml).
+// Tuned to doc-kitty markdown: YAML frontmatter, Starlight asides (:::note), explicit heading
+// anchors ({#id}), and tables wider than a line.
+{
+  "globs": ["docs/**/*.md"],
+  "ignores": [
+    // Generated from the core glossary on every build; core owns the wording.
+    "docs/glossary/**",
+    // Templates and registries, not pages.
+    "docs/_meta/**"
+  ],
+  "config": {
+    "default": true,
+    // Prose and tables are not hard-wrapped to a fixed width.
+    "MD013": false,
+    // The frontmatter `title:` is the page title and the body opens with the same H1, so
+    // markdownlint must not count the frontmatter title as a second H1.
+    "MD025": { "front_matter_title": "" },
+    "MD041": false,
+    // Pages repeat headings such as "Context" under different parents.
+    "MD024": { "siblings_only": true },
+    // Inline HTML is allowed (details/summary, svg wrappers).
+    "MD033": false,
+    // Ordered lists are numbered 1., 2., 3.
+    "MD029": { "style": "ordered" }
+  }
+}

@@ -1,0 +1,40 @@
+# Terminology rules for docs/**/*.md (check: `check_docs.py terms`). Not a page: the docsite
+# excludes docs/_meta. The imported glossary pages (docs/glossary/) are not scanned: core
+# owns their wording. Aliases found in site/.contextive/definitions.yaml are added as `avoid`
+# rules automatically (none today).
+#
+# forbidden: never allowed outside `allow`.
+# avoid:     a non-canonical synonym of a glossary term.
+# allow:     a deliberate mention, by path glob and term; every entry needs a reason.
+
+forbidden:
+  - term: feature
+    pattern: '\bfeatures?\b'
+    prefer: Mission
+    reason: Spec Kitty's terminology canon prohibits "feature" for the domain object
+  - term: retired-ceremony
+    pattern: '\bceremon(?:y|ies)\b'
+    prefer: status commit
+    reason: retired term, gated in core by test_no_legacy_terminology
+  - term: retired-status-writing
+    pattern: '\bstatus-writing\b'
+    prefer: status commit
+    reason: retired term, gated in core by test_no_legacy_terminology
+
+avoid:
+  - term: active-bundle
+    pattern: '\bactive (?:charter )?bundle\b'
+    prefer: Charter Bundle
+    reason: core's glossary - the .kittify/charter/ tree is never called "active"
+  - term: charter-bundle-pack
+    pattern: '\bcharter (?:bundle|offering) pack\b'
+    prefer: Charter Pack
+    reason: a Charter Pack is the distributable bundle; Charter Bundle is the .kittify/charter tree
+
+allow:
+  - path: docs/context/domain.md
+    term: feature
+    reason: lists "feature" as a prohibited word for Mission
+  - path: docs/guides/contributing.md
+    term: feature
+    reason: states the rule (Mission, not "feature")
