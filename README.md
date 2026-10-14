@@ -33,8 +33,9 @@ repository holds the agreed direction, the target design and the decisions; code
   authoritative with a loud fallback), and writes move later, one operation at a time. The Python charter likely moves into this
   repository first; whether a rewrite-and-replace is safer or cheaper is still to be
   decided.
-- **Not an event producer.** Events come from the runtime's `next` transitions and follow
-  the [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
+- **Not an event producer.** Events come from the core CLI's one canonical event writer,
+  which the runtime calls as Missions move through their lifecycle, and follow the
+  [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
   charter service answers questions; it does not write to the ledger.
 
 ## Governing decisions

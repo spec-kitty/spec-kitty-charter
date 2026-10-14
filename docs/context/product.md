@@ -79,7 +79,8 @@ Python implementation to this service, stage by stage
 ## What it is not
 
 - **Not an event producer.** The charter service does not write to the event ledger. Events come
-  from the runtime's `next` transitions; see [System context](/context/system-context/).
+  from the core CLI's one canonical event writer, which the runtime calls; see
+  [Events and the ledger](/architecture/events-and-ledger/).
 - **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
   authored in `spec-kitty-open-packs`. The charter service loads and resolves packs; it does not
   own their text.
