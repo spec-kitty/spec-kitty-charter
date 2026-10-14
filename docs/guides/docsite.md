@@ -111,7 +111,7 @@ none does. The checks:
 | markdownlint, cspell | Markdown style and spelling. Add project words to `docs/_meta/spelling-words.txt`; `check_docs.py wordlist` prints glossary words not yet listed |
 
 The `plantuml` check renders with the pinned PlantUML (`scripts/docs/plantuml_pins.json`:
-version and jar SHA-256) and compares the semantic content of the SVG: the texts, plus the
+version and jar SHA-256; it needs Java and Graphviz `dot`) and compares the semantic content of the SVG: the texts, plus the
 ids, classes, entity names, relation types, source lines and link targets PlantUML stamps on
 its elements. Geometry, styles, fonts, path data and text widths are ignored, because they
 vary with the fonts and Java of the machine that renders; a changed label, class, member,
@@ -134,7 +134,7 @@ red run names what failed:
   `terms`, `adr`, `changelog` and `orphans`, each a separate step that runs even when an
   earlier one failed;
 - **Markdown lint** and **Spellcheck**, with pinned tool versions;
-- **PlantUML diagrams are current**, with the pinned jar and Java 21;
+- **PlantUML diagrams are current**, with the pinned jar, Java 21 and Graphviz;
 - **External links**, with lychee. It is not required: remote sites flake, so it reports but
   never blocks a pull request. It also runs weekly, together with the freshness check, so a page that goes stale on its own is noticed.
 
