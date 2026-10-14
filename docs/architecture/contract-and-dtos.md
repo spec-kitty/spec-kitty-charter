@@ -18,9 +18,9 @@ audience:
 
 # Contract and DTOs
 
-> **State:** design only. `contracts/charter/` does not exist yet, here or in core. Core has
-> one contract module today, `contracts/mission-status/`, and the tooling this contract
-> will reuse.
+How one OpenAPI document becomes the DTOs on both sides: the service generates its server interfaces from it, and core ingests a pinned release to generate its own. The page also lists what the contract carries and how it is versioned.
+
+> **Status:** design only; `contracts/charter/` exists neither here nor in core yet. [What the labels mean](/#status).
 
 ## One document, two generators
 

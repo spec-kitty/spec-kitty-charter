@@ -24,11 +24,7 @@ This tree follows the [doc-kitty](https://github.com/spec-kitty/doc-kitty) conve
 every folder is a section whose `README.md` is its index, every page carries frontmatter,
 and the sections are registered in [`_meta/sections.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/_meta/sections.yaml).
 
-> **Status: bootstrap.** No code lives here yet. The pages describe the agreed direction
-> and the target design, and each one says what exists today. The governing decisions are
-> core ADR `2026-10-12-2` (the charter gets its own repository), core ADR `2026-10-03-1`
-> (a staged Java service strangler) and this repository's
-> [ADR-0001](/adr/0001-java-service-with-openapi-contract/) (Java, contract-first).
+> **Status: bootstrap.** No code lives here yet. [What each page's status line means](#status).
 
 ## Sections
 
@@ -59,3 +55,22 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
   It carries the import-move precondition, formerly
   [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) (closed as not
   planned on 2026-10-13)
+
+## Status
+
+No charter code lives in this repository yet. The pages describe the agreed direction and the
+target design. Each page opens with what it gives you, then carries one status line, using
+these labels:
+
+- **Design only.** Described here, built nowhere.
+- **Exists in core.** The behavior is core's Python charter today. The design here must
+  reproduce it, and core stays the reference until this repository's contract is the source
+  of record.
+- **Direction.** Stated by the operator, not yet in an ADR.
+- **Designed API.** The public surface the extracted charter is designed to expose. No package
+  or contract has been released from this repository.
+
+The governing decisions are core ADR `2026-10-12-2` (the charter gets its own repository),
+core ADR `2026-10-03-1` (a staged Java service strangler) and this repository's
+[ADR-0001](/adr/0001-java-service-with-openapi-contract/) (Java, contract-first). Where the
+Python charter lives while the strangler runs is [open question 2](/plans/open-questions/).

@@ -15,8 +15,9 @@ audience:
 
 # Hexagonal service
 
-> **State:** design only. The module names are proposals for the first Gradle build; core
-> ADR `2026-10-03-1` fixes the dependency direction, not the names.
+The Gradle modules of the Java service and the one dependency rule that organizes them: infrastructure depends inward on a plain-Java domain.
+
+> **Status:** design only; the module names are proposals, and core ADR `2026-10-03-1` fixes the dependency direction, not the names. [What the labels mean](/#status).
 
 ## Stack
 

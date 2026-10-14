@@ -16,10 +16,9 @@ audience:
 
 # Versioning and compatibility
 
-> **Designed API — not implemented here.** No package or contract has been released from
-> this repository. These rules are derived from core's `charter.offering.api` docstring
-> (`src/charter/offering/api.py`), core ADR `2026-10-12-2`, core ADR `2026-10-03-1` and
-> [Contract and DTOs](/architecture/contract-and-dtos/).
+How the designed charter package and service contract are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR `2026-10-12-2`, core ADR `2026-10-03-1` and [Contract and DTOs](/architecture/contract-and-dtos/).
+
+> **Designed API.** Not implemented; see the [API overview](/api/).
 
 ## Python package
 

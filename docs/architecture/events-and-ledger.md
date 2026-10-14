@@ -17,17 +17,16 @@ audience:
 
 # Events and the ledger
 
-> **State:** direction stated by the operator on 2026-10-13, not recorded in a core ADR.
-> Today status events are appended by `specify_cli.status` (`emit_status_transition`) from
-> several commands. The row has no versioned schema of its own, although `spec-kitty-events`
-> already defines the transition payload and reduces the rows.
+Why the charter service publishes no events, where it meets Spec Kitty's publish, ledger, subscribe model, and what that keeps simple in the design.
+
+> **Status:** direction stated by the operator on 2026-10-13, not yet recorded in a core ADR. [What the labels mean](/#status).
 
 ## The model around the charter
 
 The operator's direction of 2026-10-13:
 
-- **Events are created by the runtime** (target: its `next` transitions). The runtime is the
-  producer.
+- **Events are created by the runtime** (target: its `next` transitions; today
+  `specify_cli.status` appends them from several commands). The runtime is the producer.
 - **Pub, ledger, sub.** Producers append to the event ledger; subscribers read from it.
   Subscribers live in the integration package (event-router), which that direction names.
 - **Producers and consumers do not know each other.** They agree only on the contracts in
