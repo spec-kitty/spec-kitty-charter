@@ -64,7 +64,7 @@ jobs:
       # Every step runs even if an earlier one failed, so one run shows every problem.
       - name: Check unit tests
         if: always()
-        run: python -m pytest scripts/docs/tests -q
+        run: python -m pytest -p no:cacheprovider scripts/docs/tests -q
       - name: Frontmatter (required keys, description length, audience)
         if: always()
         run: python scripts/docs/check_docs.py frontmatter
@@ -89,6 +89,26 @@ jobs:
       - name: Orphan pages
         if: always()
         run: python scripts/docs/check_docs.py orphans
+
+  freshness-weekly:
+    # The weekly run exists to notice a page going stale on its own; the other checks only
+    # change with a diff, so freshness is the one that runs here.
+    name: Freshness SLA (weekly)
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Set up Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/docs/requirements.txt
+      - name: Install check dependencies
+        run: pip install -r scripts/docs/requirements.txt
+      - name: Freshness SLA
+        run: python scripts/docs/check_docs.py freshness
 
   markdown-lint:
     name: Markdown lint
