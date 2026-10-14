@@ -4,7 +4,7 @@ description: How the designed charter Python package and service contract are ve
 doc_status: draft
 updated: 2026-10-14
 type: API
-kind: Explanation
+kind: Reference
 related:
   - api/python-package
   - api/service-contract

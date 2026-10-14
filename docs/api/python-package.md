@@ -4,7 +4,7 @@ description: The designed in-process public surface of the extracted charter pac
 doc_status: draft
 updated: 2026-10-14
 type: API
-kind: Explanation
+kind: Reference
 related:
   - api/compatibility
   - architecture/logical-model

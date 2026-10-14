@@ -4,7 +4,7 @@ description: Every charter descriptor file — pack, manifest, graph fragment, o
 doc_status: draft
 updated: 2026-10-14
 type: Architecture
-kind: Explanation
+kind: Reference
 related:
   - architecture/logical-model
   - architecture/descriptor-schemas
@@ -35,6 +35,12 @@ descriptors carry.
 | `built-in` | `packs/built-in/` | `<plural>/` (for example `directives/`, `agent_profiles/`) | one `<kind>.graph.yaml` shard per node kind that has built-in nodes, at the pack root |
 | `org` | the configured pack path | `<plural>/` | one `drg/fragment.yaml` |
 | `project` | `.kittify/charter-packs/` | `directive/`, `tactic/`, `styleguide/`, `procedure/` (singular); every other kind plural | project fragment |
+
+Where each level is configured: `built-in` ships with Spec Kitty (source home moving to
+`spec-kitty-open-packs`, core ADR `2026-08-16-2`) and uses sharded graph files plus a generated
+`pack-manifest.yaml`; `org` packs are listed under `charter_packs.org.packs` in
+`.kittify/config.yaml` (core's `packs/internal/` is an org pack that never ships to
+consumers); the `project` pack sits under `.kittify/charter-packs/`.
 
 The singular project directories for four kinds are a deliberate asymmetry, declared once in
 core's `PROJECT_KIND_DIRS`. Built-in step contracts live under

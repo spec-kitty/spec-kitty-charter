@@ -114,11 +114,11 @@ A **Charter Pack** is a distributable bundle of artifacts and their DRG edges, o
 **activation presets**. Every pack declares its level in `pack.yaml` (core ADR
 `2026-10-11-2`):
 
-| Pack level | Where it is configured | Shape | Notes |
-|---|---|---|---|
-| `built-in` | ships with Spec Kitty (`packs/built-in/` in core) | sharded `<kind>.graph.yaml` files plus a generated `pack-manifest.yaml` | Source home moving to `spec-kitty-open-packs` (core ADR `2026-08-16-2`). Ships presets `default` and `minimal`. |
-| `org` | each path under `charter_packs.org.packs` in `.kittify/config.yaml` | one `drg/fragment.yaml` plus `org-charter.yaml` | May enforce activations through `required_<kind>` lists. Core's `packs/internal/` is an org pack that never ships to consumers. |
-| `project` | `.kittify/charter-packs/` | per-kind directories | The project layer. Ships no presets. |
+The three levels are `built-in` (ships with Spec Kitty; ships the `default` and `minimal`
+presets), `org` (each path under `charter_packs.org.packs`; may enforce activations through
+`required_<kind>` lists) and `project` (the project's own layer; ships no presets). Where each
+level is configured, the shape of its files and its directory layout are tabulated in
+[Descriptors](/architecture/descriptors/#where-descriptors-live).
 
 A pack may name a `parent_pack`; a pack without one is a root pack. A pack has a *level*; the
 merged graph has *layers*, one per level. The layers merge built-in, then org, then project,
