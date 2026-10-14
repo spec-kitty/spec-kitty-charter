@@ -157,6 +157,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Install Graphviz
+        # PlantUML lays class diagrams out with Graphviz `dot`. Without it the render is an
+        # error image, which the semantic comparison rightly reports as stale.
+        run: sudo apt-get update -q && sudo apt-get install -y -q graphviz
       - name: Download the pinned PlantUML jar
         # check_docs.py verifies the jar against plantuml_pins.json before every use.
         run: |
