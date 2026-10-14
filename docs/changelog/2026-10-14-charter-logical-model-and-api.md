@@ -22,8 +22,9 @@ related:
 - **[Descriptor schemas](/architecture/descriptor-schemas/)** adds PlantUML diagrams of those
   schemas, derived from core's schemas and models.
 - **[API](/api/)** describes the designed Python package surface and service contract.
-  Neither exists in this repository yet; the pages say so. What the Python package returns,
-  core's own types or generated DTOs, is an open question awaiting a ruling.
+  Neither exists in this repository yet; the pages say so. The operator ruled that the API
+  returns DTOs generated from the OpenAPI contract, per client language
+  ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)).
 
 Everything here is derived from the core repository, which stays the authority until the
 charter code moves.

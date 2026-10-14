@@ -10,6 +10,7 @@ related:
   - architecture/logical-model
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
+  - adr/0004-public-api-returns-generated-dtos
 ---
 
 # API
@@ -28,15 +29,15 @@ The charter has two public surfaces, one per stage of the extraction:
 | Surface | Kind | Consumers | Basis |
 |---|---|---|---|
 | [Python package](/api/python-package/) | in-process Python API, versioned by wheel semver and `py.typed` | the CLI's charter facades, open-core consumers | core ADR `2026-10-12-2` D-1: callers use only `charter.offering.api` |
-| [Service contract](/api/service-contract/) | OpenAPI 3.1 over loopback REST, later MCP | the core's seam (planned: through generated DTOs; see the open question below), agent harnesses | ADR-0001, ADR-0002, core ADR `2026-10-03-1` |
+| [Service contract](/api/service-contract/) | OpenAPI 3.1 over loopback REST, later MCP | the core's seam (through generated DTOs, per [ADR-0004](/adr/0004-public-api-returns-generated-dtos/)), agent harnesses | ADR-0001, ADR-0002, core ADR `2026-10-03-1` |
 
-### Open question: what the Python package returns
+### Decision: the API returns generated DTOs
 
-> **Ruling pending.** [Contract and DTOs](/architecture/contract-and-dtos/) says the seam
-> `charter.offering.api` returns DTOs generated from the OpenAPI contract. Core's
-> `src/charter/offering/api.py` (constraint C-003) is an in-process Python contract with its
-> own types. The two disagree on what the package returns. Until the operator rules,
-> [Python package](/api/python-package/) describes today's core types.
+[ADR-0004](/adr/0004-public-api-returns-generated-dtos/) (Accepted, 2026-10-14) settles it:
+the public API returns DTOs generated from the OpenAPI contract, generated per client
+language for each integration client surface (Python for core's seam and the CLI, Java for
+the service, others as needed). Core's hand-written types behind `charter.offering.api`
+are transitional; amending core's constraint C-003 is a core follow-up.
 
 Both expose the same [logical model](/architecture/logical-model/). While both exist, they
 must give one answer for the same inputs; the conformance corpus in
