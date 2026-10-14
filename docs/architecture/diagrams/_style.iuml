@@ -1,0 +1,20 @@
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontColor #15202B
+skinparam ArrowColor #30475E
+skinparam ArrowFontColor #30475E
+skinparam class {
+  BackgroundColor #F5F8FA
+  BorderColor #30475E
+  HeaderBackgroundColor #E1E8ED
+}
+skinparam enum {
+  BackgroundColor #FFFFFF
+  BorderColor #30475E
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #8899A6
+}
+hide empty methods

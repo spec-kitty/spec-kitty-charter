@@ -1,0 +1,86 @@
+@startuml descriptor-agent-profile
+' Source: src/charter/offering/schemas/agent-profile.schema.yaml (schema-version 2; 1.0 still accepted)
+'         model: src/charter/offering/agent_profiles/schema_models.py
+' Notation: + required, - optional. Keys are kebab-case in YAML.
+!include _style.iuml
+title Agent profile descriptor schema (*.agent.yaml)
+
+class AgentProfile <<agent-profile.schema.yaml>> {
+  + profile-id : string ~ ^[a-z][a-z0-9-]*$
+  + name : string
+  + purpose : string
+  + specialization : Specialization
+  + role : string and/or roles : string[1..] [anyOf: at least one]
+  - description : string
+  - schema-version : "1.0" | "2"
+  - avatar-image : string
+  - sentinel : bool = false
+  - tags : string[]
+  - capabilities : string[]
+  - routing-priority : int 0..100
+  - max-concurrent-tasks : int >= 1
+  - applies_to_languages : string[]
+  - model : string
+  - effort : string
+  - collaboration : Collaboration
+  - mode-defaults : ModeDefault[]
+  - initialization-declaration : string
+  - specialization-context : SpecializationContext
+  - directive-references : DirectiveRef[]
+  - tactic-references : IdRationaleRef[]
+  - toolguide-references : IdRationaleRef[]
+  - styleguide-references : IdRationaleRef[]
+  - self-review-protocol : SelfReviewProtocol
+}
+class Specialization {
+  + primary-focus : string
+  - secondary-awareness : string
+  - avoidance-boundary : string
+  - success-definition : string
+}
+class Collaboration {
+  - handoff-to, handoff-from, works-with,
+    output-artifacts, operating-procedures,
+    canonical-verbs : string[]
+}
+class ModeDefault {
+  + mode : string
+  + description : string
+  + use-case : string
+}
+class SpecializationContext {
+  - languages, frameworks, file-patterns,
+    domain-keywords, writing-style,
+    complexity-preference : string[]
+}
+class DirectiveRef {
+  + code : string
+  + name : string
+  + rationale : string
+}
+class IdRationaleRef {
+  + id : string
+  + rationale : string
+}
+class SelfReviewProtocol {
+  - steps : SelfReviewStep[]
+}
+class SelfReviewStep {
+  + name : string
+  + gate : string
+  - command : string
+}
+AgentProfile *-- Specialization
+AgentProfile *-- "0..1" Collaboration
+AgentProfile *-- "*" ModeDefault
+AgentProfile *-- "0..1" SpecializationContext
+AgentProfile *-- "*" DirectiveRef
+AgentProfile *-- "*" IdRationaleRef
+AgentProfile *-- "0..1" SelfReviewProtocol
+SelfReviewProtocol *-- "*" SelfReviewStep
+note bottom of AgentProfile
+  Lineage is NOT a field: it is a DRG edge
+  agent_profile:<child> -[specializes_from]-> agent_profile:<parent>
+  [a per-profile lineage field is rejected at load time].
+end note
+@enduml
