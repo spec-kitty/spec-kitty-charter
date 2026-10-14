@@ -29,6 +29,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 import yaml
 
@@ -531,19 +532,39 @@ def _check_target(tree: Tree, page: Page, lineno: int, target: str, anchors: Cal
 PINS = "plantuml_pins.json"
 
 
+_SVG_SEMANTIC_ATTRS = (
+    "id",
+    "class",
+    "data-qualified-name",
+    "data-entity-1",
+    "data-entity-2",
+    "data-link-type",
+    "data-source-line",
+    "data-diagram-type",
+    "href",
+    "{http://www.w3.org/1999/xlink}href",
+)
+
+
 def _normalise_svg(svg: str) -> str:
-    """Drop the version PI and every number, keeping structure and text.
+    """Reduce an SVG to its semantic content: text, entity identity and link targets.
 
-    The font metrics of the machine that renders move coordinates by a few pixels; a changed
-    label, class, relation or element still changes the result.
+    Geometry, styles, fonts, text widths, path data and element counts depend on the fonts and
+    Java of the machine that renders, so none of them is compared. What is compared: the sorted
+    texts, plus the sorted (id, class, entity, relation, source line, link) attributes PlantUML
+    stamps on its elements. A changed label, class, member, relation or link still differs.
     """
-    svg = re.sub(r"<\?plantuml[^>]*\?>", "", svg)
-    svg = re.sub(r'id="[^"]*"', 'id=""', svg)
-
-    def blank_numbers(m: re.Match[str]) -> str:
-        return re.sub(r"-?\d+(?:\.\d+)?", "#", m.group(0))
-
-    return re.sub(r"<[^>]+>", blank_numbers, svg)
+    root = ElementTree.fromstring(svg)
+    texts: list[str] = []
+    marks: list[str] = []
+    for el in root.iter():
+        tag = el.tag.rsplit("}", 1)[-1]
+        if tag == "text":
+            texts.append(" ".join("".join(el.itertext()).split()))
+        found = [f"{a.rsplit('}', 1)[-1]}={el.attrib[a]}" for a in _SVG_SEMANTIC_ATTRS if a in el.attrib]
+        if found:
+            marks.append(f"{tag} " + " ".join(found))
+    return "\n".join([*sorted(t for t in texts if t), "--", *sorted(marks)])
 
 
 def _plantuml_command(pins: dict[str, str]) -> list[str]:
@@ -580,6 +601,10 @@ def check_plantuml(tree: Tree, _today: dt.date, strict: bool = False) -> list[Fi
             if proc.returncode != 0 or not rendered.is_file():
                 out.append(Finding("plantuml", rel, f"does not render: {(proc.stderr or proc.stdout).strip()[:200]}"))
                 continue
+            keep = os.environ.get("PLANTUML_RENDER_DIR")  # CI uploads this so a mismatch can be diagnosed
+            if keep:
+                Path(keep).mkdir(parents=True, exist_ok=True)
+                shutil.copy2(rendered, Path(keep) / committed.name)
             new, old = rendered.read_text(encoding="utf-8"), committed.read_text(encoding="utf-8")
             same = new == old if strict else _normalise_svg(new) == _normalise_svg(old)
             if not same:

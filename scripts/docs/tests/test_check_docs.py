@@ -183,9 +183,14 @@ def test_links_ignore_fenced_code(root: Path) -> None:
     assert run("links", root) == []
 
 
-def test_svg_normalisation_ignores_layout_numbers_but_not_text() -> None:
-    a = '<?plantuml 1.1?><svg width="10"><text x="1.5">Label</text></svg>'
-    b = '<?plantuml 1.2?><svg width="99"><text x="7">Label</text></svg>'
-    c = '<svg width="10"><text x="1.5">Other</text></svg>'
-    assert cd._normalise_svg(a) == cd._normalise_svg(b)
-    assert cd._normalise_svg(a) != cd._normalise_svg(c)
+def test_svg_normalisation_ignores_geometry_and_fonts_but_not_content() -> None:
+    def svg(label: str, x: str, font: str, extra: str = "") -> str:
+        return (
+            f'<?plantuml 1.1?><svg width="{x}"><g class="entity" data-qualified-name="A" id="ent0001">'
+            f'<rect x="{x}"/><path d="M{x},1"/><text font-family="{font}" x="{x}" textLength="{x}">{label}</text>{extra}</g></svg>'
+        )
+
+    base = cd._normalise_svg(svg("Label", "10", "Helvetica"))
+    assert base == cd._normalise_svg(svg("Label", "99.5", "DejaVu Sans", "<line x1=\"3\"/>"))
+    assert base != cd._normalise_svg(svg("Other", "10", "Helvetica"))
+    assert base != cd._normalise_svg(svg("Label", "10", "Helvetica").replace('"A"', '"B"'))

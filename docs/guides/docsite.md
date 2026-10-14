@@ -111,9 +111,13 @@ none does. The checks:
 | markdownlint, cspell | Markdown style and spelling. Add project words to `docs/_meta/spelling-words.txt`; `check_docs.py wordlist` prints glossary words not yet listed |
 
 The `plantuml` check renders with the pinned PlantUML (`scripts/docs/plantuml_pins.json`:
-version and jar SHA-256) and compares after normalizing the SVG: the version comment and every
-number are dropped, so the few pixels a different font or Java version moves do not fail it,
-while a changed label, class or relation does. Pass `--strict-svg` to require identical bytes
+version and jar SHA-256) and compares the semantic content of the SVG: the texts, plus the
+ids, classes, entity names, relation types, source lines and link targets PlantUML stamps on
+its elements. Geometry, styles, fonts, path data and text widths are ignored, because they
+vary with the fonts and Java of the machine that renders; a changed label, class, member,
+relation or link still fails. In CI a failing job uploads its renders as the
+`rendered-diagrams` artifact (`PLANTUML_RENDER_DIR` sets the folder).
+Pass `--strict-svg` to require identical bytes
 (the committed SVGs match the pinned version byte for byte on the machine that rendered
 them). Locally it uses `plantuml` on the path; set `PLANTUML_JAR` to use a downloaded jar,
 which is verified against the pin. Re-render a stale diagram with `plantuml -tsvg <file>.puml`
