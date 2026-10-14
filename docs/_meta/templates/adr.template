@@ -1,12 +1,5 @@
----
-title: "ADR-NNNN: Title"
-description: Blank ADR to copy for a new decision record.
-doc_status: draft
-updated: 2026-10-13
-type: Template
-kind: ADR
----
-
+<!-- Blank ADR. Copy to docs/adr/NNNN-<slug>.md and add the frontmatter every docs page carries
+     (title, description, doc_status, updated, type: ADR, kind: ADR, audience). -->
 # ADR-NNNN: Title
 
 ## Status

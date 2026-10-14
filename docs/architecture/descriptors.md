@@ -1,5 +1,5 @@
 ---
-title: Descriptors
+title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
 doc_status: draft
 updated: 2026-10-14

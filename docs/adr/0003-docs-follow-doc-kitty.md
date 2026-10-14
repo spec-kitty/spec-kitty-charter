@@ -30,7 +30,7 @@ convention for a `docs/` tree that it can render into a site with feeds and an a
   api, guides, changelog.
 - Every page carries frontmatter: `title`, `description`, `doc_status`, `updated`, and
   `type` and `kind` where they help.
-- ADRs are numbered `NNNN-<slug>.md` from [the template](/adr/template/).
+- ADRs are numbered `NNNN-<slug>.md` from [the template](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/_meta/templates/adr.template).
 - Notable changes get a dated page under `changelog/`.
 - The former `development/` section folds into `guides/` (contributor how-tos), since
   doc-kitty has no separate development section.

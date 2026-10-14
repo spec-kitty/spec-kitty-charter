@@ -1,5 +1,5 @@
 ---
-title: Product
+title: What the charter service is for
 description: What the charter service is for, where it sits in the Brain, Build and Team Kitty product lines, and what this repository will hold.
 doc_status: active
 updated: 2026-10-13
