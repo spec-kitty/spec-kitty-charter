@@ -3,7 +3,17 @@
 # and anchors are checked at source level by scripts/docs/check_docs.py (gating).
 scheme = ["https", "http"]
 exclude_path = ["docs/glossary", "docs/_meta"]
-exclude = ['^https?://localhost', '^https?://127\.0\.0\.1']
+# Root-relative site routes (`/glossary/`) have no file or host for lychee to resolve. Give them
+# a placeholder base, then exclude it: check_docs.py links owns them.
+base_url = "https://docs-site.invalid"
+# This repository's own blob/tree URLs on main (templates, ADRs) only exist on main after merge;
+# the internal checks own them.
+exclude = [
+  '^https://docs-site\.invalid',
+  '^https://github\.com/spec-kitty/spec-kitty-charter/(blob|tree)/main/',
+  '^https?://localhost',
+  '^https?://127\.0\.0\.1',
+]
 accept = [200, 206, 429]
 max_retries = 3
 timeout = 20
