@@ -9,6 +9,9 @@ related:
   - architecture/logical-model
   - architecture/descriptors
   - api/python-package
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for what changed on this date.
 ---
 
 # 2026-10-14 — Charter logical model, descriptors and designed API

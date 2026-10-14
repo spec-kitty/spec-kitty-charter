@@ -155,10 +155,10 @@ facts; it does not restate them.
   skills are.
 - **Operator token**: `ArtifactKind.operator_token`, accepted by `ArtifactKind.from_operator_token`. Every
   artifact kind has one, `anti-pattern`, `asset` and `template` included.
-- **In `CHARTER_KIND_TOKENS`**: the hand-authorable set of tokens the charter activation
+- **In `CHARTER_KIND_TOKENS`**: the hand-written set of tokens the charter activation
   commands accept. It drops `template`, `asset` and `anti_pattern` and adds `mission-type`.
   An anti-pattern is a re-kinded node inside another kind's graph fragment, never a
-  standalone file, so it is activatable but not hand-authorable.
+  standalone file, so it is activatable but not hand-written.
 - `mission-type` is in `CHARTER_KIND_TOKENS` but is not an artifact kind;
   `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
   mission-type path.
