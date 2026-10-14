@@ -100,7 +100,7 @@ result is the **active graph** that every read answers from.
   `activated_kinds` and `mission_type_activations`. It lives in `.kittify/config.yaml`, or in
   `charter.yaml` for a migrated project.
 
-The charter has two sides that match core's package split (core ADR `2026-10-06-2`):
+The charter has two sides that match core's package split (core ADR [`2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md)):
 `charter.offering` (what is offered) and `charter.activation` (what is chosen, and the
 answers computed from the choice).
 
@@ -118,7 +118,7 @@ level is configured, the shape of its files and its directory layout are tabulat
 
 A pack may name a `parent_pack`; a pack without one is a root pack. A pack has a *level*; the
 merged graph has *layers*, one per level. The layers merge built-in, then org, then project,
-under core ADR `2026-05-16-1`. Implementations read the configured inputs and never infer a
+under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
 ## Artifact kinds

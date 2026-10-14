@@ -18,7 +18,7 @@ audience:
 
 # Strangler transition
 
-The stages come from core ADR `2026-10-03-1` ("Staged ownership"). It is still **Proposed**
+The stages come from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Staged ownership"). It is still **Proposed**
 in core; this repository treats it as the plan, and [open questions](/plans/open-questions/)
 tracks its acceptance. The stages are written for either answer to
 [question 2](/plans/open-questions/).
@@ -85,7 +85,7 @@ participated.
 
 ## Relation to the 4.0.0 gate
 
-Stage 1 is the import-move precondition of core ADR `2026-10-12-2` (D-2), and it gates 4.0.0
+Stage 1 is the import-move precondition of core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (D-2), and it gates 4.0.0
 GA. It was tracked as spec-kitty#645 until that issue was closed as not planned on
 2026-10-13; the import move is now in the scope of epic spec-kitty#6099, which still names
 #645 as its precondition, so core has to re-home it. Stages 2 onward do not gate GA: core

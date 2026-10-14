@@ -21,6 +21,9 @@ core `spec-kitty` repository. They are derived from the schema and model sources
 in each section, not designed here. Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
 
+All `src/charter/...` and `packs/...` paths on this page are in core,
+[`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty).
+
 These diagrams are derived from [Descriptors](/architecture/descriptors/); where the two
 disagree, that page wins. For `pack.yaml`, core's `src/charter/diagrams/pack-descriptor-model.puml`
 is authoritative and the view here is derived from it.

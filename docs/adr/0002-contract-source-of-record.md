@@ -20,7 +20,7 @@ audience:
 ## Status
 
 **Proposed** — 2026-10-13. Decider: pending (operator). Needs the operator's ruling, because
-it changes where core ADR `2026-10-03-1` puts the contract.
+it changes where core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) puts the contract.
 
 ## Context
 
@@ -34,7 +34,7 @@ source of charter DTOs and has the core *ingest* it. The question is which repos
 authors it.
 
 The Mission Status contract stays in core because its producer (the Python reducer) and its
-Java service both live in core for now (core ADR `2026-10-01-2`, Amendment 2026-10-12). The
+Java service both live in core for now (core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API), Amendment 2026-10-12). The
 charter is different: its producer is moving here.
 
 ## Decision
@@ -47,7 +47,7 @@ charter is different: its producer is moving here.
 2. Shared vocabulary (`Problem`, `PageInfo`, `PageCursor`) is reused from core's `_shared/`
    by vendoring a pinned copy, not redefined.
 3. Each contract release publishes a single-file bundle and the conformance corpus. The core
-   vendors a pinned, checksummed release, the way core ADR `2026-08-16-2` plans to vendor
+   vendors a pinned, checksummed release, the way core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md) (open-packs as the built-in source) plans to vendor
    built-in pack content (core #3504, not built yet), and generates its Python DTOs from it.
 4. Core's contract tooling (layout, lint, breaking-change checks) runs here in CI against
    this module. Until it is packaged for reuse, this repository runs a pinned copy.

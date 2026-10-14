@@ -19,11 +19,11 @@ agreed and marks what exists today. When code lands, the pages move to describin
 
 The design is grounded in three core ADRs and this repository's own records:
 
-- core ADR `2026-10-12-2` (Accepted) — the charter becomes an external contract package in
+- core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (Accepted) — the charter becomes an external contract package in
   its own repository;
-- core ADR `2026-10-03-1` (Proposed in core) — a staged Java service strangler: reads first,
+- core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (Proposed in core) — a staged Java service strangler: reads first,
   writes later, one operation at a time;
-- core ADR `2026-10-01-2` (Accepted) — the Mission Status Read API, the sibling Java service
+- core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (Accepted) — the Mission Status Read API, the sibling Java service
   whose stack, binding and release practice the charter follows;
 - [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and
   [ADR-0002](/adr/0002-contract-source-of-record/) in this repository.

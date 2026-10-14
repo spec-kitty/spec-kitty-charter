@@ -52,7 +52,7 @@ flowchart LR
 |---|---|---|---|
 | Charter service | Charter Packs on disk | The pack schemas (`pack.yaml`, `org-charter.yaml`, DRG fragments, artifact YAML) | Read-only during the read stages. Writes stay in Python until each write operation migrates. |
 | Core CLI and runtime | Charter service | **The charter OpenAPI contract** | CLI callers go through the Python seam `charter.offering.api`, which calls the service over loopback REST. They never bypass the seam. |
-| Agent harnesses | Charter service | The same contract, over MCP | Planned. Must not ship before its authorization decision (core ADR `2026-10-03-1`). |
+| Agent harnesses | Charter service | The same contract, over MCP | Planned. Must not ship before its authorization decision (core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)). |
 | Runtime | Event ledger | **spec-kitty-events** | The runtime's `next` transitions append events. The charter service appends none. |
 | Integration package | Event ledger | **spec-kitty-events** | Subscribers. They know the contracts, not the producers. |
 | UIs | Mission Status Read API | The Mission Status Read API's OpenAPI contract | Pull, read-only. |

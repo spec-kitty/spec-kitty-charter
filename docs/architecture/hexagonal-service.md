@@ -17,11 +17,11 @@ audience:
 
 The Gradle modules of the Java service and the one dependency rule that organizes them: infrastructure depends inward on a plain-Java domain.
 
-> **Status:** design only; the module names are proposals, and core ADR `2026-10-03-1` fixes the dependency direction, not the names. [What the labels mean](/#status).
+> **Status:** design only; the module names are proposals, and core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
 
 ## Stack
 
-The charter service follows the Mission Status Read API (core ADR `2026-10-01-2`,
+The charter service follows the Mission Status Read API (core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API),
 Amendment 2026-10-03):
 
 - **Runtime:** Java 25, Spring Boot 4, Spring MVC on virtual threads.

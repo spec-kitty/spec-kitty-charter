@@ -22,13 +22,13 @@ audience:
 
 ## The charter is tangled into the CLI
 
-The charter lives at `src/charter/` in the core CLI and depends only on `kernel`. It has a
-curated manifest, `charter.offering.api`, but that manifest exports 11 offering symbols and
-core's rules still bar runtime code from importing it directly. It is not yet the seam the
+In the core CLI repository, the charter lives at `src/charter/` and depends only on `kernel`.
+Its curated manifest, `charter.offering.api`, exports 11 offering symbols. Core's rules still
+bar runtime code from importing it directly. The manifest is not yet the seam the
 strangler needs: it fronts no context read and no write path. Meanwhile about 130 files in
 `specify_cli`, `runtime` and `glossary` import charter internals directly (`charter.drg`,
 `charter.activation.pack_context`, `charter.bundle`, `charter.activation.charter_yaml_io`,
-the compiler, the resolver, and more; core ADR `2026-10-03-1` counts the imports by
+the compiler, the resolver, and more; core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) counts the imports by
 module).
 
 As long as that holds:
@@ -38,7 +38,7 @@ As long as that holds:
 - no other implementation can replace the Python one, because callers do not go through a
   single surface.
 
-Core ADR `2026-10-12-2` (Accepted) decides that the charter becomes an external contract
+Core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (Accepted) decides that the charter becomes an external contract
 package (core's term for a package consumed only through its public surface) in its own
 repository, like `spec-kitty-events` and `spec-kitty-tracker`. Its
 precondition, moving those imports onto `charter.offering.api`, is part of the 4.0.0 GA
@@ -70,7 +70,7 @@ answer until the old one retires.
 The operator chose Java for the charter (2026-10-13, recorded in
 [ADR-0001](/adr/0001-java-service-with-openapi-contract/)). That follows the direction
 core ADR `2026-10-03-1` proposed (a per-worktree Java read service, writes later) and matches
-the Mission Status Read API (core ADR `2026-10-01-2`): Java 25, Spring Boot 4, one
+the Mission Status Read API (core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md)): Java 25, Spring Boot 4, one
 Gradle build, contract-first OpenAPI 3.1.
 
 The OpenAPI contract is what keeps two languages honest. The core ingests it and generates

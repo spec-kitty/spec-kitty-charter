@@ -34,11 +34,11 @@ These live in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty
 
 | Core ADR | Title | Status in core | What it gives this repository |
 |---|---|---|---|
-| `4.x/2026-10-12-2` | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; the import-move precondition (formerly #645, now carried by epic #6099) is GA-gating |
-| `4.x/2026-10-03-1` | Replace charter reads and writes through a staged Java service strangler | **Proposed** | The stages, the hexagonal shape, the write gates, the service boundary |
-| `4.x/2026-10-01-2` | A mission status read API replaces the CLI-bundled dashboard | Accepted | The sibling Java service: stack, binding, contract conventions, release model |
-| `4.x/2026-10-06-2` | Charter offering, active charter and activation presets | Accepted | The domain vocabulary; presets as pack data; no aliases or shims |
-| `4.x/2026-10-11-2` | A Charter Pack declares its level in `pack.yaml` | Accepted | `pack_level` and its refusal codes |
-| `3.x/2026-05-16-1` | Doctrine layer merge semantics | Accepted | How built-in, org and project layers merge |
-| `3.x/2026-08-02-1` | Charter wheel assessment | Accepted | The earlier, deferred wheel split that 2026-10-12-2 extends |
-| `3.x/2026-04-25-1` | Shared package boundary | Accepted | How external contract packages are consumed |
+| [`4.x/2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; the import-move precondition (formerly #645, now carried by epic #6099) is GA-gating |
+| [`4.x/2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) | Replace charter reads and writes through a staged Java service strangler | **Proposed** | The stages, the hexagonal shape, the write gates, the service boundary |
+| [`4.x/2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) | A mission status read API replaces the CLI-bundled dashboard | Accepted | The sibling Java service: stack, binding, contract conventions, release model |
+| [`4.x/2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md) | Charter offering, active charter and activation presets | Accepted | The domain vocabulary; presets as pack data; no aliases or shims |
+| [`4.x/2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md) | A Charter Pack declares its level in `pack.yaml` | Accepted | `pack_level` and its refusal codes |
+| [`3.x/2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) | Doctrine layer merge semantics | Accepted | How built-in, org and project layers merge |
+| [`3.x/2026-08-02-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md) | Charter wheel assessment | Accepted | The earlier, deferred wheel split that 2026-10-12-2 extends |
+| [`3.x/2026-04-25-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-04-25-1-shared-package-boundary.md) | Shared package boundary | Accepted | How external contract packages are consumed |

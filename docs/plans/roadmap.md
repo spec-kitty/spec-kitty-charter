@@ -19,7 +19,7 @@ audience:
 
 Each step ends in something checkable. Steps 1 to 5 can run in parallel with the core's
 seam work, because none of them answers a production read. Steps 6 and 7 wait for it. The
-seam work is the import-move precondition of core ADR `2026-10-12-2` (D-2). It was tracked
+seam work is the import-move precondition of core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (D-2). It was tracked
 as spec-kitty#645 until that issue was closed as not planned on 2026-10-13, and is now in
 the scope of epic spec-kitty#6099.
 
@@ -43,7 +43,7 @@ on the answer.
 
 ## Also needed, outside this repository
 
-- **Core:** accept or amend ADR `2026-10-03-1`, and amend ADR `2026-10-12-2` so it names the
+- **Core:** accept or amend ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), and amend ADR `2026-10-12-2` so it names the
   Java direction and this repository's role.
 - **Core:** re-home the D-2 import-move precondition after #645's closure; epic #6099 still
   names #645 as its precondition.
