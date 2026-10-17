@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: qa-review
+action: review
+mission: qa
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action review --mission-type qa --json"
+
+  - id: verify_no_fake_green
+    description: Verify that implement's reported results are genuine, not a fake-green result
+    delegates_to:
+      kind: directive
+      candidates:
+        - QA_003
+
+  - id: triage_defects
+    description: Triage the defects surfaced during implementation
+    delegates_to:
+      kind: procedure
+      candidates:
+        - qa-defect-triage-ritual

@@ -1,0 +1,6 @@
+# org-charter for the `qa` private pack.
+# Deliberately activates nothing on its own: a consumer opts in per project with
+# `spec-kitty charter activate ...` (see README.md, "Adopt"). Keeping the pack inert
+# by default lets it sit beside a team's existing doctrine without changing it.
+schema_version: 2
+org_name: spec-kitty-qa

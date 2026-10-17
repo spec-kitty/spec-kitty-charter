@@ -1,0 +1,29 @@
+schema_version: "1.0"
+id: qa-promise-page
+title: Promise Page Authoring (DocKitty)
+scope: testing
+applies_to_languages: []
+
+principles:
+  - "A promise page is a DocKitty (Common Docs) page: the human-readable description of
+    one thing the product promises. Store promise pages in the product's docs tree, for
+    example `docs/context/promises/<area>/<slug>.md`, so they render, link and feed the
+    agent API like any other page."
+  - "Frontmatter carries the DocKitty fields (`title`, `description`, `doc_status`,
+    `updated`, `type: Promise`, `kind: Reference`) plus a `promise:` block with `id`,
+    `status` (candidate, ratified, retired), `owner`, and, once ratified, `ratified_by`
+    and `ratified_at`. Use `moscow` for priority and `related` for neighbouring pages."
+  - "Name one observable outcome. Write it the way a user would check it, not the way
+    the code achieves it. Two outcomes are two promises."
+  - "State the conditions the promise holds under (supported versions, platforms,
+    configurations). Unstated conditions are untested conditions."
+  - "List the surfaces that assert it (docs page, help text, error message) under
+    `promise.surfaces`, so a change to any of them is visibly a change to a promise."
+  - "When no scenario checks the promise yet, declare it: `promise.gap` with `reason` and
+    `issue`. A silent gap is a finding; a declared gap is a plan."
+  - "The body explains the promise for people: why it matters, an example, what is
+    deliberately out of scope. Scenarios live in `*.feature` files and cite the id; the
+    page does not copy them."
+  - "`Promise` is not in DocKitty's canonical type set. The DocKitty validator warns on it
+    (open vocabulary) and still builds the page; do not alias it to another type, or the
+    page stops reading as a promise to people browsing the site."

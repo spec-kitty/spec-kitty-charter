@@ -1,0 +1,32 @@
+schema_version: "1.0"
+id: qa-carrier-lint
+tool: qa-carrier-lint
+title: QA Traceability Carrier Lint (Coverage Validator)
+guide_path: toolguides/QA-CARRIER-LINT.md
+summary: >
+  Validates a qa-traceability/v1 carrier (qa-traceability.yaml) and computes
+  qa-coverage.json, a machine-readable coverage record: requirement/case
+  coverage counts, JUnit-XML and session-evidence classification, and the
+  bridge-check invariant against tasks/WP*.md frontmatter. Resolve the
+  script via `spec-kitty charter pack asset path qa-traceability-lint` — the
+  asset sidecar's own id, distinct from this toolguide's own id
+  (qa-carrier-lint) — then invoke it with
+  `--carrier PATH --mission-dir PATH [--json]`, or `--self-test` to run its
+  built-in fixture/assertion suite instead (the tool prints its own pair count). Exit code communicates
+  status: 0 (measured, verdict ready), 1 (measured, verdict blocked), 2
+  (not_measured, or error on a malformed carrier). No runtime hook compels
+  running this validator or blocks on its verdict today:
+  `GateBinding.handler_kind: "asset"` remains inert pending upstream issue
+  #2599 (open), and although spec-kitty gained a live per-type
+  artifact-presence gate on 2026-08-21 (`gather_artifact_presence`, closing
+  #3597), it is wired only for the four built-in mission families' own step
+  vocabularies, ignores expected-artifacts.yaml's `blocking:` flag entirely,
+  and has no entry for a custom type such as this
+  pack's own qa — so `accept` still enforces nothing from that manifest.
+  Mechanically checkable (exit code, qa-coverage.json) but agent-invoked,
+  never machine-enforced, until both of those conditions close.
+commands:
+  - spec-kitty charter pack asset path qa-traceability-lint
+  - python qa_carrier_lint.py --carrier PATH --mission-dir PATH
+  - python qa_carrier_lint.py --carrier PATH --mission-dir PATH --json
+  - python qa_carrier_lint.py --self-test

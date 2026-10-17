@@ -1,0 +1,20 @@
+schema_version: "1.0"
+id: qa-test-data-minimization
+name: Test Data Minimization
+purpose: >-
+  Reduce the volume and complexity of the test data (per this pack's `qa-glossary` term) a
+  test case uses, while preserving its coverage intent. Distinct from `test-minimisation`,
+  which removes redundant test cases while preserving suite coverage — a test-suite-size
+  concern. This tactic instead shrinks the data a single retained test case consumes; it never
+  removes the test case itself.
+steps:
+  - title: Identify which fields of the test case's data are actually exercised by its assertions
+  - title: Remove or replace fields the test case does not exercise with minimal placeholder values
+  - title: Replace large or production-derived data-sets with the smallest synthetic set that preserves the case's coverage intent
+  - title: Simplify fixtures shared across test cases to their smallest reusable form
+  - title: Re-run the test case and confirm its original coverage intent still holds after reduction
+references:
+  - name: QA No Fake Green
+    type: directive
+    id: QA_003
+    when: when a minimized test case's re-run result must be verified rather than assumed, so reduced test data cannot silently produce a false-pass result that reads as preserved coverage

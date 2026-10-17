@@ -1,0 +1,32 @@
+id: QA_007
+schema_version: "1.0"
+title: QA Promise Traceability
+enforcement: required
+intent: >
+  What the product promises decides what must be verified, not the tests that happen to
+  exist. Every gating scenario cites a ratified promise, every ratified promise is checked
+  by a scenario or carries a declared gap, and no result can rewrite a promise.
+scope: >
+  Promise pages (human-readable product descriptions, `type: Promise`, in a DocKitty docs
+  tree) and the Given/When/Then scenarios that gate a release. QA_001 governs requirement
+  coverage inside one QA mission; this governs the standing product-level chain.
+validation_criteria:
+  - "Each promise page has a stable `promise.id` matching a stated id regex, and a
+    `promise.status` of candidate, ratified or retired. Ids are never reused."
+  - "`ratified` requires `ratified_by` and `ratified_at`, recorded by the named product
+    authority. Docs, code, help text and agents propose candidates; they never ratify."
+  - "Every gating scenario carries `@promise:<id>` naming a ratified promise. An untraced,
+    dangling, or candidate-citing scenario is a finding, not a pass."
+  - "Every ratified promise has at least one automated or manual scenario, or a
+    `promise.gap` with a reason and an issue. An undeclared uncovered promise is a FAIL."
+  - "Recompute the chain from the files on every gating run
+    (`qa-promise-trace-lint`); report every finding list, even when empty."
+  - "A failing, flaky or missing check never edits, retires or relaxes a promise. Changing
+    what a promise says or retiring it is a separate change, ratified like the original."
+  - "Manual scenarios carry `@manual-result`, `@manual-last-tested:<version>` and, when
+    passed, `@manual-test-evidence:<link>`. A result from another version is pending,
+    never passed."
+explicit_allowances:
+  - "Candidate promises may exist with no scenario; they are not counted as gaps."
+  - "Exploratory sessions (QA_006) need not cite a promise; any defect they find that is
+    kept as a gating scenario must."

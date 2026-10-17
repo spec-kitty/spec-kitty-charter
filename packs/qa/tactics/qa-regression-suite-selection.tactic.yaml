@@ -1,0 +1,20 @@
+schema_version: "1.0"
+id: qa-regression-suite-selection
+name: Regression Suite Selection
+purpose: >-
+  Select which regression tests (per this pack's `regression testing` glossary term,
+  `qa-glossary`) to run for a given change, based on the change's impact and test history,
+  rather than re-running the full suite every time. Distinct from `quality-gate-verification`,
+  a downstream, composable tactic that interprets gate results after the selected suite has
+  already run — this tactic decides which tests run at all, not what their results mean.
+steps:
+  - title: Map the change to the components and requirements it could affect
+  - title: Select regression tests whose test basis traces to an affected component or requirement
+  - title: Add history-flagged tests that have failed repeatedly or recently regardless of direct mapping
+  - title: Exclude regression tests with no plausible path from the change to their asserted behavior
+  - title: Record the selection rationale alongside the run for later audit
+references:
+  - name: QA Traceability Mandatory
+    type: directive
+    id: QA_001
+    when: when selecting, for a specific change, exactly the regression tests that trace to the requirements the change could affect

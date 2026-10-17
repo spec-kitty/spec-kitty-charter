@@ -1,0 +1,52 @@
+# Pack-provided plan-substantive-content declaration for the `qa` mission type.
+#
+# Consumed by spec-kitty core's plan-substantive gate (see
+# `specify_cli.missions._substantive._resolve_declaration` /
+# `_pack_provided_declaration`, upstream #3830 FIX-1). Core no longer ships a
+# hardcoded field table for third-party mission types; each pack now declares
+# the shape of its OWN plan template here, resolved through the identical
+# `resolve_template` seam that resolves `test-plan-template.md` itself
+# (same `missions/qa/templates/` directory, same tier-precedence chain).
+#
+# Combination rule (unchanged core semantics): `primary` must be substantive,
+# PLUS at least one of `peers` must also be substantive, for `plan.md` to
+# pass the auto-commit / setup-plan gate. See test-plan-template.md's own
+# eight `## N. <Heading>` sections — headings are NUMBERED in this pack's
+# template (`## 4. Suite Breakdown`, not `## Suite Breakdown`); a heading
+# string here that omits the number will silently never match.
+#
+# Coverage: only 2 of the template's 8 sections are declarable. The gate
+# supports exactly four field kinds (bold_field / any_bold_field /
+# table_field / nested_heading_field) — each requires a bold `**Label**:`
+# line, a Markdown table, or a nested `###` heading. Sections 1, 2, 3, 5, 6
+# and 7 are pure prose under an italic instruction sentence with none of
+# those three shapes; a real author can write substantive prose there that
+# this declaration structurally cannot detect. This is a constraint of the
+# core gate's vocabulary, not an oversight in this file — do not read the
+# 6-section gap as under-specification.
+#
+# Known accidental-pass edge case (verified against the real detector, kept
+# here so a future reader does not have to rediscover it): section 8's own
+# "Skeleton shape" illustrative table lives inside a fenced ```markdown
+# block in this pack's shipped template. The core table_field detector scans
+# for lines starting/ending with `|` and does not parse Markdown fences, so
+# that fenced EXAMPLE row is indistinguishable from a real data row. A
+# plan.md that is a byte-for-byte, untouched copy of the template therefore
+# already reads section 8 as "substantive" on its own. The combination rule
+# still saves the untouched-scaffold case in practice: section 4's own
+# boilerplate (the Smoke/Sanity/Regression vocabulary paragraph) uses an
+# em-dash after each bold label ("**Smoke** — a fast..."), not the colon
+# `_any_other_bold_field_substantive` requires, so the peer never trips on
+# boilerplate alone — but this is incidental to how that boilerplate happens
+# to be punctuated, not a guarantee. If section 4's boilerplate ever gains a
+# colon-punctuated bold line, an entirely unfilled plan.md could pass this
+# gate. Confirmed empirically (see mission verification notes) that today's
+# actual unfilled scaffold still fails closed because of this.
+
+primary:
+  kind: table_field
+  heading: "8. Traceability-Matrix Skeleton"
+peers:
+  - kind: any_bold_field
+    heading: "4. Suite Breakdown"
+    example_label: "Suite"

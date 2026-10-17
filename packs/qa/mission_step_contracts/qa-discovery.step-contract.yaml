@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: qa-discovery
+action: discovery
+mission: qa
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action discovery --mission-type qa --json"
+
+  - id: scope_qa_charter
+    description: Scope a timeboxed exploratory QA charter for this mission
+    delegates_to:
+      kind: directive
+      candidates:
+        - QA_006
+
+  - id: apply_exploratory_tactics
+    description: Apply exploratory-testing charter-writing technique to the scoped charter
+    delegates_to:
+      kind: tactic
+      candidates:
+        - qa-exploratory-charter-writing

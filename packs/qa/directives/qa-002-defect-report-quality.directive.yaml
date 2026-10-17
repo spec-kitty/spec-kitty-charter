@@ -1,0 +1,29 @@
+id: QA_002
+schema_version: "1.0"
+title: QA Defect Report Quality
+enforcement: required
+intent: >
+  A defect report is judged incomplete unless it carries seven distinct, present fields: repro
+  steps, expected result, actual result, environment, severity, priority, and attached evidence.
+  This directive makes "incomplete" a checkable state rather than a judgement call, and forbids
+  the one collapse it specifically exists to catch: merging severity and priority into a single
+  value.
+scope: >
+  The Defect Report produced by any project adopting this pack: any record raised to describe a
+  defect for triage, fix, or verification.
+validation_criteria:
+  - "Seven fields are mandatory on every defect report, each present as its own field, never
+    combined: repro steps, expected result, actual result, environment, severity, priority,
+    attached evidence."
+  - "A report missing any one of the seven is judged incomplete. This is not a recommendation —
+    every one of the seven is mandatory, with no partial-credit reading."
+  - "Severity and priority are set independently: neither is derived from, defaulted from, or
+    substituted for the other. The two may legitimately disagree — a cosmetic-severity defect can
+    carry the highest priority for a launch-blocking business reason — and disagreement between
+    them is permitted."
+  - "The violation this directive forbids is the collapse itself: presenting severity and priority
+    as a single value, or presenting one as derived from the other. A report with severity stated
+    and no separate priority field is incomplete, regardless of what the severity value is."
+  - "Compliant example: severity=cosmetic, priority=highest, with a stated business reason — all
+    seven fields present and independently set. Non-compliant example: severity=high with no
+    priority field, or a single severity/priority field standing in for both."

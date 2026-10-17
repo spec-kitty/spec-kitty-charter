@@ -1,0 +1,249 @@
+description: >-
+  Canonical ISTQB-grounded QA vocabulary for this pack's tactics and
+  procedures — the single-mint source for terms this pack's shipped content
+  cites by surface rather than re-enumerates, above all severity and
+  priority. Confirmed against the ISTQB Glossary, edition v4.5
+  (glossary.istqb.org), at authoring time; a later ISTQB edition that revises
+  any cited definition is a stated re-verify condition for this file, not
+  silent drift. This glossary pack is reference data consulted by doctrine
+  tooling (e.g. doctor charter-packs, charter status/lint) and by
+  glossary-curation workflows; it is not delivered into any dispatched
+  agent's context today.
+id: qa-glossary
+provenance: org
+terms:
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, boundary value analysis is a black-box test
+    technique that derives test cases from the boundaries of equivalence
+    partitions — the minimum and maximum values of a partition, and the
+    values immediately adjacent to those extremes on either side. The
+    technique targets the observation that defects cluster at the edges of
+    valid and invalid input ranges more often than in the interior of a
+    partition, so a boundary value analysis test suite exercises those edge
+    values explicitly rather than relying on interior sampling alone.
+  status: active
+  surface: boundary value analysis
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a defect is a flaw in a component or system that
+    can cause the component or system to fail to perform its required
+    function, for example an incorrect statement or a missing or incorrect
+    data definition. A defect encountered during execution may — but does
+    not always — cause a failure; a defect can also remain latent (never
+    triggered by any executed test) without ceasing to be a defect.
+  status: active
+  surface: defect
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, equivalence partitioning is a black-box test
+    technique that divides the input (or output) domain of a component or
+    system into partitions of data such that, under the technique's
+    equivalence assumption, every value within a given partition is expected
+    to be processed in an equivalent way. One representative test case per
+    partition is, in principle, sufficient to exercise that partition,
+    letting a test designer cover a large input space with a small,
+    deliberately chosen set of cases rather than exhaustive enumeration.
+  status: active
+  surface: equivalence partitioning
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, exit criteria are the set of conditions, agreed
+    during test planning, for formally completing a test process or a level
+    of testing. Exit criteria are used both to report against — stating how
+    much of the agreed testing has actually been done — and to plan when
+    testing may stop, so that "when do we stop testing" is answered by a
+    pre-agreed condition rather than by an ad hoc judgment call at the end.
+  status: active
+  surface: exit criteria
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, exploratory testing is an approach to testing
+    whereby the tester dynamically designs and executes tests based on their
+    knowledge, prior exploration of the test item, and the results of
+    previous tests, treating test design, test execution, and learning about
+    the item under test as simultaneous, mutually informing activities
+    rather than sequential, separately-scripted phases.
+  status: active
+  surface: exploratory testing
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a false-fail result is a test result in which a
+    defect is reported although no such defect actually exists in the test
+    object — the fault lies in the test itself, its environment, or its
+    data, not in the component or system under test. A false-fail result is
+    what a test execution has actually produced whenever a reported failure
+    is investigated and no corresponding defect (this pack's own defect
+    term) is found in the test object.
+  status: active
+  surface: false-fail result
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a false-pass result is a test result which fails
+    to identify the presence of a defect that is actually present in the
+    test object — the test reports success while a real defect (this pack's
+    own defect term) goes undetected. A false-pass result is the converse of
+    a false-fail result (this pack's own term): one test result wrongly
+    reports a defect that is not there, the other wrongly reports the
+    absence of a defect that is there.
+  status: active
+  surface: false-pass result
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, pairwise testing (also called all-pairs testing)
+    is a black-box test technique that designs test cases to cover every
+    discrete pairwise combination of the values of two or more input
+    parameters, rather than every possible combination of all parameter
+    values at once. The technique trades exhaustive combinatorial coverage
+    for a much smaller test-case set that still detects most defects caused
+    by the interaction of any two parameters, since field data cited by
+    ISTQB shows most interaction defects are triggered by a pairwise, not a
+    higher-order, combination.
+  status: active
+  surface: pairwise testing
+- confidence: 0.95
+  definition: >-
+    Per the ISTQB Glossary, priority is the level of importance assigned to
+    an item, such as a defect, reflecting how urgently it should be fixed,
+    resolved, or otherwise addressed relative to other outstanding work —
+    independent of the item's severity (this pack's own severity term).
+    This pack adopts a four-level priority scale distinct in wording from
+    its severity scale to keep the two axes visibly separate: P1 (fix
+    immediately, blocks further work), P2 (fix before the next release), P3
+    (fix in a normal work cycle), P4 (fix opportunistically, no scheduled
+    date). Because priority and severity are independent axes, a
+    low-severity defect can carry high priority (e.g. a cosmetic typo on a
+    high-traffic public page: negligible functional impact, but P1 because
+    of reputational urgency), and a high-severity defect can carry low
+    priority (e.g. a crash in a rarely-used legacy module with a documented
+    workaround and no near-term users: severe impact if triggered, but P4
+    because nothing schedules it sooner). Any tactic or procedure in this
+    pack that discusses fixing urgency must cite this term by surface and
+    this pack's id (qa-glossary) rather than re-enumerate the P1–P4 scale.
+  status: active
+  surface: priority
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a product risk is a risk directly related to the
+    test object — for example the risk that a product characteristic
+    (functionality, performance, usability, or another quality
+    characteristic) fails to meet stakeholder needs, potentially causing a
+    business, financial, or reputational loss if it materializes. Product
+    risk is the thing a risk-based test strategy analyzes and prioritizes
+    against (this pack's own risk term), distinct from project risk, which
+    concerns the test project's own execution (staffing, schedule, tooling)
+    rather than the product under test.
+  status: active
+  surface: product risk
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, regression testing is testing of a previously
+    tested component or system following a modification, to confirm that
+    the modification has not introduced new defects and has not uncovered
+    previously hidden defects in the parts of the component or system left
+    unchanged by the modification. Regression testing therefore targets
+    unchanged behavior around a change, distinct from testing the change
+    itself.
+  status: active
+  surface: regression testing
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a review is a type of static testing in which a
+    work product or process is evaluated by one or more individuals to
+    detect defects or to provide improvements, with review types spanning
+    increasing formality from informal review, through walkthrough and
+    technical review, to inspection as the most formal. Management review is
+    a distinct ISTQB review category evaluating project status — progress
+    against plans and schedules — rather than a rung on this
+    defect-detection formality ladder. A review is a static technique: it
+    examines a work product directly rather than executing it, so it can
+    find defects (this pack's own defect term) before a component or system
+    is ever run.
+  status: active
+  surface: review
+- confidence: 0.95
+  definition: >-
+    Per the ISTQB Glossary, a risk is a factor that could result in future
+    negative consequences, usually expressed as a combination of the
+    likelihood that it occurs and the impact (harm) if it does. Risk-based
+    testing uses this likelihood-times-impact assessment to decide what to
+    test first and how much testing effort each area warrants, so an item
+    with high likelihood and high impact is tested ahead of one that is
+    comparatively improbable or harmless. This pack distinguishes risk (the
+    general concept defined here) from product risk (this pack's own term
+    for a risk located specifically in the test object).
+  status: active
+  surface: risk
+- confidence: 0.95
+  definition: >-
+    Per the ISTQB Glossary, severity is the degree of impact that a defect
+    has on the development or operation of a component or system, judged
+    independently of how urgently the defect needs to be fixed (this pack's
+    own priority term covers urgency). This pack adopts a four-level
+    severity scale, ordered from greatest to least impact: critical (the
+    system is unusable, unavailable, or corrupts data, with no workaround),
+    high (a major function is broken or produces wrong results, a workaround
+    exists but is costly), medium (a function is impaired or produces wrong
+    results in a limited case, a reasonable workaround exists), low (a
+    cosmetic, minor, or edge-case issue with negligible functional impact).
+    This is the only place in this pack's shipped content where these four
+    severity-level words are enumerated as a scale; any tactic or procedure
+    in this pack that discusses defect severity must cite this term by
+    surface and this pack's id (qa-glossary) rather than restate the scale.
+  status: active
+  surface: severity
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, the test basis is the body of knowledge used as
+    the source for the analysis and design of test cases — for example
+    requirements specifications, design specifications, source code,
+    architecture documents, or risk analyses. A test basis is whatever
+    documented (or documentable) knowledge a test analyst can point to as
+    the origin of a given test case's expected result.
+  status: active
+  surface: test basis
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a test charter (used in exploratory testing) is
+    a statement of test objectives, and may also include test ideas, the
+    scope of what to explore, deliverables expected from the session, and
+    the time allocated to it. A test charter guides an exploratory testing
+    session toward a stated objective without prescribing the session's
+    individual test steps in advance, the way a scripted test case would.
+  status: active
+  surface: test charter
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, test coverage is the degree, typically expressed
+    as a percentage, to which a specified set of coverage items (for
+    example requirements, code branches, or equivalence partitions) has been
+    exercised by a test suite. Test coverage gives a measurable answer to
+    how much of the test basis (this pack's own test basis term) has
+    actually been tested, so a coverage gap is the portion of the specified
+    coverage items that remains unexercised.
+  status: active
+  surface: test coverage
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, test data is data that exists (for example in a
+    database or a file) before a test is executed, and that affects or is
+    affected by the component or system under test — whether hand-crafted,
+    copied and anonymized from production, or generated. Test data must be
+    established or restored to a known state before execution so a test's
+    outcome can be attributed to the change under test rather than to an
+    uncontrolled starting state.
+  status: active
+  surface: test data
+- confidence: 0.9
+  definition: >-
+    Per the ISTQB Glossary, a test plan is a document describing the scope,
+    approach, resources, and schedule of intended test activities, and
+    identifying, among other things, the test items, the features to be
+    tested, the testing tasks, the entry and exit criteria (this pack's own
+    exit criteria term), and the risks (this pack's own risk term) requiring
+    contingency planning. A test plan is authored and reviewed (this pack's
+    own review term) before test execution begins, distinct from a test
+    strategy, which sets the organization-wide approach that a test plan
+    then applies to a specific project or release.
+  status: active
+  surface: test plan

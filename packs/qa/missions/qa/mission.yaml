@@ -1,0 +1,54 @@
+name: "QA"
+description: "The v0 display/acceptance config for the QA mission type: independent test strategy, planning, design, execution, and reporting across the seven-step QA lifecycle."
+version: "1.0.0"
+domain: other
+workflow:
+  phases:
+    - name: strategy
+      description: "Define the QA test strategy and scope for the feature under test."
+    - name: planning
+      description: "Translate the test strategy into a detailed, executable test plan."
+    - name: design
+      description: "Design the concrete test suite and work packages that implement the test plan."
+    - name: execution
+      description: "Execute the test suite and record defects found."
+    - name: reporting
+      description: "Review execution results and produce the acceptance report."
+artifacts:
+  required: [spec.md, plan.md, tasks.md]
+  optional: [test-report.md, defect-log.md]
+validation:
+  checks: []
+
+# --- Optional Schema-A block appended below ---
+# NEVER READ BY THE RUNTIME — zero production importers of the state-machine
+# engine this block's schema (the v1 FSM) belongs to. Documents rework intent
+# only; it is not a live control mechanism and is never consulted by
+# `spec-kitty next`'s planner or by Schema B's `MissionConfig` validation
+# (the compatibility strip removes these keys before that validation runs).
+mission: qa
+initial: discovery
+states:
+  - name: discovery
+    display_name: "Discovery"
+  - name: specify
+    display_name: "Test Strategy"
+  - name: plan
+    display_name: "Test Plan"
+  - name: tasks
+    display_name: "Test Design"
+  - name: implement
+    display_name: "Test Execution"
+  - name: review
+    display_name: "Test Report Review"
+  - name: accept
+    display_name: "Acceptance"
+transitions:
+  - from: tasks
+    to: plan
+    # non-executing: rework intent only — mid-run test-plan amendment,
+    # re-homed to doctrine, never a runtime control mechanism.
+  - from: review
+    to: implement
+    # non-executing: rework intent only — defects found in review re-run
+    # the WP lane's own rejection cycle, never a runtime state transition.

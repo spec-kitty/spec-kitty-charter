@@ -1,0 +1,31 @@
+id: QA_004
+schema_version: "1.0"
+title: QA Exit Criteria Precede Execution
+enforcement: lenient-adherence
+intent: >
+  Exit criteria for a test run are frozen before execution begins. Execution begins at the
+  timestamp the first suite named in the declared test strategy starts running, or an equivalent
+  explicit marker the adopting project's own process defines and records — a point locatable in a
+  real run's records, not a restatement of "when testing starts" left unglossed. Any change to
+  the criteria set after that moment is compliant only when recorded as an attributed decision; a
+  silent change is not.
+scope: >
+  The Exit Criteria Record produced by any project adopting this pack: the set of pass/fail
+  conditions a test run is judged against.
+validation_criteria:
+  - "The criteria set is frozen at the execution-start moment defined above: the timestamp the
+    first declared suite begins running, or an equivalent explicit, recorded marker the project's
+    own process defines."
+  - "An amendment made after execution begins is compliant only if recorded as an attributed
+    decision: who changed it, what changed, and why, with a when. Absent that record, the
+    amendment is out of policy regardless of whether the change itself was reasonable."
+  - "An amendment made with no recorded decision is out of policy even if the criteria set was
+    frozen for most of the run. One unrecorded edit voids compliance for that record."
+  - "Compliant example: criteria frozen throughout the run, or changed mid-run with a logged
+    decision naming who, what, why and when. Non-compliant example: the same change applied with
+    no such record."
+explicit_allowances:
+  - "Exit criteria may change after execution begins when, and only when, the change is recorded
+    as an attributed decision (who changed it, what changed, why, and when). This is not a general
+    exemption and not blanket permission for changes — an unrecorded change remains out of
+    policy."

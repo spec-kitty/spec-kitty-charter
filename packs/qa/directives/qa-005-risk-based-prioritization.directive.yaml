@@ -1,0 +1,42 @@
+id: QA_005
+schema_version: "1.0"
+title: QA Risk-Based Prioritization
+enforcement: lenient-adherence
+intent: >
+  Suite execution order is governed by the current risk register's rank, so the riskiest
+  declared work is tested first by default. Any departure from that order — including the
+  absence of a risk register itself — is visible and carries a stated justification, never a
+  silent default ordering.
+scope: >
+  The risk register (ranked risk entries, checked against its current state at prioritization
+  time, not a stale copy) and the suite execution order it constrains.
+integrity_rules:
+  - "Suite execution order matches the current risk register's rank by default. A register
+    superseded since prioritization does not satisfy this — the check is against the register
+    as it stands at prioritization time, never an earlier snapshot."
+  - "An order that deviates from current rank is compliant only when a stated justification for
+    the actual ordering accompanies it. A deviation with no stated justification is out of
+    policy."
+  - "No risk register existing yet is itself a deviation from risk-based ordering — not an
+    absence of applicable rule. It requires the same stated justification a deviation from an
+    existing register would require."
+  - "A stated justification for the no-register case names the ad-hoc ordering rationale
+    actually used until a register exists. A bare assertion that no register exists is not a
+    justification."
+  - "No register and no stated justification is out of policy. Never inferred as 'no register,
+    so no rule applies', and never a silent default to whatever order the author happens to
+    run suites in."
+validation_criteria:
+  - "PASS requires either: a current risk register exists and suite order matches its rank; or
+    a stated justification accompanies the actual ordering used, covering any deviation
+    including the no-register case."
+  - "FAIL when a risk register exists, execution order deviates from its current rank, and no
+    stated justification is recorded."
+  - "FAIL when no risk register exists and no stated justification for the ordering actually
+    used is recorded. Absence of a register is never read as a free pass."
+  - "Check register currency before comparing rank: a stale or superseded register is not 'the
+    current risk register' for this check, and ordering against it is treated as ordering
+    against no register."
+explicit_allowances:
+  - "Suite execution order differs from the current risk register's rank — or no register
+    exists yet — when a stated justification for the actual ordering used is recorded."

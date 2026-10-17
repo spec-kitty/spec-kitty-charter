@@ -1,0 +1,55 @@
+schema_version: "1.0"
+id: qa-defect-triage-ritual
+name: QA Defect Triage Ritual
+purpose: >
+  A periodic ISTQB severity/priority classification governance meeting over
+  defects surfaced by test execution. This ritual is neither of two
+  near-neighbor built-ins: it is not issue-triage-state-machine (a
+  tracker-neutral bug/enhancement classification procedure for delegation
+  routing to an agent or human) and it is not disciplined-defect-diagnosis
+  (a root-cause debugging methodology). This ritual classifies severity and
+  priority on defects test execution has already surfaced; it does not
+  decide delegation routing and it does not debug root cause.
+entry_condition: >
+  A batch of newly-surfaced defects is awaiting agreed severity and priority
+  classification.
+exit_condition: >
+  Every defect in the batch carries an agreed severity and an agreed
+  priority.
+steps:
+  - title: Confirm each item is a confirmed defect — per the qa-glossary defect term — not a false-fail result
+    actor: agent
+    description: >
+      Before classifying, confirm the item is this pack's own defect term
+      and not a false-fail result (a reported failure with no underlying
+      defect in the test object).
+  - title: Classify each defect's severity — critical, high, medium, or low per the qa-glossary severity term — on technical impact alone
+    actor: human
+    description: >
+      Assign severity per this pack's severity term (qa-glossary), judged
+      independently of urgency; the title's scale is an attributed quote of
+      the glossary's own scale, not a silently re-minted parallel enum.
+  - title: Classify each defect's priority — P1 to P4 per the qa-glossary priority term — on scheduling urgency, independently of severity
+    actor: human
+    description: >
+      Assign priority per this pack's priority term (qa-glossary), judged
+      independently of severity; the title's scale is an attributed quote of
+      the glossary's own scale, not a silently re-minted parallel enum.
+  - title: Record the rationale for any severity/priority pairing that looks unusual
+    actor: agent
+    description: >
+      Where a defect's severity and priority pull in different directions,
+      note the rationale so a later reader does not mistake it for a
+      classification error.
+  - title: Confirm every defect in the batch has both fields recorded before closing the ritual
+    actor: agent
+    description: >
+      Do not close the ritual while any defect in the batch is missing
+      either its severity or its priority classification.
+references:
+  - type: directive
+    id: QA_002
+    reason: >
+      This ritual's severity/priority classification step feeds defect
+      report quality by ensuring every reported defect carries an agreed
+      classification.

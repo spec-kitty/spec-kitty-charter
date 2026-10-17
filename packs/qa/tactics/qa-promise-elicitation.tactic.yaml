@@ -1,0 +1,26 @@
+schema_version: "1.0"
+id: qa-promise-elicitation
+name: Promise Elicitation (seed candidates, then ratify)
+purpose: >-
+  Build a product's promise set from what it already tells its users, without letting
+  those sources decide what the product owes. Every surface that asserts behaviour (user
+  docs, command help, error messages, exit codes, release notes, sales copy) proposes
+  candidate promises; a named product authority ratifies, rewrites or rejects each one.
+  Apply when a product has tests but no independent statement of what they should prove,
+  so coverage can only report on what someone already thought to test.
+steps:
+  - title: List the surfaces where the product asserts behaviour to a user
+  - title: Extract each assertion of the form "the product will do X" as a candidate promise page, naming the surface that asserts it
+  - title: Write one observable outcome per promise, in the user's words, with the conditions it holds under
+  - title: Mark every extracted page `status candidate`; never mark one ratified from the source alone
+  - title: Review candidates with the product authority, who ratifies, rewrites or rejects each, and records who and when
+  - title: Record promises the product authority wants but no surface states yet; a missing promise is the gap this tactic exists to expose
+references:
+  - name: QA Promise Traceability
+    type: directive
+    id: QA_007
+    when: when deciding whether a candidate may be cited by a gating scenario
+  - name: Promise Page Authoring
+    type: styleguide
+    id: qa-promise-page
+    when: when writing the page for each candidate

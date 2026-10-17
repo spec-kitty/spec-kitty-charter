@@ -1,0 +1,36 @@
+id: QA_003
+schema_version: "1.0"
+title: QA No Fake Green
+enforcement: required
+intent: >
+  A test report/CI run record must never read greener than the run. Forbidden: did-not-run into
+  absent, timeout into failed, retries into final attempt, skipped into passed, inapplicable
+  into either. Every run's verdict, incl. automated ones, is recomputed from enumerated
+  evidence, not a summary line.
+scope: >
+  Execution-outcome region of test report/CI run records: suites, outcomes, retries, counts.
+  QA_001 governs coverage; this governs execution honesty.
+validation_criteria:
+  - "S = declared execution population, frozen pre-run, read at its declared grain (suite- or
+    test-grained); every rule below reads S at that grain."
+  - "One outcome per S-member, six categories: passed; failed=>FAIL; errored (crash/import/env
+    failure)=>FAIL; timed_out (over limit)=>own category; skipped (ran, not executed)=>never a
+    pass; not_applicable (declared, not run, stated predicate)=>not FAIL only if evidenced."
+  - "suites_reported == S required. Missing S-members are errored (did-not-run), never dropped;
+    reported suites not in S are undeclared_suite, never accepted."
+  - "not_applicable needs a stated predicate + what evaluated it; lacking evidence, defaults to
+    errored — a bare self-asserted n/a is never accepted."
+  - "Every suite reports attempts=N + ordered per-attempt outcomes, N even at 1. Final passed
+    with N>1 reads `passed (flaky: N attempts — outcomes)`, never unqualified. Unexposed
+    per-attempt outcomes is itself the recorded result, not a clean passed."
+  - "pass_count counts passed only; skipped_count separate, always reported, incl. zero. Every
+    percentage states denominator |S| — never executed or non-skipped subset;
+    passed/(passed+failed) is forbidden; skips show as green-with-N-skipped, never plain green."
+  - "GREEN only if failed, errored (incl. default-errored), timed_out, undeclared_suite are
+    empty, suites_reported==S, every not_applicable has its predicate, every suite discloses
+    attempts+outcomes; skips don't fail it but show in the verdict string, and every
+    category above plus undeclared_suite reports count+ids even at zero."
+  - "S == ∅ is never a vacuous GREEN: FAIL or inapplicable-and-stated. |S| is reported with every
+    verdict, so an empty population is visible, not inferable."
+  - "No report at all (crash, missing artifact, env down) is itself the recorded result, never a
+    pass for no failure seen."
