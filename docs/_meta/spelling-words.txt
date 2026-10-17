@@ -12,9 +12,6 @@ applies
 architectural
 artifact
 available
-cucumber
-gherkin
-monorepo
 base
 baseline
 brain
@@ -33,6 +30,7 @@ code
 compiler
 context
 convention
+cucumber
 cutover
 dataclass
 dead
@@ -55,6 +53,7 @@ examples
 facade
 from
 frontmatter
+gherkin
 global
 glossary
 governance
@@ -78,6 +77,7 @@ mapping
 mediated
 miss
 mission
+monorepo
 offering
 organization
 orphan
