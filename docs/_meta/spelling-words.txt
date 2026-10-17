@@ -15,7 +15,6 @@ available
 cucumber
 gherkin
 monorepo
-swagger
 base
 baseline
 brain

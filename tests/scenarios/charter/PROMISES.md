@@ -7,7 +7,9 @@ charter-offering-scenario-extraction procedure; evidence is read, never transcri
 
 Each row maps a `@promise:` id to the offering guarantee it asserts and the FR/ADR that states it.
 The suite is the consumer contract on top of the Python `tests/e2e` / `tests/charter*` mechanism
-net, which stays in place. See `RESEARCH.md` for the extraction trail.
+net, which stays in place in core. (The extraction trail and the lower-level mechanism net live
+in core today; see the note in `README.md` on paths that are re-homed as the offering moves
+here.)
 
 ## The governance in force is what I chose — `governance-in-force/`
 
@@ -44,6 +46,8 @@ over an org pack needs the black-box override + layer-provenance fixture tracked
 
 A bound scenario may still be red in the nightly Cucumber-JVM run for a real, documented reason
 (a defect's witness surfaces on a surface the Act does not yet drive, or a fixture gap), never
-because of a stub. The per-PR scenario contract (`tests/architectural/test_scenario_contract.py`)
-checks the tag and step-binding shape without a JDK; the nightly acceptance-bdd job runs the bound
-scenarios cross-OS. Expected green vs red-for-a-real-reason is called out in the PR body.
+because of a stub. In core today, the per-PR scenario contract
+(`tests/architectural/test_scenario_contract.py`) checks the tag and step-binding shape without a
+JDK and the nightly acceptance-bdd job runs the bound scenarios cross-OS. Neither that contract
+check nor a BDD CI job exists in this repository yet; standing up the runner (Layer B) is tracked
+by #31, and these references are re-homed as the offering moves here.

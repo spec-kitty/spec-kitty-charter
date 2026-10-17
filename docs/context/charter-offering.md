@@ -23,11 +23,18 @@ audience:
 
 # The charter offering
 
-The **charter offering** is the read side of the charter: given the Charter Packs a project
-draws from and what the project has activated, it answers one question — *what governs this
-step?* — and returns the directives, tactics, styleguides, procedures, agent profiles and
-glossary for one action. It is the subsystem this repository is built to own. This page is
-about why that subsystem is worth extracting and running on its own; [Product](/context/product/)
+In the charter's vocabulary, the **charter offering** is the *offer side* of the charter:
+everything a project can draw from — the built-in, organisation and project Charter Packs and the
+project layer — as distinct from the *activation side*, the active charter (core ADR
+`2026-10-06-1`). Checking the active charter against the offering to get the guidance for one
+step is **governance resolution**.
+
+This repository is built to own the extracted **`charter.offering` subsystem** — the code that
+today lives in core as `src/charter/offering/`, which models the offer side and the resolution
+over it. Where this page says *the offering* without qualification it means that subsystem; the
+glossary term keeps its offer-side meaning (see the [glossary](/glossary/); formally capturing
+this second, bounded-context sense is a follow-up for the glossary owners). This page is about
+why that subsystem is worth extracting and running on its own; [Product](/context/product/)
 covers what the charter is and where it sits among the product lines.
 
 ## Centrally governed, distributed execution
@@ -65,7 +72,7 @@ particular tool's internals.
 Charter Packs are **layered** — built-in, then organisation, then project — and a project
 **activates** only the entries it wants. That gives each repository a composition of its own:
 
-- A repository takes the built-in base, adds the org packs its team mandates, and selects
+- A repository takes the built-in base, adds the org packs its team mandates, and activates
   per-entry what applies to its work (`spec-kitty charter activate`), leaving the rest inert.
 - A monorepo and a single-service repository in the same organisation can draw on the same org
   doctrine yet put different subsets in force.
@@ -87,9 +94,12 @@ the same doctrine, composed to each project's and repository's needs.
 
 ## The boundary this repository owns
 
-The offering **answers questions**; it does not author the doctrine (that is
+The offering models the offer side and resolves it; it does not author the doctrine (that is
 `spec-kitty-open-packs`) and it does not write events (that is the core CLI's one canonical event
-writer — see [Events and the ledger](/architecture/events-and-ledger/)). Its role and boundary
-are defined behaviourally, by the promise-first acceptance scenarios in
+writer — see [Events and the ledger](/architecture/events-and-ledger/)). One edge is still being
+settled: whether the activation side (`charter.activation`) that governance resolution also needs
+falls inside this repository's extraction boundary or stays in core is an open operator decision
+([open question 2](/plans/open-questions/)). Its role and boundary are otherwise defined
+behaviourally, by the promise-first acceptance scenarios in
 [Behaviour and acceptance scenarios](/architecture/behaviour-and-scenarios/), which this
 repository treats as the contract to specify before any implementation is chosen.
