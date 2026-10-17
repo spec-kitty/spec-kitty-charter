@@ -55,7 +55,7 @@ once an implementation exists.
 
 | Phase | Focus | Outcome |
 |---|---|---|
-| **P0 — Governance and seed** *(done)* | Activate the authoring doctrine; seed the behavior contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
+| **P0 — Governance and seed** *(done)* | Register (vendor) the authoring doctrine; seed the behavior contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
 | **P1 — Scenarios and boundary** | Define the offering's role and boundary as promise-first scenarios. | The suite covers the offering's guarantees and edges; each promise is traced to an authority; the set is presented in the docsite. |
 | **P2 — API specification** | Turn the described boundary into a published contract. | An OpenAPI 3.1 YAML contract under `contracts/charter/`, versioned as the external contract and rendered in the docsite (see [ADR-0002](/adr/0002-contract-source-of-record/)). |
 | **P3 — Low-level design** *(next focus)* | The artifact structure and storage model, behind a repository layer. | A design that decouples infrastructure from logic: a repository layer agnostic of whether charter content is file-based or database-provided. |
@@ -75,7 +75,7 @@ So the three decompositions line up and no step is claimed twice. All `#N` below
 | P1 — Scenarios and boundary | precedes step 1 | #30, #31, #32, #33 (epic #29) |
 | P2 — API specification | step 1 (OpenAPI contract) | #7 (existing), framed by epic #29 |
 | P3 — Low-level design | precedes step 4 | #34 (epic #29) |
-| P4 — Implementation | steps 2–7 | epic #6 (#7–#14) |
+| P4 — Implementation | steps 2–7 | epic #6 (#8–#14); #7 is the P2 contract |
 
 ## What P3 sets up
 
