@@ -15,10 +15,10 @@ any future implementation must pass.
   Standing it up — and pointing it at whatever answers the charter commands — is tracked in the
   issue tracker.
 
-These three outcome features were copied from the charter-offering suite in
+These three outcome scenario files were copied from the charter-offering suite in
 `spec-kitty/spec-kitty` (`tests/scenarios/charter/`) as the starting contract. The
-CLI-affordance feature (`charter.feature`) was left behind on purpose: it asserts the Python
-CLI's output surface, which is mechanism, not an offering promise.
+CLI-affordance scenario file (`charter.feature`) was left behind on purpose: it asserts the
+Python CLI's output surface, which is mechanism, not an offering promise.
 
 ## Layout
 
@@ -33,10 +33,11 @@ One folder per consumer outcome:
 
 ## Authoring
 
-New scenarios follow the activated org doctrine: the `feature-and-scenario-authoring` styleguide
-and the `charter-offering-scenario-extraction` procedure (consumer-first outcomes, one promise
-per scenario, the consumer's language only), and the `qa-description-to-acceptance-ci` procedure
-for the description → acceptance → CI loop.
+New scenarios follow the org-pack doctrine (authored and vendored; not yet activated in this
+repo — activation is tracked by #32): the `feature-and-scenario-authoring` styleguide and the
+`charter-offering-scenario-extraction` procedure (consumer-first outcomes, one promise per
+scenario, the consumer's language only), and the `qa-description-to-acceptance-ci` procedure for
+the description → acceptance → CI loop.
 
 > Note on `PROMISES.md`: its "offering authority" column still cites paths in core's
 > `src/charter/offering/` (for example `artifact_kinds.py`). Those are the authorities the

@@ -66,8 +66,9 @@ choose an implementation — each step constrained by the one before it.
 ## Authoring and ownership
 
 New scenarios follow the `feature-and-scenario-authoring` styleguide and the
-`charter-offering-scenario-extraction` procedure (both now activated as org doctrine, see
-[the overhaul approach](/plans/overhaul-approach/)): outcomes rather than output surfaces, one
+`charter-offering-scenario-extraction` procedure (authored and vendored in the org packs, to be
+put in force in P1 — see [the overhaul approach](/plans/overhaul-approach/)): outcomes rather
+than output surfaces, one
 promise per scenario, the consumer's language only, and desired behaviour rather than a defect
 reproduction. In core, the charter scenarios are co-owned by QA and core; the same split applies
 as the suite grows here.

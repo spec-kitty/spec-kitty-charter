@@ -2,7 +2,7 @@
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-17
 type: ADR
 kind: Hub
 audience:
@@ -17,8 +17,11 @@ audience:
 # Decision Records
 
 Decisions taken in this repository. Records are numbered `NNNN-<slug>.md` and copied from
-[the template](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/_meta/templates/adr.template), as in doc-kitty. A record is immutable once accepted; a later
-decision supersedes it rather than editing it.
+[the template](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/_meta/templates/adr.template), as in doc-kitty. The *decision* in an accepted record is immutable: a
+later decision supersedes it rather than editing it. A record may still carry a dated,
+decision-preserving **clarification** (an annotation that sharpens scope or wording without
+changing what was decided); a clarification is labelled and dated, and anything that changes the
+decision is a new record instead.
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|

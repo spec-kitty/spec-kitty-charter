@@ -38,7 +38,7 @@ end-state design lives in [Architecture](/architecture/); settled decisions live
   does and where its edges are, as promise-first acceptance scenarios — the consumer contract,
   independent of the command or service that delivers it.
 - **The contract follows the behaviour.** Once the boundary is described, it is specified as an
-  OpenAPI 3.1 / Swagger YAML contract, published in this repository as the external contract and
+  OpenAPI 3.1 YAML contract, published in this repository as the external contract and
   rendered in the docsite.
 
 ## Why a strangler fig
@@ -57,12 +57,25 @@ once an implementation exists.
 |---|---|---|
 | **P0 — Governance and seed** *(done)* | Activate the authoring doctrine; seed the behaviour contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
 | **P1 — Scenarios and boundary** | Define the offering's role and boundary as promise-first scenarios. | The suite covers the offering's guarantees and edges; each promise is traced to an authority; the set is presented in the docsite. |
-| **P2 — API specification** | Turn the described boundary into a published contract. | An OpenAPI 3.1 / Swagger YAML contract under `contracts/charter/`, versioned as the external contract and rendered in the docsite (see [ADR-0002](/adr/0002-contract-source-of-record/)). |
+| **P2 — API specification** | Turn the described boundary into a published contract. | An OpenAPI 3.1 YAML contract under `contracts/charter/`, versioned as the external contract and rendered in the docsite (see [ADR-0002](/adr/0002-contract-source-of-record/)). |
 | **P3 — Low-level design** *(next focus)* | The artifact structure and storage model, behind a repository layer. | A design that decouples infrastructure from logic: a repository layer agnostic of whether charter content is file-based or database-provided. |
-| **P4 — Implementation** *(deferred)* | Build the Java service ([ADR-0001](/adr/0001-java-service-with-openapi-contract/)); settle the migration sequencing. | Sequenced only once P1–P2 fix the behaviour and the contract; see [Roadmap](/plans/roadmap/) steps 1–7. |
+| **P4 — Implementation** *(deferred)* | Build the Java service ([ADR-0001](/adr/0001-java-service-with-openapi-contract/)); settle the migration sequencing. | Sequenced only once P1–P2 fix the behaviour and the contract; see [Roadmap](/plans/roadmap/) steps 2–7 (step 1, the contract, is P2). |
 
 P0, P1 and P2 can run in parallel with the core's seam work, because none of them answers a
 production read.
+
+### Crosswalk: phase ↔ roadmap step ↔ tracker
+
+So the three decompositions line up and no step is claimed twice. All `#N` below are
+`spec-kitty-charter` issues.
+
+| Phase | Roadmap step | Tracked by |
+|---|---|---|
+| P0 — Governance and seed | — | this change, under epic #29 |
+| P1 — Scenarios and boundary | precedes step 1 | #30, #31, #32, #33 (epic #29) |
+| P2 — API specification | step 1 (OpenAPI contract) | #7 (existing), framed by epic #29 |
+| P3 — Low-level design | precedes step 4 | #34 (epic #29) |
+| P4 — Implementation | steps 2–7 | epic #6 (#7–#14) |
 
 ## What P3 sets up
 
@@ -73,14 +86,16 @@ decoupling behind a repository layer lets the domain be specified and tested aga
 scenarios without committing to file storage, a database, or a particular service shape — which
 keeps the P4 migration sequencing and storage decisions genuinely open.
 
-## Governance in force for this work
+## Governance intended to govern this work (activation is P1)
 
-The activated org doctrine governs how this overhaul is carried out:
+The org packs are registered and healthy (P0), but **not yet in force** — no charter has been
+synthesized here. These are the entries intended to govern the overhaul once P1 puts them in
+force:
 
 - `feature-and-scenario-authoring` (styleguide) and `charter-offering-scenario-extraction`
   (procedure) — the promise-first, consumer-first method for the scenario work in P1.
 - `qa-description-to-acceptance-ci` (procedure) with the `qa-001`/`qa-003`/`qa-007` directives —
   the description → acceptance → CI loop and its traceability and no-fake-green gates.
 
-How those packs are put *in force* (charter synthesis and per-entry `charter activate`) is itself
-P1 setup work and is tracked in the issue tracker.
+Putting them in force (targeted charter synthesis and per-entry `charter activate`) is P1 setup
+work, tracked by issue #32 and sequenced around the Creeds-and-Values epic #16.
