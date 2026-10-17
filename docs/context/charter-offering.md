@@ -46,7 +46,7 @@ offering is what makes that authored doctrine *in force* at the point of work:
 - **One authored source.** Directives, tactics, styleguides, procedures, profiles and glossary
   live in Charter Packs — built-in, organization and project — authored in
   `spec-kitty-open-packs`, not scattered through each repository's own setup.
-- **Governed from the centre.** An organization ships its standards in an org pack; every
+- **Governed from the center.** An organization ships its standards in an org pack; every
   repository that registers it inherits them. Changing the standard in one place changes what
   governs every adopting repository, without editing each one.
 - **Executed at the edge.** The offering resolves that doctrine locally, per worktree, into the
@@ -98,8 +98,9 @@ The offering models the offer side and resolves it; it does not author the doctr
 `spec-kitty-open-packs`) and it does not write events (that is the core CLI's one canonical event
 writer — see [Events and the ledger](/architecture/events-and-ledger/)). One edge is still being
 settled: whether the activation side (`charter.activation`) that governance resolution also needs
-falls inside this repository's extraction boundary or stays in core is an open operator decision
-([open question 2](/plans/open-questions/)). Its role and boundary are otherwise defined
+falls inside this repository's extraction boundary or stays in core. That boundary is one factor
+inside [open question 2](/plans/open-questions/) (how the Python charter reaches this repository),
+which remains an open operator decision. Its role and boundary are otherwise defined
 behaviorally, by the promise-first acceptance scenarios in
 [Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/), which this
 repository treats as the contract to specify before any implementation is chosen.
