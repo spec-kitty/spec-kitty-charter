@@ -17,7 +17,7 @@ audience:
 Future work for this repository. The target design lives in
 [Architecture](/architecture/), and settled decisions in [Decision Records](/adr/).
 
-- [High-level approach](/plans/overhaul-approach/) — the behaviour-first, strangler-fig shape of
+- [High-level approach](/plans/overhaul-approach/) — the behavior-first, strangler-fig shape of
   the overhaul: scenarios and boundary first, then the published OpenAPI contract.
 - [Roadmap](/plans/roadmap/) — the bootstrap steps, from the contract skeleton to a shadow
   read, and how they line up with the core's #645 work.

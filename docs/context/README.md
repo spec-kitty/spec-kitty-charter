@@ -20,7 +20,7 @@ before the architecture.
 - [Product](/context/product/) — what the charter is for, where it sits in the product lines,
   and what this repository will hold.
 - [The charter offering](/context/charter-offering/) — why the offering is worth extracting:
-  centrally governed, harness-independent agent behaviour each project composes to its needs.
+  centrally governed, harness-independent agent behavior each project composes to its needs.
 - [Problem](/context/problem/) — why the charter leaves the CLI, and why it becomes Java.
 - [Domain](/context/domain/) — the charter vocabulary: Charter Pack, activation preset,
   active charter, pack level, DRG and the rest.

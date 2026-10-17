@@ -2,7 +2,7 @@
 
 Promise-first BDD scenarios that define **what the charter offering does for a consumer** — its
 role and its boundary — independent of the command or implementation that delivers it. They are
-the behavioural contract this repository specifies before choosing an implementation (see
+the behavioral contract this repository specifies before choosing an implementation (see
 `docs/plans/overhaul-approach.md`), and the conformance net both the current Python charter and
 any future implementation must pass.
 
