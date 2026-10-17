@@ -26,7 +26,7 @@ them. Read them there for the reasoning behind each artifact.
 | `qa-test-designer-tessa` cites the tactic `bdd-scenario-formulation`. | Its old reference, `behavior-driven-development`, was retired in 4.0.0rc5 in favour of that tactic. |
 | The `test-case-template.md` examples (`TC-014`, `TC-015`) use `text` fences, and the ingester reads every CommonMark yaml fence form (`YAML`, `yml`, info-string attributes, tildes, longer and indented fences), warning on a repeated case id or an unclosed fence (self-test Pair16). | With the #5 fix the template's own examples would otherwise be ingested as cases, and other valid fence forms were dropped without a word. |
 | Internal finding ids (`SK-NNN`) replaced by plain descriptions. | They point at a ledger outside this repository. |
-| Not ported: `scripts/`, `kitty-specs/`, `_rnd/`, `kitty-ops/`, `.kittify/`, `docs/install/`, `CONVENTIONS.md`. | History and tooling pinned to older Spec Kitty builds; `pack_ci.py` imports APIs that no longer exist (`DoctrineService`, `save_pack_registry`). This repository's `scripts/ci/validate-packs.sh` replaces its validation role. |
+| Not ported: `scripts/`, `kitty-specs/`, `_rnd/`, `kitty-ops/`, `.kittify/`, `docs/install/`, `CONVENTIONS.md`. | History and tooling pinned to older Spec Kitty builds; `pack_ci.py` imports APIs that no longer exist (`DoctrineService`, `save_pack_registry`). This repository does not yet reproduce that pack-validation step (tracked as a follow-up). |
 
 `mission-steps/` stays although its `step.yaml` files name a `prompt.md` that is not shipped: the
 runtime builds the `qa` action sequence from those files (without them, mission creation fails
