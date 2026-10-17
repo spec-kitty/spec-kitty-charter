@@ -1,4 +1,4 @@
-# Maintainer notes (not part of the behaviour description):
+# Maintainer notes (not part of the behavior description):
 # - Consumer-outcome scenarios for the charter offering promise "the governance in force is what
 #   I chose". Promise-first, authored to the feature-and-scenario-authoring styleguide.
 # - Each scenario's Act drives the command that reveals the governance in force, so a red is
@@ -28,7 +28,7 @@ Feature: The governance in force is what I chose
     Then the governance in force is only what the charter puts in force
 
   @promise:PR-CHARTER-GOVERNANCE-002
-  Scenario: A team's org-wide requirement is honoured on top of the project's own choices
+  Scenario: A team's org-wide requirement is honored on top of the project's own choices
     Given the team pack requires a rule the project did not select
     And the charter has been synthesized
     When the author asks what governs the work

@@ -16,7 +16,7 @@ here.)
 | Promise | Consumer guarantee | Offering authority | Binding |
 |---------|--------------------|--------------------|---------|
 | `PR-CHARTER-GOVERNANCE-001` | Sharing a pack does not silently add its commands to every tool; a skill is in force only when the charter requires/selects it, not merely because a pack offers it. | `ArtifactKind.effective_when_absent == "required"` for `skill` — `src/charter/offering/artifact_kinds.py`; ADR `2026-09-27-1`. | bound |
-| `PR-CHARTER-GOVERNANCE-002` | A team's org-wide requirement is honoured on top of the project's own choices (selection overlay). | `ArtifactKind.selection_overlayable` + org `required_<plural>` → `selected_<plural>` union — `src/charter/offering/artifact_kinds.py` / `src/charter/activation/org_charter.py`. | bound |
+| `PR-CHARTER-GOVERNANCE-002` | A team's org-wide requirement is honored on top of the project's own choices (selection overlay). | `ArtifactKind.selection_overlayable` + org `required_<plural>` → `selected_<plural>` union — `src/charter/offering/artifact_kinds.py` / `src/charter/activation/org_charter.py`. | bound |
 
 ## The system refuses unsound governance with a clear reason — `refuses-unsound-governance/`
 

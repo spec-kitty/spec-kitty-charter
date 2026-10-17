@@ -33,7 +33,7 @@ The suite is organized by consumer outcome. The three offering outcomes are:
 
 | Outcome | Guarantee |
 |---|---|
-| **The governance in force is what I chose** | The governance in force is the set the charter puts in force — sharing a pack does not silently add its commands everywhere, and a team's org-wide requirement is honoured on top of the project's own choices. |
+| **The governance in force is what I chose** | The governance in force is the set the charter puts in force — sharing a pack does not silently add its commands everywhere, and a team's org-wide requirement is honored on top of the project's own choices. |
 | **The system refuses unsound governance with a clear reason** | Governance that would silently weaken a profile, a mistyped reference between pieces of governance, or a broken charter is refused and the reason named — never quietly accepted or half-applied. |
 | **I can share governance across a team or project safely** | An unsound shared pack is not reported healthy, a project's own choice wins over a team pack it adopts, and reserved namespaces and pack-escaping assets are refused. |
 

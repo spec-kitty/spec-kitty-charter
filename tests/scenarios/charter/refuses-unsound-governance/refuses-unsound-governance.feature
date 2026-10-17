@@ -1,4 +1,4 @@
-# Maintainer notes (not part of the behaviour description):
+# Maintainer notes (not part of the behavior description):
 # - Consumer-outcome scenarios for the charter offering promise "the system refuses unsound
 #   governance with a clear reason". Promise-first, authored to the
 #   feature-and-scenario-authoring styleguide: outcomes, not output surfaces; one promise per

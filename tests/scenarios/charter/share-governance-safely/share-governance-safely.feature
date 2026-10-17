@@ -1,4 +1,4 @@
-# Maintainer notes (not part of the behaviour description):
+# Maintainer notes (not part of the behavior description):
 # - Consumer-outcome scenarios for the charter offering promise "I can share governance across a
 #   team or project safely". Promise-first, authored to the feature-and-scenario-authoring
 #   styleguide.
