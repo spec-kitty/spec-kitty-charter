@@ -65,8 +65,6 @@ spec-kitty agent mission create <slug> --mission-type qa
 spec-kitty charter context --include procedure:qa-description-to-acceptance-ci
 ```
 
-See [Use a Charter Pack](../../docs/guides/use-a-doctrine-pack.md) for the configuration fields.
-
 The pack activates nothing by itself. To put the promise layer in force for every mission, add
 to the consuming org's charter:
 

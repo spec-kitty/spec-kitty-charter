@@ -143,9 +143,6 @@ longer tracked. Pulling the change that untracked it deletes your local copy, an
 `doctor skills --fix` then refuses because it sees unmanaged files. Remove the generated
 `.agents/skills/spec-kitty.*` directories and run `spec-kitty doctor skills --fix` once.
 
-See [How to enable the internal charter and skills](../../docs/development/how-to/enable-the-internal-pack.md)
-for the setup steps and [Create and activate a pack skill](../../docs/development/how-to/create-a-pack-skill.md).
-
 ## Reference, don't duplicate
 
 The built-in Charter Pack is repository-agnostic; the Spec Kitty specifics of a
