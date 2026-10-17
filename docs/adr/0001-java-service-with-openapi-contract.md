@@ -2,7 +2,7 @@
 title: "ADR-0001: The charter is a Java service built against an OpenAPI contract"
 description: The charter's new implementation is a Java service; an OpenAPI contract is the single source of the DTOs that the service and the core's runtime (CLI, next state machine) both use.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-17
 type: ADR
 kind: ADR
 related:
@@ -22,6 +22,18 @@ audience:
 
 **Accepted** — 2026-10-13. Decider: Stijn Dejongh (operator), in the project discussion of
 how the charter, the event router and the product direction fit together.
+
+**Amended 2026-10-17 (clarification; the decision is unchanged).** The behaviour-first
+bootstrap recorded in [the overhaul approach](/plans/overhaul-approach/) sequences the work so
+that the charter offering's role and boundary are specified as acceptance scenarios, then
+published as the OpenAPI contract, *before* an implementation is built. This does not reopen the
+decision below: the target implementation remains a Java service. What stays open is only the
+*migration sequencing* of decision 3 — whether the Python charter first moves into this
+repository as an interim package or is replaced in place
+([open questions](/plans/open-questions/), question 2). Epic
+[#29](https://github.com/spec-kitty/spec-kitty-charter/issues/29) tracks the behaviour-first
+phases that precede and constrain the Java implementation tracked by epic
+[#6](https://github.com/spec-kitty/spec-kitty-charter/issues/6).
 
 ## Context
 
