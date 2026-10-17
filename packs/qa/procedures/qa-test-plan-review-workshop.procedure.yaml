@@ -1,0 +1,56 @@
+schema_version: "1.0"
+id: qa-test-plan-review-workshop
+name: QA Test Plan Review Workshop
+purpose: >
+  A peer-review (per this pack's `review` glossary term, `qa-glossary`)
+  workshop over an already-drafted test plan (per this pack's `test plan`
+  glossary term, `qa-glossary`) or test strategy document, held before test
+  execution begins. Cited alongside example-mapping-workshop for format
+  continuity as a related workshop-shaped procedure — example-mapping-workshop
+  turns a behavior request into examples and rules pre-design; this workshop
+  instead reviews a document that already exists.
+entry_condition: >
+  A drafted test plan or test strategy document exists and is ready for peer
+  review before test execution begins.
+exit_condition: >
+  The test plan is either accepted as-is, or returned to its author with
+  specific, actionable revision points recorded against the plan.
+steps:
+  - title: Confirm the plan names its test basis — per the qa-glossary test basis term — before review begins
+    actor: agent
+    description: >
+      Check that the plan states which test basis it was derived from
+      (requirements, design docs, risk analysis) so reviewers can trace
+      coverage claims back to a source.
+  - title: Confirm the plan states its exit criteria explicitly
+    actor: agent
+    description: >
+      Check that the plan names the agreed conditions for completing the
+      test process rather than leaving "when do we stop" unanswered.
+  - title: Trace each planned test area back to a requirement or risk item
+    actor: agent
+    description: >
+      Walk the plan's test areas and confirm each one maps to a stated
+      requirement, feature, or identified risk rather than existing without
+      a traceable origin.
+  - title: Record open questions and revision points as specific, actionable items
+    actor: agent
+    description: >
+      For any gap found, write a specific revision point the plan's author
+      can act on directly rather than a vague comment.
+  - title: Obtain stakeholder sign-off on the reviewed plan
+    actor: human
+    description: >
+      A human stakeholder accepts the plan as reviewed, or confirms the
+      revision points before the next review cycle.
+anti_patterns:
+  - name: Silent acceptance without traceability check
+    description: >
+      Approving a plan without confirming its test-area-to-requirement
+      traceability defeats the purpose of the review.
+references:
+  - type: directive
+    id: QA_001
+    reason: >
+      This workshop's traceability step operationalises requirement-to-plan
+      traceability before execution begins.

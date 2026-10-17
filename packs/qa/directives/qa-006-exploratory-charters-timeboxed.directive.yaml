@@ -1,0 +1,35 @@
+id: QA_006
+schema_version: "1.0"
+title: QA Exploratory Charters Timeboxed
+enforcement: lenient-adherence
+intent: >
+  Exploratory testing is governed by a written charter set before the session begins, stating a
+  timebox, and closing with a recorded debrief. A session missing any of the three has no basis
+  for evaluation.
+scope: >
+  The exploratory charter — what the session will and will not explore, its timebox, and its
+  debrief — and the session it governs, from charter authorship through debrief.
+integrity_rules:
+  - "A written charter must exist before the session starts, stating what will and will not be
+    explored. A session with no written charter is out of policy outright, regardless of what
+    was found."
+  - "The charter states a timebox: a bounded duration, not an open-ended allowance."
+  - "The session closes with a recorded debrief describing the outcome."
+  - "Running past the stated timebox is permitted only when the overrun itself is recorded — how
+    far past the timebox the session ran — and the debrief explicitly accounts for the overrun."
+  - "A debrief that is silent about a recorded overrun is out of policy, exactly as if there had
+    been no debrief at all. The debrief must address the overrun specifically, not merely exist."
+validation_criteria:
+  - "PASS requires a written charter dated before the session start, stating scope and a bounded
+    timebox, and a debrief recorded at close."
+  - "PASS, when the session ran past its timebox, additionally requires: the overrun is recorded
+    and the debrief explicitly addresses the overrun — whether continuing past the box was worth
+    it."
+  - "FAIL when no written charter exists, regardless of findings."
+  - "FAIL when the charter states no timebox, or the timebox is open-ended."
+  - "FAIL when the session overran its timebox and the debrief does not address the overrun. A
+    debrief that exists but is silent about the overrun does not satisfy this rule — treat it as
+    if no debrief were recorded."
+explicit_allowances:
+  - "The session runs past its stated timebox, provided the overrun and its debrief — addressing
+    the overrun specifically — are both recorded."

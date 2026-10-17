@@ -10,6 +10,19 @@ mission_type_activations:
 - plan
 vcs:
   type: git
+charter_packs:
+  org:
+    packs:
+    # spec-kitty-internal (org tier): the maintainer doctrine that authored the
+    # charter-offering BDD suite -- charter-offering-scenario-extraction procedure
+    # and feature-and-scenario-authoring styleguide. Vendored, never shipped.
+    - name: internal
+      local_path: packs/internal
+    # spec-kitty-qa (org tier): governs description -> BDD scenario -> acceptance CI
+    # (qa-description-to-acceptance-ci) plus traceability / no-fake-green directives.
+    # Inert by default; specific entries are opted in per project with `charter activate`.
+    - name: qa
+      local_path: packs/qa
 agents:
   available:
   - claude

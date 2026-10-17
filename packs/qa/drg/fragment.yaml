@@ -1,0 +1,199 @@
+# The pack's DRG fragment, the only DRG file an org Charter Pack may ship.
+# Read by `charter pack validate`, `doctor charter-packs`, `charter context`
+# and profile health.
+# pack_name/source_kind/source_ref/layer_index are overwritten at load time
+# by the operator-side org-pack loader; the values below are placeholders.
+pack_name: qa
+source_kind: local_path
+source_ref: "."
+layer_index: 1
+nodes:
+- id: QA_001
+  kind: directives
+  title: "QA Traceability Mandatory"
+  body_path: directives/qa-001-traceability-mandatory.directive.yaml
+- id: QA_002
+  kind: directives
+  title: "QA Defect Report Quality"
+  body_path: directives/qa-002-defect-report-quality.directive.yaml
+- id: QA_003
+  kind: directives
+  title: "QA No Fake Green"
+  body_path: directives/qa-003-no-fake-green.directive.yaml
+- id: QA_004
+  kind: directives
+  title: "QA Exit Criteria Precede Execution"
+  body_path: directives/qa-004-exit-criteria-precede-execution.directive.yaml
+- id: QA_005
+  kind: directives
+  title: "QA Risk-Based Prioritization"
+  body_path: directives/qa-005-risk-based-prioritization.directive.yaml
+- id: QA_006
+  kind: directives
+  title: "QA Exploratory Charters Timeboxed"
+  body_path: directives/qa-006-exploratory-charters-timeboxed.directive.yaml
+- id: qa-risk-based-test-prioritization
+  kind: tactics
+  title: "Risk-Based Test Prioritization"
+  body_path: tactics/qa-risk-based-test-prioritization.tactic.yaml
+- id: qa-boundary-equivalence-partitioning
+  kind: tactics
+  title: "Boundary and Equivalence Partitioning"
+  body_path: tactics/qa-boundary-equivalence-partitioning.tactic.yaml
+- id: qa-pairwise-test-reduction
+  kind: tactics
+  title: "Pairwise Test Reduction"
+  body_path: tactics/qa-pairwise-test-reduction.tactic.yaml
+- id: qa-regression-suite-selection
+  kind: tactics
+  title: "Regression Suite Selection"
+  body_path: tactics/qa-regression-suite-selection.tactic.yaml
+- id: qa-flaky-test-quarantine
+  kind: tactics
+  title: "Flaky Test Quarantine"
+  body_path: tactics/qa-flaky-test-quarantine.tactic.yaml
+- id: qa-test-data-minimization
+  kind: tactics
+  title: "Test Data Minimization"
+  body_path: tactics/qa-test-data-minimization.tactic.yaml
+- id: qa-exploratory-charter-writing
+  kind: tactics
+  title: "Exploratory Charter Writing"
+  body_path: tactics/qa-exploratory-charter-writing.tactic.yaml
+- id: qa-test-plan-review-workshop
+  kind: procedures
+  title: "QA Test Plan Review Workshop"
+  body_path: procedures/qa-test-plan-review-workshop.procedure.yaml
+- id: qa-defect-triage-ritual
+  kind: procedures
+  title: "QA Defect Triage Ritual"
+  body_path: procedures/qa-defect-triage-ritual.procedure.yaml
+- id: qa-coverage-gap-analysis
+  kind: procedures
+  title: "QA Coverage Gap Analysis"
+  body_path: procedures/qa-coverage-gap-analysis.procedure.yaml
+- id: qa-go-no-go-readiness-review
+  kind: procedures
+  title: "QA Go/No-Go Readiness Review"
+  body_path: procedures/qa-go-no-go-readiness-review.procedure.yaml
+- id: qa-glossary
+  kind: glossary_packs
+  title: "QA Glossary"
+  body_path: glossary_packs/qa-glossary.glossary-pack.yaml
+- id: qa-traceability-lint
+  kind: assets
+  title: "QA Traceability Lint"
+  body_path: assets/qa_carrier_lint.py.asset.yaml
+- id: qa-carrier-lint
+  kind: toolguides
+  title: "QA Carrier Lint Toolguide"
+  body_path: toolguides/qa-carrier-lint.toolguide.yaml
+- id: qa-result-ingest
+  kind: assets
+  title: "QA Result Ingest"
+  body_path: assets/qa_result_ingest.py.asset.yaml
+- id: qa-result-ingest-guide
+  kind: toolguides
+  title: "QA Result Ingest Toolguide"
+  body_path: toolguides/qa-result-ingest.toolguide.yaml
+- id: qa
+  kind: mission_types
+  title: QA Mission Type
+  body_path: mission_types/qa/governance-profile.yaml
+- id: qa-strategist-quinn
+  kind: agent_profiles
+  title: QA Strategist (Quinn)
+  body_path: agent_profiles/qa-strategist-quinn.agent.yaml
+- id: qa-test-designer-tessa
+  kind: agent_profiles
+  title: QA Test Designer (Tessa)
+  body_path: agent_profiles/qa-test-designer-tessa.agent.yaml
+- id: qa-test-executor-elena
+  kind: agent_profiles
+  title: QA Test Executor (Elena)
+  body_path: agent_profiles/qa-test-executor-elena.agent.yaml
+- id: qa-reporter-rhea
+  kind: agent_profiles
+  title: QA Reporter (Rhea)
+  body_path: agent_profiles/qa-reporter-rhea.agent.yaml
+- id: qa-defect-triager-dmitri
+  kind: agent_profiles
+  title: QA Defect Triager (Dmitri)
+  body_path: agent_profiles/qa-defect-triager-dmitri.agent.yaml
+- id: QA_007
+  kind: directives
+  title: "QA Promise Traceability"
+  body_path: directives/qa-007-promise-traceability.directive.yaml
+- id: QA_008
+  kind: directives
+  title: "QA Known-Defect Reproductions Gate Releases"
+  body_path: directives/qa-008-reproductions-gate-releases.directive.yaml
+- id: qa-promise-elicitation
+  kind: tactics
+  title: "Promise Elicitation"
+  body_path: tactics/qa-promise-elicitation.tactic.yaml
+- id: qa-promise-page
+  kind: styleguides
+  title: "Promise Page Authoring (DocKitty)"
+  body_path: styleguides/qa-promise-page.styleguide.yaml
+- id: qa-description-to-acceptance-ci
+  kind: procedures
+  title: "Description to Acceptance CI"
+  body_path: procedures/qa-description-to-acceptance-ci.procedure.yaml
+- id: qa-promise-trace-lint-guide
+  kind: toolguides
+  title: "QA Promise Trace Lint Toolguide"
+  body_path: toolguides/qa-promise-trace-lint.toolguide.yaml
+- id: qa-promise-trace-lint
+  kind: assets
+  title: "QA Promise Trace Lint"
+  body_path: assets/qa_promise_trace_lint.py.asset.yaml
+edges:
+- source: directive:QA_001
+  target: asset:qa-traceability-lint
+  relation: requires
+- source: directive:QA_003
+  target: asset:qa-traceability-lint
+  relation: requires
+- source: toolguide:qa-carrier-lint
+  target: asset:qa-traceability-lint
+  relation: suggests
+- source: directive:QA_001
+  target: asset:qa-result-ingest
+  relation: requires
+- source: toolguide:qa-result-ingest-guide
+  target: asset:qa-result-ingest
+  relation: suggests
+- source: directive:QA_007
+  target: asset:qa-promise-trace-lint
+  relation: requires
+- source: directive:QA_007
+  target: styleguide:qa-promise-page
+  relation: requires
+- source: directive:QA_007
+  target: tactic:qa-promise-elicitation
+  relation: suggests
+- source: directive:QA_008
+  target: directive:QA_007
+  relation: requires
+- source: directive:QA_008
+  target: directive:QA_003
+  relation: requires
+- source: procedure:qa-description-to-acceptance-ci
+  target: directive:QA_007
+  relation: requires
+- source: procedure:qa-description-to-acceptance-ci
+  target: directive:QA_008
+  relation: requires
+- source: procedure:qa-description-to-acceptance-ci
+  target: tactic:bdd-scenario-formulation
+  relation: suggests
+- source: procedure:qa-description-to-acceptance-ci
+  target: styleguide:given-when-then-authoring
+  relation: suggests
+- source: procedure:qa-description-to-acceptance-ci
+  target: toolguide:gherkin
+  relation: suggests
+- source: toolguide:qa-promise-trace-lint-guide
+  target: asset:qa-promise-trace-lint
+  relation: suggests

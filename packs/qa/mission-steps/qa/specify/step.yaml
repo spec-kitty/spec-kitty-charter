@@ -1,0 +1,13 @@
+id: specify
+display_name: "Test Strategy"
+step_type: agent
+prompt_template: prompt.md
+agent_profile: qa-strategist-quinn
+guidance: null
+delegates_to: []
+depends_on: [discovery]
+sequence_index: 1
+in_action_sequence: true
+template:
+  artifact_key: spec
+  template_file: test-strategy-template.md

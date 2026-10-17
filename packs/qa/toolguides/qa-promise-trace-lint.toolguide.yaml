@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: qa-promise-trace-lint-guide
+tool: qa-promise-trace-lint
+title: QA Promise Trace Lint (promise -> scenario chain)
+guide_path: toolguides/QA-PROMISE-TRACE-LINT.md
+summary: >
+  Reconciles promise pages in a DocKitty docs tree with the `@promise:<id>` tags on
+  Gherkin scenarios, and reports untraced scenarios, dangling or candidate citations,
+  uncovered ratified promises, declared gaps, malformed or duplicate ids, missing
+  ratification records and incomplete, failed or stale manual results. It runs no
+  scenario. Resolve the script with `spec-kitty charter pack asset path
+  qa-promise-trace-lint`, then run it in CI before the gating scenario run. Exit 0 (chain
+  intact), 1 (blocking findings), 2 (cannot measure). Stdlib plus ruamel.yaml.
+commands:
+  - spec-kitty charter pack asset path qa-promise-trace-lint
+  - python qa_promise_trace_lint.py --promises docs --scenarios tests/scenarios --release VERSION
+  - python qa_promise_trace_lint.py --promises docs --scenarios tests/scenarios --json --out promise-trace.json
+  - python qa_promise_trace_lint.py --self-test

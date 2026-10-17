@@ -1,0 +1,4 @@
+id: qa-result-ingest
+mime: text/x-python
+path: qa_result_ingest.py
+title: QA result ingestion (JUnit-XML producer)

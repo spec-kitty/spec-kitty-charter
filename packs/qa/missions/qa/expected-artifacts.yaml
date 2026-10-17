@@ -1,0 +1,122 @@
+schema_version: "1.0"
+mission_type: "qa"
+manifest_version: "1"
+
+required_always: []
+
+required_by_step:
+  specify:
+    - artifact_key: "input.spec.qa"
+      artifact_class: "input"
+      path_pattern: "spec.md"
+      blocking: true
+  plan:
+    - artifact_key: "workflow.plan.qa"
+      artifact_class: "workflow"
+      path_pattern: "plan.md"
+      blocking: true
+  tasks:
+    - artifact_key: "workflow.tasks.qa"
+      artifact_class: "workflow"
+      path_pattern: "tasks.md"
+      blocking: true
+  # implement: deliberately empty (op/retire-misplaced-traceability-requirement).
+  # FR-007/Decision 4 (pack-donation-readiness-01M0TW8E) added a blocking entry here for
+  # qa-traceability.yaml, grounded in QA_001. That grounding does not hold: QA_001's own
+  # scope excludes execution ("QA_003 governs execution outcomes"; its intent scopes the
+  # check to strategy authoring and every report submission, neither of which is
+  # `implement`); mission_step_contracts/qa-implement.step-contract.yaml delegates only to
+  # QA_002 plus execution tactics, never QA_001; qa-test-executor-elena (the implement step's
+  # bound profile) cites QA_003/QA_004/QA_006, not QA_001; and no shipped step-contract or
+  # profile produces qa-traceability.yaml at all. An empty implement list is therefore
+  # correct, not accidental: QA_003 governs execution outcomes, and implement's own
+  # artifacts are conditional (a clean run produces no defect log either). See
+  # CONVENTIONS.md Known-Limitations (o) in spec-kitty/spec-kitty-qa-pack (not ported here) for
+  # the resolution record. Do not re-add a
+  # blocking implement entry for qa-traceability.yaml without new grounding that survives
+  # the checks above.
+  implement: []
+  review:
+    - artifact_key: "output.test-report.review.qa"
+      artifact_class: "output"
+      path_pattern: "test-report.md"
+      blocking: true
+    # Presence-only, never provenance. Like every other entry in this manifest,
+    # this check verifies only that qa-traceability.yaml exists at the expected
+    # path. It cannot and does not distinguish a carrier produced by this
+    # mission's ingester (assets/qa_result_ingest.py) from one a human
+    # hand-typed — closing that gap is this mission's purpose, not something an
+    # existence check can see.
+    #
+    # blocking: true IS enforced by the manifest-driven path, and is NOT inert.
+    # This corrects an earlier claim in this file, disproved first-hand by
+    # mission int-e2e-qa-run against the installed spec-kitty package:
+    #   - `evaluate_guards_strict` (runtime/next/runtime_bridge_cores.py) does
+    #     NOT require a `_GUARD_TABLES` entry for "qa". A family with no table
+    #     falls through to a manifest-driven branch that raises
+    #     UnregisteredMissionFamilyError only when `blocking_artifact_names is
+    #     None`; otherwise it returns `blocking_artifact_names - present`.
+    #   - `blocking_artifact_names` is populated (runtime_bridge_io.py) whenever
+    #     this manifest resolves, via `required_artifacts_for(step, "qa")`.
+    #   - `required_artifacts_for` (specify_cli/runtime/resolver.py) ends
+    #     `return [spec.path_pattern for spec in specs if spec.blocking]` — it
+    #     reads `blocking:` explicitly rather than unioning path_patterns.
+    # Measured on this build: required_artifacts_for("review", "qa") ==
+    # ["qa-traceability.yaml", "test-report.md"] and ("accept", "qa") ==
+    # ["qa-coverage.json"] — the blocking entries only, with defect-log.md and
+    # evidence/** correctly excluded. So both former predicates tested the wrong
+    # condition and could never have fired, in either direction.
+    #
+    # What actually stops this guard biting today is a DIFFERENT defect: the
+    # `next` control loop cannot reach `review`/`accept` for a custom mission
+    # type at all (an upstream runtime limitation at authoring time), so the snapshot carrying these names is never
+    # built at those steps. Separately, the per-step `accept` command uses a
+    # different checker — specify_cli/acceptance/__init__.py::_missing_artifacts
+    # — which hardcodes required=[spec.md, plan.md, tasks.md] and consults the
+    # mission only for the OPTIONAL list, ignoring this manifest entirely.
+    #
+    # Re-verification (both must hold; each can genuinely pass AND fail):
+    #   1. `required_artifacts_for("review", "qa", repo_root=<consumer>)`
+    #      contains "qa-traceability.yaml". Fails if this manifest stops
+    #      resolving or the entry loses `blocking: true`.
+    #   2. A fixture qa mission at `review` with qa-traceability.yaml
+    #      deliberately absent, driven through `next`, fails the guard rather
+    #      than proceeding. This was blocked by that runtime limitation, not
+    #      by this manifest; it is runnable once `next` reaches `review` for qa.
+    - artifact_key: "output.qa-traceability.review.qa"
+      artifact_class: "evidence"
+      path_pattern: "qa-traceability.yaml"
+      blocking: true
+  accept:
+    - artifact_key: "output.qa-coverage.qa"
+      artifact_class: "evidence"
+      path_pattern: "qa-coverage.json"
+      blocking: true
+
+optional_always:
+  - artifact_key: "output.test-report.qa"
+    artifact_class: "output"
+    path_pattern: "test-report.md"
+    blocking: false
+  - artifact_key: "output.defect-log.qa"
+    artifact_class: "output"
+    path_pattern: "defect-log.md"
+    blocking: false
+  - artifact_key: "output.qa-traceability.qa"
+    artifact_class: "evidence"
+    path_pattern: "qa-traceability.yaml"
+    blocking: false
+  # Deliberate second declaration of qa-coverage.json (Decision 17): the accept-step
+  # entry above is the blocking one; this one keeps the file visible to the dossier
+  # completeness scan at every other step. Distinct artifact_key because
+  # ExpectedArtifactSpec.artifact_key's own docstring calls it a "stable, unique key"
+  # and nothing enforces that — flagged independently by WP04's reviewer and by two
+  # pre-merge squad lenses (finding S5).
+  - artifact_key: "output.qa-coverage.qa.optional"
+    artifact_class: "evidence"
+    path_pattern: "qa-coverage.json"
+    blocking: false
+  - artifact_key: "output.evidence.qa"
+    artifact_class: "evidence"
+    path_pattern: "evidence/**"
+    blocking: false

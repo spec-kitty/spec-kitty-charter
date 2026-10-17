@@ -1,0 +1,13 @@
+id: review
+display_name: "Test Report Review"
+step_type: agent
+prompt_template: prompt.md
+agent_profile: qa-reporter-rhea
+guidance: null
+delegates_to: []
+depends_on: [implement]
+sequence_index: 5
+in_action_sequence: true
+template:
+  artifact_key: test-report
+  template_file: test-report-template.md

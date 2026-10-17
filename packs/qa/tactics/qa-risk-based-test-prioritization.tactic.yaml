@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: qa-risk-based-test-prioritization
+name: Risk-Based Test Prioritization
+purpose: >-
+  Rank test cases by risk — likelihood times impact of failure, per this pack's `risk`/
+  `product risk` glossary terms (`qa-glossary`) — to decide execution order when time does
+  not allow running every case. Distinct from `eisenhower-prioritisation` (a generic
+  importance/urgency task-triage tactic, not a test-case risk ranking) and from
+  `premortem-risk-identification` (a plan-level failure-brainstorming tactic, not a ranking
+  technique) — both considered and rejected as fits for this technique.
+steps:
+  - title: Enumerate every test case eligible for this execution pass
+  - title: Score each test case's failure likelihood and business impact against the current risk register
+  - title: Rank test cases by likelihood-times-impact to produce a single risk order
+  - title: Select the execution cutoff the time budget allows, starting from the highest-ranked case
+  - title: Record any deviation from the risk-ranked order with a stated justification
+references:
+  - name: QA Risk-Based Prioritization
+    type: directive
+    id: QA_005
+    when: when ranking test cases by risk before a time-boxed execution pass

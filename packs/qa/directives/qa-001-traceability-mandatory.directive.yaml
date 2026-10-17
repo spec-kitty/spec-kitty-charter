@@ -1,0 +1,40 @@
+id: QA_001
+schema_version: "1.0"
+title: QA Traceability Mandatory
+enforcement: required
+intent: >
+  Every requirement a test-strategy/test-report artifact declares must trace to a test case,
+  checked at strategy authoring and every report submission, by recomputing from enumerated
+  ids — never a free-text summary.
+scope: >
+  The requirement-coverage region of test-strategy/test-report artifacts: declared ids and
+  mapped/unmapped/measured report evidence. QA_003 governs execution outcomes.
+validation_criteria:
+  - "Step 0: artifact states its own id-shape regex (example only: ^(?:FR|NFR|C)-\\d{3,}$).
+    Never inferred from observed ids — that makes malformed unreachable. No stated shape =>
+    not-evaluable, never PASS."
+  - "D_raw = every requirements-table row, in order, as a multiset (dupes preserved, never a
+    set). Regex-partition D_raw => D_malformed (fails) / D_wellformed (passes)."
+  - "Before Step 4: D_dupes = ids 2+x in D_wellformed => FAIL `duplicate_declared_id`,
+    enumerated with counts; never recast as unmapped."
+  - "Step 4: D = set(D_wellformed) — malformed excluded; dupes collapse here, after Step 3
+    only."
+  - "Before Step 7: from the report take M_raw (mapped ids), U_raw (enumerated-unmapped);
+    regex-filter both (fails => report_malformed); M/U = set(wellformed M_raw/U_raw)."
+  - "Report `malformed_ids` (declared+report side), always, even `0 malformed`. Non-empty =>
+    its own FAIL, distinct from the coverage verdict."
+  - "Step 7 (after shape-partitioning both sides): require M∪U==D. Enumerate: not_measured =
+    D\\(M∪U); reported_not_declared = (M∪U)\\D; contradictory = M∩U."
+  - "Also require U==∅, U enumerated by id, never a bare count; free-text \"0 uncovered\" is
+    never evidence. No enumerable D/M/U => FAIL, never PASS."
+  - "If D == ∅: FAIL or inapplicable-and-stated, never vacuous PASS (the degenerate
+    fake-green)."
+  - "Verdict: PASS only if D≠∅ and all six of U, duplicate_declared_id, malformed_ids,
+    not_measured, reported_not_declared, contradictory are empty. Report each always, even
+    empty, plus |D|,|M|,|U|."
+  - "FR-008: no upstream mechanism computes NFR-/C- coverage (functional-id-only).
+    Every declared NFR-/C- id carries `measured: yes|no`; absence
+    reads `no`, never covered."
+  - "FR-008 reuse: run Steps 1-10 over the NFR-/C- set, M=measured:yes, U=measured:no,
+    not_measured=undeclared. Verdict needs U empty — an honest `measured: no` is FAIL, not a
+    disclosed PASS."

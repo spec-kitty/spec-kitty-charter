@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: qa-exploratory-charter-writing
+name: Exploratory Charter Writing
+purpose: >-
+  Write a timeboxed exploratory-testing charter — mission, areas to explore, risks/resources,
+  and time budget — before an exploratory testing session begins (per this pack's
+  `exploratory testing`/`test charter` glossary terms, `qa-glossary`).
+steps:
+  - title: State the charter's mission — what this session sets out to learn or find
+  - title: Name the areas, features, or risks the session will explore
+  - title: Name what the session will explicitly not explore, given the timebox
+  - title: Set a bounded time budget for the session
+  - title: Reserve a debrief slot at the timebox's end to record the session's outcome
+references:
+  - name: QA Exploratory Charters Timeboxed
+    type: directive
+    id: QA_006
+    when: when writing a charter before a timeboxed exploratory session

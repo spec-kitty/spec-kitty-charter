@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: qa-boundary-equivalence-partitioning
+name: Boundary and Equivalence Partitioning
+purpose: >-
+  Derive test cases for a requirement's input domain using two black-box techniques as the
+  primary method itself: equivalence partitioning (`qa-glossary`) divides the domain into
+  partitions where every value is expected to be processed equivalently, and boundary value
+  analysis (`qa-glossary`) targets the edges of those partitions where defects cluster.
+  Distinct from `black-box-integration-testing`, whose own step "Select inputs using
+  black-box techniques" names both techniques as one step within a different taught method —
+  a responsibility-boundary integration-test strategy — not as the primary technique this
+  tactic teaches.
+steps:
+  - title: Identify the input domain to be partitioned from the test basis
+  - title: Divide the input domain into equivalence partitions of expected-equivalent behavior
+  - title: Select one representative value per equivalence partition
+  - title: Identify the minimum, maximum, and just-off-boundary values at each partition edge
+  - title: Add boundary value test cases to the representative-partition set
+references:
+  - name: QA Exit Criteria Precede Execution
+    type: directive
+    id: QA_004
+    when: when the exit criteria frozen before execution require boundary/equivalence-partition coverage of a requirement's input domain, so the partitioned test-case set must be fully derived before that freeze point

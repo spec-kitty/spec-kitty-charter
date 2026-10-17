@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: qa-accept
+action: accept
+mission: qa
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action accept --mission-type qa --json"
+
+  - id: confirm_evidence_integrity
+    description: Confirm the no-fake-green principle holds one last time before go/no-go sign-off
+    delegates_to:
+      kind: directive
+      candidates:
+        - QA_003
+
+  - id: run_go_no_go_review
+    description: Run the go/no-go readiness review before accepting the mission
+    delegates_to:
+      kind: procedure
+      candidates:
+        - qa-go-no-go-readiness-review

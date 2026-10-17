@@ -1,0 +1,27 @@
+id: QA_008
+schema_version: "1.0"
+title: QA Known-Defect Reproductions Gate Releases
+enforcement: required
+intent: >
+  "Green" means no known open defect of the agreed kind. A confirmed defect in the agreed
+  scope becomes a scenario that fails until the fix lands, and a release candidate is cut
+  only when every gating scenario passes.
+scope: >
+  Defects in the scope the product authority sets for reproductions (for example P0 only,
+  or P0 plus named P1s), their reproduction scenarios, and the release-candidate gate.
+validation_criteria:
+  - "The reproduction scope is written down by the product authority before reproductions
+    are added. A defect outside it is triaged (QA_002) but does not gate."
+  - "A reproduction is a Given/When/Then scenario tagged `@defect:<issue>` and
+    `@promise:<id>` (QA_007), committed while it still fails, and linked from the issue."
+  - "A release candidate requires the gating run green on the exact commit being released:
+    every gating scenario passed, none skipped, none quarantined into passing (QA_003)."
+  - "A waiver is explicit, logged with who, why and until when, and leaves the red visible
+    in the report. A waiver never marks a failing scenario as passed."
+  - "When a fix lands, the reproduction stays as a regression scenario; deleting it needs
+    the same review as relaxing a promise."
+  - "Track how many reproductions are open and for how long; a growing backlog is reported
+    to the product authority, not absorbed by habitual waivers."
+explicit_allowances:
+  - "A team may run gating scenarios nightly rather than per change, provided the release
+    gate reads the nightly result for the commit it releases."

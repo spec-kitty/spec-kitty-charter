@@ -1,0 +1,48 @@
+schema_version: "1.0"
+id: qa-coverage-gap-analysis
+name: QA Coverage Gap Analysis
+purpose: >
+  Identify gaps between what the test basis requires and what the current
+  test suite actually covers — a test-coverage gap analysis, per this pack's
+  `test coverage` glossary term (`qa-glossary`). The name-only collision with
+  documentation-gap-prioritization was checked and rejected as a false
+  friend: documentation-gap-prioritization addresses documentation gaps, an
+  unrelated domain that happens to share the "gap analysis" shape but not
+  the subject matter this procedure covers.
+entry_condition: >
+  A test basis and a current test suite both exist and can be compared.
+exit_condition: >
+  Every identified gap is either scheduled for new test authoring or
+  explicitly accepted as a documented risk.
+steps:
+  - title: Enumerate the coverage items the test basis requires
+    actor: agent
+    description: >
+      List the requirements, code branches, or equivalence partitions the
+      test basis identifies as coverage items to be exercised.
+  - title: Map each coverage item to the tests that currently exercise it
+    actor: agent
+    description: >
+      For each coverage item, identify which existing tests, if any,
+      exercise it, so unexercised items become visible.
+  - title: Record every unexercised coverage item as a candidate gap
+    actor: agent
+    description: >
+      List each coverage item with no exercising test as a candidate gap
+      rather than silently omitting it.
+  - title: Decide whether each gap is scheduled for new tests or accepted as a documented risk
+    actor: human
+    description: >
+      For every candidate gap, either schedule new test authoring to close
+      it or explicitly accept it as a documented risk with rationale.
+  - title: Confirm no candidate gap is left undecided before closing the analysis
+    actor: agent
+    description: >
+      Do not close the analysis while any candidate gap lacks either a
+      scheduling decision or an accepted-risk decision.
+references:
+  - type: directive
+    id: QA_001
+    reason: >
+      This analysis's coverage-item-to-test mapping operationalises
+      traceability between the test basis and the suite that exercises it.

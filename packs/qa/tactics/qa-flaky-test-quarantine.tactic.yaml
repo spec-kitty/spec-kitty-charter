@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: qa-flaky-test-quarantine
+name: Flaky Test Quarantine
+purpose: >-
+  Detect and isolate tests that fail nondeterministically so they stop masking real signal in
+  a run's verdict. A test is flagged when an immediate rerun of the same code and environment
+  produces a false-fail result (per this pack's `qa-glossary` term) with no corresponding
+  defect. Distinct from `no-parallel-duplicate-test-runs`, which addresses concurrent-run
+  hygiene — a different failure mode than nondeterministic results, not the same concern under
+  a different name.
+steps:
+  - title: Flag a test as a flake candidate when an immediate rerun changes its result with no code or environment change
+  - title: Confirm no corresponding defect exists before treating the result as a false-fail result
+  - title: Move confirmed flakes into quarantine, excluded from the run's pass/fail verdict
+  - title: Track quarantined tests separately so they are not silently forgotten
+  - title: Re-admit a quarantined test only after its nondeterminism is fixed and it passes a stability check
+references:
+  - name: QA No Fake Green
+    type: directive
+    id: QA_003
+    when: when a flaky test's false-fail result would otherwise corrupt a run's recomputed verdict

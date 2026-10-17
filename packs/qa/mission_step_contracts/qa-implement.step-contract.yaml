@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: qa-implement
+action: implement
+mission: qa
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action implement --mission-type qa --json"
+
+  - id: report_defects
+    description: Execute the planned tests and report defects found during execution
+    delegates_to:
+      kind: directive
+      candidates:
+        - QA_002
+
+  - id: apply_execution_tactics
+    description: Apply execution-time techniques while running the test suite
+    delegates_to:
+      kind: tactic
+      candidates:
+        - qa-flaky-test-quarantine
+        - qa-test-data-minimization
+        - qa-regression-suite-selection

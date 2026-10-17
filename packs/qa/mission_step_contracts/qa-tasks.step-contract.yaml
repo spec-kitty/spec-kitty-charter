@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: qa-tasks
+action: tasks
+mission: qa
+steps:
+  - id: bootstrap
+    description: Load charter context for this action
+    command: "spec-kitty charter context --action tasks --mission-type qa --json"
+
+  - id: reduce_test_surface
+    description: Decompose the test-design task set using test-surface reduction techniques
+    delegates_to:
+      kind: tactic
+      candidates:
+        - qa-pairwise-test-reduction
+        - qa-boundary-equivalence-partitioning
+
+  - id: close_coverage_gaps
+    description: Identify and close coverage gaps in the resulting task list
+    delegates_to:
+      kind: procedure
+      candidates:
+        - qa-coverage-gap-analysis
