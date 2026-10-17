@@ -23,7 +23,7 @@ audience:
 **Accepted** — 2026-10-13. Decider: Stijn Dejongh (operator), in the project discussion of
 how the charter, the event router and the product direction fit together.
 
-**Amended 2026-10-17 (clarification; the decision is unchanged).** The behaviour-first
+**Amended 2026-10-17 (clarification; the decision is unchanged).** The behavior-first
 bootstrap recorded in [the overhaul approach](/plans/overhaul-approach/) sequences the work so
 that the charter offering's role and boundary are specified as acceptance scenarios, then
 published as the OpenAPI contract, *before* an implementation is built. This does not reopen the
@@ -31,7 +31,7 @@ decision below: the target implementation remains a Java service. What stays ope
 *migration sequencing* of decision 3 — whether the Python charter first moves into this
 repository as an interim package or is replaced in place
 ([open questions](/plans/open-questions/), question 2). Epic
-[#29](https://github.com/spec-kitty/spec-kitty-charter/issues/29) tracks the behaviour-first
+[#29](https://github.com/spec-kitty/spec-kitty-charter/issues/29) tracks the behavior-first
 phases that precede and constrain the Java implementation tracked by epic
 [#6](https://github.com/spec-kitty/spec-kitty-charter/issues/6).
 

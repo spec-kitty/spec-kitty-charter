@@ -1,5 +1,5 @@
 ---
-title: Behaviour and acceptance scenarios
+title: Behavior and acceptance scenarios
 description: The promise-first BDD scenarios that define the charter offering's role and boundary, and how they become the conformance net that survives the repository split.
 doc_status: draft
 updated: 2026-10-17
@@ -11,14 +11,14 @@ related:
   - plans/overhaul-approach
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this for the behaviour the implementation must reproduce and where the scenarios live.
+    guidance_text: Read this for the behavior the implementation must reproduce and where the scenarios live.
   - profile: core-maintainer
     guidance_text: Read this for how the offering suite relates to core's acceptance scenarios and ownership.
 ---
 
-# Behaviour and acceptance scenarios
+# Behavior and acceptance scenarios
 
-The charter offering's role and boundary are defined **behaviourally**, by promise-first
+The charter offering's role and boundary are defined **behaviorally**, by promise-first
 acceptance scenarios. Each scenario states a guarantee a consumer relies on — *what the system
 should do for me* — phrased so it stays true regardless of which command or implementation
 delivers it. Because they describe outcomes and not mechanism, they are the **conformance net**
@@ -29,7 +29,7 @@ scenarios come before the contract and before any implementation choice.
 
 ## The offering promises
 
-The suite is organised by consumer outcome. The three offering outcomes are:
+The suite is organized by consumer outcome. The three offering outcomes are:
 
 | Outcome | Guarantee |
 |---|---|
@@ -60,7 +60,7 @@ at whatever answers the charter commands, is tracked in the issue tracker.
 
 The scenarios describe the boundary in the consumer's language; the
 [OpenAPI contract](/architecture/contract-and-dtos/) will state that same boundary as a typed,
-versioned surface. The order is deliberate: describe the behaviour, publish the contract, then
+versioned surface. The order is deliberate: describe the behavior, publish the contract, then
 choose an implementation — each step constrained by the one before it.
 
 ## Authoring and ownership
@@ -69,6 +69,6 @@ New scenarios follow the `feature-and-scenario-authoring` styleguide and the
 `charter-offering-scenario-extraction` procedure (authored and vendored in the org packs, to be
 put in force in P1 — see [the overhaul approach](/plans/overhaul-approach/)): outcomes rather
 than output surfaces, one
-promise per scenario, the consumer's language only, and desired behaviour rather than a defect
+promise per scenario, the consumer's language only, and desired behavior rather than a defect
 reproduction. In core, the charter scenarios are co-owned by QA and core; the same split applies
 as the suite grows here.

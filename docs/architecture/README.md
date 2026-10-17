@@ -31,7 +31,7 @@ The design is grounded in three core ADRs and this repository's own records:
 ## The map
 
 - [Overview](/architecture/overview/) — containers and the main flows. Read this first.
-- [Behaviour and acceptance scenarios](/architecture/behaviour-and-scenarios/) — the promise-first
+- [Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/) — the promise-first
   BDD scenarios that define the offering's role and boundary, and the conformance net they form.
 
 ## The charter model
