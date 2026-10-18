@@ -1,0 +1,3 @@
+# PackDescriptor fixture (consumer tier, filesystem source).
+id: local-dev-pack
+level: project

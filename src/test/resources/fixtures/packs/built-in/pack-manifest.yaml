@@ -1,0 +1,9 @@
+# Generated pack manifest (built_in tier). One illustrative constituent; the real built-in pack
+# carries many. Snapshot digest tracked in the lockfile (DM-11). Illustrative hashes.
+charter:
+constituents:
+  - content_hash: 66f60718293a4b5c6d7e8f901234561122334455666f60718293a4b5c6d7abcd
+    id: analyst-annie
+    kind: agent_profile
+    path: agent_profiles/analyst-annie.agent.yaml
+    provenance_path:

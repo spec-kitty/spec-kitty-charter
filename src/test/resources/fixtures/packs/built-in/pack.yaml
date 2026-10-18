@@ -1,0 +1,5 @@
+# PackDescriptor fixture (built_in tier). The first catfooding consumer (DM-8): registered and
+# resolved through the same path as every other pack; bundled into the installed distribution for
+# cold/offline installs (DM-9).
+id: built-in
+level: built_in

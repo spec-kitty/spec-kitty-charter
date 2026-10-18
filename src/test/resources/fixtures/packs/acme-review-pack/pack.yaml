@@ -1,0 +1,4 @@
+# PackDescriptor fixture (org tier). Mirrors core's pack.yaml: closed schema, no extra fields.
+# requires_core and source/pin live in the lockfile + source descriptor (DM-11), NOT here.
+id: acme-review-pack
+level: org
