@@ -1,0 +1,105 @@
+package ai.speckitty.charter.yaml;
+
+import org.snakeyaml.engine.v2.common.ScalarStyle;
+
+/** Writes one scalar value as source text, keeping the original style when it can carry the value. */
+final class ScalarWriter {
+
+    private ScalarWriter() {
+    }
+
+    static String write(String value, ScalarStyle style, String original) {
+        return switch (style) {
+            case PLAIN -> plainSafe(value, original) ? value : doubleQuoted(value);
+            case SINGLE_QUOTED -> value.indexOf('\n') < 0 ? "'" + value.replace("'", "''") + "'" : doubleQuoted(value);
+            case LITERAL -> literal(value, original).orElseGet(() -> doubleQuoted(value) + lineBreakSuffix(original));
+            // Folding a value back into a folded block needs the emitter of open question 6; until then the
+            // value is written double-quoted, keeping the line break the block owned.
+            default -> doubleQuoted(value) + lineBreakSuffix(original);
+        };
+    }
+
+    /**
+     * Writes a literal block with the original header and indentation, when the header's chomping can
+     * carry the value's trailing line breaks and no line would need an indentation indicator.
+     */
+    private static java.util.Optional<String> literal(String value, String original) {
+        int headerEnd = original.indexOf('\n');
+        if (headerEnd < 0) {
+            return java.util.Optional.empty();
+        }
+        String header = original.substring(0, headerEnd + 1);
+        String indent = original.substring(headerEnd + 1).lines().filter(l -> !l.isBlank()).findFirst()
+                .map(l -> l.substring(0, l.length() - l.stripLeading().length())).orElse("");
+        String body = value;
+        int trailing = 0;
+        while (body.endsWith("\n")) {
+            body = body.substring(0, body.length() - 1);
+            trailing++;
+        }
+        boolean strip = header.contains("-");
+        boolean keep = header.contains("+");
+        boolean chompingFits = strip ? trailing == 0 : keep ? trailing >= 1 : trailing == 1;
+        if (indent.isEmpty() || !chompingFits || body.isEmpty() || body.startsWith(" ") || body.contains("\r")
+                || header.chars().anyMatch(Character::isDigit)) {
+            return java.util.Optional.empty();
+        }
+        StringBuilder out = new StringBuilder(header);
+        for (String line : body.split("\n", -1)) {
+            out.append(line.isEmpty() ? "" : indent + line).append('\n');
+        }
+        for (int i = 1; i < trailing; i++) {
+            out.append('\n');
+        }
+        return java.util.Optional.of(out.toString());
+    }
+
+    /** The line breaks and indentation a block scalar token owns after its content. */
+    private static String lineBreakSuffix(String original) {
+        int end = original.length();
+        while (end > 0 && (original.charAt(end - 1) == '\n' || original.charAt(end - 1) == '\r' || original.charAt(end - 1) == ' ')) {
+            end--;
+        }
+        return original.substring(end);
+    }
+
+    /**
+     * A plain scalar is kept plain only when writing the value back re-reads as the same string: the
+     * value must equal the original text (a single-line plain scalar) or be a single line the YAML
+     * reader takes as a string unchanged.
+     */
+    private static boolean plainSafe(String value, String original) {
+        if (value.equals(original)) {
+            return true;
+        }
+        if (value.isEmpty() || value.indexOf('\n') >= 0 || !value.strip().equals(value)) {
+            return false;
+        }
+        try {
+            return value.equals(Yaml.load("k: " + value + "\n") instanceof java.util.Map<?, ?> m ? m.get("k") : null);
+        } catch (RuntimeException notPlain) {
+            return false;
+        }
+    }
+
+    static String doubleQuoted(String value) {
+        StringBuilder out = new StringBuilder("\"");
+        value.codePoints().forEach(c -> {
+            switch (c) {
+                case '"' -> out.append("\\\"");
+                case '\\' -> out.append("\\\\");
+                case '\n' -> out.append("\\n");
+                case '\t' -> out.append("\\t");
+                case '\r' -> out.append("\\r");
+                default -> {
+                    if (c < 0x20 || c == 0x7f) {
+                        out.append(String.format("\\x%02x", c));
+                    } else {
+                        out.appendCodePoint(c);
+                    }
+                }
+            }
+        });
+        return out.append('"').toString();
+    }
+}

@@ -2,7 +2,7 @@
 title: What the charter service is for
 description: What the charter service is for, where it sits in the Brain, Build and Team Kitty product lines, and what this repository will hold.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-18
 type: Context
 kind: Explanation
 related:
@@ -52,14 +52,14 @@ Spec Kitty Inc. names three product lines (core `docs/context/product-lines.md`)
 The charter is a **producer**. Consumers reach it only across its published contract,
 never through its internals.
 
-## What this repository will hold
+## What this repository holds
 
 | Part | Purpose | State |
 |---|---|---|
-| `contracts/charter/` | The OpenAPI 3.1 contract: the source of record for every charter DTO (pending ADR-0002) | planned |
-| The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | planned |
+| `contracts/charter/` | The OpenAPI 3.1 contract and its BDD scenarios: the source of record for every charter DTO ([ADR-0002](/adr/0002-contract-source-of-record/)) | first read paths |
+| The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | skeleton: domain, read app, REST in, YAML out |
 | Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
-| The Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), consumed through `charter.offering.api`, as the conformance oracle while Java takes over | open; see [question 2](/plans/open-questions/) |
+| The Python charter package | Not held here: it stays in core behind `charter.offering.api` as the conformance oracle while Java takes over ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)) | decided |
 | `docs/` | This documentation | bootstrapped |
 
 CLI callers reach the charter through the Python seam `charter.offering.api` while the

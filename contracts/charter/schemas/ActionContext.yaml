@@ -1,0 +1,17 @@
+title: ActionContext
+description: The governance that applies to one action of one mission type.
+type: object
+additionalProperties: false
+required:
+  - action
+  - missionType
+  - guidance
+properties:
+  action:
+    $ref: Urn.yaml
+  missionType:
+    $ref: Urn.yaml
+  guidance:
+    type: array
+    items:
+      $ref: GuidanceEntry.yaml

@@ -1,0 +1,32 @@
+get:
+  operationId: getActionContext
+  summary: Read the governance that applies to one action of one mission type.
+  description: >-
+    Starts at the DRG node action:<missionType>/<action> and returns every artifact reached by
+    one scope edge from that action node, then every artifact reached by one scope edge from the
+    mission type node, without repeats; an artifact in both keeps its action entry. Entries keep
+    the order of the edges in the merged graph. This first slice answers from the merged offering
+    without activation filtering; activation joins with the conformance corpus (roadmap steps 3
+    to 5) as a new contract version. An unknown mission type or action is a 404, never an empty
+    answer.
+  tags:
+    - Context
+  parameters:
+    - $ref: ../parameters/MissionType.yaml
+    - $ref: ../parameters/Action.yaml
+  responses:
+    '200':
+      description: The action-scoped context.
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActionContext.yaml
+          examples:
+            software-dev-plan:
+              $ref: ../examples/ActionContext.software-dev-plan.yaml
+    '404':
+      $ref: ../responses/ActionNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

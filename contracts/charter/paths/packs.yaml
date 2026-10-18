@@ -1,0 +1,23 @@
+get:
+  operationId: listPacks
+  summary: List the Charter Packs of the charter offering.
+  description: >-
+    Every Charter Pack the service loaded, in layer order (built-in, then org, then project) and,
+    within a layer, in the order the packs are configured. A pack that fails to load refuses the
+    whole read with a 500; the listing is never partial.
+  tags:
+    - Packs
+  responses:
+    '200':
+      description: The pack listing.
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackListing.yaml
+          examples:
+            built-in:
+              $ref: ../examples/PackListing.built-in.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

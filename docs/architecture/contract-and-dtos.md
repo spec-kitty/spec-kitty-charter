@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Explanation
 related:
@@ -20,7 +20,7 @@ audience:
 
 How one OpenAPI document becomes the DTOs on both sides: the service generates its server interfaces from it, and core ingests a pinned release to generate its own. The page also lists what the contract carries and how it is versioned.
 
-> **Status:** design only; `contracts/charter/` exists neither here nor in core yet. [What the labels mean](/#status).
+> **Status:** partly built. `contracts/charter/` exists here at `0.1.0-SNAPSHOT` with two read paths and its BDD scenarios, and the service generates its interfaces from it; no release is cut and core ingests nothing yet. [What the labels mean](/#status).
 
 ## One document, two generators
 
@@ -30,7 +30,7 @@ The service is built against the same document.
 
 ```mermaid
 flowchart LR
-  spec["contracts/charter/openapi.yaml<br/>OpenAPI 3.1, split files<br/><b>source of record</b><br/><i>pending ADR-0002</i>"]
+  spec["contracts/charter/openapi.yaml<br/>OpenAPI 3.1, split files<br/><b>source of record</b><br/><i>ADR-0002</i>"]
   bundle["released bundle<br/>single-file, versioned"]
   javagen["Java generation<br/>server interfaces + DTOs<br/>charter-api module"]
   core["spec-kitty core<br/>pinned, checksummed copy"]
@@ -58,9 +58,16 @@ flowchart LR
   by sharing code.
 
 Where the contract is authored is decided in
-[ADR-0002](/adr/0002-contract-source-of-record/) (Proposed): here, in this repository,
+[ADR-0002](/adr/0002-contract-source-of-record/) (Accepted 2026-10-18): here, in this repository,
 with core consuming releases. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) placed it in core's `contracts/`; that
-placement predates the charter getting its own repository.
+placement predates the charter getting its own repository; its Amendment 2026-10-18 points
+here.
+
+The behavior half of the contract is written as **BDD scenarios** in
+`contracts/charter/scenarios/`, beside the OpenAPI document
+([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)). Each scenario
+names pack files, calls one operation and states the answer; the service runs every scenario
+in its build, and another implementation can bind the same steps.
 
 ## What the contract carries
 

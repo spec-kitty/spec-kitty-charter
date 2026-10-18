@@ -2,7 +2,7 @@
 title: System context
 description: The systems around the charter service — the core CLI and runtime, the Charter Packs, the event contracts and the integration package — and which contract each edge uses.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-18
 type: Context
 kind: Explanation
 related:
@@ -61,7 +61,7 @@ flowchart LR
 
 There are two families of contracts and they must not mix:
 
-- **The charter contract** (this repository, `contracts/charter/`, pending ADR-0002)
+- **The charter contract** (this repository, `contracts/charter/`, [ADR-0002](/adr/0002-contract-source-of-record/))
   describes the request and response shapes of governance reads and, later, writes. Charter
   DTOs come only from there.
 - **spec-kitty-events** describes what is appended to the ledger: the event envelope, with

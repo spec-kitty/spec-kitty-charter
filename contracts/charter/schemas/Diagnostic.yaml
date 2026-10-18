@@ -1,0 +1,12 @@
+title: Diagnostic
+description: One load finding of a pack. The detail names pack-relative paths only, never a host path.
+type: object
+additionalProperties: false
+required:
+  - code
+  - detail
+properties:
+  code:
+    $ref: DiagnosticCode.yaml
+  detail:
+    type: string

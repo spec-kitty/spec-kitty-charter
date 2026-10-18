@@ -9,18 +9,19 @@ the guidance that Spec Kitty's runtime acts on at each step of a Mission.
 This repository is where the charter becomes a **Java service built against an OpenAPI
 contract**, released and versioned on its own.
 
-## Status: bootstrap, no code yet
+## Status: bootstrap, first code
 
 The charter still runs as Python inside the core CLI
-([`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty), `src/charter/`). This
-repository holds the agreed direction, the target design and the decisions; code follows.
+([`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty), `src/charter/`), and
+stays there as the reference until the Java service replaces it. This repository holds the
+direction, the design, the decisions, the contract and the first slice of the service.
 
 | Part | What it is | State |
 |---|---|---|
-| `contracts/charter/` | OpenAPI 3.1 contract: the single source of every charter data transfer object (DTO); authored here pending ADR-0002 | planned |
-| Java service | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only | planned |
-| Conformance corpus | Fixtures the Python and Java implementations must both pass | planned |
-| Python charter package | Today's `src/charter/offering/` or all of `src/charter/` from core (boundary open: spec-kitty#3101, spec-kitty#6099), behind `charter.offering.api` | likely moves here first; to be decided |
+| [`contracts/charter/`](contracts/charter/openapi.yaml) | OpenAPI 3.1 contract, the single source of every charter data transfer object (DTO), and its [BDD scenarios](contracts/charter/scenarios/) | `0.1.0-SNAPSHOT`: two read paths |
+| [`service/`](service/) | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only; Gradle convention plugins in [`build-logic/`](build-logic/) | skeleton: domain, read app, REST in, YAML out |
+| Conformance corpus | Fixtures the Python and Java implementations must both pass | next ([roadmap](docs/plans/roadmap.md) step 3) |
+| Python charter | Stays in core behind `charter.offering.api` as the oracle while Java replaces it ([ADR-0008](docs/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts.md)) | not moved here |
 | [`docs/`](docs/README.md) | Context, architecture, decisions and plans | bootstrapped |
 
 ## How it fits
@@ -30,9 +31,9 @@ repository holds the agreed direction, the target design and the decisions; code
   `next` state machine use. Neither side imports the other's code.
 - **Staged behind one seam.** The Python seam `charter.offering.api` becomes the only entry
   point for CLI callers. Behind it, reads move to the Java service first (shadow, then
-  authoritative with a loud fallback), and writes move later, one operation at a time. The Python charter likely moves into this
-  repository first; whether a rewrite-and-replace is safer or cheaper is still to be
-  decided.
+  authoritative with a loud fallback), and writes move later, one operation at a time. The
+  Java service is a rewrite built against BDD and OpenAPI contracts; the Python charter does
+  not move here.
 - **Not an event producer.** Events come from the core CLI's one canonical event writer,
   which the runtime calls as Missions move through their lifecycle, and follow the
   [`spec-kitty-events`](https://github.com/spec-kitty/spec-kitty-events) contracts. The
@@ -46,12 +47,24 @@ repository holds the agreed direction, the target design and the decisions; code
   [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) until that issue was
   closed as not planned on 2026-10-13; the import move is now carried by epic
   [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
-- Core ADR `2026-10-03-1` (Proposed): a staged Java service strangler for charter reads
-  and writes.
+- Core ADR `2026-10-03-1` (Accepted, Amendment 2026-10-18): a staged Java service
+  strangler for charter reads and writes.
 - [ADR-0001](docs/adr/0001-java-service-with-openapi-contract.md): the charter is a Java
   service built against an OpenAPI contract.
-- [ADR-0002](docs/adr/0002-contract-source-of-record.md) (Proposed): this repository is
-  the source of record for that contract.
+- [ADR-0002](docs/adr/0002-contract-source-of-record.md): this repository is the source of
+  record for that contract.
+- [ADR-0008](docs/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts.md): the
+  Java service is a rewrite that replaces the Python charter; the open-packs content must
+  round-trip through its file-based layer.
+
+## Building the service
+
+```bash
+./gradlew verifyAll   # contract validation, unit, architecture, BDD and open-packs round-trip
+```
+
+It needs Java 25 and a `spec-kitty-open-packs` checkout beside this one (or
+`-PopenPacksDir=<path>`). Details: [Building the service](docs/guides/service-build.md).
 
 ## Documentation
 

@@ -1,0 +1,10 @@
+title: CharterRefusal
+description: The problem details body of a refused charter read, a Problem whose code is a CharterRefusalCode.
+allOf:
+  - $ref: ../../_shared/schemas/Problem.yaml
+  - type: object
+    required:
+      - code
+    properties:
+      code:
+        $ref: CharterRefusalCode.yaml

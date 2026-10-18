@@ -1,0 +1,10 @@
+description: >-
+  The mission type or the action names no node of the merged graph, refused with 404. The code
+  is MISSION_TYPE_NOT_FOUND or ACTION_NOT_FOUND.
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      action-not-found:
+        $ref: ../examples/CharterRefusal.action-not-found.yaml

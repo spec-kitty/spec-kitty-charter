@@ -1,0 +1,23 @@
+title: GuidanceEntry
+description: One artifact in an action-scoped context and the edge that brought it in.
+type: object
+additionalProperties: false
+required:
+  - urn
+  - kind
+  - label
+  - relation
+  - via
+properties:
+  urn:
+    $ref: Urn.yaml
+  kind:
+    $ref: NodeKind.yaml
+  label:
+    type: ['string', 'null']
+    description: The node label, or null when the graph declares none.
+  relation:
+    $ref: Relation.yaml
+  via:
+    $ref: Urn.yaml
+    description: The node the edge starts from, the action node or the mission type node.

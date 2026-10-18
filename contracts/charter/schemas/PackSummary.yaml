@@ -1,0 +1,41 @@
+title: PackSummary
+description: One loaded Charter Pack and the size of the DRG it contributes.
+type: object
+additionalProperties: false
+required:
+  - name
+  - level
+  - packId
+  - packVersion
+  - parentPack
+  - nodeCount
+  - edgeCount
+  - diagnostics
+properties:
+  name:
+    type: string
+    description: The pack name.
+  level:
+    $ref: PackLevel.yaml
+  packId:
+    type: ['string', 'null']
+    description: The pack's ULID from pack.yaml, or null for a pack without a descriptor.
+  packVersion:
+    type: ['string', 'null']
+    description: The pack_version from pack.yaml, or null for a pack without a descriptor.
+  parentPack:
+    type: ['string', 'null']
+    description: The parent_pack from pack.yaml; null for a root pack.
+  nodeCount:
+    type: integer
+    minimum: 0
+    description: The number of DRG nodes the pack declares.
+  edgeCount:
+    type: integer
+    minimum: 0
+    description: The number of DRG edges the pack declares.
+  diagnostics:
+    type: array
+    description: Load findings that did not stop the load; empty for a clean pack.
+    items:
+      $ref: Diagnostic.yaml

@@ -1,0 +1,11 @@
+title: PackListing
+description: The Charter Packs of the offering, in layer order.
+type: object
+additionalProperties: false
+required:
+  - packs
+properties:
+  packs:
+    type: array
+    items:
+      $ref: PackSummary.yaml
