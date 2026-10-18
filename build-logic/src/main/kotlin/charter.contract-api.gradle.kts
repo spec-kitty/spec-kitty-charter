@@ -45,6 +45,9 @@ val generateContract = tasks.register<GenerateTask>("generateContract") {
         "serializableModel" to "false",
         "hideGenerationTimestamp" to "true",
         "containerDefaultToNull" to "false",
+        // Pinned to the generator's default so the output stays as is and the notices stay quiet.
+        "generateJsonIncludeAnnotations" to "false",
+        "generateJsonSetterNullsAnnotations" to "false",
     )
 }
 
