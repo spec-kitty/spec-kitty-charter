@@ -26,23 +26,28 @@ for a **core P0 issue** to remediate the `plan` mission type holistically.
   mission only. **Design issue filed: this repo #42** (make profile roles
   pack-declared + charter-resolved, retire the hardcoded table).
 
-- **[2026-10-18] `plan` artifact gate hits the `_check_cli_guards`
-  software-dev-hardcode defect — UNRESOLVED, BLOCKING.** After the profile
-  workaround, `next --result success` fails with `Required artifact missing:
-  spec.md` even though `spec.md` is committed in the root-checkout mission dir
-  AND copied into the coord worktree; the presence check is filesystem
-  (`.exists()`), yet reports missing from both real locations, and
-  `guard_failure_paths` returns `{}` (cannot even name the directory checked).
-  Root cause is the documented defect: `_check_cli_guards` hardcodes
-  `mission_family="software-dev"` for every type
-  (`src/runtime/next/runtime_bridge.py:234`; noted in this repo's
-  `.kittify/missions/plan/expected-artifacts.yaml:11-18`), so the `plan` gate
-  resolves against a path that is not its mission dir. **No surgical
-  per-mission workaround found.** **Disposition: PIVOTED** — doing the design
-  work outside the runtime step-gate (operator decision 2026-10-18); the mission
-  artifacts live in `kitty-specs/pack-registration-distribution-01M56M49/`, and
-  Decision Moments are used for operator calls, without forcing step-state
-  advancement.
+- **[2026-10-18] `plan` specify gate reports a present `spec.md` as missing —
+  UNRESOLVED, BLOCKING; reproduced on LATEST upstream main.** `next --result
+  success` fails with `Required artifact missing: spec.md` even though `spec.md`
+  is committed in the root-checkout mission dir AND copied into the coord
+  worktree, and `guard_failure_paths` returns `{}` (cannot name the directory
+  it checked). **Verified 2026-10-18 on `spec-kitty/spec-kitty` `main @ 0746bec`
+  (4.0.0rc8, 0 behind upstream) — the block persists on current main.**
+  **Attribution corrected:** this is NOT the old `_check_cli_guards`
+  `mission_family="software-dev"` hardcode — that was replaced by `#3386`'s
+  first-class `_evaluate_plan_guards` (`src/runtime/next/runtime_bridge_cores.py`,
+  registered in `_GUARD_TABLES`), which IS present on main. The real defect is in
+  that guard's presence resolution: its `specify` branch calls
+  `_check_artifact_present(snapshot, SPEC_ARTIFACT)` and the artifact-presence
+  snapshot resolves `spec.md` to a location that does not match where the plan
+  mission's `spec.md` actually sits, so a present artifact reads as missing.
+  The empty `guard_failure_paths` is a diagnostic sub-bug. **No surgical
+  per-mission workaround found.** **Disposition: PIVOTED** — the design work was
+  done outside the runtime step-gate (operator decision 2026-10-18); mission
+  artifacts live in `kitty-specs/pack-registration-distribution-01M56M49/`, with
+  Decision Moments for operator calls, without forcing step-state advancement.
+  The pivot is justified: the runtime genuinely cannot drive a plan mission
+  end-to-end on current main.
 
 ## For the core P0 issue (to file later)
 
