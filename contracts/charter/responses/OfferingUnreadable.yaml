@@ -1,0 +1,7 @@
+description: >-
+  A configured Charter Pack could not be loaded or merged, refused with 500. The answer is never
+  partial. The code names the reason, for example PACK_LEVEL_MISMATCH or unresolved_edge_endpoint.
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml

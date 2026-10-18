@@ -1,0 +1,6 @@
+name: missionType
+in: path
+required: true
+description: The mission type, the id part of a mission_type node, for example software-dev.
+schema:
+  $ref: ../schemas/Slug.yaml

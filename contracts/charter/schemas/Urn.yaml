@@ -1,0 +1,4 @@
+title: Urn
+description: A DRG node identity, <node kind>:<id>, for example directive:DIRECTIVE_010.
+type: string
+pattern: '^[a-z_]+:.+$'

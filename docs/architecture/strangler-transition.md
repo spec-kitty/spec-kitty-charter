@@ -2,7 +2,7 @@
 title: Strangler transition
 description: The stages that move charter reads, then writes, from core Python to the Java service, with the evidence for each and the point of no return.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Explanation
 related:
@@ -18,10 +18,10 @@ audience:
 
 # Strangler transition
 
-The stages come from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Staged ownership"). It is still **Proposed**
-in core; this repository treats it as the plan, and [open questions](/plans/open-questions/)
-tracks its acceptance. The stages are written for either answer to
-[question 2](/plans/open-questions/).
+The stages come from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Staged ownership"), accepted in core on 2026-10-18. The Java service is a rewrite that
+replaces the Python charter, which stays in core as the oracle until its reads and writes
+retire ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)), so the
+seam and the shadow comparison run in core and the service runs from this repository.
 
 > **Status:** design only; this repository is at stage 0. [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 

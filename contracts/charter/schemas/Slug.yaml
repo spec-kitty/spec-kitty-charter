@@ -1,0 +1,5 @@
+title: Slug
+description: A lowercase identifier segment of a DRG URN.
+type: string
+pattern: '^[a-z0-9][a-z0-9_-]*$'
+maxLength: 64

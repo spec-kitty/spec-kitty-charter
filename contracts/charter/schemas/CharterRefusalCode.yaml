@@ -1,0 +1,13 @@
+title: CharterRefusalCode
+description: >-
+  Why the charter refused a read. Codes are part of the contract; consumers branch on them,
+  never on the title. Codes core already uses keep their spelling.
+  MISSION_TYPE_NOT_FOUND and ACTION_NOT_FOUND are 404; every other code is 500.
+type: string
+enum:
+  - MISSION_TYPE_NOT_FOUND
+  - ACTION_NOT_FOUND
+  - PACK_LEVEL_MISMATCH
+  - PACK_UNREADABLE
+  - DRG_SCHEMA_ERROR
+  - unresolved_edge_endpoint

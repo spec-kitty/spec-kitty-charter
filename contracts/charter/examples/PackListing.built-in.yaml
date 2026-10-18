@@ -1,0 +1,11 @@
+summary: The built-in pack alone.
+value:
+  packs:
+    - name: built-in
+      level: built-in
+      packId: 01ARWG13C000000000000000FG
+      packVersion: 1.0.0
+      parentPack: null
+      nodeCount: 358
+      edgeCount: 1069
+      diagnostics: []

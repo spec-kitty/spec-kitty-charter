@@ -1,0 +1,7 @@
+title: PackLevel
+description: The level a Charter Pack declares in pack.yaml (core ADR 2026-10-11-2).
+type: string
+enum:
+  - built-in
+  - org
+  - project

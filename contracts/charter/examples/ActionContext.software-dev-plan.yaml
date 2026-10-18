@@ -1,0 +1,10 @@
+summary: An excerpt of the context of software-dev/plan.
+value:
+  action: action:software-dev/plan
+  missionType: mission_type:software-dev
+  guidance:
+    - urn: directive:DIRECTIVE_003
+      kind: directive
+      label: Decision Documentation Requirement
+      relation: scope
+      via: action:software-dev/plan

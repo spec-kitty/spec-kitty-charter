@@ -19,7 +19,7 @@ audience:
 
 The Gradle modules of the Java service and the one dependency rule that organizes them: infrastructure depends inward on a plain-Java domain.
 
-> **Status:** design only; the module names are proposals, and core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
+> **Status:** design, with a first skeleton built. The skeleton under `service/` (`charter-domain`, `charter-read-app`, `charter-api`, `adapter-in-rest`, `adapter-out-yaml`, `charter-service`, convention plugins in `build-logic/`) predates [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) and still uses the horizontal read/write module split; it is reshaped into the slices below once ADR-0006 is accepted. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
 >
 > **Module shape updated.** [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) partitions the service **top-level by vertical concern slice** (one Gradle module per slice, layers as packages within), not by the earlier horizontal read/write module split. The read/write distinction survives as a **sub-split inside each slice's application ring**, and core ADR `2026-10-03-1`'s staged read-first/write-later strangler runs within that shape. The [pack registration and distribution](/architecture/pack-registration-distribution/) design is the worked example.
 
@@ -45,7 +45,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, same four layers as packages |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
-| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here pending ADR-0002); referenced only from each slice's `infra.api` |
+| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here, ADR-0002); referenced only from each slice's `infra.api` |
 | `bootstrap` | every slice | Spring Boot wiring, configuration, loopback binding and credential checks; the composition root — the only module that knows every slice — and owns the ArchUnit gate |
 | `charter-conformance` | the slices, fixtures | Runs the conformance corpus against the service |
 
@@ -76,6 +76,9 @@ infra.storage (file / db / blob /    │
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).
+In today's skeleton, `HexagonalArchitectureTest` (in `charter-service`) pins the inward direction over
+the horizontal modules, and the `charter.domain-conventions` plugin refuses any external dependency in
+the domain and application modules at configuration time.
 
 ## Three models, kept apart
 

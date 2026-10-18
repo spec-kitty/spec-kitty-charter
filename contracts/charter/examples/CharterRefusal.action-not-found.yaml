@@ -1,0 +1,6 @@
+summary: The action is not part of the mission type.
+value:
+  title: Action not found
+  status: 404
+  code: ACTION_NOT_FOUND
+  detail: action:software-dev/deploy is not a node of the merged graph.

@@ -1,0 +1,21 @@
+title: NodeKind
+description: >-
+  The kind of a DRG node: every artifact kind plus action and mission_type. The retiring
+  glossary node kinds are not part of this contract.
+type: string
+enum:
+  - directive
+  - tactic
+  - styleguide
+  - toolguide
+  - paradigm
+  - procedure
+  - agent_profile
+  - mission_step_contract
+  - glossary_pack
+  - skill
+  - anti_pattern
+  - asset
+  - template
+  - action
+  - mission_type

@@ -14,14 +14,15 @@ audience:
 
 This section describes the **target design** of the charter service. doc-kitty's
 convention keeps architecture pages in the present tense and puts future work under
-[Plans](/plans/). This repository has no code yet, so each page here states the design as
-agreed and marks what exists today. When code lands, the pages move to describing it.
+[Plans](/plans/). The first code has landed (the contract skeleton and the Gradle build,
+[Roadmap](/plans/roadmap/) steps 1 and 2); each page states the design as agreed and marks
+what exists today. As more code lands, the pages move to describing it.
 
 The design is grounded in three core ADRs and this repository's own records:
 
 - core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (Accepted) — the charter becomes an external contract package in
   its own repository;
-- core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (Proposed in core) — a staged Java service strangler: reads first,
+- core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (Accepted, Amendment 2026-10-18) — a staged Java service strangler: reads first,
   writes later, one operation at a time;
 - core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (Accepted) — the Mission Status Read API, the sibling Java service
   whose stack, binding and release practice the charter follows;

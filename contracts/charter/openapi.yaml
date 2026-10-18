@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Charter API
+  version: 0.1.0-SNAPSHOT
+  summary: Read-only answers of the charter of one project.
+  description: >-
+    The contract of the charter service. This file holds the document header and the map from
+    each path to the file that defines it; every definition lives in a small file next to it.
+    Behavior is pinned by the BDD contracts under scenarios/ and, from roadmap step 3, by the
+    conformance corpus.
+servers:
+  - url: /api/v1
+tags:
+  - name: Packs
+    description: The Charter Packs of the charter offering.
+  - name: Context
+    description: Action-scoped governance context.
+paths:
+  /packs:
+    $ref: paths/packs.yaml
+  /mission-types/{missionType}/actions/{action}/context:
+    $ref: paths/mission-types_missionType_actions_action_context.yaml

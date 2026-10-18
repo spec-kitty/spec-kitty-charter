@@ -1,0 +1,14 @@
+files:
+  - ActionContext.yaml
+  - CharterRefusal.yaml
+  - CharterRefusalCode.yaml
+  - Diagnostic.yaml
+  - DiagnosticCode.yaml
+  - GuidanceEntry.yaml
+  - NodeKind.yaml
+  - PackLevel.yaml
+  - PackListing.yaml
+  - PackSummary.yaml
+  - Relation.yaml
+  - Slug.yaml
+  - Urn.yaml

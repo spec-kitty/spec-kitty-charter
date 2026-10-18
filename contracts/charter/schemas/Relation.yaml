@@ -1,0 +1,19 @@
+title: Relation
+description: The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md.
+type: string
+enum:
+  - requires
+  - suggests
+  - applies
+  - scope
+  - vocabulary
+  - instantiates
+  - refines
+  - specializes_from
+  - delegates_to
+  - enhances
+  - overrides
+  - replaces
+  - in_tension_with
+  - reconciles_tension
+  - rejects

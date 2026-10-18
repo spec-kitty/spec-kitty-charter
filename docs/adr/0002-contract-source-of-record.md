@@ -1,8 +1,8 @@
 ---
 title: "ADR-0002: This repository is the source of record for the charter contract"
 description: The charter OpenAPI contract is authored in spec-kitty-charter under contracts/charter/, following core's contracts conventions, and the core ingests pinned releases of it.
-doc_status: draft
-updated: 2026-10-14
+doc_status: active
+updated: 2026-10-18
 type: ADR
 kind: ADR
 related:
@@ -19,8 +19,11 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-13. Decider: pending (operator). Needs the operator's ruling, because
-it changes where core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) puts the contract.
+**Accepted** — 2026-10-18. Decider: Stijn Dejongh (operator). Proposed 2026-10-13. It changes
+where core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) puts the contract; that ADR,
+accepted the same day, records the change in its Amendment 2026-10-18. The first risk below
+is settled by [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/):
+the Python charter stays in core as the oracle, and the contract is authored here anyway.
 
 ## Context
 

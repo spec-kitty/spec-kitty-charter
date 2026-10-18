@@ -37,3 +37,10 @@
 kitty-ops/ops-index.jsonl
 kitty-specs/*/.kittify/dossiers/
 __pycache__/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+.open-packs/
