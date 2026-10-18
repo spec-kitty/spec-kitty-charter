@@ -1,0 +1,17 @@
+{
+  "coordination_branch": "kitty/mission-pack-registration-distribution-01M56M49",
+  "created_at": "2026-10-18T04:25:43.365924+00:00",
+  "flattened": false,
+  "friendly_name": "Pack registration & distribution design",
+  "mid8": "01M56M49",
+  "mission_id": "01M56M49NT3KVAQJKEFVP3ACAJ",
+  "mission_number": null,
+  "mission_slug": "pack-registration-distribution-01M56M49",
+  "mission_type": "plan",
+  "pr_bound": true,
+  "purpose_context": "The charter offering service must store and distribute consumer-created and non-open packs, not only resolve the built-in and org tiers. This mission produces the implementation-independent design for that capability -- feature and scenario descriptions, the proposed OpenAPI API structure and formats, the architecture, and docsite entries -- so the registration and distribution contract is agreed before any code is written. Built-in becomes the first catfooding consumer of that same path; core consumes it as a generated client.",
+  "purpose_tldr": "Design, without building, how the charter offering service registers, stores, verifies and distributes packs of every tier.",
+  "slug": "pack-registration-distribution-01M56M49",
+  "target_branch": "feat/pack-registration-distribution",
+  "topology": "coord"
+}

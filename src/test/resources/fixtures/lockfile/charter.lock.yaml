@@ -1,0 +1,64 @@
+# Config-level lockfile fixture — the committed pin that IS the reproducibility fact (DM-11, tier 1).
+# One entry per registered pack: {source, rev, snapshot_sha256}. Per-constituent content_hash lives
+# in each pack's pack-manifest.yaml (DM-11, tier 2). snapshot recipe = spec-kitty-snapshot-sha256
+# (reused verbatim, research Q4). Hash values below are illustrative fixture data.
+
+version: 1
+snapshot_algorithm: spec-kitty-snapshot-sha256
+
+packs:
+  - pack_id: built-in
+    tier: built_in
+    source:
+      kind: service-stored          # bundled into the installed distribution for cold/offline (DM-9)
+      stored_ref: stored://built-in@4.0.0rc7
+    rev: '4.0.0rc7'
+    snapshot_sha256: fae0c298d0fb54882d41b0c859ea44fc380655d2dfb895570ac3cdcfa68adbcf
+    requires_core: '>=4.0.0rc7,<5'
+
+  - pack_id: acme-review-pack
+    tier: org
+    source:
+      kind: git
+      url: https://github.com/acme/acme-charter-packs
+      subdir: review-pack
+    rev: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+    snapshot_sha256: 7c9e6679f2a1b4d3c8e05f1a9b2c3d4e5f60718293a4b5c6d7e8f9012345abcd
+    requires_core: '>=4.0.0rc7,<5'
+
+  - pack_id: local-dev-pack
+    tier: consumer
+    source:
+      kind: filesystem
+      path: fixtures/packs/local-dev-pack
+    rev: 'fs:2026-10-18T00:00:00Z'   # filesystem sources pin to the snapshot of the materialized tree
+    snapshot_sha256: 3d2a1f0e9c8b7a6d5e4f3c2b1a0998877665544332211000ffeeddccbbaa9988
+    requires_core: '>=4.0.0rc7,<5'
+
+  - pack_id: acme-private-styleguide
+    tier: private
+    source:
+      kind: service-stored
+      stored_ref: stored://acme-private-styleguide@1.0.0
+    rev: '1.0.0'
+    snapshot_sha256: bb11cc22dd33ee44ff5566778899aabbccddeeff00112233445566778899aabb
+    requires_core: '>=4.0.0rc7,<5'
+    owner_tenant: acme               # tenancy/visibility is DEFERRED policy (storage phase); see @deferred
+
+  - pack_id: community-linters
+    tier: org
+    source:
+      kind: published-artifact
+      coordinate: pkg:charter/community-linters@2.3.1
+    rev: '2.3.1'
+    snapshot_sha256: cc22dd33ee44ff5566778899aabbccddeeff00112233445566778899aabbccdd
+    requires_core: '>=4.0.0rc7,<5'
+
+  - pack_id: legacy-pack
+    tier: org
+    source:
+      kind: git
+      url: https://github.com/acme/legacy-charter-packs
+    rev: f00dbabe1234567890abcdef1234567890abcdef
+    snapshot_sha256: dd33ee44ff5566778899aabbccddeeff00112233445566778899aabbccddeeff0
+    requires_core: '>=3.0.0,<4'      # excludes engine 4.0.0rc7 -> PACK_ENGINE_INCOMPATIBLE at resolve

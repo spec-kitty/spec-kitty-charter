@@ -1,0 +1,4 @@
+# PackDescriptor fixture (org tier). Its source descriptor requires_core ">=3.0.0,<4", which
+# excludes the engine at 4.0.0rc7 -> PACK_ENGINE_INCOMPATIBLE at resolve (PR-PACK-DISTRIBUTE-003).
+id: legacy-pack
+level: org

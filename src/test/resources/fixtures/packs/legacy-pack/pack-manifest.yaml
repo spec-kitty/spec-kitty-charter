@@ -1,0 +1,9 @@
+# Generated pack manifest (engine-incompatible pack). Resolution is refused on the requires_core
+# gate before any constituent is merged, so these hashes are never reached. Illustrative values.
+charter:
+constituents:
+  - content_hash: 77071829_placeholder_not_reached_engine_gate_fails_closed_before_abcd
+    id: legacy-procedure
+    kind: procedure
+    path: procedures/legacy-procedure.procedure.yaml
+    provenance_path:

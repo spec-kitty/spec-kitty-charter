@@ -1,0 +1,14 @@
+# Per-pack source descriptor (parity with upstream spec-kitty-open-packs/built-in.source.yaml).
+# Carries the pin + integrity + compat primitives OUTSIDE pack.yaml (which forbids extra fields).
+# The lockfile aggregates one such entry per registered pack (DM-11); this file shows the per-pack
+# shape the generalized lockfile entry is lifted from. Illustrative values.
+source:
+  kind: git
+  url: https://github.com/acme/acme-charter-packs
+  subdir: review-pack
+  ref: main                              # the moving ref requested...
+  rev: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678   # ...pinned to this exact commit (trust anchor)
+tree_digest:
+  algorithm: spec-kitty-snapshot-sha256
+  value: 7c9e6679f2a1b4d3c8e05f1a9b2c3d4e5f60718293a4b5c6d7e8f9012345abcd
+requires_core: '>=4.0.0rc7,<5'

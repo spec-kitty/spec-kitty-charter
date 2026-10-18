@@ -2,7 +2,7 @@
 title: Architecture
 description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Hub
 audience:
@@ -49,6 +49,9 @@ The design is grounded in three core ADRs and this repository's own records:
   dependency rule.
 - [Contract and DTOs](/architecture/contract-and-dtos/) — the OpenAPI contract, how the core and the
   service generate from it, and how it is versioned.
+- [Pack registration and distribution](/architecture/pack-registration-distribution/) — how the service
+  registers, stores, verifies and distributes packs of every tier: the layering, the four source kinds, the
+  trust and lockfile model, the storage ports, and the API surface.
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,

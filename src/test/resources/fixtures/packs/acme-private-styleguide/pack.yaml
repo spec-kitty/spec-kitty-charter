@@ -1,0 +1,4 @@
+# PackDescriptor fixture (private tier, service-stored source). Tenancy/visibility is DEFERRED
+# policy (storage phase) — see the @deferred scenario; not specified here.
+id: acme-private-styleguide
+level: org

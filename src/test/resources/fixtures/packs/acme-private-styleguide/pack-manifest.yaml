@@ -1,0 +1,8 @@
+# Generated pack manifest (private tier, service-stored). Illustrative hashes.
+charter:
+constituents:
+  - content_hash: 44d4e5f60718293a4b5c6d7e8f9012345611223344d4e5f60718293a4b5cabcd
+    id: acme-house-style
+    kind: styleguide
+    path: styleguides/acme-house-style.styleguide.yaml
+    provenance_path:

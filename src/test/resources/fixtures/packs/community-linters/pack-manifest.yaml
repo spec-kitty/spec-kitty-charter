@@ -1,0 +1,8 @@
+# Generated pack manifest (published-artifact source, pinned to version 2.3.1). Illustrative hashes.
+charter:
+constituents:
+  - content_hash: 55e5f60718293a4b5c6d7e8f90123456112233445555e5f60718293a4b5cabcd
+    id: spk-lint-markdown
+    kind: skill
+    path: skills/spk-lint-markdown/SKILL.md
+    provenance_path:

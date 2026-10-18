@@ -2,13 +2,15 @@
 title: Charter service overview
 description: Containers and main flows of the charter service — the Python seam in core, the Java service, its adapters and the pack inputs.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Explanation
 related:
   - context/system-context
   - architecture/hexagonal-service
   - architecture/contract-and-dtos
+  - architecture/pack-registration-distribution
+  - adr/0006-onion-vertical-slices-archunit
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this first for the containers and the main flows of a governed read.
@@ -41,28 +43,30 @@ flowchart TB
     life -->|endpoint + credential| seam
   end
 
-  subgraph svc["charter service (Java, this repository)"]
+  subgraph svc["charter service (Java, this repository) — one module per concern slice"]
     direction TB
-    rest["adapter-in-rest"]
-    mcp["adapter-in-mcp<br/><i>after authz decision</i>"]
-    read["read application"]
-    write["write application<br/><i>later</i>"]
-    domain["domain<br/>models + ports, plain Java"]
-    yaml["adapter-out-yaml<br/>lossless documents"]
-    rest --> read
-    mcp --> read
-    read --> domain
-    write --> domain
-    yaml --> domain
+    ep["entry-point ring<br/>infra.api.rest (v1)<br/>infra.api.graphql (planned-later)<br/>MCP (deferred)"]
+    app["application ring<br/>read / write use cases, per slice"]
+    domain["domain ring (pure)<br/>registration · mission-types · profiles · artifacts · kernel"]
+    storage["storage ring<br/>file-based (default) · blob · resolver + offline cache"]
+    ep --> app
+    app --> domain
+    storage --> domain
   end
 
   packs[("Charter Packs and project config<br/>pack.yaml, *.graph.yaml, drg/fragment.yaml,<br/>org-charter.yaml, .kittify/config.yaml, charter.yaml")]
 
-  seam -->|loopback REST| rest
+  seam -->|loopback REST| ep
   life -->|start / stop per worktree| svc
-  yaml -->|read| packs
+  storage -->|read| packs
   pyimpl -->|read / write| packs
 ```
+
+The service is organized top-level by **vertical concern slice**, with the onion rings
+(entry-point infra → application → domain ← storage infra) as packages within each slice
+([ADR-0006](/adr/0006-onion-vertical-slices-archunit/)); [Hexagonal service](/architecture/hexagonal-service/)
+has the module list and [Pack registration and distribution](/architecture/pack-registration-distribution/)
+is the worked example.
 
 ## Main flows
 
@@ -91,5 +95,7 @@ before it answers again.
   `specify_cli`, which hands the seam an endpoint and a credential, so `charter` gains no
   outbound edge to `specify_cli` and core's enforced import chain
   (`kernel <- charter <- {glossary, runtime, mission_runtime} <- specify_cli`) stays intact.
-- No caller bypasses it. REST and MCP may never implement charter resolution independently;
-  they are transports into the same read application.
+- No caller bypasses it. REST, GraphQL and MCP may never implement charter resolution
+  independently; each is an entry-point adapter into the same application use cases. In v1 only
+  REST ships; GraphQL is planned-later and MCP is deferred
+  ([ADR-0007](/adr/0007-rest-hateoas-contract-of-record/)).

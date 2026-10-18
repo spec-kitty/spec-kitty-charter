@@ -1,0 +1,36 @@
+# Operator configuration fixture for the pack registration & distribution BDD suite.
+# Illustrative data only — shapes the public surface and the trust floor; not a running config.
+# Authority: DM-10 (explicit allowlist in config, v1), recorded engine default (requires_core).
+
+engine:
+  # The core version this service instance reports; engine/compat gating at resolve time
+  # compares a pack's requires_core range against this (recorded default, PACK_ENGINE_INCOMPATIBLE).
+  core_version: 4.0.0rc7
+
+trust:
+  # Explicit allowlist (DM-10). A git source not matched by any entry fails closed
+  # (SOURCE_NOT_ALLOWLISTED). Built-in / open packs are a high-trust tier that bypasses this list.
+  # Mixed per-entry granularity (DM-18): each entry is host-, org-, or exact-repo-scoped;
+  # exact-repo is the least-privilege form.
+  git_allowlist:
+    - scope: host
+      match: github.com/acme                      # any repository on this host is admitted
+    - scope: exact_repo
+      match: github.com/community/charter-linters  # least privilege: only this one repository
+    - scope: org
+      match: gitlab.com/acme-oss                   # any repository under this org / group
+  # Requester tier is DERIVED from the authenticated caller (DM-14), never a client-set field;
+  # it is listed here only to record the tiers the service recognizes, not as an input channel.
+  high_trust_tiers:
+    - built_in
+    - open
+  # Trust floor applied to every source regardless of tier (DM-10):
+  floor:
+    pin_to_rev: required          # never register against a floating ref
+    verify_content_hash: required # every constituent verified against its pack-manifest content_hash
+    offline_cache: enabled        # a previously-resolved pack resolves with no network
+    on_unlisted_or_unreachable: fail_closed
+
+cache:
+  # Offline cache location for materialized, verified packs (DM-10 floor; DM-9 cold/offline bundle).
+  dir: fixtures/cache

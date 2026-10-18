@@ -1,0 +1,14 @@
+# Generated pack manifest (DM-11 tier 2). Per-constituent content_hash verified at resolve.
+# Illustrative hash values. constituents mirror core's shape: {content_hash,id,kind,path,provenance_path}.
+charter:
+constituents:
+  - content_hash: 11a1b2c3d4e5f60718293a4b5c6d7e8f9012345611a1b2c3d4e5f6071829abcd
+    id: spk-review-gate
+    kind: skill
+    path: skills/spk-review-gate/SKILL.md
+    provenance_path:
+  - content_hash: 22b2c3d4e5f60718293a4b5c6d7e8f901234561122b2c3d4e5f607182930abcd
+    id: review-discipline
+    kind: directive
+    path: directives/review-discipline.directive.yaml
+    provenance_path:

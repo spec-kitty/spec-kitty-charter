@@ -1,0 +1,18 @@
+# Stale-tree variant for PR-PACK-INTEGRITY-003: the recorded snapshot_sha256 for acme-review-pack
+# does NOT match the materialized tree in fixtures/packs/acme-review-pack/. Resolution must fail
+# closed with INTEGRITY_FAILURE naming the recorded vs computed digest. Illustrative fixture data.
+
+version: 1
+snapshot_algorithm: spec-kitty-snapshot-sha256
+
+packs:
+  - pack_id: acme-review-pack
+    tier: org
+    source:
+      kind: git
+      url: https://github.com/acme/acme-charter-packs
+      subdir: review-pack
+    rev: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+    # Deliberately wrong: differs from charter.lock.yaml's recorded digest for this pack.
+    snapshot_sha256: 0000000000000000000000000000000000000000000000000000000000000000
+    requires_core: '>=4.0.0rc7,<5'

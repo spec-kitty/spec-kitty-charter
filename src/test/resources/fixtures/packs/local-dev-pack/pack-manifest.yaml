@@ -1,0 +1,8 @@
+# Generated pack manifest (consumer tier). Illustrative hashes.
+charter:
+constituents:
+  - content_hash: 33c3d4e5f60718293a4b5c6d7e8f901234561122c3d4e5f60718293a4b5cabcd
+    id: local-dev-notes
+    kind: tactic
+    path: tactics/local-dev-notes.tactic.yaml
+    provenance_path:

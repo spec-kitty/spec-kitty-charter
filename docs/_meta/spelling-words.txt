@@ -147,3 +147,26 @@ vocabulary
 with
 workflow
 workshop
+# pack-registration-distribution design mission (ADR-0005/0006/0007)
+archunit
+hateoas
+catfooding
+purl
+ulid
+dedupes
+graphql
+swagger
+openapi
+allowlist
+lockfile
+authn
+authz
+subdomain
+jakarta
+jackson
+jdbc
+jpa
+sdl
+versionable
+dogfooded
+unstarted
