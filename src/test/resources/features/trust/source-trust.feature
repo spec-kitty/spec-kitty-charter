@@ -4,8 +4,10 @@
 # - Public surface this shapes (OpenAPI/HATEOAS, v1 — DM-13):
 #     POST /api/v1/packs with a git `source.kind` is evaluated against the operator allowlist
 #     before any fetch. Refusal -> Problem { refusalCode: "SOURCE_NOT_ALLOWLISTED", detail }.
-#     The allowlist is operator configuration (not a request field); the trust tier of the pack
-#     (built_in | open | consumer | private) is derived, not client-asserted.
+#     The allowlist is operator configuration (not a request field). Each entry is host-, org-, or
+#     exact-repo-scoped (mixed per-entry granularity, DM-18; exact-repo = least privilege). The pack's
+#     trust tier (built_in | open | consumer | private) is DERIVED from the authenticated caller
+#     (DM-14), never client-asserted.
 # - Decisions / spec exercised: DM-10 (explicit allowlist in config, v1; fail-closed; built-in/open
 #   high-trust; floor = pin-to-rev + content-hash + offline cache). Signing is a reserved higher
 #   tier (DM-10), NOT specified here.
@@ -47,3 +49,11 @@ Feature: Only sources I have authorized can enter
     When I register a git source that resolves to no fixed commit
     Then the registration is refused on the pin-to-rev floor
     And nothing is registered against a floating reference
+
+  @promise:PR-PACK-TRUST-005
+  Scenario: An exact-repo allowlist entry admits only that repository, not its whole host
+    Given the allowlist names the exact repository "github.com/acme/acme-charter-packs"
+    And it does not allow the host "github.com/acme" as a whole
+    When I register a pack from a different repository "github.com/acme/experimental-packs" on that same host
+    Then the registration is refused with "SOURCE_NOT_ALLOWLISTED"
+    And a pack from the exact repository "github.com/acme/acme-charter-packs" is admitted

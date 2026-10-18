@@ -8,10 +8,12 @@
 #                                   201 -> RegisteredPack { packId, source(with rev), lockfileEntry,
 #                                                           _links: self|resolve|verify|distribute|source }
 #                                   4xx -> Problem { refusalCode, detail }
-#   The four `source.kind` discriminator values are the four v1 source kinds (DM-7).
+#   The four `source.kind` discriminator values are the four v1 source kinds (DM-7). The
+#   published-artifact locator is purl-style `pkg:charter/<id>@<version>` (DM-17).
 # - Decisions / spec exercised: DM-7 (four source kinds incl. published-artifact),
-#   DM-11 (two-tier lockfile: config entry {source,rev,snapshot_sha256}),
-#   DM-10 floor (pin-to-rev), DM "fail-closed" cross-cut (SOURCE_CONFLICT, research §Cross-cutting).
+#   DM-17 (purl-style published-artifact locator), DM-11 (two-tier lockfile: config entry
+#   {source,rev,snapshot_sha256}), DM-10 floor (pin-to-rev), DM-15 (constituent-slug collisions are
+#   GLOBAL — refused across packs), DM "fail-closed" cross-cut (SOURCE_CONFLICT, research §Cross-cutting).
 # - Promises mapped to decision/spec in kitty-specs/.../bdd-scenarios.md.
 
 Feature: A pack I register is pinned and recorded, whatever source it came from

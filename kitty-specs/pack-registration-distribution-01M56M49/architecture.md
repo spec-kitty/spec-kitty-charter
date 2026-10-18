@@ -124,7 +124,7 @@ Plain-Java POJOs (records / sealed types), repository **ports** (interfaces), an
 
 ### 3.0 Shared kernel (`kernel.domain`)
 - `Pack` — a registered pack: `PackId` (ULID), `PackVersion`, `PackLevel {built_in, org, project}`, `parentPack`, declared `PackSource`, `PackManifest`.
-- `PackSource` — **sealed, four kinds** (ledger decision 7): `GitSource {url, ref, rev(pinned sha), subdir?}`, `FilesystemSource {path}`, `StoredSource {storedRef}` (uploaded/service-held), `PublishedArtifactSource {coordinates, version}` (a versioned package pulled from a registry). `rev`/`version` is the trust anchor, never a floating ref. `bundled` is a *resolve-time materialization outcome*, not a registration kind.
+- `PackSource` — **sealed, four kinds** (ledger decision 7): `GitSource {url, ref, rev(pinned sha), subdir?}`, `FilesystemSource {path}`, `StoredSource {storedRef}` (uploaded/service-held), `PublishedArtifactSource {purl}` — a **purl-style locator `pkg:charter/<id>@<version>`** (ledger decision 17) for a versioned package pulled from a registry. `rev`/`version` is the trust anchor, never a floating ref. `bundled` is a *resolve-time materialization outcome*, not a registration kind.
 - `PackManifest` — generated manifest: per-constituent `{id, kind, path, contentHash, provenancePath}`; the file-level integrity primitive (reuse the open-packs `content_hash`; do not reinvent).
 - `DrgNode`, `DrgEdge`, `Urn (<kind>:<id>)`, `ArtifactKind`, `NodeKind`, `Relation`.
 - `RefusalCode` — canonical diagnostics as domain values (`PACK_LEVEL_MISMATCH`, `PACK_LEVEL_MISSING`, `UNRESOLVED_EDGE_ENDPOINT`, `SOURCE_CONFLICT`, `INTEGRITY_FAILURE`, `PACK_ENGINE_INCOMPATIBLE`, `SOURCE_UNREACHABLE`, …). Part of the contract (contract-and-dtos §"What the contract carries"), surfaced as `Problem`.
@@ -136,10 +136,10 @@ Entities / value objects:
 - `IntegrityReport`, `CompatRange` (`requires_core`, engine-compat — decision default), `SourceConflict`.
 
 Service interfaces + implementations (domain-owned, plain Java):
-- `PackRegistrationService` — `register(PackSource, TrustContext) : RegisteredPack`; validates descriptor, assigns/honors `PackId`, fails closed on id/slug collision (`SOURCE_CONFLICT`).
-- `PackResolver` — `resolve(PackId|PackSource) : ResolvedPack` (materialized local dir + manifest); **fetch → materialize → verify → hand downstream**. Verifies against the lockfile; **gates `requires_core` at resolve time** (`PACK_ENGINE_INCOMPATIBLE`, engine-compat default); fails closed and legible when uncached + unreachable (`SOURCE_UNREACHABLE`).
-- `PackDistributionService` — `distribute(PackId, requesterTier) : DistributionResponse` (the one canonical read/pull surface every tier shares; ADR-0005 §2 — tier is a parameter, not a branch).
-- `IntegrityVerifier`, `TrustPolicy` (explicit allowlist gate for allowlisted/private git; built-in/open bypass as high-trust — ledger decision 10), `SupplyChainPolicy`.
+- `PackRegistrationService` — `register(PackSource, TrustContext) : RegisteredPack`; validates descriptor, assigns/honors `PackId`, fails closed on pack-id or constituent-slug collision (`SOURCE_CONFLICT`). The **constituent-slug namespace is global** (ledger decision 15): a slug that collides across packs is refused, not shadowed per-pack (reversible to per-pack if too strict).
+- `PackResolver` — `resolve(PackId|PackSource) : ResolvedPack` (materialized local dir + manifest); **fetch → materialize → verify → hand downstream**. Verifies against the lockfile; **gates `requires_core` at resolve time** (`PACK_ENGINE_INCOMPATIBLE`, engine-compat default); fails closed and legible when uncached + unreachable (`SOURCE_UNREACHABLE`). It is a **domain service invoked internally by register/distribute — never a REST resource** (ledger decision 16; §4).
+- `PackDistributionService` — `distribute(PackId, requesterTier) : DistributionResponse` (the one canonical read/pull surface every tier shares; ADR-0005 §2). `requesterTier` is **derived from the authenticated identity, never client-set** (ledger decision 14); tier selects behavior as a parameter, not a branch.
+- `IntegrityVerifier`, `TrustPolicy` (explicit allowlist gate for allowlisted/private git — **mixed per-entry granularity: host-, org- or exact-repo-scoped**, exact-repo = least privilege, ledger decision 18; built-in/open bypass as high-trust — ledger decision 10), `SupplyChainPolicy`.
 
 Repository ports (domain-owned, impl in storage ring):
 - `RegisteredPackRepository` — `save/find/list` RegisteredPacks (returns domain models).
@@ -193,6 +193,8 @@ flowchart LR
 - **OpenAPI is the single source of record; GraphQL is derived from it** (ledger decision 2, ADR-0007 §2, preserving ADR-0002). GraphQL SDL is generated/derived from the OpenAPI contract, so the two surfaces cannot drift into two sources of truth.
 - **GraphQL is planned-later, not built in v1** (ledger decision 13, ADR-0007 §3). The use-case layer is kept **adapter-ready** (the `infra.api.graphql` package is reserved) so a GraphQL adapter drops in over the identical use cases without domain change. Domain-operation parity holds by construction whenever it lands.
 - **MCP is deferred** (ledger decision 4, ADR-0007 §5). The planned `adapter-in-mcp` is not built; it remains a later third entry-point adapter over the same use cases — structurally a non-event.
+- **Resolution is a read-only projection, not a public action resource** (ledger decision 16, ADR-0007 §7). There is **no** `POST /packs/{id}/resolutions` verb. Resolution happens internally during register/distribute (`PackResolver` is a domain service, §3.1); its integrity/engine-compat/cache/reachability outcomes surface as the **result of the distribute action** (a success payload or a `Problem` carrying `PACK_ENGINE_INCOMPATIBLE` / `INTEGRITY_FAILURE` / `SOURCE_UNREACHABLE`). Resolution *state* is read-only — `GET /packs/{id}/resolution`, or embedded in the pack resource and reached via its `Links` component — never a client-triggered operation.
+- **The requester tier is derived from the authenticated identity, never client-set** (ledger decision 14, ADR-0007 §8). No request body or query parameter carries the tier; the adapter derives it from the authenticated principal (authn/authz is a separate downstream concern).
 - **The application use cases are the shared contract-neutral seam.** DTO/GraphQL-type ↔ use-case-I/O mapping lives *only* in the adapters (`..infra.api..`). A transport type never crosses into the application or domain ring (three-models-kept-apart rule, hexagonal-service.md; ArchUnit-pinned, §6).
 
 ---
@@ -249,14 +251,17 @@ ADR-0005's decisions map onto the structure (ledger decisions 7–12 + engine-co
 | Decision | Home in this architecture |
 |---|---|
 | Service owns registration/distribution via OpenAPI (dec. 8, ADR-0005 §1) | `registration` slice; REST adapter implements the OpenAPI contract |
-| Four source kinds (dec. 7) | `PackSource` sealed type in `kernel.domain` — git, filesystem, service-stored, published-artifact |
+| Four source kinds (dec. 7, 17) | `PackSource` sealed type in `kernel.domain` — git, filesystem, service-stored, published-artifact (purl `pkg:charter/<id>@<version>`) |
 | One canonical path; built-in is first catfooding consumer (dec. 8) | `PackDistributionService` + `PackResolver` — tier is a parameter, not a branch |
 | Staged built-in migration + bundle into distribution (dec. 9) | resolver-behind-loader → integrity+lockfile → fetch-at-release → de-vendor; installed distribution bundles built-in for cold/offline installs |
-| Trust = explicit allowlist on a fail-closed floor (dec. 10) | `TrustPolicy` (allowlist) + `SupplyChainPolicy` + `IntegrityVerifier`; built-in/open high-trust; signing a reserved higher tier |
+| Trust = explicit allowlist on a fail-closed floor (dec. 10, 18) | `TrustPolicy` (mixed per-entry allowlist: host / org / exact-repo) + `SupplyChainPolicy` + `IntegrityVerifier`; built-in/open high-trust; signing a reserved higher tier |
 | Two-tier lockfile (dec. 11) | `ConfigLockfile {source, rev, snapshot_sha256}` + per-constituent `content_hash` in `PackManifest` |
 | File-based content-addressed storage behind a port (dec. 12) | `*.infra.storage` adapters behind `RegisteredPackRepository`/`LockfileRepository`/`PackBlobStore`/`PackSourceGateway` |
 | Engine-compat `requires_core` at resolve time (default) | `CompatRange` on the registration/source descriptor + lockfile entry; `PackResolver` refuses with `PACK_ENGINE_INCOMPATIBLE` |
 | Resolver / merge boundary (ADR-0005 §10) | `registration` (resolve) vs `artifacts` (merge/activate); `PackSourceGateway` is the single translation layer |
+| Resolution surface = read-only projection (dec. 16) | no `POST …/resolutions`; outcomes on the distribute result + `GET …/resolution`; `PackResolver` is a domain service, not a resource |
+| Requester tier from auth (dec. 14) | derived from the authenticated principal in the adapter; never a client-set field |
+| Global constituent-slug namespace (dec. 15) | `PackRegistrationService` refuses a slug colliding across packs (`SOURCE_CONFLICT`); reversible to per-pack |
 | Core is a generated client (ADR-0004) | REST adapter + generated Python client; no second resolver in core |
 
 ---
@@ -277,7 +282,7 @@ flowchart TB
     ep --> app --> domc
     st --> domc
   end
-  sources[("Pack sources (4 kinds)<br/>git URL (pinned rev) · filesystem · service-stored · published-artifact")]
+  sources[("Pack sources (4 kinds)<br/>git URL (pinned rev) · filesystem · service-stored · published-artifact (pkg:charter/&lt;id&gt;@&lt;version&gt;)")]
   core -->|loopback REST /api/v1| ep
   rc --> ep
   st -->|fetch · verify · materialize| sources

@@ -36,6 +36,25 @@ this ledger is the consolidated, human-readable summary. Date: 2026-10-18.
 - **Private-pack tenancy/privacy boundary** — baseline: ownership/visibility enforced at the storage port + API (not directory presence). DM `01M5781ER9V60RN0KVBJH0EQRM` (deferred).
 - **Retention / GC policy** — baseline: retain anything a lockfile pins, GC the rest. DM `01M5781HN6JHTV970D3V2N7FEF` (deferred).
 
-## Still open (from research, not yet decided)
+## Batch 4 — surface reconciliation (surfaced by the BDD scenarios)
 
-- Nothing blocking: the seven researched questions are resolved or deferred above; the two deferred items are storage-phase policy, not design blockers.
+| # | Decision | Choice | DM |
+|---|----------|--------|----|
+| 14 | Requester tier | **Derived from authenticated identity**, never a client-set field (fail-closed trust); authn/authz is a separate downstream concern. *(default)* | `01M578W9FK24NNSFRYT7C5ZZZ1` |
+| 15 | Constituent-slug conflict scope | **Global** constituent namespace — a slug collision across packs is refused; reversible to per-pack if too strict. *(default, per research)* | `01M578WCEQERGSG02RPN29KRZF` |
+| 16 | Resolution surface | **Read-only projection** of resolution state (GET), NOT a public action resource. Resolve happens internally during register/distribute; integrity/engine/cache/reachability outcomes surface as the distribute action's result and are reflected in the read-only projection. | `01M578WFJ84BNS2ZSE6SN35CFG` |
+| 17 | Published-artifact locator | **purl-style** `pkg:charter/<id>@<version>`. | `01M578WH1TV7FYJFBNHX7BXN5F` |
+| 18 | Allowlist granularity | **Mixed per-entry**: each allowlist entry may be host-, org-, or exact-repo-scoped (exact-repo for least privilege). | `01M578WJG7ZQ9AAX4WWP1H555M` |
+| 19 | Domain term spelling | **US "artifacts"** everywhere (gate-clean; ADRs + `be.sddevelopment.charter.artifacts`). | `01M578WKZBXDXYR7XPKN0H2WD8` |
+
+## Recorded trade-offs / risks (no decision; on record)
+
+- One-module-per-slice → intra-slice onion layering is ArchUnit-enforced, not compiler-enforced (ADR-0006 Risks).
+- "GraphQL adapter-ready" depends on a future OpenAPI→GraphQL-SDL generator (ADR-0007 Risks).
+- `PACK_ENGINE_INCOMPATIBLE` is the working refusal-code name; exact string ratified at contract-authoring.
+
+## Follow-ups
+
+- Docs-sync: `docs/architecture/hexagonal-service.md` + `overview.md` describe the superseded horizontal module shape; update to the vertical-slice shape (ADR-0006).
+- Deferred policy (storage phase): private-pack tenancy boundary; retention/GC.
+- Core P0 (from `traces/tooling-friction.md`): remediate the `plan` mission type holistically.

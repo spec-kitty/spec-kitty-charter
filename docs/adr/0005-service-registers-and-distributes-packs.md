@@ -57,11 +57,14 @@ client of that contract** — it does not re-implement resolution or vendor pack
 1. **The service owns pack registration and distribution, exposed in the OpenAPI contract.** A registered
    pack declares a **source** of one of **four kinds** (DM `01M577HPH8R7T9NQGHZJ46WASF`): a **git URL**
    (pinned to a commit rev), a **filesystem location**, a **service-stored** pack (uploaded/held — the
-   mechanism for consumer and private packs), and a **published-artifact** source (a versioned package the
-   service pulls from a registry). The `source` kind is a versionable discriminator; `bundled` is a
-   resolve-time materialization outcome, not a registration input.
+   mechanism for consumer and private packs), and a **published-artifact** source identified by a
+   **purl-style locator `pkg:charter/<id>@<version>`** (a versioned package the service pulls from a
+   registry; DM `01M578WH1TV7FYJFBNHX7BXN5F`). The `source` kind is a versionable discriminator; `bundled`
+   is a resolve-time materialization outcome, not a registration input.
 2. **One canonical path for every tier** (DIRECTIVE_044). Built-in, org, consumer and private packs all
-   register and resolve through this one API; the requester tier is a parameter, never a separate code path.
+   register and resolve through this one API; the requester tier is **derived from the authenticated
+   identity, never a client-set field** (DM `01M578W9FK24NNSFRYT7C5ZZZ1`; fail-closed trust, with authn/authz
+   a separate downstream concern), and it selects behavior as a parameter, never a separate code path.
    **Built-in is the first catfooding consumer** (DM `01M577HR0FSCR6574VXB9K814C`): resolved through the
    service from its versioned, tagged, published open-packs ref, not vendored as a special case. The one pack
    we most control is the one we most want continuously exercising the distribution path every consumer
@@ -92,9 +95,24 @@ client of that contract** — it does not re-implement resolution or vendor pack
    recorded per DIRECTIVE_051, DIRECTIVE_003). Every non-stored source pins a **rev, never a floating ref**,
    and every materialized constituent is **integrity-verified** against its `content_hash` / tree digest. A
    consumer/private **git** source sits behind an **explicit allowlist in config**; unlisted or unreachable
-   sources **fail closed**, never silent fetch-on-use. An **offline cache** lets a populated service resolve
-   with no network. **Trust tiers:** built-in and open packs are a high-trust tier above the allowlist;
-   **signing is reserved as a higher tier** to adopt when core's verified-distribution scheme lands.
+   sources **fail closed**, never silent fetch-on-use. The allowlist has **mixed per-entry granularity** (DM
+   `01M578WJG7ZQ9AAX4WWP1H555M`): each entry may be scoped to a **host**, an **org**, or an **exact repo**,
+   the exact-repo scope being least privilege. A sketch of the config shape:
+
+   ```yaml
+   trust:
+     allowlist:
+       - scope: host         # broadest
+         match: github.com
+       - scope: org          # one owner/org on a host
+         match: github.com/spec-kitty
+       - scope: repo         # exact repo — least privilege
+         match: github.com/spec-kitty/spec-kitty-open-packs
+   ```
+
+   An **offline cache** lets a populated service resolve with no network. **Trust tiers:** built-in and open
+   packs are a high-trust tier above the allowlist; **signing is reserved as a higher tier** to adopt when
+   core's verified-distribution scheme lands.
 9. **Engine/compatibility is gated at resolve time** (DM `01M5781BVDQ4NTHSKA95Z60XPY`). A `requires_core`-style
    range lives on the **registration/source descriptor and the lockfile entry** — **not** in `pack.yaml`,
    whose `PackDescriptor` schema forbids extra fields. It is enforced at **resolve time** with a canonical
@@ -135,8 +153,10 @@ client of that contract** — it does not re-implement resolution or vendor pack
   **tamper-evidence** (content hash) plus an **allowlist**, not tamper-proof signing; signing is a reserved
   higher tier. Contained by pin-to-rev + integrity verify + allowlist + fail-closed (decision 8).
 - **Version/engine skew:** a fetched pack may not match the engine — gated at resolve time (decision 9).
-- **Source conflict:** two sources claiming the same pack id or a colliding constituent slug — **fail closed**
-  (DIRECTIVE_043), never last-write-wins.
+- **Source conflict:** two sources claiming the same pack id, or a constituent slug that collides across
+  packs, are **refused** — **fail closed** (DIRECTIVE_043), never last-write-wins. The **constituent-slug
+  namespace is global** (DM `01M578WCEQERGSG02RPN29KRZF`): a slug collision across packs is a refusal, not a
+  per-pack shadow; the choice is reversible to per-pack scope if it proves too strict.
 - **Deferred storage policy (flagged, not resolved here):** the private-pack tenancy/privacy boundary (DM
   `01M5781ER9V60RN0KVBJH0EQRM`, deferred — baseline: ownership/visibility enforced at the storage port and
   API, never by directory presence) and the retention/GC policy (DM `01M5781HN6JHTV970D3V2N7FEF`, deferred —
@@ -178,8 +198,10 @@ floor is the headless-friendly default, with signing reserved as a higher tier (
 - Decision Moments: `01M577HPH8R7T9NQGHZJ46WASF` (four source kinds), `01M577HR0FSCR6574VXB9K814C` (built-in
   end-state), `01M577HSFD75NHZHVMP9RGNEK7` (staged migration + bundle), `01M577HTZ0YTYYJRFCMDQN0PRN` (trust /
   allowlist), `01M577WZG8726DCYH7ECDQWWZ1` (two-tier lockfile), `01M577X0ZJJW170A5RM1PP9AV2` (storage port),
-  `01M5781BVDQ4NTHSKA95Z60XPY` (engine-compat); deferred `01M5781ER9V60RN0KVBJH0EQRM` (tenancy),
-  `01M5781HN6JHTV970D3V2N7FEF` (retention).
+  `01M5781BVDQ4NTHSKA95Z60XPY` (engine-compat); `01M578WH1TV7FYJFBNHX7BXN5F` (purl published-artifact
+  locator), `01M578WJG7ZQ9AAX4WWP1H555M` (mixed-granularity allowlist), `01M578W9FK24NNSFRYT7C5ZZZ1`
+  (requester tier from auth), `01M578WCEQERGSG02RPN29KRZF` (global constituent-slug namespace); deferred
+  `01M5781ER9V60RN0KVBJH0EQRM` (tenancy), `01M5781HN6JHTV970D3V2N7FEF` (retention).
 - Core prior art (reference, not binding): ADR `2026-08-16-2` + its 2026-10-11 amendment, core #6045, #3504 /
   PR #6363; ADR `2026-05-16-1` (layer merge); ADR `2026-10-11-2` (`pack_level`).
 - open-packs: #23 (checksum/verification/trust model), #31/#32 (built-in seed + `snapshot_sha256` +

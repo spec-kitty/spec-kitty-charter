@@ -26,9 +26,9 @@ One feature per behavior cluster:
 | Feature | Cluster | Implied REST surface (v1 source of record) |
 |---------|---------|---------------------------------------------|
 | `registration/register-pack.feature` | Intake: pin & record a pack from each of the four source kinds; fail closed on id/slug conflict. | `POST /api/v1/packs` |
-| `trust/source-trust.feature` | Allowlist admits/refuses git sources; high-trust built-in bypasses; pin-to-rev floor. | `POST /api/v1/packs` (pre-fetch allowlist check) |
-| `integrity/pin-and-verify.feature` | Two-tier integrity at resolve; fail closed on constituent-hash or snapshot-digest mismatch. | `POST /api/v1/packs/{packId}/resolutions` |
-| `distribution/resolve-and-distribute.feature` | One canonical path across the four tiers; built-in catfooding; engine gate; offline cache; unreachable fail-closed; one `@deferred` tenancy placeholder. | `GET /api/v1/packs/{packId}/distribution` |
+| `trust/source-trust.feature` | Mixed-granularity allowlist admits/refuses git sources; high-trust built-in bypasses; pin-to-rev floor. | `POST /api/v1/packs` (pre-fetch allowlist check) |
+| `integrity/pin-and-verify.feature` | Two-tier integrity verified during distribute; fail closed on constituent-hash or snapshot-digest mismatch. | `POST .../distributions` (write) + `GET .../resolution` (read-only projection) |
+| `distribution/resolve-and-distribute.feature` | One canonical path across the four tiers; built-in catfooding; engine gate; offline cache; unreachable fail-closed; one `@deferred` tenancy placeholder. | `POST /api/v1/packs/{packId}/distributions` + `GET .../resolution` |
 
 ## Fixtures (`fixtures/`)
 

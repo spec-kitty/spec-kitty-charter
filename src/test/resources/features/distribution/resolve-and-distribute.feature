@@ -1,14 +1,17 @@
 # Maintainer notes (not part of the behavior description):
 # - Consumer-outcome scenarios for the distribution promise "every tier pulls a registered pack
 #   through one canonical path, offline-capable, and engine-gated". Promise-first.
-# - Public surface this shapes (OpenAPI/HATEOAS, v1 — DM-13):
-#     GET /api/v1/packs/{packId}/distribution        -> DistributionResponse { packId, rev,
-#                                                        tier, constituents[], _links: source|verify }
-#       The requester tier (built_in|org|consumer|private) is DERIVED from the authenticated
-#       caller, not a last-write client flag. One operation serves all tiers (DM-8 "one canonical
-#       path"; tier is a parameter, not a branch).
-#     Engine gate and reachability are enforced during the preceding resolution:
+# - Public surface this shapes (OpenAPI/HATEOAS, v1 — DM-13, DM-16):
+#     POST /api/v1/packs/{packId}/distributions   -> DistributionResponse { packId, rev,
+#                                                     tier, constituents[], _links: source|resolution }
+#       The distribute action is the WRITE that triggers resolve+verify internally, so the engine
+#       gate, cache hit and reachability all surface as THIS action's result. One operation serves
+#       all tiers (DM-8 "one canonical path"; tier is a parameter, not a branch). The requester tier
+#       (built_in|org|consumer|private) is DERIVED from the authenticated caller (DM-14), never a
+#       client-set field.
 #       4xx -> Problem { refusalCode: "PACK_ENGINE_INCOMPATIBLE" | "SOURCE_UNREACHABLE" }.
+#     GET /api/v1/packs/{packId}/resolution        -> read-only resolution-state projection (DM-16),
+#       reflecting verified/rev/digests and the last refusal — NOT a resolve action resource.
 # - Decisions / spec exercised: DM-8 (built-in = first catfooding consumer, one canonical path),
 #   DM-9 (built-in bundles into the installed distribution for cold/offline), DM-10 floor (offline
 #   cache), recorded default (engine gating at resolve, PACK_ENGINE_INCOMPATIBLE), DIRECTIVE_043
@@ -50,25 +53,26 @@ Feature: Every tier pulls a registered pack through one canonical path
   Scenario: A pack whose required core range excludes the engine is refused at resolve time
     Given the pack "legacy-pack" requires a core range of ">=3.0.0,<4"
     And the engine reports its core version as "4.0.0rc7"
-    When I resolve the pack "legacy-pack"
-    Then resolution is refused with "PACK_ENGINE_INCOMPATIBLE"
+    When a consumer requests distribution of the pack "legacy-pack"
+    Then the distribute request is refused with "PACK_ENGINE_INCOMPATIBLE"
     And the refusal names the required range and the engine version
     And the refusal happens before any merge or activation work
+    And the read-only resolution-state projection reports the pack as not resolvable on this engine
 
   @promise:PR-PACK-DISTRIBUTE-004
   Scenario: A previously resolved pack resolves from cache with no network
     Given the pack "acme-review-pack" was resolved earlier and is in the offline cache
     And no network is available
-    When I resolve the pack "acme-review-pack"
-    Then the pack resolves from the cache without reaching the network
+    When a consumer requests distribution of the pack "acme-review-pack"
+    Then the pack is distributed from the offline cache without reaching the network
     And it is verified against the same pinned revision and digests
 
   @promise:PR-PACK-DISTRIBUTE-005
   Scenario: An uncached pack whose source is unreachable fails closed and legibly
     Given the pack "acme-review-pack" is not in the offline cache
     And its source cannot be reached
-    When I resolve the pack "acme-review-pack"
-    Then resolution fails closed with "SOURCE_UNREACHABLE"
+    When a consumer requests distribution of the pack "acme-review-pack"
+    Then the distribute request fails closed with "SOURCE_UNREACHABLE"
     And the refusal names the source it could not reach
 
   @promise:PR-PACK-DISTRIBUTE-006 @deferred @deferred-reason:private-tenancy-is-storage-phase-policy

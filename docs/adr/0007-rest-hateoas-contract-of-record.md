@@ -69,6 +69,18 @@ surface set raised the question of what actually ships in v1.
    only in `..infra.api..`; a transport type never crosses into the application or domain ring
    (ArchUnit-pinned, ADR-0006). "REST and MCP may never implement charter resolution independently" (the
    `overview` invariant) extends to GraphQL.
+7. **Resolution is a read-only projection, not a public action resource** (DM `01M578WFJ84BNS2ZSE6SN35CFG`).
+   There is **no** `POST /packs/{id}/resolutions` action endpoint. Resolution happens *internally* during
+   register and distribute; `PackResolver` stays a **domain service** (ADR-0005 §10), never a REST resource.
+   The integrity, engine-compatibility, cache and reachability outcomes surface as the **result of the
+   distribute action** (success payload, or a `Problem` with the canonical refusal code such as
+   `PACK_ENGINE_INCOMPATIBLE` / `INTEGRITY_FAILURE` / `SOURCE_UNREACHABLE`). Resolution *state* is exposed as
+   a **read-only projection** — `GET /packs/{id}/resolution`, or embedded in the pack resource and reachable
+   through its `Links` component — not as something a client triggers.
+8. **The requester tier is derived from the authenticated identity, never a client-set field** (DM
+   `01M578W9FK24NNSFRYT7C5ZZZ1`). No request body or query parameter carries the tier; the adapter derives it
+   from the authenticated principal, keeping tier selection fail-closed (authn/authz is a separate downstream
+   concern).
 
 ## Consequences
 
@@ -82,6 +94,9 @@ surface set raised the question of what actually ships in v1.
   use-case seam keeps both a cheap, non-structural add later.
 - Generating GraphQL from OpenAPI means a contract change reaches both surfaces by regeneration, never by
   hand-syncing two schemas.
+- Keeping resolution a read-only projection means the API exposes no way to trigger a fetch/verify out of
+  band of register/distribute — resolution stays an internal domain concern with a single owner, and the
+  tier cannot be spoofed because it is derived from auth, not sent by the client.
 
 ### Negative
 
@@ -117,6 +132,14 @@ Build all surfaces now. Not chosen: it front-loads cost and conformance surface 
 consumer, against a write set that is small and already canonical in REST. The use-case seam keeps them cheap
 to add when demand is real.
 
+### Option D: Model resolution as a public `POST /packs/{id}/resolutions` action resource
+
+Expose resolution as a client-triggered action that returns a resolution resource. Not chosen (DM
+`01M578WFJ84BNS2ZSE6SN35CFG`): resolution is an internal step of register/distribute, not an independent
+client action; a public resolve verb would duplicate the distribute path, invite out-of-band fetch/verify,
+and let a client imply a tier. The outcomes are surfaced on the distribute result and as a read-only
+projection instead.
+
 ## References
 
 - This repo: [ADR-0001](/adr/0001-java-service-with-openapi-contract/) (service + OpenAPI contract),
@@ -126,6 +149,7 @@ to add when demand is real.
   `architecture/contract-and-dtos`.
 - Decision Moments: `01M575AAJW9R833MV6ZDA4G64J` (OpenAPI sole source, GraphQL derived),
   `01M575AC288BKPRCCTJKT33H3G` (Links component HATEOAS), `01M575ADHN04ZSRK007Y2S0CRF` (MCP deferred),
-  `01M577X2EMGY9R5E2JC8PCJVTD` (REST v1 of record, GraphQL planned-later).
+  `01M577X2EMGY9R5E2JC8PCJVTD` (REST v1 of record, GraphQL planned-later), `01M578WFJ84BNS2ZSE6SN35CFG`
+  (resolution as read-only projection), `01M578W9FK24NNSFRYT7C5ZZZ1` (requester tier from auth).
 - Directives: DIRECTIVE_044 (canonical source).
 </content>

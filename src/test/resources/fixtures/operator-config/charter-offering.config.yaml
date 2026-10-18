@@ -8,10 +8,19 @@ engine:
   core_version: 4.0.0rc7
 
 trust:
-  # Explicit allowlist (DM-10). A git source whose host is not listed fails closed
+  # Explicit allowlist (DM-10). A git source not matched by any entry fails closed
   # (SOURCE_NOT_ALLOWLISTED). Built-in / open packs are a high-trust tier that bypasses this list.
+  # Mixed per-entry granularity (DM-18): each entry is host-, org-, or exact-repo-scoped;
+  # exact-repo is the least-privilege form.
   git_allowlist:
-    - github.com/acme
+    - scope: host
+      match: github.com/acme                      # any repository on this host is admitted
+    - scope: exact_repo
+      match: github.com/community/charter-linters  # least privilege: only this one repository
+    - scope: org
+      match: gitlab.com/acme-oss                   # any repository under this org / group
+  # Requester tier is DERIVED from the authenticated caller (DM-14), never a client-set field;
+  # it is listed here only to record the tiers the service recognizes, not as an input channel.
   high_trust_tiers:
     - built_in
     - open
