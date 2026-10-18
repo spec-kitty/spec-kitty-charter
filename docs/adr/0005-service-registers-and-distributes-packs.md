@@ -210,4 +210,5 @@ floor is the headless-friendly default, with signing reserved as a higher tier (
   (close defect classes by construction), DIRECTIVE_001 / 031 (boundaries / bounded context), DIRECTIVE_003
   (decision documentation).
 </content>
+
 </invoke>

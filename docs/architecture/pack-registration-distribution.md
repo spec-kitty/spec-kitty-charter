@@ -140,6 +140,7 @@ be.sddevelopment.charter
 Plain-Java POJOs (records / sealed types), repository **ports** (interfaces), and **service interfaces + implementations** (hybrid placement, decision 5). No annotations. Names and responsibilities only.
 
 ### 3.0 Shared kernel (`kernel.domain`)
+
 - `Pack` — a registered pack: `PackId` (a ULID), `PackVersion`, `PackLevel {built_in, org, project}`, `parentPack`, declared `PackSource`, `PackManifest`.
 - `PackSource` — **sealed, four kinds** (ledger decision 7): `GitSource {url, ref, rev(pinned sha), subdir?}`, `FilesystemSource {path}`, `StoredSource {storedRef}` (uploaded/service-held), `PublishedArtifactSource {purl}` — a **purl-style locator `pkg:charter/<id>@<version>`** (ledger decision 17) for a versioned package pulled from a registry. `rev`/`version` is the trust anchor, never a floating ref. `bundled` is a *resolve-time materialization outcome*, not a registration kind.
 - `PackManifest` — generated manifest: per-constituent `{id, kind, path, contentHash, provenancePath}`; the file-level integrity primitive (reuse the open-packs `content_hash`; do not reinvent).
@@ -147,18 +148,22 @@ Plain-Java POJOs (records / sealed types), repository **ports** (interfaces), an
 - `RefusalCode` — canonical diagnostics as domain values (`PACK_LEVEL_MISMATCH`, `PACK_LEVEL_MISSING`, `UNRESOLVED_EDGE_ENDPOINT`, `SOURCE_CONFLICT`, `INTEGRITY_FAILURE`, `PACK_ENGINE_INCOMPATIBLE`, `SOURCE_UNREACHABLE`, …). Part of the contract ([Contract and DTOs](/architecture/contract-and-dtos/)), surfaced as `Problem`.
 
 ### 3.1 Pack registration & validation (`registration.domain`) — the heart of this design
+
 Entities / value objects:
+
 - `RegisteredPack` (aggregate root) — a `Pack` + its `RegistrationStatus`, `TrustTier {built_in_high, open_high, allowlisted, private}`, `ConsentState`, lockfile linkage.
 - **Two-tier lockfile** (ledger decision 11): `ConfigLockfile` with one `LockfileEntry {packId, PackSource(with rev), snapshot_sha256}` per registered pack — the single reproducibility fact and the committed pin (ADR-0005 §3). Per-constituent `content_hash` stays in each pack's `PackManifest` for file-level verify. Reuse the `spec-kitty-snapshot-sha256` recipe verbatim.
 - `IntegrityReport`, `CompatRange` (`requires_core`, engine-compat — decision default), `SourceConflict`.
 
 Service interfaces + implementations (domain-owned, plain Java):
+
 - `PackRegistrationService` — `register(PackSource, TrustContext) : RegisteredPack`; validates descriptor, assigns/honors `PackId`, fails closed on pack-id or constituent-slug collision (`SOURCE_CONFLICT`). The **constituent-slug namespace is global** (ledger decision 15): a slug that collides across packs is refused, not shadowed per-pack (reversible to per-pack if too strict).
 - `PackResolver` — `resolve(PackId|PackSource) : ResolvedPack` (materialized local dir + manifest); **fetch → materialize → verify → hand downstream**. Verifies against the lockfile; **gates `requires_core` at resolve time** (`PACK_ENGINE_INCOMPATIBLE`, engine-compat default); fails closed and legible when uncached + unreachable (`SOURCE_UNREACHABLE`). It is a **domain service invoked internally by register/distribute — never a REST resource** (ledger decision 16; §4).
 - `PackDistributionService` — `distribute(PackId, requesterTier) : DistributionResponse` (the one canonical read/pull surface every tier shares; ADR-0005 §2). `requesterTier` is **derived from the authenticated identity, never client-set** (ledger decision 14); tier selects behavior as a parameter, not a branch.
 - `IntegrityVerifier`, `TrustPolicy` (explicit allowlist gate for allowlisted/private git — **mixed per-entry granularity: host-, org- or exact-repo-scoped**, exact-repo = least privilege, ledger decision 18; built-in/open bypass as high-trust — ledger decision 10), `SupplyChainPolicy`.
 
 Repository ports (domain-owned, impl in storage ring):
+
 - `RegisteredPackRepository` — `save/find/list` RegisteredPacks (returns domain models).
 - `LockfileRepository` — read/write the committed config lockfile.
 - `PackSourceGateway` (port) — "give me a verified local materialization of this `PackSource`"; the **only** seam that knows git/network/registry/cache. Domain depends on the port; the resolver adapter in the storage ring implements it.
@@ -167,16 +172,19 @@ Repository ports (domain-owned, impl in storage ring):
 > **Resolver / merge boundary** (ADR-0005 §10, DIRECTIVE_001/031): the resolver (fetch/materialize/verify/store) is a *different concern* from merge/activation. This slice ends at "verified local materialization + manifest"; merge/activation is the artifacts/kernel read side (§3.4). The loader never sees a URL.
 
 ### 3.2 Mission types (`missiontypes.domain`)
+
 - `MissionType {id}`, `Action (action:<missionType>/<action>)`, `MissionStepContract {step → delegated kind + candidates}`.
 - `MissionTypeService` — list/describe; `ActionSequenceService` (from `requires` edges).
 - Ports: `MissionTypeRepository`.
 
 ### 3.3 Profiles (`profiles.domain`)
+
 - `AgentProfile {id, specialization, collaboration, references}`, `ResolvedProfile`, `ProfileLineage (specializes_from)`, overlay semantics (`enhances` field-merge / `overrides` replace).
 - `ProfileResolutionService` — `resolve(profileId, action) : ResolvedProfile` (lineage + overlays + compact context); unresolved = error; `skipped_profiles` reported.
 - Ports: `AgentProfileRepository` (exposes `skippedProfiles`).
 
 ### 3.4 Other charter artifacts (`artifacts.domain`)
+
 - `Artifact {id, kind : ArtifactKind}` across the kinds table (directive, tactic, styleguide, toolguide, paradigm, procedure, glossary_pack, skill, anti_pattern, asset, template, mission_step_contract).
 - `ActiveGraph`, `LayerMerge`, `Activation {activated_<kind>, activated_kinds, mission_type_activations}`, `OrgCharterPolicy {required_<kind>}`.
 - `ArtifactService`, `GraphQueryService`, `ActivationService` (plan → commit).

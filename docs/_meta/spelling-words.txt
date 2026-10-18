@@ -167,3 +167,6 @@ jackson
 jdbc
 jpa
 sdl
+versionable
+dogfooded
+unstarted
