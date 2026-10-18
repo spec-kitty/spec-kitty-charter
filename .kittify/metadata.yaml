@@ -4,9 +4,9 @@
 
 spec_kitty:
   schema_version: 3
-  version: 4.0.0rc7
+  version: 4.0.0rc8
   initialized_at: '2026-10-13T18:49:07.255757+00:00'
-  last_upgraded_at:
+  last_upgraded_at: '2026-10-18T14:30:20.398760+00:00'
   schema_capabilities:
     canonical_context: true
     event_log_authority: true
@@ -17,4 +17,8 @@ environment:
   platform: linux
   platform_version: Linux-6.8.0-146-generic-x86_64-with-glibc2.39
 migrations:
-  applied: []
+  applied:
+  - id: 4.0.0rc7_exclude_spec_kitty
+    applied_at: '2026-10-18T14:30:00.085775+00:00'
+    result: success
+    notes: Added .spec-kitty/ to .git/info/exclude

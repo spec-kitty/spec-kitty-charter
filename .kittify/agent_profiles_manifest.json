@@ -210,6 +210,61 @@
       "tool_key": "claude"
     },
     {
+      "file_hash": "4b31b9dca4c0cb5bf984ff4dcd614de6c17fc68b10eec3401ddf570e75f5f88e",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/qa-defect-triager-dmitri.md",
+      "profile_urn": "agent_profile:qa-defect-triager-dmitri",
+      "projection_version": 1,
+      "source_hash": "a1963d99b5fc82a161eaa4b1b416852a069d828d6699640ab0c7d580d94d9dc6",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-defect-triager-dmitri.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
+      "file_hash": "4b68117c7cface22dfe1a286a2a0dc3f1fb9321ad1f4fab3c06e132e2c0622f9",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/qa-reporter-rhea.md",
+      "profile_urn": "agent_profile:qa-reporter-rhea",
+      "projection_version": 1,
+      "source_hash": "a73a22a2918b138fee400776fe90b3d657c38c14e62fa94d5e46ad283f673283",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-reporter-rhea.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
+      "file_hash": "540153607b155b49d0731f2d38a4266c8c8256641b4449450322a60dca9c5269",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/qa-strategist-quinn.md",
+      "profile_urn": "agent_profile:qa-strategist-quinn",
+      "projection_version": 1,
+      "source_hash": "4847a7cda546993d70f2248ed95fc8ee830ac75b9cdf9bdfa0b249b819533bb1",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-strategist-quinn.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
+      "file_hash": "7bf14d7a865346cfdbcef5112a2c84d7442745a6feff56d744087a2ab958bb1b",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/qa-test-designer-tessa.md",
+      "profile_urn": "agent_profile:qa-test-designer-tessa",
+      "projection_version": 1,
+      "source_hash": "9cb238705d70486d361a58aba7d1c15a3905fec61bfa3b7417d7056fd99963ad",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-test-designer-tessa.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
+      "file_hash": "60aaa3eec0f1ecf82e268179e098b4d2df58e42843dc07769347f26e8013a48a",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/qa-test-executor-elena.md",
+      "profile_urn": "agent_profile:qa-test-executor-elena",
+      "projection_version": 1,
+      "source_hash": "67262168e6df05e07edd918d03fa1ebf2199f248c3909227a5ee26a007acd927",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-test-executor-elena.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
       "file_hash": "6427419082a58c4d2826bac8c0aa147a347b96136ccaaa18a48600a7ad2ed3e9",
       "format": "claude-agent",
       "output_path": ".claude/agents/randy-reducer.md",
@@ -482,6 +537,61 @@
       "source_hash": "7184286bd3a7e781c593940a235fd4171647f89c60dfd201c3498bc48e1328ea",
       "source_layer": "built-in",
       "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/python-pedro.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "972653b779ff45d37dad9fed40e1906edfdda829c4ccbe39dcbb9b06f7d16f56",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/qa-defect-triager-dmitri.toml",
+      "profile_urn": "agent_profile:qa-defect-triager-dmitri",
+      "projection_version": 1,
+      "source_hash": "a1963d99b5fc82a161eaa4b1b416852a069d828d6699640ab0c7d580d94d9dc6",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-defect-triager-dmitri.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "05e14c15529901591baff0a7edf4e3590ad0f044cc72bec66b1826dd64427205",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/qa-reporter-rhea.toml",
+      "profile_urn": "agent_profile:qa-reporter-rhea",
+      "projection_version": 1,
+      "source_hash": "a73a22a2918b138fee400776fe90b3d657c38c14e62fa94d5e46ad283f673283",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-reporter-rhea.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "0f64c3c8f23d3f5637248dec3150859f503c153a4e0dd7c17095d49d0e3ca8c8",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/qa-strategist-quinn.toml",
+      "profile_urn": "agent_profile:qa-strategist-quinn",
+      "projection_version": 1,
+      "source_hash": "4847a7cda546993d70f2248ed95fc8ee830ac75b9cdf9bdfa0b249b819533bb1",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-strategist-quinn.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "a9ba24bfa23474073191780b5f82d852e5136322024c4616d1bd5a731ba054e5",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/qa-test-designer-tessa.toml",
+      "profile_urn": "agent_profile:qa-test-designer-tessa",
+      "projection_version": 1,
+      "source_hash": "9cb238705d70486d361a58aba7d1c15a3905fec61bfa3b7417d7056fd99963ad",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-test-designer-tessa.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "ba5b5ffc8b796cfb16725ff2fae116890280d774adfe4a3535b253946bb47d9a",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/qa-test-executor-elena.toml",
+      "profile_urn": "agent_profile:qa-test-executor-elena",
+      "projection_version": 1,
+      "source_hash": "67262168e6df05e07edd918d03fa1ebf2199f248c3909227a5ee26a007acd927",
+      "source_layer": "org",
+      "source_path": "packs/qa/agent_profiles/qa-test-executor-elena.agent.yaml",
       "tool_key": "codex"
     },
     {
