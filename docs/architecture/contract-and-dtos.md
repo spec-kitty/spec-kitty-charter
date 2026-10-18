@@ -48,7 +48,7 @@ flowchart LR
   (`charter-api`). Controllers implement the generated interfaces, so a contract change that
   the code does not follow fails the build.
 - **The core** ingests a released bundle of the contract (pinned and checksummed, the way
-  core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md) (open-packs as the built-in source) plans to vendor built-in packs; core #3504, not built yet) and
+  core ADR [`2026-08-16-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-08-16-2-open-packs-is-source-of-truth-for-built-in-doctrine.md) (open-packs as the built-in source) Option B re-vendors built-in packs; core #3504, in progress) and
   generates Python DTOs from it. The seam
   `charter.offering.api` returns those DTOs; the CLI and the runtime consume them. No Python
   code hand-writes a charter response shape. This is decided in [ADR-0004](/adr/0004-public-api-returns-generated-dtos/): the

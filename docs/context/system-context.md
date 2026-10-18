@@ -77,8 +77,8 @@ canonical event writer, not by the charter service. See [Events and the ledger](
 
 - **spec-kitty (core).** Owns the CLI, the runtime and its `next` state machine, the
   event ledger and the Python seam. Owns the GA gate this extraction is part of.
-- **spec-kitty-open-packs.** Designated source home of the built-in and internal pack
-  content, to be vendored into core at release (core #3504, not built yet). Its CI registers only packs that declare
+- **spec-kitty-open-packs.** Source of truth for the built-in and internal pack
+  content, re-vendored into core at release as a pinned, checksummed ref (core ADR `2026-08-16-2` Option B; the content is seeded upstream per open-packs #32, and the re-vendor pipeline core #3504 is in progress). Its CI registers only packs that declare
   `pack_level: org`.
 - **spec-kitty-events.** The event contract package. Producers and consumers depend on it,
   not on each other.
