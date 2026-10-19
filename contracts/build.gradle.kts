@@ -565,8 +565,8 @@ abstract class CheckContractCompatibility @Inject constructor(
             throw GradleException("-PcontractBaseline accepts only 'none', not '${baselineOverride.get()}'.")
         }
         val repo = repository.get().asFile.path
-        val howToFix = "Fetch the full history and tags (actions/checkout fetch-depth: 0), or pass " +
-            "-PcontractBaseline=none to skip the check on purpose."
+        val howToFix = "Fetch the full history and tags (actions/checkout fetch-depth: 0). Locally, when you " +
+            "cannot deepen the clone, -PcontractBaseline=none skips the check on purpose; CI refuses it."
         val (shallowCode, shallow) = run("git", "-C", repo, "rev-parse", "--is-shallow-repository")
         if (shallowCode != 0) throw GradleException("Cannot read the git history of $repo:\n$shallow")
         if (shallow.trim() == "true") {
