@@ -2,7 +2,7 @@
 title: "ADR-0003: Documentation follows the doc-kitty convention"
 description: The docs tree uses doc-kitty's structure — README-as-index sections registered in _meta/sections.yaml, frontmatter on every page, numbered ADRs and a dated changelog.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 audience:
@@ -16,6 +16,15 @@ audience:
 
 **Accepted** — 2026-10-13. Decider: Stijn Dejongh (operator), who asked for this
 repository's documentation to use doc-kitty's structure.
+
+**Amendment 2026-10-19** (operator): the toolkit moved to `@spec-kitty/doc-toolkit` `0.4.0`
+(Astro 7, Starlight 0.42, Node 22.22+). The decision stands; two convention points change.
+First, the glossary generator now **owns** `docs/glossary/**/README.md`: it writes an exact
+frontmatter key set and refuses to overwrite a page that carries any other key, so those
+pages are committed exactly as generated and the Python docs checks exempt them from the
+authored-only frontmatter rules (there is no post-build `--finalize` step any more). Second,
+`updated` (and `stale_after`) are written as UTC instants (`YYYY-MM-DDT00:00:00Z`), which
+doc-kitty 0.4.0 expects and the checks accept. See [Building the docsite](/guides/docsite/).
 
 ## Context
 
