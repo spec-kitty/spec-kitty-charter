@@ -70,7 +70,7 @@ packs/internal/
     ├── spec-kitty-branded-pdf.py.asset.yaml         # its asset sidecar
     ├── test-quality-scan.py                         # static test-quality triage (runs no tests)
     ├── test-quality-scan.py.asset.yaml              # its asset sidecar
-    ├── validate-pr-body.py                          # PR-body contract validator (five sections, git-grep discovery check)
+    ├── validate-pr-body.py                          # PR-body contract validator (five sections, advisory closes link, git-grep discovery check)
     ├── validate-pr-body.py.asset.yaml               # its asset sidecar
     └── debrief/                                     # executive-debrief tooling; the template loads logo.png and fonts/ by relative path
         ├── collect-debrief.py                       # deterministic GitHub facts as one JSON document (debrief-collector)
