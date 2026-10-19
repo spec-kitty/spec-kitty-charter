@@ -18,13 +18,19 @@ audience:
 repository's documentation to use doc-kitty's structure.
 
 **Amendment 2026-10-19** (operator): the toolkit moved to `@spec-kitty/doc-toolkit` `0.4.0`
-(Astro 7, Starlight 0.42, Node 22.22+). The decision stands; two convention points change.
+(Astro 7, Starlight 0.42, Node 22.22+). The decision stands; three convention points change.
 First, the glossary generator now **owns** `docs/glossary/**/README.md`: it writes an exact
-frontmatter key set and refuses to overwrite a page that carries any other key, so those
-pages are committed exactly as generated and the Python docs checks exempt them from the
-authored-only frontmatter rules (there is no post-build `--finalize` step any more). Second,
-`updated` (and `stale_after`) are written as UTC instants (`YYYY-MM-DDT00:00:00Z`), which
-doc-kitty 0.4.0 expects and the checks accept. See [Building the docsite](/guides/docsite/).
+frontmatter key set (including a `generated:` stamp) and refuses to overwrite a page that
+carries any other key, so those pages are committed exactly as generated and the Python docs
+checks exempt a page **carrying that stamp** from the authored-only frontmatter rules (there
+is no post-build `--finalize` step any more; an unstamped page under `docs/glossary/` is still
+treated as authored). Second, `updated` (and `stale_after`) are written as UTC instants
+(`YYYY-MM-DDT00:00:00Z`), which doc-kitty 0.4.0 expects and the checks accept. Third, every
+build now writes an **Open Knowledge Format (OKF)** bundle under `site/dist/okf` — doc-kitty's
+structured export of the docs for agent consumption — and CI conformance-checks it
+(`npm run check:okf`); section hubs carry an `okf_version` marker (`0.2` under this toolkit
+version). OKF is defined and versioned by doc-kitty, not this repository. See
+[Building the docsite](/guides/docsite/) and `docs/_meta/doc-rules.yaml`.
 
 ## Context
 

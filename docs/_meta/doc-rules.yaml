@@ -99,9 +99,14 @@ rules:
     ci: PlantUML diagrams are current
     severity: error
   - id: glossary-imported
-    rule: docs/glossary/ and site/.contextive/definitions.yaml are generated from the core glossary and carry its commit (source_ref); not hand-edited.
-    check: check_docs.py frontmatter (the generated pages carry full frontmatter); the core commit is recorded, not compared
+    rule: docs/glossary/**/README.md are owned by doc-kitty's glossary generator — committed exactly as generated, carrying its `generated:` stamp and reduced frontmatter; not hand-edited. The source commit lives in site/.contextive/definitions.yaml's header, not on the pages.
+    check: check_docs.py frontmatter (a page under docs/glossary/ that carries the `generated:` stamp is exempt from the authored-only keys updated/type/audience, the description-length band and the terminology check; every other required key still applies, and an unstamped page there is treated as authored)
     ci: Docs checks / Frontmatter
+    severity: error
+  - id: okf-export-conformance
+    rule: Every build writes an Open Knowledge Format (OKF) bundle under site/dist/okf and it must pass OKF conformance. OKF is doc-kitty's structured export of the docs for agent consumption; section hubs carry its `okf_version` marker (`0.2` under doc-kitty 0.4.0).
+    check: "npm run check:okf (dockitty-export-okf: re-exports the built content graph and validates the bundle)"
+    ci: Docs site / build
     severity: error
   - id: glossary-matches-core
     rule: The imported glossary is current with the core glossary.
