@@ -9,6 +9,19 @@ archunit = "1.5.1"
 cucumber = "8.0.4"
 snakeyaml-engine = "3.2"
 swagger-annotations = "2.2.55"
+# Quality gates (operator-vetted 2026-10-18; research.md section 10). jqwik is excluded (C-008).
+spotless = "8.10.3"
+palantir-java-format = "2.101.0"
+checkstyle = "14.3.0"
+errorprone-plugin = "5.1.1"
+errorprone = "2.50.0"
+nullaway = "0.14.2"
+jspecify = "1.0.0"
+jacoco = "0.8.15"
+pitest-plugin = "1.19.0"
+pitest = "1.30.0"
+pitest-junit5 = "1.2.3"
+mockito = "5.24.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -33,6 +46,14 @@ cucumber-bom = { module = "io.cucumber:cucumber-bom", version.ref = "cucumber" }
 cucumber-java = { module = "io.cucumber:cucumber-java" }
 cucumber-spring = { module = "io.cucumber:cucumber-spring" }
 cucumber-junit-platform-engine = { module = "io.cucumber:cucumber-junit-platform-engine" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
 # Plugin artifacts, consumed by the build-logic convention plugins.
 gradle-plugin-spring-boot = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 gradle-plugin-openapi-generator = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "openapi-generator" }
+gradle-plugin-spotless = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+gradle-plugin-errorprone = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "errorprone-plugin" }
+gradle-plugin-pitest = { module = "info.solidsoft.gradle.pitest:gradle-pitest-plugin", version.ref = "pitest-plugin" }
