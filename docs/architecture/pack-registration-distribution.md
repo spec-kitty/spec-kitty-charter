@@ -1,6 +1,6 @@
 ---
 title: Pack registration and distribution
-description: "How the charter service registers, stores, verifies and distributes packs of every tier: layering, the four source kinds, the trust and lockfile model, and the API surface."
+description: "How the charter service registers, stores, verifies and distributes packs of every level: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
 updated: 2026-10-19
 type: Architecture

@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Reference
 related:
@@ -246,7 +246,7 @@ actions and governance are graph data: `mission_type:<id>` `requires` its action
 
 - **Anti-pattern** has no descriptor file. It is a node re-kinded as `anti_pattern` inside
   another kind's graph shard, the target of `rejects` edges.
-- **Template** has no descriptor pattern. Templates are mission-tier content resolved
+- **Template** has no descriptor pattern. Templates are mission-type content resolved
   through the template chain and linked with `instantiates` edges.
 
 ## Project-side configuration
