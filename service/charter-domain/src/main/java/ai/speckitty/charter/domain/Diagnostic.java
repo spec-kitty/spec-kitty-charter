@@ -15,7 +15,10 @@ public record Diagnostic(Code code, String detail) {
      * wire spelling.
      */
     public enum Code {
-        /** A {@code pack.yaml} declares no {@code pack_level}; the configured level is used. */
+        /**
+         * The pack has no {@code pack.yaml}, or its {@code pack.yaml} declares no {@code pack_level}; the configured
+         * level is used.
+         */
         PACK_LEVEL_MISSING("pack_level_missing");
 
         private final String token;

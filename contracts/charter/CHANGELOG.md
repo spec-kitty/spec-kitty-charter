@@ -63,6 +63,9 @@ did not; `Changed` lists what differs from the draft.
   asserts the whole body with `Then the response body is:`. A refusal body omits an absent
   optional member; it carried `"type": null` and `"instance": null`, which the closed
   `Problem` schema does not allow.
+- Scenario "A pack descriptor without pack_level loads at its configured level, with a
+  warning" is renamed "A pack descriptor without pack_level loads at its configured level,
+  with a diagnostic", the name the answer gives it (`diagnostics`); the answer is unchanged.
 
 ### Provisional
 

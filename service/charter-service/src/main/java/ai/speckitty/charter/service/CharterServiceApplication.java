@@ -5,7 +5,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-/** The charter service: Spring wiring only. Loopback binding and credentials arrive with the launcher work. */
+/**
+ * The charter service: Spring wiring only. It listens on loopback ({@code server.address} in
+ * {@code application.yaml}); the port and credentials arrive with the launcher work.
+ */
 @SpringBootApplication(scanBasePackageClasses = {CharterServiceApplication.class, ContextController.class})
 @EnableConfigurationProperties(CharterProperties.class)
 public class CharterServiceApplication {

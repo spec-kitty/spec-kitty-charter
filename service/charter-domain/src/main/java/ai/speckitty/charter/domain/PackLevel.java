@@ -7,7 +7,7 @@ import java.util.Optional;
 public enum PackLevel {
     /** Ships with Spec Kitty; merged first. */
     BUILT_IN("built-in"),
-    /** An organisation's pack, registered under {@code charter_packs.org.packs}; merged second. */
+    /** An organization's pack, registered under {@code charter_packs.org.packs}; merged second. */
     ORG("org"),
     /** The project's own layer; merged last. */
     PROJECT("project");
