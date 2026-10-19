@@ -24,17 +24,20 @@ import java.util.Set;
 public final class GraphDocumentReader {
 
     /** Which of the two DRG document shapes a file has. */
-    public enum Shape { SHARD, FRAGMENT }
+    public enum Shape {
+        SHARD,
+        FRAGMENT
+    }
 
-    private static final Set<String> SHARD_KEYS = Set.of("schema_version", "generated_at", "generated_by", "nodes", "edges");
+    private static final Set<String> SHARD_KEYS =
+            Set.of("schema_version", "generated_at", "generated_by", "nodes", "edges");
     private static final Set<String> SHARD_NODE_KEYS = Set.of("urn", "kind", "label", "tags");
     private static final Set<String> FRAGMENT_KEYS =
             Set.of("pack_name", "source_kind", "source_ref", "layer_index", "provenance_marker", "nodes", "edges");
     private static final Set<String> FRAGMENT_NODE_KEYS = Set.of("id", "kind", "title", "body_path");
     private static final Set<String> EDGE_KEYS = Set.of("source", "target", "relation", "when", "reason");
 
-    private GraphDocumentReader() {
-    }
+    private GraphDocumentReader() {}
 
     public static DoctrineGraph read(String text, Shape shape, String origin) {
         Object document;
@@ -58,10 +61,14 @@ public final class GraphDocumentReader {
             Map<String, Object> edge = mapping(item, origin + " edge");
             checkKeys(edge, EDGE_KEYS, origin + " edge");
             String relationToken = string(edge, "relation", origin);
-            Relation relation = Relation.fromToken(relationToken).orElseThrow(() -> schema(origin, "unknown relation '" + relationToken + "'"));
-            edges.add(new DrgEdge(endpoint(string(edge, "source", origin), declaredIds, origin),
-                    endpoint(string(edge, "target", origin), declaredIds, origin), relation,
-                    optionalString(edge, "when", origin), optionalString(edge, "reason", origin)));
+            Relation relation = Relation.fromToken(relationToken)
+                    .orElseThrow(() -> schema(origin, "unknown relation '" + relationToken + "'"));
+            edges.add(new DrgEdge(
+                    endpoint(string(edge, "source", origin), declaredIds, origin),
+                    endpoint(string(edge, "target", origin), declaredIds, origin),
+                    relation,
+                    optionalString(edge, "when", origin),
+                    optionalString(edge, "reason", origin)));
         }
         return new DoctrineGraph(nodes, edges);
     }
@@ -81,7 +88,8 @@ public final class GraphDocumentReader {
         checkKeys(node, FRAGMENT_NODE_KEYS, origin + " node");
         String id = string(node, "id", origin);
         String plural = string(node, "kind", origin);
-        NodeKind kind = pluralKind(plural).orElseThrow(() -> schema(origin, "node " + id + " has unknown kind '" + plural + "'"));
+        NodeKind kind = pluralKind(plural)
+                .orElseThrow(() -> schema(origin, "node " + id + " has unknown kind '" + plural + "'"));
         return new DrgNode(new Urn(kind, id), optionalString(node, "title", origin));
     }
 
@@ -95,8 +103,10 @@ public final class GraphDocumentReader {
 
     /** An endpoint is a URN of a known node kind, or a bare id the same document declares. */
     private static Urn endpoint(String token, Map<String, Urn> declaredIds, String origin) {
-        return Urn.parse(token).or(() -> Optional.ofNullable(declaredIds.get(token)))
-                .orElseThrow(() -> new CharterRefusal(RefusalCode.UNRESOLVED_EDGE_ENDPOINT,
+        return Urn.parse(token)
+                .or(() -> Optional.ofNullable(declaredIds.get(token)))
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.UNRESOLVED_EDGE_ENDPOINT,
                         origin + ": edge endpoint '" + token + "' is neither a URN nor an id this document declares"));
     }
 
@@ -119,9 +129,13 @@ public final class GraphDocumentReader {
     }
 
     private static void checkKeys(Map<String, Object> map, Set<String> allowed, String what) {
-        map.keySet().stream().filter(k -> !allowed.contains(k)).sorted().findFirst().ifPresent(k -> {
-            throw schema(what, "unknown key '" + k + "'");
-        });
+        map.keySet().stream()
+                .filter(k -> !allowed.contains(k))
+                .sorted()
+                .findFirst()
+                .ifPresent(k -> {
+                    throw schema(what, "unknown key '" + k + "'");
+                });
     }
 
     private static String string(Map<String, Object> map, String key, String origin) {

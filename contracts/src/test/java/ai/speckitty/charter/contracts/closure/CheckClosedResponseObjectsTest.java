@@ -24,11 +24,14 @@ class CheckClosedResponseObjectsTest {
 
     @Test
     void anOpenBundleFailsWithOneLinePerViolation() throws URISyntaxException {
-        Path fixture = Path.of(getClass().getResource("/closure/additional-properties-true.yaml").toURI());
+        Path fixture = Path.of(getClass()
+                .getResource("/closure/additional-properties-true.yaml")
+                .toURI());
         int code = CheckClosedResponseObjects.run(List.of(fixture.toString()), out);
         assertThat(code).isEqualTo(1);
-        assertThat(printed()).startsWith("1 violation of the closed-response-objects convention:\n"
-                + "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/probe: ");
+        assertThat(printed())
+                .startsWith("1 violation of the closed-response-objects convention:\n"
+                        + "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/probe: ");
     }
 
     @Test

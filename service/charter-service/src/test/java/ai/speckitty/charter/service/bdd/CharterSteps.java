@@ -45,7 +45,9 @@ public class CharterSteps {
 
     @Then("the response status is {int}")
     public void status(int status) throws Exception {
-        assertThat(result.getResponse().getStatus()).as(result.getResponse().getContentAsString()).isEqualTo(status);
+        assertThat(result.getResponse().getStatus())
+                .as(result.getResponse().getContentAsString())
+                .isEqualTo(status);
     }
 
     @Then("the response body is:")
@@ -57,6 +59,9 @@ public class CharterSteps {
     @Then("the problem code is {string}")
     public void problemCode(String code) throws Exception {
         assertThat(result.getResponse().getContentType()).startsWith("application/problem+json");
-        assertThat(JSON.readTree(result.getResponse().getContentAsString()).path("code").asString()).isEqualTo(code);
+        assertThat(JSON.readTree(result.getResponse().getContentAsString())
+                        .path("code")
+                        .asString())
+                .isEqualTo(code);
     }
 }

@@ -16,11 +16,9 @@ import java.util.Optional;
  */
 final class PackDescriptorReader {
 
-    record Result(PackDescriptor descriptor, List<Diagnostic> diagnostics) {
-    }
+    record Result(PackDescriptor descriptor, List<Diagnostic> diagnostics) {}
 
-    private PackDescriptorReader() {
-    }
+    private PackDescriptorReader() {}
 
     static Result read(String text, String packName, PackLevel configured) {
         Object document;
@@ -36,21 +34,29 @@ final class PackDescriptorReader {
         PackLevel level = configured;
         List<Diagnostic> diagnostics = List.of();
         if (levelToken == null) {
-            diagnostics = List.of(new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING,
-                    "pack.yaml of " + packName + " has no pack_level; the configured level " + configured.token() + " is used"));
+            diagnostics = List.of(new Diagnostic(
+                    Diagnostic.Code.PACK_LEVEL_MISSING,
+                    "pack.yaml of " + packName + " has no pack_level; the configured level " + configured.token()
+                            + " is used"));
         } else {
-            level = PackLevel.fromToken(levelToken).orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE,
-                    "pack.yaml of " + packName + " declares an unknown pack_level '" + levelToken + "'"));
+            level = PackLevel.fromToken(levelToken)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE,
+                            "pack.yaml of " + packName + " declares an unknown pack_level '" + levelToken + "'"));
         }
         PackDescriptor descriptor = new PackDescriptor(
-                required(root, "pack_id", packName), required(root, "pack_version", packName),
-                text(root, "parent_pack", packName), required(root, "name", packName), level);
+                required(root, "pack_id", packName),
+                required(root, "pack_version", packName),
+                text(root, "parent_pack", packName),
+                required(root, "name", packName),
+                level);
         return new Result(descriptor, diagnostics);
     }
 
     private static String required(Map<?, ?> root, String key, String packName) {
-        return text(root, key, packName).orElseThrow(() ->
-                new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + packName + " has no " + key));
+        return text(root, key, packName)
+                .orElseThrow(() ->
+                        new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + packName + " has no " + key));
     }
 
     private static Optional<String> text(Map<?, ?> root, String key, String packName) {
@@ -61,6 +67,7 @@ final class PackDescriptorReader {
         if (value instanceof String s) {
             return Optional.of(s);
         }
-        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + packName + ": " + key + " must be a string");
+        throw new CharterRefusal(
+                RefusalCode.PACK_UNREADABLE, "pack.yaml of " + packName + ": " + key + " must be a string");
     }
 }

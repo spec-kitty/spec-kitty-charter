@@ -19,5 +19,7 @@ public final class CharterRefusal extends RuntimeException {
         this.code = Objects.requireNonNull(code, "code");
     }
 
-    public RefusalCode code() { return code; }
+    public RefusalCode code() {
+        return code;
+    }
 }

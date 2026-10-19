@@ -16,6 +16,5 @@ public record CharterProperties(List<Pack> packs) {
     }
 
     /** One configured pack. */
-    public record Pack(String name, String level, Path path) {
-    }
+    public record Pack(String name, String level, Path path) {}
 }

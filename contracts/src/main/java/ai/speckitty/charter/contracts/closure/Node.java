@@ -24,7 +24,9 @@ record Node(Object value, JsonPointer pointer) {
 
     /** The keys of a mapping, as strings, in document order; none for any other value. */
     List<String> keys() {
-        return value instanceof Map<?, ?> map ? map.keySet().stream().map(String::valueOf).toList() : List.of();
+        return value instanceof Map<?, ?> map
+                ? map.keySet().stream().map(String::valueOf).toList()
+                : List.of();
     }
 
     boolean has(String key) {
@@ -46,12 +48,14 @@ record Node(Object value, JsonPointer pointer) {
 
     /** The values of the mapping under {@code key}; a value there that is not a mapping is reported. */
     List<Node> entries(String key, Findings findings) {
-        return child(key).map(node -> {
-            if (!node.isMap()) {
-                findings.malformed(node.pointer(), "must be a mapping");
-            }
-            return node.members();
-        }).orElse(List.of());
+        return child(key)
+                .map(node -> {
+                    if (!node.isMap()) {
+                        findings.malformed(node.pointer(), "must be a mapping");
+                    }
+                    return node.members();
+                })
+                .orElse(List.of());
     }
 
     /** The elements of the list under {@code key}; a value there that is not a non-empty list is reported. */

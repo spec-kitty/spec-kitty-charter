@@ -10,11 +10,11 @@ import java.util.Set;
  */
 final class ResponseSchemas {
 
-    private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
+    private static final Set<String> METHODS =
+            Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
     private static final String REF = "$ref";
 
-    private ResponseSchemas() {
-    }
+    private ResponseSchemas() {}
 
     static List<Node> in(Object document, Findings findings) {
         Node root = new Node(document, JsonPointer.ROOT);
@@ -26,7 +26,8 @@ final class ResponseSchemas {
         List<Node> schemas = new ArrayList<>();
         for (Node pathItem : root.entries("paths", findings)) {
             refused(pathItem, findings);
-            pathItem.members().stream().filter(op -> METHODS.contains(op.pointer().tokens().getLast()))
+            pathItem.members().stream()
+                    .filter(op -> METHODS.contains(op.pointer().tokens().getLast()))
                     .forEach(operation -> schemas.addAll(ofOperation(operation, findings)));
         }
         return schemas;
@@ -37,8 +38,11 @@ final class ResponseSchemas {
         for (Node response : operation.entries("responses", findings)) {
             refused(response, findings);
             for (Node media : response.entries("content", findings)) {
-                media.child("schema").ifPresentOrElse(schemas::add, () -> findings.malformed(media.pointer(),
-                        "the media type has no schema, so its body is unconstrained"));
+                media.child("schema")
+                        .ifPresentOrElse(
+                                schemas::add,
+                                () -> findings.malformed(
+                                        media.pointer(), "the media type has no schema, so its body is unconstrained"));
             }
         }
         return schemas;
@@ -46,7 +50,8 @@ final class ResponseSchemas {
 
     private static void refused(Node node, Findings findings) {
         if (node.has(REF)) {
-            findings.malformed(node.pointer().child(REF), "a $ref is left in the bundle; the bundle must inline every reference");
+            findings.malformed(
+                    node.pointer().child(REF), "a $ref is left in the bundle; the bundle must inline every reference");
         }
     }
 }

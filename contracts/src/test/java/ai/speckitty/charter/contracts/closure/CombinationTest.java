@@ -15,12 +15,15 @@ class CombinationTest {
     private static final Closure CLOSED = Closure.closedObject(HOLDER.child("a"), "closed");
     private static final Closure SCALAR = Closure.notAnObject(HOLDER.child("b"), "a string");
     private static final Closure UNTYPED = Closure.open(HOLDER.child("c"), "untyped", false);
-    private static final Closure OPEN_OBJECT = new Closure(HOLDER.child("d"), Facet.open("an open object", true), Facet.none("no array"));
-    private static final Closure CLOSED_UNTYPED = new Closure(HOLDER.child("e"), Facet.closed("closed"), Facet.open("any array", false));
+    private static final Closure OPEN_OBJECT =
+            new Closure(HOLDER.child("d"), Facet.open("an open object", true), Facet.none("no array"));
+    private static final Closure CLOSED_UNTYPED =
+            new Closure(HOLDER.child("e"), Facet.closed("closed"), Facet.open("any array", false));
 
     @Test
     void aConjunctionIsClosedByAnyClosedPart() {
-        assertThat(Conjunction.of(HOLDER, List.of(UNTYPED, OPEN_OBJECT, CLOSED)).kind()).isEqualTo(Kind.CLOSED);
+        assertThat(Conjunction.of(HOLDER, List.of(UNTYPED, OPEN_OBJECT, CLOSED)).kind())
+                .isEqualTo(Kind.CLOSED);
     }
 
     @Test
@@ -36,9 +39,10 @@ class CombinationTest {
         assertThat(Conjunction.of(HOLDER, List.of(UNTYPED, SCALAR)).kind()).isEqualTo(Kind.NOT_AN_OBJECT);
         Closure contradiction = Conjunction.of(HOLDER, List.of(SCALAR, OPEN_OBJECT));
         assertThat(contradiction.kind()).isEqualTo(Kind.OPEN);
-        assertThat(contradiction.reason()).isEqualTo("an open object (an open object; from d) sits beside a part that admits"
-                + " no object (a string; from b): this pairing is refused by convention, as a likely authoring mistake,"
-                + " even where a value satisfies both parts");
+        assertThat(contradiction.reason())
+                .isEqualTo("an open object (an open object; from d) sits beside a part that admits"
+                        + " no object (a string; from b): this pairing is refused by convention, as a likely authoring mistake,"
+                        + " even where a value satisfies both parts");
     }
 
     @Test
@@ -71,6 +75,8 @@ class CombinationTest {
 
     @Test
     void onlyAnOpenFacetFails() {
-        assertThat(List.of(CLOSED, SCALAR, UNTYPED, CLOSED_UNTYPED)).extracting(Closure::passes).containsExactly(true, true, false, false);
+        assertThat(List.of(CLOSED, SCALAR, UNTYPED, CLOSED_UNTYPED))
+                .extracting(Closure::passes)
+                .containsExactly(true, true, false, false);
     }
 }

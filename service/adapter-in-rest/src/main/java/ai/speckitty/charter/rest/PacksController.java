@@ -22,15 +22,22 @@ public class PacksController implements PacksApi {
 
     @Override
     public ResponseEntity<PackListing> listPacks() {
-        return ResponseEntity.ok(new PackListing(query.answer().stream().map(PacksController::toDto).toList()));
+        return ResponseEntity.ok(new PackListing(
+                query.answer().stream().map(PacksController::toDto).toList()));
     }
 
     private static PackSummary toDto(ai.speckitty.charter.read.PackSummary pack) {
-        return new PackSummary(pack.name(), PackSummary.LevelEnum.fromValue(pack.level().token()),
-                pack.packId().orElse(null), pack.packVersion().orElse(null), pack.parentPack().orElse(null),
-                pack.nodeCount(), pack.edgeCount(),
+        return new PackSummary(
+                pack.name(),
+                PackSummary.LevelEnum.fromValue(pack.level().token()),
+                pack.packId().orElse(null),
+                pack.packVersion().orElse(null),
+                pack.parentPack().orElse(null),
+                pack.nodeCount(),
+                pack.edgeCount(),
                 pack.diagnostics().stream()
-                        .map(d -> new Diagnostic(Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
+                        .map(d -> new Diagnostic(
+                                Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
                         .toList());
     }
 }

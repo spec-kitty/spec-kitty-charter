@@ -9,13 +9,26 @@ class ArtifactKindTest {
 
     @Test
     void factsMatchTheLogicalModelTable() {
-        assertThat(Arrays.stream(ArtifactKind.values()).filter(ArtifactKind::activatable).map(ArtifactKind::token))
-                .containsExactly("directive", "tactic", "styleguide", "toolguide", "paradigm", "procedure", "agent_profile",
-                        "mission_step_contract", "glossary_pack", "skill", "anti_pattern");
+        assertThat(Arrays.stream(ArtifactKind.values())
+                        .filter(ArtifactKind::activatable)
+                        .map(ArtifactKind::token))
+                .containsExactly(
+                        "directive",
+                        "tactic",
+                        "styleguide",
+                        "toolguide",
+                        "paradigm",
+                        "procedure",
+                        "agent_profile",
+                        "mission_step_contract",
+                        "glossary_pack",
+                        "skill",
+                        "anti_pattern");
         assertThat(Arrays.stream(ArtifactKind.values()).filter(ArtifactKind::selectionOverlayable))
                 .allMatch(ArtifactKind::orgRequirable)
                 .hasSize(8);
-        assertThat(Arrays.stream(ArtifactKind.values()).filter(k -> k.inForceWhenAbsent() == ArtifactKind.InForceWhenAbsent.REQUIRED))
+        assertThat(Arrays.stream(ArtifactKind.values())
+                        .filter(k -> k.inForceWhenAbsent() == ArtifactKind.InForceWhenAbsent.REQUIRED))
                 .containsExactly(ArtifactKind.SKILL);
         assertThat(ArtifactKind.ASSET.orgRequirable()).isTrue();
         assertThat(ArtifactKind.TEMPLATE.orgRequirable()).isFalse();

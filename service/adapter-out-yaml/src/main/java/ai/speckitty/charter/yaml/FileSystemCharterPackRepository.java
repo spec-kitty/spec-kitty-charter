@@ -33,7 +33,9 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
 
     @Override
     public CharterOffering load() {
-        return new CharterOffering(locations.get().stream().map(FileSystemCharterPackRepository::loadPack).toList());
+        return new CharterOffering(locations.get().stream()
+                .map(FileSystemCharterPackRepository::loadPack)
+                .toList());
     }
 
     static CharterPack loadPack(PackLocation location) {
@@ -45,21 +47,28 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
         List<Diagnostic> diagnostics = new ArrayList<>();
         Path packYaml = root.resolve("pack.yaml");
         if (Files.isRegularFile(packYaml)) {
-            PackDescriptorReader.Result result = PackDescriptorReader.read(read(packYaml, location), location.name(), location.level());
+            PackDescriptorReader.Result result =
+                    PackDescriptorReader.read(read(packYaml, location), location.name(), location.level());
             descriptor = Optional.of(result.descriptor());
             diagnostics.addAll(result.diagnostics());
         } else {
-            diagnostics.add(new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING, location.level().token() + " pack "
-                    + location.name() + " has no pack.yaml; the configured level " + location.level().token() + " is used"));
+            diagnostics.add(new Diagnostic(
+                    Diagnostic.Code.PACK_LEVEL_MISSING,
+                    location.level().token() + " pack " + location.name() + " has no pack.yaml; the configured level "
+                            + location.level().token() + " is used"));
         }
         DoctrineGraph graph = DoctrineGraph.empty();
         for (Path shard : shards(root, location)) {
-            graph = graph.merge(GraphDocumentReader.read(read(shard, location), GraphDocumentReader.Shape.SHARD,
+            graph = graph.merge(GraphDocumentReader.read(
+                    read(shard, location),
+                    GraphDocumentReader.Shape.SHARD,
                     location.name() + "/" + root.relativize(shard)));
         }
         Path fragment = root.resolve("drg").resolve("fragment.yaml");
         if (Files.isRegularFile(fragment)) {
-            graph = graph.merge(GraphDocumentReader.read(read(fragment, location), GraphDocumentReader.Shape.FRAGMENT,
+            graph = graph.merge(GraphDocumentReader.read(
+                    read(fragment, location),
+                    GraphDocumentReader.Shape.FRAGMENT,
                     location.name() + "/drg/fragment.yaml"));
         }
         return new CharterPack(location.name(), location.level(), descriptor, graph, diagnostics);
@@ -68,7 +77,8 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
     private static List<Path> shards(Path root, PackLocation location) {
         try (Stream<Path> files = Files.list(root)) {
             return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && Files.isRegularFile(p))
-                    .sorted().toList();
+                    .sorted()
+                    .toList();
         } catch (IOException e) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " cannot be listed", e);
         }
@@ -78,8 +88,10 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
         try {
             return Files.readString(file, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE,
-                    location.name() + "/" + location.root().relativize(file) + " cannot be read", e);
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    location.name() + "/" + location.root().relativize(file) + " cannot be read",
+                    e);
         }
     }
 }

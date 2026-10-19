@@ -16,14 +16,17 @@ import org.springframework.context.annotation.Configuration;
 public class CharterWiring {
 
     /** Where the packs are; a test may supply a {@code @Primary} one. */
-    public interface PackLocations extends Supplier<List<PackLocation>> {
-    }
+    public interface PackLocations extends Supplier<List<PackLocation>> {}
 
     @Bean
     PackLocations packLocations(CharterProperties properties) {
         List<PackLocation> locations = properties.packs().stream()
-                .map(p -> new PackLocation(p.name(), PackLevel.fromToken(p.level()).orElseThrow(() ->
-                        new IllegalArgumentException("charter.packs: unknown level '" + p.level() + "' for " + p.name())), p.path()))
+                .map(p -> new PackLocation(
+                        p.name(),
+                        PackLevel.fromToken(p.level())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "charter.packs: unknown level '" + p.level() + "' for " + p.name())),
+                        p.path()))
                 .toList();
         return () -> locations;
     }

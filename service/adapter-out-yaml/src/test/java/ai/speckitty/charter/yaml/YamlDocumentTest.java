@@ -29,7 +29,8 @@ class YamlDocumentTest {
     @Test
     void anEditReplacesOneScalarAndKeepsEverythingElse() {
         YamlDocument doc = YamlDocument.parse(SOURCE);
-        int index = doc.scalars().stream().map(YamlDocument.Scalar::value).toList().indexOf("built-in");
+        int index =
+                doc.scalars().stream().map(YamlDocument.Scalar::value).toList().indexOf("built-in");
         String edited = doc.withScalar(index, "org").render();
         assertThat(edited).isEqualTo(SOURCE.replace("name: built-in", "name: org"));
     }

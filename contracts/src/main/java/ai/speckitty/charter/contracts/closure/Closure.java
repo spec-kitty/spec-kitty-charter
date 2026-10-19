@@ -97,6 +97,10 @@ public record Closure(JsonPointer at, Facet objects, Facet arrays) {
         if (passes()) {
             return kind() == Kind.CLOSED ? objects.reason() : "it admits no object: " + objects.reason();
         }
-        return Stream.of(objects, arrays).filter(Facet::isOpen).map(Facet::reason).distinct().collect(Collectors.joining("; and "));
+        return Stream.of(objects, arrays)
+                .filter(Facet::isOpen)
+                .map(Facet::reason)
+                .distinct()
+                .collect(Collectors.joining("; and "));
     }
 }

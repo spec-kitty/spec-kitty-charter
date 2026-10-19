@@ -12,10 +12,10 @@ import java.util.Set;
  */
 final class OwnShape {
 
-    private static final List<String> CLOSING_KEYWORDS = List.of("additionalProperties", "patternProperties", "items", "prefixItems");
+    private static final List<String> CLOSING_KEYWORDS =
+            List.of("additionalProperties", "patternProperties", "items", "prefixItems");
 
-    private OwnShape() {
-    }
+    private OwnShape() {}
 
     static Closure classify(Node schema) {
         if (schema.value() instanceof Boolean admitsAll) {
@@ -24,7 +24,9 @@ final class OwnShape {
                     : Closure.notAnObject(schema.pointer(), "the false schema admits nothing");
         }
         Closure type = byType(schema);
-        return finiteValues(schema).map(values -> Conjunction.of(schema.pointer(), List.of(values, type))).orElse(type);
+        return finiteValues(schema)
+                .map(values -> Conjunction.of(schema.pointer(), List.of(values, type)))
+                .orElse(type);
     }
 
     /**
@@ -41,9 +43,12 @@ final class OwnShape {
         schema.child("const").ifPresent(c -> values.add(c.value()));
         listed.ifPresent(e -> values.addAll((List<?>) e.value()));
         String only = "a const or enum admits only the values it lists";
-        return Optional.of(new Closure(schema.pointer(),
+        return Optional.of(new Closure(
+                schema.pointer(),
                 values.stream().anyMatch(Map.class::isInstance) ? Closure.Facet.closed(only) : Closure.Facet.none(only),
-                values.stream().anyMatch(List.class::isInstance) ? Closure.Facet.closed(only) : Closure.Facet.none(only)));
+                values.stream().anyMatch(List.class::isInstance)
+                        ? Closure.Facet.closed(only)
+                        : Closure.Facet.none(only)));
     }
 
     private static Closure byType(Node schema) {
@@ -66,24 +71,31 @@ final class OwnShape {
         if (schema.has("patternProperties")) {
             return Closure.Facet.open(untyped + "patternProperties admits members by pattern", declared);
         }
-        Object additional = schema.child("additionalProperties").map(Node::value).orElse(null);
+        Object additional =
+                schema.child("additionalProperties").map(Node::value).orElse(null);
         if (Boolean.FALSE.equals(additional)) {
             return Closure.Facet.closed("additionalProperties: false without patternProperties");
         }
         if (additional == null) {
             return Closure.Facet.open(untyped + "no additionalProperties: false", declared);
         }
-        return Closure.Facet.open(untyped + (Boolean.TRUE.equals(additional)
-                ? "additionalProperties: true admits any member"
-                : "additionalProperties holds a schema, so it is a map"), declared);
+        return Closure.Facet.open(
+                untyped
+                        + (Boolean.TRUE.equals(additional)
+                                ? "additionalProperties: true admits any member"
+                                : "additionalProperties holds a schema, so it is a map"),
+                declared);
     }
 
     private static Closure.Facet arrayFacet(Node schema, String untyped) {
         if (schema.has("items")) {
             return Closure.Facet.closed("its items are a position of their own");
         }
-        return Closure.Facet.open(untyped + (schema.has("prefixItems")
-                ? "a tuple with no items: false admits any item after its prefixItems"
-                : "an array with no items admits any item"), false);
+        return Closure.Facet.open(
+                untyped
+                        + (schema.has("prefixItems")
+                                ? "a tuple with no items: false admits any item after its prefixItems"
+                                : "an array with no items admits any item"),
+                false);
     }
 }

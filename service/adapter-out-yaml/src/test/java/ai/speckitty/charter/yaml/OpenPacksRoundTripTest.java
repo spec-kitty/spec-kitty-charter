@@ -44,12 +44,15 @@ class OpenPacksRoundTripTest {
             "built-in", List.of(),
             "cave-kitty", List.of(noPackYaml("cave-kitty")),
             "event-driven", List.of(noPackYaml("event-driven")),
-            "internal", List.of(new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING,
-                    "pack.yaml of internal has no pack_level; the configured level org is used")),
+            "internal",
+                    List.of(new Diagnostic(
+                            Diagnostic.Code.PACK_LEVEL_MISSING,
+                            "pack.yaml of internal has no pack_level; the configured level org is used")),
             "qa", List.of(noPackYaml("qa")));
 
     private static Diagnostic noPackYaml(String orgPack) {
-        return new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING,
+        return new Diagnostic(
+                Diagnostic.Code.PACK_LEVEL_MISSING,
                 "org pack " + orgPack + " has no pack.yaml; the configured level org is used");
     }
 
@@ -67,8 +70,10 @@ class OpenPacksRoundTripTest {
         for (String top : List.of("built-in", "packs")) {
             try (Stream<Path> walk = Files.walk(root.resolve(top))) {
                 walk.filter(Files::isRegularFile)
-                        .filter(p -> p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
-                        .sorted().forEach(files::add);
+                        .filter(p ->
+                                p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
+                        .sorted()
+                        .forEach(files::add);
             }
         }
         return files;
@@ -79,13 +84,18 @@ class OpenPacksRoundTripTest {
         Path root = openPacks();
         List<Path> files = yamlFiles(root);
         assertThat(files).as("YAML files under built-in/ and packs/").hasSizeGreaterThan(100);
-        return files.stream().map(file -> dynamicTest(root.relativize(file).toString(), () -> {
-            byte[] bytes = Files.readAllBytes(file);
-            String text = new String(bytes, StandardCharsets.UTF_8);
-            YamlDocument document = YamlDocument.parse(text);
-            assertThat(document.render().getBytes(StandardCharsets.UTF_8)).as("bytes").isEqualTo(bytes);
-            assertThat(Yaml.loadAll(document.mapScalars(v -> v).render())).as("data").isEqualTo(Yaml.loadAll(text));
-        }));
+        return files.stream()
+                .map(file -> dynamicTest(root.relativize(file).toString(), () -> {
+                    byte[] bytes = Files.readAllBytes(file);
+                    String text = new String(bytes, StandardCharsets.UTF_8);
+                    YamlDocument document = YamlDocument.parse(text);
+                    assertThat(document.render().getBytes(StandardCharsets.UTF_8))
+                            .as("bytes")
+                            .isEqualTo(bytes);
+                    assertThat(Yaml.loadAll(document.mapScalars(v -> v).render()))
+                            .as("data")
+                            .isEqualTo(Yaml.loadAll(text));
+                }));
     }
 
     @TestFactory
@@ -94,20 +104,27 @@ class OpenPacksRoundTripTest {
         List<PackLocation> packs = new ArrayList<>();
         packs.add(new PackLocation("built-in", PackLevel.BUILT_IN, root.resolve("built-in")));
         try (Stream<Path> dirs = Files.list(root.resolve("packs"))) {
-            dirs.filter(Files::isDirectory).sorted()
+            dirs.filter(Files::isDirectory)
+                    .sorted()
                     .forEach(dir -> packs.add(new PackLocation(dir.getFileName().toString(), PackLevel.ORG, dir)));
         }
-        assertThat(packs).extracting(PackLocation::name).as("packs of the corpus")
+        assertThat(packs)
+                .extracting(PackLocation::name)
+                .as("packs of the corpus")
                 .containsExactlyInAnyOrderElementsOf(DIAGNOSTICS.keySet());
-        return packs.stream().map(location -> dynamicTest(location.name(), () -> {
-            CharterPack pack = FileSystemCharterPackRepository.loadPack(location);
-            assertThat(pack.diagnostics()).as("diagnostics of " + location.name())
-                    .containsExactlyElementsOf(DIAGNOSTICS.get(location.name()));
-            DoctrineGraph graph = pack.graph();
-            assertThat(graph.nodes()).as("nodes of " + location.name()).isNotEmpty();
-            DoctrineGraph reread = GraphDocumentReader.read(GraphShardWriter.write(graph), GraphDocumentReader.Shape.SHARD,
-                    location.name() + " (written)");
-            assertThat(reread).isEqualTo(graph);
-        }));
+        return packs.stream()
+                .map(location -> dynamicTest(location.name(), () -> {
+                    CharterPack pack = FileSystemCharterPackRepository.loadPack(location);
+                    assertThat(pack.diagnostics())
+                            .as("diagnostics of " + location.name())
+                            .containsExactlyElementsOf(DIAGNOSTICS.get(location.name()));
+                    DoctrineGraph graph = pack.graph();
+                    assertThat(graph.nodes()).as("nodes of " + location.name()).isNotEmpty();
+                    DoctrineGraph reread = GraphDocumentReader.read(
+                            GraphShardWriter.write(graph),
+                            GraphDocumentReader.Shape.SHARD,
+                            location.name() + " (written)");
+                    assertThat(reread).isEqualTo(graph);
+                }));
     }
 }

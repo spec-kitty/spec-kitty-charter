@@ -14,10 +14,14 @@ public record Diagnostic(Code code, String detail) {
 
         private final String token;
 
-        Code(String token) { this.token = token; }
+        Code(String token) {
+            this.token = token;
+        }
 
         /** The wire spelling of the code. */
-        public String token() { return token; }
+        public String token() {
+            return token;
+        }
     }
 
     public Diagnostic {

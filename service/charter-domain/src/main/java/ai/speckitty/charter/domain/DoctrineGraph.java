@@ -24,18 +24,30 @@ public final class DoctrineGraph {
         this.edges = List.copyOf(edges);
     }
 
-    public static DoctrineGraph empty() { return new DoctrineGraph(List.of(), List.of()); }
+    public static DoctrineGraph empty() {
+        return new DoctrineGraph(List.of(), List.of());
+    }
 
-    public Collection<DrgNode> nodes() { return nodes.values(); }
+    public Collection<DrgNode> nodes() {
+        return nodes.values();
+    }
 
-    public List<DrgEdge> edges() { return edges; }
+    public List<DrgEdge> edges() {
+        return edges;
+    }
 
-    public Optional<DrgNode> node(Urn urn) { return Optional.ofNullable(nodes.get(urn)); }
+    public Optional<DrgNode> node(Urn urn) {
+        return Optional.ofNullable(nodes.get(urn));
+    }
 
-    public boolean contains(Urn urn) { return nodes.containsKey(urn); }
+    public boolean contains(Urn urn) {
+        return nodes.containsKey(urn);
+    }
 
     public List<DrgEdge> outgoing(Urn source, Relation relation) {
-        return edges.stream().filter(e -> e.source().equals(source) && e.relation() == relation).toList();
+        return edges.stream()
+                .filter(e -> e.source().equals(source) && e.relation() == relation)
+                .toList();
     }
 
     public DoctrineGraph merge(DoctrineGraph other) {
@@ -48,10 +60,13 @@ public final class DoctrineGraph {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof DoctrineGraph g && List.copyOf(nodes.values()).equals(List.copyOf(g.nodes.values()))
+        return o instanceof DoctrineGraph g
+                && List.copyOf(nodes.values()).equals(List.copyOf(g.nodes.values()))
                 && edges.equals(g.edges);
     }
 
     @Override
-    public int hashCode() { return 31 * List.copyOf(nodes.values()).hashCode() + edges.hashCode(); }
+    public int hashCode() {
+        return 31 * List.copyOf(nodes.values()).hashCode() + edges.hashCode();
+    }
 }

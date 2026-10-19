@@ -14,8 +14,7 @@ import org.snakeyaml.engine.v2.common.FlowStyle;
 /** Writes a {@link DoctrineGraph} as a graph shard in the canonical key order of the built-in shards. */
 public final class GraphShardWriter {
 
-    private GraphShardWriter() {
-    }
+    private GraphShardWriter() {}
 
     public static String write(DoctrineGraph graph) {
         Map<String, Object> root = new LinkedHashMap<>();
@@ -41,7 +40,10 @@ public final class GraphShardWriter {
             edges.add(out);
         }
         root.put("edges", edges);
-        DumpSettings settings = DumpSettings.builder().setDefaultFlowStyle(FlowStyle.BLOCK).setWidth(4096).build();
+        DumpSettings settings = DumpSettings.builder()
+                .setDefaultFlowStyle(FlowStyle.BLOCK)
+                .setWidth(4096)
+                .build();
         return new Dump(settings).dumpToString(root);
     }
 }

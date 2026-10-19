@@ -19,5 +19,4 @@ import org.junit.platform.suite.api.Suite;
 @IncludeTags("contract")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "ai.speckitty.charter.service.bdd")
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, summary")
-public class CharterContractSuite {
-}
+public class CharterContractSuite {}

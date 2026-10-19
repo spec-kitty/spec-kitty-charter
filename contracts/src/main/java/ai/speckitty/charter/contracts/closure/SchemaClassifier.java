@@ -47,8 +47,10 @@ final class SchemaClassifier {
             return OwnShape.classify(schema);
         }
         if (!inProgress.add(schema.value())) {
-            return Closure.open(schema.pointer(),
-                    "it contains itself through a YAML alias, and a recursive schema cannot be proven closed", false);
+            return Closure.open(
+                    schema.pointer(),
+                    "it contains itself through a YAML alias, and a recursive schema cannot be proven closed",
+                    false);
         }
         try {
             return classifyMapping(schema);
@@ -78,11 +80,13 @@ final class SchemaClassifier {
     private List<Node> nestedPositions(Node schema) {
         Optional<Node> map = schema.child("additionalProperties").filter(Node::isMap);
         return Stream.of(
-                schema.entries("properties", findings).stream(),
-                schema.entries("patternProperties", findings).stream(),
-                map.stream(),
-                schema.child("items").stream(),
-                schema.elements("prefixItems", findings).stream()).flatMap(s -> s).toList();
+                        schema.entries("properties", findings).stream(),
+                        schema.entries("patternProperties", findings).stream(),
+                        map.stream(),
+                        schema.child("items").stream(),
+                        schema.elements("prefixItems", findings).stream())
+                .flatMap(s -> s)
+                .toList();
     }
 
     /** A union is one conjunctive part, named by its keyword; its members are named by their index. */
@@ -92,7 +96,8 @@ final class SchemaClassifier {
             return Optional.empty();
         }
         JsonPointer at = schema.pointer().child(keyword);
-        return Optional.of(Disjunction.of(at, members.stream().map(this::classify).toList()));
+        return Optional.of(
+                Disjunction.of(at, members.stream().map(this::classify).toList()));
     }
 
     /**
@@ -108,8 +113,8 @@ final class SchemaClassifier {
         if (!schema.has("if")) {
             schema.child(THEN).ifPresent(this::classify);
             schema.child(ELSE).ifPresent(this::classify);
-            return Optional.of(Closure.open(at, "without an if, then and else have no effect, so they close nothing",
-                    false));
+            return Optional.of(
+                    Closure.open(at, "without an if, then and else have no effect, so they close nothing", false));
         }
         Closure then = branch(schema, THEN, "there is no then, so nothing applies where the if holds");
         Closure otherwise = branch(schema, ELSE, "there is no else, so nothing applies where the if fails");
@@ -117,7 +122,8 @@ final class SchemaClassifier {
     }
 
     private Closure branch(Node schema, String keyword, String whenMissing) {
-        return schema.child(keyword).map(this::classify)
+        return schema.child(keyword)
+                .map(this::classify)
                 .orElseGet(() -> Closure.open(schema.pointer().child(keyword), whenMissing, false));
     }
 }

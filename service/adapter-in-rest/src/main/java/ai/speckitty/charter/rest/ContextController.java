@@ -22,13 +22,18 @@ public class ContextController implements ContextApi {
     @Override
     public ResponseEntity<ActionContext> getActionContext(String missionType, String action) {
         ai.speckitty.charter.read.ActionContext context = query.answer(missionType, action);
-        return ResponseEntity.ok(new ActionContext(context.action().toString(), context.missionType().toString(),
+        return ResponseEntity.ok(new ActionContext(
+                context.action().toString(),
+                context.missionType().toString(),
                 context.guidance().stream().map(ContextController::toDto).toList()));
     }
 
     private static GuidanceEntry toDto(ai.speckitty.charter.read.GuidanceEntry entry) {
-        return new GuidanceEntry(entry.urn().toString(), GuidanceEntry.KindEnum.fromValue(entry.kind().token()),
-                entry.label().orElse(null), GuidanceEntry.RelationEnum.fromValue(entry.relation().token()),
+        return new GuidanceEntry(
+                entry.urn().toString(),
+                GuidanceEntry.KindEnum.fromValue(entry.kind().token()),
+                entry.label().orElse(null),
+                GuidanceEntry.RelationEnum.fromValue(entry.relation().token()),
                 entry.via().toString());
     }
 }

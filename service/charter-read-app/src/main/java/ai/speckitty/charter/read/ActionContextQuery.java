@@ -4,8 +4,8 @@ import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.CharterRefusal;
 import ai.speckitty.charter.domain.DoctrineGraph;
 import ai.speckitty.charter.domain.DrgEdge;
-import ai.speckitty.charter.domain.Relation;
 import ai.speckitty.charter.domain.RefusalCode;
+import ai.speckitty.charter.domain.Relation;
 import ai.speckitty.charter.domain.Urn;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,7 +33,8 @@ public final class ActionContextQuery {
         Urn missionTypeUrn = Urn.missionType(missionType);
         Urn actionUrn = Urn.action(missionType, action);
         if (!graph.contains(missionTypeUrn)) {
-            throw new CharterRefusal(RefusalCode.MISSION_TYPE_NOT_FOUND, missionTypeUrn + " is not a node of the merged graph.");
+            throw new CharterRefusal(
+                    RefusalCode.MISSION_TYPE_NOT_FOUND, missionTypeUrn + " is not a node of the merged graph.");
         }
         if (!graph.contains(actionUrn)) {
             throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, actionUrn + " is not a node of the merged graph.");
@@ -43,8 +44,12 @@ public final class ActionContextQuery {
         for (Urn via : List.of(actionUrn, missionTypeUrn)) {
             for (DrgEdge edge : graph.outgoing(via, Relation.SCOPE)) {
                 if (seen.add(edge.target())) {
-                    guidance.add(new GuidanceEntry(edge.target(), edge.target().kind(),
-                            graph.node(edge.target()).flatMap(n -> n.label()), edge.relation(), via));
+                    guidance.add(new GuidanceEntry(
+                            edge.target(),
+                            edge.target().kind(),
+                            graph.node(edge.target()).flatMap(n -> n.label()),
+                            edge.relation(),
+                            via));
                 }
             }
         }

@@ -28,15 +28,12 @@ public final class YamlDocument {
         String text();
     }
 
-    public record Trivia(String text) implements Segment {
-    }
+    public record Trivia(String text) implements Segment {}
 
-    public record TokenText(Token.ID id, String text) implements Segment {
-    }
+    public record TokenText(Token.ID id, String text) implements Segment {}
 
     /** A scalar token: its source text, its style and its value as the parser reads it. */
-    public record Scalar(String text, ScalarStyle style, String value) implements Segment {
-    }
+    public record Scalar(String text, ScalarStyle style, String value) implements Segment {}
 
     private final List<Segment> segments;
 
@@ -86,7 +83,10 @@ public final class YamlDocument {
     }
 
     public List<Scalar> scalars() {
-        return segments.stream().filter(Scalar.class::isInstance).map(Scalar.class::cast).toList();
+        return segments.stream()
+                .filter(Scalar.class::isInstance)
+                .map(Scalar.class::cast)
+                .toList();
     }
 
     /** Renders the document from its segments. */
@@ -103,7 +103,8 @@ public final class YamlDocument {
         int seen = 0;
         for (int i = 0; i < edited.size(); i++) {
             if (edited.get(i) instanceof Scalar scalar && seen++ == index) {
-                edited.set(i, new Scalar(ScalarWriter.write(value, scalar.style(), scalar.text()), scalar.style(), value));
+                edited.set(
+                        i, new Scalar(ScalarWriter.write(value, scalar.style(), scalar.text()), scalar.style(), value));
                 return new YamlDocument(edited);
             }
         }
