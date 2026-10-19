@@ -33,6 +33,10 @@ import java.util.stream.IntStream;
  *   <li><b>Pending release.</b> When the top heading is released and no tag for it is merged into HEAD (the release
  *       pull request, before {@code main} is tagged at its merge commit), the release is <i>pending</i>: it is
  *       compared against the previous release, and the message says "pending release".</li>
+ *   <li><b>Released top, already tagged.</b> When the top heading is released and its tag is merged into HEAD, HEAD
+ *       must be the commit of that tag ({@code git tag --points-at HEAD}): it is then compared against itself. Any
+ *       later commit is refused until the next {@code -SNAPSHOT} is opened (heading and {@code info.version}
+ *       together), so a change after a release never hides under the released version.</li>
  *   <li><b>Same major only.</b> The baseline is the newest recorded release, other than a pending one, with the
  *       major version of {@code info.version}. Its tag must be merged into HEAD; when it is not, the gate refuses
  *       rather than fall back to an older release. With no such release there is no baseline, and the gate says
@@ -163,9 +167,11 @@ public final class ReleaseGate {
      * @param infoVersion the {@code info.version} of the contract
      * @param changelog   the text of the contract's CHANGELOG
      * @param mergedTags  the {@code contract-charter-v*} tags merged into HEAD
+     * @param tagsAtHead  the {@code contract-charter-v*} tags that point at HEAD itself
      * @return what to compare against, or why nothing is, or why the gate fails
      */
-    public static Decision decide(String infoVersion, String changelog, Set<String> mergedTags) {
+    public static Decision decide(
+            String infoVersion, String changelog, Set<String> mergedTags, Set<String> tagsAtHead) {
         List<Section> sections = sections(changelog);
         Optional<Decision.Refused> refused = changelogRefusal(infoVersion, sections);
         if (refused.isPresent()) {
@@ -185,6 +191,12 @@ public final class ReleaseGate {
                     + (recorded.isEmpty() ? "none" : recorded) + ").");
         }
         Version top = sections.getFirst().version().orElseThrow();
+        if (top.released() && mergedTags.contains(top.tag()) && !tagsAtHead.contains(top.tag())) {
+            return new Decision.Refused("The top heading " + top.text() + " of contracts/charter/CHANGELOG.md is"
+                    + " released: " + top.tag() + " is merged into HEAD, and HEAD is not that release. A change after a"
+                    + " release belongs under the next version: open the next -SNAPSHOT (heading and info.version"
+                    + " together).");
+        }
         boolean pending = top.released() && !mergedTags.contains(top.tag());
         List<Version> candidates = pending ? released.subList(1, released.size()) : released;
         Optional<Version> baseline =

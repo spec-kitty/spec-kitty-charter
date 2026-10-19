@@ -17,15 +17,15 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
 
 /**
  * The command line of {@link ReleaseGate}, run by the Gradle task {@code checkContractCompatibility}:
- * {@code CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--merged-tags <file> | --no-git)}, the tags file holding
- * one tag per line. On success it prints the decision as its first line ({@code COMPARE <tag>}, {@code NONE} or
+ * {@code CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)}, each tags
+ * file holding one tag per line: the tags merged into HEAD, and those that point at HEAD. On success it prints the decision as its first line ({@code COMPARE <tag>}, {@code NONE} or
  * {@code SKIPPED}) and the message as its second, and exits 0; it exits 1 with the message when the gate refuses,
  * and 2 when an input cannot be read.
  */
 public final class CheckReleaseGate {
 
     private static final String USAGE =
-            "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--merged-tags <file> | --no-git)";
+            "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)";
 
     private CheckReleaseGate() {}
 
@@ -43,7 +43,7 @@ public final class CheckReleaseGate {
 
     static int run(List<String> args, PrintStream out) {
         boolean noGit = args.size() == 3 && "--no-git".equals(args.get(2));
-        boolean tags = args.size() == 4 && "--merged-tags".equals(args.get(2));
+        boolean tags = args.size() == 5 && "--git".equals(args.get(2));
         if (!noGit && !tags) {
             out.println(USAGE);
             return 2;
@@ -51,14 +51,13 @@ public final class CheckReleaseGate {
         String infoVersion;
         String changelog;
         Set<String> merged = Set.of();
+        Set<String> atHead = Set.of();
         try {
             infoVersion = infoVersion(Path.of(args.get(0)));
             changelog = Files.readString(Path.of(args.get(1)));
             if (tags) {
-                merged = Files.readAllLines(Path.of(args.get(3))).stream()
-                        .map(String::trim)
-                        .filter(line -> !line.isEmpty())
-                        .collect(Collectors.toUnmodifiableSet());
+                merged = tags(Path.of(args.get(3)));
+                atHead = tags(Path.of(args.get(4)));
             }
         } catch (IOException | YamlEngineException | IllegalArgumentException e) {
             out.println("Cannot read the release gate's inputs: " + e.getMessage());
@@ -66,7 +65,7 @@ public final class CheckReleaseGate {
         }
         Decision decision = noGit
                 ? ReleaseGate.decideWithoutGit(infoVersion, changelog)
-                : ReleaseGate.decide(infoVersion, changelog, merged);
+                : ReleaseGate.decide(infoVersion, changelog, merged, atHead);
         switch (decision) {
             case Decision.Compare compare -> out.println("COMPARE " + compare.tag());
             case Decision.NoBaseline none -> out.println("NONE");
@@ -78,6 +77,13 @@ public final class CheckReleaseGate {
         }
         out.println(decision.message());
         return 0;
+    }
+
+    private static Set<String> tags(Path file) throws IOException {
+        return Files.readAllLines(file).stream()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** The {@code info.version} of an OpenAPI document, which must be a string. */
