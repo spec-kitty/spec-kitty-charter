@@ -182,9 +182,16 @@ public final class GraphDocumentReader {
         return new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, origin + ": " + problem);
     }
 
+    /**
+     * The first non-blank line of the parser's message: what it was doing or found, as {@code while parsing a block
+     * mapping}. Its later lines hold the position and a snippet of the document, so nothing of the host reaches
+     * the detail; the parser is given no file name, only the label {@code charter}.
+     */
     private static String firstLine(RuntimeException e) {
-        String message = String.valueOf(e.getMessage());
-        int newline = message.indexOf('\n');
-        return newline < 0 ? message : message.substring(0, newline);
+        return String.valueOf(e.getMessage())
+                .lines()
+                .filter(l -> !l.isBlank())
+                .findFirst()
+                .orElse(e.getClass().getSimpleName());
     }
 }
