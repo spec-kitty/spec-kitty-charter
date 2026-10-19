@@ -11,7 +11,12 @@ Usage::
     gh pr view 123 --json body -q .body | python packs/internal/assets/validate-pr-body.py -
     python packs/internal/assets/validate-pr-body.py BODY.md --verify-discovery --expected-head <sha>
 
-Exit codes: 0 valid, 1 violations (one ``section: problem`` line each), 2 usage error.
+A missing ``closes``/``fixes`` issue link in the Issue section is a **warning**, not a
+violation: a PR that legitimately closes no issue (for example one that only records
+decisions) still passes. Warnings print as ``warning: ...`` and do not change the exit code.
+
+Exit codes: 0 valid (warnings allowed), 1 violations (one ``section: problem`` line each),
+2 usage error.
 Standard library only.
 """
 
@@ -28,7 +33,8 @@ SECTIONS = ("Issue", "Change", "Tests run", "Blast radius", "Deferred")
 DOC_SCRIPT_HINT = "use `uv run python -m scripts.docs.<x>`, not the bare path"
 _SHELL_OPERATORS = frozenset({"|", "||", "&&", ";", "&", ">", ">>", "<", "(", ")", "`"})
 _NAME_ONLY_FLAGS = frozenset({"-l", "--files-with-matches", "--name-only"})
-_CLOSES = re.compile(r"\bcloses\s+#\d+", re.IGNORECASE)
+# GitHub's issue-closing keywords (close/closes/closed, fix/fixes/fixed, resolve/resolves/resolved).
+_ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", re.IGNORECASE)
 _BARE_DOC_SCRIPT = re.compile(r"(?<!\.)(?<![\w/])scripts/docs/[\w.]+\.py\b")
 _FENCE = re.compile(r"^\s*(```|~~~)")
 _PLACEHOLDER = re.compile(r"^<[^<>]+>")
@@ -82,9 +88,12 @@ def check_change(lines: list[tuple[str, bool]]) -> list[str]:
     return [] if any(line.strip() for line, _ in lines) else ["Change: section is empty"]
 
 
-def check_issue(lines: list[tuple[str, bool]]) -> list[str]:
+def check_issue_link(lines: list[tuple[str, bool]]) -> list[str]:
+    """A missing closes/fixes link is advisory (returned as a warning, not a problem)."""
     text = "\n".join(line for line, _ in lines)
-    return [] if _CLOSES.search(text) else ["Issue: missing `closes #<n>` link"]
+    if _ISSUE_LINK.search(text):
+        return []
+    return ["Issue: no `closes #<n>` / `fixes #<n>` link (fine if this PR closes no issue)"]
 
 
 def _split_command(command: str) -> list[str]:
@@ -231,11 +240,13 @@ def verify_discovery(lines: list[tuple[str, bool]], expected_head: str, repo: Pa
     return problems
 
 
-def validate(body: str, *, expected_head: str | None = None, repo: Path = Path()) -> list[str]:
+def validate(body: str, *, expected_head: str | None = None, repo: Path = Path()) -> tuple[list[str], list[str]]:
+    """Return ``(problems, warnings)``. Problems fail the body; warnings are advisory."""
     order, content = split_sections(body)
     problems = check_structure(order)
+    warnings: list[str] = []
     if "Issue" in content:
-        problems += check_issue(content["Issue"])
+        warnings += check_issue_link(content["Issue"])
     if "Change" in content:
         problems += check_change(content["Change"])
     if "Tests run" in content:
@@ -244,13 +255,13 @@ def validate(body: str, *, expected_head: str | None = None, repo: Path = Path()
         problems += check_blast_radius(content["Blast radius"])
         if expected_head is not None:
             problems += verify_discovery(content["Blast radius"], expected_head, repo)
-    return problems
+    return problems, warnings
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Validate a Spec Kitty PR body (five sections: " + ", ".join(SECTIONS) + ").",
-        epilog="Exit 0 valid, 1 violations (one `section: problem` line each), 2 usage error.",
+        epilog="Exit 0 valid (warnings allowed), 1 violations (one `section: problem` line each), 2 usage error.",
     )
     parser.add_argument("body", nargs="?", default="-", help="PR body file, or '-' for stdin (default)")
     parser.add_argument("--verify-discovery", action="store_true", help="re-run the Discovery `git grep` and compare with Files:")
@@ -271,9 +282,11 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:
         print(f"validate-pr-body: cannot read body: {exc}", file=sys.stderr)
         return 2
-    problems = validate(body, expected_head=args.expected_head if args.verify_discovery else None, repo=Path(args.repo))
+    problems, warnings = validate(body, expected_head=args.expected_head if args.verify_discovery else None, repo=Path(args.repo))
     for problem in problems:
         print(problem)
+    for warning in warnings:
+        print(f"warning: {warning}")
     return 1 if problems else 0
 
 

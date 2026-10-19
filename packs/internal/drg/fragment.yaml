@@ -143,7 +143,7 @@ nodes:
     body_path: assets/test-quality-scan.py
   - id: validate-pr-body
     kind: assets
-    title: "PR-body contract validator (five sections, closes link, runnable commands, git-grep discovery check)"
+    title: "PR-body contract validator (five sections, advisory closes link, runnable commands, git-grep discovery check)"
     body_path: assets/validate-pr-body.py
   - id: test-quality-triage
     kind: toolguides

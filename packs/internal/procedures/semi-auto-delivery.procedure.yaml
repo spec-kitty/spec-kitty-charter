@@ -149,7 +149,8 @@ steps:
       follow-up only for a finding that is highly impactful, takes significant
       effort, or needs an operator decision — name each in the PR's Deferred
       section). Open the PR as a DRAFT targeting main using the repository template —
-      the five-section body contract (Issue with `closes #<n>`, Change, Tests run
+      the five-section body contract (Issue with `closes #<n>` when the PR closes an
+      issue — advisory otherwise, Change, Tests run
       with a Self-review block, Blast radius with Discovery + Files, Deferred),
       validated with the internal `validate-pr-body.py` asset. Watch CI until it is
       green, or every remaining red is classified as not this PR's, then flip the PR to ready-for-review with a reviewer handover comment stating
