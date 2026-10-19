@@ -75,6 +75,10 @@ Feature: Pack listing and load refusals
     When I GET "/packs"
     Then the response status is 500
     And the problem code is "pack_level_mismatch"
+    And the response body is:
+      """
+      {"title": "Pack level mismatch", "status": 500, "code": "pack_level_mismatch", "detail": "Pack 'rogue' is configured as org but declares pack_level built-in"}
+      """
 
   Scenario: A bare edge endpoint the fragment does not declare is refused
     Given the org pack "qa" with the file "drg/fragment.yaml":
@@ -89,6 +93,10 @@ Feature: Pack listing and load refusals
     When I GET "/packs"
     Then the response status is 500
     And the problem code is "unresolved_edge_endpoint"
+    And the response body is:
+      """
+      {"title": "Unresolved edge endpoint", "status": 500, "code": "unresolved_edge_endpoint", "detail": "qa/drg/fragment.yaml: edge endpoint 'QA_404' is neither a URN nor an id this document declares"}
+      """
 
   Scenario: A graph shard with an unknown key is refused
     Given the built-in pack "built-in" with the file "directive.graph.yaml":
@@ -102,3 +110,7 @@ Feature: Pack listing and load refusals
     When I GET "/packs"
     Then the response status is 500
     And the problem code is "drg_schema_error"
+    And the response body is:
+      """
+      {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "built-in/directive.graph.yaml: unknown key 'surprise'"}
+      """
