@@ -9,12 +9,15 @@ import ai.speckitty.charter.domain.DoctrineGraph;
 import ai.speckitty.charter.domain.PackDescriptor;
 import ai.speckitty.charter.domain.RefusalCode;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -81,12 +84,34 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
 
     private static List<Path> shards(Path root, PackLocation location) {
         try (Stream<Path> files = Files.list(root)) {
-            return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && Files.isRegularFile(p))
+            return graphShards(files, location, Files::isRegularFile);
+        } catch (IOException e) {
+            throw unlistable(location, e);
+        }
+    }
+
+    /**
+     * The graph shards of a pack directory listing: its {@code *.graph.yaml} regular files, sorted by name.
+     *
+     * @param files the directory listing; reading it may fail with an {@link UncheckedIOException}
+     * @param location the pack the listing belongs to, named in a refusal
+     * @param regularFile whether a listed path is a regular file
+     * @return the shards, sorted
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when reading the listing fails, as when opening it fails
+     */
+    static List<Path> graphShards(Stream<Path> files, PackLocation location, Predicate<Path> regularFile) {
+        try {
+            return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && regularFile.test(p))
                     .sorted()
                     .toList();
-        } catch (IOException e) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " cannot be listed", e);
+        } catch (UncheckedIOException e) {
+            // The JDK always sets the cause; the fallback only satisfies the nullness checker.
+            throw unlistable(location, Objects.<Exception>requireNonNullElse(e.getCause(), e));
         }
+    }
+
+    private static CharterRefusal unlistable(PackLocation location, Exception cause) {
+        return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " cannot be listed", cause);
     }
 
     private static String read(Path file, PackLocation location) {

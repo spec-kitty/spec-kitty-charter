@@ -103,6 +103,9 @@ public final class GraphDocumentReader {
         checkKeys(node, FRAGMENT_NODE_KEYS, origin + " node");
         String id = string(node, "id", origin);
         String plural = string(node, "kind", origin);
+        if (id.isEmpty()) {
+            throw schema(origin, "a node of kind '" + plural + "' has an empty id");
+        }
         NodeKind kind = pluralKind(plural)
                 .orElseThrow(() -> schema(origin, "node " + id + " has unknown kind '" + plural + "'"));
         return new DrgNode(new Urn(kind, id), optionalString(node, "title", origin));
