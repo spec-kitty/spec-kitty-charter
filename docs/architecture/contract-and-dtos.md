@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
@@ -94,9 +94,9 @@ The contract keeps the layout of core's `contracts/README.md`, but the charter o
 conventions and the checks that enforce them (operator, 2026-10-18): core's contract tools
 do not run here, and where core's conventions differ, the integration seam in core adapts.
 The charter's own checks run in `./gradlew verifyAll` through the `:contracts` project: a
-lint ruleset in `contracts/lint/` with a planted fixture per rule, the bundle core vendors,
-a Java checker that every response schema is closed, and the breaking-change check. The
-rules and tasks are listed in [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
+lint ruleset in `contracts/lint/` with at least one planted fixture per rule, the bundle
+core vendors, a Java checker that every response schema is closed, and the breaking-change
+check. The rules and tasks are listed in [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
 
 The layout:
 
@@ -113,14 +113,24 @@ The layout:
 
 ## Versioning
 
-- Response schemas are **closed** (`additionalProperties: false`). Any change to a response
-  shape ships as a new schema version and a new published contract release.
-- An unreleased version carries a `-SNAPSHOT` suffix.
+- Response schemas are **closed** (`additionalProperties: false`), so a strict consumer such
+  as core's integration seam may reject a member it does not know. Adding a response
+  property, optional or required, is therefore a **breaking** change (DM
+  `01M5986E711JT296MA6NDN91MG`), like any other change to a response shape: it needs a new
+  major version and a core-side migration of its DTO consumers.
+- An unreleased version carries a `-SNAPSHOT` suffix. `info.version` must equal the
+  version of the top heading of the contract's `CHANGELOG.md`.
 - A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
-  released version, the `contract-charter-v<version>` tag recorded in the contract's
-  `CHANGELOG.md`; a breaking change needs a new major version and a core-side migration of
-  its DTO consumers. Until the first release there is no baseline, and the check says so
-  ([the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)).
+  released version of the **same major version**, the `contract-charter-v<version>` tag
+  recorded in the `CHANGELOG.md`; only tags merged into the checked-out commit count. While
+  a release is pending (the top heading is released and equals `info.version`, but its tag
+  does not exist yet) the check compares with the release before it. Until the first
+  release there is no baseline, and the check says so. The rules and the release steps are
+  in
+  [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
+- A release is tagged on `main` after its pull request merges. Publishing the bundle and the
+  conformance corpus from a tag is not built yet; it is a follow-up (DM
+  `01M5986KJ7B18K7GQ25E47J989`).
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same
   change, and the conformance corpus of that release must pass against the Python
   implementation while it still answers.

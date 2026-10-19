@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service locally, what each verification task checks, and how to change the contract or a dependency.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Guide
 kind: How-to
 related:
@@ -27,8 +27,9 @@ How to build the charter service and run every check CI runs.
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. CI checks out the
   commit pinned in `.github/workflows/service.yml`.
 - **The full Git history and tags.** The breaking-change check compares the contract with its
-  last released version and refuses a shallow clone. In a clone you cannot deepen, pass
-  `-PcontractBaseline=none` to skip that one check on purpose; CI never does.
+  last released version of the same major version and refuses a shallow clone. In a clone
+  you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
+  never does.
 - **Network access on the first run.** The contract checks download vacuum and oasdiff at
   pinned versions and verify each archive's SHA-256 before using it (Linux and macOS, x86-64
   and arm64).
@@ -85,8 +86,26 @@ date; no gate is relaxed anywhere else, and blanket suppressions are not allowed
 
 The contract checks follow the conventions in
 [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
-A new lint rule lands with a planted fixture that fails it, and only it; that page describes
-the steps.
+A new lint rule lands with at least one planted fixture that fails it, and only it; that page
+describes the steps.
+
+Adding a property to a response schema is a breaking change, because response schemas are
+closed ([Contract and DTOs](/architecture/contract-and-dtos/#versioning)).
+
+## Release a contract version
+
+1. On a topic branch, turn the `-SNAPSHOT` heading of `contracts/charter/CHANGELOG.md` into
+   `## <version>` and set `info.version` in `contracts/charter/openapi.yaml` to the same
+   version; the check fails when the two differ.
+2. Run `./gradlew :contracts:check`. The release is now pending: the check compares with the
+   release before it, within the same major version.
+3. After the pull request merges, tag the merge commit on `main`
+   `contract-charter-v<version>`. Only a tag merged into the checked-out commit counts as a
+   baseline.
+
+[`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)
+holds the exact rules. Publishing the bundle and the conformance corpus from the tag is a
+follow-up and not built yet.
 
 `contracts/_shared/` is a vendored copy of core's shared vocabulary; change it in core and
 refresh the copy (`contracts/_shared/VENDORED.md`).
