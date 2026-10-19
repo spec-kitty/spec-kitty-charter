@@ -446,7 +446,8 @@ abstract class CompatibilityFixtures : ContractToolTask() {
  * a pending release (released heading, no tag yet) is compared against the previous release, and a commit after a
  * release's tag is refused until the next -SNAPSHOT is opened. A shallow clone fails,
  * because a released contract's tag may be missing. `-PcontractBaseline=none` skips the comparison on purpose and
- * says so; the gates that read no git history (the version gate and the Breaking subsection) still run.
+ * says so, and is refused when the environment variable CI is true; the gates that read no git history (the version
+ * gates and the Breaking subsection) still run.
  * It declares no outputs, so it runs every time: a new tag changes its answer without changing any file.
  */
 @DisableCachingByDefault(because = "Reads git history and tags, which are not file inputs.")
@@ -463,6 +464,7 @@ abstract class CheckContractCompatibility @Inject constructor(
     @get:Classpath abstract val gateClasspath: ConfigurableFileCollection
     @get:Nested abstract val launcher: Property<JavaLauncher>
     @get:Input @get:Optional abstract val baselineOverride: Property<String>
+    @get:Input @get:Optional abstract val ci: Property<String>
     @get:Internal abstract val repository: DirectoryProperty
 
     /**
@@ -550,6 +552,11 @@ abstract class CheckContractCompatibility @Inject constructor(
     @TaskAction
     fun compare() {
         if (baselineOverride.orNull == "none") {
+            if (ci.orNull.equals("true", ignoreCase = true)) {
+                throw GradleException("-PcontractBaseline=none is refused when CI=true: CI must compare against the " +
+                    "released baseline. Fetch the full history and tags (actions/checkout fetch-depth: 0) and drop " +
+                    "the property.")
+            }
             val (_, message) = gate("--no-git")
             logger.lifecycle("Compatibility check skipped on request (-PcontractBaseline=none): no baseline was " +
                 "compared. $message")
@@ -687,6 +694,7 @@ val checkContractCompatibility = tasks.register<CheckContractCompatibility>("che
     gateClasspath.from(sourceSets.main.map { it.runtimeClasspath })
     launcher = javaToolchains.launcherFor(java.toolchain)
     baselineOverride = providers.gradleProperty("contractBaseline")
+    ci = providers.environmentVariable("CI")
     repository = rootProject.layout.projectDirectory
 }
 
