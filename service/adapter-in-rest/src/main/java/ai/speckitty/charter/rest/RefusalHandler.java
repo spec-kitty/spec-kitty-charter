@@ -2,6 +2,8 @@ package ai.speckitty.charter.rest;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.domain.RefusalCode;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RefusalHandler {
 
+    private static final Log LOGGER = LogFactory.getLog(RefusalHandler.class);
+
     private static final String INTERNAL_ERROR_DETAIL =
             "The charter service failed unexpectedly; the failure is logged.";
 
@@ -25,13 +29,18 @@ public class RefusalHandler {
     public RefusalHandler() {}
 
     /**
-     * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise.
+     * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise. A
+     * server-error (5xx) refusal is logged first with its cause, like {@link ProblemHandler}, so every 500 the
+     * service returns leaves a diagnostic trail even though its body names nothing of the failure.
      *
      * @param refusal the domain refusal
      * @return the {@code application/problem+json} response carrying the refusal's code and detail
      */
     @ExceptionHandler(ai.speckitty.charter.domain.CharterRefusal.class)
     public ResponseEntity<CharterRefusal> refused(ai.speckitty.charter.domain.CharterRefusal refusal) {
+        if (!refusal.code().notFound()) {
+            LOGGER.error("Server refusal " + refusal.code().token(), refusal);
+        }
         return respond(refusal);
     }
 
