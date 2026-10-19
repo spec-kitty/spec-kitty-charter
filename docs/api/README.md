@@ -1,8 +1,8 @@
 ---
 title: API
-description: The designed public API of the extracted charter — Python package surface and service contract. Designed only; no code exists here yet.
+description: The charter API — two read operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: API
 kind: Hub
 related:
@@ -18,14 +18,21 @@ audience:
 
 # API
 
-> **Designed API — not implemented here.** Everything in this section describes the API the
-> extracted charter is designed to expose. **No charter code exists in this repository
-> yet.** The package surface is derived from core's `charter.offering.api`
-> (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty));
-> the service contract is derived from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler),
-> [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and
-> [ADR-0002](/adr/0002-contract-source-of-record/). Names and shapes may change until code
-> and a released contract land here.
+> **Partly built, partly designed.** Two read operations are in the contract
+> (`contracts/charter/openapi.yaml`) and served by the Java charter service: pack listing
+> (`listPacks`, `GET /packs`) and action-scoped context (`getActionContext`,
+> `GET /mission-types/{missionType}/actions/{action}/context`). The
+> [Java API reference](/api/javadoc/) documents the service's hand-written modules. Still
+> only designed: the other planned reads of the [service contract](/api/service-contract/)
+> (profile resolution, active charter, artifact lookup, graph query and diagnostics), its
+> write operations, and the Python package surface, derived from core's
+> `charter.offering.api` (`src/charter/offering/api.py` in
+> [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)). The planned service
+> operations derive from core ADR
+> [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)
+> (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/)
+> and [ADR-0002](/adr/0002-contract-source-of-record/). Their names and shapes may change
+> until code and a released contract land here.
 
 The charter has two public surfaces, one per stage of the extraction:
 
@@ -52,3 +59,5 @@ must give one answer for the same inputs; the conformance corpus in
   error model and the transports.
 - [Versioning and compatibility](/api/compatibility/) — how each surface is versioned and
   what a consumer can rely on.
+- [Java API reference (Javadoc)](/api/javadoc/) — the Javadoc of the service's hand-written
+  Java modules, built by the main build and published with this site.

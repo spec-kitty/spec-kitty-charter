@@ -20,11 +20,13 @@ import fnmatch
 import hashlib
 import json
 import os
+import posixpath
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,6 +43,9 @@ STATUSES = {"draft", "active", "deprecated", "superseded", "durable"}
 REQUIRED_KEYS = ("title", "description", "doc_status", "updated", "type", "kind", "audience")
 DESC_MIN, DESC_MAX = 50, 180
 AUDIENCE_DIR = "docs/context/audience"
+DOC_RULES = "docs/_meta/doc-rules.yaml"
+# The rule in DOC_RULES whose `prefixes` list the routes the site build generates.
+GENERATED_ROUTES_RULE = "site-generated-routes"
 
 # Freshness SLA in days by doc_status, adapted from core's docs-freshness-sla styleguide
 # (tiers by volatility). None = never aged out. ADR and Changelog pages are dated records:
@@ -108,6 +113,7 @@ class Tree:
         self.root = root.resolve()
         self.docs = self.root / "docs"
         self._pages: list[Page] | None = None
+        self._generated_prefixes: tuple[str, ...] | None = None
 
     def pages(self) -> list[Page]:
         if self._pages is None:
@@ -137,6 +143,21 @@ class Tree:
         if not isinstance(data, dict):
             return Page(rel, path, None, "frontmatter is not a mapping", text, start)
         return Page(rel, path, data, None, text, start)
+
+    def generated_route_prefixes(self) -> tuple[str, ...]:
+        """Root-absolute route prefixes the site build generates (DOC_RULES, GENERATED_ROUTES_RULE)."""
+        if self._generated_prefixes is None:
+            data = load_yaml(self.root / DOC_RULES) or {}
+            rules = data.get("rules") if isinstance(data, dict) else None
+            rule = next(
+                (r for r in rules or [] if isinstance(r, dict) and r.get("id") == GENERATED_ROUTES_RULE),
+                {},
+            )
+            prefixes = rule.get("prefixes") or []
+            self._generated_prefixes = tuple(
+                p for p in prefixes if isinstance(p, str) and p.startswith("/") and p.endswith("/") and p != "/"
+            )
+        return self._generated_prefixes
 
     def is_generated(self, page: Page) -> bool:
         return page.docs_rel.startswith("glossary/")
@@ -516,6 +537,10 @@ def _check_target(tree: Tree, page: Page, lineno: int, target: str, anchors: Cal
     if path.startswith(SITE_BASE + "/"):
         return bad(f"`{target}` includes the site base path; the toolkit adds it")
     if path.startswith("/"):
+        if _under_generated_route(tree, path):
+            # Built by the site build (for example the Javadoc), so no source file exists here;
+            # check:built-links checks it in the built site.
+            return []
         doc = tree.resolve_doc(path)
         if doc is None:
             asset = tree.docs / path.lstrip("/")
@@ -532,6 +557,21 @@ def _check_target(tree: Tree, page: Page, lineno: int, target: str, anchors: Cal
     if frag and frag not in anchors(doc):
         return bad(f"anchor `#{frag}` not found in {doc.relative_to(tree.root).as_posix()}")
     return []
+
+
+def _under_generated_route(tree: Tree, path: str) -> bool:
+    """A link is under a generated route only when its raw path and its decoded path both start
+    with the prefix, and the decoded, normalized path stays inside it. Decoding, as a browser
+    does, catches `%2e%2e` escapes; the raw test refuses `/javadoc%2Fx.html`, one segment to a
+    server."""
+    decoded = urllib.parse.unquote(path)
+    normalized = posixpath.normpath(decoded)
+    if decoded.endswith("/"):
+        normalized += "/"
+    return any(
+        path.startswith(prefix) and decoded.startswith(prefix) and normalized.startswith(prefix)
+        for prefix in tree.generated_route_prefixes()
+    )
 
 
 # ---------------------------------------------------------------- PlantUML

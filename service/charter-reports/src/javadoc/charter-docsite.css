@@ -1,0 +1,138 @@
+/*
+ * The docsite's look for the aggregated Javadoc, layered over the JDK 25 stylesheet with
+ * javadoc's --add-stylesheet (service/charter-reports/build.gradle.kts).
+ *
+ * The JDK sheet is driven by CSS custom properties; this sheet only re-declares them. The
+ * values are the Spec Kitty theme tokens of @spec-kitty/doc-toolkit 0.2.0, the version
+ * site/package.json pins (themes/spec-kitty/tokens.css for the colors of both modes,
+ * themes/spec-kitty/index.ts for the type families). They are copied, because these
+ * static pages do not load the docsite's CSS; when the toolkit changes a token, change it
+ * here too. No font files ship, as on the docsite: the stacks fall back to system faces.
+ *
+ * Light is the default. Dark follows the reader's system setting (prefers-color-scheme),
+ * because the docsite's theme switch (data-theme on its own pages) does not reach these
+ * pages.
+ */
+
+:root {
+    color-scheme: light dark;
+
+    /* Doc-toolkit tokens: type (both modes). */
+    --dk-font-sans: "Swansea", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --dk-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+    /* Doc-toolkit tokens: colors, light. */
+    --dk-color-bg: #FBFAF7;
+    --dk-color-bg-nav: #F4F2ED;
+    --dk-color-bg-sidebar: #F4F2ED;
+    --dk-color-surface-1: #FFFFFF;
+    --dk-color-surface-2: #F1EEE7;
+    --dk-color-surface-inset: #ECE8DF;
+    --dk-color-border: #E2DDD1;
+    --dk-color-border-strong: #CFC8B8;
+    --dk-color-text: #1A1B1F;
+    --dk-color-text-strong: #0D0E11;
+    --dk-color-text-muted: #5B5B63;
+    --dk-color-text-accent: #806508;
+    --dk-color-accent-low: #FDF3CF;
+    --dk-color-accent: #F5C518;
+    --dk-color-accent-text: #1A1408;
+    --dk-color-danger: #B3352F;
+    --dk-color-danger-bg: #FBE7E6;
+    /* A hovered link: the strong text color in light, since the toolkit's hover gold
+       (#C99A0E) is 2.5:1 on paper and too faint for text. */
+    --charter-link-hover: var(--dk-color-text-strong);
+
+    /* The JDK stylesheet's properties, mapped onto the tokens. */
+    --body-font-family: var(--dk-font-sans);
+    --block-font-family: var(--dk-font-sans);
+    --code-font-family: var(--dk-font-mono);
+    --body-text-color: var(--dk-color-text);
+    --block-text-color: var(--dk-color-text);
+    --body-background-color: var(--dk-color-bg);
+    --section-background-color: var(--dk-color-bg);
+    --detail-background-color: var(--dk-color-surface-1);
+    --code-background-color: var(--dk-color-surface-2);
+    --mark-background-color: var(--dk-color-accent-low);
+    --detail-block-color: var(--dk-color-surface-2);
+    --navbar-background-color: var(--dk-color-bg-nav);
+    --navbar-text-color: var(--dk-color-text);
+    --subnav-background-color: var(--dk-color-surface-inset);
+    --subnav-link-color: var(--dk-color-text-accent);
+    --member-heading-background-color: var(--dk-color-surface-2);
+    --selected-background-color: var(--dk-color-accent);
+    --selected-text-color: var(--dk-color-accent-text);
+    --selected-link-color: var(--dk-color-accent-text);
+    --table-header-color: var(--dk-color-surface-2);
+    --even-row-color: var(--dk-color-surface-1);
+    --odd-row-color: var(--dk-color-bg);
+    --title-color: var(--dk-color-text-strong);
+    --link-color: var(--dk-color-text-accent);
+    --link-color-active: var(--charter-link-hover);
+    --toc-background-color: var(--dk-color-bg-sidebar);
+    --toc-highlight-color: var(--dk-color-accent-low);
+    --toc-hover-color: var(--dk-color-surface-2);
+    --snippet-background-color: var(--dk-color-surface-2);
+    --snippet-text-color: var(--dk-color-text);
+    --snippet-highlight-color: var(--dk-color-accent-low);
+    --pre-background-color: var(--dk-color-surface-2);
+    --pre-text-color: var(--dk-color-text);
+    --border-color: var(--dk-color-border);
+    --table-border-color: var(--dk-color-border-strong);
+    --search-input-background-color: var(--dk-color-surface-1);
+    --search-input-text-color: var(--dk-color-text);
+    --search-input-placeholder-color: var(--dk-color-text-muted);
+    --search-tag-highlight-color: var(--dk-color-accent-low);
+    --button-border-color: var(--dk-color-border-strong);
+    --invalid-tag-background-color: var(--dk-color-danger-bg);
+    --invalid-tag-text-color: var(--dk-color-danger);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Doc-toolkit tokens: colors, dark. */
+        --dk-color-bg: #0D0E11;
+        --dk-color-bg-nav: #121317;
+        --dk-color-bg-sidebar: #121317;
+        --dk-color-surface-1: #181A1F;
+        --dk-color-surface-2: #1C1F25;
+        --dk-color-surface-inset: #212830;
+        --dk-color-border: #2B313B;
+        --dk-color-border-strong: #353C48;
+        --dk-color-text: #D6D6DA;
+        --dk-color-text-strong: #FFFFFF;
+        --dk-color-text-muted: #A9A9B0;
+        --dk-color-text-accent: #F5C518;
+        --dk-color-accent-low: #2A2410;
+        --dk-color-accent: #F5C518;
+        --dk-color-accent-text: #1A1408;
+        --dk-color-danger: #E97373;
+        --dk-color-danger-bg: #2E1616;
+        /* The toolkit's dark hover color. */
+        --charter-link-hover: #FFD84D;
+    }
+
+    /* The JDK draws its icons dark, for a light page: lighten them on dark surfaces. */
+    nav.toc button img,
+    button.copy img,
+    a.anchor-link > img,
+    input#reset-search,
+    input.reset-filter,
+    input#page-search-reset {
+        filter: invert(85%);
+    }
+}
+
+/* The JDK lightens a targeted member's anchor icon for its dark navbar color; the docsite's
+   navbar is light in light mode, so the icon keeps its own color there. */
+@media (prefers-color-scheme: light) {
+    body.class-declaration-page section.detail:target > h3 > a.anchor-link > img,
+    body.class-declaration-page section.detail > h3:target > a.anchor-link > img {
+        filter: none;
+    }
+}
+
+/* The link back to the docsite, in the footer of every page (javadoc -bottom). */
+.charter-docsite-back {
+    font-weight: 600;
+}

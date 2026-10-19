@@ -210,3 +210,22 @@ def test_svg_normalisation_ignores_geometry_and_fonts_but_not_content() -> None:
     assert base == cd._normalise_svg(svg("Label", "99.5", "DejaVu Sans", "<line x1=\"3\"/>"))
     assert base != cd._normalise_svg(svg("Other", "10", "Helvetica"))
     assert base != cd._normalise_svg(svg("Label", "10", "Helvetica").replace('"A"', '"B"'))
+
+
+def test_links_accept_generated_route_prefix_from_doc_rules_only(root: Path) -> None:
+    rewrite(root, "docs/guides/one.md", "See [home](/)", "See [api](/javadoc/index.html) [gone](/nope/x.html) [up](/javadoc/../nope/) [enc](/javadoc/%2e%2e/nope.html) [seg](/javadoc%2Fx.html)")
+    before = [f.message for f in run("links", root)]
+    assert any("/javadoc/index.html" in m for m in before)  # no rule yet: a missing file fails
+    (root / "docs/_meta/doc-rules.yaml").write_text(
+        "version: 1\nrules:\n  - id: site-generated-routes\n    rule: r\n    check: c\n    prefixes: [/javadoc/]\n",
+        encoding="utf-8",
+    )
+    messages = [f.message for f in run("links", root)]
+    assert not any("/javadoc/index.html" in m for m in messages)
+    # Positive controls: an unlisted root-absolute link to a missing file still fails, and so does
+    # one that only starts with the prefix before leaving it,
+    # also percent-encoded, and one whose encoded slash makes it a single segment to a server.
+    assert any("`/nope/x.html` does not resolve" in m for m in messages)
+    assert any("`/javadoc/../nope/` does not resolve" in m for m in messages)
+    assert any("`/javadoc/%2e%2e/nope.html` does not resolve" in m for m in messages)
+    assert any("`/javadoc%2Fx.html` does not resolve" in m for m in messages)
