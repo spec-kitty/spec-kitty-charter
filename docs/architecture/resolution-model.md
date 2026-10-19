@@ -64,9 +64,8 @@ flowchart LR
    diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
    mutability level is checked against what later packs do to it: a change the level does not
    allow is the refusal `governance_policy_violation`
-   ([ADR-0012](/adr/0012-pack-mutability-policy/)). Core keeps the first org pack's node for
-   non-built-in URNs but the last for built-in URNs; that inconsistency is a defect to fix
-   before the levels land.
+   ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
+   later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either

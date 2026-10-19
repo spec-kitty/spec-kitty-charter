@@ -1,8 +1,8 @@
 ---
 title: Versioning and compatibility
-description: How the charter service contract and the designed Python package are versioned, and what a consumer can rely on across releases.
+description: How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: API
 kind: Reference
 related:
@@ -16,24 +16,22 @@ audience:
 
 # Versioning and compatibility
 
-How the charter service contract and the designed Python package are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter moves to its own repository), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/).
+How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows until the cutover retires it. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/). No Python package ships from this repository ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)).
 
-> **Partly built.** The service contract exists at `1.0.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python package is designed only. See the [API overview](/api/).
+> **Partly built.** The service contract exists at `1.0.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python surface below is core's, not a package of this repository. See the [API overview](/api/).
 
-## Python package
+## Core's in-process seam surface
 
-- **Semantic versioning** of the wheel, with `py.typed` shipped so type checkers see the
-  surface.
+Core versions this surface, not this repository; it stays in core until the cutover.
+
 - **The public surface is `__all__` of `charter.offering.api`.** A symbol outside it carries
   no compatibility promise.
 - Adding a symbol is a **minor** release. Removing or renaming a symbol, changing a
   signature incompatibly, or changing an `ArtifactKind` fact is a **major** release.
-- Consumers pin a version range, as they do for `spec-kitty-events` and
-  `spec-kitty-tracker`. A consumer that imports only from `charter.offering.api` survives the
-  move to this repository (core ADR `2026-10-12-2`).
-- Core enforces the surface's shape today (importable, sorted, every symbol tagged public in
-  its disposition census). This repository needs an equivalent gate before the first
-  release.
+- A consumer that imports only from `charter.offering.api` survives the cutover: the seam
+  keeps its shape and answers from the service.
+- Core enforces the surface's shape (importable, sorted, every symbol tagged public in its
+  disposition census).
 
 ## Service contract
 

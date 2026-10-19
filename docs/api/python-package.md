@@ -1,6 +1,6 @@
 ---
 title: Python package API
-description: The designed in-process public surface of the extracted charter package, derived from core's charter.offering.api — entry points, types, operations and errors.
+description: Core's in-process charter seam surface, charter.offering.api — entry points, types, operations and errors — until the Java service replaces it.
 doc_status: draft
 updated: 2026-10-19
 type: API
@@ -15,9 +15,9 @@ audience:
 
 # Python package API
 
-The in-process public surface the extracted charter package is designed to export: entry point, types, operations and errors. It derives from `charter.offering.api` in core (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)), where these symbols exist today, and from core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) D-1. The designed return types are the DTOs generated from the OpenAPI contract ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the core types listed on this page are today's transitional shapes, which the generated DTOs replace.
+Core's in-process charter seam surface: entry point, types, operations and errors of `charter.offering.api` in core (`src/charter/offering/api.py` in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)), where these symbols exist today. No Python package ships from this repository: the surface stays in core until the Java service replaces it ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). The designed return types are the DTOs generated from the OpenAPI contract ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the core types listed on this page are today's transitional shapes, which the generated DTOs replace.
 
-> **Designed API.** Not implemented; see the [API overview](/api/).
+> **Exists in core.** This page documents core's surface, which the seam keeps until the cutover; nothing here is implemented in this repository. See the [API overview](/api/).
 
 ## Entry point
 
