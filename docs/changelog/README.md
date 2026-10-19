@@ -2,7 +2,7 @@
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-charter repository and its documentation.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Changelog
 kind: Hub
 audience:
@@ -15,6 +15,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-19 — Tracker milestones and their proposed distribution](/changelog/2026-10-19-tracker-milestones/)
 - [2026-10-18 — Contract and build brought under governance](/changelog/2026-10-18-retroactive-contract-and-build-mission/)
 - [2026-10-18 — Contract skeleton, Gradle build and three decisions](/changelog/2026-10-18-contract-gradle-build-and-decisions/)
 - [2026-10-14 — Events go through the core's one canonical event writer](/changelog/2026-10-14-one-canonical-event-writer/)
