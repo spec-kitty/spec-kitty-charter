@@ -1,5 +1,6 @@
 package ai.speckitty.charter.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -9,15 +10,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ai.speckitty.charter.domain.CharterPackRepository;
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The failures the contract scenarios cannot provoke: an unexpected exception, a method the path does not have,
@@ -26,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @SpringBootTest(classes = {CharterServiceApplication.class, ProblemResponsesTest.Failing.class})
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 class ProblemResponsesTest {
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -36,6 +44,20 @@ class ProblemResponsesTest {
             return () -> {
                 throw new IllegalStateException("a secret the body must not show");
             };
+        }
+
+        @Bean
+        UnwritableController unwritableController() {
+            return new UnwritableController();
+        }
+    }
+
+    /** A handler whose response Spring cannot write: a failure {@code ResponseEntityExceptionHandler} resolves. */
+    @RestController
+    static class UnwritableController {
+        @GetMapping("/test/unwritable")
+        String unwritable() {
+            throw new HttpMessageNotWritableException("a secret the body must not show");
         }
     }
 
@@ -78,5 +100,21 @@ class ProblemResponsesTest {
         mvc.perform(get("/error"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void aServerErrorSpringResolvesIsLoggedOnceWithItsExceptionAndNeverShownInTheBody(CapturedOutput output)
+            throws Exception {
+        String body = mvc.perform(get("/test/unwritable"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).doesNotContain("secret").doesNotContain("HttpMessageNotWritable");
+        assertThat(output.getAll())
+                .containsOnlyOnce("ERROR")
+                .containsOnlyOnce("HttpMessageNotWritableException: a secret the body must not show");
     }
 }
