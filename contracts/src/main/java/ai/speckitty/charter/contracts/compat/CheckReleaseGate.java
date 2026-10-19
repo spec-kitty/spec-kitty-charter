@@ -26,12 +26,17 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * <p>{@code CheckReleaseGate --baseline <openapi.yaml> <tag>} checks the contract archived at a baseline tag
  * ({@link ReleaseGate#baselineRefusal}): it prints {@code BASELINE <version>} and exits 0, or prints the refusal
  * and exits 1.
+ *
+ * <p>{@code CheckReleaseGate --previous-major <openapi.yaml> <CHANGELOG.md> <merged-tags>} prints
+ * {@code PREVIOUS_MAJOR <tag>} when the version is a major bump over a release whose tag is merged
+ * ({@link ReleaseGate#previousMajorBaseline}), else {@code NONE}; it exits 0, or 2 when an input cannot be read.
  */
 public final class CheckReleaseGate {
 
     private static final String USAGE =
             "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)"
-                    + " | CheckReleaseGate --baseline <openapi.yaml> <tag>";
+                    + " | CheckReleaseGate --baseline <openapi.yaml> <tag>"
+                    + " | CheckReleaseGate --previous-major <openapi.yaml> <CHANGELOG.md> <merged-tags>";
 
     private CheckReleaseGate() {}
 
@@ -48,6 +53,9 @@ public final class CheckReleaseGate {
     }
 
     static int run(List<String> args, PrintStream out) {
+        if (args.size() == 4 && "--previous-major".equals(args.get(0))) {
+            return previousMajor(args, out);
+        }
         if (args.size() == 3 && "--baseline".equals(args.get(0))) {
             return baseline(Path.of(args.get(1)), args.get(2), out);
         }
@@ -86,6 +94,20 @@ public final class CheckReleaseGate {
         }
         out.println(decision.message());
         return 0;
+    }
+
+    private static int previousMajor(List<String> args, PrintStream out) {
+        try {
+            Optional<String> tag = ReleaseGate.previousMajorBaseline(
+                    infoVersion(Path.of(args.get(1))),
+                    Files.readString(Path.of(args.get(2))),
+                    tags(Path.of(args.get(3))));
+            out.println(tag.map(t -> "PREVIOUS_MAJOR " + t).orElse("NONE"));
+            return 0;
+        } catch (IOException | YamlEngineException | IllegalArgumentException e) {
+            out.println("Cannot read the release gate's inputs: " + e.getMessage());
+            return 2;
+        }
     }
 
     private static int baseline(Path openapi, String tag, PrintStream out) {
