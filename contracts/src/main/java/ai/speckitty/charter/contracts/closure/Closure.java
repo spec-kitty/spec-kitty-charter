@@ -43,7 +43,8 @@ public record Closure(JsonPointer at, Facet objects, Facet arrays) {
      * @param admission what is admitted
      * @param reason    why, naming the parts that decided it
      * @param declared  for an open object facet: whether an explicit {@code type} naming {@code object} is among what
-     *                  is open, so that a part that admits no object beside it is a contradiction, not an excuse
+     *                  is open, so that a part that admits no object beside it is refused by convention (rule 7 of
+     *                  {@link ClosureChecker}), never an excuse
      */
     public record Facet(Admission admission, String reason, boolean declared) {
 

@@ -84,7 +84,7 @@ final class Vocabulary {
 
     /**
      * Reports every keyword of {@code schema} the checker does not understand, a {@code $ref}, a malformed
-     * {@code type} and a malformed {@code enum}.
+     * {@code type}, a malformed {@code enum} and an {@code additionalProperties} that is not a schema.
      */
     static void vet(Node schema, Findings findings) {
         for (String keyword : schema.keys()) {
@@ -95,8 +95,8 @@ final class Vocabulary {
             } else if (!understands(keyword)) {
                 findings.malformed(
                         schema.pointer().child(keyword),
-                        "the keyword '" + keyword + "' is not one the"
-                                + " checker understands, so it cannot judge the schema; teach the checker or drop the keyword");
+                        "the keyword '" + keyword + "' is not one the checker understands, so it cannot judge"
+                                + " the schema; teach the checker or drop the keyword");
             }
         }
         schema.child("type")
@@ -105,6 +105,10 @@ final class Vocabulary {
         schema.child("enum")
                 .filter(e -> !isEnum(e))
                 .ifPresent(e -> findings.malformed(e.pointer(), "must be a non-empty list of values"));
+        schema.child("additionalProperties")
+                .filter(additional -> !additional.isSchema())
+                .ifPresent(additional ->
+                        findings.malformed(additional.pointer(), "must be a schema: a mapping or a boolean"));
     }
 
     /** Whether {@code node}, the value of an {@code enum}, is well-formed: a non-empty list. */

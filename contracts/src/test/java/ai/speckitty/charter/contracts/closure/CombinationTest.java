@@ -41,7 +41,8 @@ class CombinationTest {
         assertThat(contradiction.kind()).isEqualTo(Kind.OPEN);
         assertThat(contradiction.reason())
                 .isEqualTo("an open object (an open object; from d) sits beside a part that admits"
-                        + " no object (a string; from b): this pairing is refused by convention, as a likely authoring mistake,"
+                        + " no object (a string; from b): this pairing is refused by convention,"
+                        + " as a likely authoring mistake,"
                         + " even where a value satisfies both parts");
     }
 

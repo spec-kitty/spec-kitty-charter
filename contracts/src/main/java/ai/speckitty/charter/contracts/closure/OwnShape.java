@@ -79,12 +79,15 @@ final class OwnShape {
         if (additional == null) {
             return Closure.Facet.open(untyped + "no additionalProperties: false", declared);
         }
-        return Closure.Facet.open(
-                untyped
-                        + (Boolean.TRUE.equals(additional)
-                                ? "additionalProperties: true admits any member"
-                                : "additionalProperties holds a schema, so it is a map"),
-                declared);
+        String why;
+        if (Boolean.TRUE.equals(additional)) {
+            why = "additionalProperties: true admits any member";
+        } else if (additional instanceof Map<?, ?>) {
+            why = "additionalProperties holds a schema, so it is a map";
+        } else {
+            why = "additionalProperties is malformed, so nothing closes it";
+        }
+        return Closure.Facet.open(untyped + why, declared);
     }
 
     private static Closure.Facet arrayFacet(Node schema, String untyped) {

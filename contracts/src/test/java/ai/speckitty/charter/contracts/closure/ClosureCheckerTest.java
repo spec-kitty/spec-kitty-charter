@@ -53,7 +53,8 @@ class ClosureCheckerTest {
             assertReports(
                     "nested-allof.yaml",
                     EXTRA,
-                    "allOf/0: no part closes it: it has no type and no closing keyword; allOf/0: no additionalProperties: false");
+                    "allOf/0: no part closes it: it has no type and no closing keyword;"
+                            + " allOf/0: no additionalProperties: false");
         }
 
         @Test
@@ -98,7 +99,8 @@ class ClosureCheckerTest {
                     "scalar-first-allof.yaml",
                     EXTRA,
                     "an open object (no additionalProperties: false; from allOf/1)"
-                            + " sits beside a part that admits no object (its type [string] admits no object; from allOf/0): "
+                            + " sits beside a part that admits no object"
+                            + " (its type [string] admits no object; from allOf/0): "
                             + CONVENTION);
         }
 
@@ -171,7 +173,8 @@ class ClosureCheckerTest {
             assertReports(
                     "constraint-member-nesting-open-oneof.yaml",
                     PROBE,
-                    "anyOf: its alternative 0 is open: no part closes it: it has no type and no closing keyword; oneOf: its alternative 0 is open: no additionalProperties: false");
+                    "anyOf: its alternative 0 is open: no part closes it: it has no type and no closing keyword;"
+                            + " oneOf: its alternative 0 is open: no additionalProperties: false");
         }
 
         @Test
@@ -348,6 +351,143 @@ class ClosureCheckerTest {
         }
     }
 
+    /** The document around the response schemas fails closed too: a key the checker does not know is reported. */
+    @Nested
+    class DocumentLevel {
+
+        private static final String GET = "/paths/~1probe/get";
+        private static final String RESPONSE = GET + "/responses/200";
+        private static final String HEADER = RESPONSE + "/headers/X-Probe";
+
+        @Test
+        void anUpperCaseMethodIsAnUnknownPathItemKey() {
+            assertReports(
+                    "path-item-unknown-key.yaml",
+                    "/paths/~1probe/GET",
+                    "'GET' is not a path item key the checker knows, so what it holds goes unjudged");
+        }
+
+        @Test
+        void aMisspeltResponsesIsAnUnknownOperationKey() {
+            assertReports(
+                    "operation-unknown-key.yaml",
+                    GET + "/responsez",
+                    "'responsez' is not an operation key the checker knows");
+        }
+
+        @Test
+        void aMisspeltContentIsAnUnknownResponseKey() {
+            assertReports(
+                    "response-unknown-key.yaml",
+                    RESPONSE + "/contents",
+                    "'contents' is not a response key the checker knows");
+        }
+
+        @Test
+        void aResponsesKeyThatIsNoStatusIsReported() {
+            assertReports(
+                    "response-status-unknown-key.yaml",
+                    GET + "/responses/ok",
+                    "'ok' is not a status code, a status range such as 4XX, or default");
+        }
+
+        @Test
+        void aMisspeltExamplesIsAnUnknownMediaTypeKey() {
+            assertReports(
+                    "media-type-unknown-key.yaml",
+                    RESPONSE + "/content/application~1json/examplez",
+                    "'examplez' is not a media type key the checker knows");
+        }
+
+        @Test
+        void webhooksAreRefused() {
+            assertReports(
+                    "webhooks.yaml",
+                    "/webhooks",
+                    "the charter contract uses no webhooks, and the checker would need to judge their responses");
+        }
+
+        @Test
+        void callbacksAreRefused() {
+            assertReports(
+                    "callbacks.yaml",
+                    GET + "/callbacks",
+                    "the charter contract uses no callbacks, and the checker would need to judge their responses");
+        }
+
+        @Test
+        void aResponseHeaderSchemaIsAPosition() {
+            assertReports("header-open-object.yaml", HEADER + "/schema", "no additionalProperties: false");
+        }
+
+        @Test
+        void aResponseHeaderContentSchemaIsAPosition() {
+            assertReports(
+                    "header-content-open-object.yaml",
+                    HEADER + "/content/application~1json/schema",
+                    "no additionalProperties: false");
+        }
+
+        @Test
+        void aResponseHeaderWithoutASchemaIsUnconstrained() {
+            assertReports(
+                    "header-without-schema.yaml",
+                    HEADER,
+                    "the header has neither a schema nor content, so its value is unconstrained");
+        }
+
+        @Test
+        void scalarAndClosedHeadersPassAndAreCounted() throws IOException, URISyntaxException {
+            ClosureReport report = ClosureChecker.check(Path.of(ClosureCheckerTest.class
+                    .getResource("/closure/header-closed.yaml")
+                    .toURI()));
+            assertThat(report.violations()).isEmpty();
+            assertThat(report.positions()).isEqualTo(3);
+        }
+
+        @Test
+        void aDocumentThatJudgesNoResponseSchemaFails() {
+            assertReports(
+                    "no-judged-position.yaml", "", "no response schema was judged, so the checker proved nothing");
+        }
+
+        @Test
+        void anAdditionalPropertiesThatIsNoSchemaIsMalformedNotAMap() {
+            List<Violation> violations = violations("additional-properties-not-a-schema.yaml");
+            assertThat(violations)
+                    .extracting(v -> v.pointer().toString())
+                    .containsExactly(PROBE + "/additionalProperties", PROBE);
+            assertThat(violations.getFirst().reason()).isEqualTo("must be a schema: a mapping or a boolean");
+            assertThat(violations.get(1).reason()).doesNotContain("map");
+        }
+
+        @Test
+        void aPathItemThatIsNotAMappingIsReported() {
+            Map<String, Object> document = new HashMap<>(probe(false));
+            document.put("paths", Map.of("/probe", "text", "/other", Map.of("get", Map.of("responses", Map.of()))));
+            assertThat(ClosureChecker.check(document).violations())
+                    .extracting(Violation::toString)
+                    .contains("/paths/~1probe: must be a mapping");
+        }
+
+        @Test
+        void aPathThatDoesNotStartWithASlashIsReported() {
+            Map<String, Object> document = new HashMap<>(probe(false));
+            Map<String, Object> paths = new HashMap<>(castMap(document.get("paths")));
+            paths.put("probe", Map.of());
+            paths.put("x-note", "an extension is not a path");
+            document.put("paths", paths);
+            assertThat(ClosureChecker.check(document).violations())
+                    .extracting(Violation::toString)
+                    .containsExactly("/paths/probe: a path must start with /");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> castMap(Object value) {
+        return (Map<String, Object>) value;
+    }
+
     @Nested
     class MustPass {
 
@@ -445,8 +585,8 @@ class ClosureCheckerTest {
             document.put("openapi", 3.1);
             assertThat(ClosureChecker.check(document).violations())
                     .extracting(Violation::toString)
-                    .containsExactly(
-                            "/openapi: the checker reads OpenAPI 3.1 (JSON Schema 2020-12) only, not openapi 3.1");
+                    .containsExactly("/openapi: the openapi version must be the string 3.1.x, not the YAML"
+                            + " number 3.1; quote it");
         }
 
         @Test

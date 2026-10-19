@@ -1,0 +1,21 @@
+# Must report (pre-PR squad): the contract uses no webhooks, and the checker would need to judge their responses.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+webhooks:
+  probe:
+    post:
+      responses:
+        '200':
+          description: The probe.
+paths:
+  /judged:
+    get:
+      responses:
+        '200':
+          description: A judged body, so the document has at least one response schema.
+          content:
+            application/json:
+              schema:
+                type: string

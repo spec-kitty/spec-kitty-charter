@@ -1,0 +1,11 @@
+# Must report (pre-PR squad): a document whose responses have no body judges nothing, which proves nothing.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    delete:
+      responses:
+        '204':
+          description: Deleted.

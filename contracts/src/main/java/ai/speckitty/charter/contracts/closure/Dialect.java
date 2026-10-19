@@ -18,9 +18,14 @@ final class Dialect {
         root.child("openapi")
                 .ifPresentOrElse(
                         version -> {
-                            if (!(version.value() instanceof String text
-                                    && OPENAPI_31.matcher(text).matches())) {
-                                findings.malformed(version.pointer(), READS_ONLY + version.value());
+                            if (!(version.value() instanceof String text)) {
+                                findings.malformed(
+                                        version.pointer(),
+                                        "the openapi version must be the string 3.1.x, not the YAML "
+                                                + (version.value() instanceof Number ? "number " : "value ")
+                                                + version.value() + "; quote it");
+                            } else if (!OPENAPI_31.matcher(text).matches()) {
+                                findings.malformed(version.pointer(), READS_ONLY + text);
                             }
                         },
                         () -> findings.malformed(
