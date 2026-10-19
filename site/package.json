@@ -5,22 +5,24 @@
   "type": "module",
   "description": "The spec-kitty-charter documentation site, built from ../docs with the published @spec-kitty/doc-toolkit.",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.22"
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && python3 tools/import_core_glossary.py --finalize",
+    "build": "astro build",
     "build:astro": "astro build",
     "preview": "astro preview",
     "validate": "dockitty-validate-frontmatter ../docs && dockitty-check-links ../docs",
     "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-charter --site https://spec-kitty.github.io",
+    "check:okf": "dockitty-export-okf --dist dist --docs ../docs --out okf-export --index-basename README --base /spec-kitty-charter --site-url https://spec-kitty.github.io",
     "check:docs": "python3 ../scripts/docs/check_docs.py all"
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.3",
     "@astrojs/sitemap": "^3.2.0",
-    "@astrojs/starlight": "^0.32.6",
-    "@spec-kitty/doc-toolkit": "0.2.0",
-    "astro": "^5.2.0",
+    "@astrojs/starlight": "^0.42.6",
+    "@spec-kitty/doc-toolkit": "0.4.0",
+    "astro": "^7.4.0",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
