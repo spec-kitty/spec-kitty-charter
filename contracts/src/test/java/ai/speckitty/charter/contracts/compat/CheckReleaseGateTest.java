@@ -40,6 +40,19 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aBaselineContractMustBeTheVersionItsTagNames() throws IOException {
+        Path archived = Files.writeString(dir.resolve("baseline.yaml"), "info:\n  version: 1.1.0-SNAPSHOT\n");
+        assertThat(CheckReleaseGate.run(List.of("--baseline", archived.toString(), "contract-charter-v1.0.0"), out))
+                .isEqualTo(1);
+        assertThat(printed()).contains("contract-charter-v1.0.0 names 1.0.0");
+        output.reset();
+        Files.writeString(archived, "info:\n  version: 1.0.0\n");
+        assertThat(CheckReleaseGate.run(List.of("--baseline", archived.toString(), "contract-charter-v1.0.0"), out))
+                .isZero();
+        assertThat(printed()).startsWith("BASELINE 1.0.0\n");
+    }
+
+    @Test
     void noReleasedVersionIsNoBaseline() throws IOException {
         assertThat(run("1.0.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "", "")).isZero();
         assertThat(printed()).startsWith("NONE\nNo released baseline: ");

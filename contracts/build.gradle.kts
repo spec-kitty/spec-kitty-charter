@@ -407,24 +407,29 @@ abstract class CheckContractCompatibility @Inject constructor(
      * the message. Standard error is kept apart, since a JVM may print notes there (JAVA_TOOL_OPTIONS).
      */
     private fun gate(vararg mode: String): Pair<String, String> {
+        val (exit, lines, errors) = runGate(openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, *mode)
+        val decision = lines.firstOrNull().orEmpty()
+        if (exit != 0 || !Regex("COMPARE \\S+|NONE|SKIPPED").matches(decision)) {
+            throw GradleException("The contract release gate refuses (exit $exit):\n" +
+                lines.joinToString("\n") + errors.let { if (it.isBlank()) "" else "\n$it" })
+        }
+        return decision to lines.drop(1).joinToString("\n")
+    }
+
+    /** Runs `CheckReleaseGate` with [args]; the result is its exit code, its standard output lines and its standard error. */
+    private fun runGate(vararg args: String): Triple<Int, List<String>, String> {
         val output = ByteArrayOutputStream()
         val errors = ByteArrayOutputStream()
         val result = execOps.javaexec {
             executable = launcher.get().executablePath.asFile.absolutePath
             classpath = gateClasspath
             mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
-            args(openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, *mode)
+            args(*args)
             standardOutput = output
             errorOutput = errors
             isIgnoreExitValue = true
         }
-        val lines = output.toString(Charsets.UTF_8).trim().lines()
-        val decision = lines.firstOrNull().orEmpty()
-        if (result.exitValue != 0 || !Regex("COMPARE \\S+|NONE|SKIPPED").matches(decision)) {
-            throw GradleException("The contract release gate refuses (exit ${result.exitValue}):\n" +
-                lines.joinToString("\n") + errors.toString(Charsets.UTF_8).let { if (it.isBlank()) "" else "\n$it" })
-        }
-        return decision to lines.drop(1).joinToString("\n")
+        return Triple(result.exitValue, output.toString(Charsets.UTF_8).trim().lines(), errors.toString(Charsets.UTF_8))
     }
 
     @TaskAction
@@ -469,6 +474,13 @@ abstract class CheckContractCompatibility @Inject constructor(
         if (archiveCode != 0) throw GradleException("Cannot read the contract at $baselineTag:\n$archiveOut")
         val tree = File(work, "baseline")
         files.copy { from(archives.tarTree(tar)); into(tree) }
+        // The tag must name the contract it holds: a tag moved onto a later commit is not the release.
+        val (versionExit, versionLines, versionErrors) =
+            runGate("--baseline", File(tree, "contracts/charter/openapi.yaml").path, baselineTag)
+        if (versionExit != 0) {
+            throw GradleException("The baseline $baselineTag is not the release it names (exit $versionExit):\n" +
+                versionLines.joinToString("\n") + versionErrors.let { if (it.isBlank()) "" else "\n$it" })
+        }
         val baseline = File(work, "baseline-openapi.yaml")
         bundle(vacuum.get().asFile, File(tree, "contracts/charter/openapi.yaml"), baseline)?.let {
             throw GradleException("Cannot bundle the contract at $baselineTag:\n$it")

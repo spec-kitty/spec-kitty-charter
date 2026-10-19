@@ -3,6 +3,7 @@ package ai.speckitty.charter.contracts.compat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.contracts.compat.ReleaseGate.Decision;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -343,6 +344,32 @@ class ReleaseGateTest {
         void zeroItselfIsFine() {
             assertThat(decide("0.0.0-SNAPSHOT", changelog("## 0.0.0-SNAPSHOT\n"), Set.of()))
                     .isInstanceOf(Decision.NoBaseline.class);
+        }
+    }
+
+    @Nested
+    class BaselineContract {
+
+        @Test
+        void aBaselineWhoseInfoVersionIsTheTagsVersionPasses() {
+            assertThat(ReleaseGate.baselineRefusal("contract-charter-v1.0.0", "1.0.0"))
+                    .isEmpty();
+        }
+
+        @Test
+        void aTagMovedOntoASnapshotCommitIsRefused() {
+            Optional<Decision.Refused> refused =
+                    ReleaseGate.baselineRefusal("contract-charter-v1.0.0", "1.1.0-SNAPSHOT");
+            assertThat(refused).isPresent();
+            assertThat(refused.get().message())
+                    .contains("contract-charter-v1.0.0 names 1.0.0")
+                    .contains("info.version is 1.1.0-SNAPSHOT");
+        }
+
+        @Test
+        void aTagWithoutAVersionIsRefused() {
+            assertThat(ReleaseGate.baselineRefusal("contract-charter-vnext", "1.0.0"))
+                    .isPresent();
         }
     }
 
