@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.speckitty.charter.domain.CharterPackRepository;
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +17,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.test.json.JsonCompareMode;
@@ -27,25 +25,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The failures the contract scenarios cannot provoke: an unexpected exception, a method the path does not have,
- * and the container's error page. A 4xx is a closed {@code Problem} of title and status; every 500 is the
- * {@code internal_error} refusal with a generic detail.
+ * The failures the contract scenarios cannot provoke: a method the path does not have, the container's error page
+ * reached by a forward and by a direct request, and a server error Spring resolves itself (logged once, never
+ * shown). The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
+ * {@code errors.feature}; what the container answers before Spring sees the request is {@code ConnectorErrorsTest}.
  */
-@SpringBootTest(classes = {CharterServiceApplication.class, ProblemResponsesTest.Failing.class})
+@SpringBootTest(classes = {CharterServiceApplication.class, ProblemResponsesTest.Unwritable.class})
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
 class ProblemResponsesTest {
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class Failing {
-        @Bean
-        @Primary
-        CharterPackRepository failingRepository() {
-            return () -> {
-                throw new IllegalStateException("a secret the body must not show");
-            };
-        }
-
+    static class Unwritable {
         @Bean
         UnwritableController unwritableController() {
             return new UnwritableController();
@@ -68,14 +59,6 @@ class ProblemResponsesTest {
     private MockMvc mvc;
 
     @Test
-    void anUnexpectedExceptionIsAnInternalErrorRefusalThatHidesTheException() throws Exception {
-        mvc.perform(get("/api/v1/packs"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
-    }
-
-    @Test
     void aMethodThePathDoesNotHaveIsAMethodNotAllowedProblemThatKeepsTheAllowHeader() throws Exception {
         mvc.perform(post("/api/v1/packs"))
                 .andExpect(status().isMethodNotAllowed())
@@ -93,13 +76,18 @@ class ProblemResponsesTest {
     }
 
     @Test
-    void theContainerErrorPageWithoutAnErrorStatusAnswersWithAnInternalErrorRefusal() throws Exception {
+    void theContainerErrorPageForwardedANonErrorStatusAnswersWithAnInternalErrorRefusal() throws Exception {
         mvc.perform(get("/error").requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 200))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void aDirectRequestForTheContainerErrorPageIsAPathTheServiceDoesNotHave() throws Exception {
         mvc.perform(get("/error"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content().json("{\"title\":\"Not Found\",\"status\":404}", JsonCompareMode.STRICT));
     }
 
     @Test
