@@ -1,12 +1,14 @@
 package ai.speckitty.charter.service.bdd;
 
 import ai.speckitty.charter.read.ConsistentLoad;
+import ai.speckitty.charter.read.ServiceInfoQuery;
 import ai.speckitty.charter.service.CharterServiceApplication;
 import ai.speckitty.charter.service.CharterWiring;
 import ai.speckitty.charter.yaml.FileSystemCharterPackRepository;
 import ai.speckitty.charter.yaml.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -46,6 +48,14 @@ public class CucumberSpringConfiguration {
         @Primary
         ConsistentLoad driftingConsistentLoad(FileSystemCharterPackRepository packs, DriftingSources sources) {
             return new ConsistentLoad(packs, sources);
+        }
+
+        /** The production {@link ServiceInfoQuery} over the same seam, so a change armed for /info is seen by it. */
+        @Bean
+        @Primary
+        ServiceInfoQuery driftingServiceInfoQuery(
+                @Value("${charter.worktree-id}") String worktree, DriftingSources sources) {
+            return new ServiceInfoQuery(worktree, sources);
         }
 
         @Bean
