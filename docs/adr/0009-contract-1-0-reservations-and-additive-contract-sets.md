@@ -7,6 +7,7 @@ type: ADR
 kind: ADR
 related:
   - adr/0002-contract-source-of-record
+  - adr/0004-public-api-returns-generated-dtos
   - adr/0007-rest-hateoas-contract-of-record
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - architecture/contract-and-dtos

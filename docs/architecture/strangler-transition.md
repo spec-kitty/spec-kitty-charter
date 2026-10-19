@@ -53,7 +53,7 @@ stages 3 and 4 stay above as the shape of the original plan.
 
 ## The 4.x cutover
 
-The 4.x cutover is stage 4. It is done when:
+The 4.x cutover is stage 4, with stage 3 folded into it. It is done when:
 
 - every Charter Pack and offering read goes through this repository's API, called from
   core's seam;
