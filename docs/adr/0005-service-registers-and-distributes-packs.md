@@ -1,8 +1,8 @@
 ---
 title: "ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer"
-description: The service registers and distributes packs of every tier through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
+description: The service registers and distributes packs of every level through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: ADR
 kind: ADR
 related:
@@ -35,7 +35,7 @@ Decision Moments; the cited DM ids are the authoritative record of each choice.
 ## Context
 
 The charter offering service (this repository; ADR-0001) manages charter offerings, and a charter is built
-from **packs**. The service must not only resolve the **built-in** and **org** tiers — it must **store and
+from **packs**. The service must not only resolve the **built-in** and **org** levels — it must **store and
 distribute consumer-created and non-open (private) packs**. A pack **registration + distribution** capability
 is therefore a day-one requirement of the service, not an optional convenience.
 
@@ -61,7 +61,7 @@ client of that contract** — it does not re-implement resolution or vendor pack
    **purl-style locator `pkg:charter/<id>@<version>`** (a versioned package the service pulls from a
    registry; DM `01M578WH1TV7FYJFBNHX7BXN5F`). The `source` kind is a versionable discriminator; `bundled`
    is a resolve-time materialization outcome, not a registration input.
-2. **One canonical path for every tier** (DIRECTIVE_044). Built-in, org, consumer and private packs all
+2. **One canonical path for every pack** (DIRECTIVE_044). Built-in, org, consumer and private packs all
    register and resolve through this one API; the requester tier is **derived from the authenticated
    identity, never a client-set field** (DM `01M578W9FK24NNSFRYT7C5ZZZ1`; fail-closed trust, with authn/authz
    a separate downstream concern), and it selects behavior as a parameter, never a separate code path.

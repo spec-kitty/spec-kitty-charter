@@ -51,7 +51,7 @@ The design is grounded in three core ADRs and this repository's own records:
 - [Contract and DTOs](/architecture/contract-and-dtos/) — the OpenAPI contract, how the core and the
   service generate from it, and how it is versioned.
 - [Pack registration and distribution](/architecture/pack-registration-distribution/) — how the service
-  registers, stores, verifies and distributes packs of every tier: the layering, the four source kinds, the
+  registers, stores, verifies and distributes packs of every level: the layering, the four source kinds, the
   trust and lockfile model, the storage ports, and the API surface.
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.

@@ -2,7 +2,7 @@
 title: Logical model
 description: The logical model of the charter components — charter, Charter Packs, pack levels, artifact kinds, the DRG, activation and agent profiles.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
@@ -253,7 +253,7 @@ this mission type in this project".
   tool's project skill root. A non-built-in skill needs a `skill_namespace`.
 - A **glossary pack** contributes terms to the project's vocabulary.
 - An **asset** is a blob (script, document, image) described by a sidecar manifest.
-- A **template** is mission-tier content that resolves specially and has no descriptor file
+- A **template** is mission-type content that resolves specially and has no descriptor file
   pattern.
 
 ## Where to go next
