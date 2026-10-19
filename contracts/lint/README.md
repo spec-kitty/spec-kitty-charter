@@ -19,7 +19,8 @@ adapts to the charter through its integration seam.
 
 `contracts/build.gradle.kts` downloads vacuum and oasdiff at pinned versions, checks each archive's
 SHA-256 before extracting it (downloads time out after 30 s without a connection or 60 s without
-data), and runs six tasks:
+data), re-verifies the installed archive and executable against the pin on every build, also after
+a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs six tasks:
 
 | Task | What it checks |
 |---|---|
@@ -49,45 +50,33 @@ and `response-required-property-added` to `ERR`. The planted pairs
 the check fails a new response field against a baseline of the same major version: it ships in a
 new major version.
 
-Which release is the baseline is decided by the release gate, the Java class
-`contracts/src/main/java/ai/speckitty/charter/contracts/compat/ReleaseGate.java`, whose class
-Javadoc is the authority (DM 01M5986KJ7B18K7GQ25E47J989). A released contract is tagged
-`contract-charter-v<version>`, and its version is a `## <version>` heading of
-`../charter/CHANGELOG.md` without `-SNAPSHOT` (`## 1.2.0`, `## v1.2.0` and `## [1.2.0] - <date>`
-are all read). The gate:
-
-- **Version gate.** `info.version` of `../charter/openapi.yaml` must equal the top CHANGELOG
-  heading, `X.Y.Z-SNAPSHOT` or a release. A mismatch fails, naming both.
-- **Only tags merged into HEAD count** (`git tag --merged HEAD`). An older commit or a stale branch
-  does not see a later release and stays green. Every merged tag must be a release the CHANGELOG
-  records; an unrecorded one fails, because comparing against an older baseline would hide it.
-- **Pending release.** While the top heading is a release whose tag is not yet merged into HEAD
-  (the release pull request), the check compares against the previous release, or reports no
-  baseline when there is none, and says "pending release <version>". Once `main` is tagged, the
-  release is compared against its own tag.
-- **Same major only.** The baseline is the newest release with the major version of `info.version`;
-  its tag must be merged into HEAD, or the check fails rather than fall back to an older one. With
-  no such release there is no baseline and the check passes, saying so: `2.0.0-SNAPSHOT` with only
-  1.x releases is not compared.
-- **A major bump lists what breaks.** When the major version of `info.version` is above that of the
-  previous release, the top CHANGELOG section must contain a `### Breaking` subsection.
+Which release is the baseline is decided by the release gate, `ReleaseGate`
+([`ReleaseGate.java`](../src/main/java/ai/speckitty/charter/contracts/compat/ReleaseGate.java)), whose
+class Javadoc is the authority on the rules and their messages (DM 01M5986KJ7B18K7GQ25E47J989). In
+short: after checking the CHANGELOG against `info.version` and the git tags, it names the newest
+release of the same major version whose tag is merged into HEAD, and a release with no such tag yet
+is *pending* and is compared against the previous one. A released contract is tagged
+`contract-charter-v<version>`.
 
 A missing baseline is a stated fact, never an artifact of the checkout:
 
 - In a shallow clone the check fails: a released contract's tag may simply not have been fetched.
   CI checks out the full history and tags (`fetch-depth: 0`).
 - `-PcontractBaseline=none` skips the comparison on purpose (for a shallow clone you cannot deepen)
-  and says so; the version gate and the Breaking subsection still run, since they read no git
-  history. The build refuses it when the environment variable `CI` is `true`: CI must compare
-  against the released baseline.
+  and says so; the gates that read no git history still run. The build refuses it when the
+  environment variable `CI` is `true`: CI must compare against the released baseline.
 
-To release a contract version:
+### Releasing a contract version
+
+This is the one release procedure.
 
 1. In a pull request, set `info.version` of `../charter/openapi.yaml` to the release (`1.1.0`) and
    turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for a new major). The
-   check reports "pending release 1.1.0" and compares against the previous release.
+   check reports "pending release 1.1.0" while no tag for it is merged into HEAD, and compares
+   against the previous release.
 2. After the merge, tag `main` at the merge commit: `git tag contract-charter-v1.1.0 <merge commit>`
-   and push the tag. From then on the check compares against that tag.
+   and push the tag. From then on the check compares against that tag, and a commit after it under
+   the `## 1.1.0` heading is refused until step 3.
 3. Open the next version: a new top heading `## 1.2.0-SNAPSHOT` and `info.version: 1.2.0-SNAPSHOT`,
    together in one change.
 
@@ -115,22 +104,11 @@ a rule silently.
 ## Closed responses
 
 Every response schema is closed (`additionalProperties: false`), so a new response field is a
-deliberate contract change that the breaking-change check sees, never something a server can add
-unannounced. This convention is not a rule of `ruleset.yaml`: JSONPath cannot classify composed
-schemas (`allOf`/`anyOf`/`oneOf`, tuples, boolean schemas, constraint-only members) recursively, and
-five review rounds each found a new hole in the Spectral version (DM 01M584Q3NNK0B78H9NKHV7VJDK).
-
-It is a small Java checker in this project, `contracts/src/main/java/ai/speckitty/charter/contracts/closure/`,
-run by `checkClosedResponseObjects` over the bundle as part of `check`. The class Javadoc of
-`ClosureChecker` is the authority on what closed means; it classifies every response schema
-positively and recursively, response headers included, and fails closed on any keyword it does not
-understand, on any key of a path item, operation, response, header or media type it does not know
-(`GET:`, `responsez:`), on `webhooks` and `callbacks`, which the contract does not use, on malformed
-input, on a response media type with no schema, on a run that judges no response schema at all, and
-on any document that is not OpenAPI 3.1 in the OAS default JSON Schema dialect. Its cases, the
-shapes it must report and the shapes it must pass, are fixtures in
-`contracts/src/test/resources/closure/` with one test each (`ClosureCheckerTest`), and it also
-passes `fixtures/clean.yaml` of this ruleset.
+deliberate contract change that the breaking-change check sees. A Java checker, `ClosureChecker`
+(run by `checkClosedResponseObjects` over the bundle as part of `check`), enforces it, and its
+[class Javadoc](../src/main/java/ai/speckitty/charter/contracts/closure/ClosureChecker.java) is the
+authority on what closed means and what the checker refuses, with its cases as fixtures in
+`contracts/src/test/resources/closure/`.
 
 ## Adding or changing a rule
 
