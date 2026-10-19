@@ -119,6 +119,11 @@ public class CharterSteps {
         http.get(path);
     }
 
+    @When("I send {word} {string}")
+    public void send(String method, String path) throws Exception {
+        http.perform(method, path, Map.of(), null);
+    }
+
     @When("I POST {string}")
     public void post(String path) throws Exception {
         http.perform("POST", path, Map.of(), null);

@@ -17,6 +17,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `When I GET "<path>"` — a path below the `/api/v1` server prefix, with its query if it has
   one.
 - `When I GET "<path>" accepting "<media type>"` — the same, with that `Accept` header.
+- `When I send <method> "<path>"` — any method name, for an outline whose examples differ in the method as well as the
+  path (for example `GET` and `POST`).
 - `When I POST "<path>"` and `When I POST "<path>" with the body:` (a doc string) — the same, with POST.
 - `When I remember the response body`, then `Then the response body is the remembered one` or `... differs from the
   remembered one`; `When I remember the header "<name>"`, then `Then the response header "<name>" is the remembered
@@ -56,8 +58,9 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Then the response header "<name>" is the remembered "<field>"` — the header equals a field remembered earlier
   with `When I remember the field "<field>" of the response body`, for example the `/info` fingerprint a later
   read must report for unchanged inputs.
-- `Given a pack file changes while the next read is answered` — the next read that loads the offering sees a pack
-  file rewritten (a node added to the first graph shard) after it digested its inputs and before it loaded them.
+- `Given a pack file changes while the next read is answered` — the next read that digests the inputs (a read that
+  loads the offering, a refresh, or `/info`) sees a pack file rewritten (a node added to the first graph shard) after
+  its first digest and before its second.
   `Given a pack file is rewritten to invalid YAML while the next read is answered` — the same, with the shard
   rewritten to text that is not YAML and left so. `Given no pack file changes while the next read is answered` —
   the same seam, changing nothing: the negative control. The change is made to a real file on disk, once; the

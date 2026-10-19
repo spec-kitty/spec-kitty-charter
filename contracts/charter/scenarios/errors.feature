@@ -79,7 +79,7 @@ Feature: Failures outside the charter's refusals
     read digests again afterwards, sees the difference, and refuses: the answer and the
     fingerprint it would report might disagree. The same read, asked again, answers.
     Given a pack file changes while the next read is answered
-    When I GET "<path>"
+    When I send <method> "<path>"
     Then the response status is 500
     And the problem code is "stale_input"
     And the response body is:
@@ -87,13 +87,30 @@ Feature: Failures outside the charter's refusals
       {"title": "Stale input", "status": 500, "code": "stale_input", "detail": "The packs or the project configuration changed while the read was answered; read again."}
       """
     And the response has no "Charter-Source-Fingerprint" header
-    When I GET "<path>"
+    When I send <method> "<path>"
     Then the response status is 200
 
     Examples:
-      | path                                                  |
-      | /packs                                                |
-      | /mission-types/software-dev/actions/plan/context      |
+      | method | path                                                  |
+      | GET    | /packs                                                |
+      | GET    | /mission-types/software-dev/actions/plan/context      |
+      | POST   | /packs/refresh                                        |
+
+  Scenario: A service info whose inputs change while it is answered is refused with stale_input
+    /info digests twice and answers only the digest both reads agree on. A pack file rewritten between the two
+    digests, or one the second digest can no longer read, makes the answer stale. The same read, asked again,
+    answers. The detail is /info's own: it reads no offering.
+    Given a pack file changes while the next read is answered
+    When I GET "/info"
+    Then the response status is 500
+    And the problem code is "stale_input"
+    And the response body is:
+      """
+      {"title": "Stale input", "status": 500, "code": "stale_input", "detail": "The inputs changed while the service info was read; read it again."}
+      """
+    And the response has no "Charter-Source-Fingerprint" header
+    When I GET "/info"
+    Then the response status is 200
 
   Scenario Outline: A pack file rewritten while it is parsed is stale, not unreadable
     The shard becomes invalid YAML after the first digest and stays so: the load fails, the
@@ -101,18 +118,19 @@ Feature: Failures outside the charter's refusals
     not the pack's, so the read answers stale_input and not pack_unreadable. (A shard restored
     before the second digest goes unseen; the contract documents that window.)
     Given a pack file is rewritten to invalid YAML while the next read is answered
-    When I GET "<path>"
+    When I send <method> "<path>"
     Then the response status is 500
     And the problem code is "stale_input"
     And the response has no "Charter-Source-Fingerprint" header
-    When I GET "<path>"
+    When I send <method> "<path>"
     Then the response status is 500
     And the problem code is "pack_unreadable"
 
     Examples:
-      | path                                                  |
-      | /packs                                                |
-      | /mission-types/software-dev/actions/plan/context      |
+      | method | path                                                  |
+      | GET    | /packs                                                |
+      | GET    | /mission-types/software-dev/actions/plan/context      |
+      | POST   | /packs/refresh                                        |
 
   Scenario Outline: A read that watches for a change and sees none answers with the digest it verified
     The negative control of the stale_input scenarios: the same seam, armed to change nothing.

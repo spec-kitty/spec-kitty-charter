@@ -5,8 +5,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A test seam: the real pack sources, plus one change a scenario arms to happen on disk right after the next digest
- * and before the load that follows it. It lives in test sources only, and the production class that computes both
- * digests, {@code ConsistentLoad}, is the one under test.
+ * and before the load that follows it. It lives in test sources only, and the production classes that compute both
+ * digests, {@code ConsistentLoad} and {@code ServiceInfoQuery}, are the ones under test.
  *
  * <p>It tests detection, not comparison: nothing here reports a different digest. The armed change rewrites a real
  * pack file, so the load reads the new bytes and the second digest, computed by the real adapter, differs from the
