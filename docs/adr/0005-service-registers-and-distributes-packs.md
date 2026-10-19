@@ -120,8 +120,9 @@ client of that contract** — it does not re-implement resolution or vendor pack
 9. **Engine/compatibility is gated at resolve time** (DM `01M5781BVDQ4NTHSKA95Z60XPY`). A `requires_core`-style
    range lives on the **registration/source descriptor and the lockfile entry** — **not** in `pack.yaml`,
    whose `PackDescriptor` schema forbids extra fields. *(Amended 2026-10-19: the operator keeps
-   `requires_core` in `pack.yaml` as an optional PEP 440 range, as core and open-packs already use it; the
-   registration descriptor and the lockfile carry it too. See
+   `requires_core` in `pack.yaml` as an optional PEP 440 range — a defined field, not an extra one,
+   so the "forbids extra fields" rationale above no longer applies — as core and open-packs already
+   use it; the registration descriptor and the lockfile carry it too. See
    [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/).)* It is enforced at **resolve time** with a canonical
    refusal code sibling to `PACK_LEVEL_MISMATCH` (e.g. `PACK_ENGINE_INCOMPATIBLE`; the exact string is a
    contract-naming detail ratified with the contract), failing closed before any merge work.
