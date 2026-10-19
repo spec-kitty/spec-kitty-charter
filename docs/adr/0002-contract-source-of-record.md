@@ -1,8 +1,8 @@
 ---
 title: "ADR-0002: This repository is the source of record for the charter contract"
-description: The charter OpenAPI contract is authored in spec-kitty-charter under contracts/charter/, following core's contracts conventions, and the core ingests pinned releases of it.
+description: The charter OpenAPI contract is authored here under contracts/charter/, in the layout of core's contract module with its own checks; core ingests pinned releases.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: ADR
 kind: ADR
 related:
@@ -25,6 +25,23 @@ accepted the same day, records the change in its Amendment 2026-10-18. The first
 is settled by [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/):
 the Python charter stays in core as the oracle, and the contract is authored here anyway.
 
+### Amendment 2026-10-18
+
+Operator ruling, the same day (DM `01M57WH7P0QZWHKYGBA2R0MA3K`, which supersedes DM
+`01M57VVQG0E6CRAPEH597Q2VNY`; [open question 18](/plans/open-questions/)). The decision text
+below is kept as accepted; this amendment changes two of its points:
+
+- **Decision 4 is replaced.** The charter owns its contract checks: the `:contracts` project
+  runs a lint ruleset the charter authors in `contracts/lint/`, the bundle, a checker for
+  closed response objects and the breaking-change check, inside `./gradlew verifyAll`.
+  Core's contract tools do not run here, and no copy of them is kept. Where the charter's
+  conventions differ from core's, core adapts through its integration seam.
+- **Decision 1 is narrowed.** The module keeps the layout of core's contract module (split
+  files, plain relative `$ref`s, `_index.yaml` lists, the `/api/v1` server prefix, its own
+  `info.version` and `CHANGELOG.md`); it does not follow core's conventions "exactly". The
+  charter's own conventions are listed in
+  [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
+
 ## Context
 
 Core ADR `2026-10-03-1` places the charter's OpenAPI document at `contracts/charter/` in the
@@ -45,6 +62,7 @@ charter is different: its producer is moving here.
 1. The charter contract is authored here, in `contracts/charter/`, as a module that follows
    core's `contracts/README.md` conventions exactly (split files, plain relative `$ref`s,
    `_index.yaml` lists, `/api/v1` server prefix, its own `info.version` and `CHANGELOG.md`).
+   *Narrowed by Amendment 2026-10-18: the layout only.*
    "Charter contract" here means all five parts listed in
    [Contract and DTOs](/architecture/contract-and-dtos/), not only the OpenAPI document.
 2. Shared vocabulary (`Problem`, `PageInfo`, `PageCursor`) is reused from core's `_shared/`
@@ -54,6 +72,7 @@ charter is different: its producer is moving here.
    built-in pack content (core #3504, not built yet), and generates its Python DTOs from it.
 4. Core's contract tooling (layout, lint, breaking-change checks) runs here in CI against
    this module. Until it is packaged for reuse, this repository runs a pinned copy.
+   *Replaced by Amendment 2026-10-18: the charter owns its contract checks.*
 
 ## Consequences
 
@@ -65,7 +84,8 @@ charter is different: its producer is moving here.
 ### Negative
 
 - The core cannot change the charter contract in its own pull request; it raises a pin.
-- Core's contract tooling has to run in a second repository.
+- Core's contract tooling has to run in a second repository. *Superseded by Amendment
+  2026-10-18: core's tools do not run here; the charter maintains its own checks instead.*
 
 ### Risks
 
