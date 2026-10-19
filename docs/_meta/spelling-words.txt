@@ -174,3 +174,5 @@ unstarted
 doclint
 jqwik
 oasdiff
+# foundational-values and creed rulings (ADR-0014)
+ammerse
