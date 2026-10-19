@@ -34,7 +34,7 @@ DOC_SCRIPT_HINT = "use `uv run python -m scripts.docs.<x>`, not the bare path"
 _SHELL_OPERATORS = frozenset({"|", "||", "&&", ";", "&", ">", ">>", "<", "(", ")", "`"})
 _NAME_ONLY_FLAGS = frozenset({"-l", "--files-with-matches", "--name-only"})
 # GitHub's issue-closing keywords (close/closes/closed, fix/fixes/fixed, resolve/resolves/resolved).
-_ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#\d+", re.IGNORECASE)
+_ISSUE_LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#\d+", re.IGNORECASE)
 _BARE_DOC_SCRIPT = re.compile(r"(?<!\.)(?<![\w/])scripts/docs/[\w.]+\.py\b")
 _FENCE = re.compile(r"^\s*(```|~~~)")
 _PLACEHOLDER = re.compile(r"^<[^<>]+>")
