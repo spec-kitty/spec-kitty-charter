@@ -18,6 +18,10 @@ RETIRED = "cere" + "mony"
 
 DESC = "A description that is comfortably longer than fifty characters and shorter than the cap."
 
+# doc-kitty's own frontmatter stamp on a generator-owned glossary page; its presence (not the
+# docs/glossary/ path alone) is what grants the authored-only-rule exemptions.
+STAMP = {"by": "doc-kitty-glossary/0.4.0", "at": "2026-10-19T15:57:59Z", "content_hash": "sha256:deadbeef"}
+
 
 def page(title: str = "Page", body: str = "Text.\n", **meta: object) -> str:
     base = {
@@ -92,6 +96,37 @@ def test_frontmatter_reports_missing_key_short_description_and_dangling_audience
     assert any("nobody.md" in m for m in messages)
 
 
+def test_generated_glossary_exemption_requires_the_stamp(root: Path) -> None:
+    gloss = root / "docs/glossary"
+    gloss.mkdir()
+    over_cap = "x" * (cd.DESC_MAX + 20)
+    # A genuinely generated page (carries doc-kitty's `generated:` stamp) may omit the
+    # authored-only keys updated/type/audience and carry a description past the cap.
+    (gloss / "README.md").write_text(
+        page("Glossary", generated=STAMP, description=over_cap, updated=None, type=None, audience=None),
+        encoding="utf-8",
+    )
+    # A page misfiled under docs/glossary/ WITHOUT the stamp is authored and must still be
+    # held to every authored-only rule — the fail-closed tightening this guards.
+    (gloss / "sneaked.md").write_text(
+        page("Sneaked", description=over_cap, updated=None, type=None, audience=None),
+        encoding="utf-8",
+    )
+    # Even a stamped page is still held to the non-exempt required keys (e.g. doc_status).
+    (gloss / "nostatus.md").write_text(page("NoStatus", generated=STAMP, doc_status=None), encoding="utf-8")
+
+    by_path: dict[str, list[str]] = {}
+    for f in run("frontmatter", root):
+        by_path.setdefault(f.path, []).append(f.message)
+
+    assert "docs/glossary/README.md" not in by_path  # exempted: no findings at all
+    sneaked = " | ".join(by_path.get("docs/glossary/sneaked.md", []))
+    assert "missing required key `updated`" in sneaked
+    assert "missing required key `type`" in sneaked
+    assert "description is" in sneaked  # over-cap still caught for an authored page
+    assert any("doc_status" in m for m in by_path.get("docs/glossary/nostatus.md", []))
+
+
 def test_audience_accepts_profile_slug_form(root: Path) -> None:
     rewrite(root, "docs/guides/one.md", "audience: docs/context/audience/dev.md", "audience:\n- profile: dev\n  guidance_text: x")
     assert run("frontmatter", root) == []
@@ -162,7 +197,9 @@ def test_terms_flags_forbidden_terms_but_not_code_urls_or_allowlisted(root: Path
 
 def test_terms_skips_generated_glossary(root: Path) -> None:
     (root / "docs/glossary").mkdir()
-    (root / "docs/glossary/index.md").write_text(page("Glossary", "A feature of the core.\n"), encoding="utf-8")
+    (root / "docs/glossary/index.md").write_text(
+        page("Glossary", "A feature of the core.\n", generated=STAMP), encoding="utf-8"
+    )
     assert run("terms", root) == []
 
 
@@ -184,7 +221,9 @@ def test_links_broken_anchor_relative_md_and_self_github_link(root: Path) -> Non
         assert needle in messages
     assert "example.org" not in messages
     (root / "docs/glossary").mkdir()
-    (root / "docs/glossary/index.md").write_text(page("Glossary", "[ok](./index.md) [gone](./missing/)\n"), encoding="utf-8")
+    (root / "docs/glossary/index.md").write_text(
+        page("Glossary", "[ok](./index.md) [gone](./missing/)\n", generated=STAMP), encoding="utf-8"
+    )
     glossary = [f.message for f in run("links", root) if f.path == "docs/glossary/index.md"]
     assert glossary == ["`./missing/` does not exist"]  # generated pages are link-checked, in core's relative style
 
