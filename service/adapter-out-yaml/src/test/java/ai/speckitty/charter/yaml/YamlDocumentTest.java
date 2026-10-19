@@ -146,4 +146,39 @@ class YamlDocumentTest {
         String source = "a: plain\nb: 'it''s'\nc: |\n  one\n  two\nd: |-\n  three\ne: |+\n  four\n\nf: [x, 'y']\n";
         assertThat(YamlDocument.parse(source).mapScalars(v -> v).render()).isEqualTo(source);
     }
+
+    /** Values a quoted or block scalar cannot carry as written: a control, a noncharacter, a lone surrogate, a CR. */
+    static java.util.stream.Stream<String> valuesNeedingEscapes() {
+        return java.util.stream.Stream.of("x\u0001y", "x\ufffey", "\ud800", "x\ry");
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("valuesNeedingEscapes")
+    void aSingleQuotedScalarFallsBackToDoubleQuotesForAValueItCannotCarry(String value) {
+        String edited = YamlDocument.parse("a: 'x'\n").withScalar(1, value).render();
+        assertThat(edited).startsWith("a: \"");
+        assertThat(Yaml.load(edited)).isEqualTo(Map.of("a", value));
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("valuesNeedingEscapes")
+    void aSingleQuotedScalarInAFlowCollectionFallsBackToDoubleQuotesForAValueItCannotCarry(String value) {
+        String edited = YamlDocument.parse("a: [ 'x' ]\n").withScalar(1, value).render();
+        assertThat(Yaml.load(edited)).isEqualTo(Map.of("a", java.util.List.of(value)));
+    }
+
+    @Test
+    void aLiteralBlockFallsBackToDoubleQuotesForAValueWithAControlCharacter() {
+        String value = "x\u0001y\n";
+        String edited = YamlDocument.parse("a: |\n  one\n").withScalar(1, value).render();
+        assertThat(edited).startsWith("a: \"");
+        assertThat(Yaml.load(edited)).isEqualTo(Map.of("a", value));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {":a", ":", "- a", "? a", "a: b", "a #b"})
+    void aPlainScalarInAFlowCollectionIsQuotedWhenFlowParsingReadsItDifferently(String value) {
+        String edited = YamlDocument.parse("[x, y]\n").withScalar(1, value).render();
+        assertThat(Yaml.load(edited)).isEqualTo(java.util.List.of("x", value));
+    }
 }
