@@ -2,7 +2,7 @@
 title: Why the charter leaves the CLI
 description: Why the charter leaves the core CLI for its own repository, and why its new implementation is a Java service built against an OpenAPI contract.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-19
 type: Context
 kind: Explanation
 related:
@@ -38,12 +38,13 @@ As long as that holds:
 - no other implementation can replace the Python one, because callers do not go through a
   single surface.
 
-Core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (Accepted) decides that the charter becomes an external contract
+Core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) decided that the charter becomes an external contract
 package (core's term for a package consumed only through its public surface) in its own
-repository, like `spec-kitty-events` and `spec-kitty-tracker`. Its
-precondition, moving those imports onto `charter.offering.api`, is part of the 4.0.0 GA
-gate. It was tracked as spec-kitty#645, which was closed as not planned on 2026-10-13; the
-import move and the extraction mechanics are now carried by epic spec-kitty#6099.
+repository, like `spec-kitty-events` and `spec-kitty-tracker`. Core marked it superseded on
+2026-10-19 by [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) and
+[ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/): the Java service replaces the Python
+charter in place, and nothing Python moves here. Its precondition, moving those imports onto
+`charter.offering.api`, is done (spec-kitty#6188, epic spec-kitty#6099).
 
 ## Every read starts from nothing
 
