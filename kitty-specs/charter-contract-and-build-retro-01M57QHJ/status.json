@@ -1,0 +1,106 @@
+{
+  "event_count": 85,
+  "last_event_id": "01M596YQQ0D4RMC3TFN3FW4JKW",
+  "materialized_at": "2026-10-19T04:33:12.929029+00:00",
+  "mission_number": "",
+  "mission_slug": "charter-contract-and-build-retro-01M57QHJ",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 6,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M596YBZN91Z7NA700Q1G3D4H",
+      "last_transition_at": "2026-10-19T04:33:00.917788+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/charter-contract-and-build-retro-01M57QHJ-coord/kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP01-contract-scenarios-first/review-cycle-7.md",
+        "reference": "review-cycle://charter-contract-and-build-retro-01M57QHJ/WP01-contract-scenarios-first/review-cycle-7.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 7118,
+      "shell_pid_created_at": "1792350340.19"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M596YEV5SXWKZ53JY2HVQDDQ",
+      "last_transition_at": "2026-10-19T04:33:03.845506+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/charter-contract-and-build-retro-01M57QHJ-coord/kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP02-quality-gates/review-cycle-2.md",
+        "reference": "review-cycle://charter-contract-and-build-retro-01M57QHJ/WP02-quality-gates/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 3502,
+      "shell_pid_created_at": "1792354444.95"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M596YHX768610XQ7J70FF8HA",
+      "last_transition_at": "2026-10-19T04:33:06.983530+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/charter-contract-and-build-retro-01M57QHJ-coord/kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP03-javadoc-site/review-cycle-3.md",
+        "reference": "review-cycle://charter-contract-and-build-retro-01M57QHJ/WP03-javadoc-site/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 18937,
+      "shell_pid_created_at": "1792357065.37"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M596YMRPSSNMAHVN7PMVGYTR",
+      "last_transition_at": "2026-10-19T04:33:09.910530+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/charter-contract-and-build-retro-01M57QHJ-coord/kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP04-ci-workflows/review-cycle-1.md",
+        "reference": "review-cycle://charter-contract-and-build-retro-01M57QHJ/WP04-ci-workflows/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 20209,
+      "shell_pid_created_at": "1792357258.01"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M596YQQ0D4RMC3TFN3FW4JKW",
+      "last_transition_at": "2026-10-19T04:33:12.929029+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/charter-contract-and-build-retro-01M57QHJ-coord/kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP05-docs-and-records/review-cycle-2.md",
+        "reference": "review-cycle://charter-contract-and-build-retro-01M57QHJ/WP05-docs-and-records/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 29751,
+      "shell_pid_created_at": "1792359282.52"
+    }
+  }
+}

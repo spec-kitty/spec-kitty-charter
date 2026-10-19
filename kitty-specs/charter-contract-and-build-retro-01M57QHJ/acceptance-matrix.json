@@ -1,0 +1,159 @@
+{
+  "mission_slug": "charter-contract-and-build-retro-01M57QHJ",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pending",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:195): the three 2026-10-18 decisions and what landed are recorded in this mission; baseline counts (2 operations, 8 scenarios, 548 tests, 520 round-trip checks) asserted from a fresh build, not copied. Records: spec.md:29-49 (decisions ADR-0002, ADR-0008, core ADR 2026-10-03-1 + Amendment; what landed); docs/changelog/2026-10-18-contract-gradle-build-and-decisions.md:21-42; docs/plans/open-questions.md rows 1-3 (:26-28). Fresh build by qa-reporter-rhea at report time on baseline 223d093 (git archive; verifyAll --rerun-tasks --no-build-cache; open-packs 7f063ae; JDK 25): BUILD SUCCESSFUL, 24/24 tasks executed, 548 JUnit testcases = 520 openPacksRoundTrip + 7 adapter-out-yaml + 8 charter-domain + 2 charter-read-app + 11 charter-service, 0 skipped, 0 failed (log /tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/base.log). 223d093:contracts/charter/openapi.yaml has 2 paths (/packs, /mission-types/{missionType}/actions/{action}/context); scenarios 3 (action_context.feature) + 5 (packs.feature) = 8. The only prior source of 548 was commit message 223d093 (pre-mission), now re-derived.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:48:57.219089+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:196): the adversarial squad assesses each of the three unreviewed calls against the Python oracle and the contract; three named assessments must exist. Evidence: research.md section 7 (:117-142) assesses each call by name against core source (PACK_LEVEL_MISSING: org_pack_loader.py:537-555, pack_validator.py:706/786-788, pack_descriptor.py:145-147; action-context: drg/query.py:184-243, activation/context.py:315-325; scenarios/: terminology.yaml:10-14); research.md section 10 (:176-244) squad cast architect-alphonso, reviewer-renata, paula-patterns, lexical-larry, with findings S1-S9 (call 1), A1-A8 (call 2), D1-D6 (call 3), each with a disposition. Decision Moments 01M57QNBN9YPHR5VXERQSMQ30N (squad then operator), 01M57SQ2MG0NPCR7YWSTQPMW63, 01M57SQ5X988XG4FHYFDS8RAA3, 01M57SQ9E314HBP2F449ZVG8AQ (resolved).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:17.282296+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:197): each ruling (ratify, amend or revert) is recorded with its date, and any amendment is carried through scenario, contract changelog and service. Rulings: DM 01M57SQ2MG0NPCR7YWSTQPMW63 (ratified), 01M57SQ5X988XG4FHYFDS8RAA3 (amended), 01M57SQ9E314HBP2F449ZVG8AQ (ratified and amended); research.md:200-210; docs/plans/open-questions.md rows 13-15 (:38-40), each 'Decided 2026-10-18'. Amendments carried through (lane-e 824564d): scenarios contracts/charter/scenarios/action_context.feature:1 (@contract @provisional), :81 (renamed, sorted by URN), :99 (DIRECTIVE_042), :137, :167 (retitled), :179 (load error 500); packs.feature:1 (@contract); contract changelog contracts/charter/CHANGELOG.md:15-67 (Added/Changed/Provisional); contract paths/mission-types_missionType_actions_action_context.yaml:18 and schemas/PackSummary.yaml:63 x-provisional; service: ActionContextQuery.java:70 (sort by URN), charter-service/build.gradle.kts:26 include(\"scenarios/**\"), CharterContractSuite @IncludeTags(\"contract\"). Call 1 ratified as is, so there is no behavior change (C-001). Scenarios green in the verifyAll run (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/accept-verify.log).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:23.479492+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:198): the charter's own contract checks (a charter-authored lint ruleset run by a pinned vacuum, a bundle, a breaking-change check against the charter's own released versions) run in the build and pass, producing a 1.0.0-SNAPSHOT bundle; every lint rule has a planted fixture that must fail it. Evidence (lane-e 824564d): contracts/lint/ruleset.yaml (11 rules, :21-184); contracts/lint/fixtures/ (12 planted + clean.yaml); contracts/build.gradle.kts:40-65 (vacuum 0.30.6 and oasdiff 1.32.1 pinned by URL and SHA-256 per platform), :118-120 (checksum mismatch fails, nothing extracted). verifyAll dry-run lists :contracts:lintContract, lintFixtures, bundleContract, checkClosedResponseObjects, checkContractCompatibility under :contracts:check. verifyAll log: 'passes all 11 lint rules'; 'Each of 11 rules fails its 12 planted fixtures, and only them; the clean fixture passes'; 'All 7 response schemas are closed'; compatibilityFixtures 'fails each of 2 breaking cases and passes 1 compatible'; bundle sha256 16d32d0c...ed9f. Bundle build/contracts/contract/charter-openapi.yaml info.version 1.0.0-SNAPSHOT. The accept run skipped checkContractCompatibility (-PcontractBaseline=none, shallow clone), so qa-reporter-rhea re-ran it on a non-shallow, tagless copy of lane-e HEAD: 'No released baseline: CHANGELOG.md records no released version and the full clone has no contract-charter-v* tag', which passes (the edge case in spec.md, Edge Cases) (log /tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/compat.log). CI keeps the bundle as artifact contract-bundle (.github/workflows/service.yml:101-108); the CI upload itself is shown with FR-005.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:29.806873+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:199): the service workflow runs green on Java 25 on the mission head; a CI run id on the head commit is required. Not yet verifiable: no CI run exists. It is verified on the pull request's first CI run at closeout (.github/workflows/service.yml job verify: ubuntu-24.04, Temurin 25 at :69-73, fetch-depth 0 at :60, ./gradlew verifyAll at :79), and the run id on the head commit must be recorded then. Local evidence only, which does not satisfy this FR: verifyAll on lane-e 824564d, JDK 25, BUILD SUCCESSFUL, 644 tests (571 service + 73 contracts), 0 skipped, 0 failed (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/accept-verify.log; counts re-derived from the JUnit XML).",
+      "pass_fail": "pending",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:35.769994+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:200): Checkstyle and a palantir-java-format check run on hand-written sources in the full verification and fail it on violation; paired with a planted violation that must fail. Evidence (lane-e 824564d): build-logic/src/main/kotlin/charter.hand-written.gradle.kts:33-48 (spotless palantir on src/main+src/test; checkstyle maxWarnings=0 maxErrors=0), applied to all 5 hand-written service modules and :contracts, not to charter-api (C-005). The verifyAll dry-run includes checkstyleMain/checkstyleTest/spotlessCheck for every hand-written module. Planted by qa-reporter-rhea in a scratch copy of HEAD: CheckstyleProbe.java (import java.util.*) made :charter-read-app:checkstyleMain FAIL, naming 'CheckstyleProbe.java:3:17 ... [AvoidStarImport]' (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/plant-CheckstyleProbe.log); unformatted FmtProbe.java made :charter-read-app:spotlessCheck FAIL, naming the file (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/plant-FmtProbe.log); :charter-read-app:check was green before and after the probes.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:42.356463+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:201): Error Prone and NullAway with JSpecify annotations run on hand-written sources at compile time and fail it on an error; paired with a planted null dereference that must fail. Evidence (lane-e 824564d): charter.hand-written.gradle.kts:25-28 (-Xlint:all -Werror), :53-72 (errorprone-core + nullaway, NullAway ERROR, OnlyNullMarked, JSpecifyMode on compileJava; disabled on tests per DM 01M57SQPWVJ82WND5C37M7XTE1); @NullMarked package-info in each hand-written package (e.g. service/charter-read-app/.../read/package-info.java:2). Planted by qa-reporter-rhea: NullProbe.java (s.length() on @Nullable s) made :charter-read-app:compileJava FAIL with 'NullProbe.java:10: error: [NullAway] dereferenced expression s is @Nullable' (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/plant-NullProbe.log); NullAway runs as an Error Prone check, so the failure also shows Error Prone active in compileJava.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:48.310179+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:202): JaCoCo coverage reported per module and aggregated in the full verification; the report must list each hand-written module. Evidence (lane-e 824564d): charter.hand-written.gradle.kts:87-102 (jacocoTestReport XML+HTML, wired into check); service/charter-reports/build.gradle.kts:27-33 (serviceModules maps each of the 5 hand-written modules to its package; a guard at :45-49 fails the build if the list drifts) and testCodeCoverageReport in check (:175-176). After the accept verifyAll: per-module reports at service/{adapter-in-rest,adapter-out-yaml,charter-domain,charter-read-app,charter-service}/build/reports/jacoco/test/html/index.html and build/contracts/reports/jacoco/test; the aggregate service/charter-reports/build/reports/jacoco/testCodeCoverageReport/html/index.html lists ai.speckitty.charter.{domain,read,yaml,rest,service}, one package per module. CI uploads it as artifact coverage (service.yml:91-97).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:50:54.198714+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:203): PIT on the domain and read-application modules as its own task, run by a nightly workflow and never on pull requests, with a reported score; the nightly report must list killed and surviving mutants, and the pull-request workflow must not invoke the task. Met so far (lane-e 824564d): charter.domain-conventions.gradle.kts:6,18-27 (pitest on charter-domain and charter-read-app, outside check); the verifyAll dry-run graph has no pitest task; .github/workflows/mutation-nightly.yml:9-13 (schedule cron '43 2 * * *' + workflow_dispatch, no pull_request), :42 ./gradlew pitest, :46-51 report upload; pitest appears in no other workflow. A local run by qa-reporter-rhea (--rerun --no-build-cache) wrote mutations.xml for charter-domain (42 KILLED, 3 SURVIVED, 26 NO_COVERAGE) and charter-read-app (8 KILLED, 100% strength) (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/pit.log). Gap: no nightly run has fired yet; the workflow runs from the default branch only after merge. Record pass on the first nightly run's report artifact.",
+      "pass_fail": "pending",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:00.153021+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:204): Mockito on the test classpath through the version catalog and dependency verification, checked by one test that uses it. Evidence (lane-e 824564d): gradle/libs.versions.toml:24,49-50 (mockito 5.24.0, mockito-core, mockito-junit-jupiter); gradle/verification-metadata.xml:3020-3022, :3036-3038 (SHA-256 for both 5.24.0 jars; verify-metadata true at :4); charter.hand-written.gradle.kts:104-119 (testImplementation plus the Java agent); service/charter-read-app/src/test/java/ai/speckitty/charter/read/PackListingQueryTest.java:28-29,41,90,102 (@Mock, MockitoExtension, verify(packs).load()). Its testcases passed in the accept verifyAll (JUnit XML).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:06.014456+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Criterion (spec.md:205): Javadoc built for every hand-written module with doclint on and warnings failing the build; paired with a planted malformed comment that must fail. Evidence (lane-e 824564d): charter.hand-written.gradle.kts:74-85,100-102 (javadoc with -Xdoclint:all -Werror, part of check); service/charter-reports/build.gradle.kts:136-143 (aggregateJavadoc with the same flags). The verifyAll dry-run includes :javadoc for adapter-in-rest, adapter-out-yaml, charter-domain, charter-read-app, charter-service and contracts, plus :charter-reports:aggregateJavadoc. Planted by qa-reporter-rhea: DocProbe.java with '<blink>' in a public method comment; compileJava passed, then :charter-read-app:javadoc FAILED with 'DocProbe.java:8: error: unknown tag: blink' (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/qa-rhea/plant-DocProbe.log).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:11.850625+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:206): the Javadoc is packaged by the main build workflow and published inside the docsite as a dedicated set of pages reached from the sidebar, styled like the docsite; the built site must contain the pages and the sidebar entry. Present by inspection (lane-e 824564d): service.yml:81-87 (javadoc artifact); docs-site.yml:52-60 (calls service.yml), :86-92 (download into site/public/javadoc), :102-104 (build + check:built-links), :112-124 (Pages deploy on main only); docs/api/javadoc.md:18-47 (page in the api section, docs/_meta/sections.yaml:38); charter-reports stageJavadocForSite (:168-173), --add-stylesheet docsite override and back link (:144-148); the aggregated Javadoc service/charter-reports/build/docs/javadoc/index.html groups all 5 modules. Gap: no built site has been produced or checked. The pinned @spec-kitty/doc-toolkit 0.2.0 needs an authenticated GitHub Packages install, and the WP03 review verified the page, staging and link check, not a built dist. It is verified on the PR's docs-site build job (dist holds /javadoc/ + the API sidebar entry, check:built-links green) and published on the first main run.",
+      "pass_fail": "pending",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:17.909257+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:207): the decision that contract scenarios stay beside the contract, and that #43's suites join them when bound, is recorded in the open questions; a dated row must exist. Evidence (lane-e 824564d): docs/plans/open-questions.md:41 (row 16, 'Decided 2026-10-18', all three scenario homes: contracts/charter/scenarios/ binds now; #43 src/test/resources/features/ moves to contracts/charter/scenarios/<cluster>/ when bound; tests/scenarios/charter/ binds with #31) and :40 (row 15, the scenarios/ name); docs/architecture/behavior-and-scenarios.md#where-they-live; DM 01M57QPDJYFCGD1SDR31C3X0R1 and 01M57SQ9E314HBP2F449ZVG8AQ.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:23.667814+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:208): the vendored-pack defects are logged with an owner (qa pack has no pack.yaml; internal pack requires glossary id spk-internal-glossary while the file stem is spk-internal); each defect needs a named owner. Evidence (lane-e 824564d): docs/plans/open-questions.md:42 (row 17) names the owners: spec-kitty-open-packs fixes both upstream (#47), then this repository re-vendors qa under charter #36 and the internal pack under #37. GitHub API at report time: spec-kitty/spec-kitty-open-packs#47 open, body item (a) 'packs/qa has no pack.yaml' and item (b) 'Internal glossary pack: required id and file stem disagree' (org-charter.yaml:15-16 vs spk-internal.glossary-pack.yaml); spec-kitty-charter#36 (open, item 1 qa pack.yaml) and #37 (open, home spec-kitty-internal upstream). issue-matrix rows #36/#37/#47: deferred-with-followup. No issue has a person assigned: the owner is the named repository and issue.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:29.429749+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "manual_qa",
+      "evidence": "Criterion (spec.md:209): the roadmap marks steps 1-2 done, the open questions are updated, and a changelog entry is written when this mission is accepted; steps 1-2 read done only after FR-004 and FR-005 pass. Met (lane-e 824564d): open questions updated (docs/plans/open-questions.md rows 13-20, :38-45); changelog entry docs/changelog/2026-10-18-retroactive-contract-and-build-mission.md:19-59. Correctly not yet done: docs/plans/roadmap.md:45 and :53 read 'Step 1/Step 2, done pending the first CI run on the pull request' (:59 'that run has not happened yet'), which is the state the FR requires while FR-005 is pending. Remaining: once FR-005 passes at closeout, mark steps 1-2 done in roadmap.md (and drop the 'pending the first CI run' wording in the changelog entry :45-46), then record pass.",
+      "pass_fail": "pending",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-10-18T21:51:35.565472+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
