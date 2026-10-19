@@ -66,6 +66,13 @@ rules:
     check: check_docs.py links
     ci: Docs checks / Links and anchors
     severity: error
+  - id: site-generated-routes
+    rule: "A root-absolute link may point under a route the site build generates instead of a page or file in docs/: the prefixes listed here. The links check accepts such a link without a source file; the built-links check resolves it in the built site. Today: the Javadoc, staged into site/public/javadoc (docs/api/javadoc.md)."
+    check: check_docs.py links (reads `prefixes` below)
+    ci: Docs checks / Links and anchors
+    severity: error
+    prefixes:
+      - /javadoc/
   - id: built-links
     rule: Every link in the built site resolves under the base path.
     check: npm run check:built-links

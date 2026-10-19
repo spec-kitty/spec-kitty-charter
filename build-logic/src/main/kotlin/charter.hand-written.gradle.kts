@@ -1,6 +1,9 @@
 // Every hand-written Java module: the quality gates. Applied beside a base plugin (`charter.java-base` or one
 // built on it) in each hand-written module, and never in charter-api, whose sources are generated (spec C-005).
-// Aggregations select projects by `plugins.hasPlugin("charter.hand-written")`, never by a module list.
+// Not every project with this plugin is part of the service: :contracts applies it too (the contract's own
+// Java checker). So the service aggregations (the Javadoc site and the coverage report in service/charter-reports)
+// declare their module set by name, in `serviceModules` there. A new hand-written module under service/ must be
+// added to that list; the charter-reports build fails, naming it, until it is.
 //
 // The one register of exceptions to these gates is config/checkstyle/suppressions.xml (rule, file, reason,
 // sunset); no gate is relaxed anywhere else.
@@ -14,6 +17,10 @@ plugins {
     id("com.diffplug.spotless")
     id("net.ltgt.errorprone")
 }
+
+// The main sources as an outgoing variant (Category=DOCUMENTATION, DocsType=SOURCES), which the aggregated
+// Javadoc in service/charter-reports resolves instead of reaching into this project's source sets.
+java { withSourcesJar() }
 
 tasks.withType<JavaCompile>().configureEach {
     // Every javac lint category, and warnings are errors.

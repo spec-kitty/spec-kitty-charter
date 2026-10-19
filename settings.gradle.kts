@@ -24,6 +24,8 @@ listOf(
     "adapter-in-rest",
     "adapter-out-yaml",
     "charter-service",
+    // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
+    "charter-reports",
 ).forEach { name ->
     include(name)
     project(":$name").projectDir = file("service/$name")

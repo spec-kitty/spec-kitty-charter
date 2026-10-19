@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .astro/
+# Staged by ./gradlew :charter-reports:stageJavadocForSite (and in CI); built, never committed.
+public/javadoc/
