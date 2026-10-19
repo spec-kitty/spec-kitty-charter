@@ -15,12 +15,12 @@ get:
     action that is not a node of the graph answers 404 action_not_found, where core falls back to
     its non-bootstrap context, and a scope target the graph does not declare is listed with a null
     label, where core skips the artifact. The registered divergences are in
-    docs/api/divergence-register.md.
+    docs/conformance/divergence-register.md.
   tags:
     - Context
   x-provisional:
     open_decision: >-
-      the registered divergences from core (docs/api/divergence-register.md) are decided by the
+      the registered divergences from core (docs/conformance/divergence-register.md) are decided by the
       conformance corpus (issue #9), including the 404 for an action that is not a graph node and
       the entry for a scope target the graph does not declare
   parameters:

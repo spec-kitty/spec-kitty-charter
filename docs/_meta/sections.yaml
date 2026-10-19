@@ -41,6 +41,12 @@ sections:
     type: API
     purpose: The public API of the extracted charter — the service contract with its two built reads, the Javadoc, and the designed Python package surface.
 
+  - id: conformance
+    label: Conformance
+    order: 55
+    type: API
+    purpose: Where the charter service answers differently from core on purpose, in one divergence register.
+
   - id: guides
     label: Guides
     order: 90

@@ -85,7 +85,7 @@ each artifact listed once by the first step that reaches it:
 2. `requires` from the scoped artifacts, transitively;
 3. `suggests` from the scoped artifacts, up to `depth` hops;
 4. `requires` of the suggested artifacts, transitively (the one registered difference in the
-   walk, DIV-010);
+   walk, DIV-110);
 5. `vocabulary`, one hop from everything the first four steps list.
 
 Each entry says which relation listed it (`relation`), its parent (`via`) and its distance from
@@ -94,7 +94,7 @@ counts suggests hops only; `hops` is the full path length. The mission-type node
 What applies in one project (activation, exclusions, selection roots) is a later operation, R9
 (#103). The rules and the reasons are in
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/); the differences from core are
-in the [divergence register](/api/divergence-register/).
+in the [divergence register](/conformance/divergence-register/).
 
 ## Writes
 

@@ -147,5 +147,5 @@ core code that only this repository uses.
 6. The corpus covers the reads "at depths 0, 1 and 2", not "at both depths": `depth` counts
 `suggests` hops, and the seam maps a first load to 2, a recorded load to 1 and the public bundle
 read to 0. The register that decision 4 describes now exists as the
-[divergence register](/api/divergence-register/), with stable ids; its machine-readable format
+[divergence register](/conformance/divergence-register/), with stable ids; its machine-readable format
 stays with #72. The original decision text above is unchanged.

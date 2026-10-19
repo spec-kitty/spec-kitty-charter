@@ -9,7 +9,7 @@ related:
   - architecture/contract-and-dtos
   - adr/0002-contract-source-of-record
   - adr/0018-action-context-read-and-seam-access-surface
-  - api/divergence-register
+  - conformance/divergence-register
   - api/compatibility
 audience:
   - profile: contract-consumer
@@ -69,7 +69,7 @@ answers. The contract files are the authority; this section only summarizes them
   public bundle read to 0.
 - **Why.** A 1.0 answer must never change meaning without the client opting in, and core's code is
   evidence of intent, not a specification. The differences from core are in the
-  [divergence register](/api/divergence-register/).
+  [divergence register](/conformance/divergence-register/).
 
 ### Known tooling gap
 

@@ -80,7 +80,7 @@ The action-scoped context is the offering's walk, decided in
 `x-provisional`: scope from the action node, `requires`, `suggests` up to `depth`, the `requires`
 of the suggested artifacts and `vocabulary`, each artifact once, sorted by URN, without activation
 filtering. The corpus ([#9](https://github.com/spec-kitty/spec-kitty-charter/issues/9)) decides
-the registered divergences ([divergence register](/api/divergence-register/)). What applies in one
+the registered divergences ([divergence register](/conformance/divergence-register/)). What applies in one
 project is the effective-context operation of the activation contract set (R9,
 [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), and **R9 gates cutover
 stage 3**: the seam does not switch its context read to the service before it exists

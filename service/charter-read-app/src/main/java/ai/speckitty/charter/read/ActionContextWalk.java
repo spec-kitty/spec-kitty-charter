@@ -22,7 +22,7 @@ import java.util.TreeMap;
  * walk: it keeps the entries listed so far, in the order the steps listed them.
  *
  * <p>Only the scoped artifacts seed {@code suggests}, as in core; the {@code requires} of the suggested artifacts
- * are listed too, an intentional difference from core's code (DIV-010).
+ * are listed too, an intentional difference from core's code (DIV-110).
  *
  * <p>Every step is a breadth-first, multi-source, cycle-safe walk over the edges of one relation. A node a step
  * reaches by a shorter path is expanded from that path, so a depth cap never hides a child a shorter path reaches.
@@ -58,7 +58,7 @@ final class ActionContextWalk {
             // Step 3 matches core's intent: suggests is walked "from scoped artifacts" (offering/drg/query.py:196-197),
             // so a required artifact is no seed. It is still walked through when a suggests path reaches it.
             List<Urn> suggested = step(scoped, Relation.SUGGESTS, depth);
-            // Step 4 is DIV-010, an intentional difference from core's code (query.py:226), which lists a suggested
+            // Step 4 is DIV-110, an intentional difference from core's code (query.py:226), which lists a suggested
             // artifact without its hard dependencies; core's own docstring calls requires "hard dependencies"
             // (query.py:194-195).
             step(suggested, Relation.REQUIRES, UNBOUNDED);

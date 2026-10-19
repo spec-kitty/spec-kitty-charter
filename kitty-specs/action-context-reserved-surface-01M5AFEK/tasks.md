@@ -42,7 +42,7 @@ Subtasks are reference rows. Record completion with
 | T020 | Steps send the token; suite configures one; production wiring test | WP04 | |
 | T021 | Refresh: red scenarios, `paths/refresh.yaml`, `RefreshController`, POST in steps and conformance | WP04 | |
 | T022 | ADR-0018; ADR-0009, ADR-0011, ADR-0016 amendments; ADR index | WP05 | |
-| T023 | `docs/api/service-contract.md` and the new `docs/api/divergence-register.md` | WP05 | |
+| T023 | `docs/api/service-contract.md` and the new `docs/conformance/divergence-register.md` | WP05 | |
 | T024 | Architecture and plan pages brought into line (resolution model, service lifecycle, contract and DTOs, open questions, roadmap) | WP05 | |
 | T025 | Contract `CHANGELOG.md` under `1.0.0-SNAPSHOT`, with the Provisional section moved to the register | WP05 | |
 | T026 | Docs checks clean | WP05 | |
