@@ -41,6 +41,5 @@ __pycache__/
 # Gradle
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 .open-packs/

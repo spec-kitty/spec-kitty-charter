@@ -8,7 +8,6 @@ assertj = "3.27.7"
 archunit = "1.5.1"
 cucumber = "8.0.4"
 snakeyaml-engine = "3.2"
-swagger-annotations = "2.2.55"
 # Quality gates (operator-vetted 2026-10-18; research.md section 10). jqwik is excluded (C-008).
 spotless = "8.10.3"
 palantir-java-format = "2.101.0"
@@ -26,7 +25,6 @@ mockito = "5.24.0"
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
-spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-webmvc-test = { module = "org.springframework.boot:spring-boot-webmvc-test" }
 spring-web = { module = "org.springframework:spring-web" }
@@ -34,7 +32,6 @@ spring-context = { module = "org.springframework:spring-context" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api" }
 jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api" }
-swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger-annotations" }
 snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
