@@ -32,14 +32,17 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 
 | Milestone | Done when |
 |---|---|
-| **4.x cutover** | The charter read side cuts over to this repository for the 4.x line. The contract is released, and core vendors it. Core's seam returns DTOs generated from the contract. The Java read shadow passes the conformance corpus, and every divergence is explained. This is [strangler stage 2](/architecture/strangler-transition/), and the milestone closes with epic #6. |
-| **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: Java authoritative reads (stage 3) and write migration, new charter capabilities, and quality follow-ups that block nothing. |
+| **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. |
+| **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
 
-The cutover milestone stops at the read shadow because the tracker stops there: epic #6
-ends at step 7, and the strangler stages take over after it. Stage 1 is the import move of
-core ADR `2026-10-12-2` (D-2), carried by epic spec-kitty#6099. It gates 4.0.0 GA. It is core
-work, so it is not tracked here, but #13 and #14 cannot close without it.
+The operator set this definition on 2026-10-19. The cutover therefore runs through three
+strangler stages: the read shadow (stage 2, epic #6), Java authoritative reads (stage 3) and
+the retirement of the Python reads (stage 4). Stage 4 is the
+[point of no return](/architecture/strangler-transition/#stepping-back). Stage 1 is the
+import move of core ADR `2026-10-12-2` (D-2), carried by epic spec-kitty#6099. It gates 4.0.0
+GA. It is core work, so it is not tracked here, but nothing in this milestone can answer a
+production read without it.
 
 ## Proposed distribution
 
@@ -49,13 +52,13 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 
 | Issue | Title | Why it is here |
 |---|---|---|
-| #6 | Epic: Java charter service built against an OpenAPI contract | Its closing step is the milestone's exit |
+| #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
 | #7, #8 | Contract setup; Gradle build | Roadmap steps 1 and 2. Delivered by PR #54, which is still open; both close when it merges |
 | #9 | Conformance corpus, first slice | Roadmap step 3; the shadow is judged against it |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
 | #12 | Decide how the Python charter reaches this repository | Gates #13 ([open question 2](/plans/open-questions/)) |
 | #13 | Core ingests the contract | Roadmap step 6 |
-| #14 | Read shadow | Roadmap step 7; the exit criterion |
+| #14 | Read shadow | Roadmap step 7; stage 2, which stages 3 and 4 build on |
 | #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor |
 | #46 | `x-stability-level` for provisional operations | The release gate must not report a change to a provisional operation as breaking |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
@@ -68,6 +71,22 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 | #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #53 | Docs cite spec-kitty#645 instead of epic #6099 | A small factual fix to the pages this milestone depends on |
+
+#### Not yet tracked
+
+The cutover needs these issues, and none exists yet. They follow the evidence each stage
+needs in [Strangler transition](/architecture/strangler-transition/).
+
+| Proposed issue | Stage | Done when |
+|---|---|---|
+| Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
+| Launcher and service lifecycle | 2 | Core starts and stops the service per worktree. #14 needs this ([open question 8](/plans/open-questions/)) |
+| Cross-OS packaging of the service | 3 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)). This is a fallback-retirement criterion |
+| Conformance as a blocking gate | 3 | A divergence on the supported corpus fails core's CI, not only diagnostics |
+| Stale and unavailable service behavior | 3 | Tests prove what the seam does when the service is stale, slow or down. The Python fallback is loud and observable, and never silently gives a second answer |
+| Java authoritative reads | 3 | The seam adapter answers from Java, with Python as the observable fallback |
+| Observation period | 4 | An agreed period of Java-authoritative reads ends with no unresolved semantic divergence |
+| Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core. Every read in core goes through the seam to the API, and a ratchet keeps it that way |
 
 ### Post-cutover
 
@@ -101,9 +120,6 @@ The cutover path, the work that keeps the contract releasable, and the conforman
   filed. The proposal is to fold what they add (the `impacts` vocabulary and its migration)
   into epic #16 as new steps, in Post-cutover.
 
-## Open decision
-
-**What "cutover" means.** This page takes the read shadow, stage 2, as the cutover. If the
-operator means Java authoritative reads (stage 3), the milestone also needs issues for the
-stage 3 entry evidence: conformance as a blocking gate, and proven freshness and failure
-behavior. No such issues exist yet.
+- **#62 to #67 against the observation period.** Persistent deactivation changes read
+  answers. If core fixes it during the observation period, the corpus and both
+  implementations have to change together, or the period restarts.
