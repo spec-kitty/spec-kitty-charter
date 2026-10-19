@@ -75,10 +75,11 @@ Hand-written answers would re-derive those rules on paper. That risks the charte
    errors to the contract's refusal codes. The seam and the shadow comparison reuse the same
    mapping.
 4. **Core is the oracle for governance content, not for shapes.** This repository mints its own
-   contract ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/),
-   decision 5). Where the service answers differently on purpose, the difference goes in a
-   reviewed divergence register (#72), never into a hand-edited expected answer. The register
-   starts with the three differences in `contracts/charter/CHANGELOG.md`.
+   contract ([ADR-0002](/adr/0002-contract-source-of-record/)) and owns the pack schemas that
+   content is written against ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/),
+   decision 5). Where the service answers differently on purpose, the difference goes in a reviewed
+   divergence register that the conformance gate (#72) consults, never into a hand-edited expected
+   answer. The register starts with the three differences in `contracts/charter/CHANGELOG.md`.
 5. **The contract scenarios stay the hand-written specification.** The corpus checks the service
    against core; the scenarios state what the contract promises.
 6. **Coverage follows the read inventory.** The corpus covers the reads the cutover inventory
@@ -130,7 +131,8 @@ core code that only this repository uses.
 
 ## References
 
-- Issue #9 (the corpus), #72 (the divergence register), #94 (the read inventory).
+- Issue #9 (the corpus), #72 (conformance as a blocking gate, which consults the divergence
+  register), #94 (the read inventory).
 - [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/),
   [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),
   [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/).
