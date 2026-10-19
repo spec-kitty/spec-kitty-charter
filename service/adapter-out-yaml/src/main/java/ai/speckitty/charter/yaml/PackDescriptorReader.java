@@ -8,6 +8,7 @@ import ai.speckitty.charter.domain.RefusalCode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Reads {@code pack.yaml}. An absent {@code pack_level} is a {@code PACK_LEVEL_MISSING} diagnostic and the
@@ -30,7 +31,7 @@ final class PackDescriptorReader {
         if (!(document instanceof Map<?, ?> root)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + packName + " is not a mapping");
         }
-        String levelToken = text(root, "pack_level", packName).orElse(null);
+        @Nullable String levelToken = text(root, "pack_level", packName).orElse(null);
         PackLevel level = configured;
         List<Diagnostic> diagnostics = List.of();
         if (levelToken == null) {

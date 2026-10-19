@@ -15,6 +15,11 @@ public class ContextController implements ContextApi {
 
     private final ActionContextQuery query;
 
+    /**
+     * A controller over action-scoped context.
+     *
+     * @param query the read use case it answers with
+     */
     public ContextController(ActionContextQuery query) {
         this.query = query;
     }
@@ -32,7 +37,7 @@ public class ContextController implements ContextApi {
         return new GuidanceEntry(
                 entry.urn().toString(),
                 GuidanceEntry.KindEnum.fromValue(entry.kind().token()),
-                entry.label().orElse(null),
+                Absent.asNull(entry.label()),
                 GuidanceEntry.RelationEnum.fromValue(entry.relation().token()),
                 entry.via().toString());
     }

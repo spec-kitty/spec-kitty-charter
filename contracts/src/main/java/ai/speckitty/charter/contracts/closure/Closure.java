@@ -79,7 +79,11 @@ public record Closure(JsonPointer at, Facet objects, Facet arrays) {
         return new Closure(at, Facet.open(reason, declared), Facet.open(reason, false));
     }
 
-    /** The classification: open when either facet is open, closed when it admits closed objects, else not an object. */
+    /**
+     * The classification: open when either facet is open, closed when it admits closed objects, else not an object.
+     *
+     * @return the schema's kind
+     */
     public Kind kind() {
         if (objects.isOpen() || arrays.isOpen()) {
             return Kind.OPEN;
@@ -87,12 +91,20 @@ public record Closure(JsonPointer at, Facet objects, Facet arrays) {
         return objects.admission() == Admission.CLOSED ? Kind.CLOSED : Kind.NOT_AN_OBJECT;
     }
 
-    /** Whether the schema passes the convention. */
+    /**
+     * Whether the schema passes the convention.
+     *
+     * @return {@code true} unless the schema is open
+     */
     public boolean passes() {
         return kind() != Kind.OPEN;
     }
 
-    /** Why the schema is open (each open facet's reason), or why it passes. */
+    /**
+     * Why the schema is open (each open facet's reason), or why it passes.
+     *
+     * @return a phrase for the report line
+     */
     public String reason() {
         if (passes()) {
             return kind() == Kind.CLOSED ? objects.reason() : "it admits no object: " + objects.reason();

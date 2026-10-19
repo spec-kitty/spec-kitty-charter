@@ -27,6 +27,11 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
 
     private final Supplier<List<PackLocation>> locations;
 
+    /**
+     * A repository over the packs {@code locations} names.
+     *
+     * @param locations the configured packs, asked again on every load
+     */
     public FileSystemCharterPackRepository(Supplier<List<PackLocation>> locations) {
         this.locations = locations;
     }

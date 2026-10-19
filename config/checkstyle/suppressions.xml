@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<!--
+  The one register of exceptions to the hand-written quality gates (spec NFR-001; research G3). It holds every
+  exception to Checkstyle here, and records any exception to another gate (Error Prone, NullAway, doclint) as a
+  comment entry, since those gates are never relaxed in source.
+
+  Each entry carries, in the comment directly above it:
+    rule:   the check that is suppressed
+    file:   the file it applies to (also the `files` attribute)
+    reason: why the code is right and the rule is wrong for it
+    sunset: the date by which the entry is removed or re-justified
+
+  Size: 0 entries.
+-->
+<suppressions>
+</suppressions>

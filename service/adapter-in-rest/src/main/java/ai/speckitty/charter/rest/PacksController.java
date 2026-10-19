@@ -16,6 +16,11 @@ public class PacksController implements PacksApi {
 
     private final PackListingQuery query;
 
+    /**
+     * A controller over the pack listing.
+     *
+     * @param query the read use case it answers with
+     */
     public PacksController(PackListingQuery query) {
         this.query = query;
     }
@@ -30,9 +35,9 @@ public class PacksController implements PacksApi {
         return new PackSummary(
                 pack.name(),
                 PackSummary.LevelEnum.fromValue(pack.level().token()),
-                pack.packId().orElse(null),
-                pack.packVersion().orElse(null),
-                pack.parentPack().orElse(null),
+                Absent.asNull(pack.packId()),
+                Absent.asNull(pack.packVersion()),
+                Absent.asNull(pack.parentPack()),
                 pack.nodeCount(),
                 pack.edgeCount(),
                 pack.diagnostics().stream()

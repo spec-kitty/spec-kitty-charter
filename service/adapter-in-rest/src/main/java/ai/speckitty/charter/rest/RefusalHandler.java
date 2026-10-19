@@ -12,6 +12,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class RefusalHandler {
 
+    /** For Spring, which finds the advice by component scan. */
+    public RefusalHandler() {}
+
+    /**
+     * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise.
+     *
+     * @param refusal the domain refusal
+     * @return the {@code application/problem+json} response carrying the refusal's code and detail
+     */
     @ExceptionHandler(ai.speckitty.charter.domain.CharterRefusal.class)
     public ResponseEntity<CharterRefusal> refused(ai.speckitty.charter.domain.CharterRefusal refusal) {
         HttpStatus status = refusal.code().notFound() ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR;

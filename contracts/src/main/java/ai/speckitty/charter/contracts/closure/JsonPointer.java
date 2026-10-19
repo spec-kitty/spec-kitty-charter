@@ -19,19 +19,33 @@ public record JsonPointer(List<String> tokens) {
         tokens = List.copyOf(tokens);
     }
 
-    /** The pointer to member {@code token} of the value this pointer names. */
+    /**
+     * The pointer to member {@code token} of the value this pointer names.
+     *
+     * @param token the member's name, unescaped
+     * @return a pointer one token longer
+     */
     public JsonPointer child(String token) {
         List<String> longer = new ArrayList<>(tokens);
         longer.add(token);
         return new JsonPointer(longer);
     }
 
-    /** The pointer to element {@code index} of the list this pointer names. */
+    /**
+     * The pointer to element {@code index} of the list this pointer names.
+     *
+     * @param index the element's position, from 0
+     * @return a pointer one token longer
+     */
     public JsonPointer child(int index) {
         return child(Integer.toString(index));
     }
 
-    /** Whether this pointer names the whole document. */
+    /**
+     * Whether this pointer names the whole document.
+     *
+     * @return {@code true} when the pointer has no tokens
+     */
     public boolean isRoot() {
         return tokens.isEmpty();
     }
@@ -39,6 +53,9 @@ public record JsonPointer(List<String> tokens) {
     /**
      * This pointer as seen from {@code ancestor}: the escaped tokens below it joined by {@code /} ({@code allOf/0}),
      * empty for the ancestor itself, and the whole pointer when {@code ancestor} is not an ancestor.
+     *
+     * @param ancestor the pointer to read this one from
+     * @return the relative path, escaped as RFC 6901 escapes tokens
      */
     public String relativeTo(JsonPointer ancestor) {
         if (tokens.size() < ancestor.tokens.size()

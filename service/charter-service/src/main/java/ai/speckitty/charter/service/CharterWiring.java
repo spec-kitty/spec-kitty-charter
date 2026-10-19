@@ -15,6 +15,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class CharterWiring {
 
+    /** For Spring, which instantiates the configuration class. */
+    public CharterWiring() {}
+
     /** Where the packs are; a test may supply a {@code @Primary} one. */
     public interface PackLocations extends Supplier<List<PackLocation>> {}
 

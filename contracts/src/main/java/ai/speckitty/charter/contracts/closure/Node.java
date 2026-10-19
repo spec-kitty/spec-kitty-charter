@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A value of the loaded bundle and where it sits.
  *
- * @param value   a mapping, list, boolean or scalar as the YAML loader produced it
+ * @param value   a mapping, list, boolean or scalar as the YAML loader produced it; {@code null} for a YAML null
  * @param pointer where the value sits in the document
  */
-record Node(Object value, JsonPointer pointer) {
+record Node(@Nullable Object value, JsonPointer pointer) {
 
     boolean isMap() {
         return value instanceof Map<?, ?>;
@@ -34,7 +35,9 @@ record Node(Object value, JsonPointer pointer) {
     }
 
     Optional<Node> child(String key) {
-        return has(key) ? Optional.of(new Node(((Map<?, ?>) value).get(key), pointer.child(key))) : Optional.empty();
+        return value instanceof Map<?, ?> map && map.containsKey(key)
+                ? Optional.of(new Node(map.get(key), pointer.child(key)))
+                : Optional.empty();
     }
 
     /** The values of a mapping, each with its pointer; none for any other value. */

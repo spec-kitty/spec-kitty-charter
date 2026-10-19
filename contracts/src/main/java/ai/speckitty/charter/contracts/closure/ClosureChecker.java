@@ -91,7 +91,13 @@ public final class ClosureChecker {
 
     private ClosureChecker() {}
 
-    /** Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document. */
+    /**
+     * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document.
+     *
+     * @param bundle the path of the bundled contract
+     * @return the positions checked and the violations found
+     * @throws IOException when the file cannot be read
+     */
     public static ClosureReport check(Path bundle) throws IOException {
         try (InputStream in = Files.newInputStream(bundle)) {
             return check(
@@ -99,7 +105,12 @@ public final class ClosureChecker {
         }
     }
 
-    /** Checks a loaded OpenAPI document: mappings, lists and scalars as a YAML loader produces them. */
+    /**
+     * Checks a loaded OpenAPI document: mappings, lists and scalars as a YAML loader produces them.
+     *
+     * @param document the loaded document
+     * @return the positions checked and the violations found; a malformed document is reported, never thrown
+     */
     public static ClosureReport check(Object document) {
         Findings findings = Findings.collecting();
         List<Node> positions = ResponseSchemas.in(document, findings);
