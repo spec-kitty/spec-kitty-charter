@@ -2,7 +2,7 @@
 title: Architecture
 description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Hub
 audience:
@@ -33,7 +33,7 @@ The design is grounded in three core ADRs and this repository's own records:
 
 - [Overview](/architecture/overview/) — containers and the main flows. Read this first.
 - [Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/) — the promise-first
-  BDD scenarios that define the offering's role and boundary, and the conformance net they form.
+  contract and acceptance scenarios that define the offering's role and boundary, and the conformance net they form.
 
 ## The charter model
 

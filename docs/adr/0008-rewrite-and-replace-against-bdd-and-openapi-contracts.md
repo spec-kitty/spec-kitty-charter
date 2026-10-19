@@ -2,7 +2,7 @@
 title: "ADR-0008: The Java charter is a rewrite that replaces the Python charter, built against BDD and OpenAPI contracts"
 description: The Python charter stays in core and is replaced stage by stage; the Java service is written against BDD and OpenAPI contracts and must round-trip open-packs.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: ADR
 kind: ADR
 related:
@@ -23,6 +23,13 @@ audience:
 
 **Accepted** — 2026-10-18. Decider: Stijn Dejongh (operator). Answers
 [open question 2](/plans/open-questions/).
+
+Clarification 2026-10-19 (terminology; the decision is unchanged): "BDD" names the
+practice. In Decision 2, "BDD scenario files" and "the Gherkin scenarios" are the **contract
+scenarios** in `contracts/charter/scenarios/`; the copied acceptance suite in
+`tests/scenarios/charter/` is the **acceptance scenarios**
+([Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/#where-they-live)).
+The title keeps its wording because it names the accepted record.
 
 ## Context
 
