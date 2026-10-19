@@ -22,8 +22,8 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * The service as it ships: a real server on a free loopback port, the packs named by {@code charter.packs[*]}
- * through Spring configuration and nothing overridden. A wiring that drops or reorders the configured packs
- * fails it.
+ * through Spring configuration and nothing overridden. A wiring that drops a configured pack, or lists the packs
+ * of one level in any order but the configured one, fails it; the layer order is the level's, built-in first.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ProductionWiringTest {
@@ -58,13 +58,22 @@ class ProductionWiringTest {
                 nodes: []
                 edges: []
                 """);
-        // Configured org first: the listing still answers built-in first, in layer order.
+        write("audit/drg/fragment.yaml", """
+                pack_name: audit
+                nodes: []
+                edges: []
+                """);
+        // Configured org first: the listing still answers built-in first, in layer order. Two org packs follow
+        // in configured order, which is not alphabetical, so a wiring that reorders them within a level fails.
         registry.add("charter.packs[0].name", () -> "qa");
         registry.add("charter.packs[0].level", () -> "org");
         registry.add("charter.packs[0].path", () -> packs.resolve("qa").toString());
         registry.add("charter.packs[1].name", () -> "built-in");
         registry.add("charter.packs[1].level", () -> "built-in");
         registry.add("charter.packs[1].path", () -> packs.resolve("built-in").toString());
+        registry.add("charter.packs[2].name", () -> "audit");
+        registry.add("charter.packs[2].level", () -> "org");
+        registry.add("charter.packs[2].path", () -> packs.resolve("audit").toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
@@ -102,7 +111,10 @@ class ProductionWiringTest {
                    "packVersion": "1.0.0", "parentPack": null, "nodeCount": 1, "edgeCount": 0, "diagnostics": []},
                   {"name": "qa", "level": "org", "packId": null, "packVersion": null, "parentPack": null,
                    "nodeCount": 0, "edgeCount": 0, "diagnostics": [{"code": "pack_level_missing",
-                   "detail": "org pack qa has no pack.yaml; the configured level org is used"}]}
+                   "detail": "org pack qa has no pack.yaml; the configured level org is used"}]},
+                  {"name": "audit", "level": "org", "packId": null, "packVersion": null, "parentPack": null,
+                   "nodeCount": 0, "edgeCount": 0, "diagnostics": [{"code": "pack_level_missing",
+                   "detail": "org pack audit has no pack.yaml; the configured level org is used"}]}
                 ]}
                 """));
     }
