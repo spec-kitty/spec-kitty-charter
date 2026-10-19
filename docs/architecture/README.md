@@ -56,7 +56,7 @@ The design is grounded in three core ADRs and this repository's own records:
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,
-  credentials, freshness and fallback.
+  credentials, freshness and failure behavior.
 - [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,
   and where it meets the publish, ledger, subscribe model.
 

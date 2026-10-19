@@ -53,17 +53,27 @@ relation, two refusal codes and these values (ADR-0009, provisional).
 
 ## Planned read surface
 
-| Operation | Answers | Today in core |
-|---|---|---|
-| Action-scoped context | The guidance for one action of one mission type in the active charter (action nodes are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review). The request carries the mission type and the load depth | `spec-kitty charter context --action <name> --mission-type <type>` |
-| Profile resolution | `(profile_id, action)` to the resolved profile with lineage and overlays, plus compact context | `spec-kitty agent profile show`, profile-load contract |
-| Active charter | The project's activations per kind and mission type, with the source of each (preset, project, org requirement) | `spec-kitty charter` status commands |
-| Pack listing | Configured packs, their levels, versions and presets | `spec-kitty charter pack list` |
-| Artifact lookup | One artifact by URN, with provenance (which pack and layer) | `charter.offering` repositories |
-| Graph query | Edges and closures over the active DRG | `charter.offering.drg` callers |
-| Diagnostics | Load and merge refusals, skipped profiles, unresolved edges | `spec-kitty doctor charter-packs --json` |
+The cutover puts every read core makes of the offering through this API
+([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). Those reads are being listed and
+decided one by one in the cutover read inventory, epic
+[#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94): each becomes an operation
+in an additive contract set ([ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)),
+is exempt, or is out of the cutover. Until a read is decided it has no shape here.
 
-Pack listing and action-scoped context are the first two in the contract ([Roadmap](/plans/roadmap/), step 1).
+| Read | Inventory issue | Today in core |
+|---|---|---|
+| Action-scoped context: the full walk (scope, `requires`, `suggests`, `vocabulary`) and the activation filter the built operation does not yet apply | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) | `spec-kitty charter context --action <name> --mission-type <type>` |
+| Artifact bodies | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories |
+| Merged graph and graph queries | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers |
+| Pack listing with presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) | `spec-kitty charter pack list` |
+| Mission types and the action index | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) | `specify_cli` mission repositories |
+| Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract |
+| Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands |
+| The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, structured-prompt blocks, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various |
+
+The reserved 1.0 surface (`depth`, `ServiceInfo`, the source fingerprint inputs, the
+per-worktree token and the post-write refresh) is reshaped before the first release
+([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113)).
 
 ## Planned write surface (later)
 

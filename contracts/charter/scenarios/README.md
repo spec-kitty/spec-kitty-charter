@@ -28,7 +28,7 @@ Keep it small; add a step only when a scenario cannot be written without it.
   the response body is the remembered one` or `... differs from the remembered one` — for a
   digest that must stay or change with the files.
 - `Then the response header "<name>" is "<text>"`, `... is a sha256 digest` and `... is the
-  contract version`.
+  contract version`; `Then the response has no "<name>" header`.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
 
 Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:

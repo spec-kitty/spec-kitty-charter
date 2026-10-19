@@ -2,7 +2,7 @@
 title: Charter service overview
 description: Containers and main flows of the charter service — the Python seam in core, the Java service, its adapters and the pack inputs.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
@@ -22,7 +22,7 @@ audience:
 
 The containers of the charter service and the main flows between them: the Python seam in core, the Java service, its adapters and the pack inputs. Read this first, then the page for the part you are building. The state of `charter.offering.api` in core today is described in [Problem](/context/problem/).
 
-> **Status:** design only, in the slice shape of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/). A first skeleton exists in the older horizontal module shape: a REST entry point and a file-based read adapter over the domain, serving two read operations ([Hexagonal service](/architecture/hexagonal-service/)); the rest of the diagram is not built. [What the labels mean](/#status).
+> **Status:** design only, in the slice shape of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/). A first skeleton exists in the older horizontal module shape: a REST entry point and a file-based read adapter over the domain, serving three read operations ([Hexagonal service](/architecture/hexagonal-service/)); the rest of the diagram is not built. [What the labels mean](/#status).
 
 ## Containers
 
@@ -75,9 +75,11 @@ asks the seam for action-scoped context, passing the mission type and the load d
 seam holds an endpoint and a credential the launcher gave it, calls `GET /api/v1/...` on the
 worktree's service, and receives a response
 that deserializes into the generated DTO. The service answers from a warm active graph it
-built from source fingerprints. If the service is stale or unreachable, the seam falls back
-to the Python implementation **loudly**: the fallback is visible in diagnostics and
-telemetry and never silently picks a second answer.
+built from source fingerprints. If the service is stale or unreachable, the seam fails
+closed with a named error and a remedy; there is no Python fallback
+([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)). Java becomes
+authoritative and the Python reads retire in one switch-over
+([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)).
 
 **A read shadow.** Before Java is authoritative, Python answers and the Java answer is
 compared out of band against the same inputs. Differences are reported, not served.

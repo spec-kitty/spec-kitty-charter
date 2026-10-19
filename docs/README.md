@@ -40,7 +40,7 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Decision Records](/adr/) — decisions taken in this repository, and the core ADRs
   they build on.
 - [Plans](/plans/) — the bootstrap roadmap and the open questions.
-- [API](/api/) — the public API: the service contract, whose two read operations are built,
+- [API](/api/) — the public API: the service contract, whose three read operations are built,
   the Javadoc of the service, and the Python package surface, which is designed only.
 - [Guides](/guides/) — contributing, building the service and building the docsite.
 - [Changelog](/changelog/) — dated record of notable changes.
@@ -56,7 +56,7 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 
 ## Status
 
-The first code lives here: the charter contract at `1.0.0-SNAPSHOT` with two read
+The first code lives here: the charter contract at `1.0.0-SNAPSHOT` with three read
 operations, and the Java service that answers them ([Roadmap](/plans/roadmap/) steps 1 and
 2). Everything else the pages describe is the agreed direction and the target design. Each
 page opens with what it gives you, then carries one status line, using these labels:
@@ -67,8 +67,8 @@ page opens with what it gives you, then carries one status line, using these lab
   reproduce it, and core stays the reference until this repository's contract is the source
   of record.
 - **Direction.** Stated by the operator, not yet in an ADR.
-- **Designed API.** The public surface the extracted charter is designed to expose. No package
-  or contract has been released from this repository.
+- **Designed API.** A part of the public service contract designed here but not yet built.
+  No contract version has been released from this repository.
 
 The governing decisions are core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter gets its own repository),
 core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (a staged Java service strangler) and this repository's

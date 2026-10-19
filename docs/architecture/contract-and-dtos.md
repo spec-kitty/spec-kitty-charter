@@ -21,7 +21,7 @@ audience:
 
 How one OpenAPI document becomes the DTOs on both sides: the service generates its server interfaces from it, and core ingests a pinned release to generate its own. The page also lists what the contract carries and how it is versioned.
 
-> **Status:** partly built. `contracts/charter/` exists here at `1.0.0-SNAPSHOT` with two read paths and its contract scenarios, the charter's own contract checks run in the build, and the service generates its interfaces from it. No release is cut and core ingests nothing yet. [What the labels mean](/#status).
+> **Status:** partly built. `contracts/charter/` exists here at `1.0.0-SNAPSHOT` with three read operations and its contract scenarios, the charter's own contract checks run in the build, and the service generates its interfaces from it. No release is cut and core ingests nothing yet. [What the labels mean](/#status).
 
 ## One document, two generators
 
@@ -106,8 +106,11 @@ The layout:
   `responses/` and `examples/`, each listed in an `_index.yaml`;
 - plain relative `$ref`s only (no URLs, absolute paths or braces);
 - `servers: [{url: /api/v1}]`; paths never carry the prefix;
-- the shared vocabulary core already defines (`Problem` for refusals, `PageInfo`,
-  `PageCursor`) is reused, not copied with changes;
+- the shared vocabulary that came from core (`Problem` for refusals, `PageInfo`,
+  `PageCursor`, in `contracts/_shared/`) is kept close to its origin, but this repository's
+  copy is canonical: a change is made here when there is reason to, listed in
+  `contracts/_shared/VENDORED.md`, and consumers adapt
+  ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/));
 - its own `info.version` and `CHANGELOG.md`;
 - `x-source` or `x-derived` on every resource property, citing where its value comes from,
   and `x-provisional` on a part whose behavior is not decided yet, naming the decision.

@@ -1,8 +1,8 @@
 ---
 title: API
-description: The charter API — two read operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
+description: The charter API — three read operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: API
 kind: Hub
 related:
@@ -18,27 +18,31 @@ audience:
 
 # API
 
-> **Partly built, partly designed.** Two read operations are in the contract
+> **Partly built, partly designed.** Three read operations are in the contract
 > (`contracts/charter/openapi.yaml`) and served by the Java charter service: pack listing
-> (`listPacks`, `GET /packs`) and action-scoped context (`getActionContext`,
-> `GET /mission-types/{missionType}/actions/{action}/context`). The
+> (`listPacks`, `GET /packs`), action-scoped context (`getActionContext`,
+> `GET /mission-types/{missionType}/actions/{action}/context`) and service info
+> (`getServiceInfo`, `GET /info`). The
 > [Java API reference](/api/javadoc/) documents the service's hand-written modules. Still
-> only designed: the other planned reads of the [service contract](/api/service-contract/)
-> (profile resolution, active charter, artifact lookup, graph query and diagnostics), its
-> write operations, and the Python package surface, derived from core's
-> `charter.offering.api` (`src/charter/offering/api.py` in
-> [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)). The planned service
+> only designed: the other reads of the [service contract](/api/service-contract/), which the
+> cutover read inventory ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94))
+> decides and shapes, and its write operations. The Python package page documents core's
+> in-process seam surface, `charter.offering.api` (`src/charter/offering/api.py` in
+> [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)); no Python package
+> ships from this repository. The planned service
 > operations derive from core ADR
 > [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)
 > (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/)
 > and [ADR-0002](/adr/0002-contract-source-of-record/). Their names and shapes may change
 > until code and a released contract land here.
 
-The charter has two public surfaces, one per stage of the extraction:
+The charter has two public surfaces. The Python one stays in core until the Java service
+replaces it ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/),
+[ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)):
 
 | Surface | Kind | Consumers | Basis |
 |---|---|---|---|
-| [Python package](/api/python-package/) | in-process Python API, versioned by wheel semver and `py.typed` | the CLI's charter facades, open-core consumers | core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) D-1: callers use only `charter.offering.api` |
+| [Python package](/api/python-package/) | in-process Python API in core, retired by the cutover | the CLI's charter facades | the import move (spec-kitty#6188): core's callers use only the seam |
 | [Service contract](/api/service-contract/) | OpenAPI 3.1 over loopback REST, later MCP | the core's seam (through generated DTOs, per [ADR-0004](/adr/0004-public-api-returns-generated-dtos/)), agent harnesses | ADR-0001, ADR-0002, core ADR `2026-10-03-1` |
 
 ## Decision: the API returns generated DTOs
