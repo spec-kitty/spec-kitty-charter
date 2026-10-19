@@ -32,7 +32,7 @@ public enum ArtifactKind {
     ANTI_PATTERN("anti_pattern", "anti_patterns", true, false, false, InForceWhenAbsent.ALL),
     /** An asset: a blob described by a sidecar manifest; org-requirable but never activated. */
     ASSET("asset", "assets", false, true, false, InForceWhenAbsent.ALL),
-    /** A template: mission-tier content that resolves specially; never activated or required. */
+    /** A template: mission-scoped content that resolves specially; never activated or required. */
     TEMPLATE("template", "templates", false, false, false, InForceWhenAbsent.ALL);
 
     /** What is in force while a kind's activation key is absent. */
