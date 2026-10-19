@@ -2,6 +2,7 @@ package ai.speckitty.charter.rest;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.api.model.Problem1;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +14,9 @@ import tools.jackson.databind.module.SimpleModule;
  * {@code code}) is omitted, never written as {@code null}. The contract's {@code Problem} is closed and declares
  * those members as strings, so a {@code null} would break it. The generated transport DTOs stay as generated;
  * the rule reaches them through a Jackson mix-in, and only them: a success body keeps its {@code null} members,
- * which the contract requires.
+ * which the contract requires. The rule is the contract's: a member the schema neither requires nor allows to be
+ * {@code null} is omitted. The models it covers are exactly those with such a member and no required nullable
+ * one, which {@code NullOmissionTest} derives from the schemas and checks against every generated model.
  */
 @Configuration(proxyBeanMethods = false)
 public class ProblemJson {
@@ -30,7 +33,9 @@ public class ProblemJson {
     public JacksonModule problemJsonModule() {
         return new SimpleModule("charter-problem-json")
                 .setMixInAnnotation(CharterRefusal.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(Problem.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(Problem.class, OmitAbsentMembers.class)
+                // The generator's second class for the same shared Problem schema (a name collision it renames).
+                .setMixInAnnotation(Problem1.class, OmitAbsentMembers.class);
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */
