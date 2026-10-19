@@ -27,7 +27,7 @@ How to build the charter service and run every check CI runs.
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. CI checks out the
   commit pinned in `.github/workflows/service.yml`.
 - **The full Git history and tags.** The breaking-change check compares the contract with its
-  last released version of the same major version and refuses a shallow clone. In a clone
+  last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
   you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
   never does.
 - **Network access on the first run.** The contract checks download vacuum and oasdiff at
@@ -94,18 +94,9 @@ closed ([Contract and DTOs](/architecture/contract-and-dtos/#versioning)).
 
 ## Release a contract version
 
-1. On a topic branch, turn the `-SNAPSHOT` heading of `contracts/charter/CHANGELOG.md` into
-   `## <version>` and set `info.version` in `contracts/charter/openapi.yaml` to the same
-   version; the check fails when the two differ.
-2. Run `./gradlew :contracts:check`. The release is now pending: the check compares with the
-   release before it, within the same major version.
-3. After the pull request merges, tag the merge commit on `main`
-   `contract-charter-v<version>`. Only a tag merged into the checked-out commit counts as a
-   baseline.
-
-[`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)
-holds the exact rules. Publishing the bundle and the conformance corpus from the tag is a
-follow-up and not built yet.
+Releasing a contract version is a short procedure with its own rules, kept in one place:
+[the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline). Follow it from a topic branch, and run
+`./gradlew :contracts:check` before you open the pull request.
 
 `contracts/_shared/` is a vendored copy of core's shared vocabulary; change it in core and
 refresh the copy (`contracts/_shared/VENDORED.md`).
