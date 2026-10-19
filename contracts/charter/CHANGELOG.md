@@ -46,10 +46,51 @@ did not; `Changed` lists what differs from the draft.
   one the operation declares for the status (or its `default`), and the body must validate
   against that content's schema. A path no operation defines must answer the shared
   `Problem` response.
+- What the cutover needs, reserved before the release (ADR-0009, operator decisions of
+  2026-10-19, provisional): a response field added after 1.0 is a breaking change, so these are
+  in 1.0 from the start.
+  - `Relation` value `impacts`: a directed, signed edge (core ADR 2026-07-26-3). A graph edge
+    with relation `impacts` carries its strength in `impacts`, from -1 (sabotages) to +1
+    (reinforces); a negative strength is a tension claim. A strength outside [-1, 1], a missing
+    one, or one on another relation is refused as `drg_schema_error`.
+  - `GuidanceEntry.impacts`: the strength of the edge that brought the artifact in, `null` for
+    every relation but `impacts`; guidance is reached by scope edges only, so it is `null`
+    throughout this version.
+  - `CharterRefusalCode` values `governance_policy_violation` and `stale_input`, **reserved**: no
+    operation raises them yet. `governance_policy_violation` is for the pack mutability policy
+    (ADR-0012), `stale_input` for the freshness work (#73, ADR-0011); `stale_input` may be
+    retried, like `internal_error`.
+  - Query parameter `depth` on the action-context operation (integer, 1 to 1, default 1) and
+    `ActionContext.depth`, which echoes it. This version answers depth 1 only; raising the
+    maximum later is compatible. A depth outside the range is a `400` Problem, not a refusal.
+  - `ActionContext.governanceFingerprint`: a `sha256:` digest of the packs in force and the
+    merged graph the answer was computed from, independent of host paths, formatting and
+    declaration order. New schema `Sha256Digest`.
+  - Operation `getServiceInfo`, `GET /info` (tag `Service`), answering the closed `ServiceInfo`:
+    `contractVersion`, `worktree` (an opaque id, `charter.worktree-id` or one derived from the
+    pack directories, never a host path) and `sourceFingerprint` (a digest of the pack files the
+    offering is loaded from). A pack that cannot be read refuses it with a `500`.
+  - Response headers `Charter-Contract-Version`, `Charter-Worktree` and
+    `Charter-Source-Fingerprint` on every response of the charter's operations, defined once in
+    `headers/`. The source fingerprint is left out when a pack file cannot be read. Only the
+    values are in this version; comparing them to refuse a stale read is the freshness work
+    (#73), which raises `stale_input`.
+- Scenarios in `action_context.feature`: "The depth of the walk is echoed, and this version
+  answers depth 1 only", "A depth this version does not answer is a bad request, not a charter
+  refusal", "The governance fingerprint is the same while the governance is, and changes with
+  it", "An impacts edge brings nothing into scope" (which also reads a legacy
+  `in_tension_with` edge), "An impacts edge without a strength in [-1, 1] is refused" and "A
+  strength on an edge that is not impacts is refused".
+- Feature `service.feature`, "What the service says about itself": the info operation, the
+  three headers on an answer and on a refusal, and the source fingerprint following the files.
+- Steps for digests and headers: `Then the response body, apart from "<field>", is:`, the
+  field and header steps, and remembering a field to compare it later (`scenarios/README.md`).
 
 ### Changed
 
 - `info.version` is `1.0.0-SNAPSHOT` (was `0.1.0-SNAPSHOT`).
+- The three action-context scenarios that answer `200` also expect `depth` and `impacts: null`
+  on every entry, and compare the body apart from `governanceFingerprint` (ADR-0009).
 - Every `CharterRefusalCode` and `DiagnosticCode` value is snake_case on the wire:
   `mission_type_not_found`, `action_not_found`, `pack_level_mismatch`, `pack_unreadable`,
   `drg_schema_error`, `pack_level_missing` (`unresolved_edge_endpoint` is unchanged). The
@@ -79,6 +120,13 @@ did not; `Changed` lists what differs from the draft.
   schema change): a body with a `code` is a charter refusal; a body without one is a transport or
   routing failure; `internal_error` is a fault and may be retried; every other code is a
   deterministic refusal.
+
+### Removed
+
+- `Relation` value `in_tension_with`, replaced by `impacts` (ADR-0009, core ADR 2026-07-26-3).
+  `reconciles_tension` now points at the sides of a pair joined by a negative `impacts`. Until
+  core migrates its graphs, the service reads a legacy `in_tension_with` edge as `impacts` with
+  strength -1; it never answers `in_tension_with`.
 
 ### Provisional
 

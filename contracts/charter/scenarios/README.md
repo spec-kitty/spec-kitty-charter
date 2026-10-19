@@ -14,11 +14,21 @@ Keep it small; add a step only when a scenario cannot be written without it.
   file to a pack; the pack is configured at the given level in the order first named.
 - `Given the service fails unexpectedly while it reads the packs` — plants a failure that no
   refusal names, for the `internal_error` scenario.
-- `When I GET "<path>"` — a path below the `/api/v1` server prefix.
+- `When I GET "<path>"` — a path below the `/api/v1` server prefix, with its query if it has
+  one.
 - `When I GET "<path>" accepting "<media type>"` — the same, with that `Accept` header.
 - `Then the response status is <n>`
 - `Then the response body is:` — the JSON body, compared exactly (order of arrays and the
   `detail` sentences included).
+- `Then the response body, apart from "<field>", is:` — the same, after taking that top-level
+  field out of the body, which must have it; for a digest whose value no scenario pins.
+- `Then the field "<field>" of the response body is "<text>"`, `... is a sha256 digest` and
+  `... is the contract version` (the `info.version` of `../openapi.yaml`).
+- `When I remember the field "<field>" of the response body`, then `Then the field "<field>" of
+  the response body is the remembered one` or `... differs from the remembered one` — for a
+  digest that must stay or change with the files.
+- `Then the response header "<name>" is "<text>"`, `... is a sha256 digest` and `... is the
+  contract version`.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
 
 Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:

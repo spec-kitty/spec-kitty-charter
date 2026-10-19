@@ -67,6 +67,7 @@ classDiagram
     source urn
     target urn
     relation : Relation
+    impacts
     when / reason
   }
   class ActiveCharter {
@@ -186,7 +187,8 @@ facts; it does not restate them.
 ## The Doctrine Reference Graph (DRG)
 
 The DRG is a typed graph. Every node has a URN `<kind>:<id>`; every edge has a source URN, a
-target URN, a relation and optional `when` and `reason` fields. A graph document carries
+target URN, a relation and optional `when` and `reason` fields; an `impacts` edge also carries its
+signed `impacts` strength. A graph document carries
 `schema_version: "1.0"` and `generated_at`, and refuses unknown keys
 (`DRGGraphSchemaError`).
 
@@ -216,8 +218,8 @@ The DRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it 
 | `enhances` | Field-merge into a target artifact; keeps the action sequence and step inputs and outputs. |
 | `overrides` | Full replacement of a target artifact. |
 | `replaces` | Supersession; kept for older hand-authored fragments. |
-| `impacts` | Directional, authored, with a signed magnitude: the source artifact helps (positive) or hurts (negative) the target. Two artifacts are in tension when `impacts < 0`. Replaces `in_tension_with` (core ADR `2026-07-26-3`). |
-| `reconciles_tension` | Directional, from a reconciling artifact to one side of an `impacts < 0` pair. A pair is resolved only when an active artifact reconciles both sides. |
+| `impacts` | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 (sabotages) to +1 (reinforces); a negative strength is a tension claim. It replaces `in_tension_with` (core ADR `2026-07-26-3`); the service reads a legacy `in_tension_with` edge as `impacts` with strength -1. |
+| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair (two artifacts joined by a negative `impacts`). A pair is resolved only when an active artifact reconciles both sides. |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 
 An edge endpoint is either a URN `<kind>:<id>` or a bare id that the same fragment's `nodes:`
