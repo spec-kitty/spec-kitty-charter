@@ -36,10 +36,11 @@ Recorded in the [open questions](/plans/open-questions/), questions 13 to 20:
 - The contract is `1.0.0-SNAPSHOT`: snake_case codes, `x-source`/`x-derived` citations and
   `x-provisional` markers (`contracts/charter/CHANGELOG.md`).
 - The `:contracts` project runs the charter's own checks with pinned vacuum and oasdiff: a
-  lint ruleset with a planted fixture per rule, the bundle, a Java checker for closed
-  response objects and the breaking-change check.
-- The quality gates: palantir-java-format, Checkstyle, Error Prone with NullAway, doclint,
-  JaCoCo and Mockito; PIT runs nightly. The generated `charter-api` is exempt.
+  lint ruleset with at least one planted fixture per rule, the bundle, a Java checker for
+  closed response objects and the breaking-change check.
+- The quality gates: palantir-java-format, Checkstyle, Error Prone with NullAway, doclint
+  and JaCoCo, with Mockito as a test library; PIT runs nightly. The generated `charter-api`
+  is exempt.
 - The Javadoc is built and staged for the docsite; it is published with the first docs-site
   run on `main` ([Java API reference](/api/javadoc/)).
 - 644 tests, none skipped, green locally on Java 25. Steps 1 and 2 are done pending the
