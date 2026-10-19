@@ -380,7 +380,8 @@ abstract class CompatibilityFixtures : ContractToolTask() {
  * baseline is the release gate's decision (`ai.speckitty.charter.contracts.compat.ReleaseGate`, whose class Javadoc
  * is the authority; DM 01M5986KJ7B18K7GQ25E47J989): `info.version` equals the top CHANGELOG heading, only
  * `contract-charter-v*` tags merged into HEAD count, only a release of the same major version is a baseline, and
- * a pending release (released heading, no tag yet) is compared against the previous release. A shallow clone fails,
+ * a pending release (released heading, no tag yet) is compared against the previous release, and a commit after a
+ * release's tag is refused until the next -SNAPSHOT is opened. A shallow clone fails,
  * because a released contract's tag may be missing. `-PcontractBaseline=none` skips the comparison on purpose and
  * says so; the gates that read no git history (the version gate and the Breaking subsection) still run.
  * It declares no outputs, so it runs every time: a new tag changes its answer without changing any file.
@@ -449,9 +450,14 @@ abstract class CheckContractCompatibility @Inject constructor(
         if (tagCode != 0) throw GradleException("Cannot list the contract tags:\n$tagList")
         val work = temporaryDir
         files.delete { delete(work.listFiles()) }
+        // The tags that point at HEAD itself tell the gate whether HEAD is the release commit.
+        val (headCode, headTagList) = run("git", "-C", repo, "tag", "--points-at", "HEAD", "--list", "contract-charter-v*")
+        if (headCode != 0) throw GradleException("Cannot list the contract tags at HEAD:\n$headTagList")
         val tagsFile = File(work, "merged-tags.txt")
         tagsFile.writeText(tagList)
-        val (decision, message) = gate("--merged-tags", tagsFile.path)
+        val headTagsFile = File(work, "head-tags.txt")
+        headTagsFile.writeText(headTagList)
+        val (decision, message) = gate("--git", tagsFile.path, headTagsFile.path)
         if (decision == "NONE") {
             logger.lifecycle(message)
             return

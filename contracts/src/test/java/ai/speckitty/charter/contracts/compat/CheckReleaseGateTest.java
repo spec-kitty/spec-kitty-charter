@@ -22,21 +22,32 @@ class CheckReleaseGateTest {
 
     @Test
     void aPendingReleaseIsComparedWithThePreviousTag() throws IOException {
-        int code = run("1.1.0", "## 1.1.0\n\n## 1.0.0\n", "contract-charter-v1.0.0\n\n");
+        int code = run("1.1.0", "## 1.1.0\n\n## 1.0.0\n", "contract-charter-v1.0.0\n\n", "");
         assertThat(code).isZero();
         assertThat(printed())
                 .isEqualTo("COMPARE contract-charter-v1.0.0\npending release 1.1.0: compared against 1.0.0\n");
     }
 
     @Test
+    void theReleaseCommitIsComparedWithItselfAndALaterCommitIsRefused() throws IOException {
+        String log = "## 1.0.0\n";
+        assertThat(run("1.0.0", log, "contract-charter-v1.0.0\n", "contract-charter-v1.0.0\n"))
+                .isZero();
+        assertThat(printed()).startsWith("COMPARE contract-charter-v1.0.0\ncompared against 1.0.0\n");
+        output.reset();
+        assertThat(run("1.0.0", log, "contract-charter-v1.0.0\n", "")).isEqualTo(1);
+        assertThat(printed()).contains("HEAD is not that release");
+    }
+
+    @Test
     void noReleasedVersionIsNoBaseline() throws IOException {
-        assertThat(run("1.0.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "")).isZero();
+        assertThat(run("1.0.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "", "")).isZero();
         assertThat(printed()).startsWith("NONE\nNo released baseline: ");
     }
 
     @Test
     void aMismatchExitsOne() throws IOException {
-        assertThat(run("1.1.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "")).isEqualTo(1);
+        assertThat(run("1.1.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "", "")).isEqualTo(1);
         assertThat(printed()).startsWith("info.version 1.1.0-SNAPSHOT");
     }
 
@@ -71,13 +82,14 @@ class CheckReleaseGateTest {
         assertThat(printed()).startsWith("usage:");
     }
 
-    private int run(String version, String changelog, String tags) throws IOException {
+    private int run(String version, String changelog, String tags, String headTags) throws IOException {
         Path openapi =
                 Files.writeString(dir.resolve("openapi.yaml"), "openapi: 3.1.0\ninfo:\n  version: " + version + "\n");
         Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "# Changelog\n\n" + changelog);
         Path merged = Files.writeString(dir.resolve("tags.txt"), tags);
+        Path atHead = Files.writeString(dir.resolve("head-tags.txt"), headTags);
         return CheckReleaseGate.run(
-                List.of(openapi.toString(), log.toString(), "--merged-tags", merged.toString()), out);
+                List.of(openapi.toString(), log.toString(), "--git", merged.toString(), atHead.toString()), out);
     }
 
     private String printed() {
