@@ -42,6 +42,7 @@ stands.
 | [0012](/adr/0012-pack-mutability-policy/) | ADR-0012: Charter Pack authors declare open, extendable or locked per artifact | Accepted (provisional) | 2026-10-19 |
 | [0013](/adr/0013-persistent-deactivation/) | ADR-0013: Deactivation is a persisted exclusion in one activation ledger | Accepted (provisional) | 2026-10-19 |
 | [0014](/adr/0014-foundational-values-and-creed-rulings/) | ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements | Accepted (provisional) | 2026-10-19 |
+| [0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) | ADR-0015: This repository is canonical for the charter structure, responses, contracts and pack schemas | Accepted (provisional) | 2026-10-19 |
 
 ## Core decisions this repository builds on
 
