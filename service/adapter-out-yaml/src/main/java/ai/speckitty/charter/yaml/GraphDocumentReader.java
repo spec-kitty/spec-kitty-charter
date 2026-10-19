@@ -11,6 +11,7 @@ import ai.speckitty.charter.domain.Relation;
 import ai.speckitty.charter.domain.Urn;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -124,12 +125,19 @@ public final class GraphDocumentReader {
                         origin + ": edge endpoint '" + token + "' is neither a URN nor an id this document declares"));
     }
 
-    @SuppressWarnings("unchecked")
+    /** A mapping whose keys are all strings, copied in document order; anything else is refused. */
     private static Map<String, Object> mapping(@Nullable Object value, String what) {
-        if (value instanceof Map<?, ?> map && map.keySet().stream().allMatch(String.class::isInstance)) {
-            return (Map<String, Object>) map;
+        if (!(value instanceof Map<?, ?> map)) {
+            throw schema(what, "expected a mapping");
         }
-        throw schema(what, "expected a mapping");
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String key)) {
+                throw schema(what, "expected a mapping");
+            }
+            copy.put(key, entry.getValue());
+        }
+        return copy;
     }
 
     private static List<?> list(@Nullable Object value, String what) {

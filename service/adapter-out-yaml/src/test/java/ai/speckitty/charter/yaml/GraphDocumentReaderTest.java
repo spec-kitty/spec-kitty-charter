@@ -70,6 +70,18 @@ class GraphDocumentReaderTest {
         assertRefused("nodes:\n- {id: x, kind: widgets}\n", Shape.FRAGMENT, RefusalCode.DRG_SCHEMA_ERROR);
     }
 
+    @Test
+    void aMappingWithANonStringKeyOrAValueThatIsNoMappingIsRefusedAsASchemaError() {
+        assertThatThrownBy(() -> GraphDocumentReader.read("nodes:\n- {1: x}\n", Shape.SHARD, "t"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR))
+                .hasMessage("t node: expected a mapping");
+        assertThatThrownBy(() -> GraphDocumentReader.read("- a\n", Shape.SHARD, "t"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR))
+                .hasMessage("t: expected a mapping");
+    }
+
     private static void assertRefused(String text, Shape shape, RefusalCode code) {
         assertThatThrownBy(() -> GraphDocumentReader.read(text, shape, "t"))
                 .isInstanceOfSatisfying(

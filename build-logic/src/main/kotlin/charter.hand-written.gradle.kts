@@ -16,9 +16,8 @@ plugins {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    // Warnings are errors; processing and serial are off because no hand-written code has a processor or a
-    // serialized form, and their warnings would only name generated or framework types.
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-processing", "-Xlint:-serial", "-Werror"))
+    // Every javac lint category, and warnings are errors.
+    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
 }
 
 // Formatting is palantir-java-format's alone: it also removes unused imports and orders them, so no second
@@ -49,12 +48,6 @@ dependencies {
     errorprone(catalog.lib("nullaway"))
     compileOnly(catalog.lib("jspecify"))
     testCompileOnly(catalog.lib("jspecify"))
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.errorprone {
-        disableWarningsInGeneratedCode = true
-    }
 }
 
 tasks.named<JavaCompile>("compileJava") {
