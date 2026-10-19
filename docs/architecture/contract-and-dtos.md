@@ -118,16 +118,10 @@ The layout:
   property, optional or required, is therefore a **breaking** change (DM
   `01M5986E711JT296MA6NDN91MG`), like any other change to a response shape: it needs a new
   major version and a core-side migration of its DTO consumers.
-- An unreleased version carries a `-SNAPSHOT` suffix. `info.version` must equal the
-  version of the top heading of the contract's `CHANGELOG.md`.
 - A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
-  released version of the **same major version**, the `contract-charter-v<version>` tag
-  recorded in the `CHANGELOG.md`; only tags merged into the checked-out commit count. While
-  a release is pending (the top heading is released and equals `info.version`, but its tag
-  does not exist yet) the check compares with the release before it. Until the first
-  release there is no baseline, and the check says so. The rules and the release steps are
-  in
-  [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
+  released version of the same major version. Until the first release there is no baseline,
+  and the check says so. How the released version is found, and the release procedure, are in
+  [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
 - A release is tagged on `main` after its pull request merges. Publishing the bundle and the
   conformance corpus from a tag is not built yet; it is a follow-up (DM
   `01M5986KJ7B18K7GQ25E47J989`).
