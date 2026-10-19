@@ -87,7 +87,9 @@ Hand-written answers would re-derive those rules on paper. That risks the charte
 5. **The contract scenarios stay the hand-written specification.** The corpus checks the service
    against core; the scenarios state what the contract promises.
 6. **Coverage follows the read inventory.** The corpus covers the reads the cutover inventory
-   (#94) decides, for every mission type and action, at both depths. *(Amended 2026-10-19: at depths 0, 1 and 2.)*
+   (#94) decides, for every mission type and action, at both depths.
+
+   *(Amended 2026-10-19: at depths 0, 1 and 2.)*
 
 ## Consequences
 
