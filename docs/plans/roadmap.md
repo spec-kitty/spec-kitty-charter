@@ -8,6 +8,7 @@ kind: Planning
 related:
   - architecture/strangler-transition
   - plans/open-questions
+  - plans/milestones
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the next checkable step and what it depends on.
@@ -32,6 +33,10 @@ the scope of epic spec-kitty#6099.
 | 5 | **Org and project layers.** Extend corpus and domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. | Corpus slice passes on both implementations | 4 |
 | 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam in core returns them ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/): the Python charter stays in core). | Core's seam tests pass on generated DTOs | the seam work, 1 |
 | 7 | **Read shadow.** The launcher starts the service per worktree; the seam compares Java with Python out of band. | Differences are reported in diagnostics; none is unexplained on the corpus | 4 to 6, the launcher |
+
+Steps 1 to 7 make up the **4.x cutover** milestone on the tracker. Work that builds on
+the cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
+proposed distribution of issues.
 
 After step 7 the [strangler stages](/architecture/strangler-transition/) take over:
 Java authoritative, then Java reads complete, then write migration one operation at a time.
