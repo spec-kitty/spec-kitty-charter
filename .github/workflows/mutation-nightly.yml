@@ -1,0 +1,52 @@
+name: Mutation testing (nightly)
+
+# PIT mutation testing of the plain-Java core (charter-domain and charter-read-app, the modules with
+# charter.domain-conventions), spec FR-009. `./gradlew pitest` is its own task, never part of `check`, and
+# this workflow has no pull-request trigger, so no pull-request run invokes it or waits for it.
+# Each module's HTML and XML report lists the killed and surviving mutants and the score; both go up as
+# the `mutation-report` artifact.
+
+on:
+  schedule:
+    # Nightly, off the hour.
+    - cron: '43 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pitest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      # No spec-kitty-open-packs checkout: PIT runs only the unit tests of the core modules; the
+      # open-packs round-trip lives in adapter-out-yaml, which PIT does not target.
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Mutation testing
+        run: ./gradlew pitest
+
+      - name: Upload the mutation reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report
+          path: |
+            service/charter-domain/build/reports/pitest
+            service/charter-read-app/build/reports/pitest
+          if-no-files-found: error
