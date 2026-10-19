@@ -42,6 +42,17 @@ Feature: What the service says about itself
     And the response header "Charter-Worktree" is "scenario-worktree"
     And the response header "Charter-Source-Fingerprint" is a sha256 digest
 
+  Scenario: When the packs cannot be read the fingerprint header is left out and the refusal still answers
+    The source fingerprint is left out when a pack file cannot be read, because the read itself
+    answers why; the refusal still carries the contract version and the worktree.
+    Given the service fails unexpectedly while it reads the packs
+    When I GET "/packs"
+    Then the response status is 500
+    And the problem code is "internal_error"
+    And the response header "Charter-Contract-Version" is the contract version
+    And the response header "Charter-Worktree" is "scenario-worktree"
+    And the response has no "Charter-Source-Fingerprint" header
+
   Scenario: The source fingerprint follows the pack files
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
