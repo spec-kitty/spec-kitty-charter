@@ -41,6 +41,11 @@ SITE_BASE = "/spec-kitty-charter"
 
 STATUSES = {"draft", "active", "deprecated", "superseded", "durable"}
 REQUIRED_KEYS = ("title", "description", "doc_status", "updated", "type", "kind", "audience")
+# doc-kitty 0.4.0 owns the generated glossary pages and writes an exact frontmatter key set
+# (okf_version, title, description, kind, [glossary_context], doc_status, generated); its
+# generator refuses to overwrite a page that carries any other key. So the generated pages
+# cannot carry these authored-only keys, and this gate must not demand them of a generated page.
+GENERATED_EXEMPT_KEYS = frozenset({"updated", "type", "audience"})
 DESC_MIN, DESC_MAX = 50, 180
 AUDIENCE_DIR = "docs/context/audience"
 DOC_RULES = "docs/_meta/doc-rules.yaml"
@@ -276,14 +281,19 @@ def check_frontmatter(tree: Tree, _today: dt.date) -> list[Finding]:
             out.append(Finding("frontmatter", page.rel, page.meta_error or "unreadable"))
             continue
         meta = page.meta
+        generated = tree.is_generated(page)
         for key in REQUIRED_KEYS:
             # doc-kitty forbids `type` on the bundle-root README (the site home).
             if key == "type" and page.rel == "docs/README.md":
                 continue
+            # A generated glossary page carries doc-kitty's own frontmatter stamp and
+            # cannot hold these authored-only keys (see GENERATED_EXEMPT_KEYS).
+            if generated and key in GENERATED_EXEMPT_KEYS:
+                continue
             if meta.get(key) in (None, "", []):
                 out.append(Finding("frontmatter", page.rel, f"missing required key `{key}`"))
         desc = meta.get("description")
-        if isinstance(desc, str) and not DESC_MIN <= len(desc.strip()) <= DESC_MAX:
+        if not generated and isinstance(desc, str) and not DESC_MIN <= len(desc.strip()) <= DESC_MAX:
             out.append(
                 Finding(
                     "frontmatter",

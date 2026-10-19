@@ -3,19 +3,21 @@
 
 Writes site/.contextive/definitions.yaml, the Contextive file doc-kitty builds the
 glossary pages from. The core glossary (docs/context/*.md in spec-kitty/spec-kitty) is the
-authority; this file is a copy and is never edited by hand.
+authority; this file is a copy and is never edited by hand. The core commit it was taken
+from is recorded in the file's header.
 
 Usage, from the repository root, with a checkout of the core repository:
 
     python3 site/tools/import_core_glossary.py /path/to/spec-kitty
 
-The doc-kitty build regenerates docs/glossary/ with minimal frontmatter on every run. This
-script owns the rest: after an import, and after every build (`npm run build` calls
-`--finalize`), it rewrites the frontmatter of those pages to the full set the docs checks
-require (description, doc_status, updated = the import date, type, kind, audience and
-`source_ref` = the core commit). Run it alone with:
-
-    python3 site/tools/import_core_glossary.py --finalize
+The doc-kitty build (`cd site && npm run build`) regenerates docs/glossary/**/README.md
+from this file. Since doc-kitty 0.4.0 the generator OWNS those pages: it writes an exact
+frontmatter key set (okf_version, title, description, kind, [glossary_context], doc_status
+and a `generated:` stamp) and refuses to overwrite a page carrying any other key. So the
+pages are committed as the generator writes them, and this script no longer rewrites their
+frontmatter; the repo's docs checks exempt generated glossary pages
+(scripts/docs/check_docs.py GENERATED_EXEMPT_KEYS). The source commit lives in this file's
+header, not on each page.
 
 It reuses the core repository's own parser (scripts/generate_contextive_glossaries.py), so
 a term is read here exactly as core reads it for its IDE glossaries.
@@ -24,7 +26,6 @@ a term is read here exactly as core reads it for its IDE glossaries.
 from __future__ import annotations
 
 import datetime as dt
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -53,23 +54,9 @@ CONTEXTS = {
 SKIP = {("governance", "Charter")}
 
 OUTPUT = Path(__file__).resolve().parents[1] / ".contextive" / "definitions.yaml"
-GLOSSARY_DIR = Path(__file__).resolve().parents[2] / "docs" / "glossary"
-
-# The readers the imported vocabulary serves (personas under docs/context/audience/).
-AUDIENCE = (
-    ("charter-service-contributor", "Read this for the vocabulary the Java domain must use unchanged."),
-    ("pack-author", "Read this for the pack and activation terms you write against."),
-)
-HUB_DESCRIPTION = (
-    "The charter vocabulary, imported from the Spec Kitty core glossary and grouped by the "
-    "bounded context that owns each term."
-)
-
 
 
 def main() -> int:
-    if sys.argv[1:] == ["--finalize"]:
-        return finalize()
     if len(sys.argv) != 2:
         print(__doc__)
         return 2
@@ -116,69 +103,7 @@ def main() -> int:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"{count} terms in {len(CONTEXTS)} contexts -> {OUTPUT}")
-    print("Now run `cd site && npm run build` to regenerate docs/glossary/, which finalizes it.")
-    return 0
-
-
-def _clip(text: str, limit: int = 180) -> str:
-    if len(text) <= limit:
-        return text
-    return text[: limit - 1].rsplit(" ", 1)[0].rstrip(",;:") + "\u2026"
-
-
-def _frontmatter(fields: dict[str, str], commit: str, date: str) -> str:
-    quote = lambda v: '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'  # noqa: E731
-    lines = ["---"]
-    lines += [f"title: {quote(fields['title'])}", f"description: {quote(fields['description'])}"]
-    lines += ["doc_status: active", f"updated: {date}", "type: Glossary", f"kind: {fields['kind']}"]
-    lines += [f"glossary_context: {quote(fields['context'])}"] if "context" in fields else []
-    lines += ["audience:"]
-    for profile, guidance in AUDIENCE:
-        lines += [f"  - profile: {profile}", f"    guidance_text: {quote(guidance)}"]
-    lines += [f"source_ref: {commit}", "---"]
-    return "\n".join(lines) + "\n"
-
-
-def finalize() -> int:
-    """Give the generated glossary pages the full frontmatter; idempotent."""
-    header = OUTPUT.read_text(encoding="utf-8")
-    commit = re.search(r"core commit ([0-9a-f]{7,40})", header)
-    date = re.search(r"imported on (\d{4}-\d{2}-\d{2})", header)
-    if not commit or not date:
-        print(f"{OUTPUT} lacks the core commit / import date header; run the import first", file=sys.stderr)
-        return 2
-    by_slug = {slug: (name, purpose) for slug, (name, purpose) in CONTEXTS.items()}
-    pages = sorted(GLOSSARY_DIR.rglob("index.md"))
-    if not pages:
-        print(f"no generated pages under {GLOSSARY_DIR}; run the site build first", file=sys.stderr)
-        return 2
-    for page in pages:
-        text = page.read_text(encoding="utf-8")
-        match = re.match(r"---\n.*?\n---\n", text, re.DOTALL)
-        if not match:
-            print(f"{page}: no frontmatter block", file=sys.stderr)
-            return 2
-        old = match.group(0)
-        title = re.search(r'^title: "(.*)"$', old, re.MULTILINE)
-        slug = page.parent.name
-        if page.parent == GLOSSARY_DIR:
-            fields = {"title": "Glossary", "description": HUB_DESCRIPTION, "kind": "Hub"}
-        elif slug in by_slug:
-            name, purpose = by_slug[slug]
-            fields = {
-                "title": name,
-                "description": _clip(f"Glossary terms of the {name} context, imported from the core glossary. {purpose}"),
-                "kind": "Glossary",
-                "context": name,
-            }
-        else:
-            print(f"{page}: context `{slug}` is not in CONTEXTS", file=sys.stderr)
-            return 2
-        if title and title.group(1) != fields["title"]:
-            print(f"{page}: unexpected title {title.group(1)!r}", file=sys.stderr)
-            return 2
-        page.write_text(_frontmatter(fields, commit.group(1), date.group(1)) + text[match.end():], encoding="utf-8")
-    print(f"finalized {len(pages)} glossary pages (source_ref {commit.group(1)}, updated {date.group(1)})")
+    print("Now run `cd site && npm run build` to regenerate docs/glossary/.")
     return 0
 
 

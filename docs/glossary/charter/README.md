@@ -1,17 +1,14 @@
 ---
+okf_version: "0.2"
 title: "Charter"
-description: "Glossary terms of the Charter context, imported from the core glossary. The governing term `charter` and the doctrine domain model: Charter Packs, artifact kinds, activation…"
-doc_status: active
-updated: 2026-10-14
-type: Glossary
+description: "Glossary terms for the Charter context."
 kind: Glossary
 glossary_context: "Charter"
-audience:
-  - profile: charter-service-contributor
-    guidance_text: "Read this for the vocabulary the Java domain must use unchanged."
-  - profile: pack-author
-    guidance_text: "Read this for the pack and activation terms you write against."
-source_ref: 9b9bf5c8ff
+doc_status: active
+generated:
+  by: "doc-kitty-glossary/0.4.0"
+  at: "2026-10-19T15:57:59Z"
+  content_hash: "sha256:c7aba26b1ac1"
 ---
 
 # Charter

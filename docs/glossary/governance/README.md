@@ -1,17 +1,14 @@
 ---
+okf_version: "0.2"
 title: "Governance"
-description: "Glossary terms of the Governance context, imported from the core glossary. Rule ownership, precedence and policy controls: the charter interview and compiler, pack levels, and…"
-doc_status: active
-updated: 2026-10-14
-type: Glossary
+description: "Glossary terms for the Governance context."
 kind: Glossary
 glossary_context: "Governance"
-audience:
-  - profile: charter-service-contributor
-    guidance_text: "Read this for the vocabulary the Java domain must use unchanged."
-  - profile: pack-author
-    guidance_text: "Read this for the pack and activation terms you write against."
-source_ref: 9b9bf5c8ff
+doc_status: active
+generated:
+  by: "doc-kitty-glossary/0.4.0"
+  at: "2026-10-19T15:57:59Z"
+  content_hash: "sha256:791727aafa83"
 ---
 
 # Governance

@@ -1,17 +1,14 @@
 ---
+okf_version: "0.2"
 title: "Product lines"
-description: "Glossary terms of the Product lines context, imported from the core glossary. The product lines of Spec Kitty Inc.: Build Kitty, Brain Kitty and Team Kitty."
-doc_status: active
-updated: 2026-10-14
-type: Glossary
+description: "Glossary terms for the Product lines context."
 kind: Glossary
 glossary_context: "Product lines"
-audience:
-  - profile: charter-service-contributor
-    guidance_text: "Read this for the vocabulary the Java domain must use unchanged."
-  - profile: pack-author
-    guidance_text: "Read this for the pack and activation terms you write against."
-source_ref: 9b9bf5c8ff
+doc_status: active
+generated:
+  by: "doc-kitty-glossary/0.4.0"
+  at: "2026-10-19T15:57:59Z"
+  content_hash: "sha256:29010ed4a04a"
 ---
 
 # Product lines
