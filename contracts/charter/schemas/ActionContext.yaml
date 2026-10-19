@@ -8,6 +8,7 @@ required:
   - depth
   - governanceFingerprint
   - guidance
+  - diagnostics
 properties:
   action:
     description: The action node the context is read for, action:<missionType>/<action>.
@@ -29,10 +30,13 @@ properties:
   depth:
     type: integer
     format: int32
-    minimum: 1
-    description: The depth the walk followed, the depth parameter of the request or its default.
+    minimum: 0
+    description: >-
+      The number of suggests hops the walk followed, the depth parameter of the request or its
+      default. It has no maximum: a later version may raise the maximum the request accepts, and
+      an answer then still conforms to this schema, so raising it is compatible.
     x-derived:
-      rule: The depth query parameter, or 1 when the request has none.
+      rule: The depth query parameter, or 2 when the request has none.
       inputs:
         - parameters/Depth.yaml
   governanceFingerprint:
@@ -50,15 +54,37 @@ properties:
   guidance:
     type: array
     description: >-
-      The artifacts one scope edge away from the action node or the mission type node, each
-      artifact once, sorted by URN.
+      The artifacts the offering's walk lists for the action, each artifact once, sorted by URN.
+      The walk has five breadth-first steps. Scope: the targets of the scope edges of the action
+      node, one hop; the mission type node's scope edges are not walked. Requires: the scoped
+      artifacts' requires edges, transitively. Suggests: the suggests edges of the scoped artifacts,
+      up to depth hops; an artifact that is only required does not seed it, but a suggests path
+      still passes through it. Requires of suggested: the requires edges of the
+      suggested artifacts, transitively; the suggested artifacts' own suggests are not walked.
+      Vocabulary: the vocabulary edges of everything listed, one hop. An artifact is listed by the
+      first step that reaches it, so its relation is the strongest reason it applies.
     items:
       $ref: GuidanceEntry.yaml
     x-derived:
       rule: >-
-        The targets of the scope edges of action:<missionType>/<action> and of
-        mission_type:<missionType>, each target once (an artifact in both scopes keeps its
-        action entry), sorted by the full URN string.
+        Scope from action:<missionType>/<action>; requires from the scoped artifacts; suggests from
+        the scoped artifacts up to depth steps; requires from the suggested artifacts;
+        vocabulary from every artifact listed. Each step is breadth-first and cycle-safe, never
+        lists a node an earlier step listed, and still walks through it. Entries are sorted by the
+        full URN string.
       inputs:
         - parameters/MissionType.yaml
         - parameters/Action.yaml
+        - parameters/Depth.yaml
+  diagnostics:
+    type: array
+    description: >-
+      The load findings of the offering the answer was computed from: the same findings the pack
+      listing reports per pack, across all packs in load order. Empty when every pack loaded
+      cleanly. A scope target the graph does not declare is not a finding; it is listed with a null
+      label.
+    items:
+      $ref: Diagnostic.yaml
+    x-source:
+      path: service/charter-read-app/src/main/java/ai/speckitty/charter/read/ActionContext.java
+      symbol: ActionContext.diagnostics

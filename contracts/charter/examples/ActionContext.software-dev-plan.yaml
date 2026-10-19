@@ -1,13 +1,43 @@
-summary: An excerpt of the context of software-dev/plan.
+summary: An excerpt of the context of software-dev/plan at depth 1, from the open-packs built-in pack.
 value:
   action: action:software-dev/plan
   missionType: mission_type:software-dev
   depth: 1
-  governanceFingerprint: sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce
+  governanceFingerprint: sha256:a16a4a9ec9b56a3c81f0b4b5d8e6bfde734dce23099af69cdc324f5f8e43fb55
   guidance:
+    - urn: directive:DIRECTIVE_001
+      kind: directive
+      label: Architectural Integrity Standard
+      relation: requires
+      impacts: null
+      via: directive:DIRECTIVE_051
+      hops: 2
     - urn: directive:DIRECTIVE_003
       kind: directive
       label: Decision Documentation Requirement
       relation: scope
       impacts: null
       via: action:software-dev/plan
+      hops: 1
+    - urn: directive:DIRECTIVE_051
+      kind: directive
+      label: Supply-Chain Install Safety
+      relation: scope
+      impacts: null
+      via: action:software-dev/plan
+      hops: 1
+    - urn: tactic:dependency-hygiene
+      kind: tactic
+      label: Dependency Hygiene
+      relation: suggests
+      impacts: null
+      via: directive:DIRECTIVE_051
+      hops: 2
+    - urn: tactic:traceable-decisions
+      kind: tactic
+      label: Traceable Decisions
+      relation: requires
+      impacts: null
+      via: directive:DIRECTIVE_003
+      hops: 2
+  diagnostics: []

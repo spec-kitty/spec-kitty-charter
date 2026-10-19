@@ -30,6 +30,9 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Then the response header "<name>" is "<text>"`, `... is a sha256 digest` and `... is the
   contract version`; `Then the response has no "<name>" header`.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
+- `Then following "via" from every guidance entry of "<path>" reaches the action in exactly "hops" edges`
+  — reads the context operation again and walks the `via` chain of every entry back to the action
+  node, through entries of the answer only, in exactly the entry's `hops` steps.
 
 Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:
 the response's content type must be one the operation declares for the status, or for its

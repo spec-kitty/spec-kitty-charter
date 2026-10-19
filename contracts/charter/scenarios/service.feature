@@ -43,9 +43,9 @@ Feature: What the service says about itself
     And the response header "Charter-Source-Fingerprint" is a sha256 digest
 
   Scenario: A bad request carries the headers too
-    The 400 for a depth this version does not answer is the shared Problem, and it carries the
+    The 400 for a depth outside 0 to 2 is the shared Problem, and it carries the
     headers like every other response.
-    When I GET "/mission-types/software-dev/actions/plan/context?depth=2"
+    When I GET "/mission-types/software-dev/actions/plan/context?depth=3"
     Then the response status is 400
     And the response header "Charter-Contract-Version" is the contract version
     And the response header "Charter-Worktree" is "scenario-worktree"

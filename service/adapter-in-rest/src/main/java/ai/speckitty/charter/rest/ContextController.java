@@ -2,6 +2,7 @@ package ai.speckitty.charter.rest;
 
 import ai.speckitty.charter.api.ContextApi;
 import ai.speckitty.charter.api.model.ActionContext;
+import ai.speckitty.charter.api.model.Diagnostic;
 import ai.speckitty.charter.api.model.GuidanceEntry;
 import ai.speckitty.charter.read.ActionContextQuery;
 import org.springframework.http.HttpStatus;
@@ -29,21 +30,27 @@ public class ContextController implements ContextApi {
     /**
      * {@inheritDoc}
      *
-     * <p>A depth outside what this version answers is a 400 problem, not a charter refusal: the request is wrong,
+     * <p>A depth outside {@link ActionContextQuery#MIN_DEPTH} to {@link ActionContextQuery#MAX_DEPTH} is a 400
+     * problem, not a charter refusal: the request is wrong,
      * not the offering.
      */
     @Override
     public ResponseEntity<ActionContext> getActionContext(String missionType, String action, Integer depth) {
-        if (depth < 1 || depth > ActionContextQuery.MAX_DEPTH) {
+        int requested = depth == null ? ActionContextQuery.DEFAULT_DEPTH : depth;
+        if (requested < ActionContextQuery.MIN_DEPTH || requested > ActionContextQuery.MAX_DEPTH) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        ai.speckitty.charter.read.ActionContext context = query.answer(missionType, action, depth);
+        ai.speckitty.charter.read.ActionContext context = query.answer(missionType, action, requested);
         return ResponseEntity.ok(new ActionContext(
                 context.action().toString(),
                 context.missionType().toString(),
                 context.depth(),
                 context.governanceFingerprint(),
-                context.guidance().stream().map(ContextController::toDto).toList()));
+                context.guidance().stream().map(ContextController::toDto).toList(),
+                context.diagnostics().stream()
+                        .map(d -> new Diagnostic(
+                                Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
+                        .toList()));
     }
 
     private static GuidanceEntry toDto(ai.speckitty.charter.read.GuidanceEntry entry) {
@@ -53,6 +60,7 @@ public class ContextController implements ContextApi {
                 Absent.asNull(entry.label()),
                 GuidanceEntry.RelationEnum.fromValue(entry.relation().token()),
                 Absent.asNull(entry.impacts()),
-                entry.via().toString());
+                entry.via().toString(),
+                entry.hops());
     }
 }
