@@ -2,7 +2,7 @@
 title: "ADR-0001: The charter is a Java service built against an OpenAPI contract"
 description: The charter's new implementation is a Java service; an OpenAPI contract is the single source of the DTOs that the service and the core's runtime (CLI, next state machine) both use.
 doc_status: active
-updated: 2026-10-17
+updated: 2026-10-19
 type: ADR
 kind: ADR
 related:
@@ -121,5 +121,5 @@ carry two runtimes.
 - Core ADR `4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md`
 - Core ADR `4.x/2026-10-03-1-charter-read-write-service-strangler.md`
 - Core ADR `4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md`
-- spec-kitty#6099, and spec-kitty#645 (closed as not planned on 2026-10-13; it tracked the
-  import-move precondition)
+- spec-kitty#6099, the extraction epic that carries the import-move precondition; the move is
+  done (spec-kitty#6188)
