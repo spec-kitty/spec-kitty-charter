@@ -1,0 +1,19 @@
+description: >-
+  The request carries no worktree token, a malformed Authorization header or a token that is not the
+  worktree's, refused with 401 before the request is routed, so also for a path the service does not
+  have. The body is the shared Problem without a code: it is a transport failure, not a charter
+  refusal. The answer carries the contract version and the worktree and asks for a Bearer token in
+  WWW-Authenticate. It never carries Charter-Source-Fingerprint: it reads no pack file.
+headers:
+  WWW-Authenticate:
+    $ref: ../headers/WwwAuthenticate.yaml
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../../_shared/schemas/Problem.yaml

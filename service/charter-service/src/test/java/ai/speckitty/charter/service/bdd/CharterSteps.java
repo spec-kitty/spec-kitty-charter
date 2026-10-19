@@ -30,6 +30,8 @@ public class CharterSteps {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final ContractConformance CONTRACT = new ContractConformance();
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
+    private static final String BODY = "#body";
+    private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
 
     private final ScenarioHttp http;
@@ -117,6 +119,16 @@ public class CharterSteps {
         http.get(path);
     }
 
+    @When("I POST {string}")
+    public void post(String path) throws Exception {
+        http.perform("POST", path, Map.of(), null);
+    }
+
+    @When("I POST {string} with the body:")
+    public void postWithBody(String path, String body) throws Exception {
+        http.perform("POST", path, Map.of(), body);
+    }
+
     @When("I GET {string} accepting {string}")
     public void getAccepting(String path, String accept) throws Exception {
         http.perform("GET", path, Map.of(HttpHeaders.ACCEPT, accept), null);
@@ -180,6 +192,36 @@ public class CharterSteps {
     @Then("the response header {string} is a sha256 digest")
     public void digestHeader(String name) {
         assertThat(http.response().getHeader(name)).isNotNull().matches(SHA256);
+    }
+
+    @When("I remember the response body")
+    public void rememberBody() throws Exception {
+        remembered.put(BODY, http.body());
+    }
+
+    @Then("the response body is the remembered one")
+    public void bodyIsRemembered() throws Exception {
+        assertThat(JSON.readTree(http.body())).isEqualTo(JSON.readTree(remembered.get(BODY)));
+    }
+
+    @Then("the response body differs from the remembered one")
+    public void bodyDiffersFromRemembered() throws Exception {
+        assertThat(JSON.readTree(http.body())).isNotEqualTo(JSON.readTree(remembered.get(BODY)));
+    }
+
+    @When("I remember the header {string}")
+    public void rememberHeader(String name) {
+        remembered.put(HEADER + name, String.valueOf(http.response().getHeader(name)));
+    }
+
+    @Then("the response header {string} is the remembered header")
+    public void headerIsRememberedHeader(String name) {
+        assertThat(http.response().getHeader(name)).isEqualTo(remembered.get(HEADER + name));
+    }
+
+    @Then("the response header {string} differs from the remembered header")
+    public void headerDiffersFromRememberedHeader(String name) {
+        assertThat(http.response().getHeader(name)).isNotEqualTo(remembered.get(HEADER + name));
     }
 
     @Then("the response header {string} is the remembered {string}")

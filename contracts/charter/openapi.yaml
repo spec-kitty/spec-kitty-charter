@@ -10,6 +10,8 @@ info:
     conformance corpus.
 servers:
   - url: /api/v1
+security:
+  - charterWorktreeToken: []
 tags:
   - name: Packs
     description: The Charter Packs of the charter offering.
@@ -22,5 +24,27 @@ paths:
     $ref: paths/info.yaml
   /packs:
     $ref: paths/packs.yaml
+  /packs/refresh:
+    $ref: paths/packs_refresh.yaml
   /mission-types/{missionType}/actions/{action}/context:
     $ref: paths/mission-types_missionType_actions_action_context.yaml
+components:
+  securitySchemes:
+    charterWorktreeToken:
+      type: http
+      scheme: bearer
+      description: >-
+        The per-worktree token that proves the client to the service (ADR-0011). There is one token
+        per worktree service. The launcher (issue #70) generates it, passes it to the service in the
+        environment and to its one client in the Authorization header as Bearer <token>; the scheme
+        name is matched without regard to case. It is never put in a URL, a command line or a log. Every operation requires it, the
+        info operation included. A request without it, or with a malformed or wrong one, is a 401.
+        A request a browser makes is a 403 whatever it carries: an Origin, Sec-Fetch-Site or
+        Sec-Fetch-Mode header, or a Host whose name is not localhost, 127.0.0.1 or [::1] (the port is
+        not judged), which is how DNS rebinding reaches a loopback service. The token proves the
+        client to the service, not the service to the client: no answer, the info operation's
+        included, is an identity proof of the server. Both refusals are answered before the request is
+        routed, so an unknown path is a 401 and not a 404, and before any pack file is read. The
+        guard does not cover the servlet container: container-level 400s, a malformed request the
+        connector rejects before the service sees it (a bad path encoding, an oversized header, a
+        missing Host), answer before the guard and carry no Charter header.

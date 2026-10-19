@@ -25,7 +25,8 @@ description: >-
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
   representation the operation does not have, a method the path does not have, a request the
-  server rejected before routing) and says nothing about the charter. internal_error is a fault of
+  server rejected before routing, a request the service refused as unauthorized (401) or
+  forbidden (403) before routing it) and says nothing about the charter. internal_error is a fault of
   the service and may be retried, and so may stale_input, whose inputs changed during the read;
   every other code is a deterministic refusal, and the same read is refused the same way again
   until the request or the configured packs change.

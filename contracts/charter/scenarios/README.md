@@ -17,6 +17,20 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `When I GET "<path>"` — a path below the `/api/v1` server prefix, with its query if it has
   one.
 - `When I GET "<path>" accepting "<media type>"` — the same, with that `Accept` header.
+- `When I POST "<path>"` and `When I POST "<path>" with the body:` (a doc string) — the same, with POST.
+- `When I remember the response body`, then `Then the response body is the remembered one` or `... differs from the
+  remembered one`; `When I remember the header "<name>"`, then `Then the response header "<name>" is the remembered
+  header` or `... differs from the remembered header` — for a whole answer, such as a listing, and a header that must
+  stay or change with the files.
+- Every request carries the worktree token as `Authorization: Bearer <token>`, the token the suite configures the
+  service with, unless one of these steps says otherwise. `<method>` is any HTTP method name, for example `GET` or
+  `POST`, and `{token}` in a value stands for the suite's token:
+  - `When I <method> "<path>" without the worktree token`;
+  - `When I <method> "<path>" with the Authorization "<value>"` — that `Authorization` header instead of the token's;
+  - `When I <method> "<path>" with the header "<name>": "<value>"` — an extra header, with the token still sent
+    (`Host` replaces the default host `localhost`);
+  - `When I <method> "<path>" without the worktree token and with the header "<name>": "<value>"`;
+  - `When I <method> "<path>" with the headers "<name>": "<value>" and "<name>": "<value>"`.
 - `Then the response status is <n>`
 - `Then the response body is:` — the JSON body, compared exactly (order of arrays and the
   `detail` sentences included).

@@ -1,0 +1,6 @@
+description: >-
+  The authentication scheme the service accepts, Bearer, naming the per-worktree token. Only on a 401.
+required: true
+schema:
+  type: string
+  pattern: '^Bearer$'

@@ -29,6 +29,7 @@ import tools.jackson.databind.ObjectMapper;
 class ProductionWiringTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static Path packs = Path.of("");
 
     @LocalServerPort
@@ -65,6 +66,9 @@ class ProductionWiringTest {
                 """);
         // Configured org first: the listing still answers built-in first, in layer order. Two org packs follow
         // in configured order, which is not alphabetical, so a wiring that reorders them within a level fails.
+        // The token is configured as the launcher does, not with the development flag: the production wiring is
+        // guarded.
+        registry.add("charter.worktree-token", () -> TOKEN);
         registry.add("charter.packs[0].name", () -> "qa");
         registry.add("charter.packs[0].level", () -> "org");
         registry.add("charter.packs[0].path", () -> packs.resolve("qa").toString());
@@ -92,9 +96,15 @@ class ProductionWiringTest {
     }
 
     private HttpResponse<String> get(String path) throws IOException, InterruptedException {
+        return get(path, "Authorization", "Bearer " + TOKEN);
+    }
+
+    private HttpResponse<String> get(String path, String header, String value)
+            throws IOException, InterruptedException {
         try (HttpClient client = HttpClient.newHttpClient()) {
             return client.send(
                     HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                            .header(header, value)
                             .GET()
                             .build(),
                     HttpResponse.BodyHandlers.ofString());
@@ -125,5 +135,53 @@ class ProductionWiringTest {
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.headers().firstValue("Content-Type")).contains("application/problem+json");
         assertThat(JSON.readTree(response.body())).isEqualTo(JSON.readTree("{\"title\":\"Not Found\",\"status\":404}"));
+    }
+
+    @Test
+    void theServiceAsItShipsRefusesARequestWithoutTheTokenBeforeItRoutesIt() throws Exception {
+        for (String path : new String[] {"/api/v1/packs", "/api/v1/info", "/api/v1/no-such-path", "/error", "/"}) {
+            HttpResponse<String> response = get(path, "Accept", "*/*");
+            assertThat(response.statusCode()).as(path).isEqualTo(401);
+            assertThat(response.headers().firstValue("WWW-Authenticate")).contains("Bearer");
+            assertThat(response.headers().firstValue("Content-Type")).contains("application/problem+json");
+            assertThat(response.headers().firstValue("Charter-Source-Fingerprint"))
+                    .isEmpty();
+            assertThat(JSON.readTree(response.body()))
+                    .isEqualTo(JSON.readTree("{\"title\":\"Unauthorized\",\"status\":401}"));
+        }
+    }
+
+    @Test
+    void theServiceAsItShipsRefusesAWrongTokenAndNeverEchoesIt() throws Exception {
+        HttpResponse<String> response = get("/api/v1/info", "Authorization", "Bearer " + TOKEN + "x");
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(response.body()).doesNotContain(TOKEN);
+        assertThat(response.headers().map().toString()).doesNotContain(TOKEN);
+    }
+
+    @Test
+    void theServiceAsItShipsRefusesABrowserEvenWithTheRightToken() throws Exception {
+        HttpResponse<String> response = get("/api/v1/info", "Origin", "https://evil.example");
+        assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.headers().firstValue("WWW-Authenticate")).isEmpty();
+        assertThat(JSON.readTree(response.body())).isEqualTo(JSON.readTree("{\"title\":\"Forbidden\",\"status\":403}"));
+    }
+
+    @Test
+    void aRefreshOverTheRealServerAnswersTheListingAndFingerprintTheListingOperationDoes() throws Exception {
+        HttpResponse<String> listing = get("/api/v1/packs");
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpResponse<String> refresh = client.send(
+                    HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/packs/refresh"))
+                            .header("Authorization", "Bearer " + TOKEN)
+                            .POST(HttpRequest.BodyPublishers.noBody())
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(refresh.statusCode()).as(refresh.body()).isEqualTo(200);
+            assertThat(JSON.readTree(refresh.body())).isEqualTo(JSON.readTree(listing.body()));
+            assertThat(refresh.headers().allValues("Charter-Source-Fingerprint"))
+                    .containsExactlyElementsOf(listing.headers().allValues("Charter-Source-Fingerprint"))
+                    .hasSize(1);
+        }
     }
 }

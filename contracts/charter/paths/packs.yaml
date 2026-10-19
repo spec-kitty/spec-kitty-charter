@@ -24,6 +24,10 @@ get:
           examples:
             built-in:
               $ref: ../examples/PackListing.built-in.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
     default:
