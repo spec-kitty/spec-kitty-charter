@@ -67,7 +67,10 @@ A user can deactivate a charter element, but nothing records the choice durably.
    surface that disagrees. A migration moves the existing `activated_*` keys into the ledger.
 2. **Exclusions are a deny-list.** The ledger holds `deactivated_<kind>` lists. The effective
    set of a kind is its allow-list, or every element when the allow-list is absent, minus its
-   deny-list. "Absent means all" stays, so new built-ins still arrive. A deny-list is omitted
+   deny-list — **except that a required or locked artifact ([ADR-0012](/adr/0012-pack-mutability-policy/))
+   is never subtracted**, so an element deactivated while `open` and later promoted to required or
+   locked wins over its stale deny-list entry and is active again. "Absent means all" stays, so new
+   built-ins still arrive. A deny-list is omitted
    while it is empty. Migrations and presets never remove a deny-list entry, so the upgrade
    reset (#66) reduces to a gate test that proves it.
 3. **Only the user's explicit choice changes a deny-list.** A user deactivation adds the named
@@ -78,7 +81,7 @@ A user can deactivate a charter element, but nothing records the choice durably.
    reached over a `requires` edge, the report flags it as a requirement the parent no longer
    has. `--include-deactivated` takes such elements back in and clears their exclusions.
 5. **A required artifact cannot be deactivated.** Deactivating an artifact an org requires, or
-   one its owner locked, is refused, and the error names the org pack
+   one its owner locked, is refused, and the error names the owning or requiring pack
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). No exclusion is recorded.
 6. **The work is split by owner.**
    - **Core, now:** the ledger, the deny-list, cascade, the migrations and the refusal (#62,
