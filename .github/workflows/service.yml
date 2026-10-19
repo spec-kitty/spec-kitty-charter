@@ -1,13 +1,18 @@
 name: service
 
-# The charter service build: contract validation and generation, unit tests, the architecture gate,
-# the BDD contracts and the spec-kitty-open-packs round-trip (./gradlew verifyAll).
+# The charter service build: the charter's own contract checks (lint, bundle, closed response
+# objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
+# contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
+# (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
+# docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
+# Mutation testing is not here: it runs nightly only (mutation-nightly.yml).
 on:
   pull_request:
     paths:
       - "contracts/**"
       - "service/**"
       - "build-logic/**"
+      - "config/**"
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
@@ -19,19 +24,24 @@ on:
       - "contracts/**"
       - "service/**"
       - "build-logic/**"
+      - "config/**"
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
       - "gradlew"
       - ".github/workflows/service.yml"
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# When called, github.workflow is the caller's name, so a call from docs-site.yml gets its own group and
+# never cancels, or is cancelled by, this workflow's own run on the same ref. Only this workflow's own runs
+# cancel a superseded run; a called run belongs to its caller, which may be publishing the site.
 concurrency:
-  group: service-${{ github.ref }}
-  cancel-in-progress: true
+  group: service-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'service' }}
 
 env:
   # The open-packs commit the round-trip runs against. Raise it in its own change.
@@ -39,11 +49,15 @@ env:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # The breaking-change check (:contracts:checkContractCompatibility) compares against the
+          # contract-charter-v* tags and refuses a shallow clone, so fetch the full history and tags.
+          fetch-depth: 0
 
       - name: Check out spec-kitty-open-packs
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -63,3 +77,32 @@ jobs:
 
       - name: Verify
         run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+
+      # The aggregated Javadoc (:charter-reports:aggregateJavadoc), published by docs-site.yml.
+      - name: Upload the Javadoc
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: javadoc
+          path: service/charter-reports/build/docs/javadoc
+          if-no-files-found: error
+
+      # The aggregated JaCoCo report (:charter-reports:testCodeCoverageReport). Uploaded on a red run too,
+      # when it exists, so the run still shows it.
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage
+          path: service/charter-reports/build/reports/jacoco/testCodeCoverageReport
+          if-no-files-found: warn
+
+      # The single-file contract bundle core vendors (:contracts:bundleContract) and its SHA-256.
+      # :contracts builds into the root build directory, build/contracts.
+      - name: Upload the contract bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: contract-bundle
+          path: |
+            build/contracts/contract/charter-openapi.yaml
+            build/contracts/contract/charter-openapi.yaml.sha256
+          if-no-files-found: error
