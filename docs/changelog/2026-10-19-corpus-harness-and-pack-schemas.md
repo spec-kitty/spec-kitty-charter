@@ -29,4 +29,4 @@ audience:
 - The [Roadmap](/plans/roadmap/) states the harness for step 3, and that the first contract release
   waits on the reshaped reserved surface (#113). The [Milestones](/plans/milestones/) list the
   cutover read inventory (#94), #113, #114 and #115. [Open questions](/plans/open-questions/)
-  records both decisions and the open `requires_core` placement question.
+  records both decisions and the `requires_core` ruling: it stays in `pack.yaml` (ADR-0005 decision 9 amended).

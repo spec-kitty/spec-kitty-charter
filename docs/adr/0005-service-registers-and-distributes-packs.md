@@ -32,6 +32,10 @@ service behind an OpenAPI contract) and [ADR-0004](/adr/0004-public-api-returns-
 public API returns contract-generated DTOs). It is the design-mission realization of thirteen resolved
 Decision Moments; the cited DM ids are the authoritative record of each choice.
 
+**Amendment 2026-10-19** (operator ruling): decision 9 is amended. `requires_core` stays in
+`pack.yaml` as an optional PEP 440 range of supported Spec Kitty core versions. The point is
+annotated where it stands.
+
 ## Context
 
 The charter offering service (this repository; ADR-0001) manages charter offerings, and a charter is built
@@ -115,7 +119,10 @@ client of that contract** — it does not re-implement resolution or vendor pack
    core's verified-distribution scheme lands.
 9. **Engine/compatibility is gated at resolve time** (DM `01M5781BVDQ4NTHSKA95Z60XPY`). A `requires_core`-style
    range lives on the **registration/source descriptor and the lockfile entry** — **not** in `pack.yaml`,
-   whose `PackDescriptor` schema forbids extra fields. It is enforced at **resolve time** with a canonical
+   whose `PackDescriptor` schema forbids extra fields. *(Amended 2026-10-19: the operator keeps
+   `requires_core` in `pack.yaml` as an optional PEP 440 range, as core and open-packs already use it; the
+   registration descriptor and the lockfile carry it too. See
+   [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/).)* It is enforced at **resolve time** with a canonical
    refusal code sibling to `PACK_LEVEL_MISMATCH` (e.g. `PACK_ENGINE_INCOMPATIBLE`; the exact string is a
    contract-naming detail ratified with the contract), failing closed before any merge work.
 10. **Resolver / merge boundary** (DIRECTIVE_001, 031). The *resolver* (fetch / materialize / verify / store)
