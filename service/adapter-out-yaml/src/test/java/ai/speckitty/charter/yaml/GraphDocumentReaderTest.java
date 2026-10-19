@@ -68,6 +68,15 @@ class GraphDocumentReaderTest {
                 RefusalCode.DRG_SCHEMA_ERROR);
         assertRefused("nodes: [\n", Shape.SHARD, RefusalCode.PACK_UNREADABLE);
         assertRefused("nodes:\n- {id: x, kind: widgets}\n", Shape.FRAGMENT, RefusalCode.DRG_SCHEMA_ERROR);
+        assertRefused("nodes:\n- {id: '', kind: directives}\n", Shape.FRAGMENT, RefusalCode.DRG_SCHEMA_ERROR);
+    }
+
+    @Test
+    void aFragmentNodeWithAnEmptyIdIsRefusedAsASchemaError() {
+        assertThatThrownBy(
+                        () -> GraphDocumentReader.read("nodes:\n- {id: '', kind: directives}\n", Shape.FRAGMENT, "t"))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("t: a node of kind 'directives' has an empty id");
     }
 
     @Test
