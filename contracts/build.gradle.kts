@@ -186,11 +186,19 @@ abstract class ContractToolTask : DefaultTask() {
         }
     }
 
-    /** The oasdiff breaking-change comparison every compatibility check uses: exit 1 means breaking. */
-    protected fun breaking(oasdiff: File, base: File, revision: File): Pair<Int, String> =
+    /**
+     * The oasdiff breaking-change comparison every compatibility check uses: exit 1 means breaking. [levels] is
+     * contracts/compat/severity-levels.txt; oasdiff reads no comments, so its `#` lines are dropped first.
+     */
+    protected fun breaking(oasdiff: File, levels: File, base: File, revision: File): Pair<Int, String> {
+        val stripped = File(temporaryDir, "severity-levels.txt")
+        stripped.writeText(levels.readLines().filter { it.isNotBlank() && !it.trimStart().startsWith("#") }
+            .joinToString("\n", postfix = "\n"))
         // --flatten-allof: without it oasdiff judges each allOf part alone and reports an enum value added to a
         // composed response (a new refusal code in CharterRefusal) as a warning, which --fail-on ERR lets pass.
-        run(oasdiff.path, "breaking", "--flatten-allof", "--fail-on", "ERR", "--color", "never", base.path, revision.path)
+        return run(oasdiff.path, "breaking", "--flatten-allof", "--fail-on", "ERR", "--severity-levels", stripped.path,
+            "--color", "never", base.path, revision.path)
+    }
 
     protected fun sha256(file: File): String =
         MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
@@ -320,6 +328,7 @@ abstract class LintFixtures : ContractToolTask() {
 @CacheableTask
 abstract class CompatibilityFixtures : ContractToolTask() {
     @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val fixtures: ConfigurableFileCollection
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val severityLevels: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val oasdiff: RegularFileProperty
     @get:OutputFile abstract val report: RegularFileProperty
 
@@ -334,7 +343,7 @@ abstract class CompatibilityFixtures : ContractToolTask() {
             val base = File(case, "base.yaml")
             val revision = File(case, "revision.yaml")
             if (!base.isFile || !revision.isFile) { problems += "${case.name}: needs base.yaml and revision.yaml"; continue }
-            val (code, output) = breaking(oasdiff.get().asFile, base, revision)
+            val (code, output) = breaking(oasdiff.get().asFile, severityLevels.get().asFile, base, revision)
             val expected = when {
                 case.name.startsWith("breaking-") -> 1
                 case.name.startsWith("compatible-") -> 0
@@ -354,13 +363,13 @@ abstract class CompatibilityFixtures : ContractToolTask() {
 }
 
 /**
- * The oasdiff breaking-change check of the bundle against the bundle of the last released contract, the tag
- * contract-charter-v<version> of the newest released (non-SNAPSHOT) heading of contracts/charter/CHANGELOG.md.
- *
- * A missing baseline is a stated fact, never an artifact of the checkout: the check fails in a shallow clone, when
- * the released version's tag is not in the clone, and when a contract-charter-v* tag exists that the CHANGELOG does
- * not record as released. When the CHANGELOG records no released version and no such tag exists, there is no
- * baseline and the check passes, saying so. `-PcontractBaseline=none` skips the check on purpose, and says so.
+ * The oasdiff breaking-change check of the bundle against the bundle of a released contract. Which release is the
+ * baseline is the release gate's decision (`ai.speckitty.charter.contracts.compat.ReleaseGate`, whose class Javadoc
+ * is the authority; DM 01M5986KJ7B18K7GQ25E47J989): `info.version` equals the top CHANGELOG heading, only
+ * `contract-charter-v*` tags merged into HEAD count, only a release of the same major version is a baseline, and
+ * a pending release (released heading, no tag yet) is compared against the previous release. A shallow clone fails,
+ * because a released contract's tag may be missing. `-PcontractBaseline=none` skips the comparison on purpose and
+ * says so; the gates that read no git history (the version gate and the Breaking subsection) still run.
  * It declares no outputs, so it runs every time: a new tag changes its answer without changing any file.
  */
 @DisableCachingByDefault(because = "Reads git history and tags, which are not file inputs.")
@@ -369,16 +378,47 @@ abstract class CheckContractCompatibility @Inject constructor(
     private val files: FileSystemOperations,
 ) : ContractToolTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val bundle: RegularFileProperty
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val openapi: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val changelog: RegularFileProperty
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val severityLevels: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val vacuum: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val oasdiff: RegularFileProperty
+    @get:Classpath abstract val gateClasspath: ConfigurableFileCollection
+    @get:Nested abstract val launcher: Property<JavaLauncher>
     @get:Input @get:Optional abstract val baselineOverride: Property<String>
     @get:Internal abstract val repository: DirectoryProperty
+
+    /**
+     * Runs the release gate (`CheckReleaseGate`): its first line of standard output is the decision, its second
+     * the message. Standard error is kept apart, since a JVM may print notes there (JAVA_TOOL_OPTIONS).
+     */
+    private fun gate(vararg mode: String): Pair<String, String> {
+        val output = ByteArrayOutputStream()
+        val errors = ByteArrayOutputStream()
+        val result = execOps.javaexec {
+            executable = launcher.get().executablePath.asFile.absolutePath
+            classpath = gateClasspath
+            mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
+            args(openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, *mode)
+            standardOutput = output
+            errorOutput = errors
+            isIgnoreExitValue = true
+        }
+        val lines = output.toString(Charsets.UTF_8).trim().lines()
+        val decision = lines.firstOrNull().orEmpty()
+        if (result.exitValue != 0 || !Regex("COMPARE \\S+|NONE|SKIPPED").matches(decision)) {
+            throw GradleException("The contract release gate refuses (exit ${result.exitValue}):\n" +
+                lines.joinToString("\n") + errors.toString(Charsets.UTF_8).let { if (it.isBlank()) "" else "\n$it" })
+        }
+        return decision to lines.drop(1).joinToString("\n")
+    }
 
     @TaskAction
     fun compare() {
         if (baselineOverride.orNull == "none") {
-            logger.lifecycle("Compatibility check skipped on request (-PcontractBaseline=none): no baseline was compared.")
+            val (_, message) = gate("--no-git")
+            logger.lifecycle("Compatibility check skipped on request (-PcontractBaseline=none): no baseline was " +
+                "compared. $message")
             return
         } else if (baselineOverride.isPresent) {
             throw GradleException("-PcontractBaseline accepts only 'none', not '${baselineOverride.get()}'.")
@@ -391,30 +431,19 @@ abstract class CheckContractCompatibility @Inject constructor(
         if (shallow.trim() == "true") {
             throw GradleException("This is a shallow clone, so a released contract's tag may be missing. $howToFix")
         }
-        val (tagCode, tagList) = run("git", "-C", repo, "tag", "--list", "contract-charter-v*")
+        // Only tags merged into HEAD: an older commit or a stale branch never sees a later release.
+        val (tagCode, tagList) = run("git", "-C", repo, "tag", "--merged", "HEAD", "--list", "contract-charter-v*")
         if (tagCode != 0) throw GradleException("Cannot list the contract tags:\n$tagList")
-        val tags = tagList.lines().map { it.trim() }.filter { it.isNotEmpty() }.toSet()
-        val released = Regex("^## (\\d+\\.\\d+\\.\\d+)\\s*$", RegexOption.MULTILINE)
-            .findAll(changelog.get().asFile.readText()).map { it.groupValues[1] }.toList()
-        // A tag the CHANGELOG does not record is a release nobody wrote down; comparing against an older baseline
-        // instead would hide it.
-        val unrecorded = tags - released.map { "contract-charter-v$it" }.toSet()
-        if (unrecorded.isNotEmpty()) {
-            throw GradleException("Tags ${unrecorded.sorted()} exist, but contracts/charter/CHANGELOG.md does not record " +
-                "them as released versions (recorded: ${released.ifEmpty { listOf("none") }}).")
-        }
-        if (released.isEmpty()) {
-            logger.lifecycle("No released baseline: contracts/charter/CHANGELOG.md records no released version " +
-                "and the full clone has no contract-charter-v* tag.")
-            return
-        }
-        val baselineTag = "contract-charter-v${released.first()}"
-        if (baselineTag !in tags) {
-            throw GradleException("contracts/charter/CHANGELOG.md records ${released.first()} as released, but the tag " +
-                "$baselineTag is not in this clone. $howToFix")
-        }
         val work = temporaryDir
         files.delete { delete(work.listFiles()) }
+        val tagsFile = File(work, "merged-tags.txt")
+        tagsFile.writeText(tagList)
+        val (decision, message) = gate("--merged-tags", tagsFile.path)
+        if (decision == "NONE") {
+            logger.lifecycle(message)
+            return
+        }
+        val baselineTag = decision.removePrefix("COMPARE ")
         val tar = File(work, "baseline.tar")
         val (archiveCode, archiveOut) = run("git", "-C", repo, "archive", "--format=tar", "-o", tar.path,
             baselineTag, "contracts/charter", "contracts/_shared")
@@ -425,11 +454,11 @@ abstract class CheckContractCompatibility @Inject constructor(
         bundle(vacuum.get().asFile, File(tree, "contracts/charter/openapi.yaml"), baseline)?.let {
             throw GradleException("Cannot bundle the contract at $baselineTag:\n$it")
         }
-        val (code, output) = breaking(oasdiff.get().asFile, baseline, bundle.get().asFile)
+        val (code, output) = breaking(oasdiff.get().asFile, severityLevels.get().asFile, baseline, bundle.get().asFile)
         if (code != 0) {
-            throw GradleException("The charter contract breaks compatibility with $baselineTag:\n$output")
+            throw GradleException("The charter contract breaks compatibility with $baselineTag ($message):\n$output")
         }
-        logger.lifecycle("Compatible with $baselineTag." + if (output.isBlank()) "" else "\n$output")
+        logger.lifecycle("Compatible with $baselineTag ($message)." + if (output.isBlank()) "" else "\n$output")
     }
 }
 
@@ -467,6 +496,9 @@ abstract class CheckClosedResponseObjects @Inject constructor(private val exec: 
 
 val charterContract = layout.projectDirectory.dir("charter")
 val rulesetFile = layout.projectDirectory.file("lint/ruleset.yaml")
+// Raises oasdiff's response-*-property-added to ERR: an addition to a closed response is breaking
+// (DM 01M5986E711JT296MA6NDN91MG).
+val severityLevelsFile = layout.projectDirectory.file("compat/severity-levels.txt")
 
 val bundleContract = tasks.register<BundleContract>("bundleContract") {
     group = "contract"
@@ -507,6 +539,7 @@ val compatibilityFixtures = tasks.register<CompatibilityFixtures>("compatibility
     group = "verification"
     description = "Checks that the breaking-change comparison fails each planted breaking pair and passes each compatible one."
     fixtures.from(fileTree(layout.projectDirectory.dir("compat/fixtures")) { include("*/*.yaml") })
+    severityLevels = severityLevelsFile
     oasdiff = oasdiffExe
     report = layout.buildDirectory.file("reports/compat/fixtures.txt")
 }
@@ -515,9 +548,13 @@ val checkContractCompatibility = tasks.register<CheckContractCompatibility>("che
     group = "verification"
     description = "Checks the bundle for breaking changes against the last released contract (see contracts/lint/README.md)."
     bundle = bundleContract.flatMap { it.bundle }
+    openapi = charterContract.file("openapi.yaml")
     changelog = charterContract.file("CHANGELOG.md")
+    severityLevels = severityLevelsFile
     vacuum = vacuumExe
     oasdiff = oasdiffExe
+    gateClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    launcher = javaToolchains.launcherFor(java.toolchain)
     baselineOverride = providers.gradleProperty("contractBaseline")
     repository = rootProject.layout.projectDirectory
 }

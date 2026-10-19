@@ -1,0 +1,73 @@
+# Revision of the breaking-response-property-added case:
+# an optional property is added to the closed PackSummary response
+# (DM 01M5986E711JT296MA6NDN91MG: an addition to a closed response is breaking).
+openapi: 3.1.0
+info:
+  title: Charter compatibility fixture
+  version: 1.0.0
+paths:
+  /packs:
+    get:
+      operationId: listPacks
+      summary: List the packs.
+      tags:
+        - Packs
+      responses:
+        '200':
+          description: The pack listing.
+          content:
+            application/json:
+              schema:
+                title: PackSummary
+                description: One loaded pack.
+                type: object
+                additionalProperties: false
+                required:
+                  - name
+                  - nodeCount
+                properties:
+                  name:
+                    type: string
+                    description: The pack name.
+                  nodeCount:
+                    type: integer
+                    description: The number of graph nodes of the pack.
+                  origin:
+                    type: string
+                    description: Where the pack was loaded from.
+        '404':
+          description: Refused.
+          content:
+            application/problem+json:
+              schema:
+                title: CharterRefusal
+                description: A Problem whose code is a charter refusal code.
+                allOf:
+                  - title: Problem
+                    description: The shared problem details body.
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - title
+                      - status
+                    properties:
+                      title:
+                        type: string
+                        description: A short summary of the kind of problem.
+                      status:
+                        type: integer
+                        description: The HTTP status code.
+                      code:
+                        type: string
+                        description: A stable machine-readable code.
+                  - type: object
+                    required:
+                      - code
+                    properties:
+                      code:
+                        title: CharterRefusalCode
+                        description: Why the read was refused.
+                        type: string
+                        enum:
+                          - mission_type_not_found
+                          - action_not_found

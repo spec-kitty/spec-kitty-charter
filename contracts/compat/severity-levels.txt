@@ -1,0 +1,7 @@
+# Custom oasdiff severity levels for the charter contract's breaking-change check (--severity-levels).
+# Every response schema of the charter contract is closed (additionalProperties: false), so a strict
+# consumer (core's ACL DTOs) may reject a member it does not know: adding a response property, optional
+# or required, is breaking (operator ruling DM 01M5986E711JT296MA6NDN91MG, 2026-10-19). oasdiff reports
+# both as info by default; they are raised to ERR here, which --fail-on ERR fails.
+response-optional-property-added ERR
+response-required-property-added ERR
