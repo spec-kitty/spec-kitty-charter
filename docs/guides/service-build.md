@@ -98,8 +98,9 @@ Releasing a contract version is a short procedure with its own rules, kept in on
 [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline). Follow it from a topic branch, and run
 `./gradlew :contracts:check` before you open the pull request.
 
-`contracts/_shared/` is a vendored copy of core's shared vocabulary; change it in core and
-refresh the copy (`contracts/_shared/VENDORED.md`).
+`contracts/_shared/` started as a copy of core's shared vocabulary. This repository's copy is
+canonical ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)): change
+it here when there is reason to, and list the change in `contracts/_shared/VENDORED.md`.
 
 ## Change a dependency
 
