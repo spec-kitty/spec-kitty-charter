@@ -5,6 +5,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.domain.RefusalCode;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -84,6 +85,35 @@ class HexagonalArchitectureTest {
                 .dependOnClassesThat()
                 .resideInAPackage("ai.speckitty.charter.api..")
                 .check(classes);
+    }
+
+    /**
+     * {@code internal_error} is the refusal of a failure no other code names, and only the inbound adapter, which
+     * answers the failure, may name it: a use case or an outbound adapter that refused with it would say, in the
+     * domain's own words, that it does not know what went wrong. The enum itself is exempt.
+     */
+    private static ArchRule onlyTheInboundAdapterNamesInternalError() {
+        return noClasses()
+                .that()
+                .resideOutsideOfPackage("ai.speckitty.charter.rest..")
+                .and()
+                .doNotHaveFullyQualifiedName(RefusalCode.class.getName())
+                .should()
+                .accessField(RefusalCode.class, "INTERNAL_ERROR");
+    }
+
+    @Test
+    void onlyTheInboundAdapterRefusesWithInternalError() {
+        onlyTheInboundAdapterNamesInternalError().check(classes);
+    }
+
+    @Test
+    void theInternalErrorRuleFailsOnAClassOutsideTheInboundAdapter() {
+        JavaClasses outside =
+                new ClassFileImporter().importPackages("ai.speckitty.charter.service.internalerrorfixture");
+        assertThatThrownBy(() -> onlyTheInboundAdapterNamesInternalError().check(outside))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UsesInternalError");
     }
 
     /**
