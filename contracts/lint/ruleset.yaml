@@ -6,7 +6,7 @@
 # so a citation or description on a referenced enum or scalar file holds wherever it is used.
 #
 # vacuum's own OpenAPI rule set is switched off and only the rules below run, so a vacuum upgrade
-# cannot add rules silently. Every rule has a planted fixture, fixtures/<rule id>[.<case>].yaml, that
+# cannot add rules silently. Every rule has at least one planted fixture, fixtures/<rule id>[.<case>].yaml, that
 # must fail exactly that rule once bundled (`./gradlew :contracts:lintFixtures`); fixtures/clean.yaml
 # passes them all.
 #
@@ -107,7 +107,7 @@ rules:
               maxProperties: 1
 
   enum-snake-case:
-    description: Enum values are snake_case; the pack tier built-in is the one spelling with a hyphen.
+    description: Enum values are snake_case; the pack level built-in is the one spelling with a hyphen.
     severity: error
     given: $..enum[*]
     then:
@@ -115,8 +115,8 @@ rules:
       functionOptions:
         match: "^([a-z][a-z0-9]*(_[a-z0-9]+)*|built-in)$"
 
-  tier-token-spelling:
-    description: The built-in pack tier is spelled built-in, never built_in, builtin or another case.
+  pack-level-token-spelling:
+    description: The pack level built-in is spelled built-in, never built_in, builtin or another case.
     severity: error
     given: $..enum
     then:

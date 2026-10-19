@@ -1,4 +1,4 @@
-# Planted fixture for tier-token-spelling: The built-in tier spelled built_in (snake_case, but not the tier spelling).
+# Planted fixture for pack-level-token-spelling: the pack level built-in spelled built_in (snake_case, not its spelling).
 openapi: 3.1.0
 info:
   title: Charter lint fixture
