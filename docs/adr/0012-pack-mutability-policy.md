@@ -106,7 +106,7 @@ introduces. Today:
    artifacts.
 7. **`required_*` means presence only.** A required artifact is always active. Its content is
    as open as its level says. Deactivating a required artifact is refused, and the error names
-   the org pack that requires it ([#67](https://github.com/spec-kitty/spec-kitty-charter/issues/67)).
+   the owning or requiring pack ([#67](https://github.com/spec-kitty/spec-kitty-charter/issues/67)).
    `locked` implies required.
 8. **The rule is stated over merge order, not over a fixed tier ladder.** The owner of an
    artifact is the pack that introduced it. Every pack merged after it is a later pack, and the
