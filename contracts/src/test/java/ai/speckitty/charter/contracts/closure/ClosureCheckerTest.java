@@ -369,10 +369,39 @@ class ClosureCheckerTest {
 
         @Test
         void aMisspeltResponsesIsAnUnknownOperationKey() {
-            assertReports(
-                    "operation-unknown-key.yaml",
-                    GET + "/responsez",
-                    "'responsez' is not an operation key the checker knows");
+            // The misspelling leaves the operation with no responses too; both are reported.
+            List<Violation> violations = violations("operation-unknown-key.yaml");
+            assertThat(violations)
+                    .extracting(v -> v.pointer().toString())
+                    .containsExactlyInAnyOrder(GET + "/responsez", GET);
+            assertThat(violations)
+                    .extracting(Violation::reason)
+                    .anyMatch(reason -> reason.contains("'responsez' is not an operation key the checker knows"));
+        }
+
+        @Test
+        void anOperationWithoutResponsesIsReported() {
+            assertReports("operation-without-responses.yaml", GET, "the operation has no responses");
+        }
+
+        @Test
+        void anOperationWithEmptyResponsesIsReported() {
+            assertReports("operation-empty-responses.yaml", GET + "/responses", "the operation's responses is empty");
+        }
+
+        @Test
+        void responsesThatAllLackABodyPass() {
+            assertPasses("operation-bodyless-responses.yaml");
+        }
+
+        @Test
+        void allowReservedIsAKnownHeaderKey() {
+            assertPasses("header-allow-reserved.yaml");
+        }
+
+        @Test
+        void allowEmptyValueIsAKnownHeaderKey() {
+            assertPasses("header-allow-empty-value.yaml");
         }
 
         @Test

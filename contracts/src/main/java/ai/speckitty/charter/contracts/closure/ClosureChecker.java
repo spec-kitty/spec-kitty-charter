@@ -31,10 +31,12 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       because it proved nothing.</li>
  *   <li><b>Fail closed around the positions.</b> The document level reads only keys it knows. A path is a key
  *       starting with {@code /}; a path item holds the lower-case methods, {@code summary}, {@code description},
- *       {@code servers} and {@code parameters}; an operation the OAS 3.1 operation fields; {@code responses} holds
- *       status codes ({@code 200}), ranges ({@code 4XX}) and {@code default}; a response holds
- *       {@code description}, {@code headers}, {@code content} and {@code links}; a header the OAS 3.1 header
- *       fields; a media type {@code schema}, {@code example}, {@code examples} and {@code encoding}. Every
+ *       {@code servers} and {@code parameters}; an operation the OAS 3.1 operation fields, and it must have
+ *       {@code responses}, not empty; {@code responses} holds status codes ({@code 200}), ranges ({@code 4XX}) and {@code default}; a response holds
+ *       {@code description}, {@code headers}, {@code content} and {@code links}; a header {@code description},
+ *       {@code required}, {@code deprecated}, {@code allowEmptyValue}, {@code allowReserved}, {@code style},
+ *       {@code explode}, {@code schema}, {@code example}, {@code examples} and {@code content} (the Parameter Object
+ *       fields that OAS 3.1 leaves a header, without {@code name} and {@code in}); a media type {@code schema}, {@code example}, {@code examples} and {@code encoding}. Every
  *       {@code x-} extension is let by. Any other key ({@code GET}, {@code responsez}, ...) is a violation naming
  *       it, as is a value there that is not a mapping, so nothing it holds goes unjudged. {@code webhooks} and
  *       operation {@code callbacks} are refused outright: the contract does not use them, and the checker would
