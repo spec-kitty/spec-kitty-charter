@@ -28,9 +28,9 @@ public enum RefusalCode {
      */
     GOVERNANCE_POLICY_VIOLATION("governance_policy_violation"),
     /**
-     * Reserved (ADR-0009): the pack or configuration files changed while the read was answered; the read may be
-     * retried. No load or query raises it yet; the code is in the contract so that the freshness work adds no
-     * breaking change.
+     * The pack or configuration files changed while the read was answered, so the answer and the fingerprint it
+     * would report might disagree; the read may be retried. Raised by {@code ConsistentLoad} and by the service
+     * info.
      */
     STALE_INPUT("stale_input");
 

@@ -1,27 +1,54 @@
 package ai.speckitty.charter.service.bdd;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The HTTP seam of one scenario. Every glue class sends its requests and reads its responses through the one instance
  * the scenario owns, so a {@code Then} step in one class sees the request a {@code When} step in another sent. It
- * keeps the last response with its method and path, which the conformance check after the scenario reads.
+ * records every exchange of the scenario, in order, which the checks after the scenario read; the steps see the last
+ * one.
+ *
+ * <p>After a 200 answer of any read but {@code /info}, it also asks {@code /info} once, off the record, and keeps the
+ * fingerprint that answer gives. The inputs have not changed in between, so it is the digest the read should have
+ * verified: the check after the scenario compares it with the read's {@code Charter-Source-Fingerprint}.
  */
 public class ScenarioHttp {
 
     private static final String BASE = "/api/v1";
 
+    private static final String INFO = "/info";
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    /**
+     * One request and its response.
+     *
+     * @param method the lower-case method, as the contract names it
+     * @param path the path below the base path, without its query
+     * @param result the response
+     * @param infoFingerprint after a 200 answer of a read other than {@code /info}: the {@code sourceFingerprint} that
+     *     {@code /info} answered right after, with the inputs unchanged; otherwise {@code null}
+     */
+    public record Exchange(
+            String method,
+            String path,
+            MvcResult result,
+            @Nullable String infoFingerprint) {}
+
     private final MockMvc mvc;
-    private @Nullable MvcResult result;
-    private @Nullable String method;
-    private @Nullable String path;
+    private final List<Exchange> exchanges = new ArrayList<>();
     private @Nullable String bearerToken;
 
     ScenarioHttp(MockMvc mvc) {
@@ -29,7 +56,7 @@ public class ScenarioHttp {
     }
 
     /**
-     * Sends a request below the API base path and remembers its response as the scenario's last one.
+     * Sends a request below the API base path and records the exchange.
      *
      * @param method the HTTP method, for example {@code GET}
      * @param path the path below the base path, with its query if any
@@ -40,8 +67,7 @@ public class ScenarioHttp {
      */
     public MvcResult perform(String method, String path, Map<String, String> headers, @Nullable String body)
             throws Exception {
-        MockHttpServletRequestBuilder request =
-                MockMvcRequestBuilders.request(org.springframework.http.HttpMethod.valueOf(method), BASE + path);
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(HttpMethod.valueOf(method), BASE + path);
         if (bearerToken != null) {
             request.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
         }
@@ -49,11 +75,28 @@ public class ScenarioHttp {
         if (body != null) {
             request.content(body);
         }
-        this.method = method.toLowerCase(java.util.Locale.ROOT);
         // The contract check matches the path without its query.
-        this.path = path.contains("?") ? path.substring(0, path.indexOf('?')) : path;
-        result = mvc.perform(request).andReturn();
-        return result;
+        String bare = path.contains("?") ? path.substring(0, path.indexOf('?')) : path;
+        MvcResult answered = mvc.perform(request).andReturn();
+        exchanges.add(
+                new Exchange(method.toLowerCase(Locale.ROOT), bare, answered, infoFingerprintAfter(bare, answered)));
+        return answered;
+    }
+
+    private @Nullable String infoFingerprintAfter(String path, MvcResult answered) throws Exception {
+        if (answered.getResponse().getStatus() != HttpStatus.OK.value() || path.equals(INFO)) {
+            return null;
+        }
+        MockHttpServletRequestBuilder probe = MockMvcRequestBuilders.get(BASE + INFO);
+        if (bearerToken != null) {
+            probe.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+        }
+        MockHttpServletResponse info = mvc.perform(probe).andReturn().getResponse();
+        return info.getStatus() == HttpStatus.OK.value()
+                ? JSON.readTree(info.getContentAsString())
+                        .path("sourceFingerprint")
+                        .asString()
+                : null;
     }
 
     /**
@@ -73,7 +116,16 @@ public class ScenarioHttp {
      * @return {@code true} once {@link #perform} has run
      */
     public boolean hasResponse() {
-        return result != null;
+        return !exchanges.isEmpty();
+    }
+
+    /**
+     * Every exchange of the scenario so far, in the order they were sent.
+     *
+     * @return a copy of the record; empty when the scenario has sent no request
+     */
+    public List<Exchange> exchanges() {
+        return List.copyOf(exchanges);
     }
 
     /**
@@ -83,7 +135,7 @@ public class ScenarioHttp {
      * @throws IllegalStateException when the scenario has sent no request
      */
     public MockHttpServletResponse response() {
-        return last().getResponse();
+        return last().result().getResponse();
     }
 
     /**
@@ -102,7 +154,7 @@ public class ScenarioHttp {
      * @return the lower-case method, as the contract names it
      */
     public String method() {
-        return require(method);
+        return last().method();
     }
 
     /**
@@ -111,7 +163,7 @@ public class ScenarioHttp {
      * @return the path below the base path
      */
     public String path() {
-        return require(path);
+        return last().path();
     }
 
     /**
@@ -123,14 +175,10 @@ public class ScenarioHttp {
         bearerToken = token;
     }
 
-    private MvcResult last() {
-        return require(result);
-    }
-
-    private static <T> T require(@Nullable T value) {
-        if (value == null) {
+    private Exchange last() {
+        if (exchanges.isEmpty()) {
             throw new IllegalStateException("the scenario has sent no request yet");
         }
-        return value;
+        return exchanges.getLast();
     }
 }

@@ -4,6 +4,7 @@ import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.Fingerprint;
 import ai.speckitty.charter.domain.PackLevel;
 import ai.speckitty.charter.read.ActionContextQuery;
+import ai.speckitty.charter.read.ConsistentLoad;
 import ai.speckitty.charter.read.PackListingQuery;
 import ai.speckitty.charter.read.ServiceInfoQuery;
 import ai.speckitty.charter.yaml.FileSystemCharterPackRepository;
@@ -107,13 +108,22 @@ public class CharterWiring {
         }
     }
 
+    /**
+     * The load every read of the offering goes through. It digests with the same {@link ProjectConfigSources} the
+     * service info uses, so the fingerprint a read reports equals the info's for unchanged inputs.
+     */
     @Bean
-    ActionContextQuery actionContextQuery(CharterPackRepository packs) {
-        return new ActionContextQuery(packs);
+    ConsistentLoad consistentLoad(CharterPackRepository packs, ProjectConfigSources sources) {
+        return new ConsistentLoad(packs, sources);
     }
 
     @Bean
-    PackListingQuery packListingQuery(CharterPackRepository packs) {
-        return new PackListingQuery(packs);
+    ActionContextQuery actionContextQuery(ConsistentLoad load) {
+        return new ActionContextQuery(load);
+    }
+
+    @Bean
+    PackListingQuery packListingQuery(ConsistentLoad load) {
+        return new PackListingQuery(load);
     }
 }

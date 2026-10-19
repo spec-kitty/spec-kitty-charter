@@ -1,7 +1,9 @@
 description: >-
-  A configured Charter Pack could not be loaded or merged, or the service failed unexpectedly,
-  refused with 500. The answer is never partial. The code names the reason, for example
-  pack_level_mismatch or unresolved_edge_endpoint; an unexpected failure is internal_error.
+  A configured Charter Pack could not be loaded or merged, the packs changed while the read was
+  answered, or the service failed unexpectedly, refused with 500. The answer is never partial. The code
+  names the reason, for example pack_level_mismatch or unresolved_edge_endpoint; a read whose packs or
+  project configuration changed while it was answered is stale_input, which may be retried; an
+  unexpected failure is internal_error. A refusal carries no Charter-Source-Fingerprint.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

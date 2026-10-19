@@ -9,10 +9,13 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletResponse;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -26,6 +29,7 @@ public class CharterSteps {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final ContractConformance CONTRACT = new ContractConformance();
+    private static final String FINGERPRINT = "Charter-Source-Fingerprint";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
 
     private final ScenarioHttp http;
@@ -52,21 +56,55 @@ public class CharterSteps {
         packs.delete();
     }
 
+    /** Every exchange of the scenario, not only the last, is checked against the schema the contract declares. */
     @After
     public void conformsToTheContract() throws Exception {
-        if (!http.hasResponse()) {
-            return;
+        for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+            MockHttpServletResponse response = exchange.result().getResponse();
+            String body = response.getContentAsString();
+            assertThat(CONTRACT.violations(
+                            exchange.method(),
+                            exchange.path(),
+                            response.getStatus(),
+                            response.getContentType(),
+                            json(body)))
+                    .as(
+                            "contract conformance of %s %s: %s",
+                            exchange.method().toUpperCase(Locale.ROOT), exchange.path(), body)
+                    .isEmpty();
         }
-        assertThat(CONTRACT.violations(
-                        http.method(),
-                        http.path(),
-                        http.response().getStatus(),
-                        http.response().getContentType(),
-                        json(http.body())))
-                .as(
-                        "contract conformance of %s %s: %s",
-                        http.method().toUpperCase(Locale.ROOT), http.path(), http.body())
-                .isEmpty();
+    }
+
+    /**
+     * Every 200 of the scenario carries exactly one {@code Charter-Source-Fingerprint}, the digest its read verified:
+     * for {@code /info} the {@code sourceFingerprint} of its own body, for another read the one {@code /info} gave
+     * right after it (the inputs had not changed). Every other answer carries none.
+     */
+    @After
+    public void fingerprintHeaderIsTheVerifiedDigest() throws Exception {
+        for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+            MockHttpServletResponse response = exchange.result().getResponse();
+            List<String> values = response.getHeaders(FINGERPRINT);
+            String what = exchange.method().toUpperCase(Locale.ROOT) + " " + exchange.path();
+            if (response.getStatus() != HttpStatus.OK.value()) {
+                assertThat(values)
+                        .as("%s answered %d and must carry no fingerprint", what, response.getStatus())
+                        .isEmpty();
+                continue;
+            }
+            assertThat(values)
+                    .as("%s must carry exactly one %s", what, FINGERPRINT)
+                    .hasSize(1);
+            String expected = exchange.path().equals("/info")
+                    ? JSON.readTree(response.getContentAsString())
+                            .path("sourceFingerprint")
+                            .asString()
+                    : exchange.infoFingerprint();
+            assertThat(values.getFirst())
+                    .as("the fingerprint header of %s", what)
+                    .matches(SHA256)
+                    .isEqualTo(expected);
+        }
     }
 
     @Given("the service fails unexpectedly while it reads the packs")
@@ -109,6 +147,11 @@ public class CharterSteps {
         assertThat(JSON.readTree(http.body()).path(field).asString()).isEqualTo(value);
     }
 
+    @Then("the field {string} of the response body starts with {string}")
+    public void fieldStartsWith(String field, String prefix) throws Exception {
+        assertThat(JSON.readTree(http.body()).path(field).asString()).startsWith(prefix);
+    }
+
     @Then("the field {string} of the response body is a sha256 digest")
     public void digestField(String field) throws Exception {
         assertThat(JSON.readTree(http.body()).path(field).asString()).matches(SHA256);
@@ -137,6 +180,11 @@ public class CharterSteps {
     @Then("the response header {string} is a sha256 digest")
     public void digestHeader(String name) {
         assertThat(http.response().getHeader(name)).isNotNull().matches(SHA256);
+    }
+
+    @Then("the response header {string} is the remembered {string}")
+    public void headerIsRemembered(String name, String field) {
+        assertThat(http.response().getHeader(name)).isEqualTo(remembered.get(field));
     }
 
     @Then("the response has no {string} header")

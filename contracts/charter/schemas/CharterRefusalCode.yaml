@@ -6,11 +6,21 @@ description: >-
   code is 500. internal_error refuses a failure no other code names; its detail is a generic
   sentence that says nothing about the failure, so every 500 is a refusal.
 
-  Two codes are reserved for the work that raises them, so that adding it is no breaking change
-  (ADR-0009); no operation of this version raises them. governance_policy_violation will refuse
-  an offering in which a lower-tier pack breaks the mutability policy of the pack that owns an
-  artifact. stale_input will refuse a read whose pack or configuration files changed while it was
-  answered.
+  stale_input is raised: the packs or the project configuration changed while the answer was computed,
+  so the answer and the Charter-Source-Fingerprint it would report might disagree. Every read that loads
+  the offering digests its inputs before and after it loads them and refuses on a difference; so does a
+  read whose load fails when the inputs digest differently afterwards, because the failure was the
+  change's (a half-written file), not the pack's. The read may be retried. A change made after the second
+  digest, or one reverted between the two, goes unseen.
+
+  One code is reserved for the work that raises it, so that adding it is no breaking change (ADR-0009):
+  governance_policy_violation will refuse an offering in which a lower-tier pack breaks the mutability
+  policy of the pack that owns an artifact (#48). No operation of this version raises it. Its scenario is
+  a declaration pin, not behavior: it asserts only what the x-refusal map below declares, and a unit test of
+  the service fails when any main class other than the enum and its title mapping names the code.
+
+  x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
+  and whether an operation of this version raises it (raised). Clients and the contract scenarios read it.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -30,6 +40,43 @@ enum:
   - internal_error
   - governance_policy_violation
   - stale_input
+x-refusal:
+  mission_type_not_found:
+    status: 404
+    retryable: false
+    raised: true
+  action_not_found:
+    status: 404
+    retryable: false
+    raised: true
+  pack_level_mismatch:
+    status: 500
+    retryable: false
+    raised: true
+  pack_unreadable:
+    status: 500
+    retryable: false
+    raised: true
+  drg_schema_error:
+    status: 500
+    retryable: false
+    raised: true
+  unresolved_edge_endpoint:
+    status: 500
+    retryable: false
+    raised: true
+  internal_error:
+    status: 500
+    retryable: true
+    raised: true
+  governance_policy_violation:
+    status: 500
+    retryable: false
+    raised: false
+  stale_input:
+    status: 500
+    retryable: true
+    raised: true
 x-source:
   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
   symbol: RefusalCode

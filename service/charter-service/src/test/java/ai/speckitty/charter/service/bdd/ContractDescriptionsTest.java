@@ -29,4 +29,21 @@ class ContractDescriptionsTest {
                 .contains("internal_error is a fault of the service and may be retried")
                 .contains("every other code is a deterministic refusal");
     }
+
+    @Test
+    void theRefusalCodeSaysStaleInputIsRaisedAndGovernancePolicyViolationIsOnlyDeclared() throws IOException {
+        assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
+                .contains("stale_input is raised: the packs or the project configuration changed while the answer was"
+                        + " computed, so the answer and the Charter-Source-Fingerprint it would report might disagree")
+                .contains("The read may be retried")
+                .contains("No operation of this version raises it")
+                .contains("Its scenario is a declaration pin, not behavior");
+    }
+
+    @Test
+    void theRefusedResponseCoversStaleInput() throws IOException {
+        assertThat(description("contract/charter/responses/OfferingUnreadable.yaml"))
+                .contains("the packs changed while the read was answered")
+                .contains("stale_input, which may be retried");
+    }
 }

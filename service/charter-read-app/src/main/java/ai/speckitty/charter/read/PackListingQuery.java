@@ -1,33 +1,37 @@
 package ai.speckitty.charter.read;
 
 import ai.speckitty.charter.domain.CharterPack;
-import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.PackDescriptor;
-import java.util.List;
 import java.util.Objects;
 
 /** The packs of the offering in layer order. */
 public final class PackListingQuery {
 
-    private final CharterPackRepository packs;
+    private final ConsistentLoad load;
 
     /**
      * A query over the offering {@code packs} loads.
      *
-     * @param packs the repository port; the offering is loaded afresh for every answer
+     * @param load the consistent load; the offering is loaded afresh for every answer
      */
-    public PackListingQuery(CharterPackRepository packs) {
-        this.packs = Objects.requireNonNull(packs, "packs");
+    public PackListingQuery(ConsistentLoad load) {
+        this.load = Objects.requireNonNull(load, "load");
     }
 
     /**
      * Every loaded pack, summarized.
      *
-     * @return one summary per pack, in layer order
-     * @throws ai.speckitty.charter.domain.CharterRefusal the repository's refusal when the offering cannot be loaded
+     * @return one summary per pack, in layer order, with the digest of the files they were loaded from
+     * @throws ai.speckitty.charter.domain.CharterRefusal the repository's refusal when the offering cannot be loaded,
+     *     or {@code STALE_INPUT} when the packs changed while the read was answered
      */
-    public List<PackSummary> answer() {
-        return packs.load().packs().stream().map(PackListingQuery::summarize).toList();
+    public PackListing answer() {
+        ConsistentLoad.Loaded loaded = load.load();
+        return new PackListing(
+                loaded.offering().packs().stream()
+                        .map(PackListingQuery::summarize)
+                        .toList(),
+                loaded.sourceFingerprint());
     }
 
     private static PackSummary summarize(CharterPack pack) {
