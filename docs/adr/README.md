@@ -37,15 +37,16 @@ stands.
 | [0006](/adr/0006-onion-vertical-slices-archunit/) | ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit | Proposed | 2026-10-18 |
 | [0007](/adr/0007-rest-hateoas-contract-of-record/) | ADR-0007: REST-HATEOAS is the v1 contract of record; GraphQL is planned-later, MCP deferred | Proposed | 2026-10-18 |
 | [0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) | ADR-0008: The Java charter is a rewrite that replaces the Python charter, built against BDD and OpenAPI contracts | Accepted | 2026-10-18 |
-| [0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) | ADR-0009: Contract 1.0 reserves the cutover and impacts surface; new capabilities arrive as additive contract sets | Accepted (provisional) | 2026-10-19 |
+| [0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) | ADR-0009: Contract 1.0 reserves the cutover and impacts surface; new capabilities arrive as additive contract sets | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |
 | [0010](/adr/0010-cutover-scope-and-seam-boundary/) | ADR-0010: The 4.x cutover retires every Python offering read; core's ADR governs only the seam routing | Accepted (provisional) | 2026-10-19 |
-| [0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) | ADR-0011: The seam fails closed, the service runs as a daemon, and freshness is fingerprinted | Accepted (provisional) | 2026-10-19 |
+| [0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) | ADR-0011: The seam fails closed, the service runs as a daemon, and freshness is fingerprinted | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |
 | [0012](/adr/0012-pack-mutability-policy/) | ADR-0012: Charter Pack authors declare open, extendable or locked per artifact | Accepted (provisional) | 2026-10-19 |
 | [0013](/adr/0013-persistent-deactivation/) | ADR-0013: Deactivation is a persisted exclusion in one activation ledger | Accepted (provisional) | 2026-10-19 |
 | [0014](/adr/0014-foundational-values-and-creed-rulings/) | ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements | Accepted (provisional) | 2026-10-19 |
 | [0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) | ADR-0015: This repository is canonical for the charter structure, responses, contracts and pack schemas | Accepted (provisional) | 2026-10-19 |
-| [0016](/adr/0016-conformance-corpus-harness-over-core-cli/) | ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects | Accepted (provisional) | 2026-10-19 |
+| [0016](/adr/0016-conformance-corpus-harness-over-core-cli/) | ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |
 | [0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) | ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema | Accepted (provisional) | 2026-10-19 |
+| [0018](/adr/0018-action-context-read-and-seam-access-surface/) | ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh | Accepted (provisional) | 2026-10-19 |
 
 ## Core decisions this repository builds on
 

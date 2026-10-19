@@ -1,12 +1,13 @@
 ---
 okf_version: "0.2"
 title: API
-description: The charter API — three read operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
+description: The charter API — four operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
 updated: 2026-10-19T00:00:00Z
 type: API
 kind: Hub
 related:
+  - api/divergence-register
   - architecture/contract-and-dtos
   - architecture/logical-model
   - adr/0001-java-service-with-openapi-contract
@@ -19,11 +20,11 @@ audience:
 
 # API
 
-> **Partly built, partly designed.** Three read operations are in the contract
+> **Partly built, partly designed.** Four operations are in the contract
 > (`contracts/charter/openapi.yaml`) and served by the Java charter service: pack listing
 > (`listPacks`, `GET /packs`), action-scoped context (`getActionContext`,
-> `GET /mission-types/{missionType}/actions/{action}/context`) and service info
-> (`getServiceInfo`, `GET /info`). The
+> `GET /mission-types/{missionType}/actions/{action}/context`), service info
+> (`getServiceInfo`, `GET /info`) and pack refresh (`refreshPacks`, `POST /packs/refresh`). The
 > [Java API reference](/api/javadoc/) documents the service's hand-written modules. Still
 > only designed: the other reads of the [service contract](/api/service-contract/), which the
 > cutover read inventory ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94))
@@ -62,6 +63,8 @@ must give one answer for the same inputs; the conformance corpus in
   errors.
 - [Service contract](/api/service-contract/) — the planned read and write operations, the
   error model and the transports.
+- [Divergence register](/api/divergence-register/) — where the service answers differently from
+  core on purpose, with a stable id for each difference.
 - [Versioning and compatibility](/api/compatibility/) — how each surface is versioned and
   what a consumer can rely on.
 - [Java API reference (Javadoc)](/api/javadoc/) — the Javadoc of the service's hand-written

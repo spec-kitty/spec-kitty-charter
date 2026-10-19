@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0015-charter-repository-is-canonical-for-charter-structure
@@ -31,6 +32,9 @@ This record clarifies [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-o
 decision 2. Its decision stands: the corpus's expected results are produced by core's Python
 charter. What changes is how. The roadmap's "core-side export script" is replaced by a harness
 in this repository over core's existing CLI.
+
+Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/): see
+[Amendment](#amendment-2026-10-19).
 
 ## Context
 
@@ -83,7 +87,7 @@ Hand-written answers would re-derive those rules on paper. That risks the charte
 5. **The contract scenarios stay the hand-written specification.** The corpus checks the service
    against core; the scenarios state what the contract promises.
 6. **Coverage follows the read inventory.** The corpus covers the reads the cutover inventory
-   (#94) decides, for every mission type and action, at both depths.
+   (#94) decides, for every mission type and action, at both depths. *(Amended 2026-10-19: at depths 0, 1 and 2.)*
 
 ## Consequences
 
@@ -136,3 +140,12 @@ core code that only this repository uses.
 - [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/),
   [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),
   [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/).
+
+## Amendment (2026-10-19)
+
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) changes one point of decision
+6. The corpus covers the reads "at depths 0, 1 and 2", not "at both depths": `depth` counts
+`suggests` hops, and the seam maps a first load to 2, a recorded load to 1 and the public bundle
+read to 0. The register that decision 4 describes now exists as the
+[divergence register](/api/divergence-register/), with stable ids; its machine-readable format
+stays with #72. The original decision text above is unchanged.

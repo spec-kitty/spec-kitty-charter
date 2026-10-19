@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - adr/0009-contract-1-0-reservations-and-additive-contract-sets
   - adr/0010-cutover-scope-and-seam-boundary
   - architecture/service-lifecycle
@@ -27,6 +28,9 @@ audience:
 **Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator).
 This decision is provisional: it is revisited as the system evolves, and a later record
 supersedes it rather than editing it.
+
+Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/): see
+[Amendment](#amendment-2026-10-19).
 
 ## Context
 
@@ -74,6 +78,7 @@ After the cutover every offering read crosses a process boundary
      by the user, read operations only, no browser-facing surface, and an identity check
      against the info operation before every session. The launcher records the process
      identity, not only the PID, so a recycled PID is never mistaken for the service.
+     *"Read operations only" is reworded by Amendment 2026-10-19.*
 3. **First-load state stays in core's seam.** The seam decides the load depth and passes it
    as the integer `depth` parameter. The service stays a pure read model: its answer is a
    function of its inputs and the depth.
@@ -82,6 +87,7 @@ After the cutover every offering read crosses a process boundary
    - It keeps a built graph and a fingerprint of its inputs: `config.yaml`, `charter.yaml`
      and every configured pack root. Each request checks the fingerprint. On a change the
      service rebuilds atomically before it answers.
+     *The input list is superseded by Amendment 2026-10-19.*
    - After each write, the seam sends the written paths (from `observe_writes`), and the
      service rebuilds.
    - If inputs change during a read, or a rebuild fails, the service refuses with
@@ -89,6 +95,8 @@ After the cutover every offering read crosses a process boundary
    - Every answer carries the `Charter-Contract-Version`, `Charter-Worktree` and
      `Charter-Source-Fingerprint` headers. The seam accepts only the contract `major.minor`
      it pinned.
+     *"Every answer carries" the fingerprint is superseded by Amendment 2026-10-19: it is on
+     200 answers only.*
 
 ## Consequences
 
@@ -158,6 +166,7 @@ A file watcher is platform-specific and misses events on network filesystems.
   worktree on first use, on loopback with a per-worktree token, and stops it on idle or
   worktree removal. This is a CLI-started daemon; it is limited to read operations and has no
   browser-facing surface."
+  *"Limited to read operations" is reworded by Amendment 2026-10-19.*
 - **Seam failure behavior** (#73): no fallback; transport failures become named errors.
 - **Write push:** after each charter write, the seam sends the paths from `observe_writes`
   to the service.
@@ -170,3 +179,20 @@ A file watcher is platform-specific and misses events on network filesystems.
 - [Service lifecycle](/architecture/service-lifecycle/),
   [Strangler transition](/architecture/strangler-transition/)
 - Issues #70, #71 and #73
+
+## Amendment (2026-10-19)
+
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) supersedes three points of
+decisions 2 and 4. The original text above is unchanged.
+
+- **Decision 2, "read operations only".** No operation changes governance or anything on disk.
+  `POST /packs/refresh` only tells the service to rebuild its read model, and every read after it
+  answers what the fingerprint check alone would answer (ADR-0018 D10).
+- **Decision 4, "every answer carries" the three headers.** `Charter-Source-Fingerprint` is on
+  200 answers only; no refusal carries it. The other two headers stay on every answer, the 401
+  and 403 included (D11).
+- **Decision 4, the fingerprint input list.** The inputs are every loaded pack file plus
+  `config.yaml` and `charter.yaml` under the configured project directory (D8).
+
+The token, its source and the browser refusal are specified in ADR-0018 D9. The built graph and
+reading pack locations from `config.yaml` are not superseded and stay with #73.

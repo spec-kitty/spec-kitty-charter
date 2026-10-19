@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - architecture/overview
   - architecture/strangler-transition
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
@@ -42,20 +43,38 @@ rules below are how this one is scoped to its worktree.
 
 ## Binding and access
 
-- Binds to `127.0.0.1` only and checks the `Host` and `Origin` headers, as the Mission
-  Status service does. Loopback-only HTTP is intended; do not change it to HTTPS in response
-  to a static-analysis finding.
-- Every request carries a capability credential scoped to the worktree.
+- Binds to `127.0.0.1` only. A request with an `Origin`, `Sec-Fetch-Site` or `Sec-Fetch-Mode`
+  header, or a `Host` whose name is not `localhost`, `127.0.0.1` or `[::1]` (the port is not
+  judged), is refused with 403. The `Origin` check alone would not stop DNS rebinding.
+  Loopback-only HTTP is intended; do not change it to HTTPS in response to a static-analysis
+  finding.
+- Every request carries the per-worktree bearer token, on every operation including `/info`. A
+  missing, malformed or wrong token is a 401 with `WWW-Authenticate: Bearer`. The guard runs
+  first, before any file is read, so an unknown path is a 401 and not a 404.
+- The service refuses to start without a token of at least 32 characters, unless
+  `charter.insecure-no-token=true` is set (development only; it warns at every start). It refuses
+  a token that comes from argv or a system property, including through `spring.application.json`
+  given on argv or with `-D`. The environment (`CHARTER_WORKTREE_TOKEN`) is the source.
+- The token proves the client to the service, not the service to the client. The launcher's
+  process identity is what identifies the server. Residual risks, for the launcher's security
+  review (#70): a process that squats the port receives the token, and a derived worktree id is
+  guessable. A `${x}` placeholder in the environment with its value on argv is not caught
+  either (hardening: #121).
 - No secrets in responses.
-- **Version handshake.** An info endpoint reports the contract version, the service version, the worktree and the current input fingerprint, and
-  every response carries `Charter-Contract-Version`, `Charter-Worktree` and
-  `Charter-Source-Fingerprint` headers. The seam refuses a service whose `major.minor` does not
-  match the contract it was built against.
+- **Version handshake.** An info endpoint reports the contract version, the service's build
+  version (`serviceVersion`, from `gradle.properties`), the worktree and the current input fingerprint.
+  Every answer carries `Charter-Contract-Version` and `Charter-Worktree`; a 200 also carries
+  `Charter-Source-Fingerprint`, once, and no refusal does. The seam refuses a service whose
+  `major.minor` does not match the contract it was built against.
 - The MCP adapter does not ship until a decision defines who may call it and how; the
   expected answer reuses this model (loopback, Host check, worktree-scoped token).
 
 ## Freshness
 
+- The fingerprint covers every pack file the service loads, plus `config.yaml` and `charter.yaml`
+  under the configured project directory (`charter.project-config-dir`; the launcher sets it to
+  the worktree's `.kittify`). An absent file and an empty one fingerprint differently. A
+  configured directory that does not exist fails startup.
 - At start, and after any write made outside it, the service fingerprints its source files
   and builds the active graph atomically. It never serves a graph built before a write it
   knows of.
@@ -64,8 +83,14 @@ rules below are how this one is scoped to its worktree.
 - **Push after write.** Core's writers notify the service after each write through the
   `kernel.atomic.observe_writes` hook, so the CLI sees its own write at once.
 - Pack locations are read from `.kittify/config.yaml`, not fixed when the service starts.
-- If inputs change while a read is answered, the service refuses with `stale_input`. There is
-  no Python fallback. Explicit refresh and mutation operations rebuild the graph atomically.
+- Every read digests its inputs before and after it answers. If they differ, including when a
+  load fails and the inputs changed meanwhile, the service refuses with `stale_input`. A change
+  after the second digest, or one reverted between the two, goes unseen. There is no Python
+  fallback.
+- `POST /packs/refresh` re-reads every pack and the project configuration, discards any built
+  read model and answers the refreshed pack listing with the fingerprint it verified. It takes
+  no body, changes nothing on disk and is idempotent. Mutation operations will rebuild the graph
+  atomically.
 - Ordinary reads make no network calls.
 
 ## Failure: the seam fails closed
@@ -79,6 +104,7 @@ together, so there is no Python fallback at any point.
 | Service answers for another worktree | Refused: identity is checked on every call |
 | Contract version does not match | Refused by the seam, naming both versions |
 | Inputs changed since the graph was built | Rebuild, or refuse with `stale_input`; never answer from the old graph |
+| Missing or wrong token (401), or a browser request (403) | A transport failure, not a refusal |
 | The service refuses (for example `pack_level_mismatch`) | That is the answer, passed through; it is not a failure |
 
 ## Release

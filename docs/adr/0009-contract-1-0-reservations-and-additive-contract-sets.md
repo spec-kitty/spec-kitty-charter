@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - adr/0002-contract-source-of-record
   - adr/0004-public-api-returns-generated-dtos
   - adr/0007-rest-hateoas-contract-of-record
@@ -28,6 +29,9 @@ audience:
 **Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator).
 This decision is provisional: it is revisited as the system evolves, and a later record
 supersedes it rather than editing it.
+
+Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/): see
+[Amendment](#amendment-2026-10-19).
 
 ## Context
 
@@ -67,7 +71,8 @@ Several needs are already known:
 2. **Two refusal codes are reserved:** `governance_policy_violation` and `stale_input`.
    Neither is raised until its behavior lands, but clients must handle both from 1.0.
 3. **The seam runtime surface is reserved:**
-   - an integer `depth` request parameter on the context read, echoed in the response;
+   - an integer `depth` request parameter on the context read, echoed in the response
+     *(superseded by Amendment 2026-10-19: it counts `suggests` hops, 0 to 2)*;
    - an info operation that returns the contract version, the service version, the worktree
      identity and the current input fingerprint;
    - the response headers `Charter-Contract-Version`, `Charter-Worktree` and
@@ -152,3 +157,13 @@ Not chosen: it gives up validation and the closed-schema rule that PR #54 adopte
 - [Contract and DTOs](/architecture/contract-and-dtos/), [Compatibility](/api/compatibility/)
 - Core ADR [`2026-07-26-3`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-07-26-3-impacts-edge-subsumes-in-tension-with.md)
 - Epics #16, #55, #56 and #77
+
+## Amendment (2026-10-19)
+
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) supersedes decision 3, first
+bullet. The reserved `depth` was an integer from 1 to 1 that counted scope hops. It now counts
+`suggests` hops, with a request range of 0 to 2 and a default of 2. `ActionContext.depth` echoes
+it with no maximum. The info operation, the three headers and the governance fingerprint stay as
+reserved here, with their inputs and rules in ADR-0018 (decisions D7, D8 and D11). Decision 2
+still holds: `stale_input` is now raised, and `governance_policy_violation` stays reserved until
+issue #48 lands. The original decision text above is unchanged.

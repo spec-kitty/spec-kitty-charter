@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - context/domain
   - architecture/contract-and-dtos
   - adr/0012-pack-mutability-policy
@@ -35,7 +36,7 @@ The service reads only configured inputs, never directory presence:
 | Project pack | `.kittify/charter-packs/` | `pack_level: project` |
 | Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys, `activated_kinds` and `mission_type_activations` |
 | Mission type | the request (`--mission-type` in the CLI) or the mission's `meta.json` | keys the action grain: action nodes are `action:<mission-type>/<action>` |
-| Load depth | the request | first load (bootstrap) or a later, compact load; see Writes |
+| `depth` | the request | the number of `suggests` hops of the action-context walk, 0 to 2, default 2; the seam maps a first load to 2, a recorded load to 1 and the public bundle read to 0 |
 
 The retired `doctrine.org.packs` key and the `.kittify/doctrine/` root are not read: core's
 charter-pack cutover removes every read-side fallback after a one-time upgrade migration
@@ -63,7 +64,7 @@ flowchart LR
    land in the same graph that cascade reads; they are not kept on a separate,
    diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
    mutability level is checked against what later packs do to it: a change the level does not
-   allow is the refusal `governance_policy_violation`
+   allow is the refusal `governance_policy_violation`, a reserved code that nothing raises yet
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
 3. **Activate.** A per-kind activation key that is absent means what the kind's
@@ -74,6 +75,26 @@ flowchart LR
    selection-overlayable.
 4. **Answer.** Action-scoped context, profile resolution with `specializes_from` lineage and
    `enhances` / `overrides` applied, graph queries and listings.
+
+### The action-context walk
+
+`getActionContext` answers the offering's walk, never a filtered one. Five breadth-first steps,
+each artifact listed once by the first step that reaches it:
+
+1. `scope` from the action node, one hop;
+2. `requires` from the scoped artifacts, transitively;
+3. `suggests` from the scoped artifacts, up to `depth` hops;
+4. `requires` of the suggested artifacts, transitively (the one registered difference in the
+   walk, DIV-010);
+5. `vocabulary`, one hop from everything the first four steps list.
+
+Each entry says which relation listed it (`relation`), its parent (`via`) and its distance from
+the action (`hops`). Following `via` always reaches the action in exactly `hops` edges. `depth`
+counts suggests hops only; `hops` is the full path length. The mission-type node is not walked.
+What applies in one project (activation, exclusions, selection roots) is a later operation, R9
+(#103). The rules and the reasons are in
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/); the differences from core are
+in the [divergence register](/api/divergence-register/).
 
 ## Writes
 
@@ -90,9 +111,10 @@ exist in core today, and each is a separate operation to migrate
 
 A fourth, non-YAML write exists: the context read itself records first-load state in
 `.kittify/charter/context-state.json` (`--mark-loaded`), and its answer differs between a
-first load and a later one. That state stays in core's seam, and the service takes the load
-depth as an integer request parameter, echoed in the response
-([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/), provisional).
+first load and a later one. That state stays in core's seam, and the service takes a
+`depth` integer request parameter that counts `suggests` hops (0 to 2), echoed in the response
+([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) and
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/), provisional).
 
 ## Rules the domain inherits
 
