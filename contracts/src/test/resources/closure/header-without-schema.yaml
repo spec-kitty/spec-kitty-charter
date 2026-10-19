@@ -1,0 +1,18 @@
+# Must report (pre-PR squad): a response header with neither a schema nor content is unconstrained.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          headers:
+            X-Probe:
+              description: An unconstrained header.
+          content:
+            application/json:
+              schema:
+                type: string

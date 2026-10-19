@@ -1,0 +1,22 @@
+# Must report (pre-PR squad): the contract uses no callbacks, and the checker would need to judge their responses.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      callbacks:
+        done:
+          '{$request.query.url}':
+            post:
+              responses:
+                '200':
+                  description: The callback.
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: string

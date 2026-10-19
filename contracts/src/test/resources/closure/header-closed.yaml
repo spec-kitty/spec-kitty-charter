@@ -1,0 +1,28 @@
+# Must pass (pre-PR squad): a scalar response header is not an object, so it passes; a closed object one too.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          headers:
+            X-Count:
+              description: A count.
+              required: true
+              schema:
+                type: integer
+            X-Meta:
+              description: A closed object header.
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    additionalProperties: false
+          content:
+            application/json:
+              schema:
+                type: string

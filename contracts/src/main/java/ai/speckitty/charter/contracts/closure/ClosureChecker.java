@@ -15,14 +15,30 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *
  * <ol>
  *   <li><b>Input.</b> The bundled contract ({@code bundleContract}'s output, every {@code $ref} inlined), an
- *       OpenAPI 3.1 document ({@code openapi: 3.1.x}) whose schemas are the OAS 3.1 default dialect,
- *       {@value #DEFAULT_DIALECT} (JSON Schema 2020-12 with the OpenAPI vocabulary). The checker assumes that
- *       dialect: another {@code openapi} version, or a {@code jsonSchemaDialect} other than the default, is a
- *       violation, because its keywords may mean something else. Every response schema,
- *       {@code paths.*.<method>.responses.*.content.*.schema}, is a <i>position</i>. A media type of
- *       {@code content} with no {@code schema} is a violation at that media type, its body being unconstrained;
- *       a response with no {@code content} (a 204) has no body and passes. A {@code $ref} left anywhere the
- *       checker reads (a path item, a response, a schema) is a violation: the bundle is wrong.</li>
+ *       OpenAPI 3.1 document ({@code openapi: 3.1.x}, a string: an unquoted YAML number {@code 3.1} is reported)
+ *       whose schemas are the OAS 3.1 default dialect, {@value #DEFAULT_DIALECT} (JSON Schema 2020-12 with the
+ *       OpenAPI vocabulary). The checker assumes that dialect: another {@code openapi} version, or a
+ *       {@code jsonSchemaDialect} other than the default, is a violation, because its keywords may mean something
+ *       else. A {@code $ref} left anywhere the checker reads (a path item, a response, a header, a media type, a
+ *       schema) is a violation: the bundle is wrong.</li>
+ *   <li><b>Positions.</b> Every response schema is a <i>position</i>:
+ *       {@code paths.*.<method>.responses.*.content.*.schema}, and, for each response header, its {@code schema}
+ *       and each {@code content.*.schema} of it. Headers are judged, not refused: a header schema that admits an
+ *       object is classified like a body schema, so a scalar header passes and an open object header is reported. A
+ *       media type of {@code content} with no {@code schema}, and a header with neither {@code schema} nor
+ *       {@code content}, is a violation there, its value being unconstrained; a response with no {@code content}
+ *       (a 204) has no body and passes. A run that judges no position at all is a violation at the document root,
+ *       because it proved nothing.</li>
+ *   <li><b>Fail closed around the positions.</b> The document level reads only keys it knows. A path is a key
+ *       starting with {@code /}; a path item holds the lower-case methods, {@code summary}, {@code description},
+ *       {@code servers} and {@code parameters}; an operation the OAS 3.1 operation fields; {@code responses} holds
+ *       status codes ({@code 200}), ranges ({@code 4XX}) and {@code default}; a response holds
+ *       {@code description}, {@code headers}, {@code content} and {@code links}; a header the OAS 3.1 header
+ *       fields; a media type {@code schema}, {@code example}, {@code examples} and {@code encoding}. Every
+ *       {@code x-} extension is let by. Any other key ({@code GET}, {@code responsez}, ...) is a violation naming
+ *       it, as is a value there that is not a mapping, so nothing it holds goes unjudged. {@code webhooks} and
+ *       operation {@code callbacks} are refused outright: the contract does not use them, and the checker would
+ *       need to judge their responses.</li>
  *   <li><b>Positive, recursive classification.</b> A schema is <i>closed</i> (admits no object with members it
  *       does not list), <i>not an object</i> (provably admits no object, and no array whose items go unjudged) or
  *       <i>open</i>. Only the first two pass; whatever the checker cannot prove is open. Internally the objects
@@ -42,8 +58,8 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       unconstrained; a tuple is closed only by {@code items: false} (or an {@code items} position). So an
  *       untyped schema with {@code additionalProperties: false} and no {@code items} is open: it admits any
  *       array.</li>
- *   <li><b>Conjunction.</b> A schema's own keywords, each {@code allOf} part, each union (rule 6) and its
- *       condition (rule 7) all apply to one value. Together they are closed when at least one part is closed, and
+ *   <li><b>Conjunction.</b> A schema's own keywords, each {@code allOf} part, each union (rule 8) and its
+ *       condition (rule 9) all apply to one value. Together they are closed when at least one part is closed, and
  *       not an object when at least one part is not an object; otherwise open (per facet: the narrowest part
  *       decides). One exception, a convention against authoring mistakes: a part that admits no object never
  *       excuses an open part whose {@code type} names {@code object}. That pairing is reported even when the
@@ -63,8 +79,8 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       constraint-only or not, can never reopen a closed holder.</li>
  *   <li><b>Conditions.</b> {@code not} never closes anything, and {@code if} only selects {@code then} or
  *       {@code else}; neither describes an admitted value, so nothing inside them is a position (their keywords
- *       are still vetted, rule 8). {@code then} and {@code else} are read only beside an {@code if}: there they
- *       are alternatives (rule 6), a missing one admitting whatever the holder admits, so they close their holder
+ *       are still vetted, rule 10). {@code then} and {@code else} are read only beside an {@code if}: there they
+ *       are alternatives (rule 8), a missing one admitting whatever the holder admits, so they close their holder
  *       only when both do. Without an {@code if} they have no effect (JSON Schema 2020-12 core 10.2.2.2 and
  *       10.2.2.3): they close nothing, and only the positions nested in them are judged. A
  *       {@code dependentSchemas} entry applies only when its member is present, so it never closes its holder;
@@ -76,12 +92,13 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       ...) is a violation naming it, so a construct the checker has no semantics for cannot slip past. These
  *       are violations too, each naming the problem: a {@code type} that is not a type name or a non-empty list
  *       of them, a type name that is not a string (an unquoted YAML {@code null} included) or not a JSON Schema
- *       type, an {@code enum} that is not a non-empty list, a schema that is neither a mapping nor a boolean, an
- *       empty union and a schema containing itself (a YAML alias cycle). A malformed {@code type} or
- *       {@code enum} is then ignored, so the schema is judged as if it were absent.</li>
+ *       type, an {@code enum} that is not a non-empty list, an {@code additionalProperties} that is not a schema
+ *       ({@code additionalProperties: 5}), a schema that is neither a mapping nor a boolean, an empty union and a
+ *       schema containing itself (a YAML alias cycle). A malformed {@code type} or {@code enum} is then ignored, so
+ *       the schema is judged as if it were absent; a malformed {@code additionalProperties} closes nothing.</li>
  *   <li><b>Output.</b> One {@link Violation} per finding: the JSON Pointer of the position (or of the offending
- *       keyword) and the reason. {@link CheckClosedResponseObjects} prints one line each and exits non-zero when
- *       there is any.</li>
+ *       key) and the reason. {@link CheckClosedResponseObjects} prints one line each and exits 1 when there is any,
+ *       and exits 2 when the bundle cannot be read or is not YAML.</li>
  * </ol>
  */
 public final class ClosureChecker {
