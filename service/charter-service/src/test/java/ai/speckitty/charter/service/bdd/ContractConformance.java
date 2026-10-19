@@ -1,18 +1,23 @@
 package ai.speckitty.charter.service.bdd;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
@@ -26,18 +31,160 @@ import tools.jackson.databind.JsonNode;
  * any module.
  *
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
- * {@code allOf}, {@code type} (one name or a list), {@code properties}, {@code required},
- * {@code additionalProperties: false}, {@code items}, {@code enum}, {@code pattern}, {@code maxLength},
+ * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
+ * {@code additionalProperties: false}, {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength},
  * {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
- * never ignored in silence.
+ * never ignored in silence: the check walks every schema of the contract once when it is built, not only the
+ * ones a body reaches. The contract tree is a constructor argument, so the fail-closed branches are tested over
+ * fixtures.
+ *
+ * <p>Not routed through here, as no scenario can provoke them: the {@code 405} of a method the path does not have
+ * and the container's {@code /error} page, pinned in {@code ProblemResponsesTest}; and what Tomcat answers before
+ * routing (a malformed path, a missing {@code Host}, an oversized header, {@code TRACE}), pinned in
+ * {@code ConnectorErrorsTest}. Both assert the closed {@code Problem} body literally.
  */
 final class ContractConformance {
 
-    private static final String OPENAPI = "contract/charter/openapi.yaml";
-    private static final String SHARED_PROBLEM = "contract/_shared/responses/Problem.yaml";
+    private static final String OPENAPI = "charter/openapi.yaml";
+    private static final String SHARED_PROBLEM = "_shared/responses/Problem.yaml";
+    private static final Set<String> CONSTRAINTS =
+            Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "minimum", "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
 
+    private final Path root;
     private final Map<String, Map<String, Object>> documents = new HashMap<>();
+
+    /** The contract on the test classpath, the {@code contract} directory the test resources hold. */
+    ContractConformance() {
+        this(classpathRoot());
+    }
+
+    /**
+     * The contract under {@code root}, for example a fixture: {@code charter/openapi.yaml} and the
+     * {@code _shared} components below it.
+     *
+     * @param root the directory that holds {@code charter/} and {@code _shared/}
+     */
+    ContractConformance(Path root) {
+        this.root = root;
+        vetEverySchema();
+    }
+
+    /**
+     * Walks every schema of the contract once: each file below a {@code schemas} directory, and each schema of
+     * a response, whether the response sits in a {@code responses} directory or in an operation. A keyword the
+     * check does not implement fails here, whether or not a body ever walks the schema that holds it.
+     */
+    private void vetEverySchema() {
+        Set<String> vetted = new HashSet<>();
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
+                String name = file.getFileName().toString();
+                String directory = String.valueOf(file.getParent().getFileName());
+                String resource = root.relativize(file).toString().replace(File.separatorChar, '/');
+                if (!name.endsWith(".yaml") || name.equals("_index.yaml")) {
+                    continue;
+                }
+                if (directory.equals("schemas")) {
+                    vetFile(resource, vetted);
+                } else if (directory.equals("responses")) {
+                    vetResponse(new Located(document(resource), resource), vetted);
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (Files.isRegularFile(root.resolve(OPENAPI))) {
+            vetOperations(vetted);
+        }
+    }
+
+    private void vetOperations(Set<String> vetted) {
+        for (Map.Entry<String, Object> entry :
+                mapping(document(OPENAPI).get("paths"), "paths").entrySet()) {
+            Located item = resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
+            for (Object operation : item.node().values()) {
+                if (operation instanceof Map<?, ?> map && map.get("responses") != null) {
+                    for (Map.Entry<String, Object> response : mapping(
+                                    map.get("responses"), entry.getKey() + " responses")
+                            .entrySet()) {
+                        vetResponse(
+                                resolve(new Located(mapping(response.getValue(), entry.getKey()), item.file())),
+                                vetted);
+                    }
+                }
+            }
+        }
+    }
+
+    private void vetResponse(Located response, Set<String> vetted) {
+        if (response.node().get("content") == null) {
+            return;
+        }
+        for (Object media : mapping(response.node().get("content"), response.file() + " content")
+                .values()) {
+            Object schema = mapping(media, response.file()).get("schema");
+            if (schema != null) {
+                vetNode(new Located(mapping(schema, response.file() + " schema"), response.file()), vetted);
+            }
+        }
+    }
+
+    private void vetFile(String resource, Set<String> vetted) {
+        if (vetted.add(resource)) {
+            vetNode(new Located(document(resource), resource), vetted);
+        }
+    }
+
+    private void vetNode(Located schema, Set<String> vetted) {
+        if (schema.node().containsKey("$ref")) {
+            vetFile(resolve(schema).file(), vetted);
+            return;
+        }
+        for (Map.Entry<String, Object> keyword : schema.node().entrySet()) {
+            String key = keyword.getKey();
+            Object argument = keyword.getValue();
+            switch (key) {
+                case "allOf", "oneOf" -> {
+                    for (Object branch : list(argument, schema.file() + " " + key)) {
+                        vetNode(new Located(mapping(branch, schema.file() + " " + key), schema.file()), vetted);
+                    }
+                }
+                case "properties" -> {
+                    for (Map.Entry<String, Object> property :
+                            mapping(argument, schema.file() + " properties").entrySet()) {
+                        vetNode(new Located(mapping(property.getValue(), property.getKey()), schema.file()), vetted);
+                    }
+                }
+                case "items" ->
+                    vetNode(new Located(mapping(argument, schema.file() + " items"), schema.file()), vetted);
+                case "additionalProperties" -> {
+                    if (!Boolean.FALSE.equals(argument)) {
+                        throw new AssertionError(
+                                schema.file() + ": only additionalProperties: false is supported, not " + argument);
+                    }
+                }
+                default -> {
+                    if (!CONSTRAINTS.contains(key) && !key.startsWith("x-") && !ANNOTATIONS.contains(key)) {
+                        throw new AssertionError(
+                                schema.file() + " uses the keyword '" + key + "', which this check does not implement");
+                    }
+                }
+            }
+        }
+    }
+
+    private static Path classpathRoot() {
+        URL url = ContractConformance.class.getClassLoader().getResource("contract");
+        if (url == null) {
+            throw new AssertionError("the contract directory is not on the test classpath");
+        }
+        try {
+            return Path.of(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new AssertionError("the contract directory has no file location: " + url, e);
+        }
+    }
 
     /**
      * The contract violations of one response; empty when it conforms.
@@ -115,6 +262,19 @@ final class ContractConformance {
                         validate(value, new Located(mapping(branch, at), resolved.file()), at, violations);
                     }
                 }
+                case "oneOf" -> {
+                    long matching = list(argument, at + " oneOf").stream()
+                            .filter(branch -> {
+                                List<String> branchViolations = new ArrayList<>();
+                                validate(
+                                        value, new Located(mapping(branch, at), resolved.file()), at, branchViolations);
+                                return branchViolations.isEmpty();
+                            })
+                            .count();
+                    if (matching != 1) {
+                        violations.add(at + " matches " + matching + " of the oneOf branches, not exactly one");
+                    }
+                }
                 case "type" -> {
                     List<?> types = argument instanceof List<?> l ? l : List.of(argument);
                     if (types.stream().noneMatch(t -> hasType(value, String.valueOf(t)))) {
@@ -178,6 +338,14 @@ final class ContractConformance {
                         violations.add(at + " '" + value.asString() + "' does not match " + argument);
                     }
                 }
+                case "minLength" -> {
+                    if (value.isString()
+                            && value.asString()
+                                            .codePointCount(0, value.asString().length())
+                                    < ((Number) argument).intValue()) {
+                        violations.add(at + " is shorter than " + argument);
+                    }
+                }
                 case "maxLength" -> {
                     if (value.isString()
                             && value.asString()
@@ -236,16 +404,16 @@ final class ContractConformance {
     }
 
     private Map<String, Object> document(String resource) {
-        return documents.computeIfAbsent(resource, ContractConformance::load);
+        return documents.computeIfAbsent(resource, this::load);
     }
 
-    private static Map<String, Object> load(String resource) {
-        try (InputStream in = ContractConformance.class.getClassLoader().getResourceAsStream(resource)) {
-            if (in == null) {
-                throw new AssertionError("the contract file " + resource + " is not on the test classpath");
-            }
-            Object document = new Load(LoadSettings.builder().build())
-                    .loadFromString(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+    private Map<String, Object> load(String resource) {
+        Path file = root.resolve(resource);
+        if (!Files.isRegularFile(file)) {
+            throw new AssertionError("the contract file " + resource + " is not under " + root);
+        }
+        try {
+            Object document = new Load(LoadSettings.builder().build()).loadFromString(Files.readString(file));
             return mapping(document, resource);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
