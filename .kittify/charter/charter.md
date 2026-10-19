@@ -23,7 +23,7 @@ DTOs from it.
 1. **Divergence from the oracle.** The service may change the wire format, but the
    governance content it answers must match the Python charter closely enough that
    core does not break.
-2. **Breaking the OpenAPI contract.** The service honours the contract, and no
+2. **Breaking the OpenAPI contract.** The service honors the contract, and no
    incompatible contract change reaches core.
 
 Also: open-packs YAML always round-trips exactly, and no unverified dependency enters
