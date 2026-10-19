@@ -2,7 +2,7 @@
 title: System context
 description: The systems around the charter service — the core CLI and runtime, the Charter Packs, the event contracts and the integration package — and which contract each edge uses.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Context
 kind: Explanation
 related:

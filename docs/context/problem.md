@@ -2,7 +2,7 @@
 title: Why the charter leaves the CLI
 description: Why the charter leaves the core CLI for its own repository, and why its new implementation is a Java service built against an OpenAPI contract.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Context
 kind: Explanation
 related:

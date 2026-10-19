@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds — the YAML files a Charter Pack ships — their fields, enums and the DRG edges between them, derived from the core schemas and models.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Architecture
 kind: Reference
 related:

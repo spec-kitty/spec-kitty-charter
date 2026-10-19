@@ -2,7 +2,7 @@
 title: "Reader persona: Core maintainer"
 description: The maintainer of the Spec Kitty core CLI, who owns the seam, the import move and the GA gate that this repository's extraction belongs to.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Maintainer of the core CLI who owns the seam, the import move and the GA gate

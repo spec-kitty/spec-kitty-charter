@@ -2,7 +2,7 @@
 title: Why the charter offering matters to an organization
 description: How the charter offering gives an organization centrally governed, harness-independent agent behavior that each project and repository composes to its own needs.
 doc_status: draft
-updated: 2026-10-17
+updated: 2026-10-17T00:00:00Z
 type: Context
 kind: Explanation
 related:

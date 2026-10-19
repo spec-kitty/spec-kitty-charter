@@ -2,7 +2,7 @@
 title: Versioning and compatibility
 description: How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: API
 kind: Reference
 related:

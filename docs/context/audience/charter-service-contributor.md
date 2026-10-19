@@ -2,7 +2,7 @@
 title: "Reader persona: Charter service contributor"
 description: The engineer who builds the Java charter service, its OpenAPI contract and the conformance corpus in this repository.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Java engineer building the charter service, its contract and its conformance corpus

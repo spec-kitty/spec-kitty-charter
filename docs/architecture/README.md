@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: Architecture
 description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Hub
 audience:

@@ -2,7 +2,7 @@
 title: Events go through the core's one canonical event writer
 description: The event pages follow the operator's 2026-10-14 clarification of one canonical event writer in the core CLI; the charter stays outside the event model.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

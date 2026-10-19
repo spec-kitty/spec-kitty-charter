@@ -2,7 +2,7 @@
 title: Behavior and acceptance scenarios
 description: The contract and acceptance scenarios that define the charter offering's role and boundary, and how they become the conformance net that survives the repository split.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

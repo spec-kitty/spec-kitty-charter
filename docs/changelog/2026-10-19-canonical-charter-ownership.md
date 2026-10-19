@@ -2,7 +2,7 @@
 title: This repository is canonical for the charter structure, responses, contracts and pack schemas
 description: ADR-0015 records the operator ruling that charter shapes changed here are canonical, even in files vendored from core.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

@@ -2,7 +2,7 @@
 title: Glossary imported from the core repository
 description: The docsite now has a Glossary section with the charter, governance and product-line terms, copied from the core glossary and linked across the docs.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

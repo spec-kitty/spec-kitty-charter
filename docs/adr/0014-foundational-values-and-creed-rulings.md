@@ -2,7 +2,7 @@
 title: "ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements, and supersede core's open-decisions table"
 description: Records the operator's rulings on value-bearing kinds, the impacts relation, arithmetic, the interview and rationale, and when creed work reaches the API.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:

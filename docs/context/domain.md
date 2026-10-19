@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]

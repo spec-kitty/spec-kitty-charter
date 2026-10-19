@@ -2,7 +2,7 @@
 title: "ADR-0002: This repository is the source of record for the charter contract"
 description: The charter OpenAPI contract is authored here under contracts/charter/, in the layout of core's contract module with its own checks; core ingests pinned releases.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:

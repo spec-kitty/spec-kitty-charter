@@ -2,7 +2,7 @@
 title: Contract 1.0 reserves the cutover surface and models impacts
 description: Contract 1.0 replaces in_tension_with with a signed impacts edge, reserves two refusal codes and a depth bound, and adds a governance fingerprint, /info and response headers.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

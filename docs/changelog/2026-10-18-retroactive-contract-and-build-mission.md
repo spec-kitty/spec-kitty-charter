@@ -2,7 +2,7 @@
 title: Contract and build brought under governance
 description: A retroactive Mission reviewed roadmap steps 1 and 2, recorded the operator rulings, and added the charter's own contract checks and the quality gates.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

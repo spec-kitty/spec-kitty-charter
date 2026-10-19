@@ -2,7 +2,7 @@
 title: "Reader persona: Non-engineer developer"
 description: Someone who builds software by directing AI agents rather than writing code (the vibe coder), and relies on the charter to keep that work safe and on track.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Builder without an engineering background who directs AI agents in plain language

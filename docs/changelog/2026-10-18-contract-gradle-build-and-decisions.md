@@ -2,7 +2,7 @@
 title: Contract skeleton, Gradle build and three decisions
 description: The operator accepted ADR-0002 and core ADR 2026-10-03-1 and chose rewrite-and-replace; the first contract paths, contract scenarios and the Gradle build of the service landed.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

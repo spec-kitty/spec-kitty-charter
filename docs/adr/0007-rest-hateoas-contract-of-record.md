@@ -2,7 +2,7 @@
 title: "ADR-0007: REST-HATEOAS is the v1 contract of record; GraphQL is planned-later, MCP deferred"
 description: REST with OpenAPI-HATEOAS ships as the sole v1 contract of record via a reusable Links component; GraphQL is derived from OpenAPI and planned-later; the MCP adapter is deferred.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: ADR
 kind: ADR
 related:

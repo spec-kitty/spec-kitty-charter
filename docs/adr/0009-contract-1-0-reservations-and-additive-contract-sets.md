@@ -2,7 +2,7 @@
 title: "ADR-0009: Contract 1.0 reserves what the cutover needs; later capabilities arrive as additive contract sets"
 description: Contract 1.0 models the signed impacts relation and reserves refusal codes, load depth and version headers; activation, creed and policy come later as new endpoints.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:
