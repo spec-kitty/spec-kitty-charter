@@ -61,9 +61,8 @@ public final class ConsistentLoad {
      * @return the offering and the digest both reads agree on
      * @throws CharterRefusal with {@link RefusalCode#STALE_INPUT} when the two digests differ, when the second digest
      *     is refused, or when the load was refused and the inputs digest differently afterwards (or cannot be
-     *     digested again); with the first
-     *     digest's refusal when an input cannot be read ({@link RefusalCode#PACK_UNREADABLE}); otherwise with the
-     *     load's own refusal. The second digest being refused counts as a change, so it is {@code STALE_INPUT}. A failure that is not a refusal is not changed
+     *     digested again); with the first digest's refusal ({@link RefusalCode#PACK_UNREADABLE}) when an input cannot
+     *     be read; otherwise with the load's own refusal. A failure that is not a refusal is not changed.
      */
     public Loaded load() {
         String first = sources.fingerprint();
