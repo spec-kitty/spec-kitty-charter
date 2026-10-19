@@ -170,11 +170,19 @@ Feature: Action-scoped context
     When I GET "/mission-types/software-dev/actions/deploy/context"
     Then the response status is 404
     And the problem code is "action_not_found"
+    And the response body is:
+      """
+      {"title": "Action not found", "status": 404, "code": "action_not_found", "detail": "action:software-dev/deploy is not a node of the merged graph."}
+      """
 
   Scenario: An unknown mission type is refused
     When I GET "/mission-types/gardening/actions/plan/context"
     Then the response status is 404
     And the problem code is "mission_type_not_found"
+    And the response body is:
+      """
+      {"title": "Mission type not found", "status": 404, "code": "mission_type_not_found", "detail": "mission_type:gardening is not a node of the merged graph."}
+      """
 
   Scenario: A context read over a pack whose graph shard is malformed is refused
     Given the built-in pack "built-in" with the file "broken.graph.yaml":
@@ -188,3 +196,7 @@ Feature: Action-scoped context
     When I GET "/mission-types/software-dev/actions/plan/context"
     Then the response status is 500
     And the problem code is "drg_schema_error"
+    And the response body is:
+      """
+      {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "built-in/broken.graph.yaml: unknown key 'surprise'"}
+      """

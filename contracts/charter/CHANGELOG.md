@@ -28,6 +28,18 @@ did not; `Changed` lists what differs from the draft.
   pins today's answer (the entry is listed with a `null` label).
 - Scenario "A context read over a pack whose graph shard is malformed is refused": pins
   today's `500` with `drg_schema_error`.
+- Feature `errors.feature`, "Failures outside the charter's refusals": scenario "A path the
+  contract does not define is answered with a not-found problem" pins `404` with the body
+  `{"title": "Not Found", "status": 404}`, and scenario "A request that accepts no
+  representation the operation has is answered with a not-acceptable problem" pins `406` with
+  `{"title": "Not Acceptable", "status": 406}`, served as `application/problem+json`. Both
+  bodies are the closed `Problem`; until now these failures answered with the framework's own
+  error document (`timestamp`, `error`, `path`) or an empty body.
+- The step `When I GET "<path>" accepting "<media type>"`, for the `406` scenario.
+- The scenario suite checks every response against the contract: the content type must be
+  one the operation declares for the status (or its `default`), and the body must validate
+  against that content's schema. A path no operation defines must answer the shared
+  `Problem` response.
 
 ### Changed
 
@@ -47,6 +59,10 @@ did not; `Changed` lists what differs from the draft.
 - Scenario "An action the mission type does not have is refused, not answered empty" is
   renamed "An action that is not a node of the graph is refused, not answered empty"; the
   answer is the same `404`.
+- Every refusal scenario (three in `action_context.feature`, three in `packs.feature`) also
+  asserts the whole body with `Then the response body is:`. A refusal body omits an absent
+  optional member; it carried `"type": null` and `"instance": null`, which the closed
+  `Problem` schema does not allow.
 
 ### Provisional
 

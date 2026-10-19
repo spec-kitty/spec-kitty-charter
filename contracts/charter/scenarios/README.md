@@ -13,10 +13,17 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Given the <level> pack "<name>" with the file "<path>":` followed by a doc string. Adds one
   file to a pack; the pack is configured at the given level in the order first named.
 - `When I GET "<path>"` — a path below the `/api/v1` server prefix.
+- `When I GET "<path>" accepting "<media type>"` — the same, with that `Accept` header.
 - `Then the response status is <n>`
 - `Then the response body is:` — the JSON body, compared exactly (order of arrays and the
   `detail` sentences included).
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
+
+Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:
+the response's content type must be one the operation declares for the status, or for its
+`default` response, and the body must validate against that content's schema. A path no
+operation defines must answer the shared `Problem` response. A binding of the steps in another
+language makes the same check.
 
 ## Tags
 

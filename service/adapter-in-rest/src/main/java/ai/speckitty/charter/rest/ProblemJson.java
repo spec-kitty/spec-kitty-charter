@@ -1,0 +1,39 @@
+package ai.speckitty.charter.rest;
+
+import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.Problem;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.module.SimpleModule;
+
+/**
+ * How the problem bodies serialize: an absent optional member ({@code type}, {@code detail}, {@code instance},
+ * {@code code}) is omitted, never written as {@code null}. The contract's {@code Problem} is closed and declares
+ * those members as strings, so a {@code null} would break it. The generated transport DTOs stay as generated;
+ * the rule reaches them through a Jackson mix-in, and only them: a success body keeps its {@code null} members,
+ * which the contract requires.
+ */
+@Configuration(proxyBeanMethods = false)
+public class ProblemJson {
+
+    /** For Spring, which finds the configuration by component scan. */
+    public ProblemJson() {}
+
+    /**
+     * The module Spring Boot adds to the application's JSON mapper.
+     *
+     * @return a module that omits the {@code null} members of the problem DTOs
+     */
+    @Bean
+    public JacksonModule problemJsonModule() {
+        return new SimpleModule("charter-problem-json")
+                .setMixInAnnotation(CharterRefusal.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(Problem.class, OmitAbsentMembers.class);
+    }
+
+    /** The mix-in: every {@code null} member of the target is left out of the JSON. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private abstract static class OmitAbsentMembers {}
+}
