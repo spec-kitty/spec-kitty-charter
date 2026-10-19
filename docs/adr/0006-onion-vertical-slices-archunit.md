@@ -62,7 +62,7 @@ domain-service *implementations* live (pure domain vs application ring), and the
    use-case orchestration plus port and transaction wiring. Use cases are the contract-neutral seam every
    inbound adapter shares; a transport type never crosses into the application or domain ring.
 4. **One Gradle module per concern slice; layers are packages within the module** (DM
-   `01M576E6NQGGSE8ESV765NGH7X`). Package naming is `be.sddevelopment.charter.<concern>.<layer>`. A
+   `01M576E6NQGGSE8ESV765NGH7X`). Package naming is `ai.speckitty.charter.<concern>.<layer>`. A
    `bootstrap` module is the only composition root that knows every slice. ArchUnit, not module boundaries,
    enforces the layering *inside* each slice; the slice boundary is the module boundary.
 5. **ArchUnit is the enforcement gate.** The following named rules make the two axes a build gate, not a
