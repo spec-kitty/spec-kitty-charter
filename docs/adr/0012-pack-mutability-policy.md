@@ -99,6 +99,9 @@ introduces. Today:
      cannot loosen the owner's level.
    - For one release the old file is still read, and each sanction it carries is reported as
      deprecated. After that release it is ignored.
+
+   The operator confirmed this migration on 2026-10-19: the built-in pack's kind defaults are
+   `extendable`, and every URN sanctioned today is listed as `open`.
 6. **`governance_policies.enforcement` is untouched.** It governs interview answer fields, not
    artifacts.
 7. **`required_*` means presence only.** A required artifact is always active. Its content is
