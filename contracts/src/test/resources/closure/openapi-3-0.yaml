@@ -1,0 +1,11 @@
+# Must report (review 6, finding 5): the checker reads JSON Schema 2020-12, so it judges only OpenAPI 3.1 documents.
+openapi: 3.0.3
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '204':
+          description: Nothing.

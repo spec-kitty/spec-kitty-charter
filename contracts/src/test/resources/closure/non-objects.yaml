@@ -1,0 +1,42 @@
+# Must pass: The false schema, scalars, a nullable scalar, a bare const and enum, an allOf of scalars and a nullable closed object.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      nothing: false
+                      text:
+                        type: string
+                      maybe:
+                        type: [integer, 'null']
+                      fixed:
+                        const: a
+                      choice:
+                        enum: [a, b]
+                      urn:
+                        description: A described reference to a scalar.
+                        allOf:
+                          - type: string
+                      owner:
+                        anyOf:
+                          - type: object
+                            additionalProperties: false
+                            properties:
+                              handle:
+                                type: string
+                          - type: 'null'

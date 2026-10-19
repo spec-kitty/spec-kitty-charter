@@ -1,0 +1,20 @@
+# Must report (review 6, finding 4): an unquoted YAML null in a type list is not the type name 'null'.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: [object, null]
+                    additionalProperties: false

@@ -1,0 +1,22 @@
+# Must report (review 6, finding 3): the open object of a union beside a string type; the message names the union part.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: string
+                    anyOf:
+                      - type: object
+                      - minLength: 1

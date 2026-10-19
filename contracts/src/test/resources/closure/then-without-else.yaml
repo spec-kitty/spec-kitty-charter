@@ -1,0 +1,23 @@
+# Must report: A then that closes the object only when the if matches; with no else nothing closes it otherwise.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: object
+                    if:
+                      required: [k]
+                    then:
+                      additionalProperties: false

@@ -1,0 +1,20 @@
+# Must report (review 6, finding 4): a type name that is not a JSON Schema type.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: objekt
+                    additionalProperties: false

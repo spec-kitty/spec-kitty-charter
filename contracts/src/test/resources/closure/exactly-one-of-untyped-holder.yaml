@@ -1,0 +1,22 @@
+# Must report: Round-5 probe 2: the exactly-one-of idiom on a holder with no type and no closing keyword.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    description: Exactly one of k or j, but nothing closes the object.
+                    oneOf:
+                      - required: [k]
+                      - required: [j]

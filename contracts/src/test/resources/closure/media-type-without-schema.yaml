@@ -1,0 +1,13 @@
+# Must report (review 6, finding 2): a response media type without a schema leaves its body unconstrained.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json: {}

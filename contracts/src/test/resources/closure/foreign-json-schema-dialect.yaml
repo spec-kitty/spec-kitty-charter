@@ -1,0 +1,12 @@
+# Must report (review 6, finding 5): a jsonSchemaDialect other than the OAS 3.1 default changes what keywords mean.
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2019-09/schema
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '204':
+          description: Nothing.

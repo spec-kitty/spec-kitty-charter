@@ -1,0 +1,11 @@
+# Must report: a response left as a $ref in the bundle, so its schema cannot be judged.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          $ref: '#/components/responses/Probe'
