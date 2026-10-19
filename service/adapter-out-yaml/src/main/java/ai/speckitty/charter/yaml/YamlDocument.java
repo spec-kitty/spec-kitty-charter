@@ -149,10 +149,11 @@ public final class YamlDocument {
     public YamlDocument withScalar(int index, String value) {
         List<Segment> edited = new ArrayList<>(segments);
         int seen = 0;
+        int flowDepth = 0;
         for (int i = 0; i < edited.size(); i++) {
+            flowDepth += flowDepthChange(edited.get(i));
             if (edited.get(i) instanceof Scalar scalar && seen++ == index) {
-                edited.set(
-                        i, new Scalar(ScalarWriter.write(value, scalar.style(), scalar.text()), scalar.style(), value));
+                edited.set(i, rewritten(scalar, value, flowDepth > 0));
                 return new YamlDocument(edited);
             }
         }
@@ -168,10 +169,11 @@ public final class YamlDocument {
      */
     public YamlDocument mapScalars(java.util.function.UnaryOperator<String> edit) {
         List<Segment> edited = new ArrayList<>(segments.size());
+        int flowDepth = 0;
         for (Segment segment : segments) {
+            flowDepth += flowDepthChange(segment);
             if (segment instanceof Scalar scalar) {
-                String value = edit.apply(scalar.value());
-                edited.add(new Scalar(ScalarWriter.write(value, scalar.style(), scalar.text()), scalar.style(), value));
+                edited.add(rewritten(scalar, edit.apply(scalar.value()), flowDepth > 0));
             } else {
                 edited.add(segment);
             }
@@ -179,14 +181,30 @@ public final class YamlDocument {
         return new YamlDocument(edited);
     }
 
+    private static Scalar rewritten(Scalar scalar, String value, boolean inFlow) {
+        return new Scalar(ScalarWriter.write(value, scalar.style(), scalar.text(), inFlow), scalar.style(), value);
+    }
+
+    /** How a segment changes the depth of flow collections ({@code [ ]} and {@code { }}) around what follows it. */
+    private static int flowDepthChange(Segment segment) {
+        if (!(segment instanceof TokenText token)) {
+            return 0;
+        }
+        return switch (token.id()) {
+            case FlowSequenceStart, FlowMappingStart -> 1;
+            case FlowSequenceEnd, FlowMappingEnd -> -1;
+            default -> 0;
+        };
+    }
+
     /**
      * The {@code index}-th scalar.
      *
      * @param index the scalar's position among the document's scalars, from 0
-     * @return the scalar; empty when the document has fewer scalars
+     * @return the scalar; empty when {@code index} is negative or the document has fewer scalars
      */
     public Optional<Scalar> scalar(int index) {
         List<Scalar> all = scalars();
-        return index < all.size() ? Optional.of(all.get(index)) : Optional.empty();
+        return index >= 0 && index < all.size() ? Optional.of(all.get(index)) : Optional.empty();
     }
 }
