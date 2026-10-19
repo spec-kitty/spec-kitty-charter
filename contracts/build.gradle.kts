@@ -90,9 +90,10 @@ fun pinFor(tool: String): ToolPin = toolPins.getValue(tool)[platform] ?: throw G
 /**
  * Downloads one pinned archive, verifies its SHA-256, and only then extracts its executable. Cacheable, so CI
  * restores the tool from the Gradle build cache (setup-gradle keeps it) instead of downloading it again: the cache
- * key holds the pinned URL and checksum, and the outputs are the verified archive and the extracted executable,
- * so a restored entry is one that a run with the same pinned checksum verified. Only a verified archive ever
- * becomes an output.
+ * key holds the pinned URL and checksum, and the outputs are the verified archive and the extracted executable.
+ * The build cache is trusted the way class outputs are, not for the integrity of a tool that gets executed:
+ * [VerifyTool] re-hashes the archive against the pin on every build, restored or not, and every consumer runs
+ * only after it.
  */
 @CacheableTask
 abstract class InstallTool @Inject constructor(
@@ -148,6 +149,50 @@ abstract class InstallTool @Inject constructor(
     }
 }
 
+/**
+ * Re-verifies an installed tool on every build, whether [InstallTool] ran or its outputs were restored from the
+ * build cache: the archive must hash to the pin, and the executable must be byte for byte the one in that
+ * archive. Not cacheable and without outputs, so it runs every time; it is cheap (one hash and one extraction of a
+ * few megabytes). Every [ContractToolTask] depends on it, so none runs a tool that was not re-verified.
+ */
+@DisableCachingByDefault(because = "Verifies what is on disk now, which no cache can vouch for.")
+abstract class VerifyTool @Inject constructor(
+    private val archives: ArchiveOperations,
+    private val files: FileSystemOperations,
+) : DefaultTask() {
+    @get:Input abstract val url: Property<String>
+    @get:Input abstract val sha256: Property<String>
+    @get:Input abstract val executable: Property<String>
+    @get:Internal abstract val archive: RegularFileProperty
+    @get:Internal abstract val installedExecutable: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val actual = hex(archive.get().asFile)
+        if (actual != sha256.get()) {
+            throw GradleException("The installed archive ${archive.get().asFile} for ${url.get()} hashes to $actual, " +
+                "not the pinned ${sha256.get()}: a restored or altered download. Run with " +
+                "--rerun-tasks to download the pinned release again and replace the cached copy. Nothing was run.")
+        }
+        val fresh = File(temporaryDir, "extracted")
+        files.delete { delete(fresh) }
+        files.copy {
+            from(archives.tarTree(archives.gzip(archive.get().asFile))) { include(executable.get()) }
+            into(fresh)
+        }
+        val expected = File(fresh, executable.get())
+        val installed = installedExecutable.get().asFile
+        if (!expected.isFile || !installed.isFile || hex(installed) != hex(expected)) {
+            throw GradleException("The installed ${installed.name} is not the executable in the verified archive " +
+                "${archive.get().asFile.name}: a restored or altered tool. Run with " +
+                "--rerun-tasks to install the pinned release again and replace the cached copy. Nothing was run.")
+        }
+    }
+
+    private fun hex(file: File): String =
+        MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+}
+
 fun installTask(tool: String) = tasks.register<InstallTool>("install${tool.replaceFirstChar { it.uppercase() }}") {
     group = "contract"
     description = "Downloads the pinned $tool release for this platform and verifies its SHA-256."
@@ -159,8 +204,23 @@ fun installTask(tool: String) = tasks.register<InstallTool>("install${tool.repla
     installDir = layout.buildDirectory.dir("tools/$tool")
 }
 
+fun verifyTask(tool: String, install: TaskProvider<InstallTool>) =
+    tasks.register<VerifyTool>("verify${tool.replaceFirstChar { it.uppercase() }}") {
+        group = "contract"
+        description = "Re-verifies the installed $tool against the pinned SHA-256, also after a build cache restore."
+        val pin = pinFor(tool)
+        url = pin.url
+        sha256 = pin.sha256
+        executable = pin.executable
+        archive = install.flatMap { it.archive }
+        installedExecutable = install.flatMap { it.installDir.file(pin.executable) }
+        dependsOn(install)
+    }
+
 val installVacuum = installTask("vacuum")
 val installOasdiff = installTask("oasdiff")
+val verifyVacuum = verifyTask("vacuum", installVacuum)
+val verifyOasdiff = verifyTask("oasdiff", installOasdiff)
 val vacuumExe = installVacuum.flatMap { it.installDir.file("vacuum") }
 val oasdiffExe = installOasdiff.flatMap { it.installDir.file("oasdiff") }
 
@@ -216,6 +276,9 @@ abstract class ContractToolTask : DefaultTask() {
     protected fun sha256(file: File): String =
         MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
 }
+
+// No consumer runs a tool that was not re-verified this build, whether it was downloaded or restored from the cache.
+tasks.withType<ContractToolTask>().configureEach { dependsOn(verifyVacuum, verifyOasdiff) }
 
 /** Bundles the split contract into one file with every $ref inlined, and checks the bundle is valid OpenAPI. */
 @CacheableTask
