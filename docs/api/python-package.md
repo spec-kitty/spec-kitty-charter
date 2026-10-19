@@ -2,7 +2,7 @@
 title: Python package API
 description: The designed in-process public surface of the extracted charter package, derived from core's charter.offering.api — entry points, types, operations and errors.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-19
 type: API
 kind: Reference
 related:
@@ -33,9 +33,8 @@ from charter.offering.api import (
 
 `charter.offering.api` is the single, enumerable manifest of the public surface: its
 `__all__` lists every public symbol, sorted. Anything not in `__all__` is internal, even when
-importable. How far core's runtime uses it today is in [Problem](/context/problem/). Core ADR `2026-10-12-2` makes it the only
-entry point for every caller once the import move is done (D-2; spec-kitty#645, closed as not planned on 2026-10-13, tracked
-it before epic spec-kitty#6099 took it over).
+importable. How far core's runtime uses it today is in [Problem](/context/problem/). The import move made it the
+only entry point for core's callers (spec-kitty#6188, epic spec-kitty#6099).
 
 ## Artifact kinds
 
@@ -109,8 +108,7 @@ The activation plan and commit (`plan_activation`, `commit_plan` in
 `charter.activation.activation_engine`) is the planned write surface; it also has no public
 entry point yet.
 
-Adding them to the public surface is part of the import-move precondition (core ADR
-`2026-10-12-2` D-2; spec-kitty#645, closed as not planned, is now in the scope of epic
-spec-kitty#6099). Each addition is a minor version; see
+Adding them to the public surface was part of the import-move precondition, done under epic
+spec-kitty#6099 (spec-kitty#6188). Each addition is a minor version; see
 [Versioning and compatibility](/api/compatibility/). The reads above are the operations of the
 [service contract](/api/service-contract/).

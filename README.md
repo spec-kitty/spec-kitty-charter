@@ -41,14 +41,15 @@ direction, the design, the decisions, the contract and the first slice of the se
 
 ## Governing decisions
 
-- Core ADR `2026-10-12-2`: the charter becomes an external contract package in its own
-  repository. Its precondition, moving the charter-internal imports of about 130 files onto
-  `charter.offering.api`, gates 4.0.0 general availability (GA). It was tracked as
-  [spec-kitty#645](https://github.com/spec-kitty/spec-kitty/issues/645) until that issue was
-  closed as not planned on 2026-10-13; the import move is now carried by epic
-  [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099).
-- Core ADR `2026-10-03-1` (Accepted, Amendment 2026-10-18): a staged Java service
-  strangler for charter reads and writes.
+- Core ADR `2026-10-12-2` made the charter an external contract package in its own
+  repository. Core marked it superseded on 2026-10-19 by this repository's
+  [ADR-0008](docs/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts.md) and
+  [ADR-0010](docs/adr/0010-cutover-scope-and-seam-boundary.md): the Python charter stays in
+  core until it is retired, and nothing Python moves here. Its precondition, moving core's
+  callers onto `charter.offering.api`, is done (spec-kitty#6188, under epic
+  [spec-kitty#6099](https://github.com/spec-kitty/spec-kitty/issues/6099)).
+- Core ADR `2026-10-03-1` (Accepted 2026-10-19, with the amendment that it governs only the
+  seam routing): a staged Java service strangler for charter reads and writes.
 - [ADR-0001](docs/adr/0001-java-service-with-openapi-contract.md): the charter is a Java
   service built against an OpenAPI contract.
 - [ADR-0002](docs/adr/0002-contract-source-of-record.md): this repository is the source of

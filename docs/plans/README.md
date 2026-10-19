@@ -20,7 +20,7 @@ Future work for this repository. The target design lives in
 - [High-level approach](/plans/overhaul-approach/) — the behavior-first, strangler-fig shape of
   the overhaul: scenarios and boundary first, then the published OpenAPI contract.
 - [Roadmap](/plans/roadmap/) — the bootstrap steps, from the contract skeleton to a shadow
-  read, and how they line up with the core's #645 work.
+  read, and how they line up with the core's seam work (epic spec-kitty#6099).
 - [Milestones](/plans/milestones/) — the tracker's milestones (4.x cutover, post-cutover,
   backlog), what closes each one, and which issue goes where.
 - [Open questions](/plans/open-questions/) — decisions this design depends on that nobody has

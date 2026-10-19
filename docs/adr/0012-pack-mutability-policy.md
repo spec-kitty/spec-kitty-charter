@@ -29,6 +29,11 @@ decision taken on 2026-10-19, this one is provisional: it is revisited as the sy
 on the triggers under [Revisit when](#revisit-when). Tracked by epic
 [#55](https://github.com/spec-kitty/spec-kitty-charter/issues/55) and its steps #57 to #61.
 
+Clarification 2026-10-19 (the decision is unchanged): the org precedence prerequisite is met.
+Core's `59d190a7` makes the later-declared org pack win for every URN and every restated edge,
+matching the documented rule, and closes #87. The passages below that call precedence
+inconsistent describe the state when this record was written.
+
 ## Context
 
 A Charter Pack author cannot say what a later pack may do with the artifacts the pack
