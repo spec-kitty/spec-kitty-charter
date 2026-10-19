@@ -91,6 +91,8 @@ each artifact listed once by the first step that reaches it:
 Each entry says which relation listed it (`relation`), its parent (`via`) and its distance from
 the action (`hops`). Following `via` always reaches the action in exactly `hops` edges. `depth`
 counts suggests hops only; `hops` is the full path length. The mission-type node is not walked.
+The walk goes through a node the graph does not declare: edges are facts, so the declared
+artifacts behind it are listed with `via` set to that node, and the node itself has a null label.
 What applies in one project (activation, exclusions, selection roots) is a later operation, R9
 (#103). The rules and the reasons are in
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/); the differences from core are
