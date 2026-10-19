@@ -168,6 +168,9 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
   scope entry, otherwise another entry of the answer.
 - `GuidanceEntry.hops` (required, integer, minimum 1): 1 for a scope entry, `hops(via) + 1`
   otherwise. Following `via` reaches the action in exactly `hops` edges.
+- The walk goes through a node the graph does not declare (documented behavior, pinned by a unit
+  test): the declared artifacts behind it are listed with `via` set to that node, and the node
+  itself has a `null` label.
 - `ActionContext.diagnostics` (required): the offering's load findings, as
   `PackSummary.diagnostics` carries them per pack.
 - The path description and the `x-provisional` decision are rewritten and link the divergence
@@ -204,16 +207,21 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
   context read: inputs are digested before and after the answer, and also when a load fails or the
   second digest is refused. A change after the second digest, or one reverted between them, goes
   unseen.
+- `/info` refuses `stale_input` when its second digest is refused, as the other reads do.
+  `stale_input` is logged at INFO, without a stack trace.
 - `governance_policy_violation` stays reserved: a declared pin, enforced by a unit test, until #48
   raises it.
 - `CharterRefusalCode` carries the machine-readable `x-refusal` map (`status`, `retryable`,
   `raised`) for all nine codes. The description adds the 401 and 403 dispatch sentence: they have
   no charter code and are transport failures.
-- Scenarios in `errors.feature` (3 to 9, 13 with their examples): `pack_unreadable` over a shard
-  that is not valid YAML, the
-  `internal_error` scenario retitled, `stale_input` on `/packs` and the context read, a pack
-  rewritten while it is parsed, a negative control, the `@contract @reserved` scenario for
-  `governance_policy_violation` and the list of raised codes.
+- Scenarios in `errors.feature` (3 to 9, 13 with their examples): `pack_unreadable` over a project
+  configuration file that is a directory (rows for `/info`, `/packs`, the context read and
+  `POST /packs/refresh`), the `internal_error` scenario retitled, `stale_input` on `/packs`, the
+  context read, `POST /packs/refresh` and `/info`, a pack rewritten while it is parsed, a negative
+  control, the `@contract @reserved` scenario for `governance_policy_violation` and the list of
+  raised codes.
+- `pack_unreadable` is no longer pinned on a shard that is not valid YAML: a shard parse failure
+  becomes `drg_schema_error` under ruling R17.
 
 **Security.**
 
