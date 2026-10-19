@@ -29,9 +29,8 @@ class ActionContextQueryTest {
     private static final Urn UNDECLARED = new Urn(NodeKind.STYLEGUIDE, "undeclared");
 
     private static ActionContextQuery over(List<DrgNode> nodes, List<DrgEdge> edges) {
-        return new ActionContextQuery(() -> new CharterOffering(List.of(
-                new CharterPack("built-in", PackLevel.BUILT_IN, Optional.empty(), new DoctrineGraph(nodes, edges),
-                        List.of()))));
+        return new ActionContextQuery(() -> new CharterOffering(List.of(new CharterPack(
+                "built-in", PackLevel.BUILT_IN, Optional.empty(), new DoctrineGraph(nodes, edges), List.of()))));
     }
 
     private static DrgNode node(Urn urn) {
@@ -40,14 +39,16 @@ class ActionContextQueryTest {
 
     private final ActionContextQuery query = over(
             List.of(node(TYPE), node(PLAN), new DrgNode(D1, Optional.of("One")), node(D2), node(T1)),
-            List.of(DrgEdge.of(TYPE, PLAN, Relation.REQUIRES), DrgEdge.of(PLAN, T1, Relation.SCOPE),
+            List.of(
+                    DrgEdge.of(TYPE, PLAN, Relation.REQUIRES), DrgEdge.of(PLAN, T1, Relation.SCOPE),
                     DrgEdge.of(TYPE, D2, Relation.SCOPE), DrgEdge.of(PLAN, D2, Relation.SCOPE),
                     DrgEdge.of(TYPE, D1, Relation.SCOPE), DrgEdge.of(PLAN, D1, Relation.SUGGESTS)));
 
     @Test
     void scopeOfTheActionAndOfItsMissionTypeOnceEachSortedByUrn() {
         ActionContext context = query.answer("software-dev", "plan");
-        assertThat(context.guidance()).extracting(GuidanceEntry::urn, GuidanceEntry::via)
+        assertThat(context.guidance())
+                .extracting(GuidanceEntry::urn, GuidanceEntry::via)
                 .containsExactly(tuple(D1, TYPE), tuple(D2, PLAN), tuple(T1, PLAN));
         assertThat(context.guidance().get(0).label()).contains("One");
         // D2 is declared without a label.
@@ -56,38 +57,46 @@ class ActionContextQueryTest {
 
     @Test
     void anArtifactScopedByBothTheActionAndItsMissionTypeIsAnsweredOnceThroughTheAction() {
-        ActionContextQuery both = over(List.of(node(TYPE), node(PLAN), node(D1)),
+        ActionContextQuery both = over(
+                List.of(node(TYPE), node(PLAN), node(D1)),
                 List.of(DrgEdge.of(TYPE, D1, Relation.SCOPE), DrgEdge.of(PLAN, D1, Relation.SCOPE)));
-        assertThat(both.answer("software-dev", "plan").guidance()).extracting(GuidanceEntry::urn, GuidanceEntry::via)
+        assertThat(both.answer("software-dev", "plan").guidance())
+                .extracting(GuidanceEntry::urn, GuidanceEntry::via)
                 .containsExactly(tuple(D1, PLAN));
     }
 
     @Test
     void aScopeEdgeToANodeTheGraphDoesNotDeclareIsListedWithoutALabel() {
-        ActionContextQuery dangling = over(List.of(node(TYPE), node(PLAN)),
-                List.of(DrgEdge.of(PLAN, UNDECLARED, Relation.SCOPE)));
-        assertThat(dangling.answer("software-dev", "plan").guidance()).singleElement().satisfies(entry -> {
-            assertThat(entry.urn()).isEqualTo(UNDECLARED);
-            assertThat(entry.kind()).isEqualTo(NodeKind.STYLEGUIDE);
-            assertThat(entry.label()).isEmpty();
-            assertThat(entry.via()).isEqualTo(PLAN);
-        });
+        ActionContextQuery dangling =
+                over(List.of(node(TYPE), node(PLAN)), List.of(DrgEdge.of(PLAN, UNDECLARED, Relation.SCOPE)));
+        assertThat(dangling.answer("software-dev", "plan").guidance())
+                .singleElement()
+                .satisfies(entry -> {
+                    assertThat(entry.urn()).isEqualTo(UNDECLARED);
+                    assertThat(entry.kind()).isEqualTo(NodeKind.STYLEGUIDE);
+                    assertThat(entry.label()).isEmpty();
+                    assertThat(entry.via()).isEqualTo(PLAN);
+                });
     }
 
     @Test
     void aPackThatCannotLoadRefusesTheReadWithItsCode() {
         ActionContextQuery broken = new ActionContextQuery(() -> {
-            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, "built-in/broken.graph.yaml: unknown key 'surprise'");
+            throw new CharterRefusal(
+                    RefusalCode.DRG_SCHEMA_ERROR, "built-in/broken.graph.yaml: unknown key 'surprise'");
         });
-        assertThatThrownBy(() -> broken.answer("software-dev", "plan")).isInstanceOfSatisfying(CharterRefusal.class,
-                r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR));
+        assertThatThrownBy(() -> broken.answer("software-dev", "plan"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR));
     }
 
     @Test
     void unknownNamesAreRefused() {
-        assertThatThrownBy(() -> query.answer("gardening", "plan")).isInstanceOfSatisfying(CharterRefusal.class,
-                r -> assertThat(r.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
-        assertThatThrownBy(() -> query.answer("software-dev", "deploy")).isInstanceOfSatisfying(CharterRefusal.class,
-                r -> assertThat(r.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+        assertThatThrownBy(() -> query.answer("gardening", "plan"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThatThrownBy(() -> query.answer("software-dev", "deploy"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
     }
 }

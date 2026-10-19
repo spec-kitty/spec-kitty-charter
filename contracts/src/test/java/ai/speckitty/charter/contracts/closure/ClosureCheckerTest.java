@@ -17,21 +17,25 @@ import org.junit.jupiter.api.Test;
  */
 class ClosureCheckerTest {
 
-    private static final String PROBE = "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/probe";
-    private static final String PACK = "/paths/~1packs/get/responses/200/content/application~1json/schema/properties/packs/items";
+    private static final String PROBE =
+            "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/probe";
+    private static final String PACK =
+            "/paths/~1packs/get/responses/200/content/application~1json/schema/properties/packs/items";
     private static final String EXTRA = PACK + "/properties/extra";
     private static final String WITHOUT_IF = "without an if, then and else have no effect, so they close nothing";
     private static final String CONVENTION = "this pairing is refused by convention, as a likely authoring mistake,"
             + " even where a value satisfies both parts";
-    private static final String REFUSAL = "/paths/~1mission-types~1{missionType}~1actions~1{action}~1context/get/responses/404"
-            + "/content/application~1problem+json/schema";
+    private static final String REFUSAL =
+            "/paths/~1mission-types~1{missionType}~1actions~1{action}~1context/get/responses/404"
+                    + "/content/application~1problem+json/schema";
 
     @Nested
     class MovedFromTheSpectralRule {
 
         @Test
         void aNamedObjectWithoutAdditionalPropertiesFalse() {
-            assertReports("open-named-object.yaml", PACK + "/properties/diagnostics/items", "no additionalProperties: false");
+            assertReports(
+                    "open-named-object.yaml", PACK + "/properties/diagnostics/items", "no additionalProperties: false");
         }
 
         @Test
@@ -46,12 +50,16 @@ class ClosureCheckerTest {
 
         @Test
         void anAllOfOverAnAllOfOverAnOpenObject() {
-            assertReports("nested-allof.yaml", EXTRA, "allOf/0: no part closes it: it has no type and no closing keyword; allOf/0: no additionalProperties: false");
+            assertReports(
+                    "nested-allof.yaml",
+                    EXTRA,
+                    "allOf/0: no part closes it: it has no type and no closing keyword; allOf/0: no additionalProperties: false");
         }
 
         @Test
         void aNullableOpenObject() {
-            assertReports("nullable-anyof.yaml", EXTRA, "anyOf: its alternative 0 is open: no additionalProperties: false");
+            assertReports(
+                    "nullable-anyof.yaml", EXTRA, "anyOf: its alternative 0 is open: no additionalProperties: false");
         }
 
         @Test
@@ -66,7 +74,8 @@ class ClosureCheckerTest {
 
         @Test
         void anOpenTupleItemBehindAClosedTail() {
-            assertReports("open-tuple-item-closed-tail.yaml", EXTRA + "/prefixItems/0", "no additionalProperties: false");
+            assertReports(
+                    "open-tuple-item-closed-tail.yaml", EXTRA + "/prefixItems/0", "no additionalProperties: false");
         }
 
         @Test
@@ -85,8 +94,12 @@ class ClosureCheckerTest {
 
         @Test
         void aScalarPartNeverExcusesAnOpenObjectPart() {
-            assertReports("scalar-first-allof.yaml", EXTRA, "an open object (no additionalProperties: false; from allOf/1)"
-                    + " sits beside a part that admits no object (its type [string] admits no object; from allOf/0): " + CONVENTION);
+            assertReports(
+                    "scalar-first-allof.yaml",
+                    EXTRA,
+                    "an open object (no additionalProperties: false; from allOf/1)"
+                            + " sits beside a part that admits no object (its type [string] admits no object; from allOf/0): "
+                            + CONVENTION);
         }
 
         @Test
@@ -100,27 +113,42 @@ class ClosureCheckerTest {
 
         @Test
         void aRequiredMemberBesideNull() {
-            assertReports("union-required-or-null.yaml", PROBE, "anyOf: its alternative 0 is open: it has no type and no closing keyword");
+            assertReports(
+                    "union-required-or-null.yaml",
+                    PROBE,
+                    "anyOf: its alternative 0 is open: it has no type and no closing keyword");
         }
 
         @Test
         void theExactlyOneOfIdiomOnAnUntypedHolder() {
-            assertReports("exactly-one-of-untyped-holder.yaml", PROBE, "oneOf: its alternative 0 is open: it has no type and no closing keyword");
+            assertReports(
+                    "exactly-one-of-untyped-holder.yaml",
+                    PROBE,
+                    "oneOf: its alternative 0 is open: it has no type and no closing keyword");
         }
 
         @Test
         void aNegatedRequiredMemberBesideNull() {
-            assertReports("union-not-required-or-null.yaml", PROBE, "anyOf: its alternative 0 is open: it has no type and no closing keyword");
+            assertReports(
+                    "union-not-required-or-null.yaml",
+                    PROBE,
+                    "anyOf: its alternative 0 is open: it has no type and no closing keyword");
         }
 
         @Test
         void aMinPropertiesMemberBesideAString() {
-            assertReports("min-properties-or-string.yaml", PROBE, "oneOf: its alternative 0 is open: it has no type and no closing keyword");
+            assertReports(
+                    "min-properties-or-string.yaml",
+                    PROBE,
+                    "oneOf: its alternative 0 is open: it has no type and no closing keyword");
         }
 
         @Test
         void aRequiredMemberWithANegatedRefinementBesideNull() {
-            assertReports("union-required-and-not-const.yaml", PROBE, "anyOf: its alternative 0 is open: it has no type and no closing keyword");
+            assertReports(
+                    "union-required-and-not-const.yaml",
+                    PROBE,
+                    "anyOf: its alternative 0 is open: it has no type and no closing keyword");
         }
     }
 
@@ -129,7 +157,8 @@ class ClosureCheckerTest {
 
         @Test
         void aMemberWithRequiredAndAdditionalPropertiesTrue() {
-            assertReports("member-required-additional-true.yaml", PROBE, "additionalProperties: true admits any member");
+            assertReports(
+                    "member-required-additional-true.yaml", PROBE, "additionalProperties: true admits any member");
         }
 
         @Test
@@ -139,12 +168,17 @@ class ClosureCheckerTest {
 
         @Test
         void aConstraintMemberNestingAOneOfOverAnOpenObject() {
-            assertReports("constraint-member-nesting-open-oneof.yaml", PROBE, "anyOf: its alternative 0 is open: no part closes it: it has no type and no closing keyword; oneOf: its alternative 0 is open: no additionalProperties: false");
+            assertReports(
+                    "constraint-member-nesting-open-oneof.yaml",
+                    PROBE,
+                    "anyOf: its alternative 0 is open: no part closes it: it has no type and no closing keyword; oneOf: its alternative 0 is open: no additionalProperties: false");
         }
 
         @Test
         void aDependentSchemaHidingAnOpenObject() {
-            assertReports("dependent-schemas-hiding-open-object.yaml", PROBE + "/dependentSchemas/k/properties/extra",
+            assertReports(
+                    "dependent-schemas-hiding-open-object.yaml",
+                    PROBE + "/dependentSchemas/k/properties/extra",
                     "no additionalProperties: false");
         }
 
@@ -207,25 +241,33 @@ class ClosureCheckerTest {
 
         @Test
         void thenAndElseWithoutAnIfCloseNothing() {
-            assertReports("then-else-without-if.yaml", PROBE,
+            assertReports(
+                    "then-else-without-if.yaml",
+                    PROBE,
                     "no part closes it: no additionalProperties: false; then|else: " + WITHOUT_IF);
         }
 
         @Test
         void untypedThenAndElseWithoutAnIfCloseNothing() {
-            assertReports("then-else-without-if-untyped.yaml", PROBE,
+            assertReports(
+                    "then-else-without-if-untyped.yaml",
+                    PROBE,
                     "no part closes it: it has no type and no closing keyword; then|else: " + WITHOUT_IF);
         }
 
         @Test
         void aThenWithoutAnIfStillHasItsNestedPositionsJudged() {
-            assertReports("then-without-if-nesting-open-object.yaml", PROBE + "/then/properties/extra",
+            assertReports(
+                    "then-without-if-nesting-open-object.yaml",
+                    PROBE + "/then/properties/extra",
                     "no additionalProperties: false");
         }
 
         @Test
         void aMediaTypeWithoutASchemaIsUnconstrained() {
-            assertReports("media-type-without-schema.yaml", JSON_MEDIA,
+            assertReports(
+                    "media-type-without-schema.yaml",
+                    JSON_MEDIA,
                     "the media type has no schema, so its body is unconstrained");
         }
 
@@ -236,14 +278,18 @@ class ClosureCheckerTest {
 
         @Test
         void aDeclaredObjectTypeBesideANonObjectPartIsRefusedByConventionEvenWhenSatisfiable() {
-            assertReports("object-or-string-beside-string-part.yaml", PROBE,
+            assertReports(
+                    "object-or-string-beside-string-part.yaml",
+                    PROBE,
                     "an open object (no additionalProperties: false; from its own keywords) sits beside a part that"
                             + " admits no object (its type [string] admits no object; from allOf/0): " + CONVENTION);
         }
 
         @Test
         void aUnionPartIsNamedByItsKeyword() {
-            assertReports("string-beside-union-with-open-object.yaml", PROBE,
+            assertReports(
+                    "string-beside-union-with-open-object.yaml",
+                    PROBE,
                     "an open object (its alternative 0 is open: no additionalProperties: false; from anyOf) sits"
                             + " beside a part that admits no object (its type [string] admits no object; from its own"
                             + " keywords): " + CONVENTION);
@@ -256,7 +302,9 @@ class ClosureCheckerTest {
 
         @Test
         void aYamlNullInATypeListIsMalformed() {
-            assertMalformed("type-list-yaml-null.yaml", PROBE + "/type",
+            assertMalformed(
+                    "type-list-yaml-null.yaml",
+                    PROBE + "/type",
                     "a type name must be a string: an unquoted YAML null is not the type name 'null'; quote it");
         }
 
@@ -272,13 +320,17 @@ class ClosureCheckerTest {
 
         @Test
         void anOpenApi30DocumentIsNotJudged() {
-            assertReports("openapi-3-0.yaml", "/openapi",
+            assertReports(
+                    "openapi-3-0.yaml",
+                    "/openapi",
                     "the checker reads OpenAPI 3.1 (JSON Schema 2020-12) only, not openapi 3.0.3");
         }
 
         @Test
         void aForeignJsonSchemaDialectIsNotJudged() {
-            assertReports("foreign-json-schema-dialect.yaml", "/jsonSchemaDialect",
+            assertReports(
+                    "foreign-json-schema-dialect.yaml",
+                    "/jsonSchemaDialect",
                     "the checker reads the OAS 3.1 default dialect " + ClosureChecker.DEFAULT_DIALECT
                             + " only, not https://json-schema.org/draft/2019-09/schema");
         }
@@ -356,19 +408,24 @@ class ClosureCheckerTest {
         @Test
         void anUnknownTypeIsReported() {
             ClosureReport report = ClosureChecker.check(probe(Map.of("type", "objekt")));
-            assertThat(report.violations()).extracting(Violation::toString).contains(PROBE + "/type: 'objekt' is not a JSON Schema type");
+            assertThat(report.violations())
+                    .extracting(Violation::toString)
+                    .contains(PROBE + "/type: 'objekt' is not a JSON Schema type");
         }
 
         @Test
         void anEmptyUnionIsReported() {
             ClosureReport report = ClosureChecker.check(probe(Map.of("type", "string", "anyOf", List.of())));
-            assertThat(report.violations()).extracting(Violation::toString).containsExactly(PROBE + "/anyOf: must be a non-empty list of schemas");
+            assertThat(report.violations())
+                    .extracting(Violation::toString)
+                    .containsExactly(PROBE + "/anyOf: must be a non-empty list of schemas");
         }
 
         @Test
         void anEmptyEnumIsReported() {
             ClosureReport report = ClosureChecker.check(probe(Map.of("type", "string", "enum", List.of())));
-            assertThat(report.violations()).extracting(Violation::toString)
+            assertThat(report.violations())
+                    .extracting(Violation::toString)
                     .containsExactly(PROBE + "/enum: must be a non-empty list of values");
         }
 
@@ -376,7 +433,8 @@ class ClosureCheckerTest {
         void aDocumentWithoutAnOpenApiVersionIsReported() {
             Map<String, Object> document = new HashMap<>(probe(false));
             document.remove("openapi");
-            assertThat(ClosureChecker.check(document).violations()).extracting(Violation::toString)
+            assertThat(ClosureChecker.check(document).violations())
+                    .extracting(Violation::toString)
                     .containsExactly("(document root): the document declares no openapi version; the checker reads"
                             + " OpenAPI 3.1 only");
         }
@@ -385,22 +443,30 @@ class ClosureCheckerTest {
         void anOpenApiVersionThatIsNotAStringIsReported() {
             Map<String, Object> document = new HashMap<>(probe(false));
             document.put("openapi", 3.1);
-            assertThat(ClosureChecker.check(document).violations()).extracting(Violation::toString)
-                    .containsExactly("/openapi: the checker reads OpenAPI 3.1 (JSON Schema 2020-12) only, not openapi 3.1");
+            assertThat(ClosureChecker.check(document).violations())
+                    .extracting(Violation::toString)
+                    .containsExactly(
+                            "/openapi: the checker reads OpenAPI 3.1 (JSON Schema 2020-12) only, not openapi 3.1");
         }
 
         @Test
         void aValueThatIsNotASchemaIsReported() {
             ClosureReport report = ClosureChecker.check(probe("text"));
-            assertThat(report.violations()).extracting(Violation::toString).containsExactly(PROBE + ": is neither a schema nor a boolean");
+            assertThat(report.violations())
+                    .extracting(Violation::toString)
+                    .containsExactly(PROBE + ": is neither a schema nor a boolean");
         }
     }
 
     private static Map<String, Object> probe(Object schema) {
-        Map<String, Object> closed = Map.of("type", "object", "additionalProperties", false, "properties", Map.of("probe", schema));
+        Map<String, Object> closed =
+                Map.of("type", "object", "additionalProperties", false, "properties", Map.of("probe", schema));
         Map<String, Object> response = Map.of("content", Map.of("application/json", Map.of("schema", closed)));
-        return Map.of("openapi", "3.1.0",
-                "paths", Map.of("/probe", Map.of("get", Map.of("responses", Map.of("200", response)))));
+        return Map.of(
+                "openapi",
+                "3.1.0",
+                "paths",
+                Map.of("/probe", Map.of("get", Map.of("responses", Map.of("200", response)))));
     }
 
     private static void assertReports(String fixture, String pointer, String reasonPart) {
@@ -415,7 +481,10 @@ class ClosureCheckerTest {
 
     private static List<Violation> violations(String fixture) {
         try {
-            return ClosureChecker.check(Path.of(ClosureCheckerTest.class.getResource("/closure/" + fixture).toURI())).violations();
+            return ClosureChecker.check(Path.of(ClosureCheckerTest.class
+                            .getResource("/closure/" + fixture)
+                            .toURI()))
+                    .violations();
         } catch (IOException | URISyntaxException e) {
             throw new IllegalStateException("cannot read the fixture " + fixture, e);
         }

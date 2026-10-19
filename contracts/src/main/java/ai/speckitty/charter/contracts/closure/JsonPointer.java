@@ -41,10 +41,13 @@ public record JsonPointer(List<String> tokens) {
      * empty for the ancestor itself, and the whole pointer when {@code ancestor} is not an ancestor.
      */
     public String relativeTo(JsonPointer ancestor) {
-        if (tokens.size() < ancestor.tokens.size() || !tokens.subList(0, ancestor.tokens.size()).equals(ancestor.tokens)) {
+        if (tokens.size() < ancestor.tokens.size()
+                || !tokens.subList(0, ancestor.tokens.size()).equals(ancestor.tokens)) {
             return toString();
         }
-        return tokens.subList(ancestor.tokens.size(), tokens.size()).stream().map(JsonPointer::escape).collect(Collectors.joining("/"));
+        return tokens.subList(ancestor.tokens.size(), tokens.size()).stream()
+                .map(JsonPointer::escape)
+                .collect(Collectors.joining("/"));
     }
 
     @Override

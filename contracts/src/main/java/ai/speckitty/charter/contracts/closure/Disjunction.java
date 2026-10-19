@@ -10,8 +10,7 @@ import java.util.function.Function;
  */
 final class Disjunction {
 
-    private Disjunction() {
-    }
+    private Disjunction() {}
 
     /** Combines alternatives into a classification at {@code at}; each is named relative to {@code at}. */
     static Closure of(JsonPointer at, List<Closure> alternatives) {
@@ -26,18 +25,20 @@ final class Disjunction {
         if (alternatives.isEmpty()) {
             return Closure.open(at, "it has no alternatives", false);
         }
-        return new Closure(at, widest(base, alternatives, Closure::objects),
-                widest(base, alternatives, Closure::arrays));
+        return new Closure(
+                at, widest(base, alternatives, Closure::objects), widest(base, alternatives, Closure::arrays));
     }
 
     /** One alternative open: open, naming it; one closed: closed; otherwise none. */
-    private static Closure.Facet widest(JsonPointer base, List<Closure> alternatives,
-            Function<Closure, Closure.Facet> facet) {
-        Optional<Closure> open = alternatives.stream().filter(a -> facet.apply(a).isOpen()).findFirst();
+    private static Closure.Facet widest(
+            JsonPointer base, List<Closure> alternatives, Function<Closure, Closure.Facet> facet) {
+        Optional<Closure> open =
+                alternatives.stream().filter(a -> facet.apply(a).isOpen()).findFirst();
         if (open.isPresent()) {
             Closure.Facet widest = facet.apply(open.get());
-            return Closure.Facet.open("its alternative " + open.get().at().relativeTo(base) + " is open: "
-                    + widest.reason(), widest.declared());
+            return Closure.Facet.open(
+                    "its alternative " + open.get().at().relativeTo(base) + " is open: " + widest.reason(),
+                    widest.declared());
         }
         if (alternatives.stream().anyMatch(a -> facet.apply(a).admission() == Closure.Admission.CLOSED)) {
             return Closure.Facet.closed("every alternative is closed or admits none");

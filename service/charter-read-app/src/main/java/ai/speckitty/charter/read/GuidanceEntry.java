@@ -6,5 +6,4 @@ import ai.speckitty.charter.domain.Urn;
 import java.util.Optional;
 
 /** One artifact of an action-scoped context and the edge that brought it in. */
-public record GuidanceEntry(Urn urn, NodeKind kind, Optional<String> label, Relation relation, Urn via) {
-}
+public record GuidanceEntry(Urn urn, NodeKind kind, Optional<String> label, Relation relation, Urn via) {}

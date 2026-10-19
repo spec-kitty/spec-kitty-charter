@@ -29,7 +29,8 @@ class GraphDocumentReaderTest {
                 """, Shape.FRAGMENT, "qa/drg/fragment.yaml");
         Urn qa = new Urn(NodeKind.DIRECTIVE, "QA_001");
         assertThat(graph.node(qa).flatMap(n -> n.label())).contains("Traceability");
-        assertThat(graph.outgoing(qa, Relation.SUGGESTS)).singleElement()
+        assertThat(graph.outgoing(qa, Relation.SUGGESTS))
+                .singleElement()
                 .satisfies(e -> assertThat(e.target()).hasToString("directive:DIRECTIVE_010"));
     }
 
@@ -49,16 +50,21 @@ class GraphDocumentReaderTest {
                   when: always
                   reason: because
                 """, Shape.SHARD, "s");
-        assertThat(GraphDocumentReader.read(GraphShardWriter.write(graph), Shape.SHARD, "w")).isEqualTo(graph);
+        assertThat(GraphDocumentReader.read(GraphShardWriter.write(graph), Shape.SHARD, "w"))
+                .isEqualTo(graph);
     }
 
     @Test
     void refusalsAreNamed() {
         assertRefused("nodes: []\nedges: []\nsurprise: 1\n", Shape.SHARD, RefusalCode.DRG_SCHEMA_ERROR);
         assertRefused("nodes:\n- urn: tactic:t\n  kind: directive\n", Shape.SHARD, RefusalCode.DRG_SCHEMA_ERROR);
-        assertRefused("edges:\n- {source: a:b, target: tactic:t, relation: requires}\n", Shape.SHARD,
+        assertRefused(
+                "edges:\n- {source: a:b, target: tactic:t, relation: requires}\n",
+                Shape.SHARD,
                 RefusalCode.UNRESOLVED_EDGE_ENDPOINT);
-        assertRefused("edges:\n- {source: tactic:t, target: tactic:u, relation: inspires}\n", Shape.SHARD,
+        assertRefused(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: inspires}\n",
+                Shape.SHARD,
                 RefusalCode.DRG_SCHEMA_ERROR);
         assertRefused("nodes: [\n", Shape.SHARD, RefusalCode.PACK_UNREADABLE);
         assertRefused("nodes:\n- {id: x, kind: widgets}\n", Shape.FRAGMENT, RefusalCode.DRG_SCHEMA_ERROR);
@@ -66,6 +72,7 @@ class GraphDocumentReaderTest {
 
     private static void assertRefused(String text, Shape shape, RefusalCode code) {
         assertThatThrownBy(() -> GraphDocumentReader.read(text, shape, "t"))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(code));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(code));
     }
 }

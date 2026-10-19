@@ -23,7 +23,10 @@ public enum ArtifactKind {
     TEMPLATE("template", "templates", false, false, false, InForceWhenAbsent.ALL);
 
     /** What is in force while a kind's activation key is absent. */
-    public enum InForceWhenAbsent { ALL, REQUIRED }
+    public enum InForceWhenAbsent {
+        ALL,
+        REQUIRED
+    }
 
     private final String token;
     private final String plural;
@@ -32,8 +35,13 @@ public enum ArtifactKind {
     private final boolean selectionOverlayable;
     private final InForceWhenAbsent inForceWhenAbsent;
 
-    ArtifactKind(String token, String plural, boolean activatable, boolean orgRequirable,
-                 boolean selectionOverlayable, InForceWhenAbsent inForceWhenAbsent) {
+    ArtifactKind(
+            String token,
+            String plural,
+            boolean activatable,
+            boolean orgRequirable,
+            boolean selectionOverlayable,
+            InForceWhenAbsent inForceWhenAbsent) {
         this.token = token;
         this.plural = plural;
         this.activatable = activatable;
@@ -43,17 +51,29 @@ public enum ArtifactKind {
     }
 
     /** The canonical (singular, snake_case) spelling used in URNs. */
-    public String token() { return token; }
+    public String token() {
+        return token;
+    }
 
-    public String plural() { return plural; }
+    public String plural() {
+        return plural;
+    }
 
-    public boolean activatable() { return activatable; }
+    public boolean activatable() {
+        return activatable;
+    }
 
-    public boolean orgRequirable() { return orgRequirable; }
+    public boolean orgRequirable() {
+        return orgRequirable;
+    }
 
-    public boolean selectionOverlayable() { return selectionOverlayable; }
+    public boolean selectionOverlayable() {
+        return selectionOverlayable;
+    }
 
-    public InForceWhenAbsent inForceWhenAbsent() { return inForceWhenAbsent; }
+    public InForceWhenAbsent inForceWhenAbsent() {
+        return inForceWhenAbsent;
+    }
 
     public static Optional<ArtifactKind> fromToken(String token) {
         return Arrays.stream(values()).filter(k -> k.token.equals(token)).findFirst();

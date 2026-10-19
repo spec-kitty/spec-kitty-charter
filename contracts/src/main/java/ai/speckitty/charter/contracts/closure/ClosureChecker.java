@@ -89,13 +89,13 @@ public final class ClosureChecker {
     /** The OAS 3.1 default JSON Schema dialect, the only one the checker reads. */
     public static final String DEFAULT_DIALECT = "https://spec.openapis.org/oas/3.1/dialect/base";
 
-    private ClosureChecker() {
-    }
+    private ClosureChecker() {}
 
     /** Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document. */
     public static ClosureReport check(Path bundle) throws IOException {
         try (InputStream in = Files.newInputStream(bundle)) {
-            return check(new Load(LoadSettings.builder().setLabel(bundle.toString()).build()).loadFromInputStream(in));
+            return check(
+                    new Load(LoadSettings.builder().setLabel(bundle.toString()).build()).loadFromInputStream(in));
         }
     }
 

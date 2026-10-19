@@ -12,8 +12,7 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  */
 public final class CheckClosedResponseObjects {
 
-    private CheckClosedResponseObjects() {
-    }
+    private CheckClosedResponseObjects() {}
 
     public static void main(String[] args) {
         int code = run(List.of(args), System.out);
@@ -39,7 +38,8 @@ public final class CheckClosedResponseObjects {
             return 0;
         }
         int count = report.violations().size();
-        out.println(count + (count == 1 ? " violation" : " violations") + " of the closed-response-objects convention:");
+        out.println(
+                count + (count == 1 ? " violation" : " violations") + " of the closed-response-objects convention:");
         report.violations().forEach(out::println);
         return 1;
     }

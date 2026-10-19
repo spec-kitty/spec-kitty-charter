@@ -5,8 +5,7 @@ import org.snakeyaml.engine.v2.common.ScalarStyle;
 /** Writes one scalar value as source text, keeping the original style when it can carry the value. */
 final class ScalarWriter {
 
-    private ScalarWriter() {
-    }
+    private ScalarWriter() {}
 
     static String write(String value, ScalarStyle style, String original) {
         return switch (style) {
@@ -29,8 +28,12 @@ final class ScalarWriter {
             return java.util.Optional.empty();
         }
         String header = original.substring(0, headerEnd + 1);
-        String indent = original.substring(headerEnd + 1).lines().filter(l -> !l.isBlank()).findFirst()
-                .map(l -> l.substring(0, l.length() - l.stripLeading().length())).orElse("");
+        String indent = original.substring(headerEnd + 1)
+                .lines()
+                .filter(l -> !l.isBlank())
+                .findFirst()
+                .map(l -> l.substring(0, l.length() - l.stripLeading().length()))
+                .orElse("");
         String body = value;
         int trailing = 0;
         while (body.endsWith("\n")) {
@@ -40,7 +43,11 @@ final class ScalarWriter {
         boolean strip = header.contains("-");
         boolean keep = header.contains("+");
         boolean chompingFits = strip ? trailing == 0 : keep ? trailing >= 1 : trailing == 1;
-        if (indent.isEmpty() || !chompingFits || body.isEmpty() || body.startsWith(" ") || body.contains("\r")
+        if (indent.isEmpty()
+                || !chompingFits
+                || body.isEmpty()
+                || body.startsWith(" ")
+                || body.contains("\r")
                 || header.chars().anyMatch(Character::isDigit)) {
             return java.util.Optional.empty();
         }
@@ -57,7 +64,10 @@ final class ScalarWriter {
     /** The line breaks and indentation a block scalar token owns after its content. */
     private static String lineBreakSuffix(String original) {
         int end = original.length();
-        while (end > 0 && (original.charAt(end - 1) == '\n' || original.charAt(end - 1) == '\r' || original.charAt(end - 1) == ' ')) {
+        while (end > 0
+                && (original.charAt(end - 1) == '\n'
+                        || original.charAt(end - 1) == '\r'
+                        || original.charAt(end - 1) == ' ')) {
             end--;
         }
         return original.substring(end);

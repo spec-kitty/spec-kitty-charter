@@ -13,18 +13,58 @@ import java.util.Set;
 final class Vocabulary {
 
     /** Keywords that describe a schema and constrain nothing. Every {@code x-} extension is one too. */
-    static final Set<String> ANNOTATIONS = Set.of("title", "description", "default", "example", "examples", "deprecated",
-            "readOnly", "writeOnly", "$comment", "format", "contentMediaType", "contentEncoding", "externalDocs", "xml",
+    static final Set<String> ANNOTATIONS = Set.of(
+            "title",
+            "description",
+            "default",
+            "example",
+            "examples",
+            "deprecated",
+            "readOnly",
+            "writeOnly",
+            "$comment",
+            "format",
+            "contentMediaType",
+            "contentEncoding",
+            "externalDocs",
+            "xml",
             "discriminator");
 
     /** Keywords that narrow a value without admitting or closing anything. */
-    static final Set<String> CONSTRAINTS = Set.of("minLength", "maxLength", "pattern", "minimum", "maximum",
-            "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "minItems", "maxItems", "uniqueItems", "required",
-            "dependentRequired", "minProperties", "maxProperties");
+    static final Set<String> CONSTRAINTS = Set.of(
+            "minLength",
+            "maxLength",
+            "pattern",
+            "minimum",
+            "maximum",
+            "exclusiveMinimum",
+            "exclusiveMaximum",
+            "multipleOf",
+            "minItems",
+            "maxItems",
+            "uniqueItems",
+            "required",
+            "dependentRequired",
+            "minProperties",
+            "maxProperties");
 
     /** Keywords the classification reads. */
-    static final Set<String> STRUCTURE = Set.of("type", "const", "enum", "properties", "additionalProperties",
-            "patternProperties", "items", "prefixItems", "allOf", "anyOf", "oneOf", "not", "if", "then", "else",
+    static final Set<String> STRUCTURE = Set.of(
+            "type",
+            "const",
+            "enum",
+            "properties",
+            "additionalProperties",
+            "patternProperties",
+            "items",
+            "prefixItems",
+            "allOf",
+            "anyOf",
+            "oneOf",
+            "not",
+            "if",
+            "then",
+            "else",
             "dependentSchemas");
 
     /** The JSON Schema type names. */
@@ -32,11 +72,12 @@ final class Vocabulary {
 
     private static final String REF = "$ref";
 
-    private Vocabulary() {
-    }
+    private Vocabulary() {}
 
     static boolean understands(String keyword) {
-        return keyword.startsWith("x-") || ANNOTATIONS.contains(keyword) || CONSTRAINTS.contains(keyword)
+        return keyword.startsWith("x-")
+                || ANNOTATIONS.contains(keyword)
+                || CONSTRAINTS.contains(keyword)
                 || STRUCTURE.contains(keyword);
     }
 
@@ -47,16 +88,21 @@ final class Vocabulary {
     static void vet(Node schema, Findings findings) {
         for (String keyword : schema.keys()) {
             if (REF.equals(keyword)) {
-                findings.malformed(schema.pointer().child(keyword),
+                findings.malformed(
+                        schema.pointer().child(keyword),
                         "a $ref is left in the bundle; the bundle must inline every reference");
             } else if (!understands(keyword)) {
-                findings.malformed(schema.pointer().child(keyword), "the keyword '" + keyword + "' is not one the"
-                        + " checker understands, so it cannot judge the schema; teach the checker or drop the keyword");
+                findings.malformed(
+                        schema.pointer().child(keyword),
+                        "the keyword '" + keyword + "' is not one the"
+                                + " checker understands, so it cannot judge the schema; teach the checker or drop the keyword");
             }
         }
-        schema.child("type").flatMap(Vocabulary::typeProblem)
+        schema.child("type")
+                .flatMap(Vocabulary::typeProblem)
                 .ifPresent(problem -> findings.malformed(schema.pointer().child("type"), problem));
-        schema.child("enum").filter(e -> !isEnum(e))
+        schema.child("enum")
+                .filter(e -> !isEnum(e))
                 .ifPresent(e -> findings.malformed(e.pointer(), "must be a non-empty list of values"));
     }
 
@@ -78,13 +124,16 @@ final class Vocabulary {
             return Optional.of("must be a type name or a non-empty list of type names");
         }
         List<?> names = type.value() instanceof List<?> list ? list : List.of(type.value());
-        return names.stream().map(Vocabulary::nameProblem).flatMap(Optional::stream).findFirst();
+        return names.stream()
+                .map(Vocabulary::nameProblem)
+                .flatMap(Optional::stream)
+                .findFirst();
     }
 
     private static Optional<String> nameProblem(Object name) {
         if (name == null) {
-            return Optional.of("a type name must be a string: an unquoted YAML null is not the type name 'null';"
-                    + " quote it");
+            return Optional.of(
+                    "a type name must be a string: an unquoted YAML null is not the type name 'null';" + " quote it");
         }
         if (!(name instanceof String text)) {
             return Optional.of("a type name must be a string, not " + name);

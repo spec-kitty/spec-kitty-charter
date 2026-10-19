@@ -8,8 +8,7 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
 /** Loading YAML text into plain values, with the settings every reader in this adapter shares. */
 final class Yaml {
 
-    private Yaml() {
-    }
+    private Yaml() {}
 
     static LoadSettings settings() {
         return LoadSettings.builder()

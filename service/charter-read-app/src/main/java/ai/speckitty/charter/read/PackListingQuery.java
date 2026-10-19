@@ -20,10 +20,14 @@ public final class PackListingQuery {
     }
 
     private static PackSummary summarize(CharterPack pack) {
-        return new PackSummary(pack.name(), pack.level(),
+        return new PackSummary(
+                pack.name(),
+                pack.level(),
                 pack.descriptor().map(PackDescriptor::packId),
                 pack.descriptor().map(PackDescriptor::packVersion),
                 pack.descriptor().flatMap(PackDescriptor::parentPack),
-                pack.graph().nodes().size(), pack.graph().edges().size(), pack.diagnostics());
+                pack.graph().nodes().size(),
+                pack.graph().edges().size(),
+                pack.diagnostics());
     }
 }

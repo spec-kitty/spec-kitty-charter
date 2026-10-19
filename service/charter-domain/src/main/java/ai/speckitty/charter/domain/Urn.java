@@ -31,8 +31,12 @@ public record Urn(NodeKind kind, String id) implements Comparable<Urn> {
     }
 
     @Override
-    public int compareTo(Urn other) { return toString().compareTo(other.toString()); }
+    public int compareTo(Urn other) {
+        return toString().compareTo(other.toString());
+    }
 
     @Override
-    public String toString() { return kind.token() + ":" + id; }
+    public String toString() {
+        return kind.token() + ":" + id;
+    }
 }

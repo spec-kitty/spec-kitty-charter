@@ -14,11 +14,17 @@ public enum RefusalCode {
 
     private final String token;
 
-    RefusalCode(String token) { this.token = token; }
+    RefusalCode(String token) {
+        this.token = token;
+    }
 
     /** The wire spelling of the code. */
-    public String token() { return token; }
+    public String token() {
+        return token;
+    }
 
     /** True when the refusal is about what was asked, not about the offering. */
-    public boolean notFound() { return this == MISSION_TYPE_NOT_FOUND || this == ACTION_NOT_FOUND; }
+    public boolean notFound() {
+        return this == MISSION_TYPE_NOT_FOUND || this == ACTION_NOT_FOUND;
+    }
 }
