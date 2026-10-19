@@ -44,6 +44,9 @@ import java.util.stream.IntStream;
  *   <li><b>Breaking subsection.</b> When the major version of {@code info.version} is above that of the previous
  *       release (the newest released heading below the top heading), the top section must hold a
  *       {@code ### Breaking} subsection.</li>
+ *   <li><b>Major bump, for information.</b> On a major bump that passes the Breaking rule, the newest release of the
+ *       earlier major whose tag is merged into HEAD is named ({@link #previousMajorBaseline}) so the build can show
+ *       what the new major breaks. It never fails the build.</li>
  *   <li><b>Baseline is the release.</b> The contract archived at the baseline tag has an {@code info.version} equal
  *       to the version the tag names ({@link #baselineRefusal}), so a tag moved onto a later commit is not
  *       compared against as if it were the release.</li>
@@ -243,6 +246,28 @@ public final class ReleaseGate {
     }
 
     /**
+     * The release a major bump is shown against, for information only: when the top section raises the major
+     * version above that of the previous release, that release's tag, provided it is merged into HEAD.
+     *
+     * @param infoVersion the {@code info.version} of the contract
+     * @param changelog   the text of the contract's CHANGELOG
+     * @param mergedTags  the {@code contract-charter-v*} tags merged into HEAD
+     * @return the tag of the previous release, or empty when this is no major bump, the CHANGELOG gates refuse, or
+     *         that tag is not merged into HEAD
+     */
+    public static Optional<String> previousMajorBaseline(String infoVersion, String changelog, Set<String> mergedTags) {
+        List<Section> sections = sections(changelog);
+        if (changelogRefusal(infoVersion, sections).isPresent()) {
+            return Optional.empty();
+        }
+        Version top = sections.getFirst().version().orElseThrow();
+        return previousRelease(sections)
+                .filter(previous -> previous.major() < top.major())
+                .map(Version::tag)
+                .filter(mergedTags::contains);
+    }
+
+    /**
      * Runs only the gates that read no git history: the version gate and the Breaking subsection.
      *
      * @param infoVersion the {@code info.version} of the contract
@@ -288,17 +313,22 @@ public final class ReleaseGate {
         if (unordered.isPresent()) {
             return unordered;
         }
-        Optional<Version> previous = sections.stream()
-                .skip(1)
-                .flatMap(s -> s.version().stream())
-                .filter(Version::released)
-                .findFirst();
+        Optional<Version> previous = previousRelease(sections);
         if (previous.isPresent() && info.get().major() > previous.get().major() && !top.breaking()) {
             return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md raises the major"
                     + " version from " + previous.get().text() + " to " + infoVersion + " but has no ### Breaking"
                     + " subsection; list what breaks there.");
         }
         return Optional.empty();
+    }
+
+    /** The newest released heading below the top heading. */
+    private static Optional<Version> previousRelease(List<Section> sections) {
+        return sections.stream()
+                .skip(1)
+                .flatMap(s -> s.version().stream())
+                .filter(Version::released)
+                .findFirst();
     }
 
     /** The order rules (rule 2): no version twice, the top above every release, strictly descending. */

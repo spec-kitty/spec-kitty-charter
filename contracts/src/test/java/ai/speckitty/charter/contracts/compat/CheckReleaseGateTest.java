@@ -53,6 +53,24 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aMajorBumpNamesThePreviousMajorsRelease() throws IOException {
+        Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 2.0.0-SNAPSHOT\n");
+        Path log = Files.writeString(
+                dir.resolve("CHANGELOG.md"), "## 2.0.0-SNAPSHOT\n\n### Breaking\n\n- x\n\n## 1.0.0\n");
+        Path merged = Files.writeString(dir.resolve("tags.txt"), "contract-charter-v1.0.0\n");
+        assertThat(CheckReleaseGate.run(
+                        List.of("--previous-major", openapi.toString(), log.toString(), merged.toString()), out))
+                .isZero();
+        assertThat(printed()).isEqualTo("PREVIOUS_MAJOR contract-charter-v1.0.0\n");
+        output.reset();
+        Files.writeString(merged, "");
+        assertThat(CheckReleaseGate.run(
+                        List.of("--previous-major", openapi.toString(), log.toString(), merged.toString()), out))
+                .isZero();
+        assertThat(printed()).isEqualTo("NONE\n");
+    }
+
+    @Test
     void noReleasedVersionIsNoBaseline() throws IOException {
         assertThat(run("1.0.0-SNAPSHOT", "## 1.0.0-SNAPSHOT\n", "", "")).isZero();
         assertThat(printed()).startsWith("NONE\nNo released baseline: ");

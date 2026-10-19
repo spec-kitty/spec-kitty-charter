@@ -348,6 +348,61 @@ class ReleaseGateTest {
     }
 
     @Nested
+    class PreviousMajor {
+
+        private static final String BREAKING_TWO = "## 2.0.0-SNAPSHOT\n\n### Breaking\n\n- dropped x\n";
+
+        @Test
+        void aMajorBumpNamesTheNewestReleaseOfTheEarlierMajor() {
+            assertThat(ReleaseGate.previousMajorBaseline(
+                            "2.0.0-SNAPSHOT",
+                            changelog(BREAKING_TWO, "## 1.1.0\n", "## 1.0.0\n"),
+                            Set.of("contract-charter-v1.1.0", "contract-charter-v1.0.0")))
+                    .contains("contract-charter-v1.1.0");
+        }
+
+        @Test
+        void aPendingMajorReleaseNamesItToo() {
+            assertThat(ReleaseGate.previousMajorBaseline(
+                            "2.0.0",
+                            changelog("## 2.0.0\n\n### Breaking\n", "## 1.1.0\n"),
+                            Set.of("contract-charter-v1.1.0")))
+                    .contains("contract-charter-v1.1.0");
+        }
+
+        @Test
+        void aSameMajorVersionNamesNothing() {
+            assertThat(ReleaseGate.previousMajorBaseline(
+                            "1.2.0-SNAPSHOT",
+                            changelog("## 1.2.0-SNAPSHOT\n", "## 1.1.0\n"),
+                            Set.of("contract-charter-v1.1.0")))
+                    .isEmpty();
+        }
+
+        @Test
+        void aMajorBumpWithoutABreakingSubsectionNamesNothing() {
+            assertThat(ReleaseGate.previousMajorBaseline(
+                            "2.0.0-SNAPSHOT",
+                            changelog("## 2.0.0-SNAPSHOT\n", "## 1.1.0\n"),
+                            Set.of("contract-charter-v1.1.0")))
+                    .isEmpty();
+        }
+
+        @Test
+        void aReleaseWhoseTagIsNotMergedNamesNothing() {
+            assertThat(ReleaseGate.previousMajorBaseline(
+                            "2.0.0-SNAPSHOT", changelog(BREAKING_TWO, "## 1.1.0\n"), Set.of()))
+                    .isEmpty();
+        }
+
+        @Test
+        void theFirstVersionNamesNothing() {
+            assertThat(ReleaseGate.previousMajorBaseline("1.0.0-SNAPSHOT", SNAPSHOT_ONLY, Set.of()))
+                    .isEmpty();
+        }
+    }
+
+    @Nested
     class BaselineContract {
 
         @Test

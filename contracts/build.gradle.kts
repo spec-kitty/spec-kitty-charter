@@ -432,6 +432,58 @@ abstract class CheckContractCompatibility @Inject constructor(
         return Triple(result.exitValue, output.toString(Charsets.UTF_8).trim().lines(), errors.toString(Charsets.UTF_8))
     }
 
+    /**
+     * The bundle of the contract as released at [tag]: `git archive` of the tag, the check that its `info.version` is
+     * the version the tag names, then the bundling every comparison uses.
+     */
+    private fun bundledRelease(repo: String, tag: String, work: File): File {
+        val dir = File(work, tag)
+        val tar = File(dir, "baseline.tar")
+        dir.mkdirs()
+        val (archiveCode, archiveOut) = run("git", "-C", repo, "archive", "--format=tar", "-o", tar.path,
+            tag, "contracts/charter", "contracts/_shared")
+        if (archiveCode != 0) throw GradleException("Cannot read the contract at $tag:\n$archiveOut")
+        val tree = File(dir, "tree")
+        files.copy { from(archives.tarTree(tar)); into(tree) }
+        // The tag must name the contract it holds: a tag moved onto a later commit is not the release.
+        val (versionExit, versionLines, versionErrors) =
+            runGate("--baseline", File(tree, "contracts/charter/openapi.yaml").path, tag)
+        if (versionExit != 0) {
+            throw GradleException("The baseline $tag is not the release it names (exit $versionExit):\n" +
+                versionLines.joinToString("\n") + versionErrors.let { if (it.isBlank()) "" else "\n$it" })
+        }
+        val bundled = File(dir, "openapi.yaml")
+        bundle(vacuum.get().asFile, File(tree, "contracts/charter/openapi.yaml"), bundled)?.let {
+            throw GradleException("Cannot bundle the contract at $tag:\n$it")
+        }
+        return bundled
+    }
+
+    /**
+     * On a major bump, shows what the new major breaks against the newest release of the earlier major: the oasdiff
+     * report, for information only. Nothing here fails the build; a problem is logged and the check goes on.
+     */
+    private fun reportOnPreviousMajor(repo: String, tagsFile: File, work: File) {
+        val (exit, lines, _) = runGate("--previous-major", openapi.get().asFile.absolutePath,
+            changelog.get().asFile.absolutePath, tagsFile.path)
+        val first = lines.firstOrNull().orEmpty()
+        if (exit != 0 || !first.startsWith("PREVIOUS_MAJOR ")) return
+        val tag = first.removePrefix("PREVIOUS_MAJOR ")
+        try {
+            val previous = bundledRelease(repo, tag, work)
+            val (code, output) = breaking(oasdiff.get().asFile, severityLevels.get().asFile, previous, bundle.get().asFile)
+            val verdict = when (code) {
+                0 -> "the new major breaks nothing"
+                1 -> "the new major breaks:"
+                else -> "oasdiff exited $code:"
+            }
+            logger.lifecycle("Information only (a major bump may break; this does not fail the build): compared with " +
+                "$tag, $verdict" + if (output.isBlank()) "" else "\n$output")
+        } catch (e: GradleException) {
+            logger.warn("Could not compare the major bump with $tag (information only): ${e.message}")
+        }
+    }
+
     @TaskAction
     fun compare() {
         if (baselineOverride.orNull == "none") {
@@ -463,28 +515,13 @@ abstract class CheckContractCompatibility @Inject constructor(
         val headTagsFile = File(work, "head-tags.txt")
         headTagsFile.writeText(headTagList)
         val (decision, message) = gate("--git", tagsFile.path, headTagsFile.path)
+        reportOnPreviousMajor(repo, tagsFile, work)
         if (decision == "NONE") {
             logger.lifecycle(message)
             return
         }
         val baselineTag = decision.removePrefix("COMPARE ")
-        val tar = File(work, "baseline.tar")
-        val (archiveCode, archiveOut) = run("git", "-C", repo, "archive", "--format=tar", "-o", tar.path,
-            baselineTag, "contracts/charter", "contracts/_shared")
-        if (archiveCode != 0) throw GradleException("Cannot read the contract at $baselineTag:\n$archiveOut")
-        val tree = File(work, "baseline")
-        files.copy { from(archives.tarTree(tar)); into(tree) }
-        // The tag must name the contract it holds: a tag moved onto a later commit is not the release.
-        val (versionExit, versionLines, versionErrors) =
-            runGate("--baseline", File(tree, "contracts/charter/openapi.yaml").path, baselineTag)
-        if (versionExit != 0) {
-            throw GradleException("The baseline $baselineTag is not the release it names (exit $versionExit):\n" +
-                versionLines.joinToString("\n") + versionErrors.let { if (it.isBlank()) "" else "\n$it" })
-        }
-        val baseline = File(work, "baseline-openapi.yaml")
-        bundle(vacuum.get().asFile, File(tree, "contracts/charter/openapi.yaml"), baseline)?.let {
-            throw GradleException("Cannot bundle the contract at $baselineTag:\n$it")
-        }
+        val baseline = bundledRelease(repo, baselineTag, work)
         val (code, output) = breaking(oasdiff.get().asFile, severityLevels.get().asFile, baseline, bundle.get().asFile)
         if (code != 0) {
             throw GradleException("The charter contract breaks compatibility with $baselineTag ($message):\n$output")
