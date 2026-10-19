@@ -2,6 +2,7 @@ package ai.speckitty.charter.contracts.closure;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -10,9 +11,10 @@ import java.util.stream.Stream;
 /**
  * Finds the response schema positions of an OpenAPI document (rules 2 and 3 of {@link ClosureChecker}): each
  * {@code paths.*.<method>.responses.*.content.*.schema}, each response header's {@code schema} and each schema of a
- * response header's {@code content}. The document around them fails closed: a key outside the known set of a path
- * item, an operation, a response, a header or a media type is reported, and so are {@code webhooks} and
- * {@code callbacks}, which the contract does not use.
+ * response header's {@code content}. The document around them fails closed: an operation with no {@code responses},
+ * or an empty one, is reported (a response without a body is fine, an operation without responses is not); a key
+ * outside the known set of a path item, an operation, a response, a header or a media type is reported, and so are
+ * {@code webhooks} and {@code callbacks}, which the contract does not use.
  */
 final class ResponseSchemas {
 
@@ -34,7 +36,17 @@ final class ResponseSchemas {
             "servers");
     private static final Set<String> RESPONSE_KEYS = Set.of("description", "headers", "content", "links");
     private static final Set<String> HEADER_KEYS = Set.of(
-            "description", "required", "deprecated", "style", "explode", "schema", "example", "examples", "content");
+            "description",
+            "required",
+            "deprecated",
+            "allowEmptyValue",
+            "allowReserved",
+            "style",
+            "explode",
+            "schema",
+            "example",
+            "examples",
+            "content");
     private static final Set<String> MEDIA_TYPE_KEYS = Set.of("schema", "example", "examples", "encoding");
     private static final Pattern STATUS = Pattern.compile("default|[1-5](\\d\\d|XX)");
     private static final String REF = "$ref";
@@ -89,6 +101,7 @@ final class ResponseSchemas {
     private static List<Node> ofOperation(Node operation, Findings findings) {
         known(operation, OPERATION_KEYS, "an operation", findings);
         operation.child("callbacks").ifPresent(c -> findings.malformed(c.pointer(), UNUSED.formatted("callbacks")));
+        requireResponses(operation, findings);
         List<Node> schemas = new ArrayList<>();
         for (Node response : operation.entries("responses", findings)) {
             String status = key(response);
@@ -104,6 +117,24 @@ final class ResponseSchemas {
             }
         }
         return schemas;
+    }
+
+    /** An operation answers something: a missing or empty {@code responses} would leave nothing to judge. */
+    private static void requireResponses(Node operation, Findings findings) {
+        Optional<Node> responses = operation.child("responses");
+        if (responses.isEmpty()) {
+            findings.malformed(
+                    operation.pointer(),
+                    "the operation has no responses, so nothing it answers is judged; declare each response, even one"
+                            + " without a body");
+        } else if (responses.get().isMap()
+                && responses.get().members().stream()
+                        .allMatch(response -> key(response).startsWith("x-"))) {
+            findings.malformed(
+                    responses.get().pointer(),
+                    "the operation's responses is empty, so nothing it answers is judged; declare each response, even"
+                            + " one without a body");
+        }
     }
 
     private static List<Node> ofResponse(Node response, Findings findings) {
