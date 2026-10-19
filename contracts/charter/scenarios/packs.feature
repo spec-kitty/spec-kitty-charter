@@ -45,7 +45,7 @@ Feature: Pack listing and load refusals
       }
       """
 
-  Scenario: A pack descriptor without pack_level loads at its configured level, with a warning
+  Scenario: A pack descriptor without pack_level loads at its configured level, with a diagnostic
     Given the org pack "internal" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R

@@ -16,7 +16,7 @@ import java.util.Set;
 
 /**
  * Action-scoped context, first slice: the targets of the scope edges of the action node and of the mission
- * type node, each target once (an artifact both scope keeps its action entry), sorted by full URN as core
+ * type node, each target once (an artifact in both scopes keeps its action entry), sorted by full URN as core
  * sorts the resolved artifacts of an action; over the merged offering without activation filtering
  * (contracts/charter/scenarios/action_context.feature).
  */

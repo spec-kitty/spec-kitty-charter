@@ -48,6 +48,11 @@ public class CharterSteps {
     }
 
     @After
+    public void deletePacks() {
+        packs.delete();
+    }
+
+    @After
     public void conformsToTheContract() throws Exception {
         if (path == null) {
             return;
