@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-19 — The action-context read walks the offering, and the seam surface is reshaped](/changelog/2026-10-19-action-context-read-and-seam-surface/)
 - [2026-10-19 — The docsite moves to doc-kitty 0.4.0](/changelog/2026-10-19-doc-kitty-0-4-0/)
 - [2026-10-19 — The corpus harness and the canonical pack schemas](/changelog/2026-10-19-corpus-harness-and-pack-schemas/)
 - [2026-10-19 — This repository is canonical for charter shapes](/changelog/2026-10-19-canonical-charter-ownership/)
