@@ -6,6 +6,7 @@ updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
+  - adr/0018-action-context-read-and-seam-access-surface
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
   - api
@@ -101,9 +102,10 @@ check. The rules and tasks are listed in [`contracts/lint/README.md`](https://gi
 
 The layout:
 
-- a module directory with a root `openapi.yaml` that holds only info, servers, tags and the
-  path-to-file map; one file per path under `paths/`; `schemas/`, `parameters/`,
-  `responses/` and `examples/`, each listed in an `_index.yaml`;
+- a module directory with a root `openapi.yaml` that holds the info, servers, root `security`,
+  tags, the path-to-file map and the `components` that declare `securitySchemes`; one file per
+  path under `paths/`; `schemas/`, `parameters/`, `responses/` and `examples/`, each listed in
+  an `_index.yaml`;
 - plain relative `$ref`s only (no URLs, absolute paths or braces);
 - `servers: [{url: /api/v1}]`; paths never carry the prefix;
 - the shared vocabulary that came from core (`Problem` for refusals, `PageInfo`,
@@ -131,10 +133,12 @@ The layout:
   is breaking, 1.0 carries:
   - the `impacts` relation, modeled as a signed, authored edge; `in_tension_with` is dropped
     and `reconciles_tension` targets `impacts < 0` pairs;
-  - the refusal codes `governance_policy_violation` and `stale_input`;
-  - an integer `depth` request parameter on the context read, echoed in the response;
-  - an info endpoint, and `Charter-Contract-Version`, `Charter-Worktree` and
-    `Charter-Source-Fingerprint` response headers;
+  - the refusal codes `governance_policy_violation` (still raised by nothing) and `stale_input`
+    (now raised);
+  - an integer `depth` request parameter on the context read that counts `suggests` hops (0 to
+    2), echoed in the response with no maximum;
+  - an info endpoint with `serviceVersion`, and `Charter-Contract-Version`, `Charter-Worktree`
+    and `Charter-Source-Fingerprint` response headers (the last on 200 answers only);
   - a governance fingerprint on context responses.
 
   Core aligns to these at the cutover. Until then, core's seam maps its `in_tension_with`

@@ -13,5 +13,5 @@ core included, adapt. A refresh from core never overwrites a change listed below
 
 - `responses/Problem.yaml` declares the three `Charter-*` response headers,
   `Charter-Contract-Version`, `Charter-Worktree` and `Charter-Source-Fingerprint`, by reference
-  to `contracts/charter/headers/` (#90, ADR-0011: every response carries them, the shared
-  default `Problem` included).
+  to `contracts/charter/headers/` (#90, ADR-0018 D11: declared on every response, the shared
+  default `Problem` included; the fingerprint is present on 200 only).

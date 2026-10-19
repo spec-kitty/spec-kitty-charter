@@ -1,6 +1,6 @@
 ---
 title: Service contract
-description: The OpenAPI 3.1 contract of the charter service — the two built reads, the planned reads and writes, the error model and the transports.
+description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
 updated: 2026-10-19T00:00:00Z
 type: API
@@ -8,6 +8,8 @@ kind: Reference
 related:
   - architecture/contract-and-dtos
   - adr/0002-contract-source-of-record
+  - adr/0018-action-context-read-and-seam-access-surface
+  - api/divergence-register
   - api/compatibility
 audience:
   - profile: contract-consumer
@@ -18,7 +20,7 @@ audience:
 
 The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
 
-> **Partly built.** Three read operations are in the contract and served by the Java service; the other operations on this page are designed only. See the [API overview](/api/).
+> **Partly built.** Three reads and one refresh are in the contract and served by the Java service; the other operations on this page are designed only. See the [API overview](/api/).
 
 ## The contract files
 
@@ -37,19 +39,60 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 `Problem` bodies for refusals. How it is laid out, generated and versioned is in
 [Contract and DTOs](/architecture/contract-and-dtos/).
 
-## Built read surface
+## Built surface
 
 | Operation | Answers | Path |
 |---|---|---|
 | `listPacks` | The configured Charter Packs, their levels and versions, with the diagnostics of each | `GET /packs` |
-| `getActionContext` | The guidance for one action of one mission type, the `depth` of the walk (1 in this version) and a fingerprint of the governance it was computed from; provisional (`x-provisional`) until the conformance corpus decides its rules | `GET /mission-types/{missionType}/actions/{action}/context` |
-| `getServiceInfo` | The contract version the service was built against, the worktree it serves and a fingerprint of the pack files it answers from | `GET /info` |
+| `refreshPacks` | Re-reads every configured pack and the project configuration, discards any built read model, and answers the refreshed pack listing with the fingerprint it verified; no request body | `POST /packs/refresh` |
+| `getActionContext` | The offering's walk for one action: the five steps below, each entry with its `relation`, `via` and `hops`, the `depth` it was walked at and the offering's load `diagnostics`; provisional (`x-provisional`) until the conformance corpus decides the registered divergences | `GET /mission-types/{missionType}/actions/{action}/context` |
+| `getServiceInfo` | The contract version, the service's build version (`serviceVersion`), the worktree it serves and a fingerprint of the sources it answers from | `GET /info` |
 
-Every response of these operations carries the `Charter-Contract-Version`, `Charter-Worktree`
-and `Charter-Source-Fingerprint` headers, so the seam in core can check it talks to the right
-service about the right files. Some of the 1.0 contract is reserved for the cutover work before
-that work exists, because a response field added after 1.0 is a breaking change: the `impacts`
-relation, two refusal codes and these values (ADR-0009, provisional).
+Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
+carries `Charter-Contract-Version` and `Charter-Worktree`. Only a 200 answer carries
+`Charter-Source-Fingerprint`, once, with the digest that read verified; no refusal carries it.
+
+### The action-context decision (#95)
+
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) decides what the read
+answers. The contract files are the authority; this section only summarizes them.
+
+- **What it is.** The offering's walk, for good. It never filters by activation, exclusion or
+  selection. What applies in one project is a separate operation of the activation contract set
+  (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), and the seam does not
+  switch its context read to the service before that operation exists.
+- **The walk.** Scope from the action node, `requires` (transitive), `suggests` (up to `depth`),
+  `requires` of the suggested artifacts, and `vocabulary` (one hop). Each artifact is listed once,
+  by the first step that reaches it, sorted by URN. The mission-type node is not walked.
+- **`depth`** is the number of `suggests` hops: 0 to 2, default 2. It is not `hops`, which is the
+  path length from the action. The seam maps a first load to 2, a recorded load to 1 and the
+  public bundle read to 0.
+- **Why.** A 1.0 answer must never change meaning without the client opting in, and core's code is
+  evidence of intent, not a specification. The differences from core are in the
+  [divergence register](/api/divergence-register/).
+
+### Known tooling gap
+
+The generator duplicates `Problem` as `Problem1` and `PackListing` as `PackListing1` (a
+swagger-parser bug with closed schemas). The wire shape is unaffected; the dedupe is issue #119.
+
+### Security and freshness
+
+- **Token.** Required bearer on every operation. The service refuses to start without a token of
+  at least 32 characters unless `charter.insecure-no-token=true`, and refuses a token that comes
+  from argv or a system property. Residual risks for the launcher review (#70): a port squatter
+  receives the token, a derived worktree id is guessable, and a `${x}` placeholder resolved from
+  argv is not refused yet (#121). A browser request (an `Origin` or `Sec-Fetch-*` header, or a
+  `Host` whose name is not loopback) is a 403.
+- **Fingerprint.** It covers every loaded pack file plus `config.yaml` and `charter.yaml` under
+  the configured project directory. No test yet pins that it digests exactly the files the load
+  reads (#120).
+- **Stale reads.** Every read digests its inputs before and after it answers and refuses with
+  `stale_input` on a difference, a failed load included.
+
+Some of the 1.0 contract is reserved for the cutover work before that work exists, because a
+response field added after 1.0 is a breaking change: the `impacts` relation, the reserved
+refusal code and these values (ADR-0009 and ADR-0018, provisional).
 
 ## Planned read surface
 
@@ -62,7 +105,8 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 
 | Read | Inventory issue | Today in core |
 |---|---|---|
-| Action-scoped context: the full walk (scope, `requires`, `suggests`, `vocabulary`) and the activation filter the built operation does not yet apply | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) | `spec-kitty charter context --action <name> --mission-type <type>` |
+| Effective context (R9): what applies in one project, with activation, exclusions, selection roots, the language filter and the directive allowlist, built on the walk. **It gates cutover stage 3** | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter context --action <name> --mission-type <type>` |
+| Tension annotation over negative `impacts`, in the creed contract set | [#16](https://github.com/spec-kitty/spec-kitty-charter/issues/16), [#77](https://github.com/spec-kitty/spec-kitty-charter/issues/77) | the `in_tension_with` annotation in `charter context` |
 | Artifact bodies | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories |
 | Merged graph and graph queries | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers |
 | Pack listing with presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) | `spec-kitty charter pack list` |
@@ -71,9 +115,10 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands |
 | The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, structured-prompt blocks, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various |
 
-The reserved 1.0 surface (`depth`, `ServiceInfo`, the source fingerprint inputs, the
-per-worktree token and the post-write refresh) is reshaped before the first release
-([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113)).
+The action-context walk (#95) and the reserved 1.0 surface (`depth`, `ServiceInfo`, the source
+fingerprint inputs, the per-worktree token and refresh) are decided and built
+([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113),
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)).
 
 ## Planned write surface (later)
 
@@ -84,14 +129,21 @@ charter document save, compile. See [Strangler transition](/architecture/strangl
 
 - Every refusal is a `Problem` body. The shared `Problem` schema and response in
   `contracts/_shared/` are canonical in this repository (ADR-0015), and every answer, the
-  `default` `Problem` response included, carries the three `Charter-*` headers.
+  `default` `Problem` response included, carries `Charter-Contract-Version` and
+  `Charter-Worktree`; only a 200 carries `Charter-Source-Fingerprint`.
 - Refusal codes are part of the contract, not implementation detail. They are snake_case on
   the wire; the integration seam in core maps them to core's own spellings. The codes and
   when each applies are defined in [`CharterRefusalCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/CharterRefusalCode.yaml),
   and the load findings that do not stop a read in [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml).
-  Two codes are reserved and raised by no operation yet: `governance_policy_violation`, for the
-  pack mutability policy, and `stale_input`, for a read whose files changed while it was
-  answered.
+  `CharterRefusalCode` carries a machine-readable `x-refusal` map (status, retryable, raised)
+  for all nine codes.
+- `stale_input` is raised by every read: inputs changed while the answer was computed, a failed
+  load whose inputs changed included. It may be retried.
+- `governance_policy_violation` is reserved: it is declared and pinned by a scenario and a unit
+  test, and raised by nothing until the pack mutability policy lands (#48).
+- **401 and 403 are transport failures, not refusals.** They are `Problem` bodies without a
+  charter code: 401 is a missing, malformed or wrong token, 403 is a browser request. The seam
+  treats both as transport failures. They carry no fingerprint.
 - Fail loud: a dropped artifact, an unresolved edge, an unresolved profile or a stale input is
   a named refusal or a diagnostic, never an empty success.
 
