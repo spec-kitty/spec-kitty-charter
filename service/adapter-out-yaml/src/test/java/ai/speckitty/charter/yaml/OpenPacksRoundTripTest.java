@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.domain.CharterPack;
+import ai.speckitty.charter.domain.Diagnostic;
 import ai.speckitty.charter.domain.DoctrineGraph;
 import ai.speckitty.charter.domain.PackLevel;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -24,13 +26,32 @@ import org.junit.jupiter.api.TestFactory;
  *   <li>bytes: the lossless document model renders each file byte for byte;</li>
  *   <li>data: rewriting every scalar of the file with its own value through the model's writer loads to
  *       the same data;</li>
- *   <li>domain: every pack loads without a refusal, and its graph written as a shard and read back is the
- *       same graph.</li>
+ *   <li>domain: every pack loads without a refusal with exactly the diagnostics listed below, and its graph
+ *       written as a shard and read back is the same graph.</li>
  * </ol>
  * Run by {@code ./gradlew :adapter-out-yaml:openPacksRoundTrip} (part of {@code check}).
  */
 @Tag("open-packs")
 class OpenPacksRoundTripTest {
+
+    /**
+     * The load diagnostics of every pack of the pinned corpus (OPEN_PACKS_REF), under the ratified strict rule:
+     * a pack without pack.yaml, or whose pack.yaml has no pack_level, is diagnosed at every level. Bringing
+     * the packs up to the rule is spec-kitty-open-packs #47; a pack added to or fixed in the corpus changes this
+     * table on purpose.
+     */
+    private static final Map<String, List<Diagnostic>> DIAGNOSTICS = Map.of(
+            "built-in", List.of(),
+            "cave-kitty", List.of(noPackYaml("cave-kitty")),
+            "event-driven", List.of(noPackYaml("event-driven")),
+            "internal", List.of(new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING,
+                    "pack.yaml of internal has no pack_level; the configured level org is used")),
+            "qa", List.of(noPackYaml("qa")));
+
+    private static Diagnostic noPackYaml(String orgPack) {
+        return new Diagnostic(Diagnostic.Code.PACK_LEVEL_MISSING,
+                "org pack " + orgPack + " has no pack.yaml; the configured level org is used");
+    }
 
     private static Path openPacks() {
         String dir = System.getProperty("charter.openPacksDir");
@@ -76,8 +97,12 @@ class OpenPacksRoundTripTest {
             dirs.filter(Files::isDirectory).sorted()
                     .forEach(dir -> packs.add(new PackLocation(dir.getFileName().toString(), PackLevel.ORG, dir)));
         }
+        assertThat(packs).extracting(PackLocation::name).as("packs of the corpus")
+                .containsExactlyInAnyOrderElementsOf(DIAGNOSTICS.keySet());
         return packs.stream().map(location -> dynamicTest(location.name(), () -> {
             CharterPack pack = FileSystemCharterPackRepository.loadPack(location);
+            assertThat(pack.diagnostics()).as("diagnostics of " + location.name())
+                    .containsExactlyElementsOf(DIAGNOSTICS.get(location.name()));
             DoctrineGraph graph = pack.graph();
             assertThat(graph.nodes()).as("nodes of " + location.name()).isNotEmpty();
             DoctrineGraph reread = GraphDocumentReader.read(GraphShardWriter.write(graph), GraphDocumentReader.Shape.SHARD,

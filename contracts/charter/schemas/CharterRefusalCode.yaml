@@ -1,13 +1,17 @@
 title: CharterRefusalCode
 description: >-
   Why the charter refused a read. Codes are part of the contract; consumers branch on them,
-  never on the title. Codes core already uses keep their spelling.
-  MISSION_TYPE_NOT_FOUND and ACTION_NOT_FOUND are 404; every other code is 500.
+  never on the title. Codes are snake_case on the wire; the integration seam in core maps them
+  to core's own spellings. mission_type_not_found and action_not_found are 404; every other
+  code is 500.
 type: string
 enum:
-  - MISSION_TYPE_NOT_FOUND
-  - ACTION_NOT_FOUND
-  - PACK_LEVEL_MISMATCH
-  - PACK_UNREADABLE
-  - DRG_SCHEMA_ERROR
+  - mission_type_not_found
+  - action_not_found
+  - pack_level_mismatch
+  - pack_unreadable
+  - drg_schema_error
   - unresolved_edge_endpoint
+x-source:
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
+  symbol: RefusalCode

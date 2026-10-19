@@ -8,10 +8,34 @@ required:
   - guidance
 properties:
   action:
-    $ref: Urn.yaml
+    description: The action node the context is read for, action:<missionType>/<action>.
+    allOf:
+      - $ref: Urn.yaml
+    x-derived:
+      rule: action:<missionType>/<action>, from the two path parameters.
+      inputs:
+        - parameters/MissionType.yaml
+        - parameters/Action.yaml
   missionType:
-    $ref: Urn.yaml
+    description: The mission type node of the action, mission_type:<missionType>.
+    allOf:
+      - $ref: Urn.yaml
+    x-derived:
+      rule: mission_type:<missionType>, from the path parameter.
+      inputs:
+        - parameters/MissionType.yaml
   guidance:
     type: array
+    description: >-
+      The artifacts one scope edge away from the action node or the mission type node, each
+      artifact once, sorted by URN.
     items:
       $ref: GuidanceEntry.yaml
+    x-derived:
+      rule: >-
+        The targets of the scope edges of action:<missionType>/<action> and of
+        mission_type:<missionType>, each target once (an artifact both scope keeps its action
+        entry), sorted by the full URN string.
+      inputs:
+        - parameters/MissionType.yaml
+        - parameters/Action.yaml

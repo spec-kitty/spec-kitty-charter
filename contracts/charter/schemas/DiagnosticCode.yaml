@@ -1,9 +1,13 @@
 title: DiagnosticCode
 description: >-
-  A load finding that does not stop the load. PACK_LEVEL_MISSING: the pack has no pack.yaml, or
-  its pack.yaml has no pack_level; the configured level is used. Core treats it the same way
+  A load finding that does not stop the load. Codes are snake_case on the wire; the integration
+  seam in core maps them to core's own spellings. pack_level_missing: the pack has no pack.yaml,
+  or its pack.yaml has no pack_level; the configured level is used. Core treats it the same way
   during the deprecation window of core ADR 2026-10-11-2; when the window closes it becomes a
   refusal in a new contract version.
 type: string
 enum:
-  - PACK_LEVEL_MISSING
+  - pack_level_missing
+x-source:
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
+  symbol: Diagnostic.Code

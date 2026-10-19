@@ -8,14 +8,17 @@ import ai.speckitty.charter.domain.Relation;
 import ai.speckitty.charter.domain.RefusalCode;
 import ai.speckitty.charter.domain.Urn;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Action-scoped context, first slice: scope edges of the action node, then of the mission type node,
- * over the merged offering without activation filtering (contracts/charter/features/action_context.feature).
+ * Action-scoped context, first slice: the targets of the scope edges of the action node and of the mission
+ * type node, each target once (an artifact both scope keeps its action entry), sorted by full URN as core
+ * sorts the resolved artifacts of an action; over the merged offering without activation filtering
+ * (contracts/charter/scenarios/action_context.feature).
  */
 public final class ActionContextQuery {
 
@@ -45,6 +48,7 @@ public final class ActionContextQuery {
                 }
             }
         }
+        guidance.sort(Comparator.comparing(GuidanceEntry::urn));
         return new ActionContext(actionUrn, missionTypeUrn, guidance);
     }
 }

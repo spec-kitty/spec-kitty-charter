@@ -5,3 +5,6 @@ enum:
   - built-in
   - org
   - project
+x-source:
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLevel.java
+  symbol: PackLevel

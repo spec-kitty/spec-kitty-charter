@@ -2,6 +2,7 @@ package ai.speckitty.charter.read;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import ai.speckitty.charter.domain.CharterOffering;
 import ai.speckitty.charter.domain.CharterPack;
@@ -25,26 +26,61 @@ class ActionContextQueryTest {
     private static final Urn D1 = new Urn(NodeKind.DIRECTIVE, "D1");
     private static final Urn D2 = new Urn(NodeKind.DIRECTIVE, "D2");
     private static final Urn T1 = new Urn(NodeKind.TACTIC, "T1");
+    private static final Urn UNDECLARED = new Urn(NodeKind.STYLEGUIDE, "undeclared");
 
-    private final ActionContextQuery query = new ActionContextQuery(() -> new CharterOffering(List.of(
-            new CharterPack("built-in", PackLevel.BUILT_IN, Optional.empty(), new DoctrineGraph(
-                    List.of(node(TYPE), node(PLAN), new DrgNode(D1, Optional.of("One")), node(D2)),
-                    List.of(DrgEdge.of(TYPE, PLAN, Relation.REQUIRES), DrgEdge.of(TYPE, D1, Relation.SCOPE),
-                            DrgEdge.of(TYPE, D2, Relation.SCOPE), DrgEdge.of(PLAN, D2, Relation.SCOPE),
-                            DrgEdge.of(PLAN, T1, Relation.SUGGESTS))), List.of()))));
+    private static ActionContextQuery over(List<DrgNode> nodes, List<DrgEdge> edges) {
+        return new ActionContextQuery(() -> new CharterOffering(List.of(
+                new CharterPack("built-in", PackLevel.BUILT_IN, Optional.empty(), new DoctrineGraph(nodes, edges),
+                        List.of()))));
+    }
 
     private static DrgNode node(Urn urn) {
         return new DrgNode(urn, Optional.empty());
     }
 
+    private final ActionContextQuery query = over(
+            List.of(node(TYPE), node(PLAN), new DrgNode(D1, Optional.of("One")), node(D2), node(T1)),
+            List.of(DrgEdge.of(TYPE, PLAN, Relation.REQUIRES), DrgEdge.of(PLAN, T1, Relation.SCOPE),
+                    DrgEdge.of(TYPE, D2, Relation.SCOPE), DrgEdge.of(PLAN, D2, Relation.SCOPE),
+                    DrgEdge.of(TYPE, D1, Relation.SCOPE), DrgEdge.of(PLAN, D1, Relation.SUGGESTS)));
+
     @Test
-    void actionScopeFirstThenMissionTypeScopeWithoutRepeats() {
+    void scopeOfTheActionAndOfItsMissionTypeOnceEachSortedByUrn() {
         ActionContext context = query.answer("software-dev", "plan");
         assertThat(context.guidance()).extracting(GuidanceEntry::urn, GuidanceEntry::via)
-                .containsExactly(org.assertj.core.groups.Tuple.tuple(D2, PLAN), org.assertj.core.groups.Tuple.tuple(D1, TYPE));
-        assertThat(context.guidance().get(1).label()).contains("One");
-        // An endpoint the graph does not declare is still listed, without a label.
-        assertThat(context.guidance().get(0).label()).isEmpty();
+                .containsExactly(tuple(D1, TYPE), tuple(D2, PLAN), tuple(T1, PLAN));
+        assertThat(context.guidance().get(0).label()).contains("One");
+        // D2 is declared without a label.
+        assertThat(context.guidance().get(1).label()).isEmpty();
+    }
+
+    @Test
+    void anArtifactScopedByBothTheActionAndItsMissionTypeIsAnsweredOnceThroughTheAction() {
+        ActionContextQuery both = over(List.of(node(TYPE), node(PLAN), node(D1)),
+                List.of(DrgEdge.of(TYPE, D1, Relation.SCOPE), DrgEdge.of(PLAN, D1, Relation.SCOPE)));
+        assertThat(both.answer("software-dev", "plan").guidance()).extracting(GuidanceEntry::urn, GuidanceEntry::via)
+                .containsExactly(tuple(D1, PLAN));
+    }
+
+    @Test
+    void aScopeEdgeToANodeTheGraphDoesNotDeclareIsListedWithoutALabel() {
+        ActionContextQuery dangling = over(List.of(node(TYPE), node(PLAN)),
+                List.of(DrgEdge.of(PLAN, UNDECLARED, Relation.SCOPE)));
+        assertThat(dangling.answer("software-dev", "plan").guidance()).singleElement().satisfies(entry -> {
+            assertThat(entry.urn()).isEqualTo(UNDECLARED);
+            assertThat(entry.kind()).isEqualTo(NodeKind.STYLEGUIDE);
+            assertThat(entry.label()).isEmpty();
+            assertThat(entry.via()).isEqualTo(PLAN);
+        });
+    }
+
+    @Test
+    void aPackThatCannotLoadRefusesTheReadWithItsCode() {
+        ActionContextQuery broken = new ActionContextQuery(() -> {
+            throw new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, "built-in/broken.graph.yaml: unknown key 'surprise'");
+        });
+        assertThatThrownBy(() -> broken.answer("software-dev", "plan")).isInstanceOfSatisfying(CharterRefusal.class,
+                r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR));
     }
 
     @Test

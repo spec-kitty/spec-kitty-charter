@@ -17,3 +17,6 @@ enum:
   - in_tension_with
   - reconciles_tension
   - rejects
+x-source:
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Relation.java
+  symbol: Relation
