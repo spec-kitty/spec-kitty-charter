@@ -1,8 +1,8 @@
 ---
 title: Service contract
-description: The designed OpenAPI 3.1 contract of the charter service — planned read and write operations, the error model and the transports. Designed only; no contract exists yet.
+description: The OpenAPI 3.1 contract of the charter service — the two built reads, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: API
 kind: Reference
 related:
@@ -18,11 +18,31 @@ audience:
 
 The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
 
-> **Designed API.** Not implemented; see the [API overview](/api/).
+> **Partly built.** Two read operations are in the contract and served by the Java service; the other operations on this page are designed only. See the [API overview](/api/).
+
+## The contract files
+
+The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `1.0.0-SNAPSHOT`, unreleased:
+
+- [`openapi.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml): the header and the map from each path to its file;
+- `paths/`, `schemas/`, `parameters/`, `responses/` and `examples/`: one definition per file;
+- [`scenarios/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/scenarios/README.md): the contract scenarios, the behavior half of the contract;
+- [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md): every change, scenario changes included, and what is provisional.
+
+The single-file bundle that core vendors is built from them by `./gradlew :contracts:bundleContract`
+and uploaded by CI as the `contract-bundle` artifact
+([Building the service](/guides/service-build/)).
 
 The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schemas and
 `Problem` bodies for refusals. How it is laid out, generated and versioned is in
 [Contract and DTOs](/architecture/contract-and-dtos/).
+
+## Built read surface
+
+| Operation | Answers | Path |
+|---|---|---|
+| `listPacks` | The configured Charter Packs, their levels and versions, with the diagnostics of each | `GET /packs` |
+| `getActionContext` | The guidance for one action of one mission type; provisional (`x-provisional`) until the conformance corpus decides its rules | `GET /mission-types/{missionType}/actions/{action}/context` |
 
 ## Planned read surface
 
@@ -36,7 +56,7 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 | Graph query | Edges and closures over the active DRG | `charter.offering.drg` callers |
 | Diagnostics | Load and merge refusals, skipped profiles, unresolved edges | `spec-kitty doctor charter-packs --json` |
 
-The first path to be specified is action-scoped context ([Roadmap](/plans/roadmap/), step 1).
+Pack listing and action-scoped context are the first two in the contract ([Roadmap](/plans/roadmap/), step 1).
 
 ## Planned write surface (later)
 
@@ -47,9 +67,10 @@ charter document save, compile. See [Strangler transition](/architecture/strangl
 
 - Every refusal is a `Problem` body, reusing the shared `Problem` schema of core's
   `contracts/_shared/`.
-- Refusal codes are part of the contract, not implementation detail. The codes core uses
-  today carry over unchanged, for example `PACK_LEVEL_MISMATCH`, `PACK_LEVEL_MISSING` and
-  `unresolved_edge_endpoint`.
+- Refusal codes are part of the contract, not implementation detail. They are snake_case on
+  the wire; the integration seam in core maps them to core's own spellings. The codes and
+  when each applies are defined in [`CharterRefusalCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/CharterRefusalCode.yaml),
+  and the load findings that do not stop a read in [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml).
 - Fail loud: a dropped artifact, an unresolved edge, an unresolved profile or a stale input is
   a named refusal or a diagnostic, never an empty success.
 

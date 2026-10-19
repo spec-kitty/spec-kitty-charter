@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-18
 type: Guide
 kind: How-To
 related:
@@ -125,7 +125,8 @@ in `docs/architecture/diagrams/`.
 
 ## What CI runs
 
-Two workflows, both on pull requests and pushes to `main` that touch the docs.
+Two workflows, both on pull requests and pushes to `main` that touch the docs. The docsite
+workflow also runs when the service build changes, because the site carries its Javadoc.
 
 `.github/workflows/docs-cleanliness.yml` holds the gates. Each is its own job or step, so a
 red run names what failed:
@@ -140,11 +141,20 @@ red run names what failed:
 
 `.github/workflows/docs-site.yml` builds and publishes the site:
 
-1. `npm ci`, reading the toolkit from GitHub Packages with the workflow's own token
+1. the `service` job calls `.github/workflows/service.yml`, the main build workflow, which
+   runs `./gradlew verifyAll` and uploads the aggregated Javadoc as the `javadoc` artifact;
+2. `npm ci`, reading the toolkit from GitHub Packages with the workflow's own token
    (`packages: read`);
-2. `validate`, `build` and `check:built-links`, as above;
-3. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
+3. the `javadoc` artifact of the same run is downloaded into `site/public/javadoc` (ignored
+   by Git), so it is published unchanged under `/javadoc/`
+   ([Java API reference](/api/javadoc/));
+4. `validate`, `build` and `check:built-links`, as above; the link check walks the Javadoc
+   pages too;
+5. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
    `https://spec-kitty.github.io/spec-kitty-charter/`.
+
+To see the Javadoc in a local build, run `./gradlew :charter-reports:stageJavadocForSite`
+before `npm run build`.
 
 Drafts are published (as `noindex` pages), because most pages are drafts during the
 bootstrap. Set `DK_PUBLISH_DRAFTS=off` in the workflow once that changes.

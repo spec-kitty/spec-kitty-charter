@@ -25,8 +25,8 @@ the scope of epic spec-kitty#6099.
 
 | # | Step | Done when | Depends on |
 |---|---|---|---|
-| 1 | **Contract skeleton.** `contracts/charter/` with `info`, `servers`, the shared `Problem` schema, and the first read path: action-scoped context, keyed by mission type and action. | Core's layout and lint checks pass here; a `0.1.0-SNAPSHOT` bundle is built | ADR-0002 ruling |
-| 2 | **Gradle build.** Multi-project build with the modules in [Hexagonal service](/architecture/hexagonal-service/), strict dependency verification, and a dependency-direction test. | An empty domain and a generated `charter-api` compile; the direction test fails a planted violation | 1 |
+| 1 | **Contract skeleton.** `contracts/charter/` with `info`, `servers`, the shared `Problem` schema, and the first read path: action-scoped context, keyed by mission type and action. | The charter's own contract checks pass and a `1.0.0-SNAPSHOT` bundle is built (core's tools do not run here; [open question 18](/plans/open-questions/)) | ADR-0002 ruling |
+| 2 | **Gradle build.** Multi-project build with the modules in [Hexagonal service](/architecture/hexagonal-service/), strict dependency verification, and a dependency-direction test. | An empty domain and a generated `charter-api` compile; the direction test fails a planted violation; `./gradlew verifyAll` runs green on Java 25 in CI | 1 |
 | 3 | **Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at both load depths. Expected results are produced by core's Python charter. | The corpus runs against Python in core and is published with the contract | 1, a core-side export script |
 | 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. | The first corpus slice passes against Java | 2, 3 |
 | 5 | **Org and project layers.** Extend corpus and domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. | Corpus slice passes on both implementations | 4 |
@@ -38,23 +38,34 @@ Java authoritative, then Java reads complete, then write migration one operation
 
 ## Progress
 
-As of 2026-10-18:
+As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
+`charter-contract-and-build-retro-01M57QHJ`
+([changelog](/changelog/2026-10-18-retroactive-contract-and-build-mission/)).
 
-- **Step 1, partly done.** `contracts/charter/` holds `0.1.0-SNAPSHOT` with two read paths
-  (`GET /packs`, `GET /mission-types/{missionType}/actions/{action}/context`), the vendored
-  `_shared` vocabulary and the BDD scenarios. The generator's OpenAPI validator runs in
-  the build. Still open: running core's `contracts/tools` layout, lint and bundle checks here
-  (ADR-0002, decision 4).
-- **Step 2, done.** `build-logic/` convention plugins, the six modules under `service/`, a
+- **Step 1, done pending the first CI run on the pull request.** `contracts/charter/` holds
+  `1.0.0-SNAPSHOT`, unreleased, with two read paths (`GET /packs`,
+  `GET /mission-types/{missionType}/actions/{action}/context`), the vendored `_shared`
+  vocabulary and the contract scenarios. The charter's own contract checks run in the build
+  (`./gradlew :contracts:check`): its lint ruleset with a planted fixture per rule, the
+  bundle core vendors, a checker for closed response objects and the breaking-change check.
+  No contract version is released yet, so the breaking-change check has no baseline; it
+  needs the full history, which CI fetches. The other checks pass locally.
+- **Step 2, done pending the first CI run on the pull request.** `build-logic/` convention
+  plugins, the six modules under `service/` plus the `charter-reports` aggregation, a
   version catalog, strict SHA-256 dependency verification and the ArchUnit gate, which fails
-  a planted violation. `./gradlew verifyAll` also runs the BDD contracts and the open-packs
-  round-trip ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/));
-  CI runs it on Java 25 (`.github/workflows/service.yml`).
+  a planted violation. `./gradlew verifyAll` also runs the quality gates, the contract
+  scenarios, the open-packs round-trip
+  ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)) and the
+  Javadoc and coverage reports ([Building the service](/guides/service-build/)): 644 tests,
+  none skipped, green locally on Java 25. `.github/workflows/service.yml` runs it on Java 25;
+  that run has not happened yet.
 - **Next: step 3**, the first corpus slice, which needs the core-side export script.
 
-The action-scoped context answered today is a first slice: scope edges of the action node,
-then of the mission type node, over the merged offering without activation filtering. The
-corpus decides the real rules and the contract version that carries them.
+The action-scoped context answered today is a first slice, marked `x-provisional` in the
+contract: scope edges of the action node, then of the mission type node, over the merged
+offering without activation filtering. The corpus ([#9](https://github.com/spec-kitty/spec-kitty-charter/issues/9))
+decides the real rules and the contract version that carries them
+([open question 14](/plans/open-questions/)).
 
 ## Before step 6
 

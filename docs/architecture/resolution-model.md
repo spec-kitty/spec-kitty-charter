@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Explanation
 related:
@@ -51,9 +51,9 @@ flowchart LR
 ```
 
 1. **Load.** Each pack's `pack.yaml` is read and its `pack_level` checked against where it
-   is configured. A mismatch refuses with `PACK_LEVEL_MISMATCH`, a missing field with
-   `PACK_LEVEL_MISSING` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md) (a pack declares its level); in core today only org packs are checked at
-   load, and the Java service should check every level).
+   is configured (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md), a pack declares its level). A mismatch refuses with
+   `pack_level_mismatch`. A missing level does not stop the load: it is the diagnostic
+   `pack_level_missing`, and [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml) in the contract states when it applies.
 2. **Merge.** The three layers merge into one graph under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Edge
    endpoints resolve to `<kind>:<id>` URNs or to bare ids the fragment declares; anything
    else is an `unresolved_edge_endpoint` conflict. Edges from an org pack's `drg/fragment.yaml`

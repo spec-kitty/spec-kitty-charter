@@ -18,8 +18,8 @@ direction, the design, the decisions, the contract and the first slice of the se
 
 | Part | What it is | State |
 |---|---|---|
-| [`contracts/charter/`](contracts/charter/openapi.yaml) | OpenAPI 3.1 contract, the single source of every charter data transfer object (DTO), and its [BDD scenarios](contracts/charter/scenarios/) | `0.1.0-SNAPSHOT`: two read paths |
-| [`service/`](service/) | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only; Gradle convention plugins in [`build-logic/`](build-logic/) | skeleton: domain, read app, REST in, YAML out |
+| [`contracts/charter/`](contracts/charter/openapi.yaml) | OpenAPI 3.1 contract, the single source of every charter data transfer object (DTO), and its [contract scenarios](contracts/charter/scenarios/), checked by the charter's own [lint ruleset](contracts/lint/README.md), bundle and breaking-change check | `1.0.0-SNAPSHOT`, unreleased: two read paths |
+| [`service/`](service/) | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only; Gradle convention plugins in [`build-logic/`](build-logic/) | skeleton: domain, read app, REST in, YAML out, behind the quality gates below |
 | Conformance corpus | Fixtures the Python and Java implementations must both pass | next ([roadmap](docs/plans/roadmap.md) step 3) |
 | Python charter | Stays in core behind `charter.offering.api` as the oracle while Java replaces it ([ADR-0008](docs/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts.md)) | not moved here |
 | [`docs/`](docs/README.md) | Context, architecture, decisions and plans | bootstrapped |
@@ -60,11 +60,15 @@ direction, the design, the decisions, the contract and the first slice of the se
 ## Building the service
 
 ```bash
-./gradlew verifyAll   # contract validation, unit, architecture, BDD and open-packs round-trip
+./gradlew verifyAll
 ```
 
-It needs Java 25 and a `spec-kitty-open-packs` checkout beside this one (or
-`-PopenPacksDir=<path>`). Details: [Building the service](docs/guides/service-build.md).
+It runs the charter's own contract checks, contract generation, formatting
+(palantir-java-format), Checkstyle, Error Prone with NullAway, Javadoc with doclint, unit
+tests, the architecture rules, the contract scenarios, the open-packs round-trip, and the
+aggregated Javadoc and coverage reports. Mutation testing (PIT) runs nightly, not here. It
+needs Java 25, the full Git history and a `spec-kitty-open-packs` checkout beside this one
+(or `-PopenPacksDir=<path>`). Details: [Building the service](docs/guides/service-build.md).
 
 ## Documentation
 
@@ -77,8 +81,8 @@ The [`docs/`](docs/README.md) tree follows the
 - [Architecture](docs/architecture/) — the target design.
 - [Decision Records](docs/adr/) — decisions here, and the core ADRs they build on.
 - [Plans](docs/plans/) — the bootstrap roadmap and open questions.
-- [API](docs/api/) — the planned contract surface.
-- [Guides](docs/guides/) — contributing and building the docsite.
+- [API](docs/api/) — the contract surface, built and planned, and the Javadoc.
+- [Guides](docs/guides/) — contributing, building the service and building the docsite.
 - [Changelog](docs/changelog/) — notable changes.
 
 ## License

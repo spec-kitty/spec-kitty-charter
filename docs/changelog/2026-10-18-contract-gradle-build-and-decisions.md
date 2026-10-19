@@ -35,4 +35,8 @@ audience:
   `GET /mission-types/{missionType}/actions/{action}/context`, with BDD scenarios.
 - The Gradle build: convention plugins in `build-logic/`, six modules under `service/`,
   strict dependency verification, an ArchUnit gate, the BDD suite and the open-packs
-  round-trip, run in CI on Java 25. See [Building the service](/guides/service-build/).
+  round-trip, with a CI workflow for Java 25. See [Building the service](/guides/service-build/).
+
+Correction (2026-10-18): this entry first said the build ran in CI on Java 25. The service
+build had not yet run in CI; its first run is on the pull request of the retroactive Mission
+([Contract and build brought under governance](/changelog/2026-10-18-retroactive-contract-and-build-mission/)).

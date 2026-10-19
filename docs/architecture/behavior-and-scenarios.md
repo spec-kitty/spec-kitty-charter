@@ -2,7 +2,7 @@
 title: Behavior and acceptance scenarios
 description: The promise-first BDD scenarios that define the charter offering's role and boundary, and how they become the conformance net that survives the repository split.
 doc_status: draft
-updated: 2026-10-17
+updated: 2026-10-18
 type: Architecture
 kind: Explanation
 related:
@@ -43,18 +43,25 @@ map for the surface under test.
 
 ## Where they live
 
-The scenarios are in `tests/scenarios/charter/`, one folder per outcome, copied from core's
-charter-offering suite as the starting contract for this repository:
+Scenarios live in three homes, each with its own state (operator ruling, 2026-10-18;
+[open question 16](/plans/open-questions/)):
+
+| Home | What it holds | State |
+|---|---|---|
+| `contracts/charter/scenarios/` | The **contract scenarios**: the behavior half of the charter contract; each names pack files, calls one operation of `contracts/charter/openapi.yaml` and states the answer | Bound. The Cucumber suite in `charter-service` runs every scenario tagged `@contract` in `./gradlew verifyAll`; a scenario tagged `@provisional` pins behavior the conformance corpus has yet to decide. Its rules are in the folder's `README.md` |
+| `src/test/resources/features/` | The pack registration and distribution suites of #43, one folder per behavior cluster | Not bound. Each cluster moves to `contracts/charter/scenarios/<cluster>/` when its harness is bound, renamed for the terms guard, moved and bound in one change |
+| `tests/scenarios/charter/` | The **acceptance scenarios**, copied from core's charter-offering suite, one folder per outcome | Not bound; they bind with the harness of [#31](https://github.com/spec-kitty/spec-kitty-charter/issues/31) |
+
+The acceptance scenarios are grouped by the three outcomes above:
 
 - `governance-in-force/` — the governance in force is what I chose.
 - `refuses-unsound-governance/` — the system refuses unsound governance with a clear reason.
 - `share-governance-safely/` — I can share governance across a team or project safely.
 - `PROMISES.md` — each `@promise` id mapped to its offering authority.
 
-They are implementation-free Gherkin: they import no code and are valid the moment they land. The
-**executable harness** that runs them (a Cucumber-JVM runner and its step definitions, as in
-core's `acceptance-jvm/`) is not yet wired up in this repository; standing it up, and pointing it
-at whatever answers the charter commands, is tracked in the issue tracker.
+The unbound suites are implementation-free Gherkin: they import no code and are valid the
+moment they land. A suite that is placed in `contracts/charter/scenarios/` before it is bound
+is not run, because the suite selects only the `@contract` tag.
 
 ## From scenario to contract
 

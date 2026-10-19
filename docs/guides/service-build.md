@@ -26,6 +26,12 @@ How to build the charter service and run every check CI runs.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. CI checks out the
   commit pinned in `.github/workflows/service.yml`.
+- **The full Git history and tags.** The breaking-change check compares the contract with its
+  last released version and refuses a shallow clone. In a clone you cannot deepen, pass
+  `-PcontractBaseline=none` to skip that one check on purpose; CI never does.
+- **Network access on the first run.** The contract checks download vacuum and oasdiff at
+  pinned versions and verify each archive's SHA-256 before using it (Linux and macOS, x86-64
+  and arm64).
 
 ## Run everything
 
@@ -33,32 +39,68 @@ How to build the charter service and run every check CI runs.
 ./gradlew verifyAll
 ```
 
+`verifyAll` runs the `check` task of every project:
+
 | Task | Checks |
 |---|---|
+| `:contracts:check` | The charter's own contract checks: `bundleContract`, `lintContract`, `lintFixtures`, `checkClosedResponseObjects`, `compatibilityFixtures` and `checkContractCompatibility` ([`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md) says what each one does) |
 | `:charter-api:validateContract` | The split OpenAPI document parses and validates |
 | `:charter-api:generateContract` | Spring interfaces and DTOs are generated; controllers that drift from the contract fail to compile |
-| `:<module>:test` | Unit tests of each module |
-| `:charter-service:test` | The ArchUnit dependency rule and every scenario in `contracts/charter/scenarios/` |
+| `:<module>:spotlessCheck` | Hand-written main and test sources are formatted by palantir-java-format |
+| `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`; any violation fails |
+| `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
+| `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
+| `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
+| `:charter-service:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
 | `:adapter-out-yaml:openPacksRoundTrip` | Every open-packs YAML file renders byte for byte, survives a rewrite of every scalar, and every pack loads and round-trips its graph. It fails, never skips, without a checkout |
+| `:charter-reports:aggregateJavadoc` | One Javadoc site over the five hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
+| `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
+
+The quality gates come from the `charter.hand-written` convention plugin, applied by every
+hand-written module. The generated `charter-api` does not apply it: it applies
+`charter.contract-api`, which reaches `charter.java-base` through `charter.spring-conventions`,
+so it is exempt by construction and still compiles. A new hand-written module under `service/` must
+also be listed in `service/charter-reports/build.gradle.kts`; the build fails, naming it,
+until it is.
+
+Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on `charter-domain` and
+`charter-read-app`; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
+request runs it.
+
+To fix formatting rather than report it, run `./gradlew spotlessApply`.
+
+## Exceptions to a gate
+
+`config/checkstyle/suppressions.xml` is the one register of exceptions to the hand-written
+gates. It holds no entry today. An entry names the rule, the file, the reason and a sunset
+date; no gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
 ## Change the contract
 
 1. Edit the split files under `contracts/charter/` and list new files in the directory's
    `_index.yaml`.
 2. Write or change the scenario in `contracts/charter/scenarios/` that pins the behavior.
-3. Add an entry to `contracts/charter/CHANGELOG.md`.
-4. Run `./gradlew verifyAll`.
+3. Add an entry to `contracts/charter/CHANGELOG.md`; a scenario change gets one too.
+4. Run `./gradlew :contracts:check`, then `./gradlew verifyAll`.
+
+The contract checks follow the conventions in
+[`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
+A new lint rule lands with a planted fixture that fails it, and only it; that page describes
+the steps.
 
 `contracts/_shared/` is a vendored copy of core's shared vocabulary; change it in core and
 refresh the copy (`contracts/_shared/VENDORED.md`).
 
 ## Change a dependency
 
-Versions live in `gradle/libs.versions.toml`. Dependency verification is strict, so a new or
-changed artifact needs its checksum recorded:
+Versions live in `gradle/libs.versions.toml`, tool plugins (Spotless, Error Prone, PIT)
+included; convention plugins read them from the catalog. Dependency verification is strict,
+so a new or changed artifact needs its checksum recorded:
 
 ```bash
 ./gradlew --write-verification-metadata sha256 verifyAll
 ```
 
-Review the diff of `gradle/verification-metadata.xml`; never edit it by hand.
+Review the diff of `gradle/verification-metadata.xml`; never edit it by hand. The vacuum and
+oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksums are pinned
+in `contracts/build.gradle.kts`.

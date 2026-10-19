@@ -20,7 +20,7 @@ audience:
 
 How one OpenAPI document becomes the DTOs on both sides: the service generates its server interfaces from it, and core ingests a pinned release to generate its own. The page also lists what the contract carries and how it is versioned.
 
-> **Status:** partly built. `contracts/charter/` exists here at `0.1.0-SNAPSHOT` with two read paths and its BDD scenarios, and the service generates its interfaces from it; no release is cut and core ingests nothing yet. [What the labels mean](/#status).
+> **Status:** partly built. `contracts/charter/` exists here at `1.0.0-SNAPSHOT` with two read paths and its contract scenarios, the charter's own contract checks run in the build, and the service generates its interfaces from it. No release is cut and core ingests nothing yet. [What the labels mean](/#status).
 
 ## One document, two generators
 
@@ -63,11 +63,13 @@ with core consuming releases. Core ADR [`2026-10-03-1`](https://github.com/spec-
 placement predates the charter getting its own repository; its Amendment 2026-10-18 points
 here.
 
-The behavior half of the contract is written as **BDD scenarios** in
+The behavior half of the contract is written as **contract scenarios** in
 `contracts/charter/scenarios/`, beside the OpenAPI document
 ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)). Each scenario
 names pack files, calls one operation and states the answer; the service runs every scenario
-in its build, and another implementation can bind the same steps.
+tagged `@contract` in its build, and another implementation can bind the same steps. Where
+the scenarios live, and the other two scenario homes:
+[Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/#where-they-live).
 
 ## What the contract carries
 
@@ -78,8 +80,9 @@ the OpenAPI document plus four more parts:
    (pack descriptor, org charter, DRG fragment and graph shards, artifact files,
    `charter.yaml`);
 2. the **semantic rules**: merge, activation, traversal and resolution;
-3. **canonical identifiers and diagnostics**: refusal codes such as `PACK_LEVEL_MISMATCH`
-   are part of the contract, not implementation detail;
+3. **canonical identifiers and diagnostics**: refusal and diagnostic codes such as
+   `pack_level_mismatch` are part of the contract, not implementation detail. They are
+   snake_case on the wire; the integration seam in core maps them to core's own spellings;
 4. **fixtures**: positive, negative, provenance and conflict cases;
 5. **expected results**: action-scoped context and graph-query answers for each fixture.
 
@@ -87,7 +90,15 @@ Items 2 to 5 are what let two implementations give one answer.
 
 ## Conventions
 
-The contract follows core's `contracts/README.md` so the same tooling can check it:
+The contract keeps the layout of core's `contracts/README.md`, but the charter owns its
+conventions and the checks that enforce them (operator, 2026-10-18): core's contract tools
+do not run here, and where core's conventions differ, the integration seam in core adapts.
+The charter's own checks run in `./gradlew verifyAll` through the `:contracts` project: a
+lint ruleset in `contracts/lint/` with a planted fixture per rule, the bundle core vendors,
+a Java checker that every response schema is closed, and the breaking-change check. The
+rules and tasks are listed in [`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md).
+
+The layout:
 
 - a module directory with a root `openapi.yaml` that holds only info, servers, tags and the
   path-to-file map; one file per path under `paths/`; `schemas/`, `parameters/`,
@@ -96,15 +107,20 @@ The contract follows core's `contracts/README.md` so the same tooling can check 
 - `servers: [{url: /api/v1}]`; paths never carry the prefix;
 - the shared vocabulary core already defines (`Problem` for refusals, `PageInfo`,
   `PageCursor`) is reused, not copied with changes;
-- its own `info.version` and `CHANGELOG.md`.
+- its own `info.version` and `CHANGELOG.md`;
+- `x-source` or `x-derived` on every resource property, citing where its value comes from,
+  and `x-provisional` on a part whose behavior is not decided yet, naming the decision.
 
 ## Versioning
 
 - Response schemas are **closed** (`additionalProperties: false`). Any change to a response
   shape ships as a new schema version and a new published contract release.
 - An unreleased version carries a `-SNAPSHOT` suffix.
-- A breaking-change check compares each release with the previous one; a breaking change
-  needs a new major version and a core-side migration of its DTO consumers.
+- A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
+  released version, the `contract-charter-v<version>` tag recorded in the contract's
+  `CHANGELOG.md`; a breaking change needs a new major version and a core-side migration of
+  its DTO consumers. Until the first release there is no baseline, and the check says so
+  ([the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)).
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same
   change, and the conformance corpus of that release must pass against the Python
   implementation while it still answers.

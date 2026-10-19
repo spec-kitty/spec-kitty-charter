@@ -26,7 +26,7 @@ audience:
 
 The target design of the charter service's pack **registration, storage, verification and distribution** capability: the onion and vertical-slice layering, the domain model, the four source kinds, the trust and lockfile model, the storage ports, and the API surface. It names the structure, the boundaries, and the enforceable invariants.
 
-> **Status:** design only; no code exists in this repository yet, and the module and type names are the agreed design, not shipped artifacts. [What the labels mean](/#status).
+> **Status:** design only; none of this design is built yet (the service skeleton under `service/` predates it and registers no packs), and the module and type names are the agreed design, not shipped artifacts. [What the labels mean](/#status).
 
 This page is the **canonical design**. It realizes [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) (the service registers and distributes packs; built-in is its first catfooding consumer), [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) (onion layering cut by vertical concern slices, enforced by ArchUnit) and [ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) (REST-HATEOAS is the v1 contract of record; GraphQL planned-later, MCP deferred). It builds on [ADR-0001](/adr/0001-java-service-with-openapi-contract/), [ADR-0002](/adr/0002-contract-source-of-record/) and [ADR-0004](/adr/0004-public-api-returns-generated-dtos/), and settles the trade-offs as decisions — it does not re-open them. "Ledger decision N" below cites the resolved decision of that number in those ADRs.
 
@@ -145,7 +145,7 @@ Plain-Java POJOs (records / sealed types), repository **ports** (interfaces), an
 - `PackSource` — **sealed, four kinds** (ledger decision 7): `GitSource {url, ref, rev(pinned sha), subdir?}`, `FilesystemSource {path}`, `StoredSource {storedRef}` (uploaded/service-held), `PublishedArtifactSource {purl}` — a **purl-style locator `pkg:charter/<id>@<version>`** (ledger decision 17) for a versioned package pulled from a registry. `rev`/`version` is the trust anchor, never a floating ref. `bundled` is a *resolve-time materialization outcome*, not a registration kind.
 - `PackManifest` — generated manifest: per-constituent `{id, kind, path, contentHash, provenancePath}`; the file-level integrity primitive (reuse the open-packs `content_hash`; do not reinvent).
 - `DrgNode`, `DrgEdge`, `Urn (<kind>:<id>)`, `ArtifactKind`, `NodeKind`, `Relation`.
-- `RefusalCode` — canonical diagnostics as domain values (`PACK_LEVEL_MISMATCH`, `PACK_LEVEL_MISSING`, `UNRESOLVED_EDGE_ENDPOINT`, `SOURCE_CONFLICT`, `INTEGRITY_FAILURE`, `PACK_ENGINE_INCOMPATIBLE`, `SOURCE_UNREACHABLE`, …). Part of the contract ([Contract and DTOs](/architecture/contract-and-dtos/)), surfaced as `Problem`.
+- `RefusalCode` — canonical refusals as domain values (`PACK_LEVEL_MISMATCH`, `UNRESOLVED_EDGE_ENDPOINT`, `SOURCE_CONFLICT`, `INTEGRITY_FAILURE`, `PACK_ENGINE_INCOMPATIBLE`, `SOURCE_UNREACHABLE`, …). Part of the contract ([Contract and DTOs](/architecture/contract-and-dtos/)), surfaced as `Problem`. Codes are snake_case on the wire. A missing `pack_level` is not among them: it is a diagnostic, `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)).
 
 ### 3.1 Pack registration & validation (`registration.domain`) — the heart of this design
 

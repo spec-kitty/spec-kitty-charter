@@ -2,7 +2,7 @@
 title: Contributing to spec-kitty-charter
 description: How work lands in spec-kitty-charter during the bootstrap — branches and pull requests, documentation rules, the contract-first order, and where decisions go.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Guide
 kind: How-To
 audience:
@@ -46,8 +46,22 @@ fixture, so the two never disagree on purpose. Where the fix lands depends on
 
 ## Quality gates
 
-The docsite workflow checks every change to `docs/`: frontmatter, source links, a full
-build and the links in the built site ([Building the docsite](/guides/docsite/)). When the
-Gradle build lands, it brings: contract layout and lint checks, the
-breaking-change check, unit tests, the dependency-direction test and the conformance corpus.
-This page will list the commands then.
+Run these before you open a pull request; CI runs the same checks.
+
+- **The service build**, on Java 25:
+
+  ```bash
+  ./gradlew verifyAll
+  ```
+
+  It runs the charter's own contract checks (lint, planted fixtures, the bundle, closed
+  response objects and the breaking-change check), contract generation, formatting,
+  Checkstyle, Error Prone with NullAway, Javadoc with doclint, unit tests, the architecture
+  rules, the contract scenarios, the open-packs round-trip, and the aggregated Javadoc and
+  coverage reports. `./gradlew :contracts:check` runs the contract checks alone. What each
+  task checks: [Building the service](/guides/service-build/).
+- **The docs checks**, on every change to `docs/`: `python3 scripts/docs/check_docs.py all`,
+  markdownlint and cspell, and in CI a full site build and the links in the built site. The
+  commands and pinned versions: [Building the docsite](/guides/docsite/).
+
+The conformance corpus joins these checks with roadmap step 3.
