@@ -1,7 +1,10 @@
 package ai.speckitty.charter.service.bdd;
 
+import ai.speckitty.charter.read.ConsistentLoad;
 import ai.speckitty.charter.service.CharterServiceApplication;
 import ai.speckitty.charter.service.CharterWiring;
+import ai.speckitty.charter.yaml.FileSystemCharterPackRepository;
+import ai.speckitty.charter.yaml.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +33,19 @@ public class CucumberSpringConfiguration {
         @ScenarioScope
         ScenarioHttp scenarioHttp(MockMvc mvc) {
             return new ScenarioHttp(mvc);
+        }
+
+        /** The real digest of the inputs, with the one change a scenario arms (see {@link DriftingSources}). */
+        @Bean
+        DriftingSources driftingSources(ProjectConfigSources real) {
+            return new DriftingSources(real);
+        }
+
+        /** The real repository and the production {@link ConsistentLoad}, over the sources the seam wraps. */
+        @Bean
+        @Primary
+        ConsistentLoad driftingConsistentLoad(FileSystemCharterPackRepository packs, DriftingSources sources) {
+            return new ConsistentLoad(packs, sources);
         }
 
         @Bean

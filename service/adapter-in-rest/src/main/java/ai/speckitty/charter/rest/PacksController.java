@@ -27,8 +27,11 @@ public class PacksController implements PacksApi {
 
     @Override
     public ResponseEntity<PackListing> listPacks() {
-        return ResponseEntity.ok(new PackListing(
-                query.answer().stream().map(PacksController::toDto).toList()));
+        ai.speckitty.charter.read.PackListing listing = query.answer();
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(listing.sourceFingerprint()))
+                .body(new PackListing(
+                        listing.packs().stream().map(PacksController::toDto).toList()));
     }
 
     private static PackSummary toDto(ai.speckitty.charter.read.PackSummary pack) {

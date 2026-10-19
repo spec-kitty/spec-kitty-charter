@@ -41,16 +41,20 @@ public class ContextController implements ContextApi {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         ai.speckitty.charter.read.ActionContext context = query.answer(missionType, action, requested);
-        return ResponseEntity.ok(new ActionContext(
-                context.action().toString(),
-                context.missionType().toString(),
-                context.depth(),
-                context.governanceFingerprint(),
-                context.guidance().stream().map(ContextController::toDto).toList(),
-                context.diagnostics().stream()
-                        .map(d -> new Diagnostic(
-                                Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
-                        .toList()));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(context.sourceFingerprint()))
+                .body(new ActionContext(
+                        context.action().toString(),
+                        context.missionType().toString(),
+                        context.depth(),
+                        context.governanceFingerprint(),
+                        context.guidance().stream()
+                                .map(ContextController::toDto)
+                                .toList(),
+                        context.diagnostics().stream()
+                                .map(d -> new Diagnostic(
+                                        Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
+                                .toList()));
     }
 
     private static GuidanceEntry toDto(ai.speckitty.charter.read.GuidanceEntry entry) {

@@ -41,6 +41,12 @@ class PackListingQueryTest {
     @Mock
     private CharterPackRepository packs;
 
+    private static final String SOURCES = "sha256:" + "6".repeat(64);
+
+    private PackListingQuery query() {
+        return new PackListingQuery(new ConsistentLoad(packs, () -> SOURCES));
+    }
+
     @Test
     void summarizesEveryPackOfOneLoadInLayerOrder() {
         CharterPack org = new CharterPack(
@@ -56,7 +62,8 @@ class PackListingQueryTest {
                 "built-in", PackLevel.BUILT_IN, Optional.empty(), DoctrineGraph.empty(), List.of(missingLevel));
         when(packs.load()).thenReturn(new CharterOffering(List.of(org, builtIn)));
 
-        List<PackSummary> listing = new PackListingQuery(packs).answer();
+        PackListing answer = query().answer();
+        List<PackSummary> listing = answer.packs();
 
         assertThat(listing)
                 .extracting(
@@ -87,6 +94,7 @@ class PackListingQueryTest {
                                 2,
                                 1,
                                 List.of()));
+        assertThat(answer.sourceFingerprint()).isEqualTo(SOURCES);
         verify(packs).load();
         verifyNoMoreInteractions(packs);
     }
@@ -96,7 +104,7 @@ class PackListingQueryTest {
         CharterRefusal unreadable = new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack acme is not a directory");
         when(packs.load()).thenThrow(unreadable);
 
-        PackListingQuery query = new PackListingQuery(packs);
+        PackListingQuery query = query();
 
         assertThatThrownBy(query::answer).isSameAs(unreadable);
         verify(packs).load();

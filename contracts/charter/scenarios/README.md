@@ -24,6 +24,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   field out of the body, which must have it; for a digest whose value no scenario pins.
 - `Then the field "<field>" of the response body is "<text>"`, `... is a sha256 digest` and
   `... is the contract version` (the `info.version` of `../openapi.yaml`).
+- `Then the field "<field>" of the response body starts with "<text>"` — for a detail whose tail is a third-party
+  parser's text (a YAML syntax error), which no scenario pins: only the part the charter wrote.
 - `When I remember the field "<field>" of the response body`, then `Then the field "<field>" of
   the response body is the remembered one` or `... differs from the remembered one` — for a
   digest that must stay or change with the files.
@@ -36,16 +38,33 @@ Keep it small; add a step only when a scenario cannot be written without it.
   is free.
 - `Then the field "<field>" of the response body is a semantic version` — matches the semantic
   version pattern of `ServiceInfo.serviceVersion`.
+- `Then the response header "<name>" appears once` — exactly one value for the header, not a repeated one.
+- `Then the response header "<name>" is the remembered "<field>"` — the header equals a field remembered earlier
+  with `When I remember the field "<field>" of the response body`, for example the `/info` fingerprint a later
+  read must report for unchanged inputs.
+- `Given a pack file changes while the next read is answered` — the next read that loads the offering sees a pack
+  file rewritten (a node added to the first graph shard) after it digested its inputs and before it loaded them.
+  `Given a pack file is rewritten to invalid YAML while the next read is answered` — the same, with the shard
+  rewritten to text that is not YAML and left so. `Given no pack file changes while the next read is answered` —
+  the same seam, changing nothing: the negative control. The change is made to a real file on disk, once; the
+  service computes both digests itself.
+- `Then the contract declares the refusal code "<code>"`, `... is answered with status <n>`, `... may not be
+  retried` and `... is raised by no operation` — read the machine-readable `x-refusal` map of
+  `../schemas/CharterRefusalCode.yaml` (`status`, `retryable`, `raised` per code). `Then the contract says exactly
+  these refusal codes are raised by an operation:` with a one-column table lists the codes whose `raised` is true.
+  After every scenario, each refusal it observed must have the status and `raised: true` the map declares.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
 - `Then following "via" from every guidance entry of "<path>" reaches the action in exactly "hops" edges`
   — the last response must be the answer to that path; walks the `via` chain of every entry back to
   the action node, through entries of the answer only, in exactly the entry's `hops` steps.
 
-Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:
-the response's content type must be one the operation declares for the status, or for its
+Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends,
+for every request it sent, not only the last: the response's content type must be one the operation declares for the status, or for its
 `default` response, and the body must validate against that content's schema. A path no
 operation defines must answer the shared `Problem` response. A binding of the steps in another
-language makes the same check.
+language makes the same check. It also checks the fingerprint header of every exchange: a 200 carries
+exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for `/info` and to what
+`/info` answers right after for another read; no other answer carries one.
 
 ## Tags
 
@@ -54,6 +73,10 @@ language makes the same check.
 - `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
   it. It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.
+- `@reserved`: the scenario pins a *declaration*, never behavior. It must also carry `@contract`, call no
+  operation, and name in its description the unit test that enforces "raised by no operation of this version" and
+  the issue that will raise the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #48). The
+  charter's refusal score is therefore reported as eight behavioral codes plus one declared.
 
 ## Rules
 

@@ -6,6 +6,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import ai.speckitty.charter.domain.CharterOffering;
 import ai.speckitty.charter.domain.CharterPack;
+import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.CharterRefusal;
 import ai.speckitty.charter.domain.Diagnostic;
 import ai.speckitty.charter.domain.DoctrineGraph;
@@ -53,6 +54,13 @@ class ActionContextQueryTest {
     }
 
     /** A query over one pack whose graph declares the mission type, the action and every edge endpoint. */
+    private static final String SOURCES = "sha256:" + "5".repeat(64);
+
+    /** A query over a repository whose input files never change. */
+    private static ActionContextQuery queryOver(CharterPackRepository packs) {
+        return new ActionContextQuery(new ConsistentLoad(packs, () -> SOURCES));
+    }
+
     private static ActionContextQuery over(DrgEdge... edges) {
         return over(List.of(), edges);
     }
@@ -65,7 +73,7 @@ class ActionContextQueryTest {
         }
         List<DrgNode> nodes =
                 urns.stream().map(u -> new DrgNode(u, Optional.empty())).toList();
-        return new ActionContextQuery(() -> new CharterOffering(List.of(new CharterPack(
+        return queryOver(() -> new CharterOffering(List.of(new CharterPack(
                 "built-in",
                 PackLevel.BUILT_IN,
                 Optional.empty(),
@@ -304,7 +312,7 @@ class ActionContextQueryTest {
     @Test
     void aTargetTheGraphDoesNotDeclareIsListedWithoutALabelAndWalkedNoFurther() {
         Urn undeclared = new Urn(NodeKind.STYLEGUIDE, "undeclared");
-        ActionContextQuery query = new ActionContextQuery(() -> new CharterOffering(List.of(new CharterPack(
+        ActionContextQuery query = queryOver(() -> new CharterOffering(List.of(new CharterPack(
                 "built-in",
                 PackLevel.BUILT_IN,
                 Optional.empty(),
@@ -324,7 +332,7 @@ class ActionContextQueryTest {
     @Test
     void anEntryCarriesTheLabelOfItsNodeAndNoImpacts() {
         Urn a = tactic("a");
-        ActionContextQuery query = new ActionContextQuery(() -> new CharterOffering(List.of(new CharterPack(
+        ActionContextQuery query = queryOver(() -> new CharterOffering(List.of(new CharterPack(
                 "built-in",
                 PackLevel.BUILT_IN,
                 Optional.empty(),
@@ -356,7 +364,7 @@ class ActionContextQueryTest {
         CharterPack qa = new CharterPack("qa", PackLevel.ORG, Optional.empty(), DoctrineGraph.empty(), List.of(first));
         CharterPack internal =
                 new CharterPack("internal", PackLevel.ORG, Optional.empty(), DoctrineGraph.empty(), List.of(second));
-        ActionContextQuery query = new ActionContextQuery(() -> new CharterOffering(List.of(clean, qa, internal)));
+        ActionContextQuery query = queryOver(() -> new CharterOffering(List.of(clean, qa, internal)));
         assertThat(query.answer(TYPE_NAME, "plan", 2).diagnostics()).containsExactly(first, second);
         assertThat(over(scope(PLAN, tactic("a"))).answer(TYPE_NAME, "plan", 2).diagnostics())
                 .isEmpty();
@@ -364,13 +372,19 @@ class ActionContextQueryTest {
 
     @Test
     void aPackThatCannotLoadRefusesTheReadWithItsCode() {
-        ActionContextQuery broken = new ActionContextQuery(() -> {
+        ActionContextQuery broken = queryOver(() -> {
             throw new CharterRefusal(
                     RefusalCode.DRG_SCHEMA_ERROR, "built-in/broken.graph.yaml: unknown key 'surprise'");
         });
         assertThatThrownBy(() -> broken.answer(TYPE_NAME, "plan", 1))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR));
+    }
+
+    @Test
+    void theAnswerCarriesTheDigestOfTheInputsItWasLoadedFrom() {
+        assertThat(over(scope(PLAN, tactic("a"))).answer(TYPE_NAME, "plan", 2).sourceFingerprint())
+                .isEqualTo(SOURCES);
     }
 
     @Test

@@ -149,4 +149,36 @@ class HexagonalArchitectureTest {
                         "ai.speckitty.charter.service.unmarkedfixture.UnmarkedFixture resides in a package that is not"
                                 + " @NullMarked");
     }
+
+    /**
+     * A test seam never lives in main: no main class depends on a class of a {@code ..bdd..} package, or on a class
+     * whose name ends in {@code Drifting} or {@code Scenario}. The seam that makes a read see a file change is test
+     * code, so the code it tests cannot have been written to cooperate with it.
+     */
+    private static ArchRule noTestSeamInMain() {
+        return noClasses()
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..bdd..")
+                .orShould()
+                .dependOnClassesThat()
+                .haveSimpleNameEndingWith("Drifting")
+                .orShould()
+                .dependOnClassesThat()
+                .haveSimpleNameEndingWith("Scenario");
+    }
+
+    @Test
+    void noMainClassDependsOnATestSeam() {
+        noTestSeamInMain().check(classes);
+    }
+
+    @Test
+    void theTestSeamRuleFailsOnAClassThatDependsOnOne() {
+        JavaClasses seamUser = new ClassFileImporter().importPackages("ai.speckitty.charter.service.seamfixture");
+        assertThatThrownBy(() -> noTestSeamInMain().check(seamUser))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UsesSeam")
+                .hasMessageContaining("ScenarioPacks");
+    }
 }
