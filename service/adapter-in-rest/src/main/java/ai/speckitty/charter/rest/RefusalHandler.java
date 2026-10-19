@@ -2,14 +2,20 @@ package ai.speckitty.charter.rest;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.domain.RefusalCode;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** Maps domain refusals to the contract's {@code CharterRefusal} problem bodies. */
+/**
+ * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies. It runs before
+ * {@link ProblemHandler}, whose catch-all would otherwise answer a refusal as an unexpected failure.
+ */
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class RefusalHandler {
 
     /** For Spring, which finds the advice by component scan. */
