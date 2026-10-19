@@ -44,6 +44,10 @@ get:
           examples:
             software-dev-plan:
               $ref: ../examples/ActionContext.software-dev-plan.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
     '404':
       $ref: ../responses/ActionNotFound.yaml
     '500':

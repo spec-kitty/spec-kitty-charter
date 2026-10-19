@@ -7,6 +7,8 @@ dependencies {
     api(project(":charter-api"))
     implementation(project(":charter-read-app"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
+
+    testImplementation(catalog.lib("spring-boot-starter-test"))
 }
 
 // The contract version the service reports (ContractVersion): the info.version of contracts/charter/openapi.yaml,

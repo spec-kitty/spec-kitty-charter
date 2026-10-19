@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @CucumberContextConfiguration
 @SpringBootTest(
         classes = {CharterServiceApplication.class, CucumberSpringConfiguration.Packs.class},
-        properties = "charter.worktree-id=scenario-worktree")
+        properties = {"charter.worktree-id=scenario-worktree", "charter.worktree-token=" + ScenarioHttp.TOKEN})
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
 
@@ -32,7 +32,7 @@ public class CucumberSpringConfiguration {
         @Bean
         @ScenarioScope
         ScenarioHttp scenarioHttp(MockMvc mvc) {
-            return new ScenarioHttp(mvc);
+            return new ScenarioHttp(mvc, ScenarioHttp.TOKEN);
         }
 
         /** The real digest of the inputs, with the one change a scenario arms (see {@link DriftingSources}). */

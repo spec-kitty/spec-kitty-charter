@@ -30,7 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
  * shown). The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
  * {@code errors.feature}; what the container answers before Spring sees the request is {@code ConnectorErrorsTest}.
  */
-@SpringBootTest(classes = {CharterServiceApplication.class, ProblemResponsesTest.Unwritable.class})
+@SpringBootTest(
+        classes = {CharterServiceApplication.class, ProblemResponsesTest.Unwritable.class},
+        properties = "charter.worktree-token=" + ProblemResponsesTest.TOKEN)
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
 class ProblemResponsesTest {
@@ -52,6 +54,9 @@ class ProblemResponsesTest {
         }
     }
 
+    static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
+    private static final String BEARER = "Bearer " + TOKEN;
+
     private static final String INTERNAL_ERROR = "{\"title\":\"Internal error\",\"status\":500,"
             + "\"code\":\"internal_error\",\"detail\":\"The charter service failed unexpectedly; the failure is logged.\"}";
 
@@ -60,7 +65,7 @@ class ProblemResponsesTest {
 
     @Test
     void aMethodThePathDoesNotHaveIsAMethodNotAllowedProblemThatKeepsTheAllowHeader() throws Exception {
-        mvc.perform(post("/api/v1/packs"))
+        mvc.perform(post("/api/v1/packs").header("Authorization", BEARER))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(header().string("Allow", "GET"))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
@@ -69,7 +74,7 @@ class ProblemResponsesTest {
 
     @Test
     void theContainerErrorPageAnswersWithTheProblemOfTheForwardedStatus() throws Exception {
-        mvc.perform(get("/error").requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 400))
+        mvc.perform(get("/error").header("Authorization", BEARER).requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 400))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(content().json("{\"title\":\"Bad Request\",\"status\":400}", JsonCompareMode.STRICT));
@@ -77,14 +82,14 @@ class ProblemResponsesTest {
 
     @Test
     void theContainerErrorPageForwardedANonErrorStatusAnswersWithAnInternalErrorRefusal() throws Exception {
-        mvc.perform(get("/error").requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 200))
+        mvc.perform(get("/error").header("Authorization", BEARER).requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 200))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
     }
 
     @Test
     void aDirectRequestForTheContainerErrorPageIsAPathTheServiceDoesNotHave() throws Exception {
-        mvc.perform(get("/error"))
+        mvc.perform(get("/error").header("Authorization", BEARER))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(content().json("{\"title\":\"Not Found\",\"status\":404}", JsonCompareMode.STRICT));
@@ -93,7 +98,7 @@ class ProblemResponsesTest {
     @Test
     void aServerErrorSpringResolvesIsLoggedOnceWithItsExceptionAndNeverShownInTheBody(CapturedOutput output)
             throws Exception {
-        String body = mvc.perform(get("/test/unwritable"))
+        String body = mvc.perform(get("/test/unwritable").header("Authorization", BEARER))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT))
                 .andReturn()
@@ -104,5 +109,29 @@ class ProblemResponsesTest {
         assertThat(output.getAll())
                 .containsOnlyOnce("ERROR")
                 .containsOnlyOnce("HttpMessageNotWritableException: a secret the body must not show");
+    }
+
+    @Test
+    void aDirectRequestForTheContainerErrorPageNeedsTheTokenToo() throws Exception {
+        mvc.perform(get("/error"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", "Bearer"))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content().json("{\"title\":\"Unauthorized\",\"status\":401}", JsonCompareMode.STRICT));
+        mvc.perform(get("/error").header("Authorization", BEARER).header("Origin", "https://evil.example"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aPathOutsideTheApiIsGuardedToo() throws Exception {
+        mvc.perform(get("/test/unwritable")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/packs")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void aMethodThePathDoesNotHaveNamesOnlyTheMethodsItHas() throws Exception {
+        mvc.perform(get("/api/v1/packs/refresh").header("Authorization", BEARER))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(header().string("Allow", "POST"));
     }
 }

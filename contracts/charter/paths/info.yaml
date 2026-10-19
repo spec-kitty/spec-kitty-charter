@@ -2,10 +2,14 @@ get:
   operationId: getServiceInfo
   summary: Read what the service says about itself.
   description: >-
-    The contract version the service was built against, the worktree it serves and the
-    fingerprint of the files it answers from. The seam in core reads it to check that it talks to
-    the right service about the right worktree (ADR-0011). It reads the pack files to fingerprint
-    them, so a pack that cannot be read refuses it with a 500.
+    The contract version the service was built against, its own service version, the worktree it
+    serves and the fingerprint of the inputs it answers from: every pack file it loads, and
+    config.yaml and charter.yaml under the project configuration directory, each with its presence.
+    The seam in core reads it to check which worktree the service serves and which inputs it answers
+    from (ADR-0011). It is not an identity proof of the server: the worktree token proves the client
+    to the service, never the service to the client. It digests the inputs twice, so a pack that
+    cannot be read refuses it with a 500, and inputs that changed between the two digests refuse it
+    with a 500 stale_input, which may be retried. Like every operation it needs the worktree token.
   tags:
     - Service
   responses:
@@ -25,6 +29,10 @@ get:
           examples:
             one-worktree:
               $ref: ../examples/ServiceInfo.one-worktree.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
     default:

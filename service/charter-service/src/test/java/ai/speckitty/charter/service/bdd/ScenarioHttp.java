@@ -27,6 +27,9 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class ScenarioHttp {
 
+    /** The worktree token the suite configures the service with: 40 characters, as a launcher would generate. */
+    public static final String TOKEN = "scenario-worktree-token-0123456789-abcde";
+
     private static final String BASE = "/api/v1";
 
     private static final String INFO = "/info";
@@ -48,11 +51,18 @@ public class ScenarioHttp {
             @Nullable String infoFingerprint) {}
 
     private final MockMvc mvc;
+    private final String suiteToken;
     private final List<Exchange> exchanges = new ArrayList<>();
-    private @Nullable String bearerToken;
 
-    ScenarioHttp(MockMvc mvc) {
+    /**
+     * The seam of one scenario, which sends {@code token} as its bearer token until a step says otherwise.
+     *
+     * @param mvc the MockMvc the service answers through
+     * @param token the worktree token the suite configures the service with
+     */
+    ScenarioHttp(MockMvc mvc, String token) {
         this.mvc = mvc;
+        this.suiteToken = token;
     }
 
     /**
@@ -60,16 +70,34 @@ public class ScenarioHttp {
      *
      * @param method the HTTP method, for example {@code GET}
      * @param path the path below the base path, with its query if any
-     * @param headers the request headers; an {@code Authorization} header here wins over {@link #bearerToken}
+     * @param headers the request headers; an {@code Authorization} header here replaces the bearer token
      * @param body the request body, or {@code null} for none
      * @return the response
      * @throws Exception when the request cannot be performed
      */
     public MvcResult perform(String method, String path, Map<String, String> headers, @Nullable String body)
             throws Exception {
+        return perform(method, path, headers, body, suiteToken);
+    }
+
+    /**
+     * Sends a request below the API base path with an explicit bearer token and records the exchange.
+     *
+     * @param method the HTTP method, for example {@code GET}
+     * @param path the path below the base path, with its query if any
+     * @param headers the request headers; an {@code Authorization} header here replaces the bearer token
+     * @param body the request body, or {@code null} for none
+     * @param token the token to send as {@code Authorization: Bearer <token>}, or {@code null} to send none
+     * @return the response
+     * @throws Exception when the request cannot be performed
+     */
+    public MvcResult perform(
+            String method, String path, Map<String, String> headers, @Nullable String body, @Nullable String token)
+            throws Exception {
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(HttpMethod.valueOf(method), BASE + path);
-        if (bearerToken != null) {
-            request.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
+        boolean ownAuthorization = headers.keySet().stream().anyMatch(HttpHeaders.AUTHORIZATION::equalsIgnoreCase);
+        if (token != null && !ownAuthorization) {
+            request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         }
         headers.forEach(request::header);
         if (body != null) {
@@ -88,9 +116,7 @@ public class ScenarioHttp {
             return null;
         }
         MockHttpServletRequestBuilder probe = MockMvcRequestBuilders.get(BASE + INFO);
-        if (bearerToken != null) {
-            probe.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
-        }
+        probe.header(HttpHeaders.AUTHORIZATION, "Bearer " + suiteToken);
         MockHttpServletResponse info = mvc.perform(probe).andReturn().getResponse();
         return info.getStatus() == HttpStatus.OK.value()
                 ? JSON.readTree(info.getContentAsString())
@@ -167,12 +193,12 @@ public class ScenarioHttp {
     }
 
     /**
-     * Makes every later request of the scenario carry {@code Authorization: Bearer <token>}.
+     * The worktree token the suite configures the service with.
      *
-     * @param token the token, or {@code null} to send none
+     * @return the token, never {@code null}
      */
-    public void bearerToken(@Nullable String token) {
-        bearerToken = token;
+    public String suiteToken() {
+        return suiteToken;
     }
 
     private Exchange last() {

@@ -1,0 +1,43 @@
+post:
+  operationId: refreshPacks
+  summary: Re-read the Charter Packs and the project configuration.
+  description: >-
+    Forces the service to re-read every configured pack and the project configuration, and to discard
+    any built read model, then answers the refreshed pack listing, exactly as the listing operation
+    would, with the one Charter-Source-Fingerprint it verified. It takes no request body: a request
+    with a non-empty body is a 400, answered before anything is read, so that an optional paths hint
+    can be added later without breaking a client. It changes nothing on disk, governance included, and
+    is idempotent: the same inputs give the same answer. This version keeps no built graph, so a
+    refresh re-reads and re-verifies the inputs; once the service keeps one (issue #73), a refresh
+    rebuilds it. It refuses like a read: a pack that cannot be loaded is a 500 with its pack code, and
+    inputs that changed while it ran are a 500 stale_input, which may be retried. Like every operation
+    it needs the worktree token.
+  tags:
+    - Packs
+  responses:
+    '200':
+      description: The refreshed pack listing.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackListing.yaml
+          examples:
+            built-in:
+              $ref: ../examples/PackListing.built-in.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

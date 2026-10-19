@@ -25,11 +25,16 @@ import tools.jackson.databind.ObjectMapper;
  * {@code application/problem+json}, and never Tomcat's HTML error report. The requests are written to a raw
  * socket, because an HTTP client would refuse to send them.
  */
-@SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        classes = CharterServiceApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "charter.worktree-token=" + ConnectorErrorsTest.TOKEN)
 class ConnectorErrorsTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final String HOST = "Host: 127.0.0.1\r\n";
+    private static final String AUTHORIZATION = "Authorization: Bearer " + TOKEN + "\r\n";
 
     @LocalServerPort
     private int port;
@@ -107,13 +112,53 @@ class ConnectorErrorsTest {
         assertThat(response.body().toLowerCase(Locale.ROOT)).doesNotContain("tomcat", "apache", "<html");
     }
 
+    @ParameterizedTest
+    @MethodSource("malformedRequests")
+    void aRequestTheConnectorRejectsAnswersBeforeTheGuardAndCarriesNoCharterHeader(String requestLine, String headers)
+            throws Exception {
+        Raw response = exchange(requestLine, headers);
+
+        assertThat(response.headers()).doesNotContainKeys("Charter-Contract-Version", "Charter-Worktree");
+        assertThat(response.headers()).doesNotContainKey("Charter-Source-Fingerprint");
+    }
+
+    @Test
+    void aRebindingHostNameIsRefusedOverARealSocketEvenWithTheRightToken() throws Exception {
+        Raw response = exchange("GET /api/v1/info HTTP/1.1", "Host: attacker.example:8080\r\n" + AUTHORIZATION);
+
+        assertThat(response.status()).isEqualTo(403);
+        assertThat(response.only("Content-Type")).isEqualTo("application/problem+json");
+        assertThat(response.headers()).doesNotContainKey("WWW-Authenticate");
+        assertThat(response.headers()).doesNotContainKey("Charter-Source-Fingerprint");
+        assertThat(JSON.readTree(response.body()).propertyNames()).containsExactlyInAnyOrder("title", "status");
+    }
+
+    @Test
+    void aLoopbackHostNameIsAcceptedOverARealSocketAtAnyPort() throws Exception {
+        for (String host : new String[] {"127.0.0.1:1", "localhost:9", "[::1]:65535", "LOCALHOST"}) {
+            Raw response = exchange("GET /api/v1/no-such-path HTTP/1.1", "Host: " + host + "\r\n" + AUTHORIZATION);
+            assertThat(response.status()).as(host).isEqualTo(404);
+        }
+    }
+
+    @Test
+    void aRequestWithoutTheTokenIsAnswered401OverARealSocketWithTheCharterHeaders() throws Exception {
+        Raw response = exchange("GET /api/v1/no-such-path HTTP/1.1", HOST);
+
+        assertThat(response.status()).isEqualTo(401);
+        assertThat(response.only("WWW-Authenticate")).isEqualTo("Bearer");
+        assertThat(response.only("Charter-Contract-Version")).isNotBlank();
+        assertThat(response.only("Charter-Worktree")).isNotBlank();
+        assertThat(response.headers()).doesNotContainKey("Charter-Source-Fingerprint");
+    }
+
     @Test
     void traceIsRefusedWithAProblemWhoseAllowHeaderNamesOnlyWhatTheServiceSupports() throws Exception {
         Raw response = exchange("TRACE /api/v1/packs HTTP/1.1", HOST + "X-Echo: must-not-come-back\r\n");
 
         assertThat(response.status()).isEqualTo(405);
         assertThat(response.only("Content-Type")).isEqualTo("application/problem+json");
-        assertThat(response.only("Allow")).isEqualTo("GET,HEAD,OPTIONS");
+        assertThat(response.only("Allow")).isEqualTo("GET,HEAD,OPTIONS,POST");
         assertThat(JSON.readTree(response.body()).propertyNames()).containsExactlyInAnyOrder("title", "status");
         assertThat(response.body()).doesNotContain("must-not-come-back");
     }

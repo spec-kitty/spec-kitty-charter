@@ -36,7 +36,9 @@ import tools.jackson.databind.ObjectMapper;
  * model the Jackson configuration does not cover, or a schema change that adds an optional member to a model
  * that has none now, fails here.
  */
-@SpringBootTest(classes = CharterServiceApplication.class)
+@SpringBootTest(
+        classes = CharterServiceApplication.class,
+        properties = "charter.worktree-token=0123456789abcdef0123456789abcdef0123")
 @ExtendWith(SpringExtension.class)
 class NullOmissionTest {
 
