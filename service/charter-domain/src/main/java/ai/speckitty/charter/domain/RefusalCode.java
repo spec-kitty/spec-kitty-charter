@@ -21,7 +21,18 @@ public enum RefusalCode {
      * The service failed in a way no other code names. No load or query raises it: the inbound adapter refuses
      * an unexpected exception with it, so that every 500 the contract answers is a refusal.
      */
-    INTERNAL_ERROR("internal_error");
+    INTERNAL_ERROR("internal_error"),
+    /**
+     * Reserved (ADR-0009): a lower-tier pack breaks the mutability policy of the pack that owns an artifact. No load
+     * or query raises it yet; the code is in the contract so that the policy work adds no breaking change.
+     */
+    GOVERNANCE_POLICY_VIOLATION("governance_policy_violation"),
+    /**
+     * Reserved (ADR-0009): the pack or configuration files changed while the read was answered; the read may be
+     * retried. No load or query raises it yet; the code is in the contract so that the freshness work adds no
+     * breaking change.
+     */
+    STALE_INPUT("stale_input");
 
     private final String token;
 

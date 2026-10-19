@@ -1,0 +1,4 @@
+description: The opaque id of the worktree the service serves; never a host path. On every response of the charter's operations (ADR-0011).
+required: true
+schema:
+  type: string

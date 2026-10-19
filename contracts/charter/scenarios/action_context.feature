@@ -83,15 +83,16 @@ Feature: Action-scoped context
     the resolved artifact URNs of an action. An artifact both nodes scope keeps its action entry.
     When I GET "/mission-types/software-dev/actions/plan/context"
     Then the response status is 200
-    And the response body is:
+    And the response body, apart from "governanceFingerprint", is:
       """
       {
         "action": "action:software-dev/plan",
         "missionType": "mission_type:software-dev",
+        "depth": 1,
         "guidance": [
-          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "via": "mission_type:software-dev"},
-          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "via": "action:software-dev/plan"},
-          {"urn": "tactic:adr-drafting-workflow", "kind": "tactic", "label": "ADR Drafting Workflow", "relation": "scope", "via": "action:software-dev/plan"}
+          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "impacts": null, "via": "mission_type:software-dev"},
+          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"},
+          {"urn": "tactic:adr-drafting-workflow", "kind": "tactic", "label": "ADR Drafting Workflow", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"}
         ]
       }
       """
@@ -123,13 +124,14 @@ Feature: Action-scoped context
       """
     When I GET "/mission-types/documentation/actions/generate/context"
     Then the response status is 200
-    And the response body is:
+    And the response body, apart from "governanceFingerprint", is:
       """
       {
         "action": "action:documentation/generate",
         "missionType": "mission_type:documentation",
+        "depth": 1,
         "guidance": [
-          {"urn": "directive:DIRECTIVE_042", "kind": "directive", "label": "Documentation Directive", "relation": "scope", "via": "action:documentation/generate"}
+          {"urn": "directive:DIRECTIVE_042", "kind": "directive", "label": "Documentation Directive", "relation": "scope", "impacts": null, "via": "action:documentation/generate"}
         ]
       }
       """
@@ -151,15 +153,16 @@ Feature: Action-scoped context
       """
     When I GET "/mission-types/software-dev/actions/review/context"
     Then the response status is 200
-    And the response body is:
+    And the response body, apart from "governanceFingerprint", is:
       """
       {
         "action": "action:software-dev/review",
         "missionType": "mission_type:software-dev",
+        "depth": 1,
         "guidance": [
-          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "via": "mission_type:software-dev"},
-          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "via": "mission_type:software-dev"},
-          {"urn": "styleguide:undeclared-guide", "kind": "styleguide", "label": null, "relation": "scope", "via": "action:software-dev/review"}
+          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "impacts": null, "via": "mission_type:software-dev"},
+          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "impacts": null, "via": "mission_type:software-dev"},
+          {"urn": "styleguide:undeclared-guide", "kind": "styleguide", "label": null, "relation": "scope", "impacts": null, "via": "action:software-dev/review"}
         ]
       }
       """
@@ -199,4 +202,128 @@ Feature: Action-scoped context
     And the response body is:
       """
       {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "built-in/broken.graph.yaml: unknown key 'surprise'"}
+      """
+
+  Scenario: The depth of the walk is echoed, and this version answers depth 1 only
+    A later version raises the maximum depth, which is compatible: a request that asks for depth
+    1 keeps its answer.
+    When I GET "/mission-types/software-dev/actions/plan/context?depth=1"
+    Then the response status is 200
+    And the response body, apart from "governanceFingerprint", is:
+      """
+      {
+        "action": "action:software-dev/plan",
+        "missionType": "mission_type:software-dev",
+        "depth": 1,
+        "guidance": [
+          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "impacts": null, "via": "mission_type:software-dev"},
+          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"},
+          {"urn": "tactic:adr-drafting-workflow", "kind": "tactic", "label": "ADR Drafting Workflow", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"}
+        ]
+      }
+      """
+
+  Scenario: A depth this version does not answer is a bad request, not a charter refusal
+    When I GET "/mission-types/software-dev/actions/plan/context?depth=2"
+    Then the response status is 400
+    And the response body is:
+      """
+      {"title": "Bad Request", "status": 400}
+      """
+
+  Scenario: The governance fingerprint is the same while the governance is, and changes with it
+    The fingerprint digests the packs in force and the merged graph; it does not depend on the
+    order a document declares its nodes and edges in.
+    When I GET "/mission-types/software-dev/actions/plan/context"
+    Then the field "governanceFingerprint" of the response body is a sha256 digest
+    When I remember the field "governanceFingerprint" of the response body
+    And I GET "/mission-types/software-dev/actions/plan/context"
+    Then the field "governanceFingerprint" of the response body is the remembered one
+    Given the built-in pack "built-in" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:DIRECTIVE_001
+        target: directive:DIRECTIVE_010
+        relation: impacts
+        impacts: -0.5
+      """
+    When I GET "/mission-types/software-dev/actions/plan/context"
+    Then the response status is 200
+    And the field "governanceFingerprint" of the response body differs from the remembered one
+
+  Scenario: An impacts edge brings nothing into scope
+    An impacts edge records how one artifact affects another, with a signed strength; only scope
+    edges bring an artifact into an action's guidance. A legacy in_tension_with edge is read as
+    impacts with strength -1 until core migrates its graphs.
+    Given the built-in pack "built-in" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: action:software-dev/plan
+        target: tactic:premortem
+        relation: impacts
+        impacts: 0.75
+      - source: directive:DIRECTIVE_001
+        target: directive:DIRECTIVE_010
+        relation: in_tension_with
+      """
+    When I GET "/mission-types/software-dev/actions/plan/context"
+    Then the response status is 200
+    And the response body, apart from "governanceFingerprint", is:
+      """
+      {
+        "action": "action:software-dev/plan",
+        "missionType": "mission_type:software-dev",
+        "depth": 1,
+        "guidance": [
+          {"urn": "directive:DIRECTIVE_001", "kind": "directive", "label": "Architectural Integrity Standard", "relation": "scope", "impacts": null, "via": "mission_type:software-dev"},
+          {"urn": "directive:DIRECTIVE_010", "kind": "directive", "label": "Specification Fidelity Requirement", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"},
+          {"urn": "tactic:adr-drafting-workflow", "kind": "tactic", "label": "ADR Drafting Workflow", "relation": "scope", "impacts": null, "via": "action:software-dev/plan"}
+        ]
+      }
+      """
+
+  Scenario: An impacts edge without a strength in [-1, 1] is refused
+    Given the built-in pack "built-in" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:DIRECTIVE_001
+        target: directive:DIRECTIVE_010
+        relation: impacts
+        impacts: -2
+      """
+    When I GET "/mission-types/software-dev/actions/plan/context"
+    Then the response status is 500
+    And the problem code is "drg_schema_error"
+    And the response body is:
+      """
+      {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "built-in/tension.graph.yaml: 'impacts' -2.0 is outside [-1, 1]"}
+      """
+
+  Scenario: A strength on an edge that is not impacts is refused
+    Given the built-in pack "built-in" with the file "tension.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: action:software-dev/plan
+        target: directive:DIRECTIVE_001
+        relation: scope
+        impacts: 0.5
+      """
+    When I GET "/mission-types/software-dev/actions/plan/context"
+    Then the response status is 500
+    And the problem code is "drg_schema_error"
+    And the response body is:
+      """
+      {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "built-in/tension.graph.yaml: a scope edge has no 'impacts'"}
       """

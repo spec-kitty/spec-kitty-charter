@@ -15,7 +15,11 @@ tags:
     description: The Charter Packs of the charter offering.
   - name: Context
     description: Action-scoped governance context.
+  - name: Service
+    description: What the service says about itself.
 paths:
+  /info:
+    $ref: paths/info.yaml
   /packs:
     $ref: paths/packs.yaml
   /mission-types/{missionType}/actions/{action}/context:

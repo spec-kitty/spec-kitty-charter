@@ -1,0 +1,31 @@
+get:
+  operationId: getServiceInfo
+  summary: Read what the service says about itself.
+  description: >-
+    The contract version the service was built against, the worktree it serves and the
+    fingerprint of the files it answers from. The seam in core reads it to check that it talks to
+    the right service about the right worktree (ADR-0011). It reads the pack files to fingerprint
+    them, so a pack that cannot be read refuses it with a 500.
+  tags:
+    - Service
+  responses:
+    '200':
+      description: The service info.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ServiceInfo.yaml
+          examples:
+            one-worktree:
+              $ref: ../examples/ServiceInfo.one-worktree.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

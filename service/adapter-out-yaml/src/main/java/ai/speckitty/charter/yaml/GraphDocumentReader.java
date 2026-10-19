@@ -21,7 +21,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Reads the two DRG document shapes into a {@link DoctrineGraph}: a built-in graph shard
  * ({@code <kind>.graph.yaml}: nodes by {@code urn}) and an org fragment ({@code drg/fragment.yaml}:
- * nodes by {@code id} with a plural {@code kind}). Unknown keys are refused, as core does.
+ * nodes by {@code id} with a plural {@code kind}). Unknown keys are refused, as core does. A legacy
+ * {@code in_tension_with} edge is read as {@code impacts} with strength -1, the meaning core ADR 2026-07-26-3 gives
+ * it, until core migrates its graphs.
  */
 public final class GraphDocumentReader {
 
@@ -39,7 +41,9 @@ public final class GraphDocumentReader {
     private static final Set<String> FRAGMENT_KEYS =
             Set.of("pack_name", "source_kind", "source_ref", "layer_index", "provenance_marker", "nodes", "edges");
     private static final Set<String> FRAGMENT_NODE_KEYS = Set.of("id", "kind", "title", "body_path");
-    private static final Set<String> EDGE_KEYS = Set.of("source", "target", "relation", "when", "reason");
+    private static final Set<String> EDGE_KEYS = Set.of("source", "target", "relation", "impacts", "when", "reason");
+    private static final String LEGACY_TENSION = "in_tension_with";
+    private static final double LEGACY_TENSION_STRENGTH = -1.0;
 
     private GraphDocumentReader() {}
 
@@ -51,7 +55,8 @@ public final class GraphDocumentReader {
      * @param origin the pack-relative name of the document, used in refusal details
      * @return the document's nodes and edges, in declared order
      * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when the text is not YAML,
-     *     {@code DRG_SCHEMA_ERROR} when the document breaks its shape's schema, or {@code UNRESOLVED_EDGE_ENDPOINT}
+     *     {@code DRG_SCHEMA_ERROR} when the document breaks its shape's schema (an {@code impacts} edge without a
+     *     strength in [-1, 1] or another edge with one included), or {@code UNRESOLVED_EDGE_ENDPOINT}
      *     when an edge endpoint is neither a URN nor a bare id the document declares
      */
     public static DoctrineGraph read(String text, Shape shape, String origin) {
@@ -76,12 +81,24 @@ public final class GraphDocumentReader {
             Map<String, Object> edge = mapping(item, origin + " edge");
             checkKeys(edge, EDGE_KEYS, origin + " edge");
             String relationToken = string(edge, "relation", origin);
-            Relation relation = Relation.fromToken(relationToken)
-                    .orElseThrow(() -> schema(origin, "unknown relation '" + relationToken + "'"));
+            boolean legacyTension = relationToken.equals(LEGACY_TENSION);
+            Relation relation = legacyTension
+                    ? Relation.IMPACTS
+                    : Relation.fromToken(relationToken)
+                            .orElseThrow(() -> schema(origin, "unknown relation '" + relationToken + "'"));
+            Optional<Double> impacts = optionalNumber(edge, "impacts", origin);
+            if (legacyTension) {
+                if (impacts.isPresent()) {
+                    throw schema(origin, "an in_tension_with edge has no 'impacts'");
+                }
+                impacts = Optional.of(LEGACY_TENSION_STRENGTH);
+            }
+            checkStrength(relation, impacts, origin);
             edges.add(new DrgEdge(
                     endpoint(string(edge, "source", origin), declaredIds, origin),
                     endpoint(string(edge, "target", origin), declaredIds, origin),
                     relation,
+                    impacts,
                     optionalString(edge, "when", origin),
                     optionalString(edge, "reason", origin)));
         }
@@ -176,6 +193,31 @@ public final class GraphDocumentReader {
             return Optional.of(s);
         }
         throw schema(origin, "'" + key + "' must be a string");
+    }
+
+    /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */
+    private static void checkStrength(Relation relation, Optional<Double> impacts, String origin) {
+        if (relation != Relation.IMPACTS) {
+            if (impacts.isPresent()) {
+                throw schema(origin, "a " + relation.token() + " edge has no 'impacts'");
+            }
+            return;
+        }
+        double strength = impacts.orElseThrow(() -> schema(origin, "an impacts edge is missing 'impacts'"));
+        if (!DrgEdge.isStrength(strength)) {
+            throw schema(origin, "'impacts' " + strength + " is outside [-1, 1]");
+        }
+    }
+
+    private static Optional<Double> optionalNumber(Map<String, Object> map, String key, String origin) {
+        Object value = map.get(key);
+        if (value == null) {
+            return Optional.empty();
+        }
+        if (value instanceof Number n) {
+            return Optional.of(n.doubleValue());
+        }
+        throw schema(origin, "'" + key + "' must be a number");
     }
 
     private static CharterRefusal schema(String origin, String problem) {

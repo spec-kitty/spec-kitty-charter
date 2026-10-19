@@ -29,9 +29,12 @@ public enum Relation {
     OVERRIDES,
     /** Supersession; kept for older hand-authored fragments. */
     REPLACES,
-    /** Symmetric and non-transitive: two co-valid artifacts compete on one decision. */
-    IN_TENSION_WITH,
-    /** From a reconciling artifact to one side of a tension pair. */
+    /**
+     * Directed and signed: the edge's {@link DrgEdge#impacts() strength} runs from -1 (sabotages) to +1
+     * (reinforces), and a negative strength is a tension claim. Replaces {@code in_tension_with}.
+     */
+    IMPACTS,
+    /** From a reconciling artifact to one side of a tension pair: a pair joined by a negative {@link #IMPACTS}. */
     RECONCILES_TENSION,
     /** From a good artifact to an {@code anti_pattern} node. */
     REJECTS;

@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Primary;
 
 /** One Spring context for every scenario; each scenario supplies its own packs through {@link ScenarioPacks}. */
 @CucumberContextConfiguration
-@SpringBootTest(classes = {CharterServiceApplication.class, CucumberSpringConfiguration.Packs.class})
+@SpringBootTest(
+        classes = {CharterServiceApplication.class, CucumberSpringConfiguration.Packs.class},
+        properties = "charter.worktree-id=scenario-worktree")
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
 

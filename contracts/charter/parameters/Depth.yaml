@@ -1,0 +1,15 @@
+name: depth
+in: query
+required: false
+description: >-
+  How many scope edges the walk follows from the action node and from the mission type node. This
+  version answers depth 1 only; a later version raises the maximum, which is a compatible change.
+  The seam in core decides the depth of a read, for example a deeper first load (ADR-0011); the
+  service keeps no state about earlier reads. A depth outside the range is a 400 Problem, not a
+  charter refusal.
+schema:
+  type: integer
+  format: int32
+  minimum: 1
+  maximum: 1
+  default: 1

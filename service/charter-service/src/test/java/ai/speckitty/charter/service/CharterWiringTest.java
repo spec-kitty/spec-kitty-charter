@@ -3,8 +3,10 @@ package ai.speckitty.charter.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.domain.PackLevel;
+import ai.speckitty.charter.read.ServiceInfoQuery;
 import ai.speckitty.charter.yaml.PackLocation;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -47,5 +49,26 @@ class CharterWiringTest {
                         .rootCause()
                         .isInstanceOf(IllegalArgumentException.class)
                         .hasMessage("charter.packs: unknown level 'galaxy' for qa"));
+    }
+
+    @Test
+    void theWorktreeIdIsTheConfiguredOneOrAStableIdDerivedFromThePackDirectories() {
+        runner.withPropertyValues("charter.worktree-id=wt-7")
+                .run(context -> assertThat(
+                                context.getBean(ServiceInfoQuery.class).worktree())
+                        .isEqualTo("wt-7"));
+        CharterProperties packs =
+                new CharterProperties(List.of(new CharterProperties.Pack("qa", "org", Path.of("/packs/qa"))), null);
+        String derived = CharterWiring.derivedWorktreeId(packs);
+        assertThat(derived).matches("[0-9a-f]{16}").doesNotContain("packs");
+        assertThat(CharterWiring.derivedWorktreeId(packs)).isEqualTo(derived);
+        assertThat(CharterWiring.derivedWorktreeId(new CharterProperties(
+                        List.of(new CharterProperties.Pack("qa", "org", Path.of("/other/qa"))), null)))
+                .isNotEqualTo(derived);
+        runner.withPropertyValues(
+                        "charter.packs[0].name=qa", "charter.packs[0].level=org", "charter.packs[0].path=/packs/qa")
+                .run(context -> assertThat(
+                                context.getBean(ServiceInfoQuery.class).worktree())
+                        .isEqualTo(derived));
     }
 }

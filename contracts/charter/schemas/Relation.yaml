@@ -1,5 +1,10 @@
 title: Relation
-description: The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md.
+description: >-
+  The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md. impacts is a
+  directed, signed edge whose strength runs from -1 (sabotages) to +1 (reinforces); a negative
+  impacts is a tension claim, and reconciles_tension points at the sides of such a pair. It
+  replaces in_tension_with (ADR-0009, core ADR 2026-07-26-3); a graph document that still holds
+  in_tension_with is read as impacts with strength -1.
 type: string
 enum:
   - requires
@@ -14,7 +19,7 @@ enum:
   - enhances
   - overrides
   - replaces
-  - in_tension_with
+  - impacts
   - reconciles_tension
   - rejects
 x-source:

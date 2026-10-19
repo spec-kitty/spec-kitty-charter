@@ -1,0 +1,34 @@
+title: ServiceInfo
+description: What the service says about itself, so the seam in core can check it talks to the right service about the right files (ADR-0011).
+type: object
+additionalProperties: false
+required:
+  - contractVersion
+  - worktree
+  - sourceFingerprint
+properties:
+  contractVersion:
+    type: string
+    description: The info.version of the contract the service was built against, for example 1.0.0.
+    x-source:
+      path: service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/ContractVersion.java
+      symbol: ContractVersion.value
+  worktree:
+    type: string
+    description: >-
+      The opaque id of the worktree the service serves: the charter.worktree-id the service was
+      started with, or, without one, an id derived from where the configured packs are. Never a
+      host path.
+    x-source:
+      path: service/charter-read-app/src/main/java/ai/speckitty/charter/read/ServiceInfoQuery.java
+      symbol: ServiceInfoQuery.worktree
+  sourceFingerprint:
+    allOf:
+      - $ref: Sha256Digest.yaml
+    description: >-
+      A digest of every file the offering is loaded from, each with its path under its pack's
+      configured name, in load order. It changes whenever a loaded file does and says nothing
+      about where the files are on the host.
+    x-source:
+      path: service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemCharterPackRepository.java
+      symbol: FileSystemCharterPackRepository.fingerprint

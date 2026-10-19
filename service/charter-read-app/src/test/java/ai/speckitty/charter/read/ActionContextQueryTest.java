@@ -46,7 +46,7 @@ class ActionContextQueryTest {
 
     @Test
     void scopeOfTheActionAndOfItsMissionTypeOnceEachSortedByUrn() {
-        ActionContext context = query.answer("software-dev", "plan");
+        ActionContext context = query.answer("software-dev", "plan", 1);
         assertThat(context.guidance())
                 .extracting(GuidanceEntry::urn, GuidanceEntry::via)
                 .containsExactly(tuple(D1, TYPE), tuple(D2, PLAN), tuple(T1, PLAN));
@@ -60,7 +60,7 @@ class ActionContextQueryTest {
         ActionContextQuery both = over(
                 List.of(node(TYPE), node(PLAN), node(D1)),
                 List.of(DrgEdge.of(TYPE, D1, Relation.SCOPE), DrgEdge.of(PLAN, D1, Relation.SCOPE)));
-        assertThat(both.answer("software-dev", "plan").guidance())
+        assertThat(both.answer("software-dev", "plan", 1).guidance())
                 .extracting(GuidanceEntry::urn, GuidanceEntry::via)
                 .containsExactly(tuple(D1, PLAN));
     }
@@ -69,7 +69,7 @@ class ActionContextQueryTest {
     void aScopeEdgeToANodeTheGraphDoesNotDeclareIsListedWithoutALabel() {
         ActionContextQuery dangling =
                 over(List.of(node(TYPE), node(PLAN)), List.of(DrgEdge.of(PLAN, UNDECLARED, Relation.SCOPE)));
-        assertThat(dangling.answer("software-dev", "plan").guidance())
+        assertThat(dangling.answer("software-dev", "plan", 1).guidance())
                 .singleElement()
                 .satisfies(entry -> {
                     assertThat(entry.urn()).isEqualTo(UNDECLARED);
@@ -85,18 +85,47 @@ class ActionContextQueryTest {
             throw new CharterRefusal(
                     RefusalCode.DRG_SCHEMA_ERROR, "built-in/broken.graph.yaml: unknown key 'surprise'");
         });
-        assertThatThrownBy(() -> broken.answer("software-dev", "plan"))
+        assertThatThrownBy(() -> broken.answer("software-dev", "plan", 1))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR));
     }
 
     @Test
     void unknownNamesAreRefused() {
-        assertThatThrownBy(() -> query.answer("gardening", "plan"))
+        assertThatThrownBy(() -> query.answer("gardening", "plan", 1))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
-        assertThatThrownBy(() -> query.answer("software-dev", "deploy"))
+        assertThatThrownBy(() -> query.answer("software-dev", "deploy", 1))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+    }
+
+    @Test
+    void theAnswerEchoesItsDepthAndCarriesTheFingerprintOfTheGovernanceItWasComputedFrom() {
+        ActionContext context = query.answer("software-dev", "plan", 1);
+        assertThat(context.depth()).isEqualTo(1);
+        assertThat(context.governanceFingerprint()).matches("sha256:[0-9a-f]{64}");
+        assertThat(query.answer("software-dev", "plan", 1).governanceFingerprint())
+                .isEqualTo(context.governanceFingerprint());
+    }
+
+    @Test
+    void aDepthOutsideWhatThisVersionAnswersIsAProgrammingError() {
+        assertThatThrownBy(() -> query.answer("software-dev", "plan", 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> query.answer("software-dev", "plan", ActionContextQuery.MAX_DEPTH + 1))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void anImpactsEdgeDoesNotBringAnArtifactIntoScopeAndAScopeEntryHasNoStrength() {
+        ActionContextQuery withImpacts = over(
+                List.of(node(TYPE), node(PLAN), node(D1), node(D2)),
+                List.of(DrgEdge.of(PLAN, D1, Relation.SCOPE), DrgEdge.impacts(PLAN, D2, -1.0)));
+        assertThat(withImpacts.answer("software-dev", "plan", 1).guidance())
+                .singleElement()
+                .satisfies(e -> {
+                    assertThat(e.urn()).isEqualTo(D1);
+                    assertThat(e.impacts()).isEmpty();
+                });
     }
 }
