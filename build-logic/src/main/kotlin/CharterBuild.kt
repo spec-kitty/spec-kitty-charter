@@ -18,3 +18,6 @@ fun VersionCatalog.lib(alias: String): Provider<MinimalExternalModuleDependency>
  */
 val Project.charterJavaVersion: Int
     get() = (findProperty("charter.javaVersion") as String?)?.toInt() ?: 25
+
+fun VersionCatalog.version(alias: String): String =
+    findVersion(alias).orElseThrow { IllegalStateException("No version '$alias' in gradle/libs.versions.toml") }.requiredVersion
