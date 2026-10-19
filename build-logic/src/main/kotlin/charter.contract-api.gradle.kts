@@ -1,5 +1,6 @@
 // The charter-api module: server interfaces and transport DTOs generated from contracts/charter/openapi.yaml.
 // Nothing here is hand-written; a contract change the controllers do not follow fails their compile.
+// It builds on the base conventions only and never applies `charter.hand-written`: no gate reaches generated code.
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
@@ -9,7 +10,9 @@ plugins {
 }
 
 val contract = rootProject.layout.projectDirectory.file("contracts/charter/openapi.yaml")
-val contractDir = rootProject.layout.projectDirectory.dir("contracts")
+// The generator reads the charter's split contract and the vendored shared components it references, and
+// nothing else under contracts/: the checker's sources and the lint fixtures are not inputs.
+val contractDirs = listOf("contracts/charter", "contracts/_shared").map { rootProject.layout.projectDirectory.dir(it) }
 val generatedDir = layout.buildDirectory.dir("generated/openapi")
 
 val validateContract = tasks.register<ValidateTask>("validateContract") {
@@ -23,7 +26,9 @@ val generateContract = tasks.register<GenerateTask>("generateContract") {
     group = "build"
     description = "Generates the Spring server interfaces and DTOs of the charter contract."
     dependsOn(validateContract)
-    inputs.dir(contractDir)
+    contractDirs.forEachIndexed { i, dir ->
+        inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractTree$i")
+    }
     generatorName = "spring"
     inputSpec = contract
     outputDir = generatedDir
@@ -53,11 +58,6 @@ val generateContract = tasks.register<GenerateTask>("generateContract") {
 
 sourceSets.main { java.srcDir(generatedDir.map { it.dir("src/main/java") }) }
 tasks.named("compileJava") { dependsOn(generateContract) }
-// Generated sources are not held to the hand-written lint bar.
-tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.removeAll(listOf("-Werror", "-Xlint:all"))
-    options.compilerArgs.add("-Xlint:none")
-}
 tasks.named("check") { dependsOn(validateContract) }
 
 dependencies {

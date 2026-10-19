@@ -1,4 +1,6 @@
-// Every Java module: one toolchain, warnings as errors, JUnit Platform, the shared BOMs.
+// Every Java module, generated or hand-written: one toolchain, JUnit Platform, the shared BOMs.
+// It holds no quality bar; hand-written modules add every gate with `charter.hand-written`, so generated
+// code (charter-api) is exempt by construction rather than by removing flags it inherited.
 plugins {
     `java-library`
 }
@@ -10,7 +12,7 @@ java {
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release = charterJavaVersion
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-processing", "-Xlint:-serial", "-Werror", "-parameters"))
+    options.compilerArgs.add("-parameters")
 }
 
 dependencies {

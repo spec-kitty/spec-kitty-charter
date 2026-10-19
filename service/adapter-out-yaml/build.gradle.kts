@@ -1,5 +1,6 @@
 plugins {
-    id("charter.java-conventions")
+    id("charter.java-base")
+    id("charter.hand-written")
 }
 
 dependencies {

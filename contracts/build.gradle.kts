@@ -22,7 +22,8 @@ import org.gradle.process.ExecOperations
 import org.gradle.work.DisableCachingByDefault
 
 plugins {
-    id("charter.java-conventions")
+    id("charter.java-base")
+    id("charter.hand-written")
 }
 
 dependencies {

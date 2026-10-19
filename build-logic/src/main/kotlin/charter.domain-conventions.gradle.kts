@@ -2,7 +2,7 @@
 // The dependency rule itself is pinned by the ArchUnit test in charter-service; this plugin
 // only keeps such modules from declaring anything but project dependencies.
 plugins {
-    id("charter.java-conventions")
+    id("charter.java-base")
 }
 
 configurations.matching { it.name == "api" || it.name == "implementation" }.configureEach {
