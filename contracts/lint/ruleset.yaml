@@ -46,7 +46,7 @@ rules:
               type: array
               minItems: 1
 
-  # The charter's operations are reads: 200 is their only success, and every other answer is a problem.
+  # The charter's operations answer 200 as their only success (refresh included; ADR-0018 D10), and every other answer is a problem.
   error-responses-are-problems:
     description: Every response other than 200 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
     severity: error
@@ -86,7 +86,7 @@ rules:
   # ADR-0011: every response of every operation, the shared default Problem included, declares the three
   # Charter headers (#90). Fingerprint is not required on the wire, but its absence is still declared.
   charter-headers-on-every-response:
-    description: Every response of every operation declares the Charter-Contract-Version, Charter-Worktree and Charter-Source-Fingerprint headers (ADR-0011).
+    description: Every response of every operation declares the Charter-Contract-Version, Charter-Worktree and Charter-Source-Fingerprint headers (ADR-0011, ADR-0018 D11).
     severity: error
     given: "$.paths[*][get,put,post,delete,options,head,patch,trace].responses[*]"
     then:
