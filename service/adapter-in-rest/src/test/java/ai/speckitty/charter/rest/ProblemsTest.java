@@ -2,6 +2,7 @@ package ai.speckitty.charter.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -14,7 +15,7 @@ class ProblemsTest {
 
     @Test
     void aProblemCarriesTheReasonPhraseAndTheStatusAndNothingElse() {
-        ResponseEntity<Problem> problem = Problems.of(HttpStatus.NOT_ACCEPTABLE, HttpHeaders.EMPTY);
+        ResponseEntity<Object> problem = Problems.of(HttpStatus.NOT_ACCEPTABLE, HttpHeaders.EMPTY);
         assertThat(problem.getStatusCode()).isEqualTo(HttpStatus.NOT_ACCEPTABLE);
         assertThat(problem.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
         assertThat(problem.getBody()).isEqualTo(new Problem("Not Acceptable", 406));
@@ -25,10 +26,19 @@ class ProblemsTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setAllow(java.util.Set.of(org.springframework.http.HttpMethod.GET));
         headers.setContentType(MediaType.TEXT_PLAIN);
-        ResponseEntity<Problem> problem = Problems.of(HttpStatus.METHOD_NOT_ALLOWED, headers);
+        ResponseEntity<Object> problem = Problems.of(HttpStatus.METHOD_NOT_ALLOWED, headers);
         assertThat(problem.getHeaders().getFirst(HttpHeaders.ALLOW)).isEqualTo("GET");
         assertThat(problem.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
         assertThat(headers.getContentType()).isEqualTo(MediaType.TEXT_PLAIN);
+    }
+
+    @Test
+    void aFiveHundredIsTheInternalErrorRefusalWithAGenericDetail() {
+        ResponseEntity<Object> problem = Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
+        assertThat(problem.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+        CharterRefusal expected = new CharterRefusal("Internal error", 500, CharterRefusal.CodeEnum.INTERNAL_ERROR);
+        expected.setDetail("The charter service failed unexpectedly; the failure is logged.");
+        assertThat(problem.getBody()).isEqualTo(expected);
     }
 
     @Test

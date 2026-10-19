@@ -36,6 +36,12 @@ did not; `Changed` lists what differs from the draft.
   bodies are the closed `Problem`; until now these failures answered with the framework's own
   error document (`timestamp`, `error`, `path`) or an empty body.
 - The step `When I GET "<path>" accepting "<media type>"`, for the `406` scenario.
+- `CharterRefusalCode` value `internal_error` (operator ruling DM
+  01M599MEAJS44RYEY0X387BY4H): every 500 is a `CharterRefusal`, and a failure no other code
+  names is refused with `internal_error` and a generic detail that names nothing of the
+  failure. The `OfferingUnreadable` 500 response says so. Scenario "An unexpected failure is
+  refused with internal_error and says nothing about it" in `errors.feature` pins the body,
+  with the step `Given the service fails unexpectedly while it reads the packs`.
 - The scenario suite checks every response against the contract: the content type must be
   one the operation declares for the status (or its `default`), and the body must validate
   against that content's schema. A path no operation defines must answer the shared
@@ -63,6 +69,8 @@ did not; `Changed` lists what differs from the draft.
   asserts the whole body with `Then the response body is:`. A refusal body omits an absent
   optional member; it carried `"type": null` and `"instance": null`, which the closed
   `Problem` schema does not allow.
+- The `ActionContext.guidance` derivation rule reads "an artifact in both scopes keeps its
+  action entry" (wording only).
 - Scenario "A pack descriptor without pack_level loads at its configured level, with a
   warning" is renamed "A pack descriptor without pack_level loads at its configured level,
   with a diagnostic", the name the answer gives it (`diagnostics`); the answer is unchanged.

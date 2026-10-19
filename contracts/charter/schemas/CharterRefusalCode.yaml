@@ -3,7 +3,8 @@ description: >-
   Why the charter refused a read. Codes are part of the contract; consumers branch on them,
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found and action_not_found are 404; every other
-  code is 500.
+  code is 500. internal_error refuses a failure no other code names; its detail is a generic
+  sentence that says nothing about the failure, so every 500 is a refusal.
 type: string
 enum:
   - mission_type_not_found
@@ -12,6 +13,7 @@ enum:
   - pack_unreadable
   - drg_schema_error
   - unresolved_edge_endpoint
+  - internal_error
 x-source:
   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
   symbol: RefusalCode
