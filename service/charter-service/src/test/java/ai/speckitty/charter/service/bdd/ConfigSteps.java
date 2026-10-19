@@ -35,6 +35,12 @@ public class ConfigSteps {
         packs.deleteConfigFile(name);
     }
 
+    /** Puts a directory where a file of the project configuration directory would be: reading it fails, even as root. */
+    @Given("the project configuration file {string} is a directory")
+    public void configFileIsADirectory(String name) {
+        packs.makeConfigFileADirectory(name);
+    }
+
     /** Checks a field of the last response body against the semantic version pattern the contract declares. */
     @Then("the field {string} of the response body is a semantic version")
     public void semanticVersionField(String field) throws Exception {
