@@ -1,0 +1,23 @@
+adapter_id: generated
+adapter_notes: 
+  generated-artifact:.kittify/charter/generated/tactics/how-we-apply-directive-051.tactic.yaml
+adapter_version: 1.0.0
+artifact_content_hash: 
+  d978676b219d240665fc285ad566f9e32237970526c5a62d73fbd8c0e1ca8191
+artifact_kind: tactic
+artifact_slug: how-we-apply-directive-051
+artifact_urn: tactic:how-we-apply-directive-051
+corpus_snapshot_id: generic-v1.0.0
+evidence_bundle_hash: 
+  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
+generated_at: '2026-10-18T15:56:15.083943+00:00'
+inputs_hash: 7db4d7a0df8cea650988dbe6d64bc125b5e99112565352a2087f24c6843d5e92
+produced_at: '2026-10-18T15:58:11.492249+00:00'
+schema_version: '2'
+source_input_ids:
+- directive:DIRECTIVE_051
+source_section: selected_directives
+source_urns:
+- directive:DIRECTIVE_051
+synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesizer_version: 4.0.0rc8

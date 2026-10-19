@@ -1,0 +1,20 @@
+failure_modes:
+- A scenario that passes because the step definition swallows the assertion.
+- Exact comparisons of incidental ordering that core does not guarantee.
+id: how-we-apply-directive-041
+name: How We Apply DIRECTIVE_041 (Tests as Scaffold)
+purpose: Keep tests failing exactly when the contract is broken and passing 
+  otherwise.
+schema_version: '1.0'
+steps:
+- description: Scenarios and tests assert the response body, status and 
+    diagnostics the contract defines, not internal call sequences. Use Mockito 
+    only at a port boundary, never to mock the unit under test.
+  title: Assert outcomes, not implementation
+- description: Every new build gate lands with a planted violation that makes it
+    fail, then the violation is removed (the build-retro mission's rule for 
+    Checkstyle, the formatter check and NullAway).
+  title: Prove each new gate is not vacuous
+- description: Review checks that a test can fail for the right reason; a test 
+    that cannot fail is rejected.
+  title: Review test quality like production code

@@ -1,0 +1,23 @@
+failure_modes:
+- Dispatch briefs that say "run everything" without naming the targeted tasks.
+id: how-we-apply-no-full-heavy-suites-in-mission
+name: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
+notes: The charter makes ./gradlew verifyAll the pre-merge gate; this tactic 
+  does not reclassify it as a heavy suite. Which local runs count as heavy 
+  beyond PIT is not stated in the interview and is left to the operator.
+purpose: Validate mission work with targeted runs and leave the heavy runs to 
+  CI.
+schema_version: '1.0'
+steps:
+- description: While implementing or reviewing a work package, run the touched 
+    module's tests (for example ./gradlew :charter-domain:test) and the specific
+    gate the change touches, and record the exact commands and counts in the 
+    pull request.
+  title: Run the targeted set during mission work
+- description: PIT runs nightly only, as its own task outside check; do not run 
+    ./gradlew pitest during mission work unless the operator asks for it by 
+    name.
+  title: Leave mutation testing to the nightly run
+- description: A red result outside the change's blast radius is classified and 
+    left to CI, not chased with a broader local sweep.
+  title: Classify unrelated reds instead of widening the run

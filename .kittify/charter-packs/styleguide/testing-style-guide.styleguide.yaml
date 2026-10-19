@@ -1,0 +1,45 @@
+anti_patterns:
+- bad_example: A test whose only assertion is a Mockito verify(...) on the pack 
+    reader.
+  description: Verifying that a collaborator was called proves wiring, not 
+    behavior.
+  good_example: A test that asserts the pack listing the use case returns for a 
+    given pack tree.
+  name: Interaction-only test
+- bad_example: '@Disabled("flaky")'
+  description: Disabling a failing test hides a regression.
+  good_example: Fix the cause, or record the failure as an open review item and 
+    keep the test running.
+  name: Disabled to reach green
+id: testing-style-guide
+patterns:
+- description: Assert what the contract returns.
+  good_example: Assert the diagnostic codes in the response body (for example 
+    pack_level_missing), not which reader method ran.
+  name: Outcome assertion
+principles:
+- Test first - a failing contract scenario under contracts/charter/scenarios/ or
+  a failing unit test precedes production code.
+- Every contract operation is pinned by BDD scenarios run with Cucumber-JVM; 
+  contract scenarios are selected by the @contract tag, and provisional behavior
+  is tagged @provisional.
+- Only scenarios/** is on the test classpath; fixtures stay inline in the 
+  scenario, never as YAML files under the contract tree.
+- Every spec-kitty-open-packs YAML file round-trips through the file-based layer
+  (openPacksRoundTrip) with per-pack diagnostics asserted; never skipped.
+- Unit tests use JUnit 6 and AssertJ; Mockito only at port boundaries.
+- Assert outcomes, not implementation details; no fake green, no skipped or 
+  quarantined tests to reach green; test code is reviewed like production code.
+- Every scenario change gets a contracts/charter/CHANGELOG.md line.
+quality_test: Would each new test fail if the contract it pins were broken, and 
+  pass after a behavior-neutral refactor?
+schema_version: '1.0'
+scope: testing
+title: Testing Style Guide
+tooling:
+  architecture: ArchUnit
+  coverage: JaCoCo
+  doubles: Mockito
+  mutation: PIT (nightly only)
+  scenarios: Cucumber-JVM
+  unit: JUnit 6 with AssertJ

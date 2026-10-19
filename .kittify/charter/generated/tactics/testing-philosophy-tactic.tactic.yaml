@@ -1,0 +1,27 @@
+id: testing-philosophy-tactic
+schema_version: "1.0"
+name: Testing Philosophy
+purpose: >-
+  How the project tests: specification by example, test first, meaningful
+  tests only.
+steps:
+  - title: Specify behavior by example first
+    description: >-
+      Every contract operation is pinned by BDD scenarios under
+      contracts/charter/scenarios/; a failing scenario or unit test comes
+      before production code.
+  - title: Round-trip the real corpus
+    description: >-
+      Every spec-kitty-open-packs YAML file round-trips through the
+      file-based layer (openPacksRoundTrip), with per-pack diagnostics
+      asserted; it is never skipped.
+  - title: Keep tests meaningful
+    description: >-
+      No fake green, no skipped or quarantined tests to reach green;
+      assertions on outcomes, not implementation details.
+  - title: Review tests like production code
+    description: >-
+      Test quality is part of every review; a test that cannot fail for the
+      right reason is rejected.
+failure_modes:
+  - Coverage numbers used as a substitute for scenario coverage.

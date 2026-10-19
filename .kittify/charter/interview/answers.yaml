@@ -1,0 +1,93 @@
+schema_version: 1.0.0
+mission: software-dev
+profile: comprehensive
+answers:
+  project_intent: >-
+    Build the Java 25 charter offering service that replaces core's Python
+    charter by rewrite (ADR-0008), and own the charter contract
+    (contracts/charter/, ADR-0002). The service answers the same governance
+    content as core's Python charter, which stays in core as the oracle,
+    behind the OpenAPI contract that core vendors and generates DTOs from.
+  languages_frameworks: >-
+    Java 25 (toolchain and release), Spring Boot 4, Gradle 9 with the
+    build-logic convention plugins, OpenAPI 3.1 with openapi-generator
+    (spring, interface-only), Cucumber-JVM for the BDD scenarios, ArchUnit for
+    the dependency rule, JUnit 6 and AssertJ. Documentation is Markdown under
+    the doc-kitty convention. No Python ships from this repository.
+  testing_requirements: >-
+    Test first: a failing scenario in contracts/charter/scenarios/ or a
+    failing unit test comes before production code. Every contract operation
+    is pinned by BDD scenarios; every spec-kitty-open-packs YAML file
+    round-trips through the file-based layer (openPacksRoundTrip, never
+    skipped). Tests must be meaningful: no fake green, no skipped or
+    quarantined tests to reach green, assertions on outcomes rather than
+    implementation details, and test quality is reviewed like production code.
+  quality_gates: >-
+    Before merge: ./gradlew verifyAll on Java 25 (contract validation and
+    generation, unit tests, the ArchUnit gate, BDD scenarios, the open-packs
+    round-trip) with strict SHA-256 dependency verification; CI never builds
+    with -Pcharter.javaVersion=21. A Java linter / style check on the
+    hand-written sources (to be wired into verifyAll; until then reviewers
+    apply the java-conventions styleguide). The docs checks: check_docs.py
+    frontmatter, related, freshness, links, terms, adr, changelog and orphans,
+    markdownlint-cli2 and cspell.
+  review_policy: >-
+    Non-trivial work runs as a spec-kitty mission (an Op for a small ad-hoc
+    fix) and lands by pull request. Contract, architecture and domain changes
+    get an adversarial review squad at the plan point and before merge, then
+    operator approval. A call made without review is logged as an open review
+    item in the mission or docs/plans/open-questions.md, never left implicit.
+  performance_targets: >-
+    No performance claims until a cold-versus-warm end-to-end benchmark exists
+    (open question 11). The service is a local loopback daemon per worktree.
+  deployment_constraints: >-
+    Loopback only, one service per worktree, launched by core. JVM artifact
+    for now; native binary is an open implementation decision (open question 5).
+  documentation_policy: >-
+    Docs follow doc-kitty (ADR-0003) and stay in sync with shipped behavior in
+    the same change. Architecture docs use C4 levels. Decisions are ADRs
+    under docs/adr/; an accepted decision is superseded, never edited.
+    Contract changes are recorded in contracts/charter/CHANGELOG.md, notable
+    changes in docs/changelog/. US spelling; the terms guard applies.
+  risk_boundaries: >-
+    The costliest failures: (1) the service answering governance content that
+    differs from core's Python charter oracle - the wire format may differ,
+    but the data must match closely enough that core does not break; (2) the
+    service not honoring the OpenAPI contract, or an incompatible contract
+    change reaching core. Also never lose or rewrite open-packs YAML content
+    in a way that fails to round-trip, and never admit an unverified
+    dependency. These are not traded for speed.
+  amendment_process: >-
+    Charter changes are proposed by pull request, through /spec-kitty.charter,
+    and approved by the operator.
+  exception_policy: >-
+    An exception names its scope, the reason, the approver and a sunset or
+    review date in the pull request and, when it outlives the change, in
+    docs/plans/open-questions.md. Exceptions to the two costliest failures
+    are not granted.
+selected_paradigms:
+  - behaviour-driven-development
+  - specification-by-example
+  - domain-driven-design
+  - c4-incremental-detail-modeling
+selected_directives:
+  - NO_FULL_HEAVY_SUITES_IN_MISSION
+  - DIRECTIVE_001
+  - DIRECTIVE_003
+  - DIRECTIVE_010
+  - DIRECTIVE_025
+  - DIRECTIVE_030
+  - DIRECTIVE_032
+  - DIRECTIVE_034
+  - DIRECTIVE_037
+  - DIRECTIVE_041
+  - DIRECTIVE_051
+  - USE_C4_MODEL_TECHNIQUES
+selected_tactics: []
+available_tools:
+  - git
+  - spec-kitty
+  - gradle
+  - java
+agent_profile:
+agent_role:

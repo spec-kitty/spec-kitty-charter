@@ -1,0 +1,20 @@
+failure_modes:
+- A squad finding with no recorded disposition.
+id: review-policy-tactic
+name: Review Policy
+purpose: How work is reviewed and approved before it lands on main.
+schema_version: '1.0'
+steps:
+- description: Non-trivial work runs as a spec-kitty mission; a small ad-hoc fix
+    runs as an Op. Both land by pull request with one approval.
+  title: Choose mission or Op
+- description: Contract, architecture and domain changes get an adversarial 
+    review squad at the plan point and before merge; record each finding with 
+    its disposition (accepted, deferred, dropped, overruled).
+  title: Squad review for high-impact changes
+- description: After the squad passes, the operator rules on divergent findings 
+    and approves the change.
+  title: Operator approval
+- description: A call made without review is logged as an open review item in 
+    the mission or docs/plans/open-questions.md.
+  title: Log unreviewed calls

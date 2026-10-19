@@ -1,0 +1,38 @@
+anti_patterns:
+- bad_example: ./gradlew verifyAll -x openPacksRoundTrip
+  description: Excluding a module, skipping the round trip or disabling 
+    verification to pass the gate.
+  good_example: ./gradlew verifyAll
+  name: Green by exclusion
+id: quality-gates-style-guide
+patterns:
+- description: A pull request adding a gate shows the red run with the planted 
+    violation and the green run after its removal.
+  name: Gate proof
+principles:
+- ./gradlew verifyAll on Java 25 passes before merge - contract validation and 
+  generation, unit tests, the ArchUnit gate, the BDD scenarios and the 
+  open-packs round trip - with strict SHA-256 dependency verification.
+- CI never builds with -Pcharter.javaVersion=21.
+- A Java style check (Checkstyle plus the palantir-java-format check) runs on 
+  hand-written sources. Until it is wired into verifyAll, reviewers apply the 
+  selected Java conventions styleguide.
+- Docs changes pass check_docs.py (frontmatter, related, freshness, links, 
+  terms, adr, changelog, orphans), markdownlint-cli2 and cspell.
+- JaCoCo reports coverage per module and aggregated; no minimum coverage is set 
+  (min_coverage 0). PIT mutation testing runs nightly only, never on a pull 
+  request and never as a merge gate.
+- Each new gate lands with a planted violation that fails it, then removed.
+- One approval per pull request; contract, architecture and domain changes also 
+  need the squad passes and operator approval.
+quality_test: Did verifyAll and the docs checks pass on the pull request without
+  any exclusion, skip or relaxed verification?
+schema_version: '1.0'
+scope: operations
+title: Quality Gates
+tooling:
+  build: ./gradlew verifyAll
+  coverage: JaCoCo
+  dependency_verification: gradle/verification-metadata.xml (SHA-256)
+  docs: check_docs.py, markdownlint-cli2, cspell
+  mutation: PIT (nightly workflow only)

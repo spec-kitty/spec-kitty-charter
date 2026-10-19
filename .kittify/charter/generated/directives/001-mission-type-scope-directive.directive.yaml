@@ -1,0 +1,43 @@
+id: PROJECT_001
+schema_version: "1.0"
+title: Mission Type and Work Intake Scope
+intent: >-
+  Work in this repository builds the Java 25 charter offering service that
+  replaces core's Python charter by rewrite (ADR-0008) and owns the charter
+  contract under contracts/charter/ (ADR-0002). Non-trivial work runs as a
+  software-dev spec-kitty mission; a small ad-hoc fix runs as an Op. Both land
+  by pull request. Contract, architecture and domain changes get an adversarial
+  review squad at the plan point and again before merge, followed by operator
+  approval.
+enforcement: required
+scope: >-
+  All change to the service modules under service/, the charter contract under
+  contracts/charter/, the build-logic convention plugins, the docs tooling and
+  the docs. Core's Python charter is out of scope: it stays in core as the
+  oracle and is never changed from here.
+procedures:
+  - Classify the request before starting. Anything beyond a small, contained
+    fix (a new or changed contract operation, a new module or gate, a domain
+    rule, a cross-module refactor) is a software-dev mission
+    (/spec-kitty.specify). A typo, a broken link or a one-line defect fix is
+    an Op opened with spec-kitty dispatch and closed with its real outcome.
+  - Land every change, mission or Op, by pull request; never push to main.
+  - When a mission touches the charter contract, the onion module
+    boundaries of ADR-0006, or the domain model, deploy an adversarial review squad at the
+    plan point and again before merge, record its findings and dispositions in
+    the mission (as research.md section 10 does), then obtain operator
+    approval.
+  - Record any call made without review as an open review item in the mission
+    or in docs/plans/open-questions.md.
+integrity_rules:
+  - A contract, architecture or domain change that merges without both squad
+    passes and an operator approval on record is non-compliant.
+  - Non-trivial work done as an Op to avoid the mission workflow is
+    non-compliant.
+  - A call made without review that is not logged as an open review item is
+    non-compliant.
+validation_criteria:
+  - Every merged pull request traces to a mission under kitty-specs/ or to a
+    closed Op.
+  - Each contract, architecture or domain mission carries plan-point and
+    pre-merge squad findings plus the operator's rulings.

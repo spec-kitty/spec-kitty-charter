@@ -1,0 +1,392 @@
+schema_version: 2.0.0
+governance:
+  testing:
+    min_coverage: 0
+    tdd_required: true
+    framework: junit-jupiter, cucumber-jvm, archunit (./gradlew verifyAll)
+    type_checking: ''
+  quality:
+    linting: java style check on hand-written sources (to be wired into verifyAll); markdownlint-cli2, cspell, check_docs.py
+    pr_approvals: 1
+    pre_commit_hooks: false
+  commits: {}
+  performance:
+    cli_timeout_seconds: 2.0
+    dashboard_max_wps: 100
+  branch_strategy:
+    main_branch: main
+    rules: []
+  charter:
+    selected_paradigms:
+    - behaviour-driven-development
+    - specification-by-example
+    - domain-driven-design
+    - c4-incremental-detail-modeling
+    selected_directives:
+    - DIRECTIVE_001
+    - DIRECTIVE_003
+    - DIRECTIVE_010
+    - DIRECTIVE_025
+    - DIRECTIVE_030
+    - DIRECTIVE_032
+    - DIRECTIVE_034
+    - DIRECTIVE_037
+    - DIRECTIVE_041
+    - DIRECTIVE_051
+    - RECONCILE_CHANGE_SCOPE_TENSIONS
+    - USE_C4_MODEL_TECHNIQUES
+    selected_tactics: []
+    selected_styleguides:
+    - java-conventions
+    - given-when-then-authoring
+    - testing-principles
+    - test-desiderata-and-boundaries
+    selected_toolguides:
+    - gherkin
+    - java-supply-chain
+    - terminology-guard
+    - test-quality-triage
+    selected_procedures: []
+    selected_agent_profiles: []
+    selected_mission_step_contracts: []
+    selected_glossary_packs: []
+    selected_assets: []
+    available_tools:
+    - git
+    - spec-kitty
+    authority_paths: []
+    governance_references: []
+  activations: []
+  enforcement: {}
+directives:
+  directives: []
+catalog:
+  mission: software-dev
+  template_set: software-dev-default
+  languages:
+  - java
+  - python
+  references:
+  - id: DIRECTIVE:DIRECTIVE_001
+    kind: directive
+    title: Architectural Integrity Standard
+    summary: "System designs must maintain clear separation of concerns and well-defined component boundaries so that each part of the system is independently understandable, testable, and replaceable without cascading changes.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-001.md
+  - id: DIRECTIVE:DIRECTIVE_003
+    kind: directive
+    title: Decision Documentation Requirement
+    summary: "Material technical and governance decisions must be captured with enough context that future contributors can understand why a path was chosen and what constraints must remain true.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-003.md
+  - id: DIRECTIVE:DIRECTIVE_010
+    kind: directive
+    title: Specification Fidelity Requirement
+    summary: "Implemented behavior and produced artifacts must remain faithful to approved specifications, with any necessary deviations explicitly documented and reviewed before acceptance.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-010.md
+  - id: DIRECTIVE:DIRECTIVE_025
+    kind: directive
+    title: Boy Scout Rule
+    summary: "Leave touched areas in a better state by default. When an area already modified for the current task carries a failing test, lint, or type issue, fixing it is the default stance — not an optional nicety. Establishing whether a failure is pre-existing routinely costs more effort than simply fixing it, and litigating blame leaves the campground dirtier; so the default is to fix, and to defer only with an explicit rationale. At planning point-cuts (post-spec, post-plan, post-tasks), this rule extends to proactive domain-matched debt folding: if a foldable tech-debt item belongs to the current mission's primary domain, it may be incorporated into the current scope; items outside the domain boundary are filed as issues and deferred, never silently absorbed. See also DIRECTIVE_024 for locality-of-change discipline; DIRECTIVE_040 for structural intervention on recurring bugs.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-025.md
+  - id: DIRECTIVE:DIRECTIVE_030
+    kind: directive
+    title: Test and Typecheck Quality Gate
+    summary: "Code changes must pass the relevant automated tests and static validation gates before handoff so regressions and interface drift are caught early.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-030.md
+  - id: DIRECTIVE:DIRECTIVE_032
+    kind: directive
+    title: Conceptual Alignment
+    summary: "Agents must never assume that shared vocabulary implies shared meaning. Before acting on any task that contains domain-specific, ambiguous, or overloaded terminology, the agent must explicitly state its interpretation of each key term and confirm that interpretation with the requester. Misaligned understanding discovered after implementation is far more costly than a brief clarification exchange before it begins.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-032.md
+  - id: DIRECTIVE:DIRECTIVE_034
+    kind: directive
+    title: Test-First Development
+    summary: "Require test-first behavior across acceptance and implementation layers, selecting tactics based on scope and risk. Tests define the contract before production code is written.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-034.md
+  - id: DIRECTIVE:DIRECTIVE_037
+    kind: directive
+    title: Living Documentation Sync
+    summary: "Behavior-describing artifacts must evolve together. When observable behavior changes, the canonical examples, acceptance checks, narrative specifications, user documentation, glossary terms, code-level documentation, and architecture records must be updated in the same change so no reader is left with a stale picture of the system.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-037.md
+  - id: DIRECTIVE:DIRECTIVE_041
+    kind: directive
+    title: Tests as Scaffold, Not Friction
+    summary: "Tests must protect change, not obstruct it. A test earns its place by failing exactly when the contract is violated and passing otherwise. Tests that pass for the wrong reason (mocked-out behavior, tautological or wiring-only assertions) or fail on correct, behavior-neutral changes (implementation-coupled assertions, line-pinned ratchets) are friction: they hide regressions and pressure engineers to revert good changes.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-041.md
+  - id: DIRECTIVE:DIRECTIVE_051
+    kind: directive
+    title: Supply-Chain Install Safety
+    summary: "Install-time and dependency-resolution decisions must be evaluated against a threat-CLASS model, not a static package denylist. Worm-style supply-chain compromises (credential-harvesting postinstall scripts, typosquatted or namespace-confused packages, rapid-republish attacks during an active incident window) recur across ecosystems faster than any hand-maintained list of bad package/version pairs can track. Agents and mission workflows must therefore default to five ecosystem-neutral threat-class controls for every dependency addition or upgrade, stated once here, never restated below, and never restated by any other artifact that cites this directive: (1) registry authenticity — the resolved package and version must come from the ecosystem's approved official registry, not an unexpected mirror or namespace; (2) package freshness — first-publish and latest-publish/update timestamps must be surfaced so an operator can see when a version is suspiciously new or was substantially reworked; (3) deny-by-default lifecycle-script approval — install-time hook scripts are never auto-approved and must be explicitly allowlisted with a documented justification when required for a legitimate native build; (4) lockfile-driven installs — the ecosystem's lockfile is the source of truth for a reproducible install, and automation uses a frozen/CI install mode so an unreviewed dependency-tree change cannot silently slip in; (5) incident-list and IoC/persistence posture — known active-incident package/version lists and indicator-of-compromise or persistence patterns (unexpected install-script network calls, credential/token exfiltration attempts, self-propagating install behavior) are treated as class-level risk signals to check for, with CAS/vendor incident feeds as the external authority of record — this directive never hardcodes specific incident package names or versions as core truth, because that list changes faster than doctrine can be re-authored. The concrete, per-ecosystem commands and file names for these five controls live in the ecosystem-neutral `supply-chain-install-safety` tactic and the per-ecosystem toolguides it points to (for example the JavaScript/TypeScript and Python toolguides), never in this directive.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-directive-051.md
+  - id: DIRECTIVE:NO_FULL_HEAVY_SUITES_IN_MISSION
+    kind: directive
+    title: No Full Runs of Computationally Heavy Suites in Mission Work
+    summary: "During mission work — implement, review, fold/rework, and closeout/pre-PR — never run a full-directory or whole-repo sweep of a computationally heavy test suite: the architectural suite (`tests/architectural/` as a whole), an end-to-end suite (`tests/e2e/`, a full `tests/integration/` sweep), a performance/stress/timing suite (`-m performance|stress|timing`, the `ci-nightly`-tier run), or `make test-full`. These runs take 20+ minutes per lane, contend with other parallel lanes on the same machine, and duplicate a run CI already owns authoritatively (the module test matrix, the nightly full/performance/interpreter run, and the aggregate gate). Run the targeted set instead: the tests for the files the change touches, the SPECIFIC architectural gate files that guard the change (named, not the whole directory), and the owning module's fast tier — then record the exact commands and pass/fail counts in the PR. This directive supersedes any guidance that reads as \"run tests/architectural/ in full for cross-cutting changes\" when the actor is doing mission work (implement/review/fold/ closeout); that guidance is retargeted to CI's cross-cutting lane, not to a mission agent's local validation pass.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-no-full-heavy-suites-in-mission.md
+  - id: DIRECTIVE:PROJECT_001
+    kind: directive
+    title: Mission Type and Work Intake Scope
+    summary: Work in this repository builds the Java 25 charter offering service that replaces core's Python charter by rewrite (ADR-0008) and owns the charter contract under contracts/charter/ (ADR-0002). Non-trivial work runs as a software-dev spec-kitty mission; a small ad-hoc fix runs as an Op. Both land by pull request. Contract, architecture and domain changes get an adversarial review squad at the plan point and again before merge, followed by operator approval.
+    source_path: ''
+    local_path: _LIBRARY/directive-project-001.md
+  - id: DIRECTIVE:PROJECT_002
+    kind: directive
+    title: Risk Appetite and Non-Negotiable Failures
+    summary: "Two failures are the costliest and are never traded for speed, scope or convenience: (1) the service answering governance content that differs from core's Python charter oracle (the wire format may differ, but the data must match closely enough that core does not break); (2) the service not honoring the OpenAPI contract, or an incompatible contract change reaching core. Also never traded away: spec-kitty-open-packs YAML content always round-trips without loss or rewrite, and no unverified dependency enters the build. No exception is granted for the first two failures."
+    source_path: ''
+    local_path: _LIBRARY/directive-project-002.md
+  - id: DIRECTIVE:QA_003
+    kind: directive
+    title: QA No Fake Green
+    summary: "A test report/CI run record must never read greener than the run. Forbidden: did-not-run into absent, timeout into failed, retries into final attempt, skipped into passed, inapplicable into either. Every run's verdict, incl. automated ones, is recomputed from enumerated evidence, not a summary line.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-qa-003.md
+  - id: DIRECTIVE:RECONCILE_CHANGE_SCOPE_TENSIONS
+    kind: directive
+    title: Reconciling Change-Scope Tensions
+    summary: "Locality of Change (DIRECTIVE_024), the Boy Scout Rule (DIRECTIVE_025), and the Change Apply Smallest Viable Diff tactic each bound the size of a change from a different angle, and by design they are not fully compatible: Locality of Change minimizes blast radius, Boy Scout Rule licenses opportunistic in-place improvement of touched areas, and smallest-viable-diff minimizes the diff itself. This directive gives an operator or agent a single place to weigh the three together on a given change, instead of applying each in isolation, so the default doctrine pack stays coherent even though the underlying tension between the three rules is real and intentionally left unresolved at the rule level.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-reconcile-change-scope-tensions.md
+  - id: DIRECTIVE:USE_C4_MODEL_TECHNIQUES
+    kind: directive
+    title: Use C4 Model Techniques
+    summary: "Document and reason about a system's architecture with the C4 model's progressive zoom — System Context, then Container, then Component, then Code — so every diagram serves one audience at one level of detail instead of a single all-in-one picture that serves nobody. Draw only the levels that earn their keep: a Context diagram is almost always worth it, Container diagrams for systems with more than one deployable unit, Component diagrams only for containers with non-obvious internal structure, and Code-level diagrams only when they can be generated cheaply. Keep every diagram in a text-based, version-controlled form (Mermaid or PlantUML diagram-as-code, not a binary export) so it diffs, reviews, and travels with the code it describes. This directive is an extensible HUB for architecture-documentation techniques: the C4 zoom-in workflow, the diagram review checklist, the diagram-as-code toolguides, the drill-down abstraction-level discipline, and code/documentation analysis for boundary discovery all hang off it, and further techniques are wired in as they are supplied. It governs HOW to document and reason about architecture at the right zoom level; the concrete techniques it recommends are the suggested members, each chosen for the specific documentation need it serves.\n"
+    source_path: ''
+    local_path: _LIBRARY/directive-use-c4-model-techniques.md
+  - id: PARADIGM:behaviour-driven-development
+    kind: paradigm
+    title: Behaviour-Driven Development
+    summary: "BDD is a collaboration practice, not a testing methodology. It operates through three cyclical phases: Discovery (structured Three Amigos conversations — product owner, developer, tester — produce concrete, validated behavioral examples before any code is written), Formulation (validated examples are expressed in plain-language Given/When/Then specifications that serve as the canonical behavioral contract), and Automation (formulated specifications are connected to executable tests that fail when the system diverges from the spec, producing living documentation that cannot become stale). BDD does not replace unit testing — it sits above the test pyramid and is reserved for behaviors with genuine cross-functional business value. The Three Amigos is the minimum collaboration unit: one person representing the business need, one who will build it, one who will verify it. Distinct from Specification by Example (the broader technique); BDD mandates the collaboration process and executable automation as the canonical specification form.\n"
+    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/paradigms/behaviour-driven-development.paradigm.yaml
+    local_path: _LIBRARY/paradigm-behaviour-driven-development.md
+  - id: PARADIGM:c4-incremental-detail-modeling
+    kind: paradigm
+    title: C4 Incremental Detail Modeling
+    summary: "Architecture communication through progressive zoom -- from the broadest system landscape down to individual components -- so that each audience sees the right level of detail without drowning in irrelevance. Inspired by Simon Brown's C4 model, the approach defines four hierarchical abstraction levels (Software System, Container, Component, Code) and a small set of supporting diagram types (System Landscape, Dynamic, Deployment). Each level answers a different question for a different stakeholder: Level 1 (Context) shows actors and boundaries for business sponsors; Level 2 (Containers) shows deployable units and technology choices for architects and DevOps; Level 3 (Components) shows logical structure for developers; Level 4 (Code) shows implementation detail only when automated generation makes it cheap. The paradigm is notation- independent and tooling-independent -- Mermaid, PlantUML, Structurizr, or whiteboard sketches all qualify, provided every diagram carries a title, a legend, labelled elements with descriptions, and labelled unidirectional relationships. The guiding heuristic: produce only the levels that add value and keep each diagram reviewable in under five minutes.\n"
+    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/paradigms/c4-incremental-detail-modeling.paradigm.yaml
+    local_path: _LIBRARY/paradigm-c4-incremental-detail-modeling.md
+  - id: PARADIGM:domain-driven-design
+    kind: paradigm
+    title: Domain-Driven Design
+    summary: "Software design guided by a deep model of the business domain. Strategic design decomposes a system into Bounded Contexts connected through explicit Context Mapping patterns (ACL, OHS, Shared Kernel, Published Language, etc.). Within each context a Ubiquitous Language keeps code, model, and domain expert communication aligned. Tactical patterns (Aggregates, Entities, Value Objects, Domain Events, Repositories, Domain Services) enforce invariants at the model boundary. DDD treats the domain model as the primary artifact — code is a direct expression of that model, not a translation layer above a database schema or UI framework.\n"
+    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/paradigms/domain-driven-design.paradigm.yaml
+    local_path: _LIBRARY/paradigm-domain-driven-design.md
+  - id: PARADIGM:specification-by-example
+    kind: paradigm
+    title: Specification by Example
+    summary: "Shared understanding of behavior is built from concrete, business-readable examples that become the canonical source of truth for requirements, acceptance checks, and living documentation. Teams refine examples collaboratively, turn stable examples into executable acceptance tests, and keep narrative specs in sync whenever behavior changes.\n"
+    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/paradigms/specification-by-example.paradigm.yaml
+    local_path: _LIBRARY/paradigm-specification-by-example.md
+  - id: PROCEDURE:adversarial-squad-deployment
+    kind: procedure
+    title: Adversarial Squad Deployment
+    summary: "Deploy a small, bounded set of profile-loaded subagents in parallel at high-leverage review point-cuts so independent doctrine lenses converge on findings no single reviewer would catch. Turns review from one perspective into a cheap adversarial panel that resists laziness, accidental-pass, and single-lens blind spots. This procedure is the single owner of when, why, who, and how — squad size is not a requirement; the numbers are examples of squad types. The point is that different profiles are selected depending on the task at hand. Optional and charter- or memory-activated — it enriches the flow, it does not gate it.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-adversarial-squad-deployment.md
+  - id: PROCEDURE:charter-offering-scenario-extraction
+    kind: procedure
+    title: Charter-Offering Scenario Extraction (promise-first BDD features from docs, with e2e as evidence)
+    summary: "The maintainer method for building the consumer-facing BDD feature/scenario suite for the charter offering domain ahead of the spec-kitty-charter extraction. The suite is the behavioural contract a user relies on — \"what should the system do for me\" — and it becomes the conformance net that survives the repo split (the offering-first extraction's red-first contract-conformance phase). The method is promise-first: scenarios are derived from the charter's stated guarantees (docs, ADRs, FR docstrings, --help, the charter.offering.api seam), and the existing nightly e2e and fast tests are read only as EVIDENCE that a promise already holds and as a source of concrete commands and outcomes — never transcribed into Gherkin. Every scenario is authored to the feature-and-scenario-authoring styleguide and lands in the existing tests/scenarios Gherkin + Cucumber-JVM scaffold, gated per-PR by the scenario contract and run nightly cross-OS.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-charter-offering-scenario-extraction.md
+  - id: PROCEDURE:cloud-session-dispatch
+    kind: procedure
+    title: Cloud Session Dispatch (hand tracker issues to an autonomous cloud runner)
+    summary: "The maintainer workflow for handing one or more spec-kitty/spec-kitty tracker issues to a fresh Claude Code cloud session that runs a governed Spec Kitty mission end to end and delivers a draft PR. The runner starts from nothing, so the dispatch prompt is its whole world. This procedure makes that prompt complete: branch off main, set up the latest CLI, align to the charter, ground in the code before specifying, bind the doctrine for the kind of work, and deliver through the canonical mission loop to a draft PR the operator merges. It is the substance behind the operator-local `spk-dispatch-cloud` skill. Per ADR 2026-09-27-1, the skill stays a thin wrapper that requires this procedure.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-cloud-session-dispatch.md
+  - id: PROCEDURE:executive-debrief-generation
+    kind: procedure
+    title: Executive Debrief Generation
+    summary: "The maintainer workflow for producing an executive debrief — a \"WTF happened since <T>\" window report or a \"WTF is up with <milestone>\" scope report — over one or more repositories. It is a three-stage pipeline: a deterministic collector reads the facts from GitHub, the maintainer synthesizes them under the executive-debrief styleguide, and a renderer produces the branded PDF. The styleguide defines two layouts: a one-pager (a fixed slot contract filled into the debrief template) and a long-form debrief (one Markdown file rendered by the spec-kitty-branded-pdf generator). It is lighter and more data-driven than the project-evolution-postmortem, and it is run as a governed dispatch Op, not a Mission (DIRECTIVE_053).\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-executive-debrief-generation.md
+  - id: PROCEDURE:landing-contributor-prs
+    kind: procedure
+    title: Landing Contributor PRs
+    summary: "The maintainer workflow for taking a contributor PR from \"open with red CI\" to \"merge-ready\": sized up, claimed, rebased onto the current main of the canonical repository, every red check adjudicated, fixes added to the contributor branch, independently reviewed, documented, and handed off with evidence, so the operator can merge without re-deriving the adjudication. This procedure holds the rules; docs/development/how-to/pr-landing.md holds the command-level detail. The `land-pr` pack skill is the thin entry point to this procedure. Terms used here. The operator is the human in charge of the run: the maintainer who invoked it. The canonical remote is the git remote that points at `spec-kitty/spec-kitty`; its name differs per clone, so find it with `git remote -v`. A landing fix (called a \"fold\" in the runbook) is one commit that the landing pass adds to the PR branch. A companion change is an edit that a gate requires next to your change, such as a regenerated index or a removed exclude entry. A review squad is a small set of reviewer subagents, each given a different focus; adversarial-squad-deployment owns how one is run. The landing queue is the set of PRs the operator has asked maintainers to land in this run, in the order they will be landed.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-landing-contributor-prs.md
+  - id: PROCEDURE:memory-curation-and-escalation
+    kind: procedure
+    title: Agent-Memory Curation and Knowledge Escalation
+    summary: "The maintainer workflow for keeping local agent-memory a durable asset rather than a landfill, and for routing each learned fact to its correct home. Local agent-memory (Claude Code's per-project `~/.claude/projects/.../memory/` store) accumulates fast and drifts: mission/PR-status notes pile up, the same lesson is written many times, and the always-loaded index silently truncates once it exceeds its load budget. This procedure classifies every memory into one of four dispositions — drop a duplicate, prune a stale status note, keep a durable gotcha, or escalate a repo-invariant fact into the repository — and applies the placement discipline that keeps each kind where it belongs. It is operator-guided: the maintainer sets the boundaries and nothing is destroyed unilaterally. It complements, and enforces at scale, the two standing rules in the memory-curation-retention-policy (mission-status never enters always-loaded memory; project memories age out at merge).\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-memory-curation-and-escalation.md
+  - id: PROCEDURE:project-evolution-postmortem
+    kind: procedure
+    title: Project Technical-Evolution Postmortem
+    summary: "The maintainer workflow for producing a project-technical-evolution postmortem: a report that describes how the project moved over a cycle — architecture and roadmap currency, code and design quality, bug trend, contribution distribution, velocity, community-versus-maintainer authorship, and the friction the Missions themselves surfaced. It is driven by parallel profile-loaded research squads whose outputs are synthesized into one least-technical-first report addressed to maintainers, stakeholders, and investors at once. The deliverable is an evidence-backed narrative every figure of which is attributed to its source; it is not a status dump and not a roadmap.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-project-evolution-postmortem.md
+  - id: PROCEDURE:semi-auto-delivery
+    kind: procedure
+    title: Semi-Auto Delivery (a governed autonomous run with pause-and-escalate)
+    summary: "The runner-side standing orders for a semi-autonomous governed delivery run: one agent — a local maintainer session or a dispatched cloud runner — takes a tracker issue, or a coherent issue-set, from orientation through to a draft PR the operator merges, working on its own but PAUSING to escalate the decisions that are the operator's to make. \"Semi-auto\" is the whole point: autonomous inside the agreed scope, never silent on a decision that changes something outside it. These standing orders are what a dispatch brief or a local invocation would otherwise hand-type every single time; a path that binds this procedure by reference stops re-authoring them. It is the substance behind the kitty-semi-auto skill in both of its modes. It is mode-agnostic: the conduct of the run is identical whether executed locally or in a cloud session. cloud-session-dispatch owns how the dispatch prompt is written and how the runner is spawned; this procedure owns how the run is then conducted.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-semi-auto-delivery.md
+  - id: PROCEDURE:test-suite-quality-assessment
+    kind: procedure
+    title: Test-Suite Quality Assessment (static triage, domain squads, shrink-only follow-through)
+    summary: "The maintainer workflow for assessing the quality of Spec Kitty's own test corpus, either the tests added in a recent window or the whole suite. The corpus is too large to read end to end (over three thousand modules), so the assessment runs cheapest-first: a static triage pass ranks every file without running a single test, then profile-loaded review squads read only the top of each domain's ranked list against the Test Desiderata, and every confirmed finding lands as a fix, a retirement with its covering guard named, or a shrink-only baseline entry. The deliverable is a set of per-domain ledgers with a verdict for each reviewed file and the issues or PRs that act on them; it is not a report that restates the flags.\n"
+    source_path: ''
+    local_path: _LIBRARY/procedure-test-suite-quality-assessment.md
+  - id: STYLEGUIDE:documentation-policy-style-guide
+    kind: styleguide
+    title: Documentation Policy
+    summary: Docs follow doc-kitty (ADR-0003) and change in the same pull request as the behavior they describe.
+    source_path: ''
+    local_path: _LIBRARY/styleguide-documentation-policy-style-guide.md
+  - id: STYLEGUIDE:given-when-then-authoring
+    kind: styleguide
+    title: Given-When-Then Scenario Authoring
+    summary: 'A scenario has three parts: Given (the precondition/context), When (the single trigger), Then (the observable outcome). This is the same behavioural skeleton the specs in this repository already use — one scenario describes one behaviour.'
+    source_path: ''
+    local_path: _LIBRARY/styleguide-given-when-then-authoring.md
+  - id: STYLEGUIDE:java-conventions
+    kind: styleguide
+    title: Java Conventions Styleguide
+    summary: 'Naming conventions: classes and interfaces in PascalCase; methods, fields, and local variables in camelCase; constants in UPPER_SNAKE_CASE; packages in lowercase dot-separated segments.'
+    source_path: ''
+    local_path: _LIBRARY/styleguide-java-conventions.md
+  - id: STYLEGUIDE:java-style-guide
+    kind: styleguide
+    title: Java Style Guide
+    summary: Java 25 for toolchain and release; Spring Boot 4; Gradle 9 with the build-logic convention plugins. CI never builds with -Pcharter.javaVersion=21.
+    source_path: ''
+    local_path: _LIBRARY/styleguide-java-style-guide.md
+  - id: STYLEGUIDE:python-style-guide
+    kind: styleguide
+    title: Python Style Guide
+    summary: No Python ships from this repository. Python here is limited to the docs tooling in scripts/docs/ (check_docs.py and its tests) and core's contract tools that CI runs from a pinned checkout of core.
+    source_path: ''
+    local_path: _LIBRARY/styleguide-python-style-guide.md
+  - id: STYLEGUIDE:quality-gates-style-guide
+    kind: styleguide
+    title: Quality Gates
+    summary: ./gradlew verifyAll on Java 25 passes before merge - contract validation and generation, unit tests, the ArchUnit gate, the BDD scenarios and the open-packs round trip - with strict SHA-256 dependency verification.
+    source_path: ''
+    local_path: _LIBRARY/styleguide-quality-gates-style-guide.md
+  - id: STYLEGUIDE:test-desiderata-and-boundaries
+    kind: styleguide
+    title: Test Desiderata and Clear Test Boundaries
+    summary: 'Desiderata are trade-offs: choose which properties a given test optimizes; do not pretend one test maximizes all twelve at once.'
+    source_path: ''
+    local_path: _LIBRARY/styleguide-test-desiderata-and-boundaries.md
+  - id: STYLEGUIDE:testing-principles
+    kind: styleguide
+    title: Testing Principles Styleguide
+    summary: 'Fast: tests execute quickly enough that running them after every small change is not a burden.'
+    source_path: ''
+    local_path: _LIBRARY/styleguide-testing-principles.md
+  - id: STYLEGUIDE:testing-style-guide
+    kind: styleguide
+    title: Testing Style Guide
+    summary: Test first - a failing contract scenario under contracts/charter/scenarios/ or a failing unit test precedes production code.
+    source_path: ''
+    local_path: _LIBRARY/styleguide-testing-style-guide.md
+  - id: TEMPLATE_SET:software-dev-default
+    kind: template_set
+    title: software-dev-default
+    summary: Build high-quality software with structured workflows and test-driven development
+    source_path: ${SPEC_KITTY_PACKS_ROOT}/built-in/missions/software-dev/mission.yaml
+    local_path: _LIBRARY/template-set-software-dev-default.md
+  - id: TOOLGUIDE:gherkin
+    kind: toolguide
+    title: The Gherkin Scenario Language
+    summary: "Reference for the Gherkin DSL itself — the language, not any runner. Covers Feature, Background, Scenario, Scenario Outline, the Given/When/Then/And/But steps, Examples tables, tags, and doc strings / data tables. Explicitly scoped to the notation only; the runner that executes Gherkin (Cucumber, behave, SpecFlow, and others) is out of scope and named only to draw the boundary.\n"
+    source_path: ''
+    local_path: _LIBRARY/toolguide-gherkin.md
+  - id: TOOLGUIDE:java-supply-chain
+    kind: toolguide
+    title: Java Supply-Chain Install Safety
+    summary: "Ecosystem-specific commands and file names for the Java Maven/Gradle stack: Maven Central resolution, checksum verification against the serving repository (Maven) or against committed hashes (Gradle), and Gradle's lockfile-driven reproducible installs. This guide carries the mechanics; the `supply-chain-install-safety` tactic (ecosystem-neutral) owns the checklist shape and the evidence a reviewer requires. Grounded in the existing Java profile guidance for Maven Central resolution and transitive-CVE exclusion, which this guide extends to the full five-control checklist.\n"
+    source_path: ''
+    local_path: _LIBRARY/toolguide-java-supply-chain.md
+  - id: TOOLGUIDE:terminology-guard
+    kind: toolguide
+    title: Terminology Guard
+    summary: "Describes when and how to invoke Spec Kitty's own legacy-terminology guard (tests/architectural/test_no_legacy_terminology.py) before pushing changes to src/charter/offering/ or user-facing prose. The guard catches superseded terms that have reappeared in active source and fails CI if any are found. Maintainer-only: it names a test that exists only in the Spec Kitty repository.\n"
+    source_path: ''
+    local_path: _LIBRARY/toolguide-terminology-guard.md
+  - id: TOOLGUIDE:test-quality-triage
+    kind: toolguide
+    title: Test-Quality Triage (static scan of the pytest corpus)
+    summary: "How to run the maintainer-only static triage asset that opens a test-suite quality assessment. It parses every test module with ast, runs no tests, flags weak-oracle and implementation-coupling patterns per test, attaches git provenance (when a file was added, by which commit, when it was last touched), and writes a ranked worklist plus one resumable review ledger per domain. Covers the make target, the direct invocation through the `charter pack asset` resolver, the window mode (--since), what each flag code means and how it maps to the review rubric, how to read the outputs, and the known false positives that make every flag a candidate rather than a verdict.\n"
+    source_path: ''
+    local_path: _LIBRARY/toolguide-test-quality-triage.md
+  - id: USER:PROJECT_PROFILE
+    kind: user_profile
+    title: User Project Profile
+    summary: Project-specific interview answers captured for charter compilation.
+    source_path: .kittify/charter/interview/answers.yaml
+    local_path: _LIBRARY/user-project-profile.md
+overrides: {}
+metadata:
+  generated_at: '2026-10-18T16:03:27Z'
+  bundle_schema_version: 2
+mission_type_activations:
+- software-dev
+- documentation
+- research
+- plan
+activated_directives:
+- 001-architectural-integrity-standard
+- 003-decision-documentation-requirement
+- 010-specification-fidelity-requirement
+- 025-boy-scout-rule
+- 030-test-and-typecheck-quality-gate
+- 032-conceptual-alignment
+- 034-test-first-development
+- 037-living-documentation-sync
+- 041-tests-as-scaffold-not-friction
+- 051-supply-chain-install-safety
+- no-full-heavy-suites-in-mission
+- qa-003-no-fake-green
+- reconcile-change-scope-tensions
+- use-c4-model-techniques
+- 001-mission-type-scope-directive
+- 002-risk-appetite-directive
+activated_paradigms:
+- behaviour-driven-development
+- c4-incremental-detail-modeling
+- domain-driven-design
+- specification-by-example
+activated_styleguides:
+- given-when-then-authoring
+- java-conventions
+- test-desiderata-and-boundaries
+- testing-principles
+- documentation-policy-style-guide
+- java-style-guide
+- python-style-guide
+- quality-gates-style-guide
+- testing-style-guide
+activated_toolguides:
+- gherkin
+- java-supply-chain
+- terminology-guard
+- test-quality-triage
+activated_procedures:
+- adversarial-squad-deployment
+- charter-offering-scenario-extraction
+- cloud-session-dispatch
+- executive-debrief-generation
+- landing-contributor-prs
+- memory-curation-and-escalation
+- project-evolution-postmortem
+- semi-auto-delivery
+- test-suite-quality-assessment
+activated_glossary_packs:
+- spec-kitty-core
+- spk-internal

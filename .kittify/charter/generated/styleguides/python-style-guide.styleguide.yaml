@@ -1,0 +1,33 @@
+id: python-style-guide
+schema_version: "1.0"
+title: Python Style Guide
+scope: code
+applies_to_languages:
+  - python
+principles:
+  - No Python ships from this repository. Python here is limited to the docs
+    tooling in scripts/docs/ (check_docs.py and its tests) and core's
+    contract tools that CI runs from a pinned checkout of core.
+  - Dependencies of the docs tooling are pinned exactly in
+    scripts/docs/requirements.txt; a change to them follows the same
+    supply-chain rules as the Java build (settled versions, no AI-use
+    clauses).
+  - Core's contract tools are run, never copied or edited here; a needed
+    change is filed upstream in core.
+  - A change to a check in check_docs.py lands with a unit test under
+    scripts/docs/tests/ and, when it adds a rule, a matching entry in
+    docs/_meta/doc-rules.yaml.
+patterns:
+  - name: Test with the check
+    description: Each check function in check_docs.py has tests in
+      scripts/docs/tests/test_check_docs.py covering a passing and a failing
+      page.
+anti_patterns:
+  - name: Vendored core tool
+    description: Copying a core contract script into this repository forks the
+      oracle tooling.
+    bad_example: "cp ../spec-kitty/contracts/tools/lint_check.py scripts/"
+    good_example: "Run the tool from the pinned core checkout in CI."
+quality_test: >-
+  Is every Python change confined to scripts/docs/, pinned, and covered by a
+  test in scripts/docs/tests/?

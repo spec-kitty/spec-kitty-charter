@@ -1,0 +1,23 @@
+adapter_id: generated
+adapter_notes: 
+  generated-artifact:.kittify/charter/generated/tactics/how-we-apply-reconcile-change-scope-tensions.tactic.yaml
+adapter_version: 1.0.0
+artifact_content_hash: 
+  28a187fdd21045c04018d254d55571e9071228f0bde62c9bded3b5cae7230e7b
+artifact_kind: tactic
+artifact_slug: how-we-apply-reconcile-change-scope-tensions
+artifact_urn: tactic:how-we-apply-reconcile-change-scope-tensions
+corpus_snapshot_id: generic-v1.0.0
+evidence_bundle_hash: 
+  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
+generated_at: '2026-10-18T15:56:15.089957+00:00'
+inputs_hash: 1f22783566422e537c5c37ccbae0aeb4317f6edb6e7338ac9711b913133b963b
+produced_at: '2026-10-18T15:58:11.499864+00:00'
+schema_version: '2'
+source_input_ids:
+- directive:RECONCILE_CHANGE_SCOPE_TENSIONS
+source_section: selected_directives
+source_urns:
+- directive:RECONCILE_CHANGE_SCOPE_TENSIONS
+synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesizer_version: 4.0.0rc8
