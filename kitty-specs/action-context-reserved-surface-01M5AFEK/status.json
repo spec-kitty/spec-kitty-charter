@@ -1,0 +1,123 @@
+{
+  "event_count": 67,
+  "last_event_id": "01M5AS3NZXMA3Y71Z519V99DD4",
+  "materialized_at": "2026-10-19T19:09:43.805315+00:00",
+  "mission_number": "",
+  "mission_slug": "action-context-reserved-surface-01M5AFEK",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 6,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS35Y5QV8Q4JY2JGV63BW5",
+      "last_transition_at": "2026-10-19T19:09:27.365761+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP01-action-context-walk/review-cycle-2.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP01-action-context-walk/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 14157,
+      "shell_pid_created_at": "1792429784.56"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS38W0E639NQ92VE8XSZTW",
+      "last_transition_at": "2026-10-19T19:09:30.368267+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP02-service-identity-and-fingerprint/review-cycle-1.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP02-service-identity-and-fingerprint/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 20090,
+      "shell_pid_created_at": "1792430538.14"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS3EZJB3FVEZZ80DER2GW4",
+      "last_transition_at": "2026-10-19T19:09:36.626559+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP03-consistent-reads-and-refusal-pins/review-cycle-2.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP03-consistent-reads-and-refusal-pins/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 1084,
+      "shell_pid_created_at": "1792432434.5"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS3J06JVW15NSCWE4ANVNR",
+      "last_transition_at": "2026-10-19T19:09:39.718892+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP04-worktree-guard-and-refresh/review-cycle-3.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP04-worktree-guard-and-refresh/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 17854,
+      "shell_pid_created_at": "1792435163.76"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS3NZXMA3Y71Z519V99DD4",
+      "last_transition_at": "2026-10-19T19:09:43.805315+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP05-records-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP05-records-and-docs/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 26218,
+      "shell_pid_created_at": "1792436458.38"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5AS3C093ZV3W6972Y4WSRJW",
+      "last_transition_at": "2026-10-19T19:09:33.577542+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/action-context-reserved-surface-01M5AFEK-coord/kitty-specs/action-context-reserved-surface-01M5AFEK/tasks/WP06-walk-evidence/review-cycle-1.md",
+        "reference": "review-cycle://action-context-reserved-surface-01M5AFEK/WP06-walk-evidence/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 20090,
+      "shell_pid_created_at": "1792430538.14"
+    }
+  }
+}

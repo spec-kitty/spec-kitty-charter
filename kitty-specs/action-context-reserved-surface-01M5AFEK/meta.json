@@ -1,0 +1,35 @@
+{
+  "accept_commit": "7afa3572c53d746e20c08941c02947eb7f39846d",
+  "acceptance_history": [
+    {
+      "accept_commit": "7afa3572c53d746e20c08941c02947eb7f39846d",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-19T19:08:57.532664+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "85a96f685a2e77627ae488f379ce920082e6fdb6"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-19T19:08:57.532664+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "85a96f685a2e77627ae488f379ce920082e6fdb6",
+  "baseline_merge_commit": "1d94a90055aa813137982ac317e37a64f088bb87",
+  "created_at": "2026-10-19T16:20:56.669819+00:00",
+  "flattened": true,
+  "friendly_name": "Action-context read and the reserved 1.0 surface",
+  "merged_at": "2026-10-19T19:09:51.361790+00:00",
+  "merged_commit": "c2b0df8e4543c4cdd272419054c6fe4aa9763a7d",
+  "mid8": "01M5AFEK",
+  "mission_id": "01M5AFEKERFFB4F0ZKMS40V51A",
+  "mission_number": 3,
+  "mission_slug": "action-context-reserved-surface-01M5AFEK",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core reads action-scoped governance from the charter after the cutover. Today the contract answers only the first slice of that read, and several 1.0 reservations (depth, service version, fingerprint inputs, worktree token, post-write refresh, reserved refusal codes) are shaped wrong or unpinned. Once 1.0 is tagged, fixing them is a breaking change, so this mission settles them first (issues #95 and #113).",
+  "purpose_tldr": "Decide and shape how the charter answers the governance for one action, and fix the reserved parts of contract 1.0 before its first release.",
+  "slug": "action-context-reserved-surface-01M5AFEK",
+  "status_phase": "1",
+  "target_branch": "feat/action-context-reserved-surface",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-19T16:50:49.114329+00:00"
+}

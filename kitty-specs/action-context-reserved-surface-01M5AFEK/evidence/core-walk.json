@@ -1,0 +1,1684 @@
+{
+ "actions": {
+  "action:documentation/accept": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/audit": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/design": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_032",
+     "tactic:adr-drafting-workflow",
+     "tactic:anti-corruption-layer",
+     "tactic:decision-marker-capture",
+     "tactic:domain-event-capture",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:review-intent-and-risk-first",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/discover": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:stakeholder-alignment",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:stakeholder-alignment",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template",
+     "template:stakeholder-persona-template",
+     "template:system-context-canvas-template"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:stakeholder-alignment",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template",
+     "template:stakeholder-persona-template",
+     "template:system-context-canvas-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/generate": {
+   "0": {
+    "artifacts": [
+     "asset:common-docs-structural-lint",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_042",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "asset:common-docs-structural-lint",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_042",
+     "styleguide:common-docs",
+     "tactic:common-docs-find",
+     "tactic:common-docs-scaffold",
+     "tactic:common-docs-write",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "asset:common-docs-structural-lint",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_042",
+     "styleguide:common-docs",
+     "tactic:common-docs-find",
+     "tactic:common-docs-scaffold",
+     "tactic:common-docs-write",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/publish": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/retrospect": {
+   "0": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:documentation/validate": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:documentation-curation-audit",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:plan/plan": {
+   "0": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [],
+    "glossary_scopes": []
+   }
+  },
+  "action:plan/research": {
+   "0": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [],
+    "glossary_scopes": []
+   }
+  },
+  "action:plan/review": {
+   "0": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [],
+    "glossary_scopes": []
+   }
+  },
+  "action:plan/specify": {
+   "0": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/gathering": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_037",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/methodology": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/output": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_037",
+     "tactic:requirements-validation-workflow",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/retrospect": {
+   "0": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/scoping": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:research/synthesis": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "tactic:decision-marker-capture",
+     "tactic:premortem-risk-identification",
+     "tactic:requirements-validation-workflow",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/implement": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:trunk-based",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:legacy-codebase-triage",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "tactic:acceptance-test-first",
+     "tactic:ammerse-impact-analysis",
+     "tactic:autonomous-operation-protocol",
+     "tactic:black-box-integration-testing",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:connascence-analysis",
+     "tactic:dependency-hygiene",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:focused-function-complexity-check",
+     "tactic:forensic-repository-audit",
+     "tactic:function-over-form-testing",
+     "tactic:generated-code-stewardship",
+     "tactic:input-validation-fail-fast",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:usage-examples-sync",
+     "toolguide:efficient-local-tooling"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "directive:DIRECTIVE_052",
+     "directive:DISCIPLINED_REFACTORING",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY",
+     "paradigm:brownfield-onboarding",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:specification-by-example",
+     "paradigm:trunk-based",
+     "procedure:adversarial-squad-deployment",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:example-mapping-workshop",
+     "procedure:legacy-codebase-triage",
+     "procedure:mission-wrap-up-sequence",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "styleguide:given-when-then-authoring",
+     "styleguide:python-conventions",
+     "styleguide:test-desiderata-and-boundaries",
+     "styleguide:testing-principles",
+     "styleguide:tiered-standards",
+     "tactic:acceptance-criteria-non-vacuity",
+     "tactic:acceptance-test-first",
+     "tactic:adversarial-qa-handoff",
+     "tactic:ammerse-impact-analysis",
+     "tactic:atdd-adversarial-acceptance",
+     "tactic:autonomous-operation-protocol",
+     "tactic:avoid-gold-plating",
+     "tactic:bdd-scenario-formulation",
+     "tactic:black-box-integration-testing",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:clean-linear-commit-history",
+     "tactic:code-review-incremental",
+     "tactic:connascence-analysis",
+     "tactic:dependency-hygiene",
+     "tactic:development-bdd",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:focused-function-complexity-check",
+     "tactic:forensic-repository-audit",
+     "tactic:formalized-constraint-testing",
+     "tactic:frozen-baseline-shrink-only-ratchet",
+     "tactic:function-over-form-testing",
+     "tactic:generated-code-stewardship",
+     "tactic:input-validation-fail-fast",
+     "tactic:no-parallel-duplicate-test-runs",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-guard-clauses-before-polymorphism",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:review-intent-and-risk-first",
+     "tactic:reviewer-implementer-role-separation",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:test-pyramid-progression",
+     "tactic:testing-select-appropriate-level",
+     "tactic:usage-examples-sync",
+     "tactic:work-package-completion-validation",
+     "toolguide:efficient-local-tooling",
+     "toolguide:gherkin",
+     "toolguide:git-agent-commit-signing",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-supply-chain",
+     "toolguide:sonar"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_032",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_041",
+     "directive:DIRECTIVE_043",
+     "directive:DIRECTIVE_044",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "directive:DIRECTIVE_052",
+     "directive:DISCIPLINED_REFACTORING",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY",
+     "paradigm:behaviour-driven-development",
+     "paradigm:brownfield-onboarding",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:specification-by-example",
+     "paradigm:trunk-based",
+     "procedure:adversarial-squad-deployment",
+     "procedure:bdd-scenario-lifecycle",
+     "procedure:development-assist-test-cleanup",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:example-mapping-workshop",
+     "procedure:legacy-codebase-triage",
+     "procedure:mission-wrap-up-sequence",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "styleguide:given-when-then-authoring",
+     "styleguide:mutation-aware-test-design",
+     "styleguide:planning-and-tracking",
+     "styleguide:python-conventions",
+     "styleguide:quadruple-a-test-format",
+     "styleguide:test-desiderata-and-boundaries",
+     "styleguide:testing-principles",
+     "styleguide:tiered-standards",
+     "tactic:acceptance-criteria-non-vacuity",
+     "tactic:acceptance-test-first",
+     "tactic:adversarial-qa-handoff",
+     "tactic:ammerse-impact-analysis",
+     "tactic:anti-corruption-layer",
+     "tactic:atdd-adversarial-acceptance",
+     "tactic:autonomous-operation-protocol",
+     "tactic:avoid-gold-plating",
+     "tactic:bdd-scenario-formulation",
+     "tactic:black-box-integration-testing",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:clean-linear-commit-history",
+     "tactic:code-review-incremental",
+     "tactic:connascence-analysis",
+     "tactic:dependency-hygiene",
+     "tactic:development-bdd",
+     "tactic:domain-event-capture",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:focused-function-complexity-check",
+     "tactic:forensic-repository-audit",
+     "tactic:formalized-constraint-testing",
+     "tactic:frozen-baseline-shrink-only-ratchet",
+     "tactic:function-over-form-testing",
+     "tactic:generated-code-stewardship",
+     "tactic:input-validation-fail-fast",
+     "tactic:model-task-routing",
+     "tactic:mutation-testing-workflow",
+     "tactic:no-parallel-duplicate-test-runs",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-conditional-to-strategy",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-encapsulate-record",
+     "tactic:refactoring-encapsulate-variable",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-extract-first-order-concept",
+     "tactic:refactoring-guard-clauses-before-polymorphism",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-move-field",
+     "tactic:refactoring-move-method",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:refactoring-state-pattern-for-behavior",
+     "tactic:refactoring-strangler-fig",
+     "tactic:reverse-speccing",
+     "tactic:review-intent-and-risk-first",
+     "tactic:reviewer-implementer-role-separation",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:test-minimisation",
+     "tactic:test-pyramid-progression",
+     "tactic:test-to-system-reconstruction",
+     "tactic:testing-select-appropriate-level",
+     "tactic:usage-examples-sync",
+     "tactic:work-package-completion-validation",
+     "toolguide:efficient-local-tooling",
+     "toolguide:gherkin",
+     "toolguide:git-agent-commit-signing",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-mutation-tools",
+     "toolguide:python-review-checks",
+     "toolguide:python-supply-chain",
+     "toolguide:sonar",
+     "toolguide:typescript-mutation-tools"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/plan": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_051",
+     "procedure:domain-aware-decision-interview",
+     "procedure:situational-assessment",
+     "tactic:adr-drafting-workflow",
+     "tactic:ammerse-impact-analysis",
+     "tactic:decision-marker-capture",
+     "tactic:deepening-opportunity-assessment",
+     "tactic:eisenhower-prioritisation",
+     "tactic:glossary-curation-interview",
+     "tactic:interface-variation-design",
+     "tactic:language-driven-design",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:safe-to-fail-experiment",
+     "tactic:stakeholder-alignment",
+     "tactic:supply-chain-install-safety",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_051",
+     "paradigm:deep-module-design",
+     "procedure:adversarial-squad-deployment",
+     "procedure:domain-aware-decision-interview",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "tactic:adr-drafting-workflow",
+     "tactic:ammerse-impact-analysis",
+     "tactic:avoid-gold-plating",
+     "tactic:decision-marker-capture",
+     "tactic:deepening-opportunity-assessment",
+     "tactic:dependency-hygiene",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:glossary-curation-interview",
+     "tactic:interface-variation-design",
+     "tactic:language-driven-design",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:supply-chain-install-safety",
+     "tactic:traceable-decisions",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-supply-chain"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_051",
+     "directive:DISCIPLINED_REFACTORING",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "paradigm:deep-module-design",
+     "procedure:adversarial-squad-deployment",
+     "procedure:domain-aware-decision-interview",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "tactic:adr-drafting-workflow",
+     "tactic:ammerse-impact-analysis",
+     "tactic:avoid-gold-plating",
+     "tactic:black-box-integration-testing",
+     "tactic:code-review-incremental",
+     "tactic:decision-marker-capture",
+     "tactic:deepening-opportunity-assessment",
+     "tactic:dependency-hygiene",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:glossary-curation-interview",
+     "tactic:interface-variation-design",
+     "tactic:language-driven-design",
+     "tactic:model-task-routing",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:supply-chain-install-safety",
+     "tactic:traceable-decisions",
+     "template:risk-identification-assessment-template",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-supply-chain"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/retrospect": {
+   "0": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "agent_profile:retrospective-facilitator",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_018",
+     "styleguide:kitty-glossary-writing",
+     "tactic:autonomous-operation-protocol",
+     "tactic:decision-marker-capture",
+     "tactic:glossary-curation-interview",
+     "tactic:requirements-validation-workflow",
+     "tactic:stopping-conditions",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/review": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_041",
+     "directive:DIRECTIVE_043",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:trunk-based",
+     "procedure:adversarial-squad-deployment",
+     "procedure:development-assist-test-cleanup",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:legacy-codebase-triage",
+     "procedure:mission-tracer-files",
+     "procedure:mission-wrap-up-sequence",
+     "procedure:post-merge-arch-gate-adjudication",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "tactic:acceptance-criteria-non-vacuity",
+     "tactic:acceptance-test-first",
+     "tactic:ammerse-impact-analysis",
+     "tactic:architectural-gate-non-vacuity",
+     "tactic:autonomous-operation-protocol",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:clean-linear-commit-history",
+     "tactic:code-review-incremental",
+     "tactic:connascence-analysis",
+     "tactic:decision-marker-capture",
+     "tactic:delete-the-assertion-not-the-test",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:forensic-repository-audit",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:review-intent-and-risk-first",
+     "tactic:safe-to-fail-experiment",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_041",
+     "directive:DIRECTIVE_043",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "directive:DIRECTIVE_052",
+     "directive:DISCIPLINED_REFACTORING",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY",
+     "paradigm:brownfield-onboarding",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:specification-by-example",
+     "paradigm:trunk-based",
+     "procedure:adversarial-squad-deployment",
+     "procedure:development-assist-test-cleanup",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:example-mapping-workshop",
+     "procedure:legacy-codebase-triage",
+     "procedure:mission-tracer-files",
+     "procedure:mission-wrap-up-sequence",
+     "procedure:post-merge-arch-gate-adjudication",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "styleguide:given-when-then-authoring",
+     "styleguide:test-desiderata-and-boundaries",
+     "styleguide:testing-principles",
+     "styleguide:tiered-standards",
+     "tactic:acceptance-criteria-non-vacuity",
+     "tactic:acceptance-test-first",
+     "tactic:adversarial-qa-handoff",
+     "tactic:ammerse-impact-analysis",
+     "tactic:architectural-gate-non-vacuity",
+     "tactic:atdd-adversarial-acceptance",
+     "tactic:autonomous-operation-protocol",
+     "tactic:avoid-gold-plating",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:clean-linear-commit-history",
+     "tactic:code-review-incremental",
+     "tactic:connascence-analysis",
+     "tactic:decision-marker-capture",
+     "tactic:delete-the-assertion-not-the-test",
+     "tactic:dependency-hygiene",
+     "tactic:development-bdd",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:forensic-repository-audit",
+     "tactic:formalized-constraint-testing",
+     "tactic:frozen-baseline-shrink-only-ratchet",
+     "tactic:mutation-testing-workflow",
+     "tactic:no-parallel-duplicate-test-runs",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:review-intent-and-risk-first",
+     "tactic:reviewer-implementer-role-separation",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync",
+     "tactic:work-package-completion-validation",
+     "toolguide:efficient-local-tooling",
+     "toolguide:gherkin",
+     "toolguide:git-agent-commit-signing",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-supply-chain",
+     "toolguide:sonar"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_028",
+     "directive:DIRECTIVE_029",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_032",
+     "directive:DIRECTIVE_033",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_036",
+     "directive:DIRECTIVE_037",
+     "directive:DIRECTIVE_040",
+     "directive:DIRECTIVE_041",
+     "directive:DIRECTIVE_043",
+     "directive:DIRECTIVE_044",
+     "directive:DIRECTIVE_045",
+     "directive:DIRECTIVE_046",
+     "directive:DIRECTIVE_051",
+     "directive:DIRECTIVE_052",
+     "directive:DISCIPLINED_REFACTORING",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "directive:USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY",
+     "paradigm:brownfield-onboarding",
+     "paradigm:execution-lanes",
+     "paradigm:git-flow",
+     "paradigm:shared-branch-ci",
+     "paradigm:specification-by-example",
+     "paradigm:trunk-based",
+     "procedure:adversarial-squad-deployment",
+     "procedure:development-assist-test-cleanup",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:example-mapping-workshop",
+     "procedure:legacy-codebase-triage",
+     "procedure:mission-tracer-files",
+     "procedure:mission-wrap-up-sequence",
+     "procedure:post-merge-arch-gate-adjudication",
+     "procedure:red-main-release-discipline",
+     "procedure:refactoring",
+     "procedure:situational-assessment",
+     "procedure:test-first-bug-fixing",
+     "styleguide:boring-code-review",
+     "styleguide:given-when-then-authoring",
+     "styleguide:mutation-aware-test-design",
+     "styleguide:planning-and-tracking",
+     "styleguide:quadruple-a-test-format",
+     "styleguide:test-desiderata-and-boundaries",
+     "styleguide:testing-principles",
+     "styleguide:tiered-standards",
+     "tactic:acceptance-criteria-non-vacuity",
+     "tactic:acceptance-test-first",
+     "tactic:adversarial-qa-handoff",
+     "tactic:ammerse-impact-analysis",
+     "tactic:anti-corruption-layer",
+     "tactic:architectural-gate-non-vacuity",
+     "tactic:atdd-adversarial-acceptance",
+     "tactic:autonomous-operation-protocol",
+     "tactic:avoid-gold-plating",
+     "tactic:bdd-scenario-formulation",
+     "tactic:black-box-integration-testing",
+     "tactic:change-apply-smallest-viable-diff",
+     "tactic:clean-linear-commit-history",
+     "tactic:code-review-incremental",
+     "tactic:connascence-analysis",
+     "tactic:decision-marker-capture",
+     "tactic:delete-the-assertion-not-the-test",
+     "tactic:dependency-hygiene",
+     "tactic:development-bdd",
+     "tactic:domain-event-capture",
+     "tactic:easy-to-change",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:forensic-repository-audit",
+     "tactic:formalized-constraint-testing",
+     "tactic:frozen-baseline-shrink-only-ratchet",
+     "tactic:function-over-form-testing",
+     "tactic:input-validation-fail-fast",
+     "tactic:model-task-routing",
+     "tactic:mutation-testing-workflow",
+     "tactic:no-parallel-duplicate-test-runs",
+     "tactic:paula-patterns-architecture-scout-review",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:quality-gate-verification",
+     "tactic:refactoring-change-function-declaration",
+     "tactic:refactoring-combine-functions-into-transform",
+     "tactic:refactoring-consolidate-conditional-expression",
+     "tactic:refactoring-encapsulate-record",
+     "tactic:refactoring-encapsulate-variable",
+     "tactic:refactoring-extract-class-by-responsibility-split",
+     "tactic:refactoring-extract-first-order-concept",
+     "tactic:refactoring-inline-temp",
+     "tactic:refactoring-introduce-null-object",
+     "tactic:refactoring-move-field",
+     "tactic:refactoring-move-method",
+     "tactic:refactoring-replace-magic-number-with-symbolic-constant",
+     "tactic:refactoring-replace-temp-with-query",
+     "tactic:refactoring-retry-pattern",
+     "tactic:refactoring-state-pattern-for-behavior",
+     "tactic:refactoring-strangler-fig",
+     "tactic:reverse-speccing",
+     "tactic:review-intent-and-risk-first",
+     "tactic:reviewer-implementer-role-separation",
+     "tactic:safe-to-fail-experiment",
+     "tactic:secure-design-checklist",
+     "tactic:stakeholder-alignment",
+     "tactic:stopping-conditions",
+     "tactic:strategic-domain-classification",
+     "tactic:supply-chain-install-safety",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:test-minimisation",
+     "tactic:test-pyramid-progression",
+     "tactic:test-to-system-reconstruction",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions",
+     "tactic:usage-examples-sync",
+     "tactic:work-package-completion-validation",
+     "toolguide:efficient-local-tooling",
+     "toolguide:gherkin",
+     "toolguide:git-agent-commit-signing",
+     "toolguide:java-supply-chain",
+     "toolguide:javascript-supply-chain",
+     "toolguide:python-mutation-tools",
+     "toolguide:python-supply-chain",
+     "toolguide:sonar",
+     "toolguide:typescript-mutation-tools"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/specify": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_031",
+     "directive:DIRECTIVE_032",
+     "paradigm:domain-driven-design",
+     "styleguide:aggregate-design-rules",
+     "tactic:aggregate-boundary-design",
+     "tactic:anti-corruption-layer",
+     "tactic:bounded-context-canvas-fill",
+     "tactic:bounded-context-identification",
+     "tactic:context-boundary-inference",
+     "tactic:context-mapping-classification",
+     "tactic:decision-marker-capture",
+     "tactic:domain-event-capture",
+     "tactic:entity-value-object-classification",
+     "tactic:requirements-validation-workflow",
+     "tactic:strategic-domain-classification",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_031",
+     "directive:DIRECTIVE_032",
+     "paradigm:domain-driven-design",
+     "styleguide:aggregate-design-rules",
+     "tactic:aggregate-boundary-design",
+     "tactic:anti-corruption-layer",
+     "tactic:bounded-context-canvas-fill",
+     "tactic:bounded-context-identification",
+     "tactic:context-boundary-inference",
+     "tactic:context-mapping-classification",
+     "tactic:decision-marker-capture",
+     "tactic:domain-event-capture",
+     "tactic:entity-value-object-classification",
+     "tactic:requirements-validation-workflow",
+     "tactic:strategic-domain-classification",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_001",
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_031",
+     "directive:DIRECTIVE_032",
+     "paradigm:domain-driven-design",
+     "styleguide:aggregate-design-rules",
+     "tactic:aggregate-boundary-design",
+     "tactic:anti-corruption-layer",
+     "tactic:bounded-context-canvas-fill",
+     "tactic:bounded-context-identification",
+     "tactic:context-boundary-inference",
+     "tactic:context-mapping-classification",
+     "tactic:decision-marker-capture",
+     "tactic:domain-event-capture",
+     "tactic:entity-value-object-classification",
+     "tactic:requirements-validation-workflow",
+     "tactic:strategic-domain-classification",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   }
+  },
+  "action:software-dev/tasks": {
+   "0": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_040",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:issue-triage-state-machine",
+     "procedure:red-main-release-discipline",
+     "procedure:test-first-bug-fixing",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions"
+    ],
+    "glossary_scopes": []
+   },
+   "1": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_040",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:issue-triage-state-machine",
+     "procedure:red-main-release-discipline",
+     "procedure:test-first-bug-fixing",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:review-intent-and-risk-first",
+     "tactic:stakeholder-alignment",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions",
+     "template:agent-brief-template",
+     "template:lightweight-prestudy-template",
+     "template:out-of-scope-record-template"
+    ],
+    "glossary_scopes": []
+   },
+   "2": {
+    "artifacts": [
+     "directive:DIRECTIVE_003",
+     "directive:DIRECTIVE_010",
+     "directive:DIRECTIVE_024",
+     "directive:DIRECTIVE_025",
+     "directive:DIRECTIVE_030",
+     "directive:DIRECTIVE_034",
+     "directive:DIRECTIVE_040",
+     "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+     "procedure:disciplined-defect-diagnosis",
+     "procedure:issue-triage-state-machine",
+     "procedure:red-main-release-discipline",
+     "procedure:test-first-bug-fixing",
+     "tactic:adr-drafting-workflow",
+     "tactic:decision-marker-capture",
+     "tactic:eisenhower-prioritisation",
+     "tactic:five-paradigm-parallel-debugging",
+     "tactic:premortem-risk-identification",
+     "tactic:problem-decomposition",
+     "tactic:requirements-validation-workflow",
+     "tactic:review-intent-and-risk-first",
+     "tactic:stakeholder-alignment",
+     "tactic:tdd-red-green-refactor",
+     "tactic:test-boundaries-by-responsibility",
+     "tactic:testing-select-appropriate-level",
+     "tactic:traceable-decisions",
+     "template:agent-brief-template",
+     "template:lightweight-prestudy-template",
+     "template:out-of-scope-record-template",
+     "template:risk-identification-assessment-template",
+     "template:stakeholder-persona-template",
+     "template:system-context-canvas-template"
+    ],
+    "glossary_scopes": []
+   }
+  }
+ },
+ "core_commit": "9554e7b26afe7a61519f7744d0147346ab36f197",
+ "open_packs_commit": "7f063aecbdede29d05cc4d5fc9a5b13f9c7434d7",
+ "undeclared": {
+  "action:documentation/accept": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/audit": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/design": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/discover": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/generate": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/publish": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/retrospect": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:documentation/validate": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:plan/plan": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:plan/research": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:plan/review": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:plan/specify": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/gathering": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/methodology": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/output": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/retrospect": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/scoping": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:research/synthesis": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/implement": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/plan": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/retrospect": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/review": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/specify": {
+   "0": [],
+   "1": [],
+   "2": []
+  },
+  "action:software-dev/tasks": {
+   "0": [],
+   "1": [],
+   "2": []
+  }
+ }
+}

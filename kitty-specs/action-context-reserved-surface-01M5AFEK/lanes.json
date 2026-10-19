@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "mission_slug": "action-context-reserved-surface-01M5AFEK",
+  "mission_id": "01M5AFEKERFFB4F0ZKMS40V51A",
+  "mission_branch": "kitty/mission-action-context-reserved-surface-01M5AFEK",
+  "target_branch": "feat/action-context-reserved-surface",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/ActionContext.software-dev-plan.yaml",
+        "contracts/charter/parameters/Depth.yaml",
+        "contracts/charter/paths/mission-types_missionType_actions_action_context.yaml",
+        "contracts/charter/scenarios/action_context.feature",
+        "contracts/charter/schemas/ActionContext.yaml",
+        "contracts/charter/schemas/GuidanceEntry.yaml",
+        "contracts/compat/fixtures/breaking-response-depth-max-raised/**",
+        "contracts/compat/fixtures/compatible-depth-max-raised/**",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/ContextController.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/DoctrineGraph.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/ActionContext.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/ActionContextQuery.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/GuidanceEntry.java",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/ActionContextQueryTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ContractShapeTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/ServiceInfo.one-worktree.yaml",
+        "contracts/charter/headers/CharterSourceFingerprint.yaml",
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/service.feature",
+        "contracts/charter/schemas/ServiceInfo.yaml",
+        "gradle.properties",
+        "service/adapter-in-rest/build.gradle.kts",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/InfoController.java",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/ServiceVersion.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/ProjectConfigSources.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/ProjectConfigSourcesTest.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/ServiceInfo.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/ServiceInfoQuery.java",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/ServiceInfoQueryTest.java",
+        "service/charter-service/src/main/java/ai/speckitty/charter/service/CharterProperties.java",
+        "service/charter-service/src/main/java/ai/speckitty/charter/service/CharterWiring.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/CharterPropertiesTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/CharterWiringTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/CharterSteps.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ConfigSteps.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ContractConformance.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ContractConformanceTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/CucumberSpringConfiguration.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ScenarioHttp.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ScenarioPacks.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ScenarioPacksTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "kitty-specs/action-context-reserved-surface-01M5AFEK/evidence/**"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/responses/OfferingUnreadable.yaml",
+        "contracts/charter/scenarios/errors.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/CharterHeaders.java",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/PacksController.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/ConsistentLoad.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/PackListing.java",
+        "service/charter-read-app/src/main/java/ai/speckitty/charter/read/PackListingQuery.java",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/ConsistentLoadTest.java",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/PackListingQueryTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/HexagonalArchitectureTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/ReservedRefusalCodesTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ContractDescriptionsTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/DriftingSources.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ReadConsistencySteps.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/paths/info.yaml",
+        "contracts/charter/paths/packs.yaml",
+        "contracts/charter/paths/refresh.yaml",
+        "contracts/charter/responses/Forbidden.yaml",
+        "contracts/charter/responses/Unauthorized.yaml",
+        "contracts/charter/responses/_index.yaml",
+        "contracts/charter/scenarios/refresh.feature",
+        "contracts/charter/scenarios/security.feature",
+        "contracts/lint/**",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/RefreshController.java",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/WorktreeGuard.java",
+        "service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/WorktreeToken.java",
+        "service/adapter-in-rest/src/test/java/ai/speckitty/charter/rest/WorktreeGuardTest.java",
+        "service/adapter-in-rest/src/test/java/ai/speckitty/charter/rest/WorktreeTokenTest.java",
+        "service/charter-service/build.gradle.kts",
+        "service/charter-service/src/main/java/ai/speckitty/charter/service/GuardWiring.java",
+        "service/charter-service/src/main/resources/**",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/ConnectorErrorsTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/GuardWiringTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/NullOmissionTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/ProblemResponsesTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/ProductionWiringTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/SecuritySteps.java",
+        "service/charter-service/src/test/resources/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "contracts/charter/CHANGELOG.md",
+        "cspell.json",
+        "docs/adr/**",
+        "docs/api/**",
+        "docs/architecture/**",
+        "docs/context/**",
+        "docs/guides/**",
+        "docs/plans/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-planning"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-19T16:49:44.077790+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP06"
+  ],
+  "planning_commit_sha": "1ea1959b82c0c327b4595554f7e690e226b59f3d"
+}
