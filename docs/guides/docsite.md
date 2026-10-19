@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -16,18 +16,26 @@ audience:
 # Building the docsite
 
 The `docs/` tree is rendered by [doc-kitty](https://github.com/spec-kitty/doc-kitty)'s
-published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.2.0`). The Astro project that
-does it lives in `site/`; it owns no content and reads `../docs` directly.
+published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.4.0`, which builds on Astro 7 and
+Starlight 0.42). The Astro project that does it lives in `site/`; it owns no content and
+reads `../docs` directly.
 
 ## Build locally
 
-You need Node 22 or later (npm comes with it) and a GitHub token with the `read:packages`
-scope, because the toolkit is published to GitHub Packages.
+You need Node 22.22 or later (`site/.nvmrc` pins it; npm comes with it) and a GitHub token
+with the `read:packages` scope, because the toolkit is published to GitHub Packages.
 
 1. Put the token in your **user-level** `~/.npmrc`, never in the project file:
 
    ```ini
    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+   ```
+
+   If you use the GitHub CLI, its token already carries `read:packages`, so you can install
+   without storing a second one:
+
+   ```sh
+   NODE_AUTH_TOKEN="$(gh auth token)" npm ci --userconfig <(echo '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}')
    ```
 
 2. Install, check and build from `site/`:
@@ -36,8 +44,9 @@ scope, because the toolkit is published to GitHub Packages.
    cd site
    npm ci                      # installs exactly what package-lock.json records
    npm run validate            # frontmatter and source links in ../docs
-   npm run build               # writes site/dist
+   npm run build               # writes site/dist (and site/dist/okf, the OKF bundle)
    npm run check:built-links   # every link in the built site resolves under the base
+   npm run check:okf           # the OKF export bundle passes conformance
    npm run preview
    ```
 
@@ -59,14 +68,17 @@ The [Glossary](/glossary/) section is generated. Its terms are copied from the c
 repository's glossary (`docs/context/charter.md`, `governance.md` and `product-lines.md` in
 `spec-kitty/spec-kitty`), which stays the authority for them.
 
-- `site/.contextive/definitions.yaml` holds the imported terms.
-- Every build writes `docs/glossary/` from that file and links each term where it is first
-  used in a section of a page. Do not edit either by hand.
-- The toolkit writes only minimal frontmatter for those pages. `npm run build` therefore ends
-  with `site/tools/import_core_glossary.py --finalize`, which adds the rest the docs checks
-  require: a description, `updated` (the import date), `type`, `kind`, `audience` and
-  `source_ref` (the core commit the terms came from). The import date and the commit are
-  recorded in the header of `definitions.yaml`.
+- `site/.contextive/definitions.yaml` holds the imported terms. Its header records the core
+  commit the terms came from and the import date.
+- Every build writes `docs/glossary/**/README.md` from that file and links each term where it
+  is first used in a section of a page. Do not edit either by hand.
+- Since doc-kitty 0.4.0 the glossary generator **owns** those pages: it writes an exact
+  frontmatter key set (`okf_version`, `title`, `description`, `kind`, `glossary_context`,
+  `doc_status` and a `generated:` stamp) and refuses to overwrite a page that carries any
+  other key. So the pages are committed exactly as the generator writes them — the build no
+  longer post-processes their frontmatter — and the Python docs checks exempt a generated
+  glossary page from the authored-only rules (`updated`, `type`, `audience` and the
+  description-length range), via `GENERATED_EXEMPT_KEYS` in `scripts/docs/check_docs.py`.
 
 To change a term, change it in the core glossary. Then, with a checkout of the core
 repository, import again from this repository's root and rebuild:
@@ -99,7 +111,7 @@ none does. The checks:
 
 | Check | What it enforces |
 |-------|------------------|
-| `frontmatter` | Required keys, description of 50-180 characters, `doc_status` vocabulary, ISO `updated`, `audience` resolving to a persona under `docs/context/audience/` |
+| `frontmatter` | Required keys, description of 50-180 characters, `doc_status` vocabulary, ISO `updated`, `audience` resolving to a persona under `docs/context/audience/`. Generated glossary pages are exempt from `updated`, `type`, `audience` and the description range (doc-kitty owns their frontmatter) |
 | `related` | Each `related` entry is the docs-root slug of an existing page |
 | `freshness` | `updated` is within the SLA of the page's `doc_status` (draft 90 days, active 180, deprecated 365, ADRs 365; superseded, durable and changelog entries exempt) |
 | `links` | Internal links are root-absolute routes that resolve, anchors exist, no absolute GitHub links to this repository's own docs |
@@ -148,8 +160,8 @@ red run names what failed:
 3. the `javadoc` artifact of the same run is downloaded into `site/public/javadoc` (ignored
    by Git), so it is published unchanged under `/javadoc/`
    ([Java API reference](/api/javadoc/));
-4. `validate`, `build` and `check:built-links`, as above; the link check walks the Javadoc
-   pages too;
+4. `validate`, `build`, `check:built-links` and `check:okf`, as above; the link check walks
+   the Javadoc pages too, and the OKF check validates the exported knowledge-format bundle;
 5. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
    `https://spec-kitty.github.io/spec-kitty-charter/`.
 
