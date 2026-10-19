@@ -1,3 +1,4 @@
+@contract
 Feature: Pack listing and load refusals
   The packs of the offering in layer order, and the loud refusals of a pack that cannot load.
 
@@ -39,7 +40,7 @@ Feature: Pack listing and load refusals
       {
         "packs": [
           {"name": "built-in", "level": "built-in", "packId": "01ARWG13C000000000000000FG", "packVersion": "1.0.0", "parentPack": null, "nodeCount": 1, "edgeCount": 0, "diagnostics": []},
-          {"name": "qa", "level": "org", "packId": null, "packVersion": null, "parentPack": null, "nodeCount": 1, "edgeCount": 1, "diagnostics": [{"code": "PACK_LEVEL_MISSING", "detail": "org pack qa has no pack.yaml; the configured level org is used"}]}
+          {"name": "qa", "level": "org", "packId": null, "packVersion": null, "parentPack": null, "nodeCount": 1, "edgeCount": 1, "diagnostics": [{"code": "pack_level_missing", "detail": "org pack qa has no pack.yaml; the configured level org is used"}]}
         ]
       }
       """
@@ -58,7 +59,7 @@ Feature: Pack listing and load refusals
       """
       {
         "packs": [
-          {"name": "internal", "level": "org", "packId": "01M4P01D5TWB5FKZGNNQG3943R", "packVersion": "1.0.0", "parentPack": null, "nodeCount": 0, "edgeCount": 0, "diagnostics": [{"code": "PACK_LEVEL_MISSING", "detail": "pack.yaml of internal has no pack_level; the configured level org is used"}]}
+          {"name": "internal", "level": "org", "packId": "01M4P01D5TWB5FKZGNNQG3943R", "packVersion": "1.0.0", "parentPack": null, "nodeCount": 0, "edgeCount": 0, "diagnostics": [{"code": "pack_level_missing", "detail": "pack.yaml of internal has no pack_level; the configured level org is used"}]}
         ]
       }
       """
@@ -73,7 +74,7 @@ Feature: Pack listing and load refusals
       """
     When I GET "/packs"
     Then the response status is 500
-    And the problem code is "PACK_LEVEL_MISMATCH"
+    And the problem code is "pack_level_mismatch"
 
   Scenario: A bare edge endpoint the fragment does not declare is refused
     Given the org pack "qa" with the file "drg/fragment.yaml":
@@ -100,4 +101,4 @@ Feature: Pack listing and load refusals
       """
     When I GET "/packs"
     Then the response status is 500
-    And the problem code is "DRG_SCHEMA_ERROR"
+    And the problem code is "drg_schema_error"

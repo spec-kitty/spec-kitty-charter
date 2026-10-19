@@ -7,5 +7,9 @@ required:
 properties:
   packs:
     type: array
+    description: The loaded Charter Packs, built-in first, then org, then project.
+    x-source:
+      path: service/charter-read-app/src/main/java/ai/speckitty/charter/read/PackListingQuery.java
+      symbol: PackListingQuery.answer
     items:
       $ref: PackSummary.yaml

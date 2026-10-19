@@ -3,14 +3,23 @@ get:
   summary: Read the governance that applies to one action of one mission type.
   description: >-
     Starts at the DRG node action:<missionType>/<action> and returns every artifact reached by
-    one scope edge from that action node, then every artifact reached by one scope edge from the
-    mission type node, without repeats; an artifact in both keeps its action entry. Entries keep
-    the order of the edges in the merged graph. This first slice answers from the merged offering
+    one scope edge from that action node or from the mission type node, without repeats; an
+    artifact in both keeps its action entry. Entries are sorted by their full URN string, the
+    order core gives the resolved artifacts of an action. This first slice answers from the merged offering
     without activation filtering; activation joins with the conformance corpus (roadmap steps 3
     to 5) as a new contract version. An unknown mission type or action is a 404, never an empty
-    answer.
+    answer. Two answers differ from core's on purpose until the conformance corpus decides
+    them (issue #9): an action that is not a node of the graph answers 404 action_not_found,
+    where core falls back to its non-bootstrap context, and a shadow comparison (roadmap step 7)
+    maps this 404 to that fallback; a scope edge to a node the graph does not declare is listed
+    with a null label, where core skips the artifact.
   tags:
     - Context
+  x-provisional:
+    open_decision: >-
+      action-context resolution rules are decided by the conformance corpus (issue #9), including the
+      404 for an action that is not a graph node and the entry for a scope target the graph does not
+      declare
   parameters:
     - $ref: ../parameters/MissionType.yaml
     - $ref: ../parameters/Action.yaml

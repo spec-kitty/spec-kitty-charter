@@ -2,3 +2,6 @@ title: Urn
 description: A DRG node identity, <node kind>:<id>, for example directive:DIRECTIVE_010.
 type: string
 pattern: '^[a-z_]+:.+$'
+x-source:
+  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Urn.java
+  symbol: Urn

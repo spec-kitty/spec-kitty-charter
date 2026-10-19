@@ -30,7 +30,7 @@ public class PacksController implements PacksApi {
                 pack.packId().orElse(null), pack.packVersion().orElse(null), pack.parentPack().orElse(null),
                 pack.nodeCount(), pack.edgeCount(),
                 pack.diagnostics().stream()
-                        .map(d -> new Diagnostic(Diagnostic.CodeEnum.fromValue(d.code().name()), d.detail()))
+                        .map(d -> new Diagnostic(Diagnostic.CodeEnum.fromValue(d.code().token()), d.detail()))
                         .toList());
     }
 }

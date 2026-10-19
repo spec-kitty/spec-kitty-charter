@@ -16,8 +16,17 @@ properties:
   label:
     type: ['string', 'null']
     description: The node label, or null when the graph declares none.
+    x-source:
+      path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/DrgNode.java
+      symbol: DrgNode.label
   relation:
     $ref: Relation.yaml
   via:
-    $ref: Urn.yaml
-    description: The node the edge starts from, the action node or the mission type node.
+    description: The node the edge starts from.
+    allOf:
+      - $ref: Urn.yaml
+    x-derived:
+      rule: The source of the scope edge that brought the artifact in.
+      inputs:
+        - schemas/ActionContext.yaml#/properties/action
+        - schemas/ActionContext.yaml#/properties/missionType
