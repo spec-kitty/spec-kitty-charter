@@ -16,6 +16,7 @@ Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
 - [2026-10-19 — This repository is canonical for charter shapes](/changelog/2026-10-19-canonical-charter-ownership/)
+- [2026-10-19 — The default Problem response declares the Charter headers](/changelog/2026-10-19-problem-response-charter-headers/)
 - [2026-10-19 — Contract 1.0 reserves the cutover surface and models impacts](/changelog/2026-10-19-contract-impacts-reservations/)
 - [2026-10-19 — Provisional design decisions](/changelog/2026-10-19-provisional-design-decisions/)
 - [2026-10-19 — Tracker milestones and their proposed distribution](/changelog/2026-10-19-tracker-milestones/)

@@ -42,6 +42,15 @@ Feature: What the service says about itself
     And the response header "Charter-Worktree" is "scenario-worktree"
     And the response header "Charter-Source-Fingerprint" is a sha256 digest
 
+  Scenario: A bad request carries the headers too
+    The 400 for a depth this version does not answer is the shared Problem, and it carries the
+    headers like every other response.
+    When I GET "/mission-types/software-dev/actions/plan/context?depth=2"
+    Then the response status is 400
+    And the response header "Charter-Contract-Version" is the contract version
+    And the response header "Charter-Worktree" is "scenario-worktree"
+    And the response header "Charter-Source-Fingerprint" is a sha256 digest
+
   Scenario: When the packs cannot be read the fingerprint header is left out and the refusal still answers
     The source fingerprint is left out when a pack file cannot be read, because the read itself
     answers why; the refusal still carries the contract version and the worktree.
