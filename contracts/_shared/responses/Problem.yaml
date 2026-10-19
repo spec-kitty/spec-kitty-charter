@@ -1,4 +1,11 @@
 description: The request failed. The body is a problem details object.
+headers:
+  Charter-Contract-Version:
+    $ref: ../../charter/headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../../charter/headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../../charter/headers/CharterSourceFingerprint.yaml
 content:
   application/problem+json:
     schema:
