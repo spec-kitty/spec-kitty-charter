@@ -34,8 +34,8 @@ properties:
     x-derived:
       rule: >-
         The targets of the scope edges of action:<missionType>/<action> and of
-        mission_type:<missionType>, each target once (an artifact both scope keeps its action
-        entry), sorted by the full URN string.
+        mission_type:<missionType>, each target once (an artifact in both scopes keeps its
+        action entry), sorted by the full URN string.
       inputs:
         - parameters/MissionType.yaml
         - parameters/Action.yaml
