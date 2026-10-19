@@ -37,12 +37,12 @@ public final class ServiceInfoQuery {
      *
      * @return the service info
      * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read
-     *     (not retryable), or with {@code STALE_INPUT} when the two digests differ because an input changed while
-     *     the info was read (retryable: read it again)
+     *     by the first digest (not retryable), or with {@code STALE_INPUT} when the two digests differ or the second
+     *     cannot be taken because an input changed while the info was read (retryable: read it again)
      */
     public ServiceInfo answer() {
         String first = sources.fingerprint();
-        String second = sources.fingerprint();
+        String second = ConsistentLoad.digestOrNull(sources);
         if (!first.equals(second)) {
             throw new CharterRefusal(
                     RefusalCode.STALE_INPUT, "The inputs changed while the service info was read; read it again.");
