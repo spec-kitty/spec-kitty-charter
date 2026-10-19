@@ -51,28 +51,29 @@ Feature: Failures outside the charter's refusals
       {"title": "Internal error", "status": 500, "code": "internal_error", "detail": "The charter service failed unexpectedly; the failure is logged."}
       """
 
-  Scenario Outline: A pack whose graph shard is not valid YAML is refused with pack_unreadable
-    The shard is an input the packs hold, not a seam: nothing about it changes while the read is
-    answered, so the refusal is the load's own. It names the shard relative to its pack and says
-    nothing of the host; the text after the colon is the YAML parser's and is not pinned.
-    Given the built-in pack "built-in" with the file "broken.graph.yaml":
-      """
-      nodes: [
-      """
-    When I GET "<path>"
+  Scenario Outline: An input the service cannot read is refused with pack_unreadable
+    A directory stands where config.yaml should be a file, so reading it fails with an I/O error
+    whoever runs the service (a file made unreadable by its permissions would still be readable to
+    root). The input is one the service digests, not a seam: nothing about it changes while the
+    read is answered, so the refusal is the first digest's own and permanent, not stale_input. It
+    names the file relative to the project configuration directory and says nothing of the host.
+    Given the project configuration file "config.yaml" is a directory
+    When I send <method> "<path>"
     Then the response status is 500
     And the problem code is "pack_unreadable"
     And the response body, apart from "detail", is:
       """
       {"title": "Pack unreadable", "status": 500, "code": "pack_unreadable"}
       """
-    And the field "detail" of the response body starts with "built-in/broken.graph.yaml is not valid YAML"
+    And the field "detail" of the response body starts with "project-config/config.yaml cannot be read"
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
-      | path                                                  |
-      | /packs                                                |
-      | /mission-types/software-dev/actions/plan/context      |
+      | method | path                                                  |
+      | GET    | /info                                                 |
+      | GET    | /packs                                                |
+      | GET    | /mission-types/software-dev/actions/plan/context      |
+      | POST   | /packs/refresh                                        |
 
   Scenario Outline: A read whose packs change while it is answered is refused with stale_input
     A pack file is rewritten after the read digested its inputs and before it loaded them. The

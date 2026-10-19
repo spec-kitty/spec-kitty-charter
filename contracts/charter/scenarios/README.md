@@ -52,6 +52,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   scenario's project configuration directory (`<root>/.kittify`), which always exists and holds
   neither file at the start. The service digests the two files and never reads them, so the content
   is free.
+- `Given the project configuration file "<name>" is a directory` — an empty directory stands where the file would be, so
+  the service cannot read it (an I/O failure that holds for root too, unlike a permission change).
 - `Then the field "<field>" of the response body is a semantic version` — matches the semantic
   version pattern of `ServiceInfo.serviceVersion`.
 - `Then the response header "<name>" appears once` — exactly one value for the header, not a repeated one.

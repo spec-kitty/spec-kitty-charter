@@ -64,6 +64,17 @@ public final class ScenarioPacks {
         }
     }
 
+    /** Replaces a file of the project configuration directory with an empty directory of that name. */
+    void makeConfigFileADirectory(String name) {
+        try {
+            Path target = Files.createDirectories(configDirectory()).resolve(name);
+            Files.deleteIfExists(target);
+            Files.createDirectory(target);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private Path configDirectory() {
         return configDir().orElseThrow(() -> new IllegalStateException("no scenario is running"));
     }
