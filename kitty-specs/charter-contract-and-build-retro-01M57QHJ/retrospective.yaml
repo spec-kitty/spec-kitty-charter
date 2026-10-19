@@ -1,0 +1,147 @@
+schema_version: 1
+mission_id: 01M57QHJ7N7Z3RR6JY5WMNEZCN
+mission_slug: charter-contract-and-build-retro-01M57QHJ
+mission_number: 1
+friendly_name: Charter contract skeleton and Gradle build (retroactive)
+mission_type: software-dev
+target_branch: ccr-9654c444-x7y94q
+created_at: '2026-10-19T04:33:21.377927+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-10-19T04:33:21.377927+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-010
+not_helpful:
+- id: n-005
+  category: doc
+  summary: analysis-report.md records 3 finding(s)
+  evidence_refs:
+  - e-015
+  details: The analysis-report.md artifact for this mission records 3 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: review_loop
+  summary: WP01 required 6 rejection cycle(s) before approval
+  evidence_refs:
+  - e-011
+  details: WP WP01 was sent back to an earlier lane with documented review feedback 6 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP02 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-012
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP03 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-013
+  details: WP WP03 was sent back to an earlier lane with documented review feedback 2 time(s).
+- id: n-004
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-014
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps:
+- id: g-001
+  category: doc
+  summary: data-model.md absent
+  evidence_refs:
+  - e-002
+  details: spec.md declares domain entities but data-model.md is missing. A data model document clarifies domain entity
+    relationships.
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP01-contract-scenarios-first.md
+- id: e-006
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP02-quality-gates.md
+- id: e-007
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP03-javadoc-site.md
+- id: e-008
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP04-ci-workflows.md
+- id: e-009
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/tasks/WP05-docs-and-records.md
+- id: e-010
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/status.events.jsonl
+- id: e-011
+  kind: event_range
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/status.events.jsonl
+  range: 01M57YGJRA35JNV72P2E05H4B7..01M586EH6BYF38RJM2KTFDX7F7
+- id: e-012
+  kind: event_range
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/status.events.jsonl
+  range: 01M58ABPSPRPGJ9QYAAP52CVK3
+- id: e-013
+  kind: event_range
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/status.events.jsonl
+  range: 01M58CC22Q4VX747NY71QPY1KT..01M58CW3D7CZNK04WKJ2KRMWG8
+- id: e-014
+  kind: event_range
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/status.events.jsonl
+  range: 01M58EZHMJT5957PZ52B84W8B8
+- id: e-015
+  kind: file
+  path: kitty-specs/charter-contract-and-build-retro-01M57QHJ/analysis-report.md
+generator_version: '1.0'
+provenance_history: []
