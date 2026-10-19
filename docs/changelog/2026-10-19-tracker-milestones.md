@@ -26,4 +26,7 @@ audience:
   creed, pack governance and persistent deactivation epics come after it.
 - The [Roadmap](/plans/roadmap/) and the [Plans](/plans/) hub link to the new page.
 
-No issue is assigned to a milestone yet. That waits on the operator's review of the proposal.
+- Every open issue is assigned to a milestone. New issues #69 to #76 track strangler stages 3 and 4, and
+  #77 to #85 track the Foundational Values and Creed epic.
+
+The assignment is provisional, and it changes as the plan does.

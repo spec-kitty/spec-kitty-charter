@@ -25,8 +25,8 @@ each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** proposal (2026-10-19). The milestones exist on the tracker; no issue is assigned to
-> one yet. The distribution below is waiting for the operator's review.
+> **Status:** in effect (2026-10-19). Every open issue is assigned to the milestone listed
+> here. The assignment is provisional, and it changes as the plan does.
 
 ## The milestones
 
@@ -71,22 +71,23 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 | #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #53 | Docs cite spec-kitty#645 instead of epic #6099 | A small factual fix to the pages this milestone depends on |
+| #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
 
-#### Not yet tracked
+#### Stages 3 and 4
 
-The cutover needs these issues, and none exists yet. They follow the evidence each stage
-needs in [Strangler transition](/architecture/strangler-transition/).
+These follow the evidence each stage needs in
+[Strangler transition](/architecture/strangler-transition/).
 
-| Proposed issue | Stage | Done when |
+| Issue | Stage | Done when |
 |---|---|---|
-| Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
-| Launcher and service lifecycle | 2 | Core starts and stops the service per worktree. #14 needs this ([open question 8](/plans/open-questions/)) |
-| Cross-OS packaging of the service | 3 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)). This is a fallback-retirement criterion |
-| Conformance as a blocking gate | 3 | A divergence on the supported corpus fails core's CI, not only diagnostics |
-| Stale and unavailable service behavior | 3 | Tests prove what the seam does when the service is stale, slow or down. The Python fallback is loud and observable, and never silently gives a second answer |
-| Java authoritative reads | 3 | The seam adapter answers from Java, with Python as the observable fallback |
-| Observation period | 4 | An agreed period of Java-authoritative reads ends with no unresolved semantic divergence |
-| Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core. Every read in core goes through the seam to the API, and a ratchet keeps it that way |
+| #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
+| #70 Launcher and service lifecycle | 2 | Core starts and stops the service per worktree. #14 needs this ([open question 8](/plans/open-questions/)) |
+| #71 Cross-OS packaging of the service | 3 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)). This is a fallback-retirement criterion |
+| #72 Conformance as a blocking gate | 3 | A divergence on the supported corpus fails core's CI, not only diagnostics |
+| #73 Stale, slow and unavailable service behavior | 3 | Tests prove what the seam does when the service is stale, slow or down. The Python fallback is loud and observable, and never silently gives a second answer |
+| #74 Java authoritative reads | 3 | The seam adapter answers from Java, with Python as the observable fallback |
+| #75 Observation period | 4 | An agreed period of Java-authoritative reads ends with no unresolved semantic divergence |
+| #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core. Every read in core goes through the seam to the API, and a ratchet keeps it that way |
 
 ### Post-cutover
 
@@ -95,6 +96,7 @@ needs in [Strangler transition](/architecture/strangler-transition/).
 | #16, #17 to #23 | Epic and steps: Creeds and Values | New charter capability. #17 (re-baseline) and #18 (prose layer, which gates nothing) can start any time |
 | #55, #57 to #61 | Epic and steps: Charter Pack governance (mutability policy) | New charter capability |
 | #56, #62 to #67 | Epic and steps: persistent deactivation | Defects in core's Python charter today; they are built here on the Java side |
+| #77, #78 to #85 | Epic and steps: Foundational Values and Creed (`impacts` edges, value sets, charter creed) | New charter capability; overlaps #16, see below |
 | #40 | Recommended-tools list per activated pack | Offering extension |
 | #42 | Pack-declared profile-role resolution | Offering extension; core work comes first |
 | #49 | Derive the hand-kept lists | Quality follow-up; blocks nothing |
@@ -116,10 +118,9 @@ needs in [Strangler transition](/architecture/strangler-transition/).
 - **#63 to #66.** These describe behavior users hit in core today. Core may fix them before
   the cutover. If it does, the conformance corpus records the fixed answers, and the
   Java side inherits them through #9 and #11.
-- **Creed drafts (E1).** Eight drafted issues duplicate epic #16 and #17 to #23, and were not
-  filed. The proposal is to fold what they add (the `impacts` vocabulary and its migration)
-  into epic #16 as new steps, in Post-cutover.
-
+- **#16 and #77.** Both Creeds and Values epics are filed, and they overlap. #77 adds the
+  `impacts` vocabulary and its migration (#79, #80). Which epic carries the rest is an open
+  decision.
 - **#62 to #67 against the observation period.** Persistent deactivation changes read
   answers. If core fixes it during the observation period, the corpus and both
   implementations have to change together, or the period restarts.
