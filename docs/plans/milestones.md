@@ -36,10 +36,14 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
 
-The operator set this definition on 2026-10-19. The cutover therefore runs through three
-strangler stages: the read shadow (stage 2, epic #6), Java authoritative reads (stage 3) and
-the retirement of the Python reads (stage 4). Stage 4 is the
-[point of no return](/architecture/strangler-transition/#stepping-back). Stage 1 is the
+The operator set this definition on 2026-10-19. The cutover runs through the read shadow
+(stage 2, epic #6), then one switch-over in which Java becomes authoritative and the Python
+offering reads retire (stages 3 and 4 ship together, with no Python fallback). The
+conformance corpus alone gates the switch-over. The cutover covers every offering read,
+including activation's reads of offering data; compile keeps a guarded Python read path until
+it is the first write moved to Java. The switch-over is the
+[point of no return](/architecture/strangler-transition/#stepping-back). These are
+provisional decisions, recorded as ADR-0010 and ADR-0011 in the decisions PR. Stage 1 is the
 import move of core ADR `2026-10-12-2` (D-2), carried by epic spec-kitty#6099. It gates 4.0.0
 GA. It is core work, so it is not tracked here, but nothing in this milestone can answer a
 production read without it.
@@ -72,6 +76,7 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #53 | Docs cite spec-kitty#645 instead of epic #6099 | A small factual fix to the pages this milestone depends on |
 | #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
+| #62 to #64, #66, #67 | Persistent deactivation, core side | Fixed in core now, ahead of the cutover, so the corpus records the fixed answers |
 
 #### Stages 3 and 4
 
@@ -81,12 +86,11 @@ These follow the evidence each stage needs in
 | Issue | Stage | Done when |
 |---|---|---|
 | #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
-| #70 Launcher and service lifecycle | 2 | Core starts and stops the service per worktree. #14 needs this ([open question 8](/plans/open-questions/)) |
-| #71 Cross-OS packaging of the service | 3 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)). This is a fallback-retirement criterion |
-| #72 Conformance as a blocking gate | 3 | A divergence on the supported corpus fails core's CI, not only diagnostics |
-| #73 Stale, slow and unavailable service behavior | 3 | Tests prove what the seam does when the service is stale, slow or down. The Python fallback is loud and observable, and never silently gives a second answer |
-| #74 Java authoritative reads | 3 | The seam adapter answers from Java, with Python as the observable fallback |
-| #75 Observation period | 4 | An agreed period of Java-authoritative reads ends with no unresolved semantic divergence |
+| #70 Launcher and service lifecycle | 2 | Core starts the service as a daemon per worktree, CI included, and it stops when idle. #14 needs this |
+| #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)) |
+| #72 Conformance as a blocking gate | 3, 4 | A divergence on the supported corpus fails core's CI. This is the only evidence for the switch-over |
+| #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed: a down or slow service is a named error, and stale input is refused. Freshness is fingerprinted |
+| #74 Java authoritative reads | 3, 4 | The seam answers from Java, in the same release as #76 |
 | #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core. Every read in core goes through the seam to the API, and a ratchet keeps it that way |
 
 ### Post-cutover
@@ -95,8 +99,9 @@ These follow the evidence each stage needs in
 |---|---|---|
 | #16, #17 to #23 | Epic and steps: Creeds and Values | New charter capability. #17 (re-baseline) and #18 (prose layer, which gates nothing) can start any time |
 | #55, #57 to #61 | Epic and steps: Charter Pack governance (mutability policy) | New charter capability |
-| #56, #62 to #67 | Epic and steps: persistent deactivation | Defects in core's Python charter today; they are built here on the Java side |
-| #77, #78 to #85 | Epic and steps: Foundational Values and Creed (`impacts` edges, value sets, charter creed) | New charter capability; overlaps #16, see below |
+| #56, #65 | Epic; projection and resolution honor exclusions | The epic, and the step that lands on the Java offering side once reads go through the API. #62 to #64, #66 and #67 are fixed in core now and sit in 4.x cutover |
+| #77, #78 to #80 | Epic and steps: the `impacts` vocabulary for the DRG | The graph layer of Creeds and Values. #16 carries the charter value layer, now including #82 |
+| #87 | Core: org pack precedence is inconsistent | Must be fixed before the policy enforcement (#58) |
 | #40 | Recommended-tools list per activated pack | Offering extension |
 | #42 | Pack-declared profile-role resolution | Offering extension; core work comes first |
 | #49 | Derive the hand-kept lists | Quality follow-up; blocks nothing |
@@ -110,17 +115,15 @@ These follow the evidence each stage needs in
 | #24 | Design spike: deployable charter backend service | Marked backlog by its own scope note |
 | #44 | Design: register an active charter configuration by ULID handle | For discussion; a step towards hosted deployment |
 
-## Candidates to move
+## Decided on 2026-10-19
 
-- **#57 and #62.** The policy ADR and the ledger-authority decision are design work only.
-  If the 1.0 contract should carry the `enforced` level or persisted exclusions, move them
-  to the cutover. Adding either later is a minor contract change, so the default is to wait.
-- **#63 to #66.** These describe behavior users hit in core today. Core may fix them before
-  the cutover. If it does, the conformance corpus records the fixed answers, and the
-  Java side inherits them through #9 and #11.
-- **#16 and #77.** Both Creeds and Values epics are filed, and they overlap. #77 adds the
-  `impacts` vocabulary and its migration (#79, #80). Which epic carries the rest is an open
-  decision.
-- **#62 to #67 against the observation period.** Persistent deactivation changes read
-  answers. If core fixes it during the observation period, the corpus and both
-  implementations have to change together, or the period restarts.
+The operator ruled on the open questions this page raised. The decisions are provisional.
+
+- **Contract 1.0** reserves what the cutover needs and models the `impacts` relation. New
+  capabilities (activation and exclusions, pack policy, the creed) arrive as additive
+  contract sets that clients opt into (ADR-0009).
+- **Persistent deactivation** is fixed in core now: #62 to #64, #66 and #67 moved to the
+  cutover; #65 stays here (ADR-0013).
+- **Creeds and Values** is split by layer: #77 carries the `impacts` vocabulary, #16 the
+  charter value layer. #81, #83, #84 and #85 were closed as duplicates (ADR-0014).
+- **The observation period (#75)** was dropped: the conformance corpus gates the switch-over.
