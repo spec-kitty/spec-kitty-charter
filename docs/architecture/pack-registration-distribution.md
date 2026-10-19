@@ -2,7 +2,7 @@
 title: Pack registration and distribution
 description: "How the charter service registers, stores, verifies and distributes packs of every tier: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
@@ -332,6 +332,6 @@ The locked decisions settle the shape; where an existing doc described a differe
 - OpenAPI contract skeleton for the `registration` concern authored under `contracts/charter/`: paths, closed schemas referencing the `Links` component, `Problem`/`PageInfo` reuse, the `PackSource` four-kind discriminator, the `requires_core` compat field on the registration/source descriptor, and the `PACK_ENGINE_INCOMPATIBLE` refusal code.
 - The two-tier lockfile shape authored: `ConfigLockfile {source, rev, snapshot_sha256}` + the `PackManifest` `content_hash`, reusing the `spec-kitty-snapshot-sha256` recipe.
 - The ArchUnit rule set (§6) agreed as the acceptance gate.
-- BDD scenarios for registration/distribution/resolve-refusal outcomes authored to the [Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/) bar, with `src/test/resources` fixtures provisioned (no vendored production trees).
+- Scenarios for registration/distribution/resolve-refusal outcomes (contract scenarios once bound, in `contracts/charter/scenarios/<cluster>/`) authored to the [Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/) bar, with `src/test/resources` fixtures provisioned (no vendored production trees).
 - The two deferred storage-policy items (tenancy/privacy boundary; retention/GC) resolved by the operator at storage-design time before the storage adapters are built.
 </content>

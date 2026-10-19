@@ -32,7 +32,7 @@ direction, the design, the decisions, the contract and the first slice of the se
 - **Staged behind one seam.** The Python seam `charter.offering.api` becomes the only entry
   point for CLI callers. Behind it, reads move to the Java service first (shadow, then
   authoritative with a loud fallback), and writes move later, one operation at a time. The
-  Java service is a rewrite built against BDD and OpenAPI contracts; the Python charter does
+  Java service is a rewrite built against its contract scenarios and the OpenAPI document; the Python charter does
   not move here.
 - **Not an event producer.** Events come from the core CLI's one canonical event writer,
   which the runtime calls as Missions move through their lifecycle, and follow the

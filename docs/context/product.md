@@ -2,7 +2,7 @@
 title: What the charter service is for
 description: What the charter service is for, where it sits in the Brain, Build and Team Kitty product lines, and what this repository will hold.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Context
 kind: Explanation
 related:
@@ -56,7 +56,7 @@ never through its internals.
 
 | Part | Purpose | State |
 |---|---|---|
-| `contracts/charter/` | The OpenAPI 3.1 contract and its BDD scenarios: the source of record for every charter DTO ([ADR-0002](/adr/0002-contract-source-of-record/)) | first read paths |
+| `contracts/charter/` | The OpenAPI 3.1 contract and its contract scenarios: the source of record for every charter DTO ([ADR-0002](/adr/0002-contract-source-of-record/)) | first read paths |
 | The Java service | A hexagonal Java 25 service: pure domain, read and write applications, REST and MCP adapters, YAML adapters | skeleton: domain, read app, REST in, YAML out |
 | Conformance corpus | Fixtures that the Python implementation and the Java service must both pass | planned |
 | The Python charter package | Not held here: it stays in core behind `charter.offering.api` as the conformance oracle while Java takes over ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)) | decided |
