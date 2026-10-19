@@ -2,7 +2,7 @@
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: ADR
 kind: Hub
 audience:
@@ -21,12 +21,15 @@ Decisions taken in this repository. Records are numbered `NNNN-<slug>.md` and co
 later decision supersedes it rather than editing it. A record may still carry a dated,
 decision-preserving **clarification** (an annotation that sharpens scope or wording without
 changing what was decided); a clarification is labelled and dated, and anything that changes the
-decision is a new record instead.
+decision is a new record instead. The one exception, as in core's records, is a dated
+**amendment** under the record's Status that cites the operator ruling changing part of the
+decision: the original decision text stays, and each point it changes is annotated where it
+stands.
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | [0001](/adr/0001-java-service-with-openapi-contract/) | ADR-0001: The charter is a Java service built against an OpenAPI contract | Accepted | 2026-10-13 |
-| [0002](/adr/0002-contract-source-of-record/) | ADR-0002: This repository is the source of record for the charter contract | Accepted | 2026-10-18 |
+| [0002](/adr/0002-contract-source-of-record/) | ADR-0002: This repository is the source of record for the charter contract | Accepted, with Amendment 2026-10-18 | 2026-10-18 |
 | [0003](/adr/0003-docs-follow-doc-kitty/) | ADR-0003: Documentation follows the doc-kitty convention | Accepted | 2026-10-13 |
 | [0004](/adr/0004-public-api-returns-generated-dtos/) | ADR-0004: The public API returns DTOs generated from the OpenAPI contract | Accepted | 2026-10-14 |
 | [0005](/adr/0005-service-registers-and-distributes-packs/) | ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer | Proposed | 2026-10-18 |
