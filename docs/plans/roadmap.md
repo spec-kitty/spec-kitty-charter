@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Plan
 kind: Planning
 related:
@@ -46,10 +46,11 @@ As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
   `1.0.0-SNAPSHOT`, unreleased, with two read paths (`GET /packs`,
   `GET /mission-types/{missionType}/actions/{action}/context`), the vendored `_shared`
   vocabulary and the contract scenarios. The charter's own contract checks run in the build
-  (`./gradlew :contracts:check`): its lint ruleset with a planted fixture per rule, the
-  bundle core vendors, a checker for closed response objects and the breaking-change check.
-  No contract version is released yet, so the breaking-change check has no baseline; it
-  needs the full history, which CI fetches. The other checks pass locally.
+  (`./gradlew :contracts:check`): its lint ruleset with at least one planted fixture per
+  rule, the bundle core vendors, a checker for closed response objects and the
+  breaking-change check. All of them pass locally. No contract version is released yet, so
+  in a full clone the breaking-change check finds no baseline, says so and passes; it
+  refuses a shallow clone, and CI fetches the full history.
 - **Step 2, done pending the first CI run on the pull request.** `build-logic/` convention
   plugins, the six modules under `service/` plus the `charter-reports` aggregation, a
   version catalog, strict SHA-256 dependency verification and the ArchUnit gate, which fails
@@ -62,8 +63,8 @@ As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
 - **Next: step 3**, the first corpus slice, which needs the core-side export script.
 
 The action-scoped context answered today is a first slice, marked `x-provisional` in the
-contract: scope edges of the action node, then of the mission type node, over the merged
-offering without activation filtering. The corpus ([#9](https://github.com/spec-kitty/spec-kitty-charter/issues/9))
+contract: the targets of the scope edges of the action node and of the mission type node,
+each once, sorted by URN, over the merged offering without activation filtering. The corpus ([#9](https://github.com/spec-kitty/spec-kitty-charter/issues/9))
 decides the real rules and the contract version that carries them
 ([open question 14](/plans/open-questions/)).
 
