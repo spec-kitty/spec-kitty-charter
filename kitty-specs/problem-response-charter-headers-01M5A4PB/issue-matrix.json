@@ -1,0 +1,17 @@
+{
+  "rows": {
+    "#90": {
+      "evidence_ref": "lane-a 37c4fbb: Problem.yaml declares headers; fccf8dd rule red on 3 default responses; c101cc5 scenario",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    }
+  },
+  "schema_version": 1
+}

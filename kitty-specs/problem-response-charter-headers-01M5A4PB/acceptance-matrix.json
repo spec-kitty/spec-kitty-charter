@@ -1,0 +1,59 @@
+{
+  "mission_slug": "problem-response-charter-headers-01M5A4PB",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "37c4fbb (kitty/mission-problem-response-charter-headers-01M5A4PB-lane-a): contracts/_shared/responses/Problem.yaml declares the three headers by $ref to contracts/charter/headers; bundle has 0 $ref and all 3 default responses carry them (required true/true/false); lintContract green: 'The charter contract passes all 12 lint rules.'",
+      "pass_fail": "pass",
+      "verified_by": "claude-reviewer",
+      "verified_at": "2026-10-19T13:46:54.328725+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "fccf8dd (kitty/mission-problem-response-charter-headers-01M5A4PB-lane-a): rule charter-headers-on-every-response; red on the pre-change contract, 3 errors on the default responses of /info, /packs and the action-context operation (/tmp/claude-0/-home-user-spec-kitty-charter/be6403ca-6a56-58f3-872e-6f7e1f9d4b46/scratchpad/wp01-red.txt; reviewer half-by-half proof reproduced); green after 37c4fbb; lintFixtures: 'Each of 12 rules fails its 14 planted fixtures, and only them; the clean fixture passes.'",
+      "pass_fail": "pass",
+      "verified_by": "claude-reviewer",
+      "verified_at": "2026-10-19T13:47:00.306639+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "c101cc5 (kitty/mission-problem-response-charter-headers-01M5A4PB-lane-a): contract scenario 'A bad request carries the headers too' (contracts/charter/scenarios/service.feature:45-52); :charter-service:test --rerun-tasks green, 6/6 in service scenarios",
+      "pass_fail": "pass",
+      "verified_by": "claude-reviewer",
+      "verified_at": "2026-10-19T13:47:06.053803+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "c101cc5 (kitty/mission-problem-response-charter-headers-01M5A4PB-lane-a): contracts/_shared/VENDORED.md states canonical ownership (operator ruling 2026-10-19, ADR-0015 via PR #91, DM 01M5A4PP44NQ3KWG4APT0PEJCT), lists responses/Problem.yaml as changed from the origin; reviewer-approved",
+      "pass_fail": "pass",
+      "verified_by": "claude-reviewer",
+      "verified_at": "2026-10-19T13:47:11.987789+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "c101cc5 (kitty/mission-problem-response-charter-headers-01M5A4PB-lane-a): contracts/charter/CHANGELOG.md 1.0.0-SNAPSHOT entry; docs/changelog/2026-10-19-problem-response-charter-headers.md; docs/api/service-contract.md error model; reviewer-approved",
+      "pass_fail": "pass",
+      "verified_by": "claude-reviewer",
+      "verified_at": "2026-10-19T13:47:18.256209+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
