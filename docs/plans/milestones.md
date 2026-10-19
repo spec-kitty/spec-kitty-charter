@@ -58,12 +58,13 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 |---|---|---|
 | #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
 | #7, #8 | Contract setup; Gradle build | Roadmap steps 1 and 2. Delivered by PR #54, which is still open; both close when it merges |
-| #9 | Conformance corpus, first slice | Roadmap step 3; the shadow is judged against it |
+| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; the switch-over is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
+| #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
-| #12 | Decide how the Python charter reaches this repository | Gates #13 ([open question 2](/plans/open-questions/)) |
 | #13 | Core ingests the contract | Roadmap step 6 |
 | #14 | Read shadow | Roadmap step 7; stage 2, which stages 3 and 4 build on |
-| #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor |
+| #113 | Reshape the reserved contract 1.0 surface | Changing it after the first release is breaking |
+| #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor; waits on #113 |
 | #46 | `x-stability-level` for provisional operations | The release gate must not report a change to a provisional operation as breaking |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
 | #48 | Pack-level policy in the domain | Do it before #11 adds the org and project layers |
@@ -76,6 +77,8 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #53 | Docs cite spec-kitty#645 instead of epic #6099 | A small factual fix to the pages this milestone depends on |
 | #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
+| #114 | Import the pack schemas as canonical | The schemas the YAML adapter validates against ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)) |
+| #115 | Pack doctor parity on open-packs | The first pack goal: Java verdicts match core's validator |
 | #62 to #64, #66, #67 | Persistent deactivation, core side | Fixed in core now, ahead of the cutover, so the corpus records the fixed answers |
 
 #### Stages 3 and 4
@@ -101,7 +104,6 @@ These follow the evidence each stage needs in
 | #55, #57 to #61 | Epic and steps: Charter Pack governance (mutability policy) | New charter capability |
 | #56, #65 | Epic; projection and resolution honor exclusions | The epic, and the step that lands on the Java offering side once reads go through the API. #62 to #64, #66 and #67 are fixed in core now and sit in 4.x cutover |
 | #77, #78 to #80 | Epic and steps: the `impacts` vocabulary for the DRG | The graph layer of Creeds and Values. #16 carries the charter value layer, now including #82 |
-| #87 | Core: org pack precedence is inconsistent | Must be fixed before the policy enforcement (#58) |
 | #40 | Recommended-tools list per activated pack | Offering extension |
 | #42 | Pack-declared profile-role resolution | Offering extension; core work comes first |
 | #49 | Derive the hand-kept lists | Quality follow-up; blocks nothing |
@@ -127,3 +129,6 @@ The operator ruled on the open questions this page raised. The decisions are pro
 - **Creeds and Values** is split by layer: #77 carries the `impacts` vocabulary, #16 the
   charter value layer. #81, #83, #84 and #85 were closed as duplicates (ADR-0014).
 - **The observation period (#75)** was dropped: the conformance corpus gates the switch-over.
+- **The conformance corpus** is a harness over core's CLI (ADR-0016). **Pack schemas** are
+  imported from core's models and owned here (ADR-0017). #12 was closed (ADR-0008), and #87 was
+  closed once core fixed org precedence.

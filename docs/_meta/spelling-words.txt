@@ -176,3 +176,6 @@ jqwik
 oasdiff
 # foundational-values and creed rulings (ADR-0014)
 ammerse
+# pack schema validation (ADR-0017)
+networknt
+snakeyaml
