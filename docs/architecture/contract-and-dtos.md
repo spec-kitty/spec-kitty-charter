@@ -9,6 +9,7 @@ related:
   - adr/0001-java-service-with-openapi-contract
   - adr/0002-contract-source-of-record
   - api
+  - adr/0009-contract-1-0-reservations-and-additive-contract-sets
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for what the contract carries and how both sides generate from it.
@@ -118,6 +119,23 @@ The layout:
   property, optional or required, is therefore a **breaking** change (DM
   `01M5986E711JT296MA6NDN91MG`), like any other change to a response shape: it needs a new
   major version and a core-side migration of its DTO consumers.
+- **New capabilities arrive as additive contract sets** (provisional,
+  [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)). Activation,
+  persistent exclusions, value sets and the creed come as new endpoints or a new OpenAPI
+  contract set beside the existing one. A new path is not a breaking change, and a client
+  chooses whether to use it. Existing response shapes are not widened for them.
+- **1.0 reserves what the cutover needs.** Because a later addition to an existing response
+  is breaking, 1.0 carries:
+  - the `impacts` relation, modeled as a signed, authored edge; `in_tension_with` is dropped
+    and `reconciles_tension` targets `impacts < 0` pairs;
+  - the refusal codes `governance_policy_violation` and `stale_input`;
+  - an integer `depth` request parameter on the context read, echoed in the response;
+  - an info endpoint, and `Charter-Contract-Version`, `Charter-Worktree` and
+    `Charter-Source-Fingerprint` response headers;
+  - a governance fingerprint on context responses.
+
+  Core aligns to these at the cutover. Until then, core's seam maps its `in_tension_with`
+  edges to negative `impacts` edges.
 - A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
   released version of the same major version. Until the first release there is no baseline,
   and the check says so. How the released version is found, and the release procedure, are in

@@ -2,12 +2,15 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
   - context/domain
   - architecture/contract-and-dtos
+  - adr/0012-pack-mutability-policy
+  - adr/0013-persistent-deactivation
+  - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the behavior the domain must reproduce, step by step.
@@ -19,7 +22,7 @@ audience:
 
 What the charter domain computes from its inputs: layer merge, activation, cascade, action-scoped context and profile resolution, and the fail-loud rules it keeps.
 
-> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. [What the labels mean](/#status).
+> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core. [What the labels mean](/#status).
 
 ## Inputs
 
@@ -58,11 +61,18 @@ flowchart LR
    endpoints resolve to `<kind>:<id>` URNs or to bare ids the fragment declares; anything
    else is an `unresolved_edge_endpoint` conflict. Edges from an org pack's `drg/fragment.yaml`
    land in the same graph that cascade reads; they are not kept on a separate,
-   diagnostic-only path (a defect the charter-resolution program fixed).
+   diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
+   mutability level is checked against what later packs do to it: a change the level does not
+   allow is the refusal `governance_policy_violation`
+   ([ADR-0012](/adr/0012-pack-mutability-policy/)). Core keeps the first org pack's node for
+   non-built-in URNs but the last for built-in URNs; that inconsistency is a defect to fix
+   before the levels land.
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
-   is an allowlist. Org `required_<kind>` lists apply where the kind is org-requirable, and
-   union into the charter's `selected_<kind>` list where it is selection-overlayable.
+   is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either
+   ([ADR-0013](/adr/0013-persistent-deactivation/)). Org `required_<kind>` lists apply where
+   the kind is org-requirable, and union into the charter's `selected_<kind>` list where it is
+   selection-overlayable.
 4. **Answer.** Action-scoped context, profile resolution with `specializes_from` lineage and
    `enhances` / `overrides` applied, graph queries and listings.
 
@@ -81,9 +91,9 @@ exist in core today, and each is a separate operation to migrate
 
 A fourth, non-YAML write exists: the context read itself records first-load state in
 `.kittify/charter/context-state.json` (`--mark-loaded`), and its answer differs between a
-first load and a later one. Default here: that state stays in the Python seam, and the
-service takes the load depth as a request parameter
-([open questions](/plans/open-questions/), question 12).
+first load and a later one. That state stays in core's seam, and the service takes the load
+depth as an integer request parameter, echoed in the response
+([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/), provisional).
 
 ## Rules the domain inherits
 

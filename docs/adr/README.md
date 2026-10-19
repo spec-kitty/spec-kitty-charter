@@ -36,6 +36,12 @@ stands.
 | [0006](/adr/0006-onion-vertical-slices-archunit/) | ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit | Proposed | 2026-10-18 |
 | [0007](/adr/0007-rest-hateoas-contract-of-record/) | ADR-0007: REST-HATEOAS is the v1 contract of record; GraphQL is planned-later, MCP deferred | Proposed | 2026-10-18 |
 | [0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) | ADR-0008: The Java charter is a rewrite that replaces the Python charter, built against BDD and OpenAPI contracts | Accepted | 2026-10-18 |
+| [0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) | ADR-0009: Contract 1.0 reserves the cutover and impacts surface; new capabilities arrive as additive contract sets | Accepted (provisional) | 2026-10-19 |
+| [0010](/adr/0010-cutover-scope-and-seam-boundary/) | ADR-0010: The 4.x cutover retires every Python offering read; core's ADR governs only the seam routing | Accepted (provisional) | 2026-10-19 |
+| [0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) | ADR-0011: The seam fails closed, the service runs as a daemon, and freshness is fingerprinted | Accepted (provisional) | 2026-10-19 |
+| [0012](/adr/0012-pack-mutability-policy/) | ADR-0012: Charter Pack authors declare open, extendable or locked per artifact | Accepted (provisional) | 2026-10-19 |
+| [0013](/adr/0013-persistent-deactivation/) | ADR-0013: Deactivation is a persisted exclusion in one activation ledger | Accepted (provisional) | 2026-10-19 |
+| [0014](/adr/0014-foundational-values-and-creed-rulings/) | ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements | Accepted (provisional) | 2026-10-19 |
 
 ## Core decisions this repository builds on
 
@@ -45,7 +51,9 @@ These live in [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty
 | Core ADR | Title | Status in core | What it gives this repository |
 |---|---|---|---|
 | [`4.x/2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) | The charter becomes an external contract package in its own repository | Accepted | The reason this repository exists; the import-move precondition (formerly #645, now carried by epic #6099) is GA-gating |
-| [`4.x/2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) | Replace charter reads and writes through a staged Java service strangler | Accepted (2026-10-18, with Amendment 2026-10-18) | The stages, the hexagonal shape, the write gates, the service boundary |
+| [`4.x/2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) | Replace charter reads and writes through a staged Java service strangler | Accepted (2026-10-18, with Amendment 2026-10-18) | The stages, the hexagonal shape, the write gates, the service boundary. To be amended so it governs only the seam routing ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)) |
+| [`4.x/2026-10-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-16-1-extract-charter-offering-first-activation-rework-post-ga.md) | Extract the charter offering first; activation rework after GA | Accepted | The import move is done (#6188); activation stays in core until its post-GA rework. Its step P4 (#6288, move the Python offering here) is to be amended ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)) |
+| [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md) | Event-native core: one canonical event writer | Accepted | Charter-related events, if any, go through this writer; the charter service writes none |
 | [`4.x/2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) | A mission status read API replaces the CLI-bundled dashboard | Accepted | The sibling Java service: stack, binding, contract conventions, release model |
 | [`4.x/2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md) | Charter offering, active charter and activation presets | Accepted | The domain vocabulary; presets as pack data; no aliases or shims |
 | [`4.x/2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md) | A Charter Pack declares its level in `pack.yaml` | Accepted | `pack_level` and its refusal codes |

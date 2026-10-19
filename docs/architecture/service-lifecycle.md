@@ -1,13 +1,14 @@
 ---
 title: Service lifecycle
-description: How the charter service runs — one per worktree, loopback only, a capability credential, source fingerprints for freshness, and a loud fallback.
+description: How the charter service runs — a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
   - architecture/overview
   - architecture/strangler-transition
+  - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -17,9 +18,9 @@ audience:
 
 # Service lifecycle
 
-How the service runs: one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints and backed by a loud fallback.
+How the service runs: one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints, and failing closed when it cannot answer.
 
-> **Status:** design only, from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Service boundary") and the sibling model in core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API). [What the labels mean](/#status).
+> **Status:** design only, from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Service boundary") and the sibling model in core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API). The launcher, failure, handshake and freshness rules below are provisional decisions of 2026-10-19 ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)). [What the labels mean](/#status).
 
 ## One service per worktree
 
@@ -31,8 +32,13 @@ shared implicitly.
 ## Who starts it
 
 The core's `specify_cli` layer launches, locates and stops the service, and hands the seam
-an endpoint and a credential. The seam never manages the process. The launcher's design (a
-daemon started on first use, or one per command) is a deferred decision.
+an endpoint and a credential. The seam never manages the process.
+
+The service always runs as a **daemon**, in CI too: started on first use in a worktree, stopped
+after an idle period and when the worktree is removed. Because the seam receives only an
+endpoint and a credential, the launcher can change later without touching the seam. A daemon
+started by the CLI reopens the trust question core settled for the dashboard; the binding
+rules below are how this one is scoped to its worktree.
 
 ## Binding and access
 
@@ -41,6 +47,10 @@ daemon started on first use, or one per command) is a deferred decision.
   to a static-analysis finding.
 - Every request carries a capability credential scoped to the worktree.
 - No secrets in responses.
+- **Version handshake.** An info endpoint reports the contract version and the worktree, and
+  every response carries `Charter-Contract-Version`, `Charter-Worktree` and
+  `Charter-Source-Fingerprint` headers. The seam refuses a service whose `major.minor` does not
+  match the contract it was built against.
 - The MCP adapter does not ship until a decision defines who may call it and how; the
   expected answer reuses this model (loopback, Host check, worktree-scoped token).
 
@@ -49,18 +59,27 @@ daemon started on first use, or one per command) is a deferred decision.
 - At start, and after any write made outside it, the service fingerprints its source files
   and builds the active graph atomically. It never serves a graph built before a write it
   knows of.
+- **Fingerprint and rebuild on read.** Each read checks the fingerprint of its inputs, so hand
+  edits and branch switches are caught.
+- **Push after write.** Core's writers notify the service after each write through the
+  `kernel.atomic.observe_writes` hook, so the CLI sees its own write at once.
+- Pack locations are read from `.kittify/config.yaml`, not fixed when the service starts.
+- If inputs change while a read is answered, the service refuses with `stale_input`. There is
+  no Python fallback. Explicit refresh and mutation operations rebuild the graph atomically.
 - Ordinary reads make no network calls.
-- A stale input causes a refusal, or a loud fallback to Python while the fallback exists.
-  Explicit refresh and mutation operations rebuild the graph atomically.
 
-## Failure and fallback
+## Failure: the seam fails closed
+
+Stages 3 and 4 of the [strangler transition](/architecture/strangler-transition/) ship
+together, so there is no Python fallback at any point.
 
 | Situation | Behavior |
 |---|---|
-| Service not running or unreachable | The seam falls back to Python (until Python reads retire), and says so in diagnostics and telemetry |
+| Service not running, unreachable or too slow | The command fails with a named error and a remedy, and exits non-zero |
 | Service answers for another worktree | Refused: identity is checked on every call |
-| Inputs changed since the graph was built | Rebuild, or refuse; never answer from the old graph |
-| After Python reads retire | No fallback: the command fails with a named error |
+| Contract version does not match | Refused by the seam, naming both versions |
+| Inputs changed since the graph was built | Rebuild, or refuse with `stale_input`; never answer from the old graph |
+| The service refuses (for example `pack_level_mismatch`) | That is the answer, passed through; it is not a failure |
 
 ## Release
 

@@ -9,6 +9,8 @@ related:
   - architecture/overview
   - architecture/contract-and-dtos
   - plans/roadmap
+  - adr/0010-cutover-scope-and-seam-boundary
+  - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
 audience:
   - profile: core-maintainer
     guidance_text: Read this for the stages, the evidence each needs and the point of no return.
@@ -23,7 +25,9 @@ replaces the Python charter, which stays in core as the oracle until its reads a
 retire ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)), so the
 seam and the shadow comparison run in core and the service runs from this repository.
 
-> **Status:** design only; this repository is at stage 0. [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
+> **Status:** design only; this repository is at stage 0. The cutover scope, the merged stages 3
+> and 4 and the corpus-only gate are provisional decisions of 2026-10-19
+> ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 
 ## Stages
 
@@ -34,20 +38,46 @@ seam and the shadow comparison run in core and the service runs from this reposi
 | 2. Read shadow | Python; Java compared out of band | Python | Contract and fixture equivalence |
 | 3. Java authoritative | Java; loud, observable Python fallback | Python | Conformance is a blocking gate; freshness and failure behavior proven |
 | 4. Java reads complete | Java only | Python | Fallback-retirement criteria met |
+| **3 + 4, as decided** | **Java only; the seam fails closed** | Python | **The conformance corpus passes as a blocking gate** |
 | 5. Write migration | Java | Python or Java, per operation | Codec identity, mapping identity, confined mutation, negative-fixture equivalence |
 | 6. End state | Java | Java | Every write operation migrated |
 
 "Java authoritative" means Java gives the production answer and Python answers only as a
 fallback. The fallback must never silently choose a second answer.
 
+**Stages 3 and 4 ship together** (provisional,
+[ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). There is no period in which Python
+answers as a fallback: when the service is down or slow, the seam fails closed with a named
+error ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)). The rows for
+stages 3 and 4 stay above as the shape of the original plan.
+
+## The 4.x cutover
+
+The 4.x cutover is stage 4. It is done when:
+
+- every Charter Pack and offering read goes through this repository's API, called from
+  core's seam;
+- that includes the reads `charter.activation` makes of offering data, while activation's own
+  state logic stays in core until its post-GA rework (core ADR
+  [`2026-10-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-16-1-extract-charter-offering-first-activation-rework-post-ga.md));
+- the Python offering read code in core is removed or inactive.
+
+**Compile is the one exemption.** It keeps a Python read path, held by a ratchet, until it
+becomes the first write operation migrated in stage 5. Core's ADR `2026-10-03-1` is to be
+amended to govern only the seam routing; the offering internals, including the Charter Pack
+structure, are decided in this repository.
+
 ## Retiring the fallback
 
 Python reads retire only when all of these hold:
 
-- the supported conformance corpus passes;
+- the supported conformance corpus passes, as a blocking gate in core's CI;
 - the behavior of a stale or unavailable service is proven by tests;
-- cross-OS packaging is supported;
-- an agreed observation period finds no unresolved semantic divergence.
+- cross-OS packaging is supported.
+
+The original plan also asked for an observation period. That was dropped on 2026-10-19
+(provisional, [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)): the corpus is the only
+evidence for the switch-over, so every behavior that matters must be a corpus case.
 
 ## Stepping back
 
@@ -56,10 +86,12 @@ can step back:
 
 - **Callers on the seam:** move a caller back to its direct import.
 - **Read shadow:** turn the comparison off; Python already answers.
-- **Java authoritative:** switch the seam adapter back to Python reads.
+- **Java authoritative:** switch the seam adapter back to Python reads. With stages 3 and 4
+  shipped together, this step exists only until the release that removes the Python reads.
 - **Write migration:** send one write operation back to Python while its writer exists.
 
-**The point of no return is stage 4**, retiring the Python reads. After it, going back means
+**The point of no return is stage 4**, retiring the Python reads. Since stages 3 and 4 ship
+together, the switch-over itself is that point. After it, going back means
 restoring deleted code from a release. Retiring each Python writer repeats that choice for
 its operation.
 
@@ -86,9 +118,11 @@ participated.
 ## Relation to the 4.0.0 gate
 
 Stage 1 is the import-move precondition of core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (D-2), and it gates 4.0.0
-GA. It was tracked as spec-kitty#645 until that issue was closed as not planned on
-2026-10-13; the import move is now in the scope of epic spec-kitty#6099, which still names spec-kitty#645
-as its precondition, so core has to re-home it. Stages 2 onward do not gate GA: core
+GA. It is done: spec-kitty#6188 moved the `specify_cli → charter` imports onto the offering
+seam, as core ADR [`2026-10-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-16-1-extract-charter-offering-first-activation-rework-post-ga.md) (Accepted) records. That ADR's step P4
+(spec-kitty#6288) still plans to move the Python offering into this repository; under
+[ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) it does not move, so
+core is asked to amend P4 ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). Stages 2 onward do not gate GA: core
 ADR `2026-10-03-1` places them in 4.x evolution. This repository can build the contract, the
 domain and the conformance corpus in parallel with stage 1, but nothing here answers a
 production read before stage 1 is done.

@@ -9,6 +9,9 @@ related:
   - context/domain
   - architecture/descriptors
   - architecture/resolution-model
+  - adr/0012-pack-mutability-policy
+  - adr/0013-persistent-deactivation
+  - adr/0009-contract-1-0-reservations-and-additive-contract-sets
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -121,6 +124,23 @@ merged graph has *layers*, one per level. The layers merge built-in, then org, t
 under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
+### Mutability levels
+
+The author of the pack that introduces an artifact decides what packs merged after it may do
+with it (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)):
+
+| Level | A later pack may |
+|---|---|
+| `open` (default) | override it, enhance it or deactivate it |
+| `extendable` | enhance it only |
+| `locked` | nothing: it is untouched, cannot be deactivated, and is required |
+
+Each level is a set of allowed operations. The levels are declared in a policy file at the
+pack root, which `pack.yaml` references. Ownership follows merge order, not a fixed ladder of
+three tiers: the owner is the pack that introduced the artifact, and every pack merged after
+it is lower. A lower pack may tighten a level, never loosen it. This replaces the
+consumer-declared `replaceable-builtins.yaml` allowlist, with a migration.
+
 ## Artifact kinds
 
 An **artifact** is one governance unit with a kind and an id. The kinds are the members of
@@ -196,12 +216,16 @@ The DRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it 
 | `enhances` | Field-merge into a target artifact; keeps the action sequence and step inputs and outputs. |
 | `overrides` | Full replacement of a target artifact. |
 | `replaces` | Supersession; kept for older hand-authored fragments. |
-| `in_tension_with` | Symmetric, non-transitive: two co-valid artifacts compete on one decision. Stored once, smaller URN as source. |
-| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. |
+| `impacts` | Directional, authored, with a signed magnitude: the source artifact helps (positive) or hurts (negative) the target. Two artifacts are in tension when `impacts < 0`. Replaces `in_tension_with` (core ADR `2026-07-26-3`). |
+| `reconciles_tension` | Directional, from a reconciling artifact to one side of an `impacts < 0` pair. A pair is resolved only when an active artifact reconciles both sides. |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 
 An edge endpoint is either a URN `<kind>:<id>` or a bare id that the same fragment's `nodes:`
 block declares. Anything else is refused at merge time as `unresolved_edge_endpoint`.
+
+Core still writes `in_tension_with` until its migration lands. The contract has only `impacts`
+from 1.0, and core's seam maps an `in_tension_with` edge to a negative `impacts` edge until then
+(provisional, [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)).
 
 ## Activation
 
@@ -209,13 +233,21 @@ Activation is the act of choosing what is in force.
 
 - **Per-kind keys.** `activated_<plural>` is an allowlist when present; when absent, the
   kind's `effective_when_absent` applies.
+- **Exclusions.** `deactivated_<plural>` is a deny-list of artifacts the user deactivated. The
+  effective set is the allowlist (or the `effective_when_absent` default) minus the deny-list,
+  so new built-ins still arrive and a deactivation survives upgrades, presets and the
+  interview. Allow and deny state live in one activation ledger file (provisional,
+  [ADR-0013](/adr/0013-persistent-deactivation/)); this is core's activation state.
 - **`activated_kinds`** gates whole kinds.
 - **`mission_type_activations`** lists the mission types the project uses.
 - **Org requirements.** `required_<plural>` lists in an org pack's `org-charter.yaml` are in
-  force for every project that registers the pack.
+  force for every project that registers the pack. Required means always active: deactivating
+  a required artifact is refused, naming the org pack. Its content stays as open as its
+  mutability level allows.
 - **Plan, then commit.** `plan_activation()` validates without writing; `commit_plan()`
   writes only after a successful plan. A failed plan never mutates configuration.
-- **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges.
+- **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges, skips
+  excluded artifacts and reports them as skipped; `--include-deactivated` takes them back in.
   Deactivating skips artifacts that another active artifact still references.
 - **Presets.** A preset (`presets/<name>.yaml` in a pack) is a named set of activations,
   applied with `spec-kitty charter activate --preset <name>` (with `--pack <pack>` for a pack
