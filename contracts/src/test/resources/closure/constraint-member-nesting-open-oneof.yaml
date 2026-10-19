@@ -1,0 +1,24 @@
+# Must report: A constraint member that nests a oneOf over an open object.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    anyOf:
+                      - required: [k]
+                        oneOf:
+                          - type: object
+                          - type: 'null'
+                      - type: 'null'

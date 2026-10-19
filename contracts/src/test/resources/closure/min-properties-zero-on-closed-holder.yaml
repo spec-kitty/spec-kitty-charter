@@ -1,0 +1,25 @@
+# Must pass: minProperties 0 as a member on a closed holder.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      k:
+                        type: string
+                    anyOf:
+                      - minProperties: 0

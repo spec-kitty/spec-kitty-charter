@@ -1,0 +1,24 @@
+# Must report (review 6, finding 1): a then without an if closes nothing, but the positions nested in it are still judged.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    type: object
+                    additionalProperties: false
+                    then:
+                      properties:
+                        extra:
+                          type: object

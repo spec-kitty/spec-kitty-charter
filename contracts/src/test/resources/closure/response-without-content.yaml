@@ -1,0 +1,11 @@
+# Must pass (review 6, finding 2): a response with no content at all has no body to judge.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    delete:
+      responses:
+        '204':
+          description: Deleted.

@@ -1,0 +1,22 @@
+# Must report: Round-5 probe 3: a negated constraint member beside null.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    anyOf:
+                      - not:
+                          required: [k]
+                      - type: 'null'
