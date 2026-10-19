@@ -29,10 +29,17 @@ Keep it small; add a step only when a scenario cannot be written without it.
   digest that must stay or change with the files.
 - `Then the response header "<name>" is "<text>"`, `... is a sha256 digest` and `... is the
   contract version`; `Then the response has no "<name>" header`.
+- `Given the project configuration file "<name>":` followed by a doc string, and `Given the project
+  configuration file "<name>" is absent` — write or delete `config.yaml` or `charter.yaml` in the
+  scenario's project configuration directory (`<root>/.kittify`), which always exists and holds
+  neither file at the start. The service digests the two files and never reads them, so the content
+  is free.
+- `Then the field "<field>" of the response body is a semantic version` — matches the semantic
+  version pattern of `ServiceInfo.serviceVersion`.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
 - `Then following "via" from every guidance entry of "<path>" reaches the action in exactly "hops" edges`
-  — reads the context operation again and walks the `via` chain of every entry back to the action
-  node, through entries of the answer only, in exactly the entry's `hops` steps.
+  — the last response must be the answer to that path; walks the `via` chain of every entry back to
+  the action node, through entries of the answer only, in exactly the entry's `hops` steps.
 
 Every scenario that calls an operation is also checked against `../openapi.yaml` once it ends:
 the response's content type must be one the operation declares for the status, or for its

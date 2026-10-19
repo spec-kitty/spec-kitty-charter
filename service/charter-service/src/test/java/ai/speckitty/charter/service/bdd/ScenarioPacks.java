@@ -10,11 +10,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /** The packs of the running scenario, written to a fresh directory that goes when the scenario ends. */
 public final class ScenarioPacks {
+
+    private static final String CONFIG_DIR = ".kittify";
 
     private @Nullable Path root;
     private boolean failing;
@@ -24,10 +27,45 @@ public final class ScenarioPacks {
     void reset() {
         delete();
         try {
-            root = Files.createTempDirectory("charter-scenario");
+            root = Files.createDirectories(
+                            Files.createTempDirectory("charter-scenario").resolve(CONFIG_DIR))
+                    .getParent();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * The scenario's project configuration directory, {@code <root>/.kittify}. It always exists during a scenario; a
+     * step writes or deletes the files in it.
+     *
+     * @return the directory, or empty when no scenario is running
+     */
+    Optional<Path> configDir() {
+        return Optional.ofNullable(root).map(r -> r.resolve(CONFIG_DIR));
+    }
+
+    /** Writes {@code content} exactly, with no added newline, to a file of the project configuration directory. */
+    void writeConfigFile(String name, String content) {
+        try {
+            Path directory = Files.createDirectories(configDirectory());
+            Files.writeString(directory.resolve(name), content, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /** Deletes a file of the project configuration directory; nothing happens when it is not there. */
+    void deleteConfigFile(String name) {
+        try {
+            Files.deleteIfExists(configDirectory().resolve(name));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private Path configDirectory() {
+        return configDir().orElseThrow(() -> new IllegalStateException("no scenario is running"));
     }
 
     /** Ends a scenario: deletes its directory and forgets its packs; nothing happens when there is none. */

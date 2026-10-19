@@ -1,7 +1,8 @@
 description: >-
-  The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. On every
-  response of the charter's operations, except when a pack file cannot be read; the read then
-  reports why. The freshness work (#73) compares it; this version only reports it (ADR-0011).
+  The digest of the inputs the answers depend on, as ServiceInfo.sourceFingerprint: every pack file
+  the service loads, and config.yaml and charter.yaml under the project configuration directory,
+  with presence. On every response of the charter's operations, except when a pack file cannot be
+  read; the read then reports why. The freshness work (#73) compares it; this version only reports it (ADR-0011).
 required: false
 schema:
   $ref: ../schemas/Sha256Digest.yaml

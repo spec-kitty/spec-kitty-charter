@@ -41,4 +41,26 @@ class ScenarioPacksTest {
 
         assertThat(Files.exists(scenarioRoot)).isFalse();
     }
+
+    @Test
+    void theProjectConfigurationDirectoryExistsEmptyAndTakesExactFiles() throws Exception {
+        ScenarioPacks packs = new ScenarioPacks();
+        assertThat(packs.configDir()).isEmpty();
+        packs.reset();
+        Path directory = packs.configDir().orElseThrow();
+        assertThat(directory).isDirectory().isEmptyDirectory();
+
+        packs.writeConfigFile("charter.yaml", "a: 1");
+        assertThat(directory.resolve("charter.yaml")).hasContent("a: 1");
+        assertThat(Files.readAllBytes(directory.resolve("charter.yaml"))).hasSize(4);
+        packs.writeConfigFile("charter.yaml", "");
+        assertThat(directory.resolve("charter.yaml")).isEmptyFile();
+        packs.deleteConfigFile("charter.yaml");
+        packs.deleteConfigFile("charter.yaml");
+        assertThat(directory).isEmptyDirectory();
+
+        packs.delete();
+        assertThat(directory).doesNotExist();
+        assertThat(packs.configDir()).isEmpty();
+    }
 }
