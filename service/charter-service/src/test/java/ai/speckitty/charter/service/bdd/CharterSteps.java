@@ -69,6 +69,11 @@ public class CharterSteps {
                 .isEmpty();
     }
 
+    @Given("the service fails unexpectedly while it reads the packs")
+    public void failUnexpectedly() {
+        packs.failUnexpectedly();
+    }
+
     @When("I GET {string}")
     public void get(String path) throws Exception {
         this.path = path;

@@ -17,6 +17,7 @@ import org.jspecify.annotations.Nullable;
 public final class ScenarioPacks {
 
     private @Nullable Path root;
+    private boolean failing;
     private final List<PackLocation> locations = new ArrayList<>();
 
     /** Starts a scenario: deletes the previous scenario's directory and creates an empty one. */
@@ -31,6 +32,7 @@ public final class ScenarioPacks {
 
     /** Ends a scenario: deletes its directory and forgets its packs; nothing happens when there is none. */
     void delete() {
+        failing = false;
         locations.clear();
         Path current = root;
         root = null;
@@ -63,7 +65,15 @@ public final class ScenarioPacks {
         }
     }
 
+    /** Plants a failure no refusal names: asking for the packs throws, until the scenario ends. */
+    void failUnexpectedly() {
+        failing = true;
+    }
+
     List<PackLocation> locations() {
+        if (failing) {
+            throw new IllegalStateException("a planted failure the response must not show");
+        }
         return List.copyOf(locations);
     }
 }

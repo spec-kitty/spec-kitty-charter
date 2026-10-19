@@ -1,6 +1,5 @@
 package ai.speckitty.charter.rest;
 
-import ai.speckitty.charter.api.model.Problem;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -16,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Answers every failure that is not a charter refusal with a closed {@code Problem} body: the Spring MVC
  * exceptions (an unknown path, a representation the request does not accept, a method the path does not have)
- * with their own status, anything else with 500. {@link RefusalHandler} answers the refusals; it runs first.
+ * with their own status, anything else with the 500 {@code internal_error} refusal. {@link RefusalHandler} answers the refusals; it runs first.
  */
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -26,13 +25,14 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
     public ProblemHandler() {}
 
     /**
-     * Answers an exception nothing else handles with 500, and logs it: the body says nothing about it.
+     * Answers an exception nothing else handles with the {@code internal_error} refusal, and logs it: the body
+     * says nothing about it.
      *
      * @param unexpected the exception
      * @return the {@code application/problem+json} 500 response
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Problem> unexpected(Exception unexpected) {
+    public ResponseEntity<Object> unexpected(Exception unexpected) {
         logger.error("Unexpected failure", unexpected);
         return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
     }
@@ -41,7 +41,6 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> createResponseEntity(
             @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-        ResponseEntity<Problem> problem = Problems.of(statusCode, headers);
-        return new ResponseEntity<>(problem.getBody(), problem.getHeaders(), problem.getStatusCode());
+        return Problems.of(statusCode, headers);
     }
 }

@@ -12,6 +12,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
 
 - `Given the <level> pack "<name>" with the file "<path>":` followed by a doc string. Adds one
   file to a pack; the pack is configured at the given level in the order first named.
+- `Given the service fails unexpectedly while it reads the packs` — plants a failure that no
+  refusal names, for the `internal_error` scenario.
 - `When I GET "<path>"` — a path below the `/api/v1` server prefix.
 - `When I GET "<path>" accepting "<media type>"` — the same, with that `Accept` header.
 - `Then the response status is <n>`

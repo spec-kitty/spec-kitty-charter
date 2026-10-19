@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RefusalHandler {
 
+    private static final String INTERNAL_ERROR_DETAIL =
+            "The charter service failed unexpectedly; the failure is logged.";
+
     /** For Spring, which finds the advice by component scan. */
     public RefusalHandler() {}
 
@@ -29,6 +32,21 @@ public class RefusalHandler {
      */
     @ExceptionHandler(ai.speckitty.charter.domain.CharterRefusal.class)
     public ResponseEntity<CharterRefusal> refused(ai.speckitty.charter.domain.CharterRefusal refusal) {
+        return respond(refusal);
+    }
+
+    /**
+     * The {@code internal_error} refusal of an unexpected failure. Its detail is the same sentence every time: it
+     * names nothing of the failure, which is logged instead.
+     *
+     * @return the {@code application/problem+json} 500 response
+     */
+    static ResponseEntity<CharterRefusal> internalError() {
+        return respond(
+                new ai.speckitty.charter.domain.CharterRefusal(RefusalCode.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL));
+    }
+
+    private static ResponseEntity<CharterRefusal> respond(ai.speckitty.charter.domain.CharterRefusal refusal) {
         HttpStatus status = refusal.code().notFound() ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR;
         CharterRefusal body = new CharterRefusal(
                 title(refusal.code()),
@@ -48,6 +66,7 @@ public class RefusalHandler {
             case PACK_UNREADABLE -> "Pack unreadable";
             case DRG_SCHEMA_ERROR -> "Invalid DRG document";
             case UNRESOLVED_EDGE_ENDPOINT -> "Unresolved edge endpoint";
+            case INTERNAL_ERROR -> "Internal error";
         };
     }
 }

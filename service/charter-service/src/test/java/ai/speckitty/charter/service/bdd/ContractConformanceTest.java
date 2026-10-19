@@ -106,6 +106,6 @@ class ContractConformanceTest {
 
     private static String codes() {
         return "[mission_type_not_found, action_not_found, pack_level_mismatch, pack_unreadable, drg_schema_error,"
-                + " unresolved_edge_endpoint]";
+                + " unresolved_edge_endpoint, internal_error]";
     }
 }

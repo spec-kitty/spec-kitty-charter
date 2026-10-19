@@ -21,7 +21,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * The failures the contract scenarios cannot provoke: an unexpected exception, a method the path does not have,
- * and the container's error page. Each is a closed {@code Problem}: title and status, nothing else.
+ * and the container's error page. A 4xx is a closed {@code Problem} of title and status; every 500 is the
+ * {@code internal_error} refusal with a generic detail.
  */
 @SpringBootTest(classes = {CharterServiceApplication.class, ProblemResponsesTest.Failing.class})
 @AutoConfigureMockMvc
@@ -38,16 +39,18 @@ class ProblemResponsesTest {
         }
     }
 
+    private static final String INTERNAL_ERROR = "{\"title\":\"Internal error\",\"status\":500,"
+            + "\"code\":\"internal_error\",\"detail\":\"The charter service failed unexpectedly; the failure is logged.\"}";
+
     @Autowired
     private MockMvc mvc;
 
     @Test
-    void anUnexpectedExceptionIsAnInternalServerErrorProblemThatHidesTheException() throws Exception {
+    void anUnexpectedExceptionIsAnInternalErrorRefusalThatHidesTheException() throws Exception {
         mvc.perform(get("/api/v1/packs"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(
-                        content().json("{\"title\":\"Internal Server Error\",\"status\":500}", JsonCompareMode.STRICT));
+                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
     }
 
     @Test
@@ -68,14 +71,12 @@ class ProblemResponsesTest {
     }
 
     @Test
-    void theContainerErrorPageWithoutAnErrorStatusAnswersWithAnInternalServerErrorProblem() throws Exception {
+    void theContainerErrorPageWithoutAnErrorStatusAnswersWithAnInternalErrorRefusal() throws Exception {
         mvc.perform(get("/error").requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 200))
                 .andExpect(status().isInternalServerError())
-                .andExpect(
-                        content().json("{\"title\":\"Internal Server Error\",\"status\":500}", JsonCompareMode.STRICT));
+                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
         mvc.perform(get("/error"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(
-                        content().json("{\"title\":\"Internal Server Error\",\"status\":500}", JsonCompareMode.STRICT));
+                .andExpect(content().json(INTERNAL_ERROR, JsonCompareMode.STRICT));
     }
 }
