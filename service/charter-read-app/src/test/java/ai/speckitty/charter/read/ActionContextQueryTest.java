@@ -423,12 +423,19 @@ class ActionContextQueryTest {
             for (int i = 0; i < 40; i++) {
                 pool.add(new Urn(kinds.get(i % kinds.size()), "n" + i));
             }
+            // The mission type may source an edge, and the action and the mission type may be targeted, so the
+            // endpoint rules (an edge back to either is never listed or walked through) are exercised too.
+            List<Urn> sources = new ArrayList<>(pool);
+            sources.add(TYPE);
+            List<Urn> targets = new ArrayList<>(pool);
+            targets.add(PLAN);
+            targets.add(TYPE);
             List<DrgEdge> edges = new ArrayList<>();
             Relation[] relations = {Relation.SCOPE, Relation.REQUIRES, Relation.SUGGESTS, Relation.VOCABULARY};
             for (int i = 0; i < 160; i++) {
                 edges.add(DrgEdge.of(
-                        pool.get(random.nextInt(pool.size())),
-                        pool.get(random.nextInt(pool.size())),
+                        sources.get(random.nextInt(sources.size())),
+                        targets.get(random.nextInt(targets.size())),
                         relations[random.nextInt(relations.length)]));
             }
             for (int i = 0; i < 6; i++) {
