@@ -1,7 +1,7 @@
 {
   "mission_slug": "charter-contract-and-build-retro-01M57QHJ",
-  "mission_number": "",
-  "mission_type": "",
+  "mission_number": "1",
+  "mission_type": "software-dev",
   "overall_verdict": "pending",
   "criteria": [
     {
@@ -47,11 +47,11 @@
     {
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": "Criterion (spec.md:199): the service workflow runs green on Java 25 on the mission head; a CI run id on the head commit is required. Not yet verifiable: no CI run exists. It is verified on the pull request's first CI run at closeout (.github/workflows/service.yml job verify: ubuntu-24.04, Temurin 25 at :69-73, fetch-depth 0 at :60, ./gradlew verifyAll at :79), and the run id on the head commit must be recorded then. Local evidence only, which does not satisfy this FR: verifyAll on lane-e 824564d, JDK 25, BUILD SUCCESSFUL, 644 tests (571 service + 73 contracts), 0 skipped, 0 failed (/tmp/claude-0/-home-user/fb45a2c5-8ebb-5df5-9291-5519fc2684d3/scratchpad/accept-verify.log; counts re-derived from the JUnit XML).",
-      "pass_fail": "pending",
-      "verified_by": "qa-reporter-rhea",
-      "verified_at": "2026-10-18T21:50:35.769994+00:00",
+      "proof_type": "ci_run",
+      "evidence": "PR #54 head 8731920: service.yml job verify green on Temurin 25.0.4+1, ubuntu-24.04 (https://github.com/spec-kitty/spec-kitty-charter/actions/runs/39205978799/job/117908797259): verifyAll 91/91 tasks executed in 3m20s from a cold Gradle home; lintContract 11 rules, lintFixtures, checkClosedResponseObjects (7 schemas closed), checkContractCompatibility 'No released baseline' with fetch-depth 0 and no opt-out; javadoc, coverage and contract-bundle artifacts uploaded. The docs-site call of the same workflow also passed (https://github.com/spec-kitty/spec-kitty-charter/actions/runs/39205978830/job/117908797616).",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T05:50:52.389690+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
@@ -117,11 +117,11 @@
     {
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
-      "proof_type": "manual_qa",
-      "evidence": "Criterion (spec.md:206): the Javadoc is packaged by the main build workflow and published inside the docsite as a dedicated set of pages reached from the sidebar, styled like the docsite; the built site must contain the pages and the sidebar entry. Present by inspection (lane-e 824564d): service.yml:81-87 (javadoc artifact); docs-site.yml:52-60 (calls service.yml), :86-92 (download into site/public/javadoc), :102-104 (build + check:built-links), :112-124 (Pages deploy on main only); docs/api/javadoc.md:18-47 (page in the api section, docs/_meta/sections.yaml:38); charter-reports stageJavadocForSite (:168-173), --add-stylesheet docsite override and back link (:144-148); the aggregated Javadoc service/charter-reports/build/docs/javadoc/index.html groups all 5 modules. Gap: no built site has been produced or checked. The pinned @spec-kitty/doc-toolkit 0.2.0 needs an authenticated GitHub Packages install, and the WP03 review verified the page, staging and link check, not a built dist. It is verified on the PR's docs-site build job (dist holds /javadoc/ + the API sidebar entry, check:built-links green) and published on the first main run.",
-      "pass_fail": "pending",
-      "verified_by": "qa-reporter-rhea",
-      "verified_at": "2026-10-18T21:51:17.909257+00:00",
+      "proof_type": "ci_run",
+      "evidence": "PR #54 head 8731920: docs-site.yml build job green (https://github.com/spec-kitty/spec-kitty-charter/actions/runs/39205978830/job/117910031350): the javadoc artifact from the called service workflow staged into the site (Pagefind walked 126 HTML files against 64 site pages), /api/javadoc/index.html built in the API section of the generated sidebar, check:built-links OK over dist. Publication to Pages runs on main after merge (deploy skipped on the PR by design).",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T05:50:58.482972+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
@@ -147,11 +147,11 @@
     {
       "criterion_id": "FR-015",
       "description": "Verify FR-015 is satisfied",
-      "proof_type": "manual_qa",
-      "evidence": "Criterion (spec.md:209): the roadmap marks steps 1-2 done, the open questions are updated, and a changelog entry is written when this mission is accepted; steps 1-2 read done only after FR-004 and FR-005 pass. Met (lane-e 824564d): open questions updated (docs/plans/open-questions.md rows 13-20, :38-45); changelog entry docs/changelog/2026-10-18-retroactive-contract-and-build-mission.md:19-59. Correctly not yet done: docs/plans/roadmap.md:45 and :53 read 'Step 1/Step 2, done pending the first CI run on the pull request' (:59 'that run has not happened yet'), which is the state the FR requires while FR-005 is pending. Remaining: once FR-005 passes at closeout, mark steps 1-2 done in roadmap.md (and drop the 'pending the first CI run' wording in the changelog entry :45-46), then record pass.",
-      "pass_fail": "pending",
-      "verified_by": "qa-reporter-rhea",
-      "verified_at": "2026-10-18T21:51:35.565472+00:00",
+      "proof_type": "document_review",
+      "evidence": "Commit b78f206 on PR #54: docs/plans/roadmap.md marks steps 1 and 2 done after FR-004 and FR-005 passed (first green service.yml run 39205978799); open questions rows 13-20 updated (docs/plans/open-questions.md); changelog entry docs/changelog/2026-10-18-retroactive-contract-and-build-mission.md drops the pending-CI wording.",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T05:51:22.874598+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     }
   ],
