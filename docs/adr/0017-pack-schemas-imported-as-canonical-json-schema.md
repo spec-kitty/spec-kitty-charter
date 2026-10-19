@@ -113,13 +113,17 @@ They cover half the kinds, the validator does not use them and they have drifted
 - networknt cannot validate a schema construct the packs need, or its upkeep becomes a burden.
 - Core changes its models in a way this repository does not want to follow.
 
-## Open decision
+## `requires_core` stays in `pack.yaml`
 
-**Where `requires_core` lives.** [ADR-0005](/adr/0005-service-registers-and-distributes-packs/)
-decision 9 puts the engine range on the registration descriptor and the lockfile, not in
-`pack.yaml`. [ADR-0012](/adr/0012-pack-mutability-policy/) asks a pack with a policy file to
-declare a `requires_core` minimum, and core has since added `requires_core` to `pack.yaml`. The
-schema cannot fix the field until the operator rules.
+The operator ruled on 2026-10-19 to keep it. `requires_core` is an optional PEP 440 version
+range of the Spec Kitty core versions a pack supports. Core validates it at descriptor load
+(`src/charter/offering/packs/pack_descriptor.py:118-140`). `charter pack vendor` refuses a pack
+the running core does not satisfy (`pack_vendor.py:114-121`, `core_compat.py`). Open-packs
+already declares it (`built-in.source.yaml:45`), and [ADR-0012](/adr/0012-pack-mutability-policy/)
+relies on it to make an older CLI refuse a pack with a policy file. The imported descriptor schema
+keeps the field as optional. Its PEP 440 grammar is checked in the domain, because a JSON Schema
+pattern cannot express it fully.
+[ADR-0005](/adr/0005-service-registers-and-distributes-packs/) decision 9 is amended to match.
 
 ## References
 
