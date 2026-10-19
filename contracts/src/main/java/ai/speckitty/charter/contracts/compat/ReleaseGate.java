@@ -44,6 +44,9 @@ import java.util.stream.IntStream;
  *   <li><b>Breaking subsection.</b> When the major version of {@code info.version} is above that of the previous
  *       release (the newest released heading below the top heading), the top section must hold a
  *       {@code ### Breaking} subsection.</li>
+ *   <li><b>Baseline is the release.</b> The contract archived at the baseline tag has an {@code info.version} equal
+ *       to the version the tag names ({@link #baselineRefusal}), so a tag moved onto a later commit is not
+ *       compared against as if it were the release.</li>
  * </ol>
  */
 public final class ReleaseGate {
@@ -220,6 +223,23 @@ public final class ReleaseGate {
                 tag,
                 (pending ? "pending release " + top.text() + ": " : "") + "compared against "
                         + baseline.get().text());
+    }
+
+    /**
+     * The baseline rule: the contract archived at a release tag must carry the version the tag names.
+     *
+     * @param tag                  the baseline tag, {@code contract-charter-v<version>}
+     * @param archivedInfoVersion the {@code info.version} of the contract as archived at that tag
+     * @return the refusal, or empty when the tag's contract is the release it names
+     */
+    public static Optional<Decision.Refused> baselineRefusal(String tag, String archivedInfoVersion) {
+        String named = tag.startsWith(TAG_PREFIX) ? tag.substring(TAG_PREFIX.length()) : tag;
+        if (Version.parse(named).filter(Version::released).isPresent() && named.equals(archivedInfoVersion)) {
+            return Optional.empty();
+        }
+        return refuse("The baseline tag " + tag + " names " + named + ", but the contract archived at that tag says"
+                + " its info.version is " + archivedInfoVersion + ". A baseline is the contract as released: the tag"
+                + " was moved or made on the wrong commit. Tag the release's merge commit on main.");
     }
 
     /**

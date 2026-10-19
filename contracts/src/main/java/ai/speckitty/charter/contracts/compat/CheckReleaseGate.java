@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -21,11 +22,16 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * file holding one tag per line: the tags merged into HEAD, and those that point at HEAD. On success it prints the decision as its first line ({@code COMPARE <tag>}, {@code NONE} or
  * {@code SKIPPED}) and the message as its second, and exits 0; it exits 1 with the message when the gate refuses,
  * and 2 when an input cannot be read.
+ *
+ * <p>{@code CheckReleaseGate --baseline <openapi.yaml> <tag>} checks the contract archived at a baseline tag
+ * ({@link ReleaseGate#baselineRefusal}): it prints {@code BASELINE <version>} and exits 0, or prints the refusal
+ * and exits 1.
  */
 public final class CheckReleaseGate {
 
     private static final String USAGE =
-            "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)";
+            "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)"
+                    + " | CheckReleaseGate --baseline <openapi.yaml> <tag>";
 
     private CheckReleaseGate() {}
 
@@ -42,6 +48,9 @@ public final class CheckReleaseGate {
     }
 
     static int run(List<String> args, PrintStream out) {
+        if (args.size() == 3 && "--baseline".equals(args.get(0))) {
+            return baseline(Path.of(args.get(1)), args.get(2), out);
+        }
         boolean noGit = args.size() == 3 && "--no-git".equals(args.get(2));
         boolean tags = args.size() == 5 && "--git".equals(args.get(2));
         if (!noGit && !tags) {
@@ -76,6 +85,23 @@ public final class CheckReleaseGate {
             }
         }
         out.println(decision.message());
+        return 0;
+    }
+
+    private static int baseline(Path openapi, String tag, PrintStream out) {
+        String version;
+        try {
+            version = infoVersion(openapi);
+        } catch (IOException | YamlEngineException | IllegalArgumentException e) {
+            out.println("Cannot read the release gate's inputs: " + e.getMessage());
+            return 2;
+        }
+        Optional<Decision.Refused> refused = ReleaseGate.baselineRefusal(tag, version);
+        if (refused.isPresent()) {
+            out.println(refused.get().message());
+            return 1;
+        }
+        out.println("BASELINE " + version);
         return 0;
     }
 
