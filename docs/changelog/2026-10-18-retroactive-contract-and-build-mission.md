@@ -2,7 +2,7 @@
 title: Contract and build brought under governance
 description: A retroactive Mission reviewed roadmap steps 1 and 2, recorded the operator rulings, and added the charter's own contract checks and the quality gates.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Changelog
 kind: Changelog
 related:
@@ -43,8 +43,8 @@ Recorded in the [open questions](/plans/open-questions/), questions 13 to 20:
   is exempt.
 - The Javadoc is built and staged for the docsite; it is published with the first docs-site
   run on `main` ([Java API reference](/api/javadoc/)).
-- 644 tests, none skipped, green locally on Java 25. Steps 1 and 2 are done pending the
-  first CI run on the pull request ([roadmap](/plans/roadmap/)).
+- 735 tests, none skipped, green on Java 25, locally and in the pull request's first CI run.
+  Steps 1 and 2 are done ([roadmap](/plans/roadmap/)).
 
 ## Upstream
 

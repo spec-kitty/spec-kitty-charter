@@ -42,24 +42,24 @@ As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
 `charter-contract-and-build-retro-01M57QHJ`
 ([changelog](/changelog/2026-10-18-retroactive-contract-and-build-mission/)).
 
-- **Step 1, done pending the first CI run on the pull request.** `contracts/charter/` holds
+- **Step 1, done.** `contracts/charter/` holds
   `1.0.0-SNAPSHOT`, unreleased, with two read paths (`GET /packs`,
   `GET /mission-types/{missionType}/actions/{action}/context`), the vendored `_shared`
   vocabulary and the contract scenarios. The charter's own contract checks run in the build
   (`./gradlew :contracts:check`): its lint ruleset with at least one planted fixture per
   rule, the bundle core vendors, a checker for closed response objects and the
-  breaking-change check. All of them pass locally. No contract version is released yet, so
+  breaking-change check. All of them pass, locally and in CI. No contract version is released yet, so
   in a full clone the breaking-change check finds no baseline, says so and passes; it
   refuses a shallow clone, and CI fetches the full history.
-- **Step 2, done pending the first CI run on the pull request.** `build-logic/` convention
+- **Step 2, done.** `build-logic/` convention
   plugins, the six modules under `service/` plus the `charter-reports` aggregation, a
   version catalog, strict SHA-256 dependency verification and the ArchUnit gate, which fails
   a planted violation. `./gradlew verifyAll` also runs the quality gates, the contract
   scenarios, the open-packs round-trip
   ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)) and the
-  Javadoc and coverage reports ([Building the service](/guides/service-build/)): 644 tests,
-  none skipped, green locally on Java 25. `.github/workflows/service.yml` runs it on Java 25;
-  that run has not happened yet.
+  Javadoc and coverage reports ([Building the service](/guides/service-build/)): 735 tests,
+  none skipped. `.github/workflows/service.yml` runs it on Java 25; its first run, on the
+  pull request of this Mission, was green ([run 39205978799](https://github.com/spec-kitty/spec-kitty-charter/actions/runs/39205978799)).
 - **Next: step 3**, the first corpus slice, which needs the core-side export script.
 
 The action-scoped context answered today is a first slice, marked `x-provisional` in the
