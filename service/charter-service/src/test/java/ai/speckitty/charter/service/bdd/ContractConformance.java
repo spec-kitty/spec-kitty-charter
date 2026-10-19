@@ -71,6 +71,15 @@ final class ContractConformance {
     }
 
     /**
+     * The contract's version.
+     *
+     * @return the {@code info.version} of {@code charter/openapi.yaml}
+     */
+    String version() {
+        return String.valueOf(mapping(document(OPENAPI).get("info"), "info").get("version"));
+    }
+
+    /**
      * Walks every schema of the contract once: each file below a {@code schemas} directory, and each schema of
      * a response, whether the response sits in a {@code responses} directory or in an operation. A keyword the
      * check does not implement fails here, whether or not a body ever walks the schema that holds it.

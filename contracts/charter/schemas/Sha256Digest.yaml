@@ -1,0 +1,6 @@
+title: Sha256Digest
+description: >-
+  A SHA-256 digest, sha256: followed by 64 lower-case hex digits. Opaque to consumers, who compare
+  it and never parse it.
+type: string
+pattern: '^sha256:[0-9a-f]{64}$'

@@ -55,6 +55,66 @@ class GraphDocumentReaderTest {
     }
 
     @Test
+    void anImpactsEdgeCarriesItsSignedStrengthAndSurvivesAWriteAndReRead() {
+        DoctrineGraph graph = GraphDocumentReader.read("""
+                edges:
+                - source: tactic:t
+                  target: tactic:u
+                  relation: impacts
+                  impacts: 0.75
+                - {source: tactic:u, target: tactic:t, relation: impacts, impacts: -1}
+                """, Shape.SHARD, "s");
+        Urn t = new Urn(NodeKind.TACTIC, "t");
+        Urn u = new Urn(NodeKind.TACTIC, "u");
+        assertThat(graph.outgoing(t, Relation.IMPACTS))
+                .singleElement()
+                .satisfies(e -> assertThat(e.impacts()).contains(0.75));
+        assertThat(graph.outgoing(u, Relation.IMPACTS))
+                .singleElement()
+                .satisfies(e -> assertThat(e.impacts()).contains(-1.0));
+        assertThat(GraphDocumentReader.read(GraphShardWriter.write(graph), Shape.SHARD, "w"))
+                .isEqualTo(graph);
+    }
+
+    @Test
+    void aLegacyInTensionWithEdgeIsReadAsImpactsWithStrengthMinusOne() {
+        DoctrineGraph graph = GraphDocumentReader.read("""
+                edges:
+                - source: directive:a
+                  target: directive:b
+                  relation: in_tension_with
+                  reason: both decide the review depth
+                """, Shape.SHARD, "s");
+        assertThat(graph.edges()).singleElement().satisfies(e -> {
+            assertThat(e.relation()).isEqualTo(Relation.IMPACTS);
+            assertThat(e.impacts()).contains(-1.0);
+            assertThat(e.reason()).contains("both decide the review depth");
+        });
+    }
+
+    @Test
+    void anImpactsStrengthIsRequiredOnImpactsEdgesInRangeAndRefusedOnOtherEdges() {
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: impacts}\n",
+                "s: an impacts edge is missing 'impacts'");
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: 1.5}\n",
+                "s: 'impacts' 1.5 is outside [-1, 1]");
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: .nan}\n",
+                "s: 'impacts' NaN is outside [-1, 1]");
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: strong}\n",
+                "s: 'impacts' must be a number");
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: scope, impacts: 0.5}\n",
+                "s: a scope edge has no 'impacts'");
+        assertRefusedWith(
+                "edges:\n- {source: tactic:t, target: tactic:u, relation: in_tension_with, impacts: -0.5}\n",
+                "s: an in_tension_with edge has no 'impacts'");
+    }
+
+    @Test
     void refusalsAreNamed() {
         assertRefused("nodes: []\nedges: []\nsurprise: 1\n", Shape.SHARD, RefusalCode.DRG_SCHEMA_ERROR);
         assertRefused("nodes:\n- urn: tactic:t\n  kind: directive\n", Shape.SHARD, RefusalCode.DRG_SCHEMA_ERROR);
@@ -89,6 +149,13 @@ class GraphDocumentReaderTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR))
                 .hasMessage("t: expected a mapping");
+    }
+
+    private static void assertRefusedWith(String text, String message) {
+        assertThatThrownBy(() -> GraphDocumentReader.read(text, Shape.SHARD, "s"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR))
+                .hasMessage(message);
     }
 
     private static void assertRefused(String text, Shape shape, RefusalCode code) {

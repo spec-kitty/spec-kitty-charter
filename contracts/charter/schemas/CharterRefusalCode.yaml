@@ -6,12 +6,19 @@ description: >-
   code is 500. internal_error refuses a failure no other code names; its detail is a generic
   sentence that says nothing about the failure, so every 500 is a refusal.
 
+  Two codes are reserved for the work that raises them, so that adding it is no breaking change
+  (ADR-0009); no operation of this version raises them. governance_policy_violation will refuse
+  an offering in which a lower-tier pack breaks the mutability policy of the pack that owns an
+  artifact. stale_input will refuse a read whose pack or configuration files changed while it was
+  answered.
+
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
   representation the operation does not have, a method the path does not have, a request the
   server rejected before routing) and says nothing about the charter. internal_error is a fault of
-  the service and may be retried; every other code is a deterministic refusal, and the same read
-  is refused the same way again until the request or the configured packs change.
+  the service and may be retried, and so may stale_input, whose inputs changed during the read;
+  every other code is a deterministic refusal, and the same read is refused the same way again
+  until the request or the configured packs change.
 type: string
 enum:
   - mission_type_not_found
@@ -21,6 +28,8 @@ enum:
   - drg_schema_error
   - unresolved_edge_endpoint
   - internal_error
+  - governance_policy_violation
+  - stale_input
 x-source:
   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
   symbol: RefusalCode

@@ -23,9 +23,17 @@ get:
   parameters:
     - $ref: ../parameters/MissionType.yaml
     - $ref: ../parameters/Action.yaml
+    - $ref: ../parameters/Depth.yaml
   responses:
     '200':
       description: The action-scoped context.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/json:
           schema:

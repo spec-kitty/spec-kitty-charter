@@ -6,7 +6,9 @@ import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.CharterRefusal;
 import ai.speckitty.charter.domain.Diagnostic;
 import ai.speckitty.charter.domain.DoctrineGraph;
+import ai.speckitty.charter.domain.Fingerprint;
 import ai.speckitty.charter.domain.PackDescriptor;
+import ai.speckitty.charter.domain.PackSources;
 import ai.speckitty.charter.domain.RefusalCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,9 +26,10 @@ import java.util.stream.Stream;
 /**
  * Loads Charter Packs from directories. A pack's graph is its root {@code *.graph.yaml} shards (sorted by
  * file name) followed by {@code drg/fragment.yaml}, the two places core's runtime reads. Every call reads
- * the files again; caching arrives with the service lifecycle work.
+ * the files again; caching arrives with the service lifecycle work. The same files, with {@code pack.yaml} first,
+ * are what {@link #fingerprint()} digests.
  */
-public final class FileSystemCharterPackRepository implements CharterPackRepository {
+public final class FileSystemCharterPackRepository implements CharterPackRepository, PackSources {
 
     private final Supplier<List<PackLocation>> locations;
 
@@ -44,6 +47,36 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
         return new CharterOffering(locations.get().stream()
                 .map(FileSystemCharterPackRepository::loadPack)
                 .toList());
+    }
+
+    @Override
+    public String fingerprint() {
+        Fingerprint fingerprint = Fingerprint.sha256();
+        for (PackLocation location : locations.get()) {
+            Path root = location.root();
+            if (!Files.isDirectory(root)) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " is not a directory");
+            }
+            List<Path> files = new ArrayList<>();
+            Path packYaml = root.resolve("pack.yaml");
+            if (Files.isRegularFile(packYaml)) {
+                files.add(packYaml);
+            }
+            files.addAll(shards(root, location));
+            Path fragment = root.resolve("drg").resolve("fragment.yaml");
+            if (Files.isRegularFile(fragment)) {
+                files.add(fragment);
+            }
+            for (Path file : files) {
+                // The relative path in '/' form, so the digest is the same on every OS.
+                String relative = root.relativize(file)
+                        .toString()
+                        .replace(root.getFileSystem().getSeparator(), "/");
+                fingerprint.add(location.name() + "/" + relative).add(bytes(file, location));
+            }
+        }
+        return fingerprint.value();
     }
 
     static CharterPack loadPack(PackLocation location) {
@@ -112,6 +145,17 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
 
     private static CharterRefusal unlistable(PackLocation location, Exception cause) {
         return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " cannot be listed", cause);
+    }
+
+    private static byte[] bytes(Path file, PackLocation location) {
+        try {
+            return Files.readAllBytes(file);
+        } catch (IOException e) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    location.name() + "/" + location.root().relativize(file) + " cannot be read",
+                    e);
+        }
     }
 
     private static String read(Path file, PackLocation location) {

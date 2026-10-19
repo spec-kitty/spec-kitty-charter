@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -77,5 +78,33 @@ class FileSystemCharterPackRepositoryTest {
                             .doesNotContain(Path.of("").toAbsolutePath().toString())
                             .doesNotContain("\n");
                 });
+    }
+
+    @Test
+    void theSourceFingerprintFollowsTheFilesAndNotWhereThePacksAre(@TempDir Path dir) throws IOException {
+        Path first = Files.createDirectories(dir.resolve("one/qa"));
+        Path second = Files.createDirectories(dir.resolve("two/qa"));
+        for (Path root : List.of(first, second)) {
+            Files.writeString(root.resolve("a.graph.yaml"), "nodes: []\n");
+            Files.createDirectories(root.resolve("drg"));
+            Files.writeString(root.resolve("drg/fragment.yaml"), "nodes: []\n");
+        }
+        String fingerprint = repository(first).fingerprint();
+        assertThat(fingerprint).matches("sha256:[0-9a-f]{64}");
+        assertThat(repository(second).fingerprint()).as("same files elsewhere").isEqualTo(fingerprint);
+
+        Files.writeString(second.resolve("a.graph.yaml"), "nodes: []\nedges: []\n");
+        assertThat(repository(second).fingerprint()).as("a changed file").isNotEqualTo(fingerprint);
+    }
+
+    @Test
+    void aPackThatIsNoDirectoryHasNoSourceFingerprint(@TempDir Path dir) {
+        assertThatThrownBy(() -> repository(dir.resolve("missing")).fingerprint())
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    private static FileSystemCharterPackRepository repository(Path root) {
+        return new FileSystemCharterPackRepository(() -> List.of(new PackLocation("qa", PackLevel.ORG, root)));
     }
 }

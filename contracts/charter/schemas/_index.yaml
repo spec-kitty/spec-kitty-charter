@@ -10,5 +10,7 @@ files:
   - PackListing.yaml
   - PackSummary.yaml
   - Relation.yaml
+  - ServiceInfo.yaml
+  - Sha256Digest.yaml
   - Slug.yaml
   - Urn.yaml

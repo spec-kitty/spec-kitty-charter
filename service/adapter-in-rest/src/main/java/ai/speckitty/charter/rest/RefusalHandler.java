@@ -76,6 +76,8 @@ public class RefusalHandler {
             case DRG_SCHEMA_ERROR -> "Invalid DRG document";
             case UNRESOLVED_EDGE_ENDPOINT -> "Unresolved edge endpoint";
             case INTERNAL_ERROR -> "Internal error";
+            case GOVERNANCE_POLICY_VIOLATION -> "Governance policy violation";
+            case STALE_INPUT -> "Stale input";
         };
     }
 }

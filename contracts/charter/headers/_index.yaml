@@ -1,0 +1,4 @@
+files:
+  - CharterContractVersion.yaml
+  - CharterSourceFingerprint.yaml
+  - CharterWorktree.yaml

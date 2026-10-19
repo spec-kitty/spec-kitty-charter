@@ -7,6 +7,7 @@ required:
   - kind
   - label
   - relation
+  - impacts
   - via
 properties:
   urn:
@@ -21,6 +22,18 @@ properties:
       symbol: DrgNode.label
   relation:
     $ref: Relation.yaml
+  impacts:
+    type: ['number', 'null']
+    format: double
+    minimum: -1
+    maximum: 1
+    description: >-
+      The signed strength of the edge when its relation is impacts, from -1 (sabotages) to +1
+      (reinforces); a negative strength is a tension claim. Null for every other relation, so null
+      throughout this version, whose guidance is reached by scope edges only.
+    x-source:
+      path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/DrgEdge.java
+      symbol: DrgEdge.impacts
   via:
     description: The node the edge starts from.
     allOf:

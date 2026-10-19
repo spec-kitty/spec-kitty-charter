@@ -1,0 +1,5 @@
+summary: The service of one worktree.
+value:
+  contractVersion: 1.0.0
+  worktree: 3f1c9a0b7d2e4c58
+  sourceFingerprint: sha256:9b2d5e0a1c4f7e3b8a6d0c2f5e9b1a4d7c3e6f0b2a5d8c1e4f7a0b3d6c9e2f5a

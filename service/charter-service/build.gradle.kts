@@ -30,7 +30,7 @@ tasks.processTestResources {
     from(contracts.dir("charter")) { include("scenarios/**") }
     from(contracts) {
         include("charter/openapi.yaml", "charter/paths/**", "charter/responses/**", "charter/schemas/**")
-        include("charter/parameters/**", "_shared/responses/**", "_shared/schemas/**")
+        include("charter/parameters/**", "charter/headers/**", "_shared/responses/**", "_shared/schemas/**")
         into("contract")
     }
 }

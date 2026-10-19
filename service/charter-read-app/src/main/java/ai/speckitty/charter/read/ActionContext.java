@@ -8,14 +8,20 @@ import java.util.List;
  *
  * @param action the action's URN
  * @param missionType the mission type's URN
+ * @param depth how many scope edges the walk followed
+ * @param governanceFingerprint the digest of the governance the answer was computed from
+ *     ({@link ai.speckitty.charter.domain.CharterOffering#governanceFingerprint()})
  * @param guidance the artifacts in scope, sorted by URN; empty when nothing is in scope
  */
-public record ActionContext(Urn action, Urn missionType, List<GuidanceEntry> guidance) {
+public record ActionContext(
+        Urn action, Urn missionType, int depth, String governanceFingerprint, List<GuidanceEntry> guidance) {
     /**
      * Copies {@code guidance}.
      *
      * @param action the action's URN
      * @param missionType the mission type's URN
+     * @param depth the depth of the walk
+     * @param governanceFingerprint the digest of the governance
      * @param guidance the artifacts in scope
      */
     public ActionContext {

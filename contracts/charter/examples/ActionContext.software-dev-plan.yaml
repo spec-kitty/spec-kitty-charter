@@ -2,9 +2,12 @@ summary: An excerpt of the context of software-dev/plan.
 value:
   action: action:software-dev/plan
   missionType: mission_type:software-dev
+  depth: 1
+  governanceFingerprint: sha256:4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce
   guidance:
     - urn: directive:DIRECTIVE_003
       kind: directive
       label: Decision Documentation Requirement
       relation: scope
+      impacts: null
       via: action:software-dev/plan

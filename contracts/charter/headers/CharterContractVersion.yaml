@@ -1,0 +1,4 @@
+description: The info.version of the contract the service was built against. On every response of the charter's operations (ADR-0011).
+required: true
+schema:
+  type: string

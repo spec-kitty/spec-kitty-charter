@@ -5,6 +5,8 @@ additionalProperties: false
 required:
   - action
   - missionType
+  - depth
+  - governanceFingerprint
   - guidance
 properties:
   action:
@@ -24,6 +26,27 @@ properties:
       rule: mission_type:<missionType>, from the path parameter.
       inputs:
         - parameters/MissionType.yaml
+  depth:
+    type: integer
+    format: int32
+    minimum: 1
+    description: The depth the walk followed, the depth parameter of the request or its default.
+    x-derived:
+      rule: The depth query parameter, or 1 when the request has none.
+      inputs:
+        - parameters/Depth.yaml
+  governanceFingerprint:
+    allOf:
+      - $ref: Sha256Digest.yaml
+    description: >-
+      A digest of the governance the answer was computed from: the packs in force in merge order
+      (pack id, version and level) and the merged graph, its nodes and edges in a canonical sorted
+      order, impacts strengths included. Two answers with the same fingerprint were computed from
+      the same governance; it does not change with host paths, file formatting or the order nodes
+      and edges are declared in. Consumers compare it; they never parse it.
+    x-source:
+      path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterOffering.java
+      symbol: CharterOffering.governanceFingerprint
   guidance:
     type: array
     description: >-

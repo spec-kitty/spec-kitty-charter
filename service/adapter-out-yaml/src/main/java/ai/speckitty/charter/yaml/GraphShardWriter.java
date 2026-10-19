@@ -41,6 +41,7 @@ public final class GraphShardWriter {
             out.put("source", edge.source().toString());
             out.put("target", edge.target().toString());
             out.put("relation", edge.relation().token());
+            edge.impacts().ifPresent(strength -> out.put("impacts", strength));
             edge.when().ifPresent(when -> out.put("when", when));
             edge.reason().ifPresent(reason -> out.put("reason", reason));
             edges.add(out);

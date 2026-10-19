@@ -2,6 +2,7 @@ package ai.speckitty.charter.service;
 
 import java.nio.file.Path;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
@@ -10,14 +11,18 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * {@code charter.packs[0].level=built-in}, {@code charter.packs[0].path=/path/to/built-in}.
  *
  * @param packs the configured packs, in configuration order; empty, never {@code null}, when none is configured
+ * @param worktreeId the opaque id of the worktree the service serves, {@code charter.worktree-id}, which the launcher
+ *     sets; {@code null} when none is configured, and the wiring then derives one from where the packs are
  */
 @ConfigurationProperties("charter")
-public record CharterProperties(@DefaultValue List<Pack> packs) {
+public record CharterProperties(
+        @DefaultValue List<Pack> packs, @Nullable String worktreeId) {
 
     /**
      * Copies {@code packs}, so the configuration cannot change after binding.
      *
      * @param packs the configured packs; the binder supplies an empty list when none is configured
+     * @param worktreeId the configured worktree id, or {@code null}
      */
     public CharterProperties {
         packs = List.copyOf(packs);
