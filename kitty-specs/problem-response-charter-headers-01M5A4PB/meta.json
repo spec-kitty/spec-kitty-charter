@@ -1,0 +1,35 @@
+{
+  "accept_commit": "13028a0bb1954aaabb319eb4f9f5cacc653b74b7",
+  "acceptance_history": [
+    {
+      "accept_commit": "13028a0bb1954aaabb319eb4f9f5cacc653b74b7",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-19T13:47:41.058151+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "a006ae41cfa3b556a307cd0093178d46c59057be"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-19T13:47:41.058151+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "a006ae41cfa3b556a307cd0093178d46c59057be",
+  "baseline_merge_commit": "da201dc7f190e166d6d089e0a0f262fb0f72c698",
+  "created_at": "2026-10-19T13:12:56.263145+00:00",
+  "flattened": true,
+  "friendly_name": "Charter headers on the default Problem response",
+  "merged_at": "2026-10-19T13:48:21.068826+00:00",
+  "merged_commit": "8a9dd4a8765b2d90fa1c8a7cae5f2b41f12b9378",
+  "mid8": "01M5A4PB",
+  "mission_id": "01M5A4PB94X621YG17ZK25JRQ0",
+  "mission_number": 2,
+  "mission_slug": "problem-response-charter-headers-01M5A4PB",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Consumers such as core learn the service's identity and version handshake from the contract. Today the generic error answer every operation can return does not declare the Charter headers the service already sends on it, so the contract under-documents the ADR-0011 rule that the headers are on every response (issue #90).",
+  "purpose_tldr": "The charter contract states that every error answer carries the same three Charter headers that success answers carry.",
+  "slug": "problem-response-charter-headers-01M5A4PB",
+  "status_phase": "1",
+  "target_branch": "fix/problem-response-charter-headers",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-19T13:33:37.681686+00:00"
+}

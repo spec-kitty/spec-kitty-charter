@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "mission_slug": "problem-response-charter-headers-01M5A4PB",
+  "mission_id": "01M5A4PB94X621YG17ZK25JRQ0",
+  "mission_branch": "kitty/mission-problem-response-charter-headers-01M5A4PB",
+  "target_branch": "fix/problem-response-charter-headers",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/_shared/VENDORED.md",
+        "contracts/_shared/responses/Problem.yaml",
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/scenarios/service.feature",
+        "contracts/lint/**",
+        "docs/api/service-contract.md",
+        "docs/changelog/2026-10-19-problem-response-charter-headers.md",
+        "docs/changelog/README.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-19T13:32:55.199901+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "f164c2b261d453c49d60e4b02ac224103f114685"
+}

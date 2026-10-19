@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-19T13:13:06.436585Z",
+      "decision_id": "01M5A4PP44NQ3KWG4APT0PEJCT",
+      "final_answer": "Edit _shared/responses/Problem.yaml as the issue says (operator ruling); record the local divergence from core's vendored copy in contracts/_shared/VENDORED.md",
+      "input_key": "shared_problem_response_approach",
+      "mission_id": "01M5A4PB94X621YG17ZK25JRQ0",
+      "mission_slug": "problem-response-charter-headers-01M5A4PB",
+      "opened_by": "cli",
+      "options": [
+        "Charter-local default response (recommended)",
+        "Edit _shared/responses/Problem.yaml as the issue says",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Confirm the intent: declare the Charter-* headers on a charter-local default Problem response (vendored _shared/ left untouched), guarded by a red-first contract check and a 400 scenario?",
+      "rationale": null,
+      "resolved_at": "2026-10-19T13:24:35.306607Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.shared-problem-response",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5A4PB94X621YG17ZK25JRQ0",
+  "version": 1
+}
