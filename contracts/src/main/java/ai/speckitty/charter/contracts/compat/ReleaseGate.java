@@ -1,12 +1,14 @@
 package ai.speckitty.charter.contracts.compat;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 /**
  * Which released contract the breaking-change check compares against, from {@code info.version} of
@@ -16,16 +18,21 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li><b>Headings.</b> A version heading is a second-level heading ({@code ## }) whose text is a version, written
  *       {@code 1.2.0}, {@code v1.2.0} or {@code [1.2.0]}, optionally followed by more text ({@code - 2026-10-19}).
- *       A version is {@code X.Y.Z} (released) or {@code X.Y.Z-SNAPSHOT} (unreleased). The CHANGELOG lists versions
- *       newest first; its first second-level heading is the <i>top heading</i>, and it must be a version.</li>
+ *       A version is {@code X.Y.Z} (released) or {@code X.Y.Z-SNAPSHOT} (unreleased). Each number is {@code 0} or
+ *       starts with a non-zero digit ({@code 01.2.0} is not SemVer and is refused) and is at most 2147483647 (a
+ *       larger one is refused). Lines inside a fenced code block ({@code ```} or {@code ~~~}) are not headings. The
+ *       CHANGELOG's first second-level heading is the <i>top heading</i>, and it must be a version.</li>
+ *   <li><b>Order.</b> The version headings are strictly descending by SemVer precedence, newest first: a version
+ *       listed twice is refused, and so is one listed below an older one. A {@code -SNAPSHOT} ranks below its
+ *       release. The top heading is above every released heading, so a {@code 1.1.5-SNAPSHOT} above a released
+ *       {@code 1.2.0}, or a {@code 1.0.0-SNAPSHOT} above a released {@code 2.0.0}, is refused.</li>
  *   <li><b>Version gate.</b> {@code info.version} must be a version and equal the top heading, released or not.</li>
  *   <li><b>Merged tags only.</b> Only tags merged into HEAD ({@code git tag --merged HEAD}) count, so an older
  *       commit or a stale branch never sees a later release. Every such tag must name a released version the
  *       CHANGELOG records: a tag nobody wrote down would otherwise hide behind an older baseline.</li>
- *   <li><b>Pending release.</b> When the top heading is released and its tag is not merged into HEAD (the release
+ *   <li><b>Pending release.</b> When the top heading is released and no tag for it is merged into HEAD (the release
  *       pull request, before {@code main} is tagged at its merge commit), the release is <i>pending</i>: it is
- *       compared against the previous release, and the message says "pending release". Once its tag is merged it
- *       is compared against itself, so a breaking change after the release without a version bump still fails.</li>
+ *       compared against the previous release, and the message says "pending release".</li>
  *   <li><b>Same major only.</b> The baseline is the newest recorded release, other than a pending one, with the
  *       major version of {@code info.version}. Its tag must be merged into HEAD; when it is not, the gate refuses
  *       rather than fall back to an older release. With no such release there is no baseline, and the gate says
@@ -40,7 +47,10 @@ public final class ReleaseGate {
     /** The prefix of a released contract's tag; the version follows it. */
     public static final String TAG_PREFIX = "contract-charter-v";
 
-    private static final Pattern VERSION = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-SNAPSHOT)?");
+    private static final String NUMBER = "(0|[1-9]\\d*)";
+    private static final Pattern VERSION = Pattern.compile(NUMBER + "\\." + NUMBER + "\\." + NUMBER + "(-SNAPSHOT)?");
+    private static final Pattern LOOSE_VERSION = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(?:-SNAPSHOT)?");
+    private static final Pattern FENCE = Pattern.compile("^ {0,3}(`{3,}|~{3,})(.*)$");
     private static final Pattern LEVEL_TWO = Pattern.compile("^##(?!#)[ \\t]+(.*?)[ \\t]*$");
     private static final Pattern HEADING_VERSION = Pattern.compile("^\\[?v?([^\\s\\]]+)\\]?(?:\\s.*)?$");
     private static final Pattern BREAKING = Pattern.compile("^###(?!#)[ \\t]+Breaking\\b.*$", Pattern.CASE_INSENSITIVE);
@@ -88,13 +98,48 @@ public final class ReleaseGate {
     }
 
     /** A parsed version. */
-    private record Version(String text, int major, boolean released) {
+    private record Version(String text, int major, int minor, int patch, boolean released)
+            implements Comparable<Version> {
 
         static Optional<Version> parse(String text) {
             Matcher m = VERSION.matcher(text);
-            return m.matches()
-                    ? Optional.of(new Version(text, Integer.parseInt(m.group(1)), m.group(4) == null))
-                    : Optional.empty();
+            if (!m.matches()) {
+                return Optional.empty();
+            }
+            try {
+                return Optional.of(new Version(
+                        text,
+                        Integer.parseInt(m.group(1)),
+                        Integer.parseInt(m.group(2)),
+                        Integer.parseInt(m.group(3)),
+                        m.group(4) == null));
+            } catch (NumberFormatException overflow) {
+                return Optional.empty();
+            }
+        }
+
+        /** Why text that looks like a version is not one, or empty when it is no such text or is a version. */
+        static Optional<String> malformation(String text) {
+            Matcher m = LOOSE_VERSION.matcher(text);
+            if (!m.matches() || parse(text).isPresent()) {
+                return Optional.empty();
+            }
+            boolean leadingZero = IntStream.rangeClosed(1, 3)
+                    .anyMatch(i -> m.group(i).length() > 1 && m.group(i).charAt(0) == '0');
+            return Optional.of(
+                    leadingZero
+                            ? "has a number with a leading zero, which SemVer forbids"
+                            : "has a number above " + Integer.MAX_VALUE);
+        }
+
+        /** SemVer precedence: the numbers, then a -SNAPSHOT below its release. */
+        @Override
+        public int compareTo(Version other) {
+            int byNumbers = Comparator.comparingInt(Version::major)
+                    .thenComparingInt(Version::minor)
+                    .thenComparingInt(Version::patch)
+                    .compare(this, other);
+            return byNumbers != 0 ? byNumbers : Boolean.compare(released, other.released);
         }
 
         String tag() {
@@ -106,10 +151,11 @@ public final class ReleaseGate {
      * A second-level heading of the CHANGELOG and whether its section holds a Breaking subsection.
      *
      * @param text     the heading text
+     * @param token    the part of the heading that is meant as the version
      * @param version  the version it names, if it names one
      * @param breaking whether a {@code ### Breaking} subsection follows it before the next second-level heading
      */
-    private record Section(String text, Optional<Version> version, boolean breaking) {}
+    private record Section(String text, String token, Optional<Version> version, boolean breaking) {}
 
     /**
      * Runs the gate.
@@ -183,10 +229,18 @@ public final class ReleaseGate {
     private static Optional<Decision.Refused> changelogRefusal(String infoVersion, List<Section> sections) {
         Optional<Version> info = Version.parse(infoVersion);
         if (info.isEmpty()) {
-            return refuse("info.version '" + infoVersion + "' is not X.Y.Z or X.Y.Z-SNAPSHOT.");
+            return refuse("info.version '" + infoVersion + "' "
+                    + Version.malformation(infoVersion).orElse("is not X.Y.Z or X.Y.Z-SNAPSHOT") + ".");
         }
         if (sections.isEmpty()) {
             return refuse("contracts/charter/CHANGELOG.md has no version heading (## X.Y.Z).");
+        }
+        for (Section section : sections) {
+            Optional<String> malformed = Version.malformation(section.token());
+            if (malformed.isPresent()) {
+                return refuse("The heading '" + section.text() + "' of contracts/charter/CHANGELOG.md names a version"
+                        + " that " + malformed.get() + ".");
+            }
         }
         Section top = sections.getFirst();
         if (top.version().isEmpty()) {
@@ -197,6 +251,10 @@ public final class ReleaseGate {
             return refuse("info.version " + infoVersion + " of contracts/charter/openapi.yaml does not equal the top"
                     + " heading " + top.version().get().text() + " of contracts/charter/CHANGELOG.md; bump both"
                     + " together.");
+        }
+        Optional<Decision.Refused> unordered = orderRefusal(sections);
+        if (unordered.isPresent()) {
+            return unordered;
         }
         Optional<Version> previous = sections.stream()
                 .skip(1)
@@ -211,27 +269,77 @@ public final class ReleaseGate {
         return Optional.empty();
     }
 
+    /** The order rules (rule 2): no version twice, the top above every release, strictly descending. */
+    private static Optional<Decision.Refused> orderRefusal(List<Section> sections) {
+        List<Version> versions =
+                sections.stream().flatMap(s -> s.version().stream()).toList();
+        Set<String> seen = new TreeSet<>();
+        for (Version version : versions) {
+            if (!seen.add(version.text())) {
+                return refuse("contracts/charter/CHANGELOG.md lists " + version.text() + " twice; each version has one"
+                        + " section.");
+            }
+        }
+        Version top = versions.getFirst();
+        Optional<Version> above = versions.stream()
+                .skip(1)
+                .filter(Version::released)
+                .filter(v -> top.compareTo(v) <= 0)
+                .findFirst();
+        if (above.isPresent()) {
+            return refuse("The top heading " + top.text() + " is not above the released "
+                    + above.get().text()
+                    + " in contracts/charter/CHANGELOG.md. A new version is higher than every release: after "
+                    + above.get().text() + " open the next -SNAPSHOT (heading and info.version together).");
+        }
+        for (int i = 1; i < versions.size(); i++) {
+            if (versions.get(i).compareTo(versions.get(i - 1)) > 0) {
+                return refuse("The version headings of contracts/charter/CHANGELOG.md are not in descending order,"
+                        + " newest first: " + versions.get(i).text() + " is listed after "
+                        + versions.get(i - 1).text() + ".");
+            }
+        }
+        return Optional.empty();
+    }
+
     private static Optional<Decision.Refused> refuse(String message) {
         return Optional.of(new Decision.Refused(message));
     }
 
-    /** The second-level headings of the CHANGELOG, in order. */
+    /** The second-level headings of the CHANGELOG, in order, outside fenced code blocks. */
     private static List<Section> sections(String changelog) {
         List<Section> sections = new ArrayList<>();
+        String fence = "";
         for (String line : changelog.lines().toList()) {
+            Matcher fenceLine = FENCE.matcher(line);
+            if (fenceLine.matches()) {
+                String marks = fenceLine.group(1);
+                if (fence.isEmpty()) {
+                    fence = marks;
+                } else if (marks.charAt(0) == fence.charAt(0)
+                        && marks.length() >= fence.length()
+                        && fenceLine.group(2).isBlank()) {
+                    fence = "";
+                }
+                continue;
+            }
+            if (!fence.isEmpty()) {
+                continue;
+            }
             Matcher heading = LEVEL_TWO.matcher(line);
             if (heading.matches()) {
-                sections.add(new Section(heading.group(1), versionOf(heading.group(1)), false));
+                String token = tokenOf(heading.group(1));
+                sections.add(new Section(heading.group(1), token, Version.parse(token), false));
             } else if (BREAKING.matcher(line).matches() && !sections.isEmpty()) {
                 Section last = sections.removeLast();
-                sections.add(new Section(last.text(), last.version(), true));
+                sections.add(new Section(last.text(), last.token(), last.version(), true));
             }
         }
         return sections;
     }
 
-    private static Optional<Version> versionOf(String heading) {
+    private static String tokenOf(String heading) {
         Matcher m = HEADING_VERSION.matcher(heading);
-        return m.matches() ? Version.parse(m.group(1)) : Optional.empty();
+        return m.matches() ? m.group(1) : heading;
     }
 }
