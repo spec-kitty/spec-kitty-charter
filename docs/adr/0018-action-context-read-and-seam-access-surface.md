@@ -43,6 +43,8 @@ This record supersedes, point by point:
   200 answers only (D11).
 - ADR-0011 decision 4, the fingerprint input list. It is now the pack files plus `config.yaml`
   and `charter.yaml` under the configured directory (D8).
+- [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/) decision 6, "at both depths".
+  The corpus covers depths 0, 1 and 2 (D4). The decision text there stays verbatim.
 
 **Not superseded.** ADR-0011's built graph (warm reads) and reading pack locations from
 `config.yaml` stay with #73.
