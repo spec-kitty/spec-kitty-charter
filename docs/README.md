@@ -2,7 +2,7 @@
 title: spec-kitty-charter documentation
 description: Documentation home for the Java charter service and its OpenAPI contract, the Brain Kitty governance producer of Spec Kitty.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-18
 kind: Hub
 audience:
   - profile: charter-service-contributor
@@ -40,9 +40,9 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Decision Records](/adr/) — decisions taken in this repository, and the core ADRs
   they build on.
 - [Plans](/plans/) — the bootstrap roadmap and the open questions.
-- [API](/api/) — the designed public API: the Python package surface and the service
-  contract. Designed only; no code exists here yet.
-- [Guides](/guides/) — contributing to this repository.
+- [API](/api/) — the public API: the service contract, whose two read operations are built,
+  the Javadoc of the service, and the Python package surface, which is designed only.
+- [Guides](/guides/) — contributing, building the service and building the docsite.
 - [Changelog](/changelog/) — dated record of notable changes.
 
 ## Quick reference
@@ -58,10 +58,12 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 
 ## Status
 
-No charter code lives in this repository yet. The pages describe the agreed direction and the
-target design. Each page opens with what it gives you, then carries one status line, using
-these labels:
+The first code lives here: the charter contract at `1.0.0-SNAPSHOT` with two read
+operations, and the Java service that answers them ([Roadmap](/plans/roadmap/) steps 1 and
+2). Everything else the pages describe is the agreed direction and the target design. Each
+page opens with what it gives you, then carries one status line, using these labels:
 
+- **Partly built.** Some of it exists in this repository; the line says which part.
 - **Design only.** Described here, built nowhere.
 - **Exists in core.** The behavior is core's Python charter today. The design here must
   reproduce it, and core stays the reference until this repository's contract is the source
@@ -73,4 +75,4 @@ these labels:
 The governing decisions are core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter gets its own repository),
 core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (a staged Java service strangler) and this repository's
 [ADR-0001](/adr/0001-java-service-with-openapi-contract/) (Java, contract-first). Where the
-Python charter lives while the strangler runs is [open question 2](/plans/open-questions/).
+Python charter lives while the strangler runs is decided in [open question 2](/plans/open-questions/).

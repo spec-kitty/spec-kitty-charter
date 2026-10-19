@@ -39,7 +39,7 @@ sections:
     label: API
     order: 50
     type: API
-    purpose: The designed public API of the extracted charter — Python package surface and service contract. Not implemented yet.
+    purpose: The public API of the extracted charter — the service contract with its two built reads, the Javadoc, and the designed Python package surface.
 
   - id: guides
     label: Guides

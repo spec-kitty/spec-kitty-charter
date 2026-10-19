@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: Architecture
 kind: Reference
 related:
@@ -60,7 +60,7 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_version` | semantic version of the pack content (built-in) |
 | `name` | human handle |
 | `parent_pack` | parent pack, or `null` for a root pack |
-| `pack_level` | `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `PACK_LEVEL_MISMATCH`, a missing value with `PACK_LEVEL_MISSING` |
+| `pack_level` | `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 

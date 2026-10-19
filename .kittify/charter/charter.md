@@ -40,11 +40,13 @@ two.
 
 ## Gates before merge
 
-- `./gradlew verifyAll` on **Java 25**, with strict SHA-256 dependency verification: contract
-  validation and generation, unit tests, the ArchUnit gate, the BDD scenarios and the
-  open-packs round-trip. CI never builds with `-Pcharter.javaVersion=21`.
-- A **Java style check** on hand-written sources. It is not yet wired into `verifyAll`;
-  until it is, reviewers apply the `java-conventions` styleguide.
+- `./gradlew verifyAll` on **Java 25**, with strict SHA-256 dependency verification: the
+  charter's own contract checks, contract validation and generation, unit tests, the
+  ArchUnit gate, the contract scenarios and the open-packs round-trip. CI never builds with
+  `-Pcharter.javaVersion=21`.
+- The **Java style check** on hand-written sources, wired into `verifyAll`: palantir-java-format
+  (Spotless) and Checkstyle, with Error Prone, NullAway and doclint beside them. What each
+  gate covers: `docs/guides/service-build.md`.
 - The docs checks: `check_docs.py` (all eight), markdownlint-cli2 and cspell.
 
 ## Practices in force
@@ -66,6 +68,6 @@ Everything else in the offering stays available, but not in force.
 
 - The internal org pack requires glossary pack `spk-internal-glossary`, but the vendored
   pack's file stem is `spk-internal`. It is activated under the stem until the pack is
-  fixed.
+  fixed upstream ([spec-kitty-open-packs#47](https://github.com/spec-kitty/spec-kitty-open-packs/issues/47)) and re-vendored.
 - `charter consistency-check` reports the two activated glossary packs as missing from
   the compiled catalog: `generate` does not compile glossary packs.

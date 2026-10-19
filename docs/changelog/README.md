@@ -15,6 +15,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-18 — Contract and build brought under governance](/changelog/2026-10-18-retroactive-contract-and-build-mission/)
 - [2026-10-18 — Contract skeleton, Gradle build and three decisions](/changelog/2026-10-18-contract-gradle-build-and-decisions/)
 - [2026-10-14 — Events go through the core's one canonical event writer](/changelog/2026-10-14-one-canonical-event-writer/)
 - [2026-10-14 — Charter logical model, descriptors and designed API](/changelog/2026-10-14-charter-logical-model-and-api/)

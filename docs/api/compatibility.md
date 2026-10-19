@@ -1,8 +1,8 @@
 ---
 title: Versioning and compatibility
-description: How the designed charter Python package and service contract are versioned, and what a consumer can rely on across releases. Designed only.
+description: How the charter service contract and the designed Python package are versioned, and what a consumer can rely on across releases.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-18
 type: API
 kind: Reference
 related:
@@ -16,9 +16,9 @@ audience:
 
 # Versioning and compatibility
 
-How the designed charter package and service contract are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter moves to its own repository), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/).
+How the charter service contract and the designed Python package are versioned, and what a consumer can rely on across releases. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (the charter moves to its own repository), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/).
 
-> **Designed API.** Not implemented; see the [API overview](/api/).
+> **Partly built.** The service contract exists at `1.0.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python package is designed only. See the [API overview](/api/).
 
 ## Python package
 
@@ -41,8 +41,9 @@ How the designed charter package and service contract are versioned, and what a 
   `-SNAPSHOT` suffix.
 - Response schemas are **closed** (`additionalProperties: false`), so any response change is a
   new schema version and a new contract release.
-- A breaking-change check compares each release with the previous one. A breaking change
-  needs a new major version and a core-side migration of its generated DTOs.
+- A breaking-change check compares the contract with its last released version. A breaking
+  change needs a new major version and a core-side migration of its generated DTOs. How the
+  released version is found: [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same change,
   and the release's conformance corpus must pass against every implementation still
   answering.

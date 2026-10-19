@@ -22,11 +22,11 @@ audience:
 
 The containers of the charter service and the main flows between them: the Python seam in core, the Java service, its adapters and the pack inputs. Read this first, then the page for the part you are building. The state of `charter.offering.api` in core today is described in [Problem](/context/problem/).
 
-> **Status:** design only; nothing in the diagram exists in this repository yet. [What the labels mean](/#status).
+> **Status:** design only, in the slice shape of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/). A first skeleton exists in the older horizontal module shape: a REST entry point and a file-based read adapter over the domain, serving two read operations ([Hexagonal service](/architecture/hexagonal-service/)); the rest of the diagram is not built. [What the labels mean](/#status).
 
 ## Containers
 
-The diagram draws the seam in core; where the Python charter ends up is [open question 2](/plans/open-questions/).
+The diagram draws the seam in core; where the Python charter ends up is decided in [open question 2](/plans/open-questions/): it stays in core.
 
 ```mermaid
 flowchart TB
