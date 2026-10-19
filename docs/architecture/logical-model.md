@@ -138,7 +138,7 @@ with it (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)):
 Each level is a set of allowed operations. The levels are declared in a policy file at the
 pack root, which `pack.yaml` references. Ownership follows merge order, not a fixed ladder of
 three tiers: the owner is the pack that introduced the artifact, and every pack merged after
-it is lower. A lower pack may tighten a level, never loosen it. This replaces the
+it is a later pack. A later pack may tighten a level, never loosen it. This replaces the
 consumer-declared `replaceable-builtins.yaml` allowlist, with a migration.
 
 ## Artifact kinds

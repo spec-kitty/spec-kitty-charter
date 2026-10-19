@@ -47,7 +47,7 @@ rules below are how this one is scoped to its worktree.
   to a static-analysis finding.
 - Every request carries a capability credential scoped to the worktree.
 - No secrets in responses.
-- **Version handshake.** An info endpoint reports the contract version and the worktree, and
+- **Version handshake.** An info endpoint reports the contract version, the service version, the worktree and the current input fingerprint, and
   every response carries `Charter-Contract-Version`, `Charter-Worktree` and
   `Charter-Source-Fingerprint` headers. The seam refuses a service whose `major.minor` does not
   match the contract it was built against.
