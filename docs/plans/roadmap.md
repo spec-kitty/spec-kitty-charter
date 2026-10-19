@@ -29,7 +29,7 @@ spec-kitty#6188 moved the imports onto the offering seam, as core ADR
 |---|---|---|---|
 | 1 | **Contract skeleton.** `contracts/charter/` with `info`, `servers`, the shared `Problem` schema, and the first read path: action-scoped context, keyed by mission type and action. | The charter's own contract checks pass and a `1.0.0-SNAPSHOT` bundle is built (core's tools do not run here; [open question 18](/plans/open-questions/)) | ADR-0002 ruling |
 | 2 | **Gradle build.** Multi-project build with the modules in [Hexagonal service](/architecture/hexagonal-service/), strict dependency verification, and a dependency-direction test. | An empty domain and a generated `charter-api` compile; the direction test fails a planted violation; `./gradlew verifyAll` runs green on Java 25 in CI | 1 |
-| 3 | **Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at both load depths. Expected results are produced by core's Python charter. | The corpus runs against Python in core and is published with the contract | 1, a core-side export script |
+| 3 | **Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at both load depths. Expected results come from a harness here over core's existing CLI, mapped onto the contract shape, with deliberate differences in a reviewed register ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). | The harness produces the first slice from open-packs and fixture projects, and the corpus is published with the contract | 1, the reads decided by the inventory (#94) |
 | 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. | The first corpus slice passes against Java | 2, 3 |
 | 5 | **Org and project layers.** Extend corpus and domain to org fragments, `required_<kind>`, project packs, `specializes_from` and `enhances` / `overrides`. | Corpus slice passes on both implementations | 4 |
 | 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam in core returns them ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/): the Python charter stays in core). | Core's seam tests pass on generated DTOs | the seam work, 1 |
@@ -102,3 +102,9 @@ the shadow comparison stay in core.
   [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md), Accepted), which writes only spec-kitty-events contract events, each
   with its `schema_version`. Not a dependency of this repository, but the events that cite
   charter identifiers will go through it.
+
+## Before the first contract release
+
+The contract's first release (#45) waits on #113, which reshapes the reserved 1.0 surface: `depth`,
+the service version in `ServiceInfo`, the source fingerprint's inputs, and the token and post-write
+surface. A change to them after release is breaking.

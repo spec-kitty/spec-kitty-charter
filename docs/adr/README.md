@@ -43,6 +43,8 @@ stands.
 | [0013](/adr/0013-persistent-deactivation/) | ADR-0013: Deactivation is a persisted exclusion in one activation ledger | Accepted (provisional) | 2026-10-19 |
 | [0014](/adr/0014-foundational-values-and-creed-rulings/) | ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements | Accepted (provisional) | 2026-10-19 |
 | [0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) | ADR-0015: This repository is canonical for the charter structure, responses, contracts and pack schemas | Accepted (provisional) | 2026-10-19 |
+| [0016](/adr/0016-conformance-corpus-harness-over-core-cli/) | ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects | Accepted (provisional) | 2026-10-19 |
+| [0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) | ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema | Accepted (provisional) | 2026-10-19 |
 
 ## Core decisions this repository builds on
 
