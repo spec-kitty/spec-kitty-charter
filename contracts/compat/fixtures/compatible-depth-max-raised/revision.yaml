@@ -1,0 +1,41 @@
+# Raising the request maximum is compatible: the response depth has no maximum to outgrow.
+openapi: 3.1.0
+info:
+  title: Charter compatibility fixture
+  version: 1.0.0
+paths:
+  /context:
+    get:
+      operationId: getContext
+      summary: Read a context.
+      tags:
+        - Context
+      parameters:
+        - name: depth
+          in: query
+          required: false
+          description: How many suggests hops the walk follows.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 3
+            default: 2
+      responses:
+        '200':
+          description: The context.
+          content:
+            application/json:
+              schema:
+                title: Context
+                description: A context.
+                type: object
+                additionalProperties: false
+                required:
+                  - depth
+                properties:
+                  depth:
+                    type: integer
+                    format: int32
+                    minimum: 0
+                    description: The depth the walk followed. It has no maximum, so a later version can accept a larger request depth.

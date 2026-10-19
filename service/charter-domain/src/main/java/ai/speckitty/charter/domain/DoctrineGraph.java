@@ -17,6 +17,10 @@ public final class DoctrineGraph {
 
     private final Map<Urn, DrgNode> nodes;
     private final List<DrgEdge> edges;
+    private final Map<EdgeKey, List<DrgEdge>> outgoing;
+
+    /** The (source, relation) an edge starts from, the key of the outgoing index. */
+    private record EdgeKey(Urn source, Relation relation) {}
 
     /**
      * A graph of {@code nodes} and {@code edges}; a node whose URN was already declared is dropped.
@@ -29,6 +33,17 @@ public final class DoctrineGraph {
         nodes.forEach(n -> byUrn.putIfAbsent(n.urn(), n));
         this.nodes = java.util.Collections.unmodifiableMap(byUrn);
         this.edges = List.copyOf(edges);
+        this.outgoing = index(this.edges);
+    }
+
+    private static Map<EdgeKey, List<DrgEdge>> index(List<DrgEdge> edges) {
+        Map<EdgeKey, List<DrgEdge>> byKey = new LinkedHashMap<>();
+        for (DrgEdge edge : edges) {
+            byKey.computeIfAbsent(new EdgeKey(edge.source(), edge.relation()), k -> new ArrayList<>())
+                    .add(edge);
+        }
+        byKey.replaceAll((k, v) -> List.copyOf(v));
+        return java.util.Collections.unmodifiableMap(byKey);
     }
 
     /**
@@ -79,16 +94,15 @@ public final class DoctrineGraph {
     }
 
     /**
-     * The edges that start at {@code source} with {@code relation}.
+     * The edges that start at {@code source} with {@code relation}, from an index built once with the graph, so a
+     * transitive walk pays no scan per visited node.
      *
      * @param source the node the edges start from
      * @param relation the relation of the edges
      * @return the matching edges, in declared order; empty when there are none
      */
     public List<DrgEdge> outgoing(Urn source, Relation relation) {
-        return edges.stream()
-                .filter(e -> e.source().equals(source) && e.relation() == relation)
-                .toList();
+        return outgoing.getOrDefault(new EdgeKey(source, relation), List.of());
     }
 
     /**

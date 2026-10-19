@@ -1,0 +1,42 @@
+# Raising the maximum of a response property is breaking: a consumer that validates the old maximum rejects it.
+openapi: 3.1.0
+info:
+  title: Charter compatibility fixture
+  version: 1.0.0
+paths:
+  /context:
+    get:
+      operationId: getContext
+      summary: Read a context.
+      tags:
+        - Context
+      parameters:
+        - name: depth
+          in: query
+          required: false
+          description: How many suggests hops the walk follows.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 3
+            default: 2
+      responses:
+        '200':
+          description: The context.
+          content:
+            application/json:
+              schema:
+                title: Context
+                description: A context.
+                type: object
+                additionalProperties: false
+                required:
+                  - depth
+                properties:
+                  depth:
+                    type: integer
+                    format: int32
+                    minimum: 0
+                    maximum: 3
+                    description: The depth the walk followed.

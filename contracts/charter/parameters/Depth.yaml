@@ -2,14 +2,16 @@ name: depth
 in: query
 required: false
 description: >-
-  How many scope edges the walk follows from the action node and from the mission type node. This
-  version answers depth 1 only; a later version raises the maximum, which is a compatible change.
-  The seam in core decides the depth of a read, for example a deeper first load (ADR-0011); the
-  service keeps no state about earlier reads. A depth outside the range is a 400 Problem, not a
+  How many suggests hops the walk follows from the artifacts the action scopes. 0 lists no
+  suggested artifact. Scope is one hop and requires is transitive, so neither depends on depth.
+  The seam in core maps its own concepts onto it: a first load asks for 2, a load after a recorded
+  load asks for 1, and the public bundle read asks for 0. The first-load state stays in core's
+  seam (ADR-0011 D3); the service keeps no state about earlier reads. A later version may raise
+  the maximum, which is a compatible change. A depth outside the range is a 400 Problem, not a
   charter refusal.
 schema:
   type: integer
   format: int32
-  minimum: 1
-  maximum: 1
-  default: 1
+  minimum: 0
+  maximum: 2
+  default: 2
