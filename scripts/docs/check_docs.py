@@ -165,7 +165,12 @@ class Tree:
         return self._generated_prefixes
 
     def is_generated(self, page: Page) -> bool:
-        return page.docs_rel.startswith("glossary/")
+        # Generator-owned = under docs/glossary/ AND carrying doc-kitty's own `generated:`
+        # stamp. Keying the frontmatter/terms/link exemptions on the stamp, not the path
+        # alone, ties them to the real ownership signal: a hand-authored page misfiled under
+        # docs/glossary/, or a generated page that lost its stamp, is treated as authored and
+        # stays subject to the full authored-only rules.
+        return page.docs_rel.startswith("glossary/") and bool((page.meta or {}).get("generated"))
 
     # -- route resolution (doc-kitty: root-absolute routes, docs-root-relative slugs) --
 
@@ -249,6 +254,9 @@ def as_date(value: Any) -> dt.date | None:
         return value.date()
     if isinstance(value, dt.date):
         return value
+    # The swept `updated:`/`stale_after:` instants (YYYY-MM-DDT00:00:00Z) must stay UNQUOTED
+    # so PyYAML loads them as a datetime (handled by the branch above). A quoted instant would
+    # arrive here as a str, fail the date-only fullmatch below, and be wrongly flagged.
     if isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         try:
             return dt.date.fromisoformat(value)
