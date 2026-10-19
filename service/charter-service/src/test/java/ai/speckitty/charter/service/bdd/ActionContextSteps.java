@@ -5,37 +5,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.cucumber.java.en.Then;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Steps of contracts/charter/scenarios/action_context.feature that read the guidance as a graph. The step reads the
- * operation again itself, so it needs nothing from {@link CharterSteps}; the read is deterministic.
+ * Steps of contracts/charter/scenarios/action_context.feature that read the guidance as a graph. They assert on the
+ * scenario's own last response, through {@link ScenarioHttp}.
  */
 public class ActionContextSteps {
 
-    private static final String BASE = "/api/v1";
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    private final MockMvc mvc;
+    private final ScenarioHttp http;
 
-    public ActionContextSteps(MockMvc mvc) {
-        this.mvc = mvc;
+    public ActionContextSteps(ScenarioHttp http) {
+        this.http = http;
     }
 
     /**
-     * Follows {@code via} from every guidance entry of the answer to {@code path}, and checks that each chain ends at
+     * Follows {@code via} from every guidance entry of the last response, which must be the answer to {@code path}, and checks that each chain ends at
      * the action node after exactly the entry's {@code hops} steps, through entries of the answer only.
      */
     @Then("following {string} from every guidance entry of {string} reaches the action in exactly {string} edges")
     public void viaChainsMatchHops(String viaField, String path, String hopsField) throws Exception {
-        MockHttpServletResponse response =
-                mvc.perform(MockMvcRequestBuilders.get(BASE + path)).andReturn().getResponse();
-        assertThat(response.getStatus()).as(response.getContentAsString()).isEqualTo(200);
-        JsonNode answer = JSON.readTree(response.getContentAsString());
+        assertThat(http.path()).as("the scenario read this path last").isEqualTo(path);
+        assertThat(http.response().getStatus()).as(http.body()).isEqualTo(200);
+        JsonNode answer = JSON.readTree(http.body());
         String action = answer.path("action").asString();
         Map<String, JsonNode> byUrn = new HashMap<>();
         answer.path("guidance").forEach(entry -> byUrn.put(entry.path("urn").asString(), entry));

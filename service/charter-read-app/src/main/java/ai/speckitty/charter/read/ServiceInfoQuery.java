@@ -1,9 +1,11 @@
 package ai.speckitty.charter.read;
 
+import ai.speckitty.charter.domain.CharterRefusal;
 import ai.speckitty.charter.domain.PackSources;
+import ai.speckitty.charter.domain.RefusalCode;
 import java.util.Objects;
 
-/** The worktree the service serves and the fingerprint of the files it answers from (ADR-0011). */
+/** The worktree the service serves and the fingerprint of the inputs it answers from (ADR-0011). */
 public final class ServiceInfoQuery {
 
     private final String worktree;
@@ -30,12 +32,21 @@ public final class ServiceInfoQuery {
     }
 
     /**
-     * The worktree and the current source fingerprint.
+     * The worktree and the current source fingerprint, digested twice. The answer carries the digest both reads agree
+     * on.
      *
      * @return the service info
-     * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when a pack file cannot be read
+     * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read
+     *     (not retryable), or with {@code STALE_INPUT} when the two digests differ because an input changed while
+     *     the info was read (retryable: read it again)
      */
     public ServiceInfo answer() {
-        return new ServiceInfo(worktree, sources.fingerprint());
+        String first = sources.fingerprint();
+        String second = sources.fingerprint();
+        if (!first.equals(second)) {
+            throw new CharterRefusal(
+                    RefusalCode.STALE_INPUT, "The inputs changed while the service info was read; read it again.");
+        }
+        return new ServiceInfo(worktree, first);
     }
 }

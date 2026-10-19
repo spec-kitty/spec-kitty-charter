@@ -28,3 +28,20 @@ val contractVersion = tasks.register("contractVersionResource") {
     }
 }
 sourceSets.main { resources.srcDir(contractVersion) }
+
+// The service's own version (ServiceVersion): the root project's `version`, from gradle.properties, written as a
+// resource. It is independent of the contract version above. The value is read at configuration time, so the task
+// holds no Project at execution and is configuration-cache safe.
+val serviceVersion = tasks.register("serviceVersionResource") {
+    description = "Writes the root project's version into service-version.properties."
+    val value = rootProject.version.toString()
+    val out = layout.buildDirectory.dir("generated/service-version")
+    inputs.property("version", value)
+    outputs.dir(out).withPropertyName("resources")
+    doLast {
+        val file = out.get().file("ai/speckitty/charter/rest/service-version.properties").asFile
+        file.parentFile.mkdirs()
+        file.writeText("version=$value\n")
+    }
+}
+sourceSets.main { resources.srcDir(serviceVersion) }
