@@ -1,0 +1,199 @@
+{
+  "mission_slug": "action-context-reserved-surface-01M5AFEK",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "document_review",
+      "evidence": "ADR-0018 D1 and docs/api/service-contract.md (WP05 90fe905/c5f72db, approved cycle 2)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:06:54.469745+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "action_context.feature requires-chain/cycle + DIV-010 suggested-artifact-requires; ActionContextQueryTest (WP01 57bd920, approved cycle 2)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:00.720847+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "action_context.feature depth 0/1/2, diamond, pass-through; ActionContextQueryTest (WP01)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:06.610463+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "action_context.feature vocabulary entry scenario; ActionContextQueryTest vocabulary cases (WP01)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:12.387397+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "action_context.feature precedence/tie-break/via-hops invariant; seeded random-graph invariant test; 0 violations over 1,227 real entries (evidence/walk-comparison.md)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:18.490916+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Depth.yaml 0..2 default 2; ContractShapeTest (no response maximum); compat fixtures compatible-depth-max-raised + breaking-response-depth-max-raised (WP01)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:24.299897+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "document_review",
+      "evidence": "ADR-0018 D5 + operator ruling (R9 gates cutover stage 3); #103 hand-off comment; divergence register DIV-007",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:31.197644+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "document_review",
+      "evidence": "docs/api/divergence-register.md DIV-001..010; corpus cases named; evidence/walk-comparison.md (WP06 approved)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:36.853583+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service.feature build version scenario; ServiceVersionTest; ServiceInfo.serviceVersion semver pattern (WP02 3a7cdda)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:42.229772+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service.feature config.yaml/charter.yaml fingerprint scenarios; ProjectConfigSourcesTest; CharterWiringTest startup check (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:48.021092+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "security.feature 401/403; WorktreeGuardTest, WorktreeTokenTest, GuardWiringTest; reviewer jar attacks refused (WP04 b3addf1, approved cycle 3)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:53.814070+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "refresh.feature POST /packs/refresh incl. stale_input/pack_unreadable/400-on-body/idempotent (WP04, operator ruling)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:07:59.418381+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "document_review",
+      "evidence": "ADR-0018 supersedes ADR-0011 D2 'read operations only'; ADR-0011 amendment 2026-10-19 (WP05)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:04.679362+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "errors.feature pack_unreadable outline (graph shard, prefix detail); internal_error scenario retitled (WP03 737efdc)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:10.204854+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "errors.feature stale_input via DriftingSources real file rewrite + negative control; ConsistentLoadTest 8 cases (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:15.530223+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "@contract @reserved scenario over x-refusal map; ReservedRefusalCodesTest with planted-throw red proof (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:21.418268+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "document_review",
+      "evidence": "ADR-0018 new; ADR-0009/0011/0016 amendments; contracts/charter/CHANGELOG.md 1.0.0-SNAPSHOT section; dated docs/changelog entry at closeout",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:26.957996+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "action_context.feature diagnostics scenario (pack_level_missing); ActionContext.diagnostics (WP01)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:32.802932+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "@After check: exactly one Charter-Source-Fingerprint on each 200 equal to the verified digest, none on non-200 (WP03 ScenarioHttp)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T19:08:38.944931+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
