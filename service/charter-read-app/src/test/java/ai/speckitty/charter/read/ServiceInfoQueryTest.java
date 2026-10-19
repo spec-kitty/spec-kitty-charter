@@ -53,4 +53,19 @@ class ServiceInfoQueryTest {
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage("The inputs changed while the service info was read; read it again.");
     }
+
+    @Test
+    void aSecondDigestThatCannotBeReadIsAChangeNotAPermanentRefusal() {
+        AtomicInteger digests = new AtomicInteger();
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", () -> {
+            if (digests.incrementAndGet() == 1) {
+                return "sha256:" + "1".repeat(64);
+            }
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack file became unreadable");
+        });
+
+        assertThatThrownBy(query::answer)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
 }

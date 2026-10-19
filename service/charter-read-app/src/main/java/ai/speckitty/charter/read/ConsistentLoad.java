@@ -83,8 +83,15 @@ public final class ConsistentLoad {
         return new Loaded(offering, first);
     }
 
-    /** The digest now, or {@code null} when it cannot be taken: an input that cannot be read has changed. */
     private @Nullable String digestOrNull() {
+        return digestOrNull(sources);
+    }
+
+    /**
+     * The digest of {@code sources} now, or {@code null} when it cannot be taken: an input that was readable for the
+     * first digest and is not for a later one has changed. Shared with {@link ServiceInfoQuery}.
+     */
+    static @Nullable String digestOrNull(PackSources sources) {
         try {
             return sources.fingerprint();
         } catch (CharterRefusal unreadable) {
