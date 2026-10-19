@@ -5,6 +5,13 @@ description: >-
   to core's own spellings. mission_type_not_found and action_not_found are 404; every other
   code is 500. internal_error refuses a failure no other code names; its detail is a generic
   sentence that says nothing about the failure, so every 500 is a refusal.
+
+  How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
+  code says why. A body without a code is a transport or routing failure (an unknown path, a
+  representation the operation does not have, a method the path does not have, a request the
+  server rejected before routing) and says nothing about the charter. internal_error is a fault of
+  the service and may be retried; every other code is a deterministic refusal, and the same read
+  is refused the same way again until the request or the configured packs change.
 type: string
 enum:
   - mission_type_not_found

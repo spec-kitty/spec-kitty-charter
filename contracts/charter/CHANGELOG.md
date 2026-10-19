@@ -75,6 +75,11 @@ did not; `Changed` lists what differs from the draft.
   warning" is renamed "A pack descriptor without pack_level loads at its configured level,
   with a diagnostic", the name the answer gives it (`diagnostics`); the answer is unchanged.
 
+- `CharterRefusalCode` states the consumer dispatch rules (description only, no scenario or
+  schema change): a body with a `code` is a charter refusal; a body without one is a transport or
+  routing failure; `internal_error` is a fault and may be retried; every other code is a
+  deterministic refusal.
+
 ### Provisional
 
 - The action-context operation (`x-provisional`): its resolution rules are decided by the
