@@ -1,5 +1,6 @@
 plugins {
     id("charter.service-conventions")
+    id("charter.hand-written")
 }
 
 dependencies {
@@ -18,8 +19,9 @@ dependencies {
     testImplementation(catalog.lib("junit-platform-suite"))
 }
 
-// The BDD scenarios are part of the contract, so they live beside the OpenAPI document and
-// are put on the test classpath from there rather than copied.
-sourceSets.test {
-    resources.srcDir(rootProject.layout.projectDirectory.dir("contracts/charter/scenarios").asFile.parentFile)
+// The BDD scenarios are part of the contract, so they live beside the OpenAPI document and are put on the
+// test classpath from there, under the resource name `scenarios` the suite selects. Only that subtree:
+// the rest of the contract tree is not a test resource.
+tasks.processTestResources {
+    from(rootProject.layout.projectDirectory.dir("contracts/charter")) { include("scenarios/**") }
 }

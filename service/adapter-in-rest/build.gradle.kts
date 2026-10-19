@@ -1,5 +1,6 @@
 plugins {
     id("charter.spring-conventions")
+    id("charter.hand-written")
 }
 
 dependencies {
