@@ -9,6 +9,7 @@ related:
   - architecture/strangler-transition
   - plans/open-questions
   - plans/milestones
+  - adr/0010-cutover-scope-and-seam-boundary
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the next checkable step and what it depends on.
@@ -20,9 +21,9 @@ audience:
 
 Each step ends in something checkable. Steps 1 to 5 can run in parallel with the core's
 seam work, because none of them answers a production read. Steps 6 and 7 wait for it. The
-seam work is the import-move precondition of core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (D-2). It was tracked
-as spec-kitty#645 until that issue was closed as not planned on 2026-10-13, and is now in
-the scope of epic spec-kitty#6099.
+seam work is the import-move precondition of core ADR [`2026-10-12-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-12-2-charter-extraction-to-its-own-repository.md) (D-2). It is done:
+spec-kitty#6188 moved the imports onto the offering seam, as core ADR
+[`2026-10-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-16-1-extract-charter-offering-first-activation-rework-post-ga.md) records.
 
 | # | Step | Done when | Depends on |
 |---|---|---|---|
@@ -34,14 +35,17 @@ the scope of epic spec-kitty#6099.
 | 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam in core returns them ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/): the Python charter stays in core). | Core's seam tests pass on generated DTOs | the seam work, 1 |
 | 7 | **Read shadow.** The launcher starts the service per worktree; the seam compares Java with Python out of band. | Differences are reported in diagnostics; none is unexplained on the corpus | 4 to 6, the launcher |
 
-Steps 1 to 7 are the start of the **4.x cutover** milestone on the tracker. The cutover is
-done when core's Python offering is removed or inactive and every charter read goes through
-this repository's API from core's seam (strangler stage 4). Work that builds on the
-cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
+Steps 1 to 7 are the start of the **4.x cutover** milestone on the tracker. Work that builds on
+the cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
 proposed distribution of issues.
 
-After step 7 the [strangler stages](/architecture/strangler-transition/) take over:
-Java authoritative, then Java reads complete, then write migration one operation at a time.
+After step 7 the [strangler stages](/architecture/strangler-transition/) take over. Stages
+3 and 4, Java authoritative and Java reads complete, ship together as the **4.x cutover**: every
+offering read, including activation's reads of offering data, goes through this repository's
+API, and the Python offering reads are removed or inactive. The seam fails closed, and the only
+gate is the conformance corpus; compile keeps a ratcheted Python read until it is the first
+write migrated (provisional, [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). Write
+migration then follows, one operation at a time.
 
 ## Progress
 
@@ -83,15 +87,18 @@ the shadow comparison stay in core.
 
 ## Also needed, outside this repository
 
+- **Core:** amend ADR `2026-10-03-1` so it governs only the seam routing; the offering
+  internals, including the Charter Pack structure, are decided here
+  ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)).
+- **Core:** amend step P4 (spec-kitty#6288) of ADR `2026-10-16-1`: the Python offering does not
+  move here ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)).
 - **Core:** amend ADR `2026-10-12-2` so it names the Java direction and this repository's
   role. ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) is accepted, with an amendment that
   points its contract here and records rewrite-and-replace.
-- **Core:** re-home the D-2 import-move precondition after #645's closure; epic #6099 still
-  names #645 as its precondition.
 - **Core:** reconcile `docs/architecture/charter-backend-service-future.md`, which still
   lists the runtime service as backlog.
 - **Core:** a fixture export that turns the Python charter's answers into corpus files.
 - **Core and spec-kitty-events:** the one canonical event writer (core ADR
-  [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/pull/6217), in review), which writes only spec-kitty-events contract events, each
+  [`4.x/2026-10-14-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md), Accepted), which writes only spec-kitty-events contract events, each
   with its `schema_version`. Not a dependency of this repository, but the events that cite
   charter identifiers will go through it.

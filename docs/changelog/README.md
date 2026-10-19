@@ -15,6 +15,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-19 — Provisional design decisions](/changelog/2026-10-19-provisional-design-decisions/)
 - [2026-10-19 — Tracker milestones and their proposed distribution](/changelog/2026-10-19-tracker-milestones/)
 - [2026-10-18 — Contract and build brought under governance](/changelog/2026-10-18-retroactive-contract-and-build-mission/)
 - [2026-10-18 — Contract skeleton, Gradle build and three decisions](/changelog/2026-10-18-contract-gradle-build-and-decisions/)

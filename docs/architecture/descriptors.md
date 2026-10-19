@@ -9,6 +9,7 @@ related:
   - architecture/logical-model
   - architecture/descriptor-schemas
   - architecture/resolution-model
+  - adr/0012-pack-mutability-policy
 audience:
   - profile: pack-author
     guidance_text: Read this to find the file, fields and naming of each descriptor you author.
@@ -63,6 +64,12 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_level` | `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
+
+**Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also
+points to the pack's mutability policy file at the pack root, so a reader finds every
+concern file from the main pack file, and a pack that has a policy file declares the minimum
+core version that understands it. Older CLIs then refuse the pack instead of ignoring its
+locks. Field names are fixed when the schema lands.
 
 DRG: none directly; it scopes the nodes the pack contributes.
 
