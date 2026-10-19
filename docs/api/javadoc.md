@@ -2,7 +2,7 @@
 title: Java API reference (Javadoc)
 description: The Javadoc of the charter service's hand-written Java modules, built by the main build and published with this site as one searchable reference.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: API
 kind: Reference
 related:
@@ -26,7 +26,7 @@ module on its overview page, with one index and one search across all of them:
 |---|---|---|
 | `charter-domain` | `ai.speckitty.charter.domain` | Charter meaning and invariants: packs, the Doctrine Reference Graph and the repository ports |
 | `charter-read-app` | `ai.speckitty.charter.read` | The read use cases over the domain |
-| `adapter-out-yaml` | `ai.speckitty.charter.yaml` | The file-based adapter: the YAML document models and the repository ports over a pack directory |
+| `adapter-out-yaml` | `ai.speckitty.charter.yaml` | The file-based adapter: the YAML document models and the repository adapters that implement those ports over a pack directory |
 | `adapter-in-rest` | `ai.speckitty.charter.rest` | The inbound REST adapter, which implements the generated contract interfaces |
 | `charter-service` | `ai.speckitty.charter.service` | The Spring Boot wiring of the runnable service |
 
