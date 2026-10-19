@@ -18,14 +18,17 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
+import org.snakeyaml.engine.v2.common.ScalarStyle;
 
 /**
  * Every YAML file of the spec-kitty-open-packs packs must survive the file-based adapter (operator
- * decision, 2026-10-18). Three legs per file or pack:
+ * decision, 2026-10-18). Four legs per file or pack:
  * <ol>
  *   <li>bytes: the lossless document model renders each file byte for byte;</li>
  *   <li>data: rewriting every scalar of the file with its own value through the model's writer loads to
  *       the same data;</li>
+ *   <li>identity: in that rewrite, every scalar whose style carries its value unchanged (a single-line plain or
+ *       single-quoted scalar) is written byte for byte as it was read;</li>
  *   <li>domain: every pack loads without a refusal with exactly the diagnostics listed below, and its graph
  *       written as a shard and read back is the same graph.</li>
  * </ol>
@@ -92,10 +95,24 @@ class OpenPacksRoundTripTest {
                     assertThat(document.render().getBytes(StandardCharsets.UTF_8))
                             .as("bytes")
                             .isEqualTo(bytes);
-                    assertThat(Yaml.loadAll(document.mapScalars(v -> v).render()))
-                            .as("data")
-                            .isEqualTo(Yaml.loadAll(text));
+                    YamlDocument rewritten = document.mapScalars(v -> v);
+                    assertThat(Yaml.loadAll(rewritten.render())).as("data").isEqualTo(Yaml.loadAll(text));
+                    List<YamlDocument.Scalar> before = document.scalars();
+                    List<YamlDocument.Scalar> after = rewritten.scalars();
+                    for (int i = 0; i < before.size(); i++) {
+                        if (carriesItsValue(before.get(i))) {
+                            assertThat(after.get(i).text())
+                                    .as("identity of scalar %d", i)
+                                    .isEqualTo(before.get(i).text());
+                        }
+                    }
                 }));
+    }
+
+    /** A single-line plain or single-quoted scalar: the writer gives its own value back as the same text. */
+    private static boolean carriesItsValue(YamlDocument.Scalar scalar) {
+        return scalar.text().indexOf('\n') < 0
+                && (scalar.style() == ScalarStyle.PLAIN || scalar.style() == ScalarStyle.SINGLE_QUOTED);
     }
 
     @TestFactory

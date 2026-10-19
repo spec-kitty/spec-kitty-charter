@@ -7,9 +7,21 @@ final class ScalarWriter {
 
     private ScalarWriter() {}
 
-    static String write(String value, ScalarStyle style, String original) {
+    /** The characters that end a plain scalar inside a flow collection, though not in a block one. */
+    private static final String FLOW_INDICATORS = ",[]{}";
+
+    /**
+     * Writes {@code value} in {@code style} where that style can carry it, and double-quoted otherwise.
+     *
+     * @param value the new value
+     * @param style the style of the scalar the value replaces
+     * @param original the source text of the scalar the value replaces
+     * @param inFlow whether the scalar sits inside a flow collection, {@code [ ]} or {@code { }}
+     * @return the scalar's new source text
+     */
+    static String write(String value, ScalarStyle style, String original, boolean inFlow) {
         return switch (style) {
-            case PLAIN -> plainSafe(value, original) ? value : doubleQuoted(value);
+            case PLAIN -> plainSafe(value, original, inFlow) ? value : doubleQuoted(value);
             case SINGLE_QUOTED -> value.indexOf('\n') < 0 ? "'" + value.replace("'", "''") + "'" : doubleQuoted(value);
             case LITERAL -> literal(value, original).orElseGet(() -> doubleQuoted(value) + lineBreakSuffix(original));
             // Folding a value back into a folded block needs the emitter of open question 6; until then the
@@ -76,13 +88,17 @@ final class ScalarWriter {
     /**
      * A plain scalar is kept plain only when writing the value back re-reads as the same string: the
      * value must equal the original text (a single-line plain scalar) or be a single line the YAML
-     * reader takes as a string unchanged.
+     * reader takes as a string unchanged. Inside a flow collection the value must also hold none of the
+     * flow indicators {@code ,[]{}}, which end a plain scalar there.
      */
-    private static boolean plainSafe(String value, String original) {
+    private static boolean plainSafe(String value, String original, boolean inFlow) {
         if (value.equals(original)) {
             return true;
         }
         if (value.isEmpty() || value.indexOf('\n') >= 0 || !value.strip().equals(value)) {
+            return false;
+        }
+        if (inFlow && value.chars().anyMatch(c -> FLOW_INDICATORS.indexOf(c) >= 0)) {
             return false;
         }
         try {
@@ -102,14 +118,29 @@ final class ScalarWriter {
                 case '\t' -> out.append("\\t");
                 case '\r' -> out.append("\\r");
                 default -> {
-                    if (c < 0x20 || c == 0x7f) {
+                    if (printable(c)) {
+                        out.appendCodePoint(c);
+                    } else if (c <= 0xff) {
                         out.append(String.format("\\x%02x", c));
                     } else {
-                        out.appendCodePoint(c);
+                        out.append(String.format("\\u%04x", c));
                     }
                 }
             }
         });
         return out.append('"').toString();
+    }
+
+    /**
+     * Whether YAML 1.2 lets {@code c} stand for itself in a stream (production [1] c-printable, less tab, line
+     * feed and carriage return, which a double-quoted scalar escapes anyway). Every non-printable code point is
+     * below U+10000, so a four-digit escape carries it.
+     */
+    private static boolean printable(int c) {
+        return (c >= 0x20 && c <= 0x7e)
+                || c == 0x85
+                || (c >= 0xa0 && c <= 0xd7ff)
+                || (c >= 0xe000 && c <= 0xfffd)
+                || (c >= 0x10000 && c <= 0x10ffff);
     }
 }
