@@ -38,14 +38,20 @@ every charter operation returns, could not declare the `Charter-*` headers the s
 it without editing a vendored file. Keeping parity with core meant keeping a gap.
 
 [ADR-0002](/adr/0002-contract-source-of-record/) already makes this repository the source of
-record for the charter contract. It did not say what happens to the vendored files the contract
-is built from, nor to the Charter Pack schemas.
+record for the charter contract, but its Decision 2 reused core's shapes by vendoring a pinned
+copy, not redefining them, and the old `VENDORED.md` turned that into "never edit these files
+here; change them in core." It did not say what happens when a vendored file must change, nor
+who owns the Charter Pack schemas. This decision supersedes that "vendor, do not redefine"
+posture for the vendored vocabulary and settles both questions.
 
 ## Decision
 
 1. **This repository is the canonical owner of the charter structure, its responses, its
    contracts and the Charter Pack schemas.** That includes the vocabulary vendored from core
    (`contracts/_shared/`). A change made here is canonical, even to a file that came from core.
+   For the charter contract this restates [ADR-0002](/adr/0002-contract-source-of-record/)
+   Decision 1; it *adds* the vendored `_shared/` vocabulary and the Charter Pack schemas, and
+   supersedes ADR-0002 Decision 2's "vendor, do not redefine" posture.
 2. **Consumers adapt.** Core and any other consumer align to this repository's shapes. They do not
    send changes back as a condition of making them here.
 3. **Stay close to the source, deviate for good reason.** A vendored file is kept as it came
@@ -56,7 +62,8 @@ is built from, nor to the Charter Pack schemas.
    origin never overwrites a listed change.
 5. **Pack content is not covered.** The content of Charter Packs stays with its owners
    (spec-kitty-open-packs for the built-in and internal packs). This repository owns the schema
-   that content is written against.
+   that content is written against — the same structure-versus-content boundary
+   [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/) Decision 6 draws.
 
 ## Consequences
 
@@ -75,6 +82,15 @@ is built from, nor to the Charter Pack schemas.
 
 - A consumer adapts late and breaks. Mitigation: changes reach consumers through the released
   contract and its CHANGELOG, and the contract's breaking-change check still applies.
+- A vendored *schema* change is classified like any contract change under
+  [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/): adding response
+  headers to a closed response (as #90 does) is additive and lands cleanly, but adding a property
+  to a closed response schema is breaking and costs a contract major. Editing a vendored shape
+  here does not exempt it from that check.
+- A change to a Charter Pack *schema* is guarded by
+  [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) Decision 3's
+  open-packs round-trip, run in CI against a pinned open-packs commit: it catches a schema change
+  that would break existing pack content.
 
 ## Alternatives considered
 
@@ -102,4 +118,4 @@ Rejected: it duplicates vocabulary that has not changed and hides which files di
 ## References
 
 - Issue #90 and its mission `problem-response-charter-headers`.
-- [ADR-0002](/adr/0002-contract-source-of-record/), [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/).
+- [ADR-0002](/adr/0002-contract-source-of-record/), [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/), [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/).
