@@ -71,7 +71,8 @@ As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
   Javadoc and coverage reports ([Building the service](/guides/service-build/)): 735 tests,
   none skipped. `.github/workflows/service.yml` runs it on Java 25; its first run, on the
   pull request of this Mission, was green ([run 39205978799](https://github.com/spec-kitty/spec-kitty-charter/actions/runs/39205978799)).
-- **Next: step 3**, the first corpus slice, which needs the core-side export script.
+- **Next: step 3**, the first corpus slice, produced by a harness here over core's existing CLI
+  rather than a core-side export script ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)).
 
 The action-scoped context answered today is a first slice, marked `x-provisional` in the
 contract: the targets of the scope edges of the action node and of the mission type node,
