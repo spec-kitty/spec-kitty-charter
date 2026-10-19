@@ -78,7 +78,8 @@ A missing baseline is a stated fact, never an artifact of the checkout:
   CI checks out the full history and tags (`fetch-depth: 0`).
 - `-PcontractBaseline=none` skips the comparison on purpose (for a shallow clone you cannot deepen)
   and says so; the version gate and the Breaking subsection still run, since they read no git
-  history. Never set it in CI.
+  history. The build refuses it when the environment variable `CI` is `true`: CI must compare
+  against the released baseline.
 
 To release a contract version:
 
