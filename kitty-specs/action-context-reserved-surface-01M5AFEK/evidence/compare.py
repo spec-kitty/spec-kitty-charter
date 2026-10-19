@@ -5,7 +5,7 @@ Usage (core's venv, because the reference model re-runs core's ``walk_edges`` ov
 
 Prints a markdown report (summary table, classified differences, via/hops invariant check).
 Classification of charter - core: the extras must equal exactly the transitive ``requires`` of the
-suggested artifacts that core lists no other way (DIV-010, research.md D2 steps 3 and 4).
+suggested artifacts that core lists no other way (DIV-110, research.md D2 steps 3 and 4).
 """
 import json
 import sys
@@ -41,7 +41,7 @@ for action in sorted(core["actions"]):
         S_core = set(c["artifacts"])
         G_core = set(c["glossary_scopes"])
         und = set(core["undeclared"][action][d])
-        # reference model: DIV-010 expected extras, computed with core's own walk_edges
+        # reference model: DIV-110 expected extras, computed with core's own walk_edges
         scoped = walk_edges(g, {action}, {Relation.SCOPE}, 1) - {action}
         suggested = walk_edges(g, scoped, {Relation.SUGGESTS}, int(d))
         step4 = walk_edges(g, suggested, {Relation.REQUIRES})
@@ -51,16 +51,16 @@ for action in sorted(core["actions"]):
         ids = []
         if char_minus:
             if char_minus == div010:
-                ids.append("DIV-010")
+                ids.append("DIV-110")
             else:
                 ids.append("UNREGISTERED")
                 findings.append(f"UNREGISTERED charter-core {action} d{d}: unexplained={sorted(char_minus - div010)} missing_expected={sorted(div010 - char_minus)}")
         elif div010:
             ids.append("UNREGISTERED")
-            findings.append(f"UNREGISTERED {action} d{d}: DIV-010 extras absent from charter: {sorted(div010)}")
+            findings.append(f"UNREGISTERED {action} d{d}: DIV-110 extras absent from charter: {sorted(div010)}")
         if core_minus:
             if core_minus <= und:
-                ids.append("DIV-002")
+                ids.append("DIV-102")
                 undeclared_rows.append((action, d, sorted(core_minus)))
             else:
                 ids.append("UNREGISTERED")

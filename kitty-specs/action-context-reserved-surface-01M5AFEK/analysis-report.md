@@ -34,7 +34,7 @@ findings:
 - id: I1
   severity: low
   category: inconsistency
-  summary: DIV-010 is narrowed (after measurement) to the requires-of-suggested follow-through. Suggests stays seeded from scope as core intends. Spec, plan, research, data-model and WP01 agree; WP01 rework cycle 1 applies it.
+  summary: DIV-110 is narrowed (after measurement) to the requires-of-suggested follow-through. Suggests stays seeded from scope as core intends. Spec, plan, research, data-model and WP01 agree; WP01 rework cycle 1 applies it.
 - id: U1
   severity: medium
   category: underspecification
@@ -58,7 +58,7 @@ findings:
 |----|----------|----------|-------------|---------|----------------|
 | C1 | Coverage | MEDIUM | spec.md FR-017; tasks.md Closeout | The dated changelog entry is outside every WP | Write it at closeout after the rebase, as tasks.md says |
 | U1 | Underspecification | MEDIUM | spec.md SC-001; WP06 | SC-001 is evidence, not a gate | Keep it. The #9 harness is the gate. WP06 states the verdict |
-| I1 | Inconsistency | LOW | spec.md US1 acceptance 7 and 9; research D2; WP01 | DIV-010 was narrowed after measurement: suggests from scope (core's intent), and the requires of suggested listed | Applied in WP01's rework cycle 1. Scenario and test comments name the steer and DIV-010 |
+| I1 | Inconsistency | LOW | spec.md US1 acceptance 7 and 9; research D2; WP01 | DIV-110 was narrowed after measurement: suggests from scope (core's intent), and the requires of suggested listed | Applied in WP01's rework cycle 1. Scenario and test comments name the steer and DIV-110 |
 | D1 | Inconsistency | LOW | WP02 to WP04 | Out-of-map edits depend on serial execution | Implement in dependency order; record each out-of-map edit |
 
 ### Coverage summary
@@ -108,7 +108,7 @@ None.
 
 ### Operator rulings (2026-10-19)
 
-- DIV-010 kept.
+- DIV-110 kept.
 - R9 gates cutover stage 3.
 - Refresh moves to `POST /packs/refresh`, answering the `PackListing` (applied in WP04's rework cycle 1).
 - Tensions are handed to the creed set.

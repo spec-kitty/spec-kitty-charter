@@ -155,7 +155,7 @@ intent and registers the difference.
     (`query.py:194-195`), and its selection closure walks `requires` and `suggests` together
     (`delivery_table.py:284-287`).
   - Delivering an artifact without what it hard-depends on contradicts both, so the charter
-    treats it as unintended (DIV-010).
+    treats it as unintended (DIV-110).
 - **Suggestions of required artifacts: not followed, as in core.**
   - Core's docstring states that `suggests` is walked "from scoped artifacts"
     (`query.py:196-197`). That is intent, not a bug.
@@ -173,7 +173,7 @@ tag.
 
 **Vocabulary** targets are entries with relation `vocabulary`, not a separate list. Core
 computes the same set and discards it (`glossary_scopes` has no consumer, which looks
-unintended). The seam drops these entries when it builds core's delivery (DIV-006).
+unintended). The seam drops these entries when it builds core's delivery (DIV-106).
 
 ### D3. Provenance and deduplication
 
@@ -403,10 +403,11 @@ control is the same seam with no change, which answers 200 with the verified dig
 
 ### D12. The divergence register gets one home
 
-**Decision:** `docs/api/divergence-register.md` with stable ids. It moves the three CHANGELOG
-entries there and adds this mission's entries.
+**Decision:** `docs/conformance/divergence-register.md` with stable ids. Operator ruling R10
+(2026-10-19, conforming to runner B): this is the single register, and this mission keeps its own
+id block DIV-101..110. The CHANGELOG Provisional paragraphs are linked from it, not moved.
 
-**Limit:** the machine-readable format stays #72's.
+**Limit:** the machine-readable format (`divergences.yaml`) stays #72's and comes with runner B.
 
 ### D13. `ActionContext.diagnostics`
 
@@ -480,17 +481,17 @@ entries there and adds this mission's entries.
 
 | Id | The charter answers | Core answers | Corpus case |
 |---|---|---|---|
-| DIV-001 | 404 `action_not_found` for an action that is not a graph node | its non-bootstrap context | `action-not-a-node` |
-| DIV-002 | a scope target the graph does not declare, with a null label | skips it (and R9's filter drops such edges) | `undeclared-scope-target` |
-| DIV-003 | a load error refused (500, pack code) | an empty answer with a warning | `unreadable-pack` |
-| DIV-005 | an ordered answer with `relation`, `via`, `hops` and `diagnostics` | unordered sets | every case (mapping) |
-| DIV-006 | vocabulary targets as entries with relation `vocabulary`; the seam drops them from delivery | computes `glossary_scopes` and discards it | `vocabulary-walk` |
-| DIV-007 | the offering's walk only; activation, roots, language filter and directive allowlist are R9's operation | one filtered, selected answer | `activated-project`, `selected-roots`, `language-filtered`, `directive-allowlist` |
-| DIV-008 | no tension annotation (until the creed set) | an annotation over `in_tension_with` pairs | `tension-pair` |
-| DIV-009 | every walked kind, including paradigm, template and agent_profile | delivery slots exclude those kinds (seam-side) | `undelivered-kind` |
-| DIV-010 | the hard dependencies (`requires`, transitive) of suggested artifacts are listed: core's docstring calls `requires` hard dependencies, and its selection closure follows them | a suggested artifact without its `requires` | `suggested-artifact-requires` |
+| DIV-101 | 404 `action_not_found` for an action that is not a graph node | its non-bootstrap context | `action-not-a-node` |
+| DIV-102 | a scope target the graph does not declare, with a null label | skips it (and R9's filter drops such edges) | `undeclared-scope-target` |
+| DIV-103 | a load error refused (500, pack code) | an empty answer with a warning | `unreadable-pack` |
+| DIV-105 | an ordered answer with `relation`, `via`, `hops` and `diagnostics` | unordered sets | every case (mapping) |
+| DIV-106 | vocabulary targets as entries with relation `vocabulary`; the seam drops them from delivery | computes `glossary_scopes` and discards it | `vocabulary-walk` |
+| DIV-107 | the offering's walk only; activation, roots, language filter and directive allowlist are R9's operation | one filtered, selected answer | `activated-project`, `selected-roots`, `language-filtered`, `directive-allowlist` |
+| DIV-108 | no tension annotation (until the creed set) | an annotation over `in_tension_with` pairs | `tension-pair` |
+| DIV-109 | every walked kind, including paradigm, template and agent_profile | delivery slots exclude those kinds (seam-side) | `undelivered-kind` |
+| DIV-110 | the hard dependencies (`requires`, transitive) of suggested artifacts are listed: core's docstring calls `requires` hard dependencies, and its selection closure follows them | a suggested artifact without its `requires` | `suggested-artifact-requires` |
 
-DIV-004 (walking scope from the mission-type node) was withdrawn after the plan-point squad (D2).
+DIV-104 (walking scope from the mission-type node) was withdrawn after the plan-point squad (D2).
 
 **Corpus cases named for the harness (#9).**
 
@@ -502,7 +503,7 @@ DIV-004 (walking scope from the mission-type node) was withdrawn after the plan-
   - `requires-cycle`;
   - `suggests-two-hops`;
   - `suggests-diamond`, a node reachable at 1 and at 2 hops whose child must appear at depth 2;
-  - `suggested-artifact-requires`, whose `requires` **is** listed (DIV-010);
+  - `suggested-artifact-requires`, whose `requires` **is** listed (DIV-110);
   - `required-artifact-suggests`, whose `suggests` is not listed, as in core;
   - `other-action-owned-via-requires`, which core includes;
   - `plan-actions-empty`, for `plan/*`, which core answers empty.
@@ -525,6 +526,9 @@ the service's answer. It is evidence, not a gate. The gate is #9.
 - `RefusalHandler.java`;
 - `docs/api/service-contract.md`;
 - `docs/changelog/README.md`;
+- `docs/conformance/divergence-register.md`;
+- `HexagonalArchitectureTest.java`;
+- `gradle.properties`;
 - ADR-0009;
 - the ADR index.
 
@@ -533,6 +537,13 @@ the service's answer. It is evidence, not a gate. The gate is #9.
 - This mission adds ADR-0018 and amends ADR-0009, ADR-0011 and ADR-0016 under dated
   "Amendment" notes. A rebase onto B renumbers ADR-0018 if B lands first.
 - The refusal code enum values do not change.
+- Ruling R10 (2026-10-19): the single divergence register lives at
+  `docs/conformance/divergence-register.md`. Runner B adds `divergences.yaml` and DIV-001..019;
+  this mission keeps DIV-101..110 (the old DIV-001..010).
+- R17 note: under R17 a shard parse failure becomes `drg_schema_error`. This mission re-pinned
+  `pack_unreadable` on an unreadable project-configuration file (fold f44ba51). The
+  `errors.feature` "rewritten while parsed" outline's second read still expects `pack_unreadable`
+  and flips with R17.
 - Fingerprint widening lives in a new class outside `FileSystemCharterPackRepository`.
 - The `governance_policy_violation` unit test names #48 as its removal point.
 
@@ -563,7 +574,7 @@ Three lenses ran on 2026-10-19:
 
 | Id | Sev | Finding | Disposition |
 |---|---|---|---|
-| O1 | blocker | Walking mission-type scope goes against core's meaning of the edge; adds 30 to 49 artifacts on `plan`, `documentation` and `research` actions | **Accepted.** Scope from the action node only (D2); DIV-004 withdrawn |
+| O1 | blocker | Walking mission-type scope goes against core's meaning of the edge; adds 30 to 49 artifacts on `plan`, `documentation` and `research` actions | **Accepted.** Scope from the action node only (D2); DIV-104 withdrawn |
 | A1 | blocker | Filtering this read after R9 silently changes a 1.0 answer | **Accepted.** This read never filters; R9 adds its own operation (D1, D5) |
 | S1 | blocker | The token check fails open when no token is configured | **Accepted.** Startup refused without a token unless an explicit dev flag (D9) |
 | S2 | blocker | `Origin` alone does not stop DNS rebinding | **Accepted.** Host-name allowlist (name only, not port) and `Sec-Fetch-*` refusal (D9) |
@@ -575,7 +586,7 @@ Three lenses ran on 2026-10-19:
 | A7 | major | Refresh freezes a shape for no benefit | **Operator ruling:** kept, as `POST /packs/refresh` answering the refreshed `PackListing` (D10) |
 | A8 | major | Token reasoning: identity claim inverted; `WWW-Authenticate` | **Accepted** (D9) |
 | A9 | major | ADR-0011 contradicted without amendment | **Accepted.** ADR-0018 supersedes the named points; `stale_input` redefined (D11, D14) |
-| A10 | minor | Suggests seeding rationale inconsistent | **Accepted, then resolved** under the operator's steer not to replicate core bugs. The `requires` of suggested artifacts is listed (DIV-010). Suggests stays seeded from scope, which is core's stated intent; the alternative was measured at +30% and rejected (D2) |
+| A10 | minor | Suggests seeding rationale inconsistent | **Accepted, then resolved** under the operator's steer not to replicate core bugs. The `requires` of suggested artifacts is listed (DIV-110). Suggests stays seeded from scope, which is core's stated intent; the alternative was measured at +30% and rejected (D2) |
 | A11 | minor | Provenance has no oracle; `serviceVersion` pattern | **Accepted.** One scenario per tie-break; semver pattern (D3, D7) |
 | S3 | major | Filter order; `CharterHeaders` digests before any guard | **Accepted.** Guard at highest precedence; the header is set only by reads (D9, D11) |
 | S4 | major | Two fingerprint headers; refusals' fingerprint undefined | **Accepted.** Set once by the read; no refusal carries it; a scenario asserts exactly one header (D11) |
@@ -586,10 +597,10 @@ Three lenses ran on 2026-10-19:
 | S9 | minor | Error paths bypass the guard | **Accepted.** Guard mapped to all REQUEST dispatches; unknown path → 401; container 400s documented as unguarded |
 | S10 | minor | Refresh CSRF; torn digest on `/info` and refresh | **Accepted.** Two-digest check on every operation; non-empty body → 400 (D10, D11) |
 | S11 | minor | A derived worktree id is guessable | **Recorded** as a residual risk for #70; the launcher always sets an opaque id |
-| O2 | major | §2 factual errors: `:462`, `glossary_scopes`, edge counts | **Accepted.** §2 corrected; DIV-006 re-described |
-| O3 | major | Core's delivered answer is not `resolve_context`; SC-001 has no oracle | **Accepted.** DIV-007 and DIV-009 widened; SC-001 re-based on a recorded evidence run (§5) |
-| O4 | major | DIV-007 is acceptable only as a cutover gate | **Accepted.** Recommended gate and two-sided corpus comparison (D5) |
-| O5 | major | Walk under-specified (DFS could pass) | **Accepted.** Breadth-first minimum steps; diamond scenario; the follow-through scenarios pin DIV-010 (D2) |
+| O2 | major | §2 factual errors: `:462`, `glossary_scopes`, edge counts | **Accepted.** §2 corrected; DIV-106 re-described |
+| O3 | major | Core's delivered answer is not `resolve_context`; SC-001 has no oracle | **Accepted.** DIV-107 and DIV-109 widened; SC-001 re-based on a recorded evidence run (§5) |
+| O4 | major | DIV-107 is acceptable only as a cutover gate | **Accepted.** Recommended gate and two-sided corpus comparison (D5) |
+| O5 | major | Walk under-specified (DFS could pass) | **Accepted.** Breadth-first minimum steps; diamond scenario; the follow-through scenarios pin DIV-110 (D2) |
 | O6 | major | The declared-only pin counts as coverage | **Accepted.** Enforcing unit test; `@contract @reserved`; score reported as 8 + 1 (D11) |
 | O7 | minor | The stale seam is honest only if built carefully | **Accepted.** Negative control; ArchUnit rule that no test seam lives in main (D11) |
 | O8 | minor | Red-first must be an assertion failure | **Accepted.** Every WP records an assertion failure and the suite's rising scenario count |
@@ -624,7 +635,8 @@ planner-priti, 2026-10-19. Every finding is accepted and folded into the WP prom
 
 | Topic | Ruling |
 |---|---|
-| DIV-010 (the `requires` of suggested artifacts) | **Keep** |
+| DIV-110 (the `requires` of suggested artifacts) | **Keep** |
 | R9 effective-context operation | **Gates cutover stage 3.** The seam does not switch its context read to the service before #103's operation exists |
 | Refresh | **Keep**, under the packs domain: `POST /packs/refresh` (D10) |
 | Tensions | **Handed to the creed set** (#16, #77). The gap is recorded in ADR-0018 |
+| Divergence register location (R10) | **Conform to runner B**: the single register is `docs/conformance/divergence-register.md`; this mission's ids are DIV-101..110; the CHANGELOG Provisional items are linked, not moved |

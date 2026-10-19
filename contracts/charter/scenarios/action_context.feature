@@ -566,11 +566,11 @@ Feature: Action-scoped context
       }
       """
 
-  Scenario: What a suggested artifact requires is listed, and the walk ends there (intentional difference from core, DIV-010)
+  Scenario: What a suggested artifact requires is listed, and the walk ends there (intentional difference from core, DIV-110)
     Core lists a suggested artifact without its requires (offering/drg/query.py:226), although its
     own docstring calls requires "hard dependencies" (query.py:194-195): delivering an artifact
     without what it depends on contradicts that. The charter lists the requires of the suggested
-    artifacts (step 4), registered as DIV-010. The step-4 artifacts are not walked for suggests: t-c
+    artifacts (step 4), registered as DIV-110. The step-4 artifacts are not walked for suggests: t-c
     is not listed, so depth bounds the answer.
     Given the built-in pack "built-in" with the file "implement.graph.yaml":
       """
@@ -796,7 +796,7 @@ Feature: Action-scoped context
   Scenario: A vocabulary edge lists its glossary pack as a vocabulary entry
     Core computes the same set and discards it (glossary_scopes, offering/drg/query.py:232-233). The
     charter lists it, with relation vocabulary; the seam drops these entries when it builds core's
-    delivery (DIV-006).
+    delivery (DIV-106).
     Given the built-in pack "built-in" with the file "vocab.graph.yaml":
       """
       schema_version: '1.0'

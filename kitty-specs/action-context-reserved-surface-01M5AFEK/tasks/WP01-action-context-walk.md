@@ -107,7 +107,7 @@ but it still seeds later steps from it. Step 4's artifacts are not walked for `s
 
 - **Step 4 differs from core's code,** which lists suggested artifacts without their
   `requires`. It follows core's stated intent instead: `requires` means "hard dependencies"
-  (`query.py:194-195`). This is registered as DIV-010.
+  (`query.py:194-195`). This is registered as DIV-110.
 - **Step 3 matches core's stated intent:** `suggests` is walked "from scoped artifacts". Seeding
   it from required artifacts was measured at +30% governance and rejected (research D2).
 
@@ -158,7 +158,7 @@ same as `PackSummary.diagnostics` across all packs in load order.
 
 - **The charter repository is canonical for the contract (ADR-0015).** Core's
   `src/charter/offering/drg/query.py:184-243` is evidence. Match its walk semantics where D2
-  says so (breadth-first, seeds, cycle safety). Where D2 differs on purpose (DIV-010, the operator steer: do not replicate core bugs), follow D2.
+  says so (breadth-first, seeds, cycle safety). Where D2 differs on purpose (DIV-110, the operator steer: do not replicate core bugs), follow D2.
 - **No activation filtering, selection roots or tension annotation.** These belong to R9 (#103)
   and the creed set (D5, D6). The read is the offering's walk for good.
 - **Runner B boundary (C-001):** do not edit `contracts/packs/**`, `PackDescriptor*`,
@@ -233,7 +233,7 @@ from "governanceFingerprint", is:". Change it as follows.
    - requires chain;
    - requires cycle terminates;
    - suggests diamond at depth 2;
-   - follow-through of `requires` from suggested artifacts (DIV-010), with a comment naming
+   - follow-through of `requires` from suggested artifacts (DIV-110), with a comment naming
      core's code and why the charter differs;
    - no `suggests` from required artifacts (core's intent);
    - the `via`/`hops` invariant: walk the `via` chain of the deepest entry back to the action;
@@ -300,7 +300,7 @@ from "governanceFingerprint", is:". Change it as follows.
    - Rewrite it: the offering's walk for good; what applies in a project is the activation
      set's operation (#103); type-wide scope is reached through that operation, not this one.
    - Keep `x-provisional`. Rewrite its `open_decision` to name only what the corpus (#9) still
-     decides: the registered divergences in `docs/api/divergence-register.md` (WP05 creates
+     decides: the registered divergences in `docs/conformance/divergence-register.md` (WP05 creates
      that page; link it by path).
 5. **The example:** regenerate it from the real service answer for open-packs
    `software-dev/plan` at depth 1, trimmed to 3 to 6 entries, with `hops` and `diagnostics`.
@@ -397,7 +397,7 @@ node.
    - The action node and the mission-type node never appear as entries, even when an edge
      points back at them. Core removes the action from the seed set; check the background's
      `mission_type requires action` edge.
-   - A walk target the graph does not declare is still listed with a null label (DIV-002).
+   - A walk target the graph does not declare is still listed with a null label (DIV-102).
      Nothing is walked from it, because it has no outgoing edges.
 5. **Diagnostics:** collect `offering.packs()`' diagnostics in load order. Check how
    `PackListingQuery` reads them.
@@ -408,7 +408,7 @@ node.
    - `IllegalArgumentException` for depth -1 and 3;
    - a cycle;
    - a diamond (the child appears at depth 2);
-   - `requires` of suggested listed (DIV-010); `suggests` of required not listed;
+   - `requires` of suggested listed (DIV-110); `suggests` of required not listed;
    - the `via`/`hops` invariant over every entry of a dense random graph (a seeded generator,
      a handful of seeds, asserting the invariant and termination);
    - every precedence rule, including an artifact both suggested and reached by `vocabulary`, and
@@ -470,7 +470,7 @@ Check that:
 - breadth-first minimum-step semantics hold (the diamond scenario);
 - the mission-type node's scope is not walked;
 - the `via`/`hops` invariant holds;
-- DIV-010's follow-through is implemented and commented as an intentional difference from
+- DIV-110's follow-through is implemented and commented as an intentional difference from
   core's code;
 - the precedence is exactly D3;
 - `depth` has no response maximum;

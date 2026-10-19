@@ -20,18 +20,18 @@ What I verified:
 
 Before you start, work from the current WP prompt and research.md in the MAIN checkout (`/home/user/spec-kitty-charter/kitty-specs/action-context-reserved-surface-01M5AFEK/`). The lane worktree still holds the pre-finalize copy of `tasks/WP01-action-context-walk.md`. Its T003 differs from the authoritative one; see Issue 2.
 
-## Issue 1 (required): Orchestrator design correction, DIV-010 narrowed (verbatim from the orchestrator)
+## Issue 1 (required): Orchestrator design correction, DIV-110 narrowed (verbatim from the orchestrator)
 
 **The finding.** I measured the walk variants over open-packs built-in with core's library, summing |entries| across all actions:
 
-| Depth | Core | + `requires` of suggested | Full DIV-010 (+ `suggests` seeded from required) |
+| Depth | Core | + `requires` of suggested | Full DIV-110 (+ `suggests` seeded from required) |
 |---|---|---|---|
 | 1 | 397 | 434 | 550 |
 | 2 | 467 | 497 | 657 |
 
 Core's own docstring (`query.py:196-197`) states `suggests` is walked "from scoped artifacts". That is core's intent, not a bug, so seeding `suggests` from required artifacts is a design change, not a bug fix. It adds about 30% more governance; for example, `software-dev/tasks` at depth 1 goes from 28 to 69.
 
-**The decision.** DIV-010 is narrowed to the hard-dependency follow-through only:
+**The decision.** DIV-110 is narrowed to the hard-dependency follow-through only:
 
 - **Step 3:** `suggests` is seeded from the SCOPED artifacts only, as core does.
 - **Step 4:** the `requires` of suggested artifacts is still listed. That follows core's stated intent ("requires = hard dependencies") and is the operator's "don't replicate bugs" steer.
@@ -49,12 +49,12 @@ Research D2, spec and data-model are being updated in the main checkout by the o
 
 Reviewer's concrete checklist for Issue 1:
 
-- **1a.** `ActionContextWalk.run`: step 3 seeds from the list step 1 returned (`scoped`), not from `listed.keySet()`. Rewrite the DIV-010 comment there, the class Javadoc and the `ActionContextQuery` class Javadoc to describe step 4 only, and state that step 3 matches core (`query.py:196-197`).
+- **1a.** `ActionContextWalk.run`: step 3 seeds from the list step 1 returned (`scoped`), not from `listed.keySet()`. Rewrite the DIV-110 comment there, the class Javadoc and the `ActionContextQuery` class Javadoc to describe step 4 only, and state that step 3 matches core (`query.py:196-197`).
 - **1b.** Contract text:
   - `ActionContext.yaml` `guidance.description` ("the suggests edges of every artifact the first two steps listed") and `x-derived.rule` ("suggests from every artifact in force") become "from the scoped artifacts".
   - Check `GuidanceEntry.yaml` and the path description for the same wording.
   - Regenerate `examples/ActionContext.software-dev-plan.yaml` from the real service (open-packs, software-dev/plan, depth 1) if the answer changes.
-- **1c.** `action_context.feature`, "What a required artifact suggests is listed (... DIV-010)": rewrite it so the artifact is NOT listed when its only path is through a required artifact. Cite `query.py:196-197` as core's intent. Then re-derive every exact body that the background's required-suggests shard affects (the depth 0/1/2 bodies, default depth, precedence and others), and re-run red, then green, for the changed scenarios.
+- **1c.** `action_context.feature`, "What a required artifact suggests is listed (... DIV-110)": rewrite it so the artifact is NOT listed when its only path is through a required artifact. Cite `query.py:196-197` as core's intent. Then re-derive every exact body that the background's required-suggests shard affects (the depth 0/1/2 bodies, default depth, precedence and others), and re-run red, then green, for the changed scenarios.
 - **1d.** Unit test `aRequiredArtifactIsInForceSoWhatItSuggestsIsListed`: invert it, so a required artifact's `suggests` target is not listed at any depth.
 - **1e.** New passing-through pin. The narrowing makes this case real: a required node is no longer a seed of step 3, but it can still be reached by `suggests`. Scoped S `suggests` R, R is already listed by step 2, and R `suggests` C. At depth 2, C must be listed with relation `suggests`, via R and hops `hops(R) + 1`, and R must keep its `requires` entry. At depth 1, C is absent. Add this case as a unit test and as a scenario. It pins the WP prompt's "passing through: Yes" decision.
 - **1f.** `amongParentsAtTheSameDistanceTheFewerHopsWinThenTheSmallerUrn`, and its scenario at about `action_context.feature:627`: the fewer-hops case currently relies on a required node (`dependency`, hops 2) seeding step 3. That no longer happens, so the test would pass for the wrong reason or fail. Rebuild it so two parents reach the target at the same suggests step with different hops. For example, S `suggests` R, where R is already required with hops 3; S `suggests` B, which is new with hops 2; and both R and B `suggest` X. X must take B as its parent.

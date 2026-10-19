@@ -145,14 +145,14 @@ did not; `Changed` lists what differs from the draft.
 Decided in ADR-0018 (provisional, 2026-10-19) and built before the 1.0 tag, while a shape change
 is still compatible. By oasdiff's rules several of these are breaking for a strict consumer of the
 closed responses; no tag exists, so no baseline is broken. The divergences from core are in
-[`docs/api/divergence-register.md`](../../docs/api/divergence-register.md).
+[`docs/conformance/divergence-register.md`](../../docs/conformance/divergence-register.md).
 
 **The walk.**
 
 - `getActionContext` answers the offering's walk in five breadth-first steps: scope from the
   action node only (the mission-type node's scope is no longer walked); `requires` from the
   scoped artifacts, transitively; `suggests` from the scoped artifacts only, up to `depth`;
-  `requires` of the suggested artifacts, transitively (DIV-010, operator-confirmed); `vocabulary`,
+  `requires` of the suggested artifacts, transitively (DIV-110, operator-confirmed); `vocabulary`,
   one hop. An artifact is listed by the first step that reaches it, and the answer is sorted by
   the full URN string. The operation applies no activation filter, for good (activation is the
   effective-context operation of #103).
@@ -176,7 +176,7 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
   scope of the action and of its mission type is answered once each, sorted by URN", "A
   directive scoped by both an action and its mission type is answered once" and the echo
   scenario are replaced by the ones below, because the mission-type node is no longer walked:
-  depth, each walk, the cycle and diamond cases, the DIV-010 cases both ways, precedence, the
+  depth, each walk, the cycle and diamond cases, the DIV-110 cases both ways, precedence, the
   parent tie-breaks, the `via`/`hops` invariant, vocabulary, the undeclared-target case and `diagnostics`.
   `ContractShapeTest` checks that `ActionContext.depth` has no maximum.
 
@@ -259,7 +259,20 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
 
 - The action-context operation (`x-provisional`): the registered divergences from core are
   decided by the conformance corpus (issue #9). `action_context.feature` is tagged
-  `@provisional`. The divergences (DIV-001 to DIV-010) live in the
-  [divergence register](../../docs/api/divergence-register.md).
+  `@provisional`. The divergences (DIV-101 to DIV-110) live in the
+  [divergence register](../../docs/conformance/divergence-register.md). The earlier note that the
+  `requires`, `suggests` and `vocabulary` walks were unfinished is superseded by the walk
+  described under "Action context and the seam surface" above.
+- An action that is not a node of the graph answers `404 action_not_found`; for the same input
+  core falls back to its non-bootstrap context (`charter/activation/context.py`). The shadow
+  comparison (roadmap step 7) maps the charter's `404 action_not_found` to core's fallback and
+  counts the pair as matching. The scenario "An action that is not a node of the graph is
+  refused, not answered empty" says so. Registered as
+  [DIV-101](../../docs/conformance/divergence-register.md).
+- A scope edge to a node the graph does not declare is listed with a `null` label; core skips
+  that artifact (`charter/activation/context_renderers/delivery_table.py`). The scenario "A
+  scope edge to a node the graph does not declare is answered without a label" pins the
+  charter's answer and says core omits it. Registered as
+  [DIV-102](../../docs/conformance/divergence-register.md).
 - `PackSummary.diagnostics` (`x-provisional`): `pack_level_missing` becomes a refusal when core
   ADR 2026-10-11-2 closes its deprecation window.

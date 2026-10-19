@@ -92,11 +92,11 @@ over core's CLI.
 - **Core is evidence.** Do not edit core or open-packs. Run Python with `-I` from a directory
   that is not inside open-packs.
 - **Mapping:** core's sets are unordered and carry no provenance, so compare **URN sets**. The
-  charter's extra fields (`relation`, `via`, `hops`) are DIV-005. Core's `glossary_scopes` maps
-  to the charter's `relation: vocabulary` entries (DIV-006).
+  charter's extra fields (`relation`, `via`, `hops`) are DIV-105. Core's `glossary_scopes` maps
+  to the charter's `relation: vocabulary` entries (DIV-106).
 - **Expected registered differences:**
-  - **DIV-002:** undeclared scope targets. Core's `walk_edges` may still list them; check.
-  - **DIV-006:** vocabulary. Open-packs has 0 `vocabulary` edges, so expect none.
+  - **DIV-102:** undeclared scope targets. Core's `walk_edges` may still list them; check.
+  - **DIV-106:** vocabulary. Open-packs has 0 `vocabulary` edges, so expect none.
   - Anything else is a finding.
 
 ## Branch Strategy

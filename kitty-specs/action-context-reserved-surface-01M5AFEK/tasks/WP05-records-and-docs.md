@@ -36,7 +36,7 @@ agent_profile: architect-alphonso
 authoritative_surface: docs/adr/
 create_intent:
 - docs/adr/0018-action-context-read-and-seam-access-surface.md
-- docs/api/divergence-register.md
+- docs/conformance/divergence-register.md
 execution_mode: code_change
 model: sonnet
 owned_files:
@@ -143,7 +143,7 @@ spec-kitty agent action implement WP05 --agent claude --mission action-context-r
 - **Decision:** D1 to D14 as numbered decisions, each concise, with the walk table, the dedup
   rule, `depth` with the seam mapping, and the token and refresh shapes.
 - **Operator rulings (research §10):** record each as decided by the operator on 2026-10-19:
-  DIV-010 kept; R9 gates cutover stage 3; refresh as `POST /packs/refresh`; tensions to the
+  DIV-110 kept; R9 gates cutover stage 3; refresh as `POST /packs/refresh`; tensions to the
   creed set. Status stays "Accepted (provisional)", with these four marked operator-confirmed.
 - **Supersedes, explicitly:**
   - ADR-0009 D3 bullet 1 (`depth` as scope hops, maximum 1);
@@ -191,12 +191,12 @@ both depths" becomes "at depths 0, 1 and 2", by amendment note.
 - The "Planned" table loses the items now done, and gains R9's effective-context operation and
   the creed set's tension operation.
 
-**`docs/api/divergence-register.md`** (new):
+**`docs/conformance/divergence-register.md`** (new):
 
 - Front matter like its siblings.
 - A short intro: ADR-0016 D4, the format belongs to #72, and every entry has a stable id.
-- The table from research §5: DIV-001 to DIV-003 and DIV-005 to DIV-009, with each one's
-  corpus case. DIV-004 is listed as withdrawn, with the reason.
+- The table from research §5: DIV-101 to DIV-103 and DIV-105 to DIV-109, with each one's
+  corpus case. DIV-104 is listed as withdrawn, with the reason.
 - The corpus cases named for #9.
 - The two-sided comparison for activated cases (D5).
 - Link it from `docs/api/README.md` (or the API index) and from ADR-0016's amendment.

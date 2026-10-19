@@ -11,7 +11,7 @@ related:
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0016-conformance-corpus-harness-over-core-cli
   - api/service-contract
-  - api/divergence-register
+  - conformance/divergence-register
   - architecture/resolution-model
   - architecture/service-lifecycle
 audience:
@@ -30,7 +30,7 @@ audience:
 **Accepted (provisional)** — 2026-10-19. The runner decided under the operator's steer ("design
 it on its own merits, not as a copy of core"). Confirmation is pending in the pull request
 handover. Four rulings of the same day are operator-confirmed and marked so below: decisions
-D2 (DIV-010 kept), D5 (R9 gates cutover stage 3), D6 (tensions go to the creed set) and D10
+D2 (DIV-110 kept), D5 (R9 gates cutover stage 3), D6 (tensions go to the creed set) and D10
 (refresh as `POST /packs/refresh`).
 
 This record supersedes, point by point:
@@ -83,7 +83,7 @@ the activation contract set (R9, [#103](https://github.com/spec-kitty/spec-kitty
 built on this walk inside the service. A 1.0 answer then never changes meaning without the
 client opting in.
 
-### D2. The walk has five steps (DIV-010 operator-confirmed)
+### D2. The walk has five steps (DIV-110 operator-confirmed)
 
 | Step | From | Reach | Entry relation |
 |---|---|---|---|
@@ -101,14 +101,14 @@ client opting in.
   the activation cascade, not of this walk. Type-wide guidance reaches an action through R9.
 - Suggestions of required artifacts are not followed, as in core. Seeding from them was
   measured at about 30% more governance and rejected.
-- Step 4 is the one difference from core's code (DIV-010). Core's own docstring calls
+- Step 4 is the one difference from core's code (DIV-110). Core's own docstring calls
   `requires` "hard dependencies", and its selection closure follows them, yet its walk lists a
   suggested artifact without them. The operator ruled on 2026-10-19 to **keep** step 4.
 - Vocabulary targets are entries with relation `vocabulary`. Core computes the same set and
-  discards it. The seam drops these entries from delivery (DIV-006).
+  discards it. The seam drops these entries from delivery (DIV-106).
 
 Evidence: 24 actions at depths 0, 1 and 2 are 72 cells over open-packs. 65 are identical to
-core, and 7 differ only by DIV-010. Core minus charter is empty in every cell. The via and hops
+core, and 7 differ only by DIV-110. Core minus charter is empty in every cell. The via and hops
 invariant holds in all 1,227 entries.
 
 ### D3. Provenance and deduplication
@@ -164,7 +164,7 @@ compares this read with core in two ways:
 
 Core's tension annotation moves to a later operation of the creed contract set (#16, #77), built
 over negative `impacts`, which 1.0 already models. Until then the seam cannot reproduce it from
-this read (DIV-008). Operator ruling, 2026-10-19: accepted.
+this read (DIV-108). Operator ruling, 2026-10-19: accepted.
 
 ### D7. `serviceVersion`
 
@@ -249,9 +249,11 @@ fingerprint check alone would answer. The path is not `/refresh` and the answer 
 
 ### D12. The divergence register has one home
 
-[`docs/api/divergence-register.md`](/api/divergence-register/) holds the entries, each with a
-stable id (DIV-001 to DIV-010, DIV-004 withdrawn). It replaces the three paragraphs that were in
-the contract CHANGELOG's provisional section. The machine-readable format stays #72's.
+[`docs/conformance/divergence-register.md`](/conformance/divergence-register/) holds the entries,
+each with a stable id. Operator ruling R10 (2026-10-19) governs the location: there is one
+register, and runner B's pack-schema block (DIV-001..019) and `divergences.yaml` join it. This
+mission uses the block DIV-101..110, with DIV-104 withdrawn. The contract CHANGELOG's provisional
+section keeps its paragraphs and links the entries. The machine-readable format stays #72's.
 
 ### D13. `ActionContext.diagnostics`
 
@@ -336,4 +338,4 @@ depths 0, 1 and 2".
   [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),
   [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/),
   [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/).
-- [Service contract](/api/service-contract/) and [divergence register](/api/divergence-register/).
+- [Service contract](/api/service-contract/) and [divergence register](/conformance/divergence-register/).

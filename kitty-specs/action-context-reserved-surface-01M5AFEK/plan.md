@@ -21,7 +21,7 @@ of the activation set (#103). The read walks:
 - `vocabulary`.
 
 Core's code is evidence of intent, not a spec. Where it contradicts its own stated intent, the
-charter follows the intent (DIV-010).
+charter follows the intent (DIV-110).
 
 Each walk is breadth-first. Each entry carries `relation`, `via` and `hops`, and the answer
 carries the offering's `diagnostics`. `depth` is redefined as `suggests` hops, from 0 to 2,
@@ -76,7 +76,7 @@ flowchart LR
 
 | Charter rule | How this plan meets it |
 |---|---|
-| Divergence from the oracle must not go wrong | Every deliberate difference is registered (research §5, DIV-001 to DIV-010, DIV-004 withdrawn) with a named corpus case for #9. Core's code is evidence of intent; its bugs are not replicated |
+| Divergence from the oracle must not go wrong | Every deliberate difference is registered (research §5, DIV-101 to DIV-110, DIV-104 withdrawn) with a named corpus case for #9. Core's code is evidence of intent; its bugs are not replicated |
 | No incompatible contract change reaches core | No tag exists, so 1.0 is still being shaped (`ReleaseGate` NoBaseline). Every closed-schema change lands before the tag (C-005). Later capabilities are new operations (ADR-0009 D4). |
 | Adversarial squad at the plan point and before merge | A squad on spec and plan before tasks; a pre-PR squad at closeout |
 | A call made without review is logged | The provisional calls D1 to D14 are listed for operator review in the PR handover |
@@ -123,7 +123,7 @@ service/
 └── charter-service/                   # CharterProperties (+projectConfigDir, worktreeToken), CharterWiring, test steps
 docs/
 ├── adr/0018-…md                       # new; ADR-0009, 0011, 0016 amended
-├── api/service-contract.md, api/divergence-register.md (new)
+├── api/service-contract.md, conformance/divergence-register.md (new)
 └── architecture/ resolution-model, service-lifecycle, contract-and-dtos
 ```
 
@@ -246,7 +246,7 @@ docs/
 - **Relevant requirements**: FR-001, FR-007, FR-008, FR-013, FR-017, NFR-002
 - **Affected surfaces**:
   - new ADR-0018; ADR-0009, ADR-0011 and ADR-0016 amendments; the ADR index;
-  - `docs/api/service-contract.md`, the new `docs/api/divergence-register.md`;
+  - `docs/api/service-contract.md`, the new `docs/conformance/divergence-register.md`;
   - `resolution-model.md`, `service-lifecycle.md`, `contract-and-dtos.md`, `open-questions.md`, `roadmap.md`;
   - the contract CHANGELOG `### Provisional` section.
 - **Sequencing/depends-on**: IC-05 (the docs describe what landed)

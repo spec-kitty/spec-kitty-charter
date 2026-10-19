@@ -201,7 +201,7 @@ class ActionContextQueryTest {
 
     @Test
     void whatASuggestedArtifactRequiresIsListedAndTheWalkEndsThere() {
-        // DIV-010, an intentional difference from core: core lists a suggested artifact without its hard
+        // DIV-110, an intentional difference from core: core lists a suggested artifact without its hard
         // dependencies (offering/drg/query.py:226 against its own "hard dependencies" at :194-195).
         Urn scoped = tactic("scoped");
         Urn suggested = tactic("suggested");

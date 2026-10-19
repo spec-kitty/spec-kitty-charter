@@ -20,9 +20,9 @@ Evidence, not a gate. The gate is the corpus harness (#9) over core's CLI.
    Output: `service-walk.json` (compact). All 72 answers were HTTP 200.
 3. `compare.py` compares URN sets per cell. Charter set S = guidance entries with a relation other
    than `vocabulary`; charter vocabulary = entries with relation `vocabulary`, compared with core's
-   `glossary_scopes` (DIV-006). Charter-minus-core is classified against a reference model that
+   `glossary_scopes` (DIV-106). Charter-minus-core is classified against a reference model that
    re-runs core's own `walk_edges`: the transitive `requires` of the artifacts core lists as
-   suggested (research.md D2 steps 3 and 4), minus what core already lists. A cell is DIV-010 only
+   suggested (research.md D2 steps 3 and 4), minus what core already lists. A cell is DIV-110 only
    when the extras equal that model exactly; any other extra or missing URN is UNREGISTERED.
    It also checks the via/hops invariant over every real answer.
 
@@ -48,7 +48,7 @@ to stay under the size budget; contents are unchanged.)
 
 ## Result
 
-- 24 actions x 3 depths = 72 cells; 65 identical, 7 differ, all 7 by DIV-010.
+- 24 actions x 3 depths = 72 cells; 65 identical, 7 differ, all 7 by DIV-110.
 - **core minus charter is empty in all 72 cells.** The charter loses nothing core lists.
 - Totals of |S| over all actions:
 
@@ -64,13 +64,13 @@ The depth-1 charter total, 434, is the figure research.md D2 quotes.
 
 | Cell | charter - core | Relation of the extras | Register |
 |---|---|---|---|
-| documentation/design d2 | 1 (`directive:DIRECTIVE_031`, via `DIRECTIVE_032`, hops 4) | requires | DIV-010 |
-| software-dev/implement d1 | 16 (1 styleguide, 4 procedure, 8 tactic, 3 directive) | requires | DIV-010 |
-| software-dev/implement d2 | 11 (2 directive, 6 tactic, 3 procedure) | requires | DIV-010 |
-| software-dev/plan d1 | 15 (11 tactic, 4 directive) | requires | DIV-010 |
-| software-dev/plan d2 | 14 (11 tactic, 3 directive) | requires | DIV-010 |
-| software-dev/review d1 | 6 (1 styleguide, 4 tactic, 1 procedure) | requires | DIV-010 |
-| software-dev/review d2 | 4 (2 tactic, 1 procedure, 1 directive) | requires | DIV-010 |
+| documentation/design d2 | 1 (`directive:DIRECTIVE_031`, via `DIRECTIVE_032`, hops 4) | requires | DIV-110 |
+| software-dev/implement d1 | 16 (1 styleguide, 4 procedure, 8 tactic, 3 directive) | requires | DIV-110 |
+| software-dev/implement d2 | 11 (2 directive, 6 tactic, 3 procedure) | requires | DIV-110 |
+| software-dev/plan d1 | 15 (11 tactic, 4 directive) | requires | DIV-110 |
+| software-dev/plan d2 | 14 (11 tactic, 3 directive) | requires | DIV-110 |
+| software-dev/review d1 | 6 (1 styleguide, 4 tactic, 1 procedure) | requires | DIV-110 |
+| software-dev/review d2 | 4 (2 tactic, 1 procedure, 1 directive) | requires | DIV-110 |
 
 In every one of the 7 cells the extras are exactly the transitive `requires` of the suggested
 artifacts that core lists no other way. Each has relation `requires`. None is `suggests` or
@@ -80,16 +80,16 @@ artifacts as suggested, and core then lists them too.
 
 Other register ids:
 
-- **DIV-002 (undeclared scope target):** not exercised. Core's results contain no URN that is not a
+- **DIV-102 (undeclared scope target):** not exercised. Core's results contain no URN that is not a
   graph node (`core-walk.json` `undeclared` is empty in all 72 cells), so there is no
   core-lists-it, charter-refuses-it case in open-packs. The scenario fixture and the corpus case
   `undeclared-scope-target` pin it, not this content.
-- **DIV-006 (vocabulary):** none. Open-packs has 0 `vocabulary` edges; core's `glossary_scopes` and
+- **DIV-106 (vocabulary):** none. Open-packs has 0 `vocabulary` edges; core's `glossary_scopes` and
   the charter's `vocabulary` entries are both empty in all 72 cells. The vocabulary walk is pinned
   by scenario fixtures only.
-- **DIV-005 (ordered answer, `relation`/`via`/`hops`):** by construction; the sets were compared
+- **DIV-105 (ordered answer, `relation`/`via`/`hops`):** by construction; the sets were compared
   as URN sets. The service's answers are sorted by URN in every cell.
-- **DIV-001, 003, 007, 008, 009:** not in scope for a bare-walk comparison (no action-not-a-node,
+- **DIV-101, 003, 007, 008, 009:** not in scope for a bare-walk comparison (no action-not-a-node,
   no load error, no activation, no tension annotation, no delivery slots were compared).
 - `plan/*` (4 actions, 12 cells): both answer empty. Mission type `plan` has no action scope edges.
 
@@ -109,7 +109,7 @@ Over all 1,227 entries (72 answers), 0 violations of:
 ## SC-001 verdict
 
 **SC-001 holds.** Over open-packs 7f063ae, for all 24 actions at depths 0, 1 and 2, the service's
-answer equals core's `resolve_context` at 9554e7b2 except for the registered DIV-010 extras
+answer equals core's `resolve_context` at 9554e7b2 except for the registered DIV-110 extras
 (7 cells; 37 extra entries at depth 1 and 30 at depth 2, summed over actions, all `requires` of
 suggested artifacts), with core minus charter empty everywhere and no unregistered difference.
 
@@ -128,7 +128,7 @@ Columns: `core S` and `charter S` are the URN-set sizes; `core glossary` is core
 | action:documentation/audit | 2 | 6 | 6 | 0 | 0 | 0 | 0 | - |
 | action:documentation/design | 0 | 7 | 7 | 0 | 0 | 0 | 0 | - |
 | action:documentation/design | 1 | 9 | 9 | 0 | 0 | 0 | 0 | - |
-| action:documentation/design | 2 | 14 | 15 | 0 | 1 | 0 | 0 | DIV-010 |
+| action:documentation/design | 2 | 14 | 15 | 0 | 1 | 0 | 0 | DIV-110 |
 | action:documentation/discover | 0 | 7 | 7 | 0 | 0 | 0 | 0 | - |
 | action:documentation/discover | 1 | 10 | 10 | 0 | 0 | 0 | 0 | - |
 | action:documentation/discover | 2 | 10 | 10 | 0 | 0 | 0 | 0 | - |
@@ -175,17 +175,17 @@ Columns: `core S` and `charter S` are the URN-set sizes; `core glossary` is core
 | action:research/synthesis | 1 | 7 | 7 | 0 | 0 | 0 | 0 | - |
 | action:research/synthesis | 2 | 7 | 7 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/implement | 0 | 63 | 63 | 0 | 0 | 0 | 0 | - |
-| action:software-dev/implement | 1 | 101 | 117 | 0 | 16 | 0 | 0 | DIV-010 |
-| action:software-dev/implement | 2 | 129 | 140 | 0 | 11 | 0 | 0 | DIV-010 |
+| action:software-dev/implement | 1 | 101 | 117 | 0 | 16 | 0 | 0 | DIV-110 |
+| action:software-dev/implement | 2 | 129 | 140 | 0 | 11 | 0 | 0 | DIV-110 |
 | action:software-dev/plan | 0 | 21 | 21 | 0 | 0 | 0 | 0 | - |
-| action:software-dev/plan | 1 | 31 | 46 | 0 | 15 | 0 | 0 | DIV-010 |
-| action:software-dev/plan | 2 | 39 | 53 | 0 | 14 | 0 | 0 | DIV-010 |
+| action:software-dev/plan | 1 | 31 | 46 | 0 | 15 | 0 | 0 | DIV-110 |
+| action:software-dev/plan | 2 | 39 | 53 | 0 | 14 | 0 | 0 | DIV-110 |
 | action:software-dev/retrospect | 0 | 11 | 11 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/retrospect | 1 | 11 | 11 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/retrospect | 2 | 11 | 11 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/review | 0 | 71 | 71 | 0 | 0 | 0 | 0 | - |
-| action:software-dev/review | 1 | 103 | 109 | 0 | 6 | 0 | 0 | DIV-010 |
-| action:software-dev/review | 2 | 128 | 132 | 0 | 4 | 0 | 0 | DIV-010 |
+| action:software-dev/review | 1 | 103 | 109 | 0 | 6 | 0 | 0 | DIV-110 |
+| action:software-dev/review | 2 | 128 | 132 | 0 | 4 | 0 | 0 | DIV-110 |
 | action:software-dev/specify | 0 | 19 | 19 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/specify | 1 | 19 | 19 | 0 | 0 | 0 | 0 | - |
 | action:software-dev/specify | 2 | 19 | 19 | 0 | 0 | 0 | 0 | - |
@@ -195,7 +195,7 @@ Columns: `core S` and `charter S` are the URN-set sizes; `core glossary` is core
 
 Totals per depth (core, charter, core-charter, charter-core): {'0': [296, 296, 0, 0], '1': [397, 434, 0, 37], '2': [467, 497, 0, 30]}
 Actions: 24 cells: 72
-Cells by register ids: {'-': 65, 'DIV-010': 7}
+Cells by register ids: {'-': 65, 'DIV-110': 7}
 Undeclared nodes in core results: []
 Invariant: {'entries': 1227} violations: 0
 Findings (unregistered): 0

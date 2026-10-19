@@ -7,7 +7,7 @@ updated: 2026-10-19T00:00:00Z
 type: API
 kind: Hub
 related:
-  - api/divergence-register
+  - conformance/divergence-register
   - architecture/contract-and-dtos
   - architecture/logical-model
   - adr/0001-java-service-with-openapi-contract
@@ -63,7 +63,7 @@ must give one answer for the same inputs; the conformance corpus in
   errors.
 - [Service contract](/api/service-contract/) — the planned read and write operations, the
   error model and the transports.
-- [Divergence register](/api/divergence-register/) — where the service answers differently from
+- [Divergence register](/conformance/divergence-register/) — where the service answers differently from
   core on purpose, with a stable id for each difference.
 - [Versioning and compatibility](/api/compatibility/) — how each surface is versioned and
   what a consumer can rely on.

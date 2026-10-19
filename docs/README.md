@@ -43,6 +43,8 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Plans](/plans/) — the bootstrap roadmap and the open questions.
 - [API](/api/) — the public API: the service contract, whose three read operations are built,
   the Javadoc of the service, and the Python package surface, which is designed only.
+- [Conformance](/conformance/) — where the service answers differently from core on purpose,
+  in one divergence register.
 - [Guides](/guides/) — contributing, building the service and building the docsite.
 - [Changelog](/changelog/) — dated record of notable changes.
 
