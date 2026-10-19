@@ -204,7 +204,7 @@ public final class ReleaseGate {
                 .filter(Version::released)
                 .findFirst();
         if (previous.isPresent() && info.get().major() > previous.get().major() && !top.breaking()) {
-            return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md rises the major"
+            return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md raises the major"
                     + " version from " + previous.get().text() + " to " + infoVersion + " but has no ### Breaking"
                     + " subsection; list what breaks there.");
         }

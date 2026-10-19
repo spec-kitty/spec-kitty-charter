@@ -168,7 +168,7 @@ class ReleaseGateTest {
                     changelog("## 2.0.0-SNAPSHOT\n\n### Changed\n", "## 1.1.0\n\n### Breaking\n"),
                     Set.of("contract-charter-v1.1.0"));
             assertThat(decision).isInstanceOf(Decision.Refused.class);
-            assertThat(decision.message()).contains("rises the major version from 1.1.0 to 2.0.0-SNAPSHOT");
+            assertThat(decision.message()).contains("raises the major version from 1.1.0 to 2.0.0-SNAPSHOT");
         }
 
         @Test

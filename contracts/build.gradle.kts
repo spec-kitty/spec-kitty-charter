@@ -30,8 +30,10 @@ dependencies {
     implementation(libs.snakeyaml.engine)
 }
 
-// Generated files stay out of contracts/: the contract tree is an input of :charter-api's code generation,
-// and an output inside it would make that task read this project's outputs.
+// This project builds into the root build/contracts, not contracts/build. That is not what keeps :charter-api's
+// code generation clean: it reads only contracts/charter and contracts/_shared (charter.contract-api.gradle.kts),
+// so contracts/build would not be among its inputs either. The location stays because CI uploads the bundle from
+// build/contracts/contract/ (.github/workflows/service.yml) and lint/README.md names that path.
 layout.buildDirectory = rootProject.layout.buildDirectory.dir("contracts")
 
 /** One pinned release archive of a tool and the name of the executable inside it. */
@@ -84,8 +86,14 @@ fun pinFor(tool: String): ToolPin = toolPins.getValue(tool)[platform] ?: throw G
     "No pinned $tool binary for platform '$platform'. Pinned platforms: ${toolPins.getValue(tool).keys.sorted()}. " +
         "Add one to contracts/build.gradle.kts with the checksum from the release's checksums.txt.")
 
-/** Downloads one pinned archive, verifies its SHA-256, and only then extracts its executable. */
-@DisableCachingByDefault(because = "Downloads a release archive; the extracted tool stays in the build directory.")
+/**
+ * Downloads one pinned archive, verifies its SHA-256, and only then extracts its executable. Cacheable, so CI
+ * restores the tool from the Gradle build cache (setup-gradle keeps it) instead of downloading it again: the cache
+ * key holds the pinned URL and checksum, and the outputs are the verified archive and the extracted executable,
+ * so a restored entry is one that a run with the same pinned checksum verified. Only a verified archive ever
+ * becomes an output.
+ */
+@CacheableTask
 abstract class InstallTool @Inject constructor(
     private val archives: ArchiveOperations,
     private val files: FileSystemOperations,
@@ -93,6 +101,7 @@ abstract class InstallTool @Inject constructor(
     @get:Input abstract val url: Property<String>
     @get:Input abstract val sha256: Property<String>
     @get:Input abstract val executable: Property<String>
+    @get:OutputFile abstract val archive: RegularFileProperty
     @get:OutputDirectory abstract val installDir: DirectoryProperty
 
     @TaskAction
@@ -100,13 +109,15 @@ abstract class InstallTool @Inject constructor(
         val dir = installDir.get().asFile
         files.delete { delete(dir) }
         dir.mkdirs()
-        val archive = File(temporaryDir, "download.tar.gz")
+        val verified = archive.get().asFile
+        verified.parentFile.mkdirs()
+        val download = File(temporaryDir, "download.tar.gz")
         try {
             val connection = URI(url.get()).toURL().openConnection()
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
             connection.getInputStream().use { input ->
-                Files.copy(input, archive.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                Files.copy(input, download.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
         } catch (e: SocketTimeoutException) {
             throw GradleException("Downloading ${url.get()} timed out (connect ${CONNECT_TIMEOUT_MS / 1000} s, " +
@@ -114,20 +125,20 @@ abstract class InstallTool @Inject constructor(
         } catch (e: IOException) {
             throw GradleException("Downloading ${url.get()} failed: $e", e)
         }
-        val actual = MessageDigest.getInstance("SHA-256").digest(archive.readBytes()).joinToString("") { "%02x".format(it) }
+        val actual = MessageDigest.getInstance("SHA-256").digest(download.readBytes()).joinToString("") { "%02x".format(it) }
         if (actual != sha256.get()) {
-            archive.delete()
+            download.delete()
             throw GradleException("Checksum mismatch for ${url.get()}: expected ${sha256.get()}, got $actual. Nothing was extracted.")
         }
+        Files.move(download.toPath(), verified.toPath(), StandardCopyOption.REPLACE_EXISTING)
         files.copy {
-            from(archives.tarTree(archives.gzip(archive))) { include(executable.get()) }
+            from(archives.tarTree(archives.gzip(verified))) { include(executable.get()) }
             into(dir)
         }
         val tool = File(dir, executable.get())
         if (!tool.isFile || !tool.setExecutable(true)) {
             throw GradleException("${url.get()} has no executable '${executable.get()}'")
         }
-        archive.delete()
     }
 
     private companion object {
@@ -143,6 +154,7 @@ fun installTask(tool: String) = tasks.register<InstallTool>("install${tool.repla
     url = pin.url
     sha256 = pin.sha256
     executable = pin.executable
+    archive = layout.buildDirectory.file("tools/archives/$tool.tar.gz")
     installDir = layout.buildDirectory.dir("tools/$tool")
 }
 
