@@ -166,6 +166,11 @@ public class CharterSteps {
         assertThat(result.getResponse().getHeader(name)).isNotNull().matches(SHA256);
     }
 
+    @Then("the response has no {string} header")
+    public void noHeader(String name) {
+        assertThat(result.getResponse().getHeader(name)).isNull();
+    }
+
     @Then("the response header {string} is the contract version")
     public void contractVersionHeader(String name) {
         assertThat(result.getResponse().getHeader(name)).isEqualTo(CONTRACT.version());
