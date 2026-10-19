@@ -310,22 +310,28 @@ class ActionContextQueryTest {
     }
 
     @Test
-    void aTargetTheGraphDoesNotDeclareIsListedWithoutALabelAndWalkedNoFurther() {
+    void aTargetTheGraphDoesNotDeclareIsListedWithoutALabelAndWalkedThroughLikeAnyOther() {
         Urn undeclared = new Urn(NodeKind.STYLEGUIDE, "undeclared");
+        Urn beyond = tactic("beyond");
         ActionContextQuery query = queryOver(() -> new CharterOffering(List.of(new CharterPack(
                 "built-in",
                 PackLevel.BUILT_IN,
                 Optional.empty(),
                 new DoctrineGraph(
                         List.of(new DrgNode(TYPE, Optional.empty()), new DrgNode(PLAN, Optional.empty())),
-                        List.of(scope(PLAN, undeclared))),
+                        List.of(scope(PLAN, undeclared), requires(undeclared, beyond))),
                 List.of()))));
-        assertThat(walk(query, 2)).singleElement().satisfies(e -> {
-            assertThat(e.urn()).isEqualTo(undeclared);
+
+        // Edges are facts: the walk goes through a node the graph does not declare; only its label is absent.
+        assertThat(entry(walk(query, 0), undeclared)).satisfies(e -> {
             assertThat(e.kind()).isEqualTo(NodeKind.STYLEGUIDE);
             assertThat(e.label()).isEmpty();
             assertThat(e.via()).isEqualTo(PLAN);
             assertThat(e.hops()).isEqualTo(1);
+        });
+        assertThat(entry(walk(query, 0), beyond)).satisfies(e -> {
+            assertThat(e.via()).isEqualTo(undeclared);
+            assertThat(e.hops()).isEqualTo(2);
         });
     }
 
