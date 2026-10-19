@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "mission_slug": "charter-contract-and-build-retro-01M57QHJ",
+  "mission_id": "01M57QHJ7N7Z3RR6JY5WMNEZCN",
+  "mission_branch": "kitty/mission-charter-contract-and-build-retro-01M57QHJ",
+  "target_branch": "ccr-9654c444-x7y94q",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "build.gradle.kts",
+        "contracts/build.gradle.kts",
+        "contracts/charter/**",
+        "contracts/lint/**",
+        "contracts/src/**",
+        "service/adapter-in-rest/src/**",
+        "service/adapter-out-yaml/src/test/**",
+        "service/charter-domain/src/**",
+        "service/charter-read-app/src/**",
+        "service/charter-service/src/test/**",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "build-logic/**",
+        "config/**",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "service/adapter-in-rest/build.gradle.kts",
+        "service/adapter-out-yaml/build.gradle.kts",
+        "service/adapter-out-yaml/src/main/**",
+        "service/charter-api/build.gradle.kts",
+        "service/charter-domain/build.gradle.kts",
+        "service/charter-read-app/build.gradle.kts",
+        "service/charter-service/build.gradle.kts",
+        "service/charter-service/src/main/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "docs/_meta/doc-rules.yaml",
+        "docs/api/README.md",
+        "docs/api/javadoc.md",
+        "scripts/docs/**",
+        "service/charter-reports/**",
+        "site/.gitignore"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        ".github/workflows/docs-site.yml",
+        ".github/workflows/mutation-nightly.yml",
+        ".github/workflows/service.yml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        ".kittify/charter/charter.md",
+        "README.md",
+        "docs/_meta/spelling-words.txt",
+        "docs/api/service-contract.md",
+        "docs/architecture/**",
+        "docs/changelog/**",
+        "docs/guides/**",
+        "docs/plans/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-18T18:36:26.206175+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "2e8d741f0112f76aab65b3930b4d3d74a8b758fb"
+}
