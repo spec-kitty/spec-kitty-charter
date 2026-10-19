@@ -182,6 +182,146 @@ class ReleaseGateTest {
         }
     }
 
+    @Nested
+    class VersionOrder {
+
+        @Test
+        void headingsThatAreNotDescendingAreRefused() {
+            Decision decision =
+                    ReleaseGate.decide("1.3.0", changelog("## 1.3.0\n", "## 1.1.0\n", "## 1.2.0\n"), Set.of());
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message()).contains("not in descending order").contains("1.2.0 is listed after 1.1.0");
+        }
+
+        @Test
+        void aSnapshotTopBelowAReleasedHeadingIsRefused() {
+            Decision decision = ReleaseGate.decide(
+                    "1.1.5-SNAPSHOT",
+                    changelog("## 1.1.5-SNAPSHOT\n", "## 1.2.0\n", "## 1.1.0\n"),
+                    Set.of("contract-charter-v1.2.0", "contract-charter-v1.1.0"));
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message())
+                    .contains("top heading 1.1.5-SNAPSHOT is not above the released 1.2.0")
+                    .contains("-SNAPSHOT");
+        }
+
+        @Test
+        void aFirstSnapshotBelowAReleasedMajorIsRefused() {
+            Decision decision = ReleaseGate.decide(
+                    "1.0.0-SNAPSHOT",
+                    changelog("## 1.0.0-SNAPSHOT\n", "## 2.0.0\n\n### Breaking\n"),
+                    Set.of("contract-charter-v2.0.0"));
+            assertThat(decision.message()).contains("top heading 1.0.0-SNAPSHOT is not above the released 2.0.0");
+        }
+
+        @Test
+        void theSnapshotOfAReleasedVersionIsNotAboveIt() {
+            Decision decision =
+                    ReleaseGate.decide("1.2.0-SNAPSHOT", changelog("## 1.2.0-SNAPSHOT\n", "## 1.2.0\n"), Set.of());
+            assertThat(decision.message()).contains("not above the released 1.2.0");
+        }
+
+        @Test
+        void aDuplicateHeadingIsRefused() {
+            Decision decision =
+                    ReleaseGate.decide("1.1.0", changelog("## 1.1.0\n", "## [1.0.0]\n", "## v1.0.0\n"), Set.of());
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message()).contains("lists 1.0.0 twice");
+        }
+
+        @Test
+        void orderIsComparedByNumberNotByText() {
+            Decision decision = ReleaseGate.decide(
+                    "1.10.0",
+                    changelog("## 1.10.0\n", "## 1.9.0\n", "## 1.2.0\n"),
+                    Set.of("contract-charter-v1.9.0", "contract-charter-v1.2.0"));
+            assertThat(decision)
+                    .isEqualTo(new Decision.Compare(
+                            "contract-charter-v1.9.0", "pending release 1.10.0: compared against 1.9.0"));
+        }
+
+        @Test
+        void theOrderRulesRunWithoutGitToo() {
+            assertThat(ReleaseGate.decideWithoutGit("1.0.0-SNAPSHOT", changelog("## 1.0.0-SNAPSHOT\n", "## 2.0.0\n")))
+                    .isInstanceOf(Decision.Refused.class);
+        }
+    }
+
+    @Nested
+    class Fences {
+
+        @Test
+        void headingsInsideAFencedCodeBlockAreIgnored() {
+            String fenced = "```markdown\n## 9.9.9\n\n### Breaking\n```\n";
+            Decision decision = ReleaseGate.decide("1.0.0-SNAPSHOT", changelog(fenced, SNAPSHOT_ONLY), Set.of());
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+        }
+
+        @Test
+        void aTildeFenceAndALongerFenceAreIgnoredToo() {
+            String tilde = "~~~\n## 9.9.9\n~~~\n";
+            String longer = "````\n```\n## 8.8.8\n```\n````\n";
+            Decision decision = ReleaseGate.decide("1.0.0-SNAPSHOT", changelog(tilde, longer, SNAPSHOT_ONLY), Set.of());
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+        }
+
+        @Test
+        void aBreakingHeadingInsideAFenceDoesNotCount() {
+            Decision decision = ReleaseGate.decide(
+                    "2.0.0-SNAPSHOT",
+                    changelog("## 2.0.0-SNAPSHOT\n\n```\n### Breaking\n```\n", "## 1.0.0\n"),
+                    Set.of("contract-charter-v1.0.0"));
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message()).contains("no ### Breaking");
+        }
+
+        @Test
+        void aHeadingAfterTheFenceClosesCountsAgain() {
+            Decision decision = ReleaseGate.decide(
+                    "1.1.0-SNAPSHOT",
+                    changelog("```\n## 9.9.9\n```\n", "## 1.1.0-SNAPSHOT\n", "## 1.0.0\n"),
+                    Set.of("contract-charter-v1.0.0"));
+            assertThat(decision).isInstanceOf(Decision.Compare.class);
+        }
+    }
+
+    @Nested
+    class MalformedVersions {
+
+        @Test
+        void aVersionNumberThatOverflowsIsARefusalNotAnException() {
+            Decision heading = ReleaseGate.decide("99999999999.0.0", changelog("## 99999999999.0.0\n"), Set.of());
+            assertThat(heading).isInstanceOf(Decision.Refused.class);
+            assertThat(heading.message()).contains("99999999999.0.0").contains("above 2147483647");
+            Decision lower = ReleaseGate.decide(
+                    "1.0.0-SNAPSHOT", changelog("## 1.0.0-SNAPSHOT\n", "## 1.0.99999999999\n"), Set.of());
+            assertThat(lower.message()).contains("1.0.99999999999").contains("above 2147483647");
+        }
+
+        @Test
+        void anInfoVersionThatOverflowsIsRefused() {
+            assertThat(ReleaseGate.decide("1.99999999999.0", SNAPSHOT_ONLY, Set.of())
+                            .message())
+                    .contains("info.version '1.99999999999.0'")
+                    .contains("above 2147483647");
+        }
+
+        @Test
+        void leadingZerosAreNotSemVer() {
+            Decision heading = ReleaseGate.decide("01.2.0", changelog("## 01.2.0\n"), Set.of());
+            assertThat(heading.message()).contains("info.version '01.2.0'").contains("leading zero");
+            Decision lower = ReleaseGate.decide("1.3.0", changelog("## 1.3.0\n", "## 1.02.0\n"), Set.of());
+            assertThat(lower).isInstanceOf(Decision.Refused.class);
+            assertThat(lower.message()).contains("heading '1.02.0'").contains("leading zero");
+        }
+
+        @Test
+        void zeroItselfIsFine() {
+            assertThat(ReleaseGate.decide("0.0.0-SNAPSHOT", changelog("## 0.0.0-SNAPSHOT\n"), Set.of()))
+                    .isInstanceOf(Decision.NoBaseline.class);
+        }
+    }
+
     @Test
     void withoutGitOnlyTheChangelogGatesRun() {
         assertThat(ReleaseGate.decideWithoutGit("1.0.0-SNAPSHOT", SNAPSHOT_ONLY))
