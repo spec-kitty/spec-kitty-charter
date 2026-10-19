@@ -2,7 +2,7 @@
 title: Strangler transition
 description: The stages that move charter reads, then writes, from core Python to the Java service, with the evidence for each and the point of no return.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Explanation
 related:
@@ -92,3 +92,7 @@ as its precondition, so core has to re-home it. Stages 2 onward do not gate GA: 
 ADR `2026-10-03-1` places them in 4.x evolution. This repository can build the contract, the
 domain and the conformance corpus in parallel with stage 1, but nothing here answers a
 production read before stage 1 is done.
+
+The tracker's **4.x cutover** milestone ends at stage 4: the Python offering reads are gone
+from core, and every read goes through this repository's API from the seam. See
+[Milestones](/plans/milestones/).

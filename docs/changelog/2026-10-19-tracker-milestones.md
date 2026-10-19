@@ -8,6 +8,7 @@ kind: Changelog
 related:
   - plans/milestones
   - plans/roadmap
+  - architecture/strangler-transition
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for what changed on this date.
@@ -19,8 +20,10 @@ audience:
 
 - The issue tracker has three milestones: **4.x cutover**, **Post-cutover** and **Backlog**.
 - [Milestones](/plans/milestones/) says what closes each milestone and proposes which open
-  issue goes where. The 4.x cutover ends at the Java read shadow (roadmap step 7, strangler
-  stage 2). The creed, pack governance and persistent deactivation epics come after it.
+  issue goes where. The 4.x cutover is done when core's Python charter offering is removed
+  or inactive and every charter read goes through this repository's API from core's seam
+  (strangler stage 4). The page lists the stage 3 and 4 issues the cutover still needs. The
+  creed, pack governance and persistent deactivation epics come after it.
 - The [Roadmap](/plans/roadmap/) and the [Plans](/plans/) hub link to the new page.
 
 No issue is assigned to a milestone yet. That waits on the operator's review of the proposal.

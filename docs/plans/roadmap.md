@@ -34,8 +34,10 @@ the scope of epic spec-kitty#6099.
 | 6 | **Core ingests the contract.** Core vendors a pinned release and generates Python DTOs; the seam in core returns them ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/): the Python charter stays in core). | Core's seam tests pass on generated DTOs | the seam work, 1 |
 | 7 | **Read shadow.** The launcher starts the service per worktree; the seam compares Java with Python out of band. | Differences are reported in diagnostics; none is unexplained on the corpus | 4 to 6, the launcher |
 
-Steps 1 to 7 make up the **4.x cutover** milestone on the tracker. Work that builds on
-the cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
+Steps 1 to 7 are the start of the **4.x cutover** milestone on the tracker. The cutover is
+done when core's Python offering is removed or inactive and every charter read goes through
+this repository's API from core's seam (strangler stage 4). Work that builds on the
+cut-over charter goes in **Post-cutover**. [Milestones](/plans/milestones/) has the
 proposed distribution of issues.
 
 After step 7 the [strangler stages](/architecture/strangler-transition/) take over:
