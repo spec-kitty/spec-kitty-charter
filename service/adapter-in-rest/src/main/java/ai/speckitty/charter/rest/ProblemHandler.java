@@ -37,6 +37,20 @@ public class ProblemHandler extends ResponseEntityExceptionHandler {
         return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
     }
 
+    /**
+     * Logs every server error this handler resolves, with its exception, before the response is built: the
+     * {@code internal_error} detail says the failure is logged, and the base class logs only when the response
+     * is already committed. The exceptions of {@link #unexpected} are logged there, so none is logged twice.
+     */
+    @Override
+    protected @Nullable ResponseEntity<Object> handleExceptionInternal(
+            Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        if (statusCode.is5xxServerError()) {
+            logger.error("Server error " + statusCode.value(), ex);
+        }
+        return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+    }
+
     /** Every response of {@link ResponseEntityExceptionHandler} becomes the closed problem of its status. */
     @Override
     protected ResponseEntity<Object> createResponseEntity(
