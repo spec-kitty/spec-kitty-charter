@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: API
 description: The charter API — three read operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: API
 kind: Hub
 related:

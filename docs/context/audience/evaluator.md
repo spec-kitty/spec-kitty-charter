@@ -2,7 +2,7 @@
 title: "Reader persona: Evaluator"
 description: The architect, tech lead or product owner who weighs whether to depend on the charter, and needs boundaries, status and trade-offs stated plainly.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Architect, tech lead or product owner deciding whether to adopt or depend on the charter

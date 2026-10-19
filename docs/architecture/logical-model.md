@@ -2,7 +2,7 @@
 title: Logical model
 description: The logical model of the charter components — charter, Charter Packs, pack levels, artifact kinds, the DRG, activation and agent profiles.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

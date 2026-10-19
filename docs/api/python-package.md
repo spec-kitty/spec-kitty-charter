@@ -2,7 +2,7 @@
 title: Python package API
 description: Core's in-process charter seam surface, charter.offering.api — entry points, types, operations and errors — until the Java service replaces it.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: API
 kind: Reference
 related:

@@ -2,7 +2,7 @@
 title: The corpus harness and the canonical pack schemas
 description: ADR-0016 makes the conformance corpus a harness over core's CLI; ADR-0017 imports the Charter Pack schemas from core's models and owns them here.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

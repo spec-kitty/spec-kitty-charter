@@ -2,7 +2,7 @@
 title: "Reader persona: Individual developer"
 description: A developer working alone with AI coding agents, who adopts the charter to keep their own rules and habits in force across every agent session.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Solo developer using Spec Kitty with AI coding agents on their own projects

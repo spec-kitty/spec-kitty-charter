@@ -2,7 +2,7 @@
 title: Events and the ledger
 description: Why the charter service publishes no events, where it meets Spec Kitty's pub, ledger, sub model, and the core's one canonical event writer.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

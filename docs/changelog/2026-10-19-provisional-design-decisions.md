@@ -2,7 +2,7 @@
 title: Provisional design decisions for the cutover, pack governance, deactivation and the creed
 description: Six provisional ADRs record the operator's 2026-10-19 rulings on the 1.0 contract, the 4.x cutover, the seam runtime, pack policy, deactivation and the creed.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

@@ -2,7 +2,7 @@
 title: The default Problem response declares the Charter headers
 description: The shared default Problem response of every operation now declares the three Charter response headers, and a lint rule keeps every response declaring them.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

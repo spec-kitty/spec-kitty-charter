@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Plan
 kind: Planning
 related:

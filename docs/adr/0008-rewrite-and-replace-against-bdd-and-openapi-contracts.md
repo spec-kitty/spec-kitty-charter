@@ -2,7 +2,7 @@
 title: "ADR-0008: The Java charter is a rewrite that replaces the Python charter, built against BDD and OpenAPI contracts"
 description: The Python charter stays in core and is replaced stage by stage; the Java service is written against BDD and OpenAPI contracts and must round-trip open-packs.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:

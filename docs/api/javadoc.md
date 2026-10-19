@@ -2,7 +2,7 @@
 title: Java API reference (Javadoc)
 description: The Javadoc of the charter service's hand-written Java modules, built by the main build and published with this site as one searchable reference.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: API
 kind: Reference
 related:

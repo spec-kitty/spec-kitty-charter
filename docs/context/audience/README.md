@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: Audience
 description: The readers this documentation is written for — one persona page per reader, with the concern each page must answer — and how a page names its reader.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Hub
 audience:

@@ -2,9 +2,9 @@
 title: Building the service
 description: How to build and test the charter service locally, what each verification task checks, and how to change the contract or a dependency.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Guide
-kind: How-to
+kind: How-To
 related:
   - architecture/hexagonal-service
   - architecture/contract-and-dtos

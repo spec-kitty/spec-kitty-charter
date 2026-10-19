@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the two built reads, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: API
 kind: Reference
 related:

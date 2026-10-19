@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: spec-kitty-charter documentation
 description: Documentation home for the Java charter service and its OpenAPI contract, the Brain Kitty governance producer of Spec Kitty.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 kind: Hub
 audience:
   - profile: charter-service-contributor

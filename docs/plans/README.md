@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: Plans
 description: Forward-looking work for the charter service — the bootstrap roadmap and the questions still open.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Plan
 kind: Hub
 audience:

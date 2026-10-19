@@ -2,7 +2,7 @@
 title: "Reader persona: Governance lead"
 description: The person in a team or organization who decides which rules govern AI-assisted delivery, and adopts the charter to make those rules reach every agent.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Team or organization lead who owns the rules agents must follow

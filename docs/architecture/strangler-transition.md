@@ -2,7 +2,7 @@
 title: Strangler transition
 description: The stages that move charter reads, then writes, from core Python to the Java service, with the evidence for each and the point of no return.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

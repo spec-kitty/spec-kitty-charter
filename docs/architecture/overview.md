@@ -2,7 +2,7 @@
 title: Charter service overview
 description: Containers and main flows of the charter service — the Python seam in core, the Java service, its adapters and the pack inputs.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

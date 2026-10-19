@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: Context
 description: Why the charter is being extracted into a Java service, the vocabulary it uses, and the systems it sits between.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Hub
 audience:

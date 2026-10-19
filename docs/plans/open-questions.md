@@ -2,7 +2,7 @@
 title: Open questions
 description: Decisions the charter design depends on that are not made yet, each with the default this repository assumes until someone rules.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Plan
 kind: Planning
 related:

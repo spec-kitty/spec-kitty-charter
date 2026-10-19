@@ -2,7 +2,7 @@
 title: "ADR-0011: At runtime the seam fails closed, a daemon serves every read, and the service stays fresh by fingerprint and push"
 description: No Python fallback or cache; one daemon per worktree, CI included; first-load state stays in core; the service rebuilds on a changed input fingerprint and on write.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:

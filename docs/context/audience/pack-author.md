@@ -2,7 +2,7 @@
 title: "Reader persona: Pack author and doctrine curator"
 description: The person who writes and curates Charter Packs, built-in, org or project, and needs to know the descriptor files, fields and resolution rules the charter applies.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Author of built-in, org and project Charter Packs

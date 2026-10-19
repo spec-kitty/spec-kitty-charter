@@ -2,7 +2,7 @@
 title: Charter logical model, descriptors and designed API
 description: The docsite now describes the charter's logical model, every descriptor file, schema diagrams and the designed, not yet implemented, API.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 related:

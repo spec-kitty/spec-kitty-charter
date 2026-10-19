@@ -2,7 +2,7 @@
 title: "Reader persona: Contract consumer"
 description: The engineer or agent harness that calls the charter, through the Python package or the service contract, and depends on a stable, versioned surface.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Context
 kind: Persona
 role: Engineer or agent harness that calls the charter through its package or service

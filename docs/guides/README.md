@@ -1,8 +1,9 @@
 ---
+okf_version: "0.2"
 title: Guides
 description: Task-oriented how-tos for contributors to the charter service and, later, for its consumers.
 doc_status: draft
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Guide
 kind: Hub
 audience:

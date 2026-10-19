@@ -2,7 +2,7 @@
 title: "ADR-0010: The 4.x cutover retires every Python offering read in one switch-over; core governs only the seam routing"
 description: All offering reads, including activation's, go through the API at once, gated by the conformance corpus; offering internals and pack structure are decided here.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
 related:

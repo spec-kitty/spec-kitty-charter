@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
