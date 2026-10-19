@@ -14,6 +14,11 @@ public final class CheckClosedResponseObjects {
 
     private CheckClosedResponseObjects() {}
 
+    /**
+     * Checks the bundle the one argument names and exits with the code the class describes.
+     *
+     * @param args the path of the bundle, and nothing else
+     */
     public static void main(String[] args) {
         int code = run(List.of(args), System.out);
         if (code != 0) {

@@ -15,7 +15,11 @@ public record ClosureReport(int positions, List<Violation> violations) {
         violations = List.copyOf(violations);
     }
 
-    /** Whether the bundle follows the convention. */
+    /**
+     * Whether the bundle follows the convention.
+     *
+     * @return {@code true} when there are no violations
+     */
     public boolean passes() {
         return violations.isEmpty();
     }

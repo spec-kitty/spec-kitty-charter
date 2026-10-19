@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Reads the two DRG document shapes into a {@link DoctrineGraph}: a built-in graph shard
@@ -25,7 +26,9 @@ public final class GraphDocumentReader {
 
     /** Which of the two DRG document shapes a file has. */
     public enum Shape {
+        /** A built-in graph shard, {@code <kind>.graph.yaml}: nodes by {@code urn}. */
         SHARD,
+        /** An org fragment, {@code drg/fragment.yaml}: nodes by {@code id} with a plural {@code kind}. */
         FRAGMENT
     }
 
@@ -39,6 +42,17 @@ public final class GraphDocumentReader {
 
     private GraphDocumentReader() {}
 
+    /**
+     * Reads one DRG document.
+     *
+     * @param text the document's YAML text
+     * @param shape which of the two shapes the document has
+     * @param origin the pack-relative name of the document, used in refusal details
+     * @return the document's nodes and edges, in declared order
+     * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when the text is not YAML,
+     *     {@code DRG_SCHEMA_ERROR} when the document breaks its shape's schema, or {@code UNRESOLVED_EDGE_ENDPOINT}
+     *     when an edge endpoint is neither a URN nor a bare id the document declares
+     */
     public static DoctrineGraph read(String text, Shape shape, String origin) {
         Object document;
         try {
@@ -111,14 +125,14 @@ public final class GraphDocumentReader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> mapping(Object value, String what) {
+    private static Map<String, Object> mapping(@Nullable Object value, String what) {
         if (value instanceof Map<?, ?> map && map.keySet().stream().allMatch(String.class::isInstance)) {
             return (Map<String, Object>) map;
         }
         throw schema(what, "expected a mapping");
     }
 
-    private static List<?> list(Object value, String what) {
+    private static List<?> list(@Nullable Object value, String what) {
         if (value == null) {
             return List.of();
         }

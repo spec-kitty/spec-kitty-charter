@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The JSON Schema and OpenAPI keywords the checker understands. Any other keyword is reported, so a construct the
@@ -130,7 +131,7 @@ final class Vocabulary {
                 .findFirst();
     }
 
-    private static Optional<String> nameProblem(Object name) {
+    private static Optional<String> nameProblem(@Nullable Object name) {
         if (name == null) {
             return Optional.of(
                     "a type name must be a string: an unquoted YAML null is not the type name 'null';" + " quote it");
@@ -142,12 +143,12 @@ final class Vocabulary {
     }
 
     /** The names of a well-formed {@code type}: one string, or a list of strings. */
-    private static Set<String> names(Object type) {
+    private static Set<String> names(@Nullable Object type) {
         Set<String> names = new LinkedHashSet<>();
         if (type instanceof List<?> list) {
             list.forEach(name -> names.add((String) name));
-        } else {
-            names.add((String) type);
+        } else if (type instanceof String name) {
+            names.add(name);
         }
         return names;
     }

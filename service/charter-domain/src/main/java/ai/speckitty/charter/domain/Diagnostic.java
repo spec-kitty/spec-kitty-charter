@@ -2,7 +2,12 @@ package ai.speckitty.charter.domain;
 
 import java.util.Objects;
 
-/** A load finding that does not stop the load. The detail names pack-relative paths only. */
+/**
+ * A load finding that does not stop the load. The detail names pack-relative paths only.
+ *
+ * @param code what was found
+ * @param detail a sentence for the reader; it names pack-relative paths only
+ */
 public record Diagnostic(Code code, String detail) {
 
     /**
@@ -10,6 +15,7 @@ public record Diagnostic(Code code, String detail) {
      * wire spelling.
      */
     public enum Code {
+        /** A {@code pack.yaml} declares no {@code pack_level}; the configured level is used. */
         PACK_LEVEL_MISSING("pack_level_missing");
 
         private final String token;
@@ -18,12 +24,22 @@ public record Diagnostic(Code code, String detail) {
             this.token = token;
         }
 
-        /** The wire spelling of the code. */
+        /**
+         * The wire spelling of the code.
+         *
+         * @return the snake_case token, for example {@code pack_level_missing}
+         */
         public String token() {
             return token;
         }
     }
 
+    /**
+     * Checks that both fields are present.
+     *
+     * @param code what was found
+     * @param detail a sentence for the reader
+     */
     public Diagnostic {
         Objects.requireNonNull(code, "code");
         Objects.requireNonNull(detail, "detail");

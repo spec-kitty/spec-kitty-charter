@@ -2,6 +2,7 @@ package ai.speckitty.charter.yaml;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 
@@ -25,7 +26,8 @@ final class Yaml {
         return documents;
     }
 
-    static Object load(String text) {
+    /** The single document of {@code text}; {@code null} for an empty stream or a document that is a YAML null. */
+    static @Nullable Object load(String text) {
         return new Load(settings()).loadFromString(text);
     }
 }

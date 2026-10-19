@@ -16,6 +16,12 @@ public final class GraphShardWriter {
 
     private GraphShardWriter() {}
 
+    /**
+     * Writes {@code graph} as a graph shard.
+     *
+     * @param graph the graph to write
+     * @return the shard's YAML text, with {@code generated_at} fixed to {@code STATIC} so the output is stable
+     */
     public static String write(DoctrineGraph graph) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("schema_version", "1.0");

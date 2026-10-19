@@ -24,10 +24,24 @@ public final class ActionContextQuery {
 
     private final CharterPackRepository packs;
 
+    /**
+     * A query over the offering {@code packs} loads.
+     *
+     * @param packs the repository port; the offering is loaded afresh for every answer
+     */
     public ActionContextQuery(CharterPackRepository packs) {
         this.packs = Objects.requireNonNull(packs, "packs");
     }
 
+    /**
+     * The context of one action of one mission type.
+     *
+     * @param missionType the mission type, for example {@code software-dev}
+     * @param action the action, for example {@code plan}
+     * @return the artifacts in scope of the action and of its mission type
+     * @throws CharterRefusal with {@link RefusalCode#MISSION_TYPE_NOT_FOUND} or {@link RefusalCode#ACTION_NOT_FOUND}
+     *     when the merged graph has no such node, or the repository's refusal when the offering cannot be loaded
+     */
     public ActionContext answer(String missionType, String action) {
         DoctrineGraph graph = packs.load().mergedGraph();
         Urn missionTypeUrn = Urn.missionType(missionType);

@@ -25,14 +25,36 @@ public final class YamlDocument {
 
     /** One run of source text: a token, or the trivia before the next token. */
     public sealed interface Segment permits Trivia, TokenText, Scalar {
+        /**
+         * The segment's source text.
+         *
+         * @return the exact characters the segment covers; rendering concatenates these
+         */
         String text();
     }
 
+    /**
+     * Text between two tokens: whitespace, comments and line breaks.
+     *
+     * @param text the exact source text; never empty
+     */
     public record Trivia(String text) implements Segment {}
 
+    /**
+     * A token other than a scalar, such as an indicator or a flow bracket.
+     *
+     * @param id the scanner's kind of token
+     * @param text the token's exact source text; never empty, as zero-width tokens own no text
+     */
     public record TokenText(Token.ID id, String text) implements Segment {}
 
-    /** A scalar token: its source text, its style and its value as the parser reads it. */
+    /**
+     * A scalar token: its source text, its style and its value as the parser reads it.
+     *
+     * @param text the scalar's exact source text, quotes and escapes included
+     * @param style how the scalar is written: plain, single-quoted, double-quoted, literal or folded
+     * @param value the scalar's value as the YAML reader takes it
+     */
     public record Scalar(String text, ScalarStyle style, String value) implements Segment {}
 
     private final List<Segment> segments;
@@ -41,6 +63,13 @@ public final class YamlDocument {
         this.segments = segments;
     }
 
+    /**
+     * Reads {@code text} into segments.
+     *
+     * @param text a YAML stream
+     * @return the document; rendering it gives {@code text} back byte for byte
+     * @throws org.snakeyaml.engine.v2.exceptions.YamlEngineException when the scanner cannot tokenize the text
+     */
     public static YamlDocument parse(String text) {
         Objects.requireNonNull(text, "text");
         int[] codePoints = text.codePoints().toArray();
@@ -78,10 +107,20 @@ public final class YamlDocument {
         return new String(codePoints, start, end - start);
     }
 
+    /**
+     * Every segment, in document order.
+     *
+     * @return an unmodifiable copy of the segments
+     */
     public List<Segment> segments() {
         return List.copyOf(segments);
     }
 
+    /**
+     * The scalar segments, in document order.
+     *
+     * @return the scalars; empty when the document has none
+     */
     public List<Scalar> scalars() {
         return segments.stream()
                 .filter(Scalar.class::isInstance)
@@ -89,7 +128,11 @@ public final class YamlDocument {
                 .toList();
     }
 
-    /** Renders the document from its segments. */
+    /**
+     * Renders the document from its segments.
+     *
+     * @return the concatenated segment texts
+     */
     public String render() {
         return segments.stream().map(Segment::text).collect(Collectors.joining());
     }
@@ -97,6 +140,11 @@ public final class YamlDocument {
     /**
      * Replaces the value of the {@code index}-th scalar (in document order), writing it in the scalar's
      * own style where that style can carry the value, and as a double-quoted scalar otherwise.
+     *
+     * @param index the scalar's position among the document's scalars, from 0
+     * @param value the new value
+     * @return a new document; this one does not change
+     * @throws IndexOutOfBoundsException when the document has no scalar at {@code index}
      */
     public YamlDocument withScalar(int index, String value) {
         List<Segment> edited = new ArrayList<>(segments);
@@ -114,6 +162,9 @@ public final class YamlDocument {
     /**
      * Rewrites every scalar value through {@code edit}, each written as {@link #withScalar} writes one.
      * Used by the round-trip: rewriting every scalar with its own value must load to the same data.
+     *
+     * @param edit the new value of a scalar, given its current value
+     * @return a new document; this one does not change
      */
     public YamlDocument mapScalars(java.util.function.UnaryOperator<String> edit) {
         List<Segment> edited = new ArrayList<>(segments.size());
@@ -128,7 +179,12 @@ public final class YamlDocument {
         return new YamlDocument(edited);
     }
 
-    /** The text of the {@code index}-th scalar, if there is one. */
+    /**
+     * The {@code index}-th scalar.
+     *
+     * @param index the scalar's position among the document's scalars, from 0
+     * @return the scalar; empty when the document has fewer scalars
+     */
     public Optional<Scalar> scalar(int index) {
         List<Scalar> all = scalars();
         return index < all.size() ? Optional.of(all.get(index)) : Optional.empty();
