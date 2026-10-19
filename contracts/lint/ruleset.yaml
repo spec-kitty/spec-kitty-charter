@@ -83,6 +83,22 @@ rules:
                               properties:
                                 title: { const: Problem }
 
+  # ADR-0011: every response of every operation, the shared default Problem included, declares the three
+  # Charter headers (#90). Fingerprint is not required on the wire, but its absence is still declared.
+  charter-headers-on-every-response:
+    description: Every response of every operation declares the Charter-Contract-Version, Charter-Worktree and Charter-Source-Fingerprint headers (ADR-0011).
+    severity: error
+    given: "$.paths[*][get,put,post,delete,options,head,patch,trace].responses[*]"
+    then:
+      - field: headers
+        function: truthy
+      - field: headers
+        function: schema
+        functionOptions:
+          schema:
+            type: object
+            required: [Charter-Contract-Version, Charter-Worktree, Charter-Source-Fingerprint]
+
   # A bare const or enum refinement (an if condition, or an allOf part narrowing a property) holds nothing
   # but that one keyword: it narrows a property described where it is declared, so it needs no description.
   property-described:

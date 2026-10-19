@@ -559,7 +559,7 @@ class ClosureCheckerTest {
         void theLintRulesetsCleanFixture() throws IOException {
             ClosureReport report = ClosureChecker.check(Path.of(System.getProperty("charter.lintCleanFixture")));
             assertThat(report.violations()).isEmpty();
-            assertThat(report.positions()).isEqualTo(4);
+            assertThat(report.positions()).isEqualTo(16);
             assertThat(report.passes()).isTrue();
         }
     }
