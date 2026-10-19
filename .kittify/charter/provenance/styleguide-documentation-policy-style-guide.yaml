@@ -1,0 +1,21 @@
+adapter_id: generated
+adapter_notes: 
+  generated-artifact:.kittify/charter/generated/styleguides/documentation-policy-style-guide.styleguide.yaml
+adapter_version: 1.0.0
+artifact_content_hash: 
+  cbf41b7861d57d949be43303012439966655de1045829914914cada729a46c96
+artifact_kind: styleguide
+artifact_slug: documentation-policy-style-guide
+artifact_urn: styleguide:documentation-policy-style-guide
+corpus_snapshot_id: generic-v1.0.0
+evidence_bundle_hash: 
+  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
+generated_at: '2026-10-18T15:57:21.015123+00:00'
+inputs_hash: 185bc374ba2389f90d3f5e73f2512124763108d4ad12cf50b6a4acb5e94ef149
+produced_at: '2026-10-18T15:58:11.511073+00:00'
+schema_version: '2'
+source_input_ids: []
+source_section: documentation_policy
+source_urns: []
+synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesizer_version: 4.0.0rc8

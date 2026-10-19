@@ -1,0 +1,24 @@
+id: how-we-apply-directive-037
+schema_version: "1.0"
+name: How We Apply DIRECTIVE_037 (Living Documentation Sync)
+purpose: >-
+  Change docs, scenarios and contract records in the same pull request as the
+  behavior they describe.
+steps:
+  - title: Update every describing artifact together
+    description: >-
+      When behavior changes, update in the same change: the contract
+      scenarios, contracts/charter/CHANGELOG.md, the docs under docs/
+      (following doc-kitty, ADR-0003), Javadoc on public types and members,
+      the glossary, and any affected ADR (by superseding it).
+  - title: Record notable changes
+    description: >-
+      Notable changes get an entry in docs/changelog/; contract changes,
+      including scenario-only changes, get a contracts/charter/CHANGELOG.md
+      line.
+  - title: Let freshness and links checks catch drift
+    description: >-
+      check_docs.py freshness, links and related fail stale or broken docs;
+      fix the doc rather than the date.
+failure_modes:
+  - A contract change merged with docs promised for a later pull request.

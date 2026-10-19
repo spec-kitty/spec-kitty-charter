@@ -1,0 +1,17 @@
+failure_modes:
+- Quoting BUILD SUCCESSFUL as the result of a run that excluded a module.
+id: how-we-apply-qa-003
+name: How We Apply QA_003 (No Fake Green)
+purpose: Report test runs exactly as they ran.
+schema_version: '1.0'
+steps:
+- description: No test or scenario is skipped, disabled or quarantined to make a
+    run pass; the open-packs round trip is never skipped.
+  title: Never reach green by skipping
+- description: A pull request's Tests run section states what was run, the pass,
+    fail and skip counts, and anything that did not run; a missing report is 
+    recorded as such, not as a pass.
+  title: Report the full outcome
+- description: Scenarios that pin provisional behavior are tagged @provisional 
+    and still execute; they are not counted as acceptance of the final behavior.
+  title: Keep provisional behavior visible

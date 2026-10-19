@@ -1,0 +1,38 @@
+id: documentation-policy-style-guide
+schema_version: "1.0"
+title: Documentation Policy
+scope: docs
+principles:
+  - Docs follow doc-kitty (ADR-0003) and change in the same pull request as
+    the behavior they describe.
+  - Architecture docs use C4 levels - System Context, Container, Component -
+    as diagram source checked into the repository.
+  - Decisions are ADRs under docs/adr/; an accepted ADR is superseded, never
+    edited.
+  - Contract changes, scenario changes included, are recorded in
+    contracts/charter/CHANGELOG.md; notable changes in docs/changelog/.
+  - Every public Java type and member carries Javadoc; the aggregated Javadoc
+    is published inside the docsite.
+  - US spelling; the terms guard in check_docs.py applies to all docs prose.
+patterns:
+  - name: Supersede an ADR
+    description: Write a new ADR that names the one it supersedes and mark the
+      old one superseded as the doc-kitty ADR rules require; leave its
+      decision text as it was.
+anti_patterns:
+  - name: Edited decision
+    description: Rewriting an accepted ADR erases why the original path was
+      chosen.
+    bad_example: "Change the decision paragraph of docs/adr/0002 in place."
+    good_example: "Add docs/adr/0009 superseding 0002 and mark 0002 superseded."
+  - name: British spelling
+    description: The docs use US spelling.
+    bad_example: "The service honours the contract."
+    good_example: "The service honors the contract."
+tooling:
+  checks: check_docs.py (frontmatter, related, freshness, links, terms, adr, changelog, orphans)
+  markdown: markdownlint-cli2
+  spelling: cspell
+quality_test: >-
+  Would a reader of docs/ alone get an accurate picture of the behavior this
+  pull request ships?

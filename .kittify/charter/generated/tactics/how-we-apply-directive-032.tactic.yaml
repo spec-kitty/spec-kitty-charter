@@ -1,0 +1,23 @@
+id: how-we-apply-directive-032
+schema_version: "1.0"
+name: How We Apply DIRECTIVE_032 (Conceptual Alignment)
+purpose: >-
+  Use core's charter vocabulary with core's meaning, and confirm a term
+  before acting on it.
+steps:
+  - title: Check the canonical terms first
+    description: >-
+      Look a domain term up in docs/context/ and docs/glossary/ before using
+      it; a term not found there is stated back to the requester with its
+      interpretation.
+  - title: Name overloaded terms precisely
+    description: >-
+      Say "charter contract", "contract scenarios" or "acceptance scenarios"
+      rather than a bare "contract"; say "diagnostic" rather than "refusal"
+      for pack-level findings.
+  - title: Run the terms guard
+    description: >-
+      The terms check in check_docs.py enforces banned and aliased terms in
+      docs prose; fix the prose, do not widen the guard.
+failure_modes:
+  - A Java name coined for a concept core already names differently.

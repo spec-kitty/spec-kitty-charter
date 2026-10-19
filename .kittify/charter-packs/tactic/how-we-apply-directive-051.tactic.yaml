@@ -1,0 +1,27 @@
+failure_modes:
+- Regenerating verification metadata wholesale without reviewing the diff.
+- Admitting a release published days ago during an active incident.
+id: how-we-apply-directive-051
+name: How We Apply DIRECTIVE_051 (Supply-Chain Install Safety)
+purpose: Admit a dependency only when it is verified, settled, and licensed for 
+  use by agents.
+schema_version: '1.0'
+steps:
+- description: gradle/verification-metadata.xml keeps verify-metadata on with 
+    SHA-256 entries for every component; a new or upgraded dependency adds its 
+    checksums in the same change and never relaxes verification.
+  title: Verify every artifact by SHA-256
+- description: Versions live in gradle/libs.versions.toml; a build script never 
+    hard-codes a coordinate that bypasses the catalog.
+  title: Pin through the version catalog
+- description: A version must be at least two weeks old at the time it is 
+    admitted; record the publish date in the pull request.
+  title: Accept only settled versions
+- description: A library whose terms or runtime output forbid or sabotage use by
+    AI agents is not admitted. jqwik (1.10.0 and later) was rejected for this 
+    reason; see research.md section 12 of charter-contract-and-build-retro.
+  title: Reject libraries with AI-use clauses
+- description: State the license of each new tool and whether it is build-time 
+    only, and reject tools whose current releases leave public repositories (as 
+    OpenRewrite was, research.md section 11).
+  title: Record license and distribution

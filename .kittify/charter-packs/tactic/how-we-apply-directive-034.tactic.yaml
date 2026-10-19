@@ -1,0 +1,22 @@
+failure_modes:
+- Tests written after the code that only restate what it does.
+- A scenario added in the same commit as the code, never observed red.
+id: how-we-apply-directive-034
+name: How We Apply DIRECTIVE_034 (Test-First Development)
+purpose: Write the failing specification before the production code that 
+  satisfies it.
+schema_version: '1.0'
+steps:
+- description: Before production code, add a failing contract scenario under 
+    contracts/charter/scenarios/ (for behavior visible on the API) or a failing 
+    unit test (for internal logic). Show it failing for the expected reason.
+  examples:
+  - 'A new query parameter: add a Given/When/Then scenario tagged @contract, see it
+    fail, then implement the controller.'
+  title: Start from a failing scenario or test
+- description: Implement until the scenario or test passes, then refactor with 
+    the suite green.
+  title: Make it pass with the smallest change
+- description: A defect fix starts with a scenario or test that reproduces it, 
+    as the DIRECTIVE_042 duplicate regression scenario does.
+  title: Pin bugs with a regression first

@@ -1,0 +1,22 @@
+id: how-we-apply-reconcile-change-scope-tensions
+schema_version: "1.0"
+name: How We Apply RECONCILE_CHANGE_SCOPE_TENSIONS
+purpose: >-
+  Weigh locality, boy-scout cleanup and smallest viable diff together on each
+  change.
+steps:
+  - title: Default to the smallest viable diff
+    description: >-
+      A change touches only what its goal needs; ratified behavior moves
+      (such as research finding S3, the domain-policy move) are recorded as
+      follow-ups rather than folded in.
+  - title: Allow cleanup inside touched files
+    description: >-
+      Fix failures and stale references in files the change already modifies,
+      as the boy-scout rule asks.
+  - title: Split mechanical sweeps out
+    description: >-
+      A sweep across many files (a formatter adoption, a rename) is its own
+      commit or change, never mixed with behavior.
+failure_modes:
+  - Citing the boy-scout rule to justify edits in untouched modules.

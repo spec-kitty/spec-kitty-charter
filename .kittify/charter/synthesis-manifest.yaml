@@ -1,0 +1,166 @@
+adapter_id: generated
+adapter_version: 1.0.0
+artifacts:
+- content_hash: cc091b094bb78cc48b15262df498b0db8fb80983172a6de216cb1720d1d13339
+  kind: directive
+  path: 
+    .kittify/charter-packs/directive/001-mission-type-scope-directive.directive.yaml
+  provenance_path: 
+    .kittify/charter/provenance/directive-mission-type-scope-directive.yaml
+  slug: mission-type-scope-directive
+- content_hash: 8c5c8a9223737bfef5ebc4a74df07e804e1f46d7e9b6f11a1ce127b35b254c69
+  kind: directive
+  path: 
+    .kittify/charter-packs/directive/002-risk-appetite-directive.directive.yaml
+  provenance_path: 
+    .kittify/charter/provenance/directive-risk-appetite-directive.yaml
+  slug: risk-appetite-directive
+- content_hash: cbf41b7861d57d949be43303012439966655de1045829914914cada729a46c96
+  kind: styleguide
+  path: 
+    .kittify/charter-packs/styleguide/documentation-policy-style-guide.styleguide.yaml
+  provenance_path: 
+    .kittify/charter/provenance/styleguide-documentation-policy-style-guide.yaml
+  slug: documentation-policy-style-guide
+- content_hash: 29822fc6ec6a78dde0950b0f8937899d43993bd8f787e65c0342d51ca55f0f32
+  kind: styleguide
+  path: .kittify/charter-packs/styleguide/java-style-guide.styleguide.yaml
+  provenance_path: .kittify/charter/provenance/styleguide-java-style-guide.yaml
+  slug: java-style-guide
+- content_hash: d8030b6014002d7990011388273b205b27707ec8d51f47a56d83993f4138e041
+  kind: styleguide
+  path: .kittify/charter-packs/styleguide/python-style-guide.styleguide.yaml
+  provenance_path: 
+    .kittify/charter/provenance/styleguide-python-style-guide.yaml
+  slug: python-style-guide
+- content_hash: 687a9849cbd372601dbd07998e9c80216eb3f66563d0bf874651002ccebffcf7
+  kind: styleguide
+  path: 
+    .kittify/charter-packs/styleguide/quality-gates-style-guide.styleguide.yaml
+  provenance_path: 
+    .kittify/charter/provenance/styleguide-quality-gates-style-guide.yaml
+  slug: quality-gates-style-guide
+- content_hash: 97d6878ac9b02ec70a199fb29692dfae5b28edb1bcddb7e3f70405225303a989
+  kind: styleguide
+  path: .kittify/charter-packs/styleguide/testing-style-guide.styleguide.yaml
+  provenance_path: 
+    .kittify/charter/provenance/styleguide-testing-style-guide.yaml
+  slug: testing-style-guide
+- content_hash: 7fdbd04059c4c07fecabef6a263e2eaf011e45dae804cd696704d9a3f93ac074
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-001.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-001.yaml
+  slug: how-we-apply-directive-001
+- content_hash: eb646c9b12b1a92d4e2f5a72be2e53064f86da6a5d5368520ccbd3aefebf02a7
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-003.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-003.yaml
+  slug: how-we-apply-directive-003
+- content_hash: b3a23d66865ce1ed8311f022256f17cde46e51664161a3c1dc93a9efd95ff977
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-010.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-010.yaml
+  slug: how-we-apply-directive-010
+- content_hash: 621d87a476b52c4fae4486b61474c54d269887ddfd2d83b8eed97bdff6c3311b
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-025.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-025.yaml
+  slug: how-we-apply-directive-025
+- content_hash: d7526285c9573284b1c0c64046ef10125321af59b5837e00656127be8f6649ab
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-030.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-030.yaml
+  slug: how-we-apply-directive-030
+- content_hash: 6edda1b10ccd87f62bf321ec854cca8cc903d438a02be4ce9ef405c9ae764ffc
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-032.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-032.yaml
+  slug: how-we-apply-directive-032
+- content_hash: df0d881846453d222564742995ad41b93857a4e88febf52a7b49072c9801d491
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-034.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-034.yaml
+  slug: how-we-apply-directive-034
+- content_hash: 6e675c47b33adeba1e5fb04f34ae759d125d089d6868f232760cec5d4331d171
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-037.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-037.yaml
+  slug: how-we-apply-directive-037
+- content_hash: 06dc1692a92758bf3ff97b59e704d1bf011bb23631f8897f2a121d0ef2584d2a
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-041.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-041.yaml
+  slug: how-we-apply-directive-041
+- content_hash: d978676b219d240665fc285ad566f9e32237970526c5a62d73fbd8c0e1ca8191
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-directive-051.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-directive-051.yaml
+  slug: how-we-apply-directive-051
+- content_hash: 209efffbcb62c904ce34456dc538d010aaf0112880f87525d5f652c7e375481f
+  kind: tactic
+  path: 
+    .kittify/charter-packs/tactic/how-we-apply-no-full-heavy-suites-in-mission.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-no-full-heavy-suites-in-mission.yaml
+  slug: how-we-apply-no-full-heavy-suites-in-mission
+- content_hash: cdf939488d6cb4a2160c153ec4dbe1fa36b9f3721063a285fc1b3896f8b76044
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-qa-003.tactic.yaml
+  provenance_path: .kittify/charter/provenance/tactic-how-we-apply-qa-003.yaml
+  slug: how-we-apply-qa-003
+- content_hash: 28a187fdd21045c04018d254d55571e9071228f0bde62c9bded3b5cae7230e7b
+  kind: tactic
+  path: 
+    .kittify/charter-packs/tactic/how-we-apply-reconcile-change-scope-tensions.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-reconcile-change-scope-tensions.yaml
+  slug: how-we-apply-reconcile-change-scope-tensions
+- content_hash: 395ee58f02a44c7afcf2fe0533fd5ba5ac1263633939a5ef998a67e17a1f8b33
+  kind: tactic
+  path: 
+    .kittify/charter-packs/tactic/how-we-apply-use-c4-model-techniques.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-use-c4-model-techniques.yaml
+  slug: how-we-apply-use-c4-model-techniques
+- content_hash: 4d654843e4f1b9087ce1ee64d339ed70f20a8b751c9dd87caabdc283e2a7804c
+  kind: tactic
+  path: .kittify/charter-packs/tactic/review-policy-tactic.tactic.yaml
+  provenance_path: .kittify/charter/provenance/tactic-review-policy-tactic.yaml
+  slug: review-policy-tactic
+- content_hash: c69cb0213494b11c5a7cdc211394e0d6b742b13f7033e67963811774b416131f
+  kind: tactic
+  path: .kittify/charter-packs/tactic/testing-philosophy-tactic.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-testing-philosophy-tactic.yaml
+  slug: testing-philosophy-tactic
+- content_hash: cc091b094bb78cc48b15262df498b0db8fb80983172a6de216cb1720d1d13339
+  kind: directive
+  path: 
+    .kittify/charter-packs/directive/001-mission-type-scope-directive.directive.yaml
+  provenance_path: .kittify/charter/provenance/directive-project-001.yaml
+  slug: project-001
+- content_hash: 8c5c8a9223737bfef5ebc4a74df07e804e1f46d7e9b6f11a1ce127b35b254c69
+  kind: directive
+  path: 
+    .kittify/charter-packs/directive/002-risk-appetite-directive.directive.yaml
+  provenance_path: .kittify/charter/provenance/directive-project-002.yaml
+  slug: project-002
+built_in_only: false
+bundle_content_hash: 
+  sha256:de0fb903aa15a7a25b6616f0ca7fddb2535e1f0f72d8dcde1998ca85bf24a4f8
+created_at: '2026-10-18T15:58:12.872153+00:00'
+manifest_hash: 97d1bde33f7f9d8d67a562b6930cd63c5751ab503db95bb4f65afb65a92d3784
+mission_id:
+run_id: 639C18D844024A828B9A2F0325
+schema_version: '3'
+synthesizer_version: 4.0.0rc8

@@ -1,0 +1,21 @@
+adapter_id: generated
+adapter_notes: 
+  generated-artifact:.kittify/charter/generated/styleguides/java-style-guide.styleguide.yaml
+adapter_version: 1.0.0
+artifact_content_hash: 
+  29822fc6ec6a78dde0950b0f8937899d43993bd8f787e65c0342d51ca55f0f32
+artifact_kind: styleguide
+artifact_slug: java-style-guide
+artifact_urn: styleguide:java-style-guide
+corpus_snapshot_id: generic-v1.0.0
+evidence_bundle_hash: 
+  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
+generated_at: '2026-10-18T15:57:21.014068+00:00'
+inputs_hash: 34d19baf1f5a1d7533f60ddadfb71e1f754c384ff73bc4930f0220e6dc1a2dc7
+produced_at: '2026-10-18T15:58:11.515520+00:00'
+schema_version: '2'
+source_input_ids: []
+source_section: language_scope
+source_urns: []
+synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesizer_version: 4.0.0rc8

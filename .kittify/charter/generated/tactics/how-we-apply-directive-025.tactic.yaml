@@ -1,0 +1,23 @@
+id: how-we-apply-directive-025
+schema_version: "1.0"
+name: How We Apply DIRECTIVE_025 (Boy Scout Rule)
+purpose: >-
+  Fix what is broken in the area a change already touches, without letting
+  cleanup widen the change.
+steps:
+  - title: Fix failures in touched files by default
+    description: >-
+      A failing test, a style or Javadoc violation, or a stale reference (such
+      as an outdated path in a comment) in a file the change already modifies
+      is fixed in the same change, or deferred with a written reason.
+  - title: Fold only domain-matched debt
+    description: >-
+      At plan and tasks point-cuts, debt in the mission's own domain may join
+      the scope; anything else is filed as an issue and deferred.
+  - title: Keep mechanical cleanup separate
+    description: >-
+      Repository-wide mechanical changes, such as a formatter adoption, land
+      as one formatting-only commit, not mixed with behavior changes.
+failure_modes:
+  - A behavior change hidden inside a reformat.
+  - Leaving a known failure in a touched file because it was pre-existing.

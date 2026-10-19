@@ -1,0 +1,20 @@
+failure_modes:
+- One all-in-one diagram mixing deployment and class detail.
+id: how-we-apply-use-c4-model-techniques
+name: How We Apply USE_C4_MODEL_TECHNIQUES
+purpose: Document the service's architecture at C4 levels, as diagrams-as-code 
+  that travel with the code.
+schema_version: '1.0'
+steps:
+- description: docs/context/system-context.md is the System Context view and 
+    docs/architecture/overview.md the Container view (the Python seam in core, 
+    the Java service as a loopback daemon per worktree, its adapters and the 
+    pack inputs); update them when a container or flow changes.
+  title: Keep the context and container views current
+- description: Component diagrams cover the onion slices of ADR-0006; code-level
+    diagrams only if generated.
+  title: Draw component views only where structure is non-obvious
+- description: Diagrams are PlantUML source checked in beside its rendered SVG 
+    under docs/architecture/diagrams/, rendered with the pinned tool versions in
+    scripts/docs/plantuml_pins.json; never a binary export alone.
+  title: Keep diagrams as text

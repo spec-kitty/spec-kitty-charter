@@ -1,0 +1,25 @@
+id: how-we-apply-directive-010
+schema_version: "1.0"
+name: How We Apply DIRECTIVE_010 (Specification Fidelity)
+purpose: >-
+  Keep the implementation faithful to the two specifications that bind it:
+  the OpenAPI contract and the contract scenarios.
+steps:
+  - title: Treat the contract as the specification of record
+    description: >-
+      contracts/charter/openapi.yaml and the Gherkin scenarios under
+      contracts/charter/scenarios/ are the specification. Controllers
+      implement the interfaces openapi-generator produces; nothing is served
+      that the contract does not declare.
+  - title: Trace mission requirements
+    description: >-
+      Each functional requirement in a mission's spec.md maps to a scenario
+      or test; review checks the mapping before acceptance.
+  - title: Document deviations before acceptance
+    description: >-
+      A deviation from the spec, the contract or core's oracle behavior is
+      written into the mission and ruled on by the operator before merge;
+      provisional behavior is marked x-provisional and tagged @provisional.
+failure_modes:
+  - A scenario edited to match the code without a contract changelog line.
+  - Behavior shipped that is in no scenario.

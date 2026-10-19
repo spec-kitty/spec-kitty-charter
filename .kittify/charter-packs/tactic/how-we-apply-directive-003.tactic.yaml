@@ -1,0 +1,23 @@
+failure_modes:
+- Editing an accepted ADR instead of superseding it.
+- A deliberate divergence from core recorded only in a commit message.
+id: how-we-apply-directive-003
+name: How We Apply DIRECTIVE_003 (Decision Documentation)
+purpose: Record material decisions where future contributors will find them, 
+  with the constraint that must stay true.
+schema_version: '1.0'
+steps:
+- description: Decisions are ADRs under docs/adr/, numbered in sequence. An 
+    accepted ADR is superseded by a new one, never edited.
+  title: Write an ADR for architecture and contract decisions
+- description: Operator rulings and squad dispositions go into the mission's 
+    research.md (as section 10 of charter-contract-and-build-retro does), with 
+    the call, the ruling and the reason.
+  title: Record mission rulings in the mission
+- description: A call made without review becomes an open review item in the 
+    mission or docs/plans/open-questions.md, never left implicit.
+  title: Log unreviewed calls
+- description: An exception names scope, reason, approver and a sunset or review
+    date in the pull request, and in docs/plans/open-questions.md when it 
+    outlives the change.
+  title: Record exceptions with their sunset

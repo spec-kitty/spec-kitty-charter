@@ -1,0 +1,55 @@
+id: java-style-guide
+schema_version: "1.0"
+title: Java Style Guide
+scope: code
+applies_to_languages:
+  - java
+principles:
+  - Java 25 for toolchain and release; Spring Boot 4; Gradle 9 with the
+    build-logic convention plugins. CI never builds with
+    -Pcharter.javaVersion=21.
+  - Hand-written code is formatted by Spotless with palantir-java-format and
+    checked by Checkstyle, on main and test sources.
+  - Error Prone runs on main and test sources; NullAway runs in JSpecify mode
+    (OnlyNullMarked) on main sources, with @NullMarked in every hand-written
+    package-info.java. Absence is modeled with Optional.
+  - Javadoc doclint runs as -Xdoclint:all with -Werror on main sources; every
+    public type and member is documented.
+  - Generated code (the charter-api module from openapi-generator, spring,
+    interface-only) is exempt by plugin split, not by subtraction - it applies
+    only the base conventions; hand-written modules opt into the hand-written
+    gates.
+  - Exceptions to a gate live in one checked-in suppressions register with
+    rule, reason and sunset - never as scattered inline suppressions.
+  - Until the style check is wired into verifyAll, reviewers apply the
+    selected Java conventions styleguide from the charter.
+patterns:
+  - name: Null-marked package
+    description: Every hand-written package declares @NullMarked in its
+      package-info.java so NullAway checks it.
+    good_example: "@NullMarked package ai.speckitty.charter.domain;"
+  - name: Dependencies through the catalog
+    description: Every coordinate comes from gradle/libs.versions.toml.
+    good_example: "implementation(libs.spring.boot.starter.webmvc)"
+    bad_example: "implementation(\"org.springframework.boot:spring-boot-starter-webmvc-test:4.0.8\")"
+anti_patterns:
+  - name: Null smuggled into a DTO
+    description: Passing orElse(null) into a generated DTO hides absence from
+      NullAway.
+    bad_example: "dto.setDetail(diagnostic.detail().orElse(null));"
+    good_example: "diagnostic.detail().ifPresent(dto::setDetail);"
+  - name: Inline suppression
+    description: A @SuppressWarnings without a register entry hides a gate
+      exception from review.
+    bad_example: "@SuppressWarnings(\"NullAway\") // TODO"
+    good_example: "An entry in the suppressions register naming rule, reason and sunset."
+tooling:
+  format: Spotless with palantir-java-format
+  style: Checkstyle
+  static_analysis: Error Prone with NullAway and JSpecify annotations
+  docs: Javadoc doclint (-Xdoclint:all -Werror), main sources only
+  architecture: ArchUnit
+  build: ./gradlew verifyAll
+quality_test: >-
+  Does ./gradlew verifyAll pass on Java 25 with no new inline suppression and
+  every new public member documented?

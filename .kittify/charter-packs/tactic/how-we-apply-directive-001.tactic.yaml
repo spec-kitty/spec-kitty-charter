@@ -1,0 +1,24 @@
+failure_modes:
+- A domain class importing Spring or a generated DTO.
+- A rule owned in two adapter sites with no single switch (research finding S3).
+id: how-we-apply-directive-001
+name: How We Apply DIRECTIVE_001 (Architectural Integrity)
+purpose: Keep the service's onion vertical slices (ADR-0006) intact so each 
+  module stays independently understandable, testable and replaceable.
+schema_version: '1.0'
+steps:
+- description: Domain rules go in charter-domain, use cases in charter-read-app,
+    the REST adapter in adapter-in-rest, the file-based pack layer in 
+    adapter-out-yaml, generated DTOs in charter-api, and wiring in 
+    charter-service. Dependencies point inward only.
+  title: Place code in the owning module
+- description: The ArchUnit dependency rule runs in ./gradlew verifyAll. A 
+    boundary change updates the rule and ADR-0006 in the same pull request; 
+    never weaken the rule to make a change compile.
+  title: Let the ArchUnit gate decide
+- description: The public API returns generated DTOs (ADR-0004); domain types 
+    never leak into charter-api and generated types never enter charter-domain.
+  title: Keep generated code at the edge
+- description: Moving a responsibility across modules is an architecture change 
+    and gets the adversarial squad at plan and pre-merge.
+  title: Escalate boundary moves

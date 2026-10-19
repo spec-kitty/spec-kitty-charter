@@ -1,0 +1,132 @@
+edges:
+- reason: Derived from synthesis target 'how-we-apply-directive-001'
+  relation: applies
+  source: tactic:how-we-apply-directive-001
+  target: directive:DIRECTIVE_001
+- reason: Derived from synthesis target 'how-we-apply-directive-003'
+  relation: applies
+  source: tactic:how-we-apply-directive-003
+  target: directive:DIRECTIVE_003
+- reason: Derived from synthesis target 'how-we-apply-directive-010'
+  relation: applies
+  source: tactic:how-we-apply-directive-010
+  target: directive:DIRECTIVE_010
+- reason: Derived from synthesis target 'how-we-apply-directive-025'
+  relation: applies
+  source: tactic:how-we-apply-directive-025
+  target: directive:DIRECTIVE_025
+- reason: Derived from synthesis target 'how-we-apply-directive-030'
+  relation: applies
+  source: tactic:how-we-apply-directive-030
+  target: directive:DIRECTIVE_030
+- reason: Derived from synthesis target 'how-we-apply-directive-032'
+  relation: applies
+  source: tactic:how-we-apply-directive-032
+  target: directive:DIRECTIVE_032
+- reason: Derived from synthesis target 'how-we-apply-directive-034'
+  relation: applies
+  source: tactic:how-we-apply-directive-034
+  target: directive:DIRECTIVE_034
+- reason: Derived from synthesis target 'how-we-apply-directive-037'
+  relation: applies
+  source: tactic:how-we-apply-directive-037
+  target: directive:DIRECTIVE_037
+- reason: Derived from synthesis target 'how-we-apply-directive-041'
+  relation: applies
+  source: tactic:how-we-apply-directive-041
+  target: directive:DIRECTIVE_041
+- reason: Derived from synthesis target 'how-we-apply-directive-051'
+  relation: applies
+  source: tactic:how-we-apply-directive-051
+  target: directive:DIRECTIVE_051
+- reason: Derived from synthesis target 
+    'how-we-apply-no-full-heavy-suites-in-mission'
+  relation: applies
+  source: tactic:how-we-apply-no-full-heavy-suites-in-mission
+  target: directive:NO_FULL_HEAVY_SUITES_IN_MISSION
+- reason: Derived from synthesis target 'how-we-apply-qa-003'
+  relation: applies
+  source: tactic:how-we-apply-qa-003
+  target: directive:QA_003
+- reason: Derived from synthesis target 
+    'how-we-apply-reconcile-change-scope-tensions'
+  relation: applies
+  source: tactic:how-we-apply-reconcile-change-scope-tensions
+  target: directive:RECONCILE_CHANGE_SCOPE_TENSIONS
+- reason: Derived from synthesis target 'how-we-apply-use-c4-model-techniques'
+  relation: applies
+  source: tactic:how-we-apply-use-c4-model-techniques
+  target: directive:USE_C4_MODEL_TECHNIQUES
+generated_at: '2026-10-18T15:58:12+00:00'
+generated_by: spec-kitty project registration
+nodes:
+- kind: directive
+  label: Mission Type and Work Intake Scope
+  urn: directive:PROJECT_001
+- kind: directive
+  label: Risk Appetite and Non-Negotiable Failures
+  urn: directive:PROJECT_002
+- kind: tactic
+  label: How We Apply DIRECTIVE_001 (Architectural Integrity)
+  urn: tactic:how-we-apply-directive-001
+- kind: tactic
+  label: How We Apply DIRECTIVE_003 (Decision Documentation)
+  urn: tactic:how-we-apply-directive-003
+- kind: tactic
+  label: How We Apply DIRECTIVE_010 (Specification Fidelity)
+  urn: tactic:how-we-apply-directive-010
+- kind: tactic
+  label: How We Apply DIRECTIVE_025 (Boy Scout Rule)
+  urn: tactic:how-we-apply-directive-025
+- kind: tactic
+  label: How We Apply DIRECTIVE_030 (Test and Typecheck Quality Gate)
+  urn: tactic:how-we-apply-directive-030
+- kind: tactic
+  label: How We Apply DIRECTIVE_032 (Conceptual Alignment)
+  urn: tactic:how-we-apply-directive-032
+- kind: tactic
+  label: How We Apply DIRECTIVE_034 (Test-First Development)
+  urn: tactic:how-we-apply-directive-034
+- kind: tactic
+  label: How We Apply DIRECTIVE_037 (Living Documentation Sync)
+  urn: tactic:how-we-apply-directive-037
+- kind: tactic
+  label: How We Apply DIRECTIVE_041 (Tests as Scaffold)
+  urn: tactic:how-we-apply-directive-041
+- kind: tactic
+  label: How We Apply DIRECTIVE_051 (Supply-Chain Install Safety)
+  urn: tactic:how-we-apply-directive-051
+- kind: tactic
+  label: How We Apply NO_FULL_HEAVY_SUITES_IN_MISSION
+  urn: tactic:how-we-apply-no-full-heavy-suites-in-mission
+- kind: tactic
+  label: How We Apply QA_003 (No Fake Green)
+  urn: tactic:how-we-apply-qa-003
+- kind: tactic
+  label: How We Apply RECONCILE_CHANGE_SCOPE_TENSIONS
+  urn: tactic:how-we-apply-reconcile-change-scope-tensions
+- kind: tactic
+  label: How We Apply USE_C4_MODEL_TECHNIQUES
+  urn: tactic:how-we-apply-use-c4-model-techniques
+- kind: tactic
+  label: Review Policy
+  urn: tactic:review-policy-tactic
+- kind: tactic
+  label: Testing Philosophy
+  urn: tactic:testing-philosophy-tactic
+- kind: styleguide
+  label: Documentation Policy
+  urn: styleguide:documentation-policy-style-guide
+- kind: styleguide
+  label: Java Style Guide
+  urn: styleguide:java-style-guide
+- kind: styleguide
+  label: Python Style Guide
+  urn: styleguide:python-style-guide
+- kind: styleguide
+  label: Quality Gates
+  urn: styleguide:quality-gates-style-guide
+- kind: styleguide
+  label: Testing Style Guide
+  urn: styleguide:testing-style-guide
+schema_version: '1.0'
