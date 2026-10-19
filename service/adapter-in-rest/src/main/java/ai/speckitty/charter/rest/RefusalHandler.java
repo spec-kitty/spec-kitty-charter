@@ -31,14 +31,18 @@ public class RefusalHandler {
     /**
      * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise. A
      * server-error (5xx) refusal is logged first with its cause, like {@link ProblemHandler}, so every 500 the
-     * service returns leaves a diagnostic trail even though its body names nothing of the failure.
+     * service returns leaves a diagnostic trail even though its body names nothing of the failure. {@code stale_input}
+     * is the exception: it is routine and retryable, so it is logged at INFO without the stack trace.
      *
      * @param refusal the domain refusal
      * @return the {@code application/problem+json} response carrying the refusal's code and detail
      */
     @ExceptionHandler(ai.speckitty.charter.domain.CharterRefusal.class)
     public ResponseEntity<CharterRefusal> refused(ai.speckitty.charter.domain.CharterRefusal refusal) {
-        if (!refusal.code().notFound()) {
+        if (refusal.code() == RefusalCode.STALE_INPUT) {
+            // Routine and retryable (an input changed under the read): one line, no stack trace.
+            LOGGER.info("Refusal " + refusal.code().token() + ": " + refusal.getMessage());
+        } else if (!refusal.code().notFound()) {
             LOGGER.error("Server refusal " + refusal.code().token(), refusal);
         }
         return respond(refusal);
