@@ -72,8 +72,9 @@ charter document save, compile. See [Strangler transition](/architecture/strangl
 
 ## Error model
 
-- Every refusal is a `Problem` body, reusing the shared `Problem` schema of core's
-  `contracts/_shared/`.
+- Every refusal is a `Problem` body. The shared `Problem` schema and response in
+  `contracts/_shared/` are canonical in this repository (ADR-0015), and every answer, the
+  `default` `Problem` response included, carries the three `Charter-*` headers.
 - Refusal codes are part of the contract, not implementation detail. They are snake_case on
   the wire; the integration seam in core maps them to core's own spellings. The codes and
   when each applies are defined in [`CharterRefusalCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/CharterRefusalCode.yaml),

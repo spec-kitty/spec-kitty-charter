@@ -120,6 +120,15 @@ did not; `Changed` lists what differs from the draft.
   schema change): a body with a `code` is a charter refusal; a body without one is a transport or
   routing failure; `internal_error` is a fault and may be retried; every other code is a
   deterministic refusal.
+- The shared `default` `Problem` response (`contracts/_shared/responses/Problem.yaml`) of every
+  operation declares the response headers `Charter-Contract-Version`, `Charter-Worktree` and
+  `Charter-Source-Fingerprint`, by reference to `headers/`. The service already sent them
+  there; the contract did not say so (#90, ADR-0011). A header declaration is not a response
+  property, so no schema changes. `contracts/lint/ruleset.yaml` gains the rule
+  `charter-headers-on-every-response`, which fails any response of any operation that lacks one
+  of the three. `_shared/VENDORED.md` records that this repository's copy is canonical.
+- Scenario "A bad request carries the headers too" in `service.feature`: the `400` for a depth
+  this version does not answer carries the three headers.
 
 ### Removed
 
