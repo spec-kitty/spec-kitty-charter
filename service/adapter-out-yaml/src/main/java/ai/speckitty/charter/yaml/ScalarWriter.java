@@ -22,8 +22,13 @@ final class ScalarWriter {
     static String write(String value, ScalarStyle style, String original, boolean inFlow) {
         return switch (style) {
             case PLAIN -> plainSafe(value, original, inFlow) ? value : doubleQuoted(value);
-            case SINGLE_QUOTED -> value.indexOf('\n') < 0 ? "'" + value.replace("'", "''") + "'" : doubleQuoted(value);
-            case LITERAL -> literal(value, original).orElseGet(() -> doubleQuoted(value) + lineBreakSuffix(original));
+            case SINGLE_QUOTED ->
+                value.indexOf('\n') < 0 && carriedAsWritten(value)
+                        ? "'" + value.replace("'", "''") + "'"
+                        : doubleQuoted(value);
+            case LITERAL ->
+                (carriedAsWritten(value) ? literal(value, original) : java.util.Optional.<String>empty())
+                        .orElseGet(() -> doubleQuoted(value) + lineBreakSuffix(original));
             // Folding a value back into a folded block needs the emitter of open question 6; until then the
             // value is written double-quoted, keeping the line break the block owned.
             default -> doubleQuoted(value) + lineBreakSuffix(original);
@@ -86,10 +91,21 @@ final class ScalarWriter {
     }
 
     /**
+     * Whether a single-quoted or block scalar can hold {@code value} as written: every code point is printable
+     * (a tab and a line feed are, though {@link #printable} leaves them to the escapes), none is a lone
+     * surrogate, and there is no carriage return, which a reader folds into a line feed. Only a double-quoted
+     * scalar escapes the others.
+     */
+    private static boolean carriedAsWritten(String value) {
+        return value.codePoints().allMatch(c -> printable(c) || c == '\t' || c == '\n');
+    }
+
+    /**
      * A plain scalar is kept plain only when writing the value back re-reads as the same string: the
      * value must equal the original text (a single-line plain scalar) or be a single line the YAML
-     * reader takes as a string unchanged. Inside a flow collection the value must also hold none of the
-     * flow indicators {@code ,[]{}}, which end a plain scalar there.
+     * reader takes as a string unchanged, read in the context the scalar sits in. Inside a flow collection the
+     * value must also hold none of the flow indicators {@code ,[]{}}, which end a plain scalar there, and must
+     * re-read unchanged as a sequence entry and as a mapping value of a flow collection.
      */
     private static boolean plainSafe(String value, String original, boolean inFlow) {
         if (value.equals(original)) {
@@ -101,8 +117,19 @@ final class ScalarWriter {
         if (inFlow && value.chars().anyMatch(c -> FLOW_INDICATORS.indexOf(c) >= 0)) {
             return false;
         }
+        return rereadsAsValue("k: " + value + "\n", value)
+                && (!inFlow
+                        || (rereadsAsValue("[" + value + "]", value) && rereadsAsValue("{k: " + value + "}", value)));
+    }
+
+    /** Whether {@code source} loads as a one-entry sequence or mapping whose single value is {@code value}. */
+    private static boolean rereadsAsValue(String source, String value) {
         try {
-            return value.equals(Yaml.load("k: " + value + "\n") instanceof java.util.Map<?, ?> m ? m.get("k") : null);
+            return switch (Yaml.load(source)) {
+                case java.util.Map<?, ?> m -> m.size() == 1 && value.equals(m.get("k"));
+                case java.util.List<?> l -> l.size() == 1 && value.equals(l.get(0));
+                case null, default -> false;
+            };
         } catch (RuntimeException notPlain) {
             return false;
         }
