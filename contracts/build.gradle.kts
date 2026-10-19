@@ -1,7 +1,8 @@
 // The charter contract's own checks (DM 01M57WH7P0QZWHKYGBA2R0MA3K): the single-file bundle core vendors,
 // lint with the charter's ruleset and the planted fixtures of every rule, the closed-response-objects
 // checker (Java, src/main/java; DM 01M584Q3NNK0B78H9NKHV7VJDK) and the breaking-change check against the
-// last released contract with its own planted pairs. All run in `check`, so `./gradlew verifyAll` runs them.
+// baseline release the release gate names (Java, src/main/java; DM 01M5986KJ7B18K7GQ25E47J989) with its own
+// planted pairs. All run in `check`, so `./gradlew verifyAll` runs them.
 // Conventions and how to add a rule: contracts/lint/README.md.
 //
 // The tools are release binaries pinned below by version and SHA-256 per platform; a download whose
