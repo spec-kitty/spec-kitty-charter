@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An ordered DRG: nodes keyed by URN in first-declared order, edges in declared order.
@@ -106,7 +107,7 @@ public final class DoctrineGraph {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         return o instanceof DoctrineGraph g
                 && List.copyOf(nodes.values()).equals(List.copyOf(g.nodes.values()))
                 && edges.equals(g.edges);
