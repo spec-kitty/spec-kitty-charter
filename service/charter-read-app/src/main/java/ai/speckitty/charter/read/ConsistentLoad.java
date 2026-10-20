@@ -15,7 +15,8 @@ import org.jspecify.annotations.Nullable;
  * so a {@code Charter-Source-Fingerprint} that reports it cannot disagree with the answer.
  *
  * <p>A load that fails is judged the same way. A file that is half written when the load parses it makes the load
- * refuse (for example with {@link RefusalCode#PACK_UNREADABLE}); if the inputs digest differently afterwards, the
+ * refuse (for example with {@link RefusalCode#DRG_SCHEMA_ERROR} for a shard, or {@link RefusalCode#PACK_UNREADABLE} for
+ * {@code pack.yaml}, which is the code by file kind since R17); if the inputs digest differently afterwards, the
  * failure was the change's, not the pack's, and the read answers {@code STALE_INPUT}, which may be retried, instead of
  * a permanent refusal.
  *

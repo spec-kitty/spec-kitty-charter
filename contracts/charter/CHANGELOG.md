@@ -193,7 +193,8 @@ was cut under either label. `Added` lists what this version holds that the first
   behavior change, no schema change: the code is already a `CharterRefusalCode` value). It was
   `pack_unreadable`. The detail `<pack>/<file> is not valid YAML: <first line of the parser's
   message>` is unchanged. A `pack.yaml` that is not valid YAML keeps `pack_unreadable`.
-  The scenarios "A pack file rewritten while it is parsed is stale, not unreadable" in
+  The scenarios "A pack file rewritten while it is parsed is stale, not a schema error" (renamed
+  from "..., not unreadable", which the answer no longer contrasts with) in
   `errors.feature` and "A refresh of a pack that cannot be loaded is refused with the pack's code"
   in `refresh.feature` expect `drg_schema_error` for their invalid shard (was `pack_unreadable`).
 - An explicit `null` in a `pack.yaml` plain-string field is no longer read as absent (#114, R19;
