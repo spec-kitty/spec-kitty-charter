@@ -245,4 +245,80 @@ class PackPolicyOrderTest {
                 .extracting(PackFinding::place)
                 .containsExactly(List.of("nodes", "1"), List.of("edges", "0"));
     }
+
+    // ---- the comparators, directly --------------------------------------------------------------------
+
+    @Test
+    void aShorterPointerComesBeforeALongerOneThatExtendsIt() {
+        assertThat(PackPolicy.schemaFindings(
+                                "qa",
+                                List.of(
+                                        fallback("a.graph.yaml", "nodes", "0", "tags"),
+                                        fallback("a.graph.yaml", "nodes", "0"),
+                                        fallback("a.graph.yaml", "nodes")))
+                        .stream()
+                        .map(f -> "/" + String.join("/", f.place())))
+                .containsExactly("/nodes", "/nodes/0", "/nodes/0/tags");
+    }
+
+    @Test
+    void schemaFindingsPutTheEarlierPlaceFirstWhateverTheInputOrder() {
+        assertThat(PackPolicy.schemaFindings(
+                                "qa",
+                                List.of(
+                                        fallback("a.graph.yaml", "nodes", "1", "tags"),
+                                        fallback("a.graph.yaml", "nodes", "0", "tags")))
+                        .stream()
+                        .map(f -> "/" + String.join("/", f.place())))
+                .containsExactly("/nodes/0/tags", "/nodes/1/tags");
+    }
+
+    @Test
+    void thePrecedenceOrdersTheFindingsOfOneFileByPlaceAndPutsAShorterPlaceFirst() {
+        PackFinding deep =
+                new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "1", "tags"), "d");
+        PackFinding early =
+                new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes", "0", "tags"), "d");
+        PackFinding shallow = new PackFinding(PackFindingCode.DRG_SCHEMA_ERROR, "a.graph.yaml", List.of("nodes"), "d");
+
+        assertThat(java.util.stream.Stream.of(deep, early, shallow).sorted(PackPolicy.PRECEDENCE))
+                .containsExactly(shallow, early, deep);
+    }
+
+    @Test
+    void aFileWithALeadingSlashIsNotARootShard() {
+        FileRead<RawGraph> rooted = broken("/x.graph.yaml", fallback("/x.graph.yaml"));
+        PackContents c = contents(
+                descriptor(Optional.of(PackLevel.ORG)),
+                List.of(broken("b.graph.yaml", fallback("b.graph.yaml")), rooted),
+                broken("drg/fragment.yaml", fallback("drg/fragment.yaml")));
+
+        assertThat(PackPolicy.judge(c).findings())
+                .extracting(PackFinding::file)
+                .containsExactly("b.graph.yaml", "drg/fragment.yaml", "/x.graph.yaml");
+    }
+
+    @Test
+    void pathsCompareSegmentBySegmentAndByCodePoint() {
+        assertThat(PackPolicy.comparePaths("a", "a")).isZero();
+        assertThat(PackPolicy.comparePaths("a", "a/b")).isNegative();
+        assertThat(PackPolicy.comparePaths("a/b", "a")).isPositive();
+        assertThat(PackPolicy.comparePaths("a", "ab")).isNegative();
+        assertThat(PackPolicy.comparePaths("ab", "a")).isPositive();
+        assertThat(PackPolicy.comparePaths("a.yaml", "a/b.yaml")).isPositive();
+        assertThat(PackPolicy.comparePaths("python-legacy/y", "python/x")).isPositive();
+        // U+FF5E (one UTF-16 unit) sorts below U+1F600 (a surrogate pair) by code point, above it by UTF-16 unit.
+        assertThat(PackPolicy.comparePaths("\uff5e", "\ud83d\ude00")).isNegative();
+        assertThat(PackPolicy.comparePaths("\ud83d\ude00", "\uff5e")).isPositive();
+        assertThat(PackPolicy.comparePaths("", "a")).isNegative();
+    }
+
+    @Test
+    void anIndexOfEighteenDigitsIsTooLongToBeAnIndexAndSortsAsText() {
+        assertThat(places(broken(
+                        "a.graph.yaml",
+                        fallback("a.graph.yaml", "nodes", "100000000000000000"),
+                        fallback("a.graph.yaml", "nodes", "99999999999999999"))))
+                .containsExactly("/nodes/100000000000000000", "/nodes/99999999999999999");
+    }
 }

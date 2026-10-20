@@ -207,6 +207,16 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
+    void anAdditionalPropertiesOrRequiredViolationWithoutAPropertyUsesTheFallback() {
+        assertDetail(
+                at(SHARD, "additionalProperties", "nodes", "0"),
+                "qa/tactic.graph.yaml: '/nodes/0' breaks schema keyword 'additionalProperties'");
+        assertDetail(
+                at(SHARD, "required", "nodes", "0"),
+                "qa/tactic.graph.yaml: '/nodes/0' breaks schema keyword 'required'");
+    }
+
+    @Test
     void aDescriptorSaysItIsNotAMappingAndNamesTheFieldWithoutQuotes() {
         assertDetail(typeAt(PACK_YAML, "array", "object"), "pack.yaml of qa is not a mapping");
         assertDetail(typeAt(PACK_YAML, "integer", "string", "name"), "pack.yaml of qa: name must be a string");

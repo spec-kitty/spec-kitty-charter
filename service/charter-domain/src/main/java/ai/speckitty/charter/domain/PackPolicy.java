@@ -6,6 +6,7 @@ import ai.speckitty.charter.domain.PackContents.RawGraph;
 import ai.speckitty.charter.domain.PackContents.RawNode;
 import ai.speckitty.charter.domain.PackContents.SchemaViolation;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -60,8 +61,8 @@ public final class PackPolicy {
     private static final List<String> FRAGMENT_EDGE_KEYS = List.of("source", "target", "relation", "reason", "impacts");
 
     /** The plan's precedence: file group, then file name, then the place within the file. */
-    private static final Comparator<PackFinding> PRECEDENCE = Comparator.comparingInt(PackPolicy::group)
-            .thenComparing(PackFinding::file)
+    static final Comparator<PackFinding> PRECEDENCE = Comparator.comparingInt(PackPolicy::group)
+            .thenComparing(PackFinding::file, PackPolicy::comparePaths)
             .thenComparing((a, b) -> comparePlaces(a.file(), a.place(), b.place()));
 
     private PackPolicy() {}
@@ -115,8 +116,8 @@ public final class PackPolicy {
     }
 
     /**
-     * Runs every rule: the level rules, the schema and parse findings of unreadable files, and the graph rules of the
-     * graph documents that were read. Later rules join here.
+     * Runs every rule: the level rules, the descriptor rules, the schema and parse findings of unreadable files, the
+     * graph rules of the graph documents that were read, and the step, artifact and asset rules of a full read.
      *
      * @param contents what the adapter read
      * @return the verdict, with the findings in precedence order
@@ -125,8 +126,10 @@ public final class PackPolicy {
         String name = contents.root().name();
         List<PackFinding> findings =
                 new ArrayList<>(level(name, contents.root().configuredLevel(), contents.descriptor()));
-        if (contents.descriptor() instanceof FileRead.Unreadable<PackDescriptor> bad) {
-            findings.addAll(unreadable(name, bad));
+        switch (contents.descriptor()) {
+            case FileRead.Unreadable<PackDescriptor> bad -> findings.addAll(unreadable(name, bad));
+            case FileRead.Read<PackDescriptor> read -> findings.addAll(descriptorRules(name, read.value()));
+            case FileRead.Absent<PackDescriptor> absent -> {}
         }
         for (FileRead<RawGraph> document : documents(contents)) {
             switch (document) {
@@ -136,8 +139,181 @@ public final class PackPolicy {
                 case FileRead.Absent<RawGraph> absent -> {}
             }
         }
+        findings.addAll(stepRules(contents.stepContracts()));
+        findings.addAll(artifactRules(contents.artifacts()));
+        findings.addAll(assetRules(contents.assets()));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
+    }
+
+    // ---- single-pack rules a schema cannot express ---------------------------------------------
+
+    private static final String REQUIRES_CORE = "requires_core";
+
+    /** {@code requires_core} must be a PEP 440 specifier set; every undeclared key is a warning (R3, R5, R13). */
+    private static List<PackFinding> descriptorRules(String name, PackDescriptor descriptor) {
+        List<PackFinding> findings = new ArrayList<>();
+        Optional<String> requiresCore = descriptor.requiresCore();
+        if (requiresCore.isPresent() && !Pep440.isValidSpecifierSet(requiresCore.get())) {
+            findings.add(new PackFinding(
+                    PackFindingCode.REQUIRES_CORE_INVALID,
+                    PACK_YAML,
+                    List.of(REQUIRES_CORE),
+                    "pack.yaml of " + name + ": requires_core '" + requiresCore.get()
+                            + "' is not a PEP 440 version specifier"));
+        }
+        descriptor.undeclaredKeys().stream()
+                .sorted()
+                .forEach(key -> findings.add(new PackFinding(
+                        PackFindingCode.PACK_UNKNOWN_KEY,
+                        PACK_YAML,
+                        List.of(key),
+                        "pack.yaml of " + name + " declares unknown key '" + key + "'; it is ignored")));
+        return findings;
+    }
+
+    /**
+     * A step id declared twice in one contract: one finding per repeated id, at its second occurrence. Core's
+     * "duplicate step IDs" check refuses the whole contract once; the place says where the first repeat is.
+     */
+    private static List<PackFinding> stepRules(List<PackContents.StepContractFacts> contracts) {
+        List<PackFinding> findings = new ArrayList<>();
+        for (PackContents.StepContractFacts contract : contracts) {
+            Set<String> seen = new LinkedHashSet<>();
+            Set<String> reported = new LinkedHashSet<>();
+            for (int i = 0; i < contract.stepIds().size(); i++) {
+                String id = contract.stepIds().get(i);
+                if (!seen.add(id) && reported.add(id)) {
+                    findings.add(new PackFinding(
+                            PackFindingCode.DUPLICATE_STEP_ID,
+                            contract.file(),
+                            List.of("steps", Integer.toString(i), "id"),
+                            contract.file() + ": step id '" + id + "' is declared more than once"));
+                }
+            }
+        }
+        return findings;
+    }
+
+    /** An artifact id is unique within its kind; the first file in path order owns it (core's {@code duplicate_id}).
+     * Path order is pathlib's: segment by segment, so a directory sorts before a sibling that extends its name. */
+    private static List<PackFinding> artifactRules(List<PackContents.ArtifactFacts> artifacts) {
+        List<PackContents.ArtifactFacts> ordered = new ArrayList<>(artifacts);
+        ordered.sort(Comparator.comparing(PackContents.ArtifactFacts::file, PackPolicy::comparePaths));
+        Map<List<String>, String> owners = new LinkedHashMap<>();
+        List<PackFinding> findings = new ArrayList<>();
+        for (PackContents.ArtifactFacts artifact : ordered) {
+            String first = owners.putIfAbsent(List.of(artifact.kind(), artifact.id()), artifact.file());
+            if (first != null) {
+                findings.add(new PackFinding(
+                        PackFindingCode.DUPLICATE_ARTIFACT_ID,
+                        artifact.file(),
+                        List.of(),
+                        artifact.file() + ": " + artifact.kind() + " id '" + artifact.id() + "' is already declared in "
+                                + first));
+            }
+        }
+        return findings;
+    }
+
+    /**
+     * The asset rules, in core's order: a path that escapes the assets root is reported and its MIME type is not
+     * judged; an empty path or MIME type is the schema's business and is skipped.
+     */
+    private static List<PackFinding> assetRules(List<PackContents.AssetFacts> assets) {
+        List<PackFinding> findings = new ArrayList<>();
+        for (PackContents.AssetFacts asset : assets) {
+            if (asset.path().isEmpty()) {
+                continue;
+            }
+            if (escapes(asset)) {
+                findings.add(assetFinding(
+                        PackFindingCode.ASSET_PATH_ESCAPE,
+                        asset,
+                        asset.file() + ": asset path '" + asset.path() + "' escapes the pack's assets/ root"));
+            } else if (!asset.mime().isEmpty()) {
+                mimeProblem(asset)
+                        .ifPresent(detail ->
+                                findings.add(assetFinding(PackFindingCode.ASSET_MIME_INVALID, asset, detail)));
+            }
+        }
+        return findings;
+    }
+
+    private static PackFinding assetFinding(PackFindingCode code, PackContents.AssetFacts asset, String detail) {
+        return new PackFinding(code, asset.file(), List.of(), detail);
+    }
+
+    /**
+     * Core's {@code resolve_relative_path_within_root} judges the path as both a {@code PurePosixPath} and a
+     * {@code PureWindowsPath}: absolute in either flavour, or a {@code ..} part in either, escapes. The adapter's
+     * containment check cannot see the Windows forms on Linux, where {@code \} and {@code C:} are ordinary name
+     * characters, so the domain reads them itself.
+     */
+    private static boolean escapes(PackContents.AssetFacts asset) {
+        String path = asset.path();
+        return !asset.containedInAssetsRoot() || isAbsolute(path) || hasDotDotPart(path);
+    }
+
+    /**
+     * POSIX absolute (a leading {@code /}), or Windows absolute: a UNC prefix of two separators of either kind, or a
+     * drive (any one character but a separator, and a colon) followed by a separator. {@code C:x} and a single leading {@code \} are not absolute.
+     */
+    private static boolean isAbsolute(String path) {
+        return path.startsWith("/") || hasUncPrefix(path) || hasDriveRoot(path) || hasBackslashColonRoot(path);
+    }
+
+    /**
+     * A quirk of Python 3.13's {@code ntpath.isabs}, which reads the normalized text: {@code \:\x} counts as a
+     * drive-and-root form ({@code \} as the "drive" character) once a real segment follows; {@code \:\} alone,
+     * or {@code \:\.}, does not.
+     */
+    private static boolean hasBackslashColonRoot(String path) {
+        return path.startsWith("\\:")
+                && path.length() > 2
+                && isSeparator(path.charAt(2))
+                && Arrays.stream(path.substring(3).split("[/\\\\]", -1)).anyMatch(s -> !s.isEmpty() && !".".equals(s));
+    }
+
+    private static boolean hasUncPrefix(String path) {
+        return path.length() >= 2 && isSeparator(path.charAt(0)) && isSeparator(path.charAt(1));
+    }
+
+    private static boolean hasDriveRoot(String path) {
+        int afterDrive = driveLength(path);
+        return afterDrive > 0 && afterDrive < path.length() && isSeparator(path.charAt(afterDrive));
+    }
+
+    /** The length of a leading {@code <char>:} drive, or 0. */
+    private static int driveLength(String path) {
+        if (path.isEmpty()) {
+            return 0;
+        }
+        int first = path.codePointAt(0);
+        int width = Character.charCount(first);
+        return !isSeparator(first) && width < path.length() && path.charAt(width) == ':' ? width + 1 : 0;
+    }
+
+    /** A {@code ..} between separators of either flavour, with a Windows drive taken off first. */
+    private static boolean hasDotDotPart(String path) {
+        String rest = path.substring(driveLength(path));
+        return List.of(rest.split("[/\\\\]", -1)).contains("..");
+    }
+
+    private static boolean isSeparator(int c) {
+        return c == '/' || c == '\\';
+    }
+
+    private static Optional<String> mimeProblem(PackContents.AssetFacts asset) {
+        String mime = asset.mime();
+        int slash = mime.indexOf('/');
+        if (slash <= 0 || slash == mime.length() - 1) {
+            return Optional.of(asset.file() + ": asset mime '" + mime + "' is not a well-formed 'type/subtype' value");
+        }
+        return AssetMimeTable.expected(asset.path())
+                .filter(expected -> !expected.type().equals(mime))
+                .map(expected -> asset.file() + ": asset mime '" + mime + "' does not match the '"
+                        + expected.extension() + "' extension (" + expected.type() + ")");
     }
 
     private static int group(PackFinding finding) {
@@ -449,7 +625,7 @@ public final class PackPolicy {
      */
     public static List<PackFinding> schemaFindings(String packName, List<SchemaViolation> violations) {
         List<SchemaViolation> ordered = new ArrayList<>(collapseNullable(violations));
-        ordered.sort(Comparator.comparing(SchemaViolation::file)
+        ordered.sort(Comparator.comparing(SchemaViolation::file, PackPolicy::comparePaths)
                 .thenComparing((a, b) -> comparePlaces(a.file(), a.pointer(), b.pointer()))
                 .thenComparingInt(v -> keywordRank(v.keyword())));
         Set<PackFinding> findings = new LinkedHashSet<>();
@@ -641,6 +817,39 @@ public final class PackPolicy {
     private static String fallback(String o, SchemaViolation v) {
         String pointer = "/" + String.join("/", v.pointer());
         return o + ": '" + pointer + "' breaks schema keyword '" + v.keyword() + "'";
+    }
+
+    /**
+     * Python's {@code PurePath} order for {@code /}-separated paths: segment by segment, a shorter prefix first, and
+     * each segment by code point. Plain {@code String} order differs: {@code '-'} and {@code '.'} sort below
+     * {@code '/'}, so {@code python-legacy/y} would sort before {@code python/x}.
+     */
+    static int comparePaths(String a, String b) {
+        String[] left = a.split("/", -1);
+        String[] right = b.split("/", -1);
+        int shared = Math.min(left.length, right.length);
+        for (int i = 0; i < shared; i++) {
+            int byCodePoint = compareCodePoints(left[i], right[i]);
+            if (byCodePoint != 0) {
+                return byCodePoint;
+            }
+        }
+        return Integer.compare(left.length, right.length);
+    }
+
+    private static int compareCodePoints(String a, String b) {
+        int i = 0;
+        int j = 0;
+        while (i < a.length() && j < b.length()) {
+            int x = a.codePointAt(i);
+            int y = b.codePointAt(j);
+            if (x != y) {
+                return Integer.compare(x, y);
+            }
+            i += Character.charCount(x);
+            j += Character.charCount(y);
+        }
+        return Integer.compare(a.length() - i, b.length() - j);
     }
 
     // ---- ordering within a file ----------------------------------------------------------------
