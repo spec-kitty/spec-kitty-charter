@@ -667,10 +667,10 @@ public final class PackPolicy {
     }
 
     private static List<SchemaViolation> collapseNullable(List<SchemaViolation> violations) {
-        Map<List<String>, List<SchemaViolation>> types = new LinkedHashMap<>();
+        Map<Spot, List<SchemaViolation>> types = new LinkedHashMap<>();
         for (SchemaViolation v : violations) {
             if ("type".equals(v.keyword())) {
-                types.computeIfAbsent(List.of(v.file(), String.join("/", v.pointer())), k -> new ArrayList<>())
+                types.computeIfAbsent(new Spot(v.file(), v.pointer()), k -> new ArrayList<>())
                         .add(v);
             }
         }
@@ -686,6 +686,9 @@ public final class PackPolicy {
         }
         return kept;
     }
+
+    /** A place in a file, by its pointer segments: a key that holds a {@code /} is one segment, not two. */
+    private record Spot(String file, List<String> pointer) {}
 
     private static boolean expectsNull(SchemaViolation violation) {
         return "null".equals(violation.args().get("1"));

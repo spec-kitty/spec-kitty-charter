@@ -481,6 +481,16 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
+    void aKeyWithASlashIsNotTheSamePointerAsTwoKeys() {
+        // The pointer ["a/b"] and ["a", "b"] are two places; joined with "/" they were one, and the string branch at
+        // the first took the lone null branch at the second with it.
+        assertThat(details(typeAt(SHARD, "integer", "null", "a", "b"), typeAt(SHARD, "integer", "string", "a/b")))
+                .containsExactly(
+                        "qa/tactic.graph.yaml: '/a/b' breaks schema keyword 'type'",
+                        "qa/tactic.graph.yaml: 'a/b' must be a string");
+    }
+
+    @Test
     void anAnyOfWithoutNestedTypeViolationsUsesTheFallback() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "0", "x"), "anyOf", null, null, Map.of()),
