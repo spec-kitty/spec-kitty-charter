@@ -173,9 +173,12 @@ final class PackSchemas {
             return violations;
         }
         // Where does the schema refuse a number at all? Run again with each non-finite value as a plain 0.5.
-        List<List<String>> refusingNumbers = new ArrayList<>();
+        Map<List<String>, List<SchemaViolation>> refusingNumbers = new LinkedHashMap<>();
         for (Error error : schema.validate(tokens(MAPPER.valueToTree(yamlTree), true))) {
-            refusingNumbers.add(violation(file, error).pointer());
+            SchemaViolation refusal = violation(file, error);
+            refusingNumbers
+                    .computeIfAbsent(refusal.pointer(), k -> new ArrayList<>())
+                    .add(refusal);
         }
         List<SchemaViolation> judged = new ArrayList<>();
         for (NonFinite entry : nonFinite) {
@@ -183,15 +186,22 @@ final class PackSchemas {
             boolean refused = violations.stream().anyMatch(v -> v.pointer().equals(pointer));
             if (isStrengthOfAnEdge(kind, pointer)) {
                 violations.removeIf(v -> v.pointer().equals(pointer) && "type".equals(v.keyword()));
-            } else if (!refused && refusingNumbers.contains(pointer)) {
-                // The token string was accepted, but a number is refused here: the schema declares a string.
-                judged.add(new SchemaViolation(
-                        file,
-                        pointer,
-                        "type",
-                        Optional.empty(),
-                        Optional.of(Double.toString(entry.value())),
-                        Map.of()));
+            } else if (!refused && refusingNumbers.containsKey(pointer)) {
+                // The token string was accepted, but a number is refused here: the schema declares a string. The
+                // violation carries the arguments of the probe run's own (the expected type), one per branch, so the
+                // domain words it, and collapses a nullable, as it would a number the file really holds.
+                String token = Double.toString(entry.value());
+                List<SchemaViolation> types = refusingNumbers.get(pointer).stream()
+                        .filter(v -> "type".equals(v.keyword()))
+                        .toList();
+                if (types.isEmpty()) {
+                    judged.add(
+                            new SchemaViolation(file, pointer, "type", Optional.empty(), Optional.of(token), Map.of()));
+                }
+                for (SchemaViolation refusal : types) {
+                    judged.add(new SchemaViolation(
+                            file, pointer, "type", Optional.empty(), Optional.of(token), refusal.args()));
+                }
             }
         }
         violations.addAll(judged);
