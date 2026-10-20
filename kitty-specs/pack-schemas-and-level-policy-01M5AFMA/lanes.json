@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "mission_slug": "pack-schemas-and-level-policy-01M5AFMA",
+  "mission_id": "01M5AFMA4S5Z3MYPW08M9Z4808",
+  "mission_branch": "kitty/mission-pack-schemas-and-level-policy-01M5AFMA",
+  "target_branch": "feat/pack-schemas-and-level-policy",
+  "lanes": [
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/packs/**",
+        "scripts/packs/sync_schemas.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "docs/_meta/sections.yaml",
+        "docs/adr/0017-pack-schemas-imported-as-canonical-json-schema.md",
+        "docs/conformance/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP03",
+        "WP04",
+        "WP05",
+        "WP06",
+        "WP07",
+        "WP08"
+      ],
+      "write_scope": [
+        ".github/workflows/service.yml",
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/scenarios/action_context.feature",
+        "contracts/charter/scenarios/packs.feature",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "contracts/charter/schemas/DiagnosticCode.yaml",
+        "gradle.properties",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "packs/internal/**",
+        "packs/qa/**",
+        "scripts/packs/core_verdicts.py",
+        "scripts/packs/mime_table.py",
+        "scripts/packs/pep440_corpus.py",
+        "service/adapter-out-yaml/build.gradle.kts",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemCharterPackRepository.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemPackInspector.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/GraphDocumentReader.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackDescriptorReader.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackFileKind.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackSchemas.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/FileSystemCharterPackRepositoryTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/FileSystemPackInspectorTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/GraphDocumentReaderTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/LoadOutcomeTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/OpenPacksAcceptanceTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/OpenPacksCorpus.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/OpenPacksRoundTripTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackDescriptorReaderTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackFileKindTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackSchemasTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PlantedFilesTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/SchemaKeywordCoverageTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/ScopeParityTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/ValidateModeTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/VocabularyEqualityTest.java",
+        "service/adapter-out-yaml/src/test/resources/load-fixtures/**",
+        "service/adapter-out-yaml/src/test/resources/planted/**",
+        "service/adapter-out-yaml/src/test/resources/schema-fixtures/**",
+        "service/charter-domain/pit-targets.init.gradle",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/AssetMimeTable.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPack.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPackRepository.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/NodeKind.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackContents.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackDescriptor.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFinding.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackInspector.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackRoot.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackValidation.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackVerdict.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Pep440.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/CharterOfferingTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/GovernanceFingerprintTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/NodeKindTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackFindingTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyGraphTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyOrderTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyRulesTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyVocabularyTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackValidationTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/Pep440Test.java",
+        "service/charter-domain/src/test/resources/pep440/**",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/ActionContextQueryTest.java",
+        "service/charter-read-app/src/test/java/ai/speckitty/charter/read/PackListingQueryTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/CharterWiringTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/HexagonalArchitectureTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/ProductionWiringTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/bdd/ScenarioPacksTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/networkntfixture/**",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/packlevelfixture/**",
+        "service/charter-service/src/test/java/com/networknt/fixture/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "docs/_meta/spelling-words.txt",
+        "docs/_meta/terminology.yaml",
+        "docs/architecture/descriptor-schemas.md",
+        "docs/architecture/descriptors.md",
+        "docs/architecture/diagrams/pack-write-model.puml",
+        "docs/architecture/diagrams/pack-write-model.svg",
+        "docs/architecture/logical-model.md",
+        "docs/architecture/pack-registration-distribution.md",
+        "docs/architecture/resolution-model.md",
+        "docs/context/domain.md",
+        "docs/context/system-context.md",
+        "docs/guides/service-build.md",
+        "docs/plans/open-questions.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-c"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-10-19T18:12:27.786077+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "180a1afc9eb8a6f4ef30e14474ec181108b1f2d7",
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP05",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java' vs 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java', 'service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java' vs 'service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java'; WP05 depends on WP01"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP06",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java' vs 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java', 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java' vs 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java'"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP07",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java' vs 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java', 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java' vs 'service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java', 'service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java' vs 'service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java', 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackDescriptorReader.java' vs 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackDescriptorReader.java', 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemCharterPackRepository.java' vs 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemCharterPackRepository.java', 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackDescriptorReaderTest.java' vs 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackDescriptorReaderTest.java'"
+      },
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP04",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/adapter-out-yaml/build.gradle.kts' vs 'service/adapter-out-yaml/build.gradle.kts'; WP04 depends on WP03"
+      },
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP08",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/OpenPacksCorpus.java' vs 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/OpenPacksCorpus.java'"
+      },
+      {
+        "wp_a": "WP07",
+        "wp_b": "WP08",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemPackInspector.java' vs 'service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FileSystemPackInspector.java', 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/FileSystemPackInspectorTest.java' vs 'service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/FileSystemPackInspectorTest.java'; WP08 depends on WP07"
+      }
+    ],
+    "total_merges": 6,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "write_scope_overlap": 6
+    }
+  }
+}

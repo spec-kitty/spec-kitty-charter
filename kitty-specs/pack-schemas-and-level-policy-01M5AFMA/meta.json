@@ -1,0 +1,37 @@
+{
+  "accept_commit": "11955c758b7f2364110a460800cba766010b5e36",
+  "acceptance_history": [
+    {
+      "accept_commit": "11955c758b7f2364110a460800cba766010b5e36",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-20T04:34:21.091155+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "ca84224be4d9ce8ed120c9a9062cd961dc82c09c"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-20T04:34:21.091155+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "ca84224be4d9ce8ed120c9a9062cd961dc82c09c",
+  "baseline_merge_commit": "56aecc2ae109c06e4de473ed66a90457839eb38a",
+  "coordination_branch": "kitty/mission-pack-schemas-and-level-policy-01M5AFMA",
+  "created_at": "2026-10-19T16:24:03.810145+00:00",
+  "flattened": false,
+  "friendly_name": "Pack schemas and pack-level policy in the domain",
+  "merged_at": "2026-10-20T04:33:26.906269+00:00",
+  "merged_commit": "6868da435b66c8ae714c7671110cfb47e96d8bc1",
+  "mid8": "01M5AFMA",
+  "mission_id": "01M5AFMA4S5Z3MYPW08M9Z4808",
+  "mission_number": 3,
+  "mission_slug": "pack-schemas-and-level-policy-01M5AFMA",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Pack authors and the charter service need one published, canonical schema per pack file kind, imported from core's models and owned here (ADR-0015, ADR-0017), so that pack verdicts start in parity with core on the real open-packs content. At the same time the pack-level policy (missing and mismatched pack_level) moves out of the YAML adapter into the domain (#48), and the rules a schema cannot express live in the domain as collected findings, ready for the pack doctor parity work (#115).",
+  "purpose_tldr": "Validate every Charter Pack file against schemas this repository owns, and let the domain alone decide pack-level outcomes.",
+  "slug": "pack-schemas-and-level-policy-01M5AFMA",
+  "status_phase": "1",
+  "target_branch": "feat/pack-schemas-and-level-policy",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-19T18:18:25.020705+00:00"
+}

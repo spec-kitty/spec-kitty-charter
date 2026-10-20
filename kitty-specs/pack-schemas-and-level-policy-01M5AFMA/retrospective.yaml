@@ -1,0 +1,195 @@
+schema_version: 1
+mission_id: 01M5AFMA4S5Z3MYPW08M9Z4808
+mission_slug: pack-schemas-and-level-policy-01M5AFMA
+mission_number: 3
+friendly_name: Pack schemas and pack-level policy in the domain
+mission_type: software-dev
+target_branch: feat/pack-schemas-and-level-policy
+created_at: '2026-10-20T04:33:42.011480+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-10-20T04:33:42.011480+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-004
+  category: doc
+  summary: analysis-report.md present with no recorded findings
+  evidence_refs:
+  - e-023
+  details: An analysis-report.md artifact is present and its frontmatter records zero findings with a resolved verdict —
+    the analysis raised nothing.
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-002
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-015
+- id: h-003
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-015
+not_helpful:
+- id: n-001
+  category: review_loop
+  summary: WP02 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-016
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-017
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP06 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-018
+  details: WP WP06 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-004
+  category: review_loop
+  summary: WP07 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-019
+  details: WP WP07 was sent back to an earlier lane with documented review feedback 2 time(s).
+- id: n-005
+  category: review_loop
+  summary: WP08 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-020
+  details: WP WP08 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-006
+  category: review_loop
+  summary: WP09 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-021
+  details: WP WP09 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-007
+  category: review_loop
+  summary: WP10 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-022
+  details: WP WP10 was sent back to an earlier lane with documented review feedback 2 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP01-domain-finding-model-and-pack-level-policy.md
+- id: e-006
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP02-canonical-pack-schemas.md
+- id: e-007
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP03-open-packs-catch-up-and-pin.md
+- id: e-008
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP04-validator-dependency-and-schema-loading.md
+- id: e-009
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP05-domain-vocabulary-and-graph-rules.md
+- id: e-010
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP06-validate-mode-domain-rules.md
+- id: e-011
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP07-adapter-load-path-and-contract-changes.md
+- id: e-012
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP08-validate-mode-and-open-packs-acceptance.md
+- id: e-013
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP09-divergence-register-and-adr-amendment.md
+- id: e-014
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP10-architecture-docs-glossary-write-model.md
+- id: e-015
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+- id: e-016
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5APS0YXNVRKMGQ13HNPBSYB
+- id: e-017
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5ASBKM67S6CHT3FPS9M427X
+- id: e-018
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5ATN687H08F5759RTRXJ0JN
+- id: e-019
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5AX5H2DW8WH52KH9CHBNEC9..01M5AXVF9PRXR6C7AWWBBFB0Y2
+- id: e-020
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5BP20Q1QXS6KSRTJEHZG5YA
+- id: e-021
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5AQMEEZRCG401D865VA52AE
+- id: e-022
+  kind: event_range
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/status.events.jsonl
+  range: 01M5AYZ4N3JYGD40TG74X09K47..01M5AZB1YCXNQH2E4DKCWXDQPF
+- id: e-023
+  kind: file
+  path: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/analysis-report.md
+generator_version: '1.0'
+provenance_history: []
