@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-20T20:03:02.896689Z",
+      "decision_id": "01M5DEJ13GDY45JDQPYYRFZT1S",
+      "final_answer": "Semantic/model round-trip: re-parsing the written output yields an equal domain model (parse(write(parse(x))) == parse(x)). No promise of byte-identical text, comment or key-order preservation.",
+      "input_key": "roundtrip_fidelity",
+      "mission_id": "01M5DEH8FJ0GY7YR1DGMVW1F3W",
+      "mission_slug": "pack-roundtrip-io-01M5DEH8",
+      "opened_by": "cli",
+      "options": [
+        "Semantic/model round-trip: re-parsing the written output yields an equal domain model",
+        "Byte-identical YAML: output is textually identical to the input files",
+        "Canonical form: output normalized to a defined canonical YAML, stable on re-round-trip"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "What must 'faithful write-back' guarantee for a parsed-then-written pack?",
+      "rationale": null,
+      "resolved_at": "2026-10-20T20:04:13.510322Z",
+      "resolved_by": null,
+      "slot_key": "specify.roundtrip.fidelity",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-20T20:04:14.994747Z",
+      "decision_id": "01M5DEM7GJ9FZDXBEMMN0BHD0G",
+      "final_answer": "Descriptor + one low-complexity leaf artifact kind (tactic). Round-trip proven via a repository port in the domain with a filesystem adapter in infra, exercised for both fetch and write of existing elements. Graph shards, relationships, and the domain graph shape are DEFERRED (future creed/values epic; careful cross-onion-layer modeling). Excluded as needing modeling work: glossary, mission-step-contract, agent-profile, asset. Tactic 'references' carried as an opaque ordered id list, not modeled as domain relationships.",
+      "input_key": "content_scope",
+      "mission_id": "01M5DEH8FJ0GY7YR1DGMVW1F3W",
+      "mission_slug": "pack-roundtrip-io-01M5DEH8",
+      "opened_by": "cli",
+      "options": [
+        "Descriptor + graph documents (the existing reader/writer pair)",
+        "Whole pack: descriptor plus every artifact kind the schemas define",
+        "Descriptor only"
+      ],
+      "origin_flow": "specify",
+      "other_answer": true,
+      "question": "Which pack content does the round-trip cover?",
+      "rationale": null,
+      "resolved_at": "2026-10-20T20:08:28.920951Z",
+      "resolved_by": null,
+      "slot_key": "specify.roundtrip.content-scope",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5DEH8FJ0GY7YR1DGMVW1F3W",
+  "version": 1
+}

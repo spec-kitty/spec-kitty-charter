@@ -1,0 +1,23 @@
+{
+  "baseline_merge_commit": "9ad7cd2f9f785d2b90d3d411d3c4691bbbbb8a19",
+  "contracts": "none",
+  "contracts_rationale": "No external API surface; the repository port is an internal domain interface captured in data-model.md. C-003 forbids REST/GraphQL changes.",
+  "created_at": "2026-10-20T20:02:37.698603+00:00",
+  "flattened": true,
+  "friendly_name": "Pack parse/write-back round-trip",
+  "merged_at": "2026-10-20T21:16:38.492292+00:00",
+  "merged_commit": "e0e02d9b278afa68fa1654929a882d2af0593b70",
+  "mid8": "01M5DEH8",
+  "mission_id": "01M5DEH8FJ0GY7YR1DGMVW1F3W",
+  "mission_number": 4,
+  "mission_slug": "pack-roundtrip-io-01M5DEH8",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The charter offering service has pack domain models (CharterPack, PackContents, PackDescriptor) and reader/writer adapter scaffolding, but no proven end-to-end parse-to-model-to-write-back path. This mission delivers that narrow round-trip vertical over the local filesystem, with faithful round-trip as the core invariant, leaving pack sources, trust and the distribution surface to the paused design mission.",
+  "purpose_tldr": "Read a pack's YAML into the charter domain models and write it back faithfully, over the schemas #137 landed.",
+  "slug": "pack-roundtrip-io-01M5DEH8",
+  "status_phase": "1",
+  "target_branch": "feat/pack-roundtrip-io",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-20T20:51:26.002136+00:00"
+}

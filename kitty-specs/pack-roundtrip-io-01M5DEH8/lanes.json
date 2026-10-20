@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "mission_slug": "pack-roundtrip-io-01M5DEH8",
+  "mission_id": "01M5DEH8FJ0GY7YR1DGMVW1F3W",
+  "mission_branch": "kitty/mission-pack-roundtrip-io-01M5DEH8",
+  "target_branch": "feat/pack-roundtrip-io",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackDescriptor.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackElementRepository.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackElementViolation.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLocator.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackSnapshot.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Tactic.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/TacticReference.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/TacticStep.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/FilesystemPackElementRepository.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackDescriptorReader.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/PackDescriptorWriter.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/TacticReader.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/TacticWriter.java",
+        "service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/YamlDumpEmitter.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackDescriptorReaderTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackElementRoundTripTest.java",
+        "service/adapter-out-yaml/src/test/java/ai/speckitty/charter/yaml/PackElementWriteSafetyTest.java",
+        "service/adapter-out-yaml/src/test/resources/roundtrip-fixtures/**",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/HexagonalArchitectureTest.java",
+        "service/charter-service/src/test/java/ai/speckitty/charter/service/archsample/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-10-20T20:42:50.975629+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "892e9fb19509d6ca6955f89420b77d4c77742332"
+}

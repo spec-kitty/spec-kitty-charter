@@ -1,0 +1,17 @@
+{
+  "rows": {
+    "#6372": {
+      "evidence_ref": "spec.md C-005: vertical is deliberately independent of core #6372 and must not pre-empt the paused pack-registration-distribution mission; no WP in this mission addresses it",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

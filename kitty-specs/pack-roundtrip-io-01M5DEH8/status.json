@@ -1,0 +1,72 @@
+{
+  "event_count": 21,
+  "last_event_id": "01M5DJRP377CXG97DKJBVFDN4D",
+  "materialized_at": "2026-10-20T21:16:35.303446+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-roundtrip-io-01M5DEH8",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5DJRMMXCRE4TFF1MK9S3JYP",
+      "last_transition_at": "2026-10-20T21:16:33.821389+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-roundtrip-io-01M5DEH8-coord/kitty-specs/pack-roundtrip-io-01M5DEH8/tasks/WP01-domain-models-and-port/review-cycle-1.md",
+        "reference": "review-cycle://pack-roundtrip-io-01M5DEH8/WP01-domain-models-and-port/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 3558578,
+      "shell_pid_created_at": "1792529483.45"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5DJRNBN2YX2F7G4AM5CNTCF",
+      "last_transition_at": "2026-10-20T21:16:34.549054+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-roundtrip-io-01M5DEH8-coord/kitty-specs/pack-roundtrip-io-01M5DEH8/tasks/WP02-filesystem-adapter/review-cycle-1.md",
+        "reference": "review-cycle://pack-roundtrip-io-01M5DEH8/WP02-filesystem-adapter/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 3563751,
+      "shell_pid_created_at": "1792529858.59"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5DJRP377CXG97DKJBVFDN4D",
+      "last_transition_at": "2026-10-20T21:16:35.303446+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-roundtrip-io-01M5DEH8-coord/kitty-specs/pack-roundtrip-io-01M5DEH8/tasks/WP03-roundtrip-and-layering-tests/review-cycle-1.md",
+        "reference": "review-cycle://pack-roundtrip-io-01M5DEH8/WP03-roundtrip-and-layering-tests/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 3569826,
+      "shell_pid_created_at": "1792530422.16"
+    }
+  }
+}
