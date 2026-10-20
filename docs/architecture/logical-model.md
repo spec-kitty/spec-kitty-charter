@@ -222,8 +222,12 @@ The DRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it 
 | `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair (two artifacts joined by a negative `impacts`). A pair is resolved only when an active artifact reconciles both sides. |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 
-An edge endpoint is either a URN `<kind>:<id>` or a bare id that the same fragment's `nodes:`
-block declares. Anything else is refused at merge time as `unresolved_edge_endpoint`.
+An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
+is written as a URN too. A value that is not a URN is refused as `drg_schema_error` by the
+schema's URN pattern, and `unresolved_edge_endpoint` is no longer raised (DIV-007). The
+schemas are in
+[`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas);
+the authored files are drawn in the [pack write model](/architecture/descriptor-schemas/#pack-write-model).
 
 Core still writes `in_tension_with` until its migration lands. The contract has only `impacts`
 from 1.0, and core's seam maps an `in_tension_with` edge to a negative `impacts` edge until then

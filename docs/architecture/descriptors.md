@@ -18,12 +18,21 @@ audience:
 # Descriptors
 
 A **descriptor** is a YAML file that declares one charter component. This page lists each
-descriptor kind. Core validates them with the YAML schemas in its `src/charter/offering/schemas/` and the Pydantic models in its `src/charter/offering/` (core is [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)); when the charter contract lands here, they become part of it. The concepts behind them are in [Logical model](/architecture/logical-model/);
-entity diagrams of the schemas are in [Descriptor schemas](/architecture/descriptor-schemas/).
-"Required" lists the fields core's schema requires; "key fields" adds the ones most
-descriptors carry.
+descriptor kind. The structural authority is the set of JSON Schemas in
+[`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas),
+imported from core's models and owned here ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/));
+this page explains them and does not restate them. Where this page and a schema disagree about structure, the schema
+wins. Core ([`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)) stays the oracle for
+governance content, and every deliberate difference is in the
+[Divergence register](/conformance/divergence-register/). The concepts behind the files are in
+[Logical model](/architecture/logical-model/); entity diagrams are in
+[Descriptor schemas](/architecture/descriptor-schemas/), and the authored files and how they
+nest are drawn in the pack write model below.
+"Required" lists the fields the schema requires; "key fields" adds the ones most descriptors carry.
 
-> **Status:** exists in core; this repository holds no descriptor schemas yet. [What the labels mean](/#status).
+![Pack write model](diagrams/pack-write-model.svg)
+
+> **Status:** the schemas exist here and the service's load path validates against them. [What the labels mean](/#status).
 
 ## Where descriptors live
 
@@ -58,10 +67,11 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | Field | Meaning |
 |---|---|
 | `pack_id` | ULID, the pack's stable identity |
-| `pack_version` | semantic version of the pack content (built-in) |
+| `pack_version` | semantic version of the pack content; required at every level (open question 13; DIV-004) |
 | `name` | human handle |
 | `parent_pack` | parent pack, or `null` for a root pack |
-| `pack_level` | `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
+| `pack_level` | optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
+| `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 
@@ -70,6 +80,13 @@ points to the pack's mutability policy file at the pack root, so a reader finds 
 concern file from the main pack file, and a pack that has a policy file declares the minimum
 core version that understands it. Older CLIs then refuse the pack instead of ignoring its
 locks. Field names are fixed when the schema lands.
+
+An explicit `null` is refused ("must be a string") for `pack_id`, `pack_version`, `name` and
+`pack_level`. `parent_pack`, `requires_core`, `active_charter` and `pack_drg` accept `null`, as
+well as a string. Only the fields the schema marks optional may be left out. A key the schema does not
+declare is tolerated (DIV-005): the pack still loads and the pack listing carries the warning
+`pack_unknown_key`, naming the key. Retired core fields such as `accompanies_doctrine_pack`
+are unknown keys like any other (DIV-006).
 
 DRG: none directly; it scopes the nodes the pack contributes.
 
@@ -87,11 +104,13 @@ One shard per node kind that has built-in nodes, at the built-in pack root (`dir
 | Field | Meaning |
 |---|---|
 | `schema_version` | `"1.0"` |
-| `generated_at`, `generated_by` | provenance of the shard |
+| `generated_at` | required provenance of the shard |
+| `generated_by` | optional here, though core requires it (DIV-009) |
 | `nodes[]` | `urn` (`<kind>:<id>`), `kind` (a `NodeKind`), `label` |
-| `edges[]` | `source`, `target`, `relation`, optional `when`, `reason` |
+| `edges[]` | `source`, `target` (both URNs), `relation`, optional `when`, `reason`; `impacts` (a number from -1 to 1) on, and only on, an `impacts` edge |
 
-Unknown keys refuse the document (`DRGGraphSchemaError`).
+Unknown keys refuse the document, with the refusal `drg_schema_error`. So does an endpoint
+that is not a URN: there are no bare ids (DIV-007).
 
 ### `drg/fragment.yaml` — org graph fragment
 
@@ -99,12 +118,42 @@ The single graph file of an org pack.
 
 | Field | Meaning |
 |---|---|
-| `pack_name`, `source_kind`, `source_ref` | where the pack comes from (for example `local_path`) |
-| `layer_index`, `provenance_marker` | the layer this fragment merges into (`org`) |
-| `nodes[]` | `id`, `kind` (plural form, for example `directives`), `title`, `body_path` to the descriptor file |
-| `edges[]` | as in the built-in shards; endpoints may be URNs or bare ids declared in `nodes` |
+| `nodes[]` | `id`, `kind` (the plural form, for example `directives`), `title`, `body_path` to the descriptor file |
+| `edges[]` | `source` and `target` (URNs), `relation`, optional `reason`; `impacts` on an `impacts` edge |
+
+A fragment has no header fields: core overwrites `pack_name`, `source_kind`, `source_ref`,
+`layer_index` and `provenance_marker` from the operator's configuration, so a fragment that
+carries one is refused as an unknown key (DIV-008). An org pack must ship the fragment, or the load
+refuses it with `pack_unreadable`. The `kind` of a fragment node has one name per concept:
+the plural of an artifact kind (`mission_step_contracts`, `anti_patterns`, `assets` and so on),
+or `mission_types` or `actions`. `mission_steps` and `mission_type` are refused (DIV-011).
 
 Edges in a fragment land in the same merged graph cascade reads.
+
+### Parse failures and the first line of a finding
+
+The adapter reads each file as a YAML event stream before it builds the document. A file that
+is not valid YAML is refused with a code that follows the file's kind: a graph shard or
+fragment with `drg_schema_error`, `pack.yaml` with `pack_unreadable`. The finding's first line
+says what was wrong, but only a graph shard or fragment finding carries the first line in its
+detail. A `pack.yaml` finding says only that `pack.yaml` of the pack is not valid YAML. Some
+first lines are fixed by the adapter:
+
+- "a mapping key is not a string";
+- "the document is nested too deeply" (the cap is 200 nested collections, counted over the
+  event stream before the document is composed);
+- "the document contains itself" (an anchor that refers to its own collection);
+- "a value is not a string, a number, a boolean or null" (a tag or type the schema cannot hold).
+
+Other first lines are still the YAML library's own wording, for example "Non scalar key is
+detected but it is not configured to be allowed.", and the raw exception text for tags such as
+`!!seq`, `!!set [a]` and `!!int abc`. Treat that wording as unstable and read the file and
+place, not the sentence.
+
+A number that is not finite (`.nan`, `.inf`, `1e400`) is refused wherever the schema asks for a
+number, and reported as `NaN`, `Infinity` or `-Infinity`, not as written in the file, so `.inf` and `1e400`
+both read `Infinity`; a free-form place accepts it. The
+`impacts` strength keeps the domain's own text, for example `'impacts' Infinity is outside [-1, 1]`.
 
 ### `org-charter.yaml` — org charter policy
 

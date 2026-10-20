@@ -1,0 +1,104 @@
+@startuml pack-write-model
+' Sources:
+'   contracts/packs/schemas/{pack-descriptor,graph-shard,org-fragment,org-charter,asset}.schema.json
+'   contracts/packs/file-kinds.yaml (node kinds, fragment kind vocabulary)
+'   service/charter-domain: PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
+' Edges carry no provenance: it is not authored and the schema refuses it (ADR-0017, DIV-019); a shard node may.
+' charter.schema.json validates the project's charter.yaml, not a pack file, so it is not drawn.
+' Notation: + required, - optional, [0..1] / [0..*] multiplicity.
+!include _style.iuml
+title Pack write model: the authored pack files
+
+class Pack <<directory>> {
+  one per Charter Pack
+}
+class PackDescriptor <<pack.yaml>> {
+  + pack_id : string [ULID]
+  + pack_version : string [every level]
+  + name : string
+  - parent_pack : string
+  - pack_level : PackLevel
+  - requires_core : string [PEP 440]
+  - active_charter : path
+  - pack_drg : path
+  unknown keys : warning pack_unknown_key
+}
+enum PackLevel {
+  built-in
+  org
+  project
+}
+class GraphShard <<*.graph.yaml>> {
+  + schema_version : "1.0"
+  + generated_at : string
+  - generated_by : string
+}
+class OrgFragment <<drg/fragment.yaml>> {
+  required for org packs
+  no header fields
+}
+class ShardNode {
+  + urn : Urn
+  + kind : NodeKind
+  - label : string
+  - provenance : string
+  - tags : string[]
+}
+class FragmentNode {
+  + id : string
+  + kind : FragmentKind
+  - title : string
+  - body_path : path
+}
+class Edge {
+  + source : Urn
+  + target : Urn
+  + relation : Relation
+  - reason : string
+  - when : string [shards only]
+  - impacts : number [-1..1, only on impacts]
+}
+class ArtifactFile <<*.directive.yaml, *.tactic.yaml,\n*.styleguide.yaml, *.toolguide.yaml,\n*.paradigm.yaml, *.procedure.yaml,\n*.agent.yaml, *.step-contract.yaml>> {
+  + id : string [profile-id for *.agent.yaml]
+  one schema per kind
+}
+class AssetManifest <<*.asset.yaml>> {
+  + id : string
+  + path : path [inside assets/]
+  + mime : string
+  - title : string
+}
+class OrgCharter <<org-charter.yaml>> {
+  - org_name : string
+  - skill_namespace : string
+  - required_<plural> : string[]
+}
+enum FragmentKind {
+  directives, tactics, styleguides, toolguides
+  paradigms, procedures, agent_profiles
+  mission_step_contracts, glossary_packs, skills
+  anti_patterns, assets, templates
+  mission_types, actions
+}
+
+Pack "1" *-- "0..1" PackDescriptor
+Pack "1" *-- "0..*" GraphShard
+Pack "1" *-- "0..1" OrgFragment : org packs: 1
+Pack "1" *-- "0..*" ArtifactFile
+Pack "1" *-- "0..*" AssetManifest
+Pack "1" *-- "0..1" OrgCharter
+PackDescriptor ..> PackLevel
+GraphShard "1" *-- "0..*" ShardNode
+GraphShard "1" *-- "0..*" Edge
+OrgFragment "1" *-- "0..*" FragmentNode
+OrgFragment "1" *-- "0..*" Edge
+FragmentNode ..> FragmentKind
+
+note bottom of FragmentKind
+  One name per concept (R14):
+  mission_step_contracts, not mission_steps;
+  mission_types, not mission_type.
+  Refused: mission_steps, mission_type,
+  glossary, glossary_scope.
+end note
+@enduml

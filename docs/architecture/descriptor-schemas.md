@@ -1,8 +1,8 @@
 ---
 title: Descriptor schemas
-description: PlantUML views of the charter descriptor kinds — the YAML files a Charter Pack ships — their fields, enums and the DRG edges between them, derived from the core schemas and models.
+description: PlantUML views of the charter descriptor kinds, their fields, enums and DRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-10-14T00:00:00Z
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -16,17 +16,41 @@ audience:
 
 # Descriptor schemas
 
-These diagrams describe the descriptor files the charter offering reads today in the
-core `spec-kitty` repository. They are derived from the schema and model sources cited
-in each section, not designed here. Notation in the field diagrams: `+` required, `-`
+The structural authority for every descriptor file is the set of JSON Schemas in
+[`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas)
+(14 schemas), imported from core's models and owned here under
+[ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and
+[ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/); every change made on import is
+listed in `contracts/packs/VENDORED.md`. The service's YAML adapter validates against them. The authored
+files and how they nest are drawn in the [pack write model](#pack-write-model). The other diagrams on this
+page were drawn from core's models and sources (cited in each section) before the schemas
+landed; where one differs from a schema, the schema wins. Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
 
 All `src/charter/...` and `packs/...` paths on this page are in core,
 [`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty).
 
-These diagrams are derived from [Descriptors](/architecture/descriptors/); where the two
-disagree, that page wins. For `pack.yaml`, core's `src/charter/diagrams/pack-descriptor-model.puml`
-is authoritative and the view here is derived from it.
+These diagrams are explained by [Descriptors](/architecture/descriptors/). Where a diagram
+and a schema disagree about structure, the schema wins; where this page and
+[Descriptors](/architecture/descriptors/) disagree about meaning, that page wins. Known older
+details in the core-derived diagrams: `pack_version` is required at every level, not only for
+`built-in` (DIV-004); `pack_level` is optional; edge endpoints are URNs only (DIV-007); the
+org fragment has no header fields (DIV-008); and the node-kind names follow the
+[pack write model](#pack-write-model). See the
+[Divergence register](/conformance/divergence-register/).
+
+## Pack write model
+
+![Pack write model](diagrams/pack-write-model.svg)
+
+The authored pack files at C4 code level: the pack descriptor, graph shards, the org fragment,
+nodes, edges, artifact files, the asset manifest and the org charter, with their
+multiplicities, drawn from the schemas and the domain records. Source:
+`diagrams/pack-write-model.puml`. A node of a fragment names its kind with one canonical
+plural (`mission_step_contracts`, not `mission_steps`); see [Domain](/context/domain/). An artifact
+file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may carry an optional
+`provenance`; an edge may not. Of the 14 schemas, `charter.schema.json` is not drawn: it validates
+the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`).
 
 ## Kinds, containment and edges
 
@@ -81,7 +105,7 @@ files are rendered from them because the docs site renders diagrams client-side 
 no PlantUML step. After editing a source, run:
 
 ```bash
-cd docs/architecture/diagrams && plantuml -tsvg descriptor-*.puml
+cd docs/architecture/diagrams && plantuml -tsvg descriptor-*.puml pack-write-model.puml
 ```
 
 `_style.iuml` holds the shared styling and is included by every diagram.
