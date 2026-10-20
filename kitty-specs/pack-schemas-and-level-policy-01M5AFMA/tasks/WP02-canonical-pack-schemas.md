@@ -80,9 +80,8 @@ Read first:
 - [spec.md](../spec.md): FR-004, FR-005 and rulings R1-R16;
 - [plan.md](../plan.md): "Vocabulary kept in sync", "Schema loading" and P2, P5, P9;
 - [research.md](../research.md): R1, R3 and R4;
-- the research scratch is **reference only**, never an input: the raw exports in
-  `/tmp/claude-0/-home-user-spec-kitty-charter/e4c21583-84af-5c92-92fe-19a07865220a/scratchpad/implementer/schemas/`
-  and the URN pattern drafts in `…/scratchpad/r-core/urn-schema-defs.json`. This WP regenerates
+- the research scratch is **reference only**, never an input: the raw exports
+  and the URN pattern drafts in the implementer's local scratch. This WP regenerates
   its own export and owns its own classifier, so nothing from the scratch is committed or
   required.
 
