@@ -130,31 +130,56 @@ the conventions in [Development conventions](/development/).
 | Method | Path | Proposed operationId | Purpose | Inventory issue |
 |---|---|---|---|---|
 | `GET` | `/` | `getApiRoot` | The API root: links to every top-level resource | — |
-| `GET` | `/packs/{packId}` | `getPack` | One pack: descriptor, source, counts, diagnostics | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}` | `getPack` | One pack: today's `PackSummary` fields | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
 | `GET` | `/packs/{packId}/artifacts` | `listPackArtifacts` | The pack's artifacts, `?kind=`, paged with `PageInfo` | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96), [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106) (glossary) |
 | `GET` | `/packs/{packId}/artifacts/{kind}/{artifactId}` | `getPackArtifact` | One artifact with its body | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
 | `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}/assets` | `listPackAssets` | The pack's asset paths | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
 | `GET` | `/packs/{packId}/assets/{path}` | `getPackAsset` | One asset file | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
-| `POST` | `/packs` | `registerPack` | Register a pack (ADR-0005); `201` with `Location` | — |
+| `POST` | `/packs` | `registerPack` | Register a pack (ADR-0005); `201` with `Location` (needs the lint amendment of ADR-0020 D9) | — |
 | `GET` | `/packs/{packId}/resolution` | `getPackResolution` | Read-only resolution state (ADR-0007 decision 7) | — |
 | `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
 
-`{packId}` is the pack's `pack_id` ULID. The composition of the charter (which packs are in force
-for this worktree, in which merge order, and the merged graph) is a separate resource, `/charter`,
-still to be designed ([#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97),
-[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)).
+`{packId}` is the pack's `pack_id` ULID. The merged offering of the packs in force is the
+`/offering` layer below.
 
 **Before the 1.0 tag** ([#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)): the
-closed `Links` component, `GET /`, and a required `_links` on every existing response
-(`PackListing`, `PackSummary`, the refresh answer, `ActionContext`, `ServiceInfo`). These change
-closed response schemas, so they are breaking after the tag. The per-pack operations are new
-paths and can follow additively.
+`Links` component, `GET /`, and a required `_links` on every existing success schema
+(`PackListing`, which the refresh also answers, `PackSummary`, `ActionContext`, `ServiceInfo`).
+These change closed response schemas, so they are breaking after the tag. With open relation keys
+(ADR-0019 D3), the per-pack operations and their relations can follow additively.
+
+## Proposed: offering and activations (ADR-0020)
+
+[ADR-0020](/adr/0020-offering-and-activations/) (Proposed) makes `/offering` the charter: the
+merged offering of the packs in force. An activation is a document the service stores under an
+opaque `activationId`; the service never reads a project's files. The design, with the request
+sequences, is in [Offering and activation](/architecture/offering-and-activation/).
+
+| Method | Path | Purpose | Inventory issue |
+|---|---|---|---|
+| `GET` | `/offering` | The packs in force, in merge order, and the offering's links | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/offering/artifacts`, `/offering/artifacts/{kind}/{artifactId}` | Merged artifacts with policy facts and provenance | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) |
+| `GET` | `/offering/graph`, `/offering/presets`, `/offering/kinds` | The merged graph, offered presets, the kind taxonomy | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97), [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) |
+| `GET` | `/offering/mission-types…` | Mission types and the action index | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) |
+| `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
+| `POST` | `/offering/activations` | Create an empty activation; the service mints the id. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44) |
+| `PUT`, `GET`, `DELETE` | `/offering/activations/{activationId}` | Register or replace, read, remove an activation. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44), [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
+| `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | Change one choice, with `If-Match`. Reserved | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
+| `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | The effective reads (R9). Reserved; R9 gates cutover stage 3 | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
+
+**Before the 1.0 tag:** the move of the action-context read; every activation operation declared
+in full with `x-reserved` and a `501`; the `ActivationConfig`, `Activation`, `ActivationChange`
+and skipped-report schemas; `ETag`, `If-Match` and `If-None-Match`; the activation refusal codes
+and `CharterRefusal`'s `pack` and `violations`; and the hosted-first reshape of the security
+scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
 
 ## Planned write surface (later)
 
-Write operations come only after the read stages, one at a time: activation plan and commit,
-charter document save, compile. See [Strangler transition](/architecture/strangler-transition/).
+The activation writes are reserved in 1.0 and built before cutover stage 3 (ADR-0020). The other
+writes come after the read stages, one at a time: charter document save and compile. See
+[Strangler transition](/architecture/strangler-transition/).
 
 ## Error model
 

@@ -56,6 +56,9 @@ The design is grounded in three core ADRs and this repository's own records:
   trust and lockfile model, the storage ports, and the API surface.
 - [Packs resource model](/architecture/packs-resource-model/) — the proposed REST resource tree for
   packs and their contents, the API root and the hypermedia links (ADR-0019, Proposed).
+- [Offering and activation](/architecture/offering-and-activation/) — the proposed `/offering`
+  layer, the activation documents the service stores and how core registers or builds one
+  (ADR-0020, Proposed).
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,

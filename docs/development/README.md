@@ -28,5 +28,8 @@ operations themselves are in the [service contract](/api/service-contract/).
 - [HTTP status codes](/development/http-status-codes/) — which status this API answers with, what
   each one means, its body and whether a client may retry.
 
-> **Status:** the REST conventions and status codes describe the contract as it is. The `Links`
-> component and the root resource are proposed by [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) and are not in the contract yet.
+> **Status:** the REST conventions and status codes describe the contract as it is, and mark
+> what is proposed. The `Links` component and the root resource are proposed by
+> [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/); the offering, the activation
+> resources, conditional requests and the hosted-first reshape by
+> [ADR-0020](/adr/0020-offering-and-activations/). None is in the contract yet.
