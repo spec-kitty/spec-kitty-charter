@@ -143,15 +143,17 @@ final class PackFileKind {
      * @return how the path is handled
      */
     Classification classify(String path) {
-        for (FileRule rule : fileRules) {
-            if (glob(rule.match()).matcher(path).matches()) {
+        // `compiled` holds the files rules, then the exclusions, each compiled once when the table was built.
+        for (int i = 0; i < compiled.size(); i++) {
+            if (!compiled.get(i).pattern().matcher(path).matches()) {
+                continue;
+            }
+            if (i < fileRules.size()) {
+                FileRule rule = fileRules.get(i);
                 return new Mapped(rule.schema(), SCHEMA_DIR + rule.schema() + SCHEMA_SUFFIX);
             }
-        }
-        for (ExclusionRule rule : exclusionRules) {
-            if (glob(rule.match()).matcher(path).matches()) {
-                return new Excluded(rule.match(), rule.reason());
-            }
+            ExclusionRule rule = exclusionRules.get(i - fileRules.size());
+            return new Excluded(rule.match(), rule.reason());
         }
         return Unclassified.INSTANCE;
     }
