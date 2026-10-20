@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -65,16 +66,28 @@ public final class FileSystemPackInspector implements PackInspector {
     /** The fixed length of a chain of symlinks that is followed; as long as the kernel's, which refuses past 40. */
     private static final int MAX_LINKS = 40;
 
-    /** The mapped schema kinds whose files declare an {@code id} (an agent profile declares {@code profile-id}). */
-    private static final Set<String> ARTIFACT_KINDS = Set.of(
-            "directive",
-            "tactic",
-            "styleguide",
-            "toolguide",
-            "paradigm",
-            "procedure",
-            "mission-step-contract",
-            "asset");
+    /**
+     * The schema kinds a {@code files} rule of {@code file-kinds.yaml} maps whose schema declares an {@code id} (an
+     * agent profile declares {@code profile-id}, so it is not one). Derived from the table and the schemas, so a kind
+     * added to either is one here too, and built on first use: it needs the schemas, which are built lazily.
+     */
+    private static final class ArtifactKinds {
+        static final Set<String> KINDS = derive();
+
+        private static Set<String> derive() {
+            PackSchemas schemas = PackSchemas.bundled();
+            return PackFileKind.bundled().fileRules().stream()
+                    .map(PackFileKind.FileRule::schema)
+                    .distinct()
+                    .filter(kind -> schemas.declaredProperties(kind).contains("id"))
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+    }
+
+    /** The artifact schema kinds, for the tests. */
+    static Set<String> artifactKinds() {
+        return ArtifactKinds.KINDS;
+    }
 
     /** An inspector; it keeps no state. */
     public FileSystemPackInspector() {}
@@ -187,7 +200,7 @@ public final class FileSystemPackInspector implements PackInspector {
         }
 
         private void factsOf(String file, String kind, Object document) {
-            if (!ARTIFACT_KINDS.contains(kind) || !(document instanceof Map<?, ?> map)) {
+            if (!ArtifactKinds.KINDS.contains(kind) || !(document instanceof Map<?, ?> map)) {
                 return;
             }
             if ("mission-step-contract".equals(kind)) {
