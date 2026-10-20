@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Architecture
 description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: Architecture
 kind: Hub
 audience:
@@ -54,6 +54,8 @@ The design is grounded in three core ADRs and this repository's own records:
 - [Pack registration and distribution](/architecture/pack-registration-distribution/) — how the service
   registers, stores, verifies and distributes packs of every level: the layering, the four source kinds, the
   trust and lockfile model, the storage ports, and the API surface.
+- [Packs resource model](/architecture/packs-resource-model/) — the proposed REST resource tree for
+  packs and their contents, the API root and the hypermedia links (ADR-0019, Proposed).
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,

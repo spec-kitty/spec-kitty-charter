@@ -47,6 +47,12 @@ sections:
     type: API
     purpose: Where the charter service answers differently from core on purpose, in one divergence register.
 
+  - id: development
+    label: Development
+    order: 85
+    type: Guide
+    purpose: The conventions contributors follow when they change the API and the service.
+
   - id: guides
     label: Guides
     order: 90
