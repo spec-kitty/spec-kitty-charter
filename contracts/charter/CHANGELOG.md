@@ -5,12 +5,15 @@ version is the `info.version` of `openapi.yaml`. The contract scenarios under `s
 half of the contract, and an OpenAPI diff cannot see them, so every scenario change gets a line
 here too.
 
-## 1.0.0-SNAPSHOT
+## 0.1.0-SNAPSHOT
 
 The first contract version core will vendor, not yet released: an unreleased contract version
-carries the `-SNAPSHOT` suffix. It replaces the unreleased `0.1.0-SNAPSHOT` draft that landed
-before the operator rulings of 2026-10-18. `Added` lists what this version holds that the draft
-did not; `Changed` lists what differs from the draft.
+carries the `-SNAPSHOT` suffix. A first `0.1.0-SNAPSHOT` draft landed before the operator rulings
+of 2026-10-18, which renumbered it `1.0.0-SNAPSHOT`. The operator ruling of 2026-10-20 (ADR-0022)
+withdrew that label: the contract is published as 0.x while it iterates with core's generated
+client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` again. No release
+was cut under either label. `Added` lists what this version holds that the first draft did not;
+`Changed` lists what differs from that draft.
 
 ### Added
 
@@ -94,7 +97,15 @@ did not; `Changed` lists what differs from the draft.
 
 ### Changed
 
-- `info.version` is `1.0.0-SNAPSHOT` (was `0.1.0-SNAPSHOT`).
+- `info.version` is `0.1.0-SNAPSHOT` (was `1.0.0-SNAPSHOT`; ADR-0022). The examples of
+  `ServiceInfo.contractVersion` read `0.1.0` (was `1.0.0`; description and example only, no
+  schema change).
+- The release gate (`ReleaseGate`) treats a 0.x minor as the breaking boundary while the major
+  version is 0 (ADR-0022): the baseline is the newest release of the same `0.y`, a minor bump
+  (`0.y` to `0.(y+1)`) needs a `### Breaking` subsection, and a patch is compared against the
+  newest release of its minor and fails on a breaking change. On a minor bump the build reports
+  what breaks against the previous minor, for information only. From 1.0.0 the major version is
+  the boundary, as before.
 - The three action-context scenarios that answer `200` also expect `depth` and `impacts: null`
   on every entry, and compare the body apart from `governanceFingerprint` (ADR-0009).
 - Every `CharterRefusalCode` and `DiagnosticCode` value is snake_case on the wire:

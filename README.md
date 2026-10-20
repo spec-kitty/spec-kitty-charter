@@ -18,7 +18,7 @@ direction, the design, the decisions, the contract and the first slice of the se
 
 | Part | What it is | State |
 |---|---|---|
-| [`contracts/charter/`](contracts/charter/openapi.yaml) | OpenAPI 3.1 contract, the single source of every charter data transfer object (DTO), and its [contract scenarios](contracts/charter/scenarios/), checked by the charter's own [lint ruleset](contracts/lint/README.md), bundle and breaking-change check | `1.0.0-SNAPSHOT`, unreleased: two read paths |
+| [`contracts/charter/`](contracts/charter/openapi.yaml) | OpenAPI 3.1 contract, the single source of every charter data transfer object (DTO), and its [contract scenarios](contracts/charter/scenarios/), checked by the charter's own [lint ruleset](contracts/lint/README.md), bundle and breaking-change check | `0.1.0-SNAPSHOT`, unreleased: two read paths |
 | [`service/`](service/) | Hexagonal Java 25 / Spring Boot 4 service, one per worktree, loopback only; Gradle convention plugins in [`build-logic/`](build-logic/) | skeleton: domain, read app, REST in, YAML out, behind the quality gates below |
 | Conformance corpus | Fixtures the Python and Java implementations must both pass | next ([roadmap](docs/plans/roadmap.md) step 3) |
 | Python charter | Stays in core behind `charter.offering.api` as the oracle while Java replaces it ([ADR-0008](docs/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts.md)) | not moved here |
