@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -39,8 +40,8 @@ import tools.jackson.databind.node.StringNode;
  * keyword the dialect does not know is refused when the schema loads instead of being silently ignored. The schema
  * {@code $id} prefix is mapped onto the classpath, and the loader allows that prefix and the bundled 2020-12
  * metaschema IRIs only, so no schema is ever fetched over the network. Every schema is checked against the
- * metaschema, compiled and cached when the set is built; a defect there is a build or configuration fault and throws
- * {@link IllegalStateException} naming the file, never a pack finding.
+ * metaschema, compiled and cached when the set is built; a defect there, a document that is not JSON included, is a
+ * build or configuration fault and throws {@link IllegalStateException} naming the file, never a pack finding.
  *
  * <p>Validation returns facts ({@link SchemaViolation}); the validator's localized message text is never read.
  */
@@ -332,6 +333,8 @@ final class PackSchemas {
             return MAPPER.readTree(new String(in.readAllBytes(), StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } catch (JacksonException e) {
+            throw new IllegalStateException(file + " is not valid JSON: " + e.getOriginalMessage(), e);
         }
     }
 
