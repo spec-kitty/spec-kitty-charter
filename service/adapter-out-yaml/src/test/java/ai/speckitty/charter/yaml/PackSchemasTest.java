@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.domain.PackContents.SchemaViolation;
 import com.networknt.schema.InvalidSchemaException;
+import com.networknt.schema.InvalidSchemaRefException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -145,7 +146,9 @@ class PackSchemasTest {
     void aDanglingLocalRefIsRefusedAtLoad() {
         assertThatThrownBy(() -> fixture("dangling-ref", "x"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("x.schema.json");
+                .hasMessageContaining("x.schema.json")
+                .hasRootCauseInstanceOf(InvalidSchemaRefException.class)
+                .hasRootCauseMessage("Reference /$defs/missing cannot be resolved");
     }
 
     @Test
