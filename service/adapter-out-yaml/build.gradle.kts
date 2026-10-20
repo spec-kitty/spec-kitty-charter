@@ -71,6 +71,9 @@ tasks.test {
     // PlantedFilesTest reads the repository's conformance files. Both find the repository by this property.
     val schemaFiles = packContracts.dir("schemas")
     inputs.dir(schemaFiles).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("packSchemaFiles")
+    // PlantedFilesTest and DivergenceRegisterTest read the register in both forms.
+    val conformance = rootProject.layout.projectDirectory.dir("docs/conformance")
+    inputs.dir(conformance).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("conformanceDocs")
     systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
     // VocabularyEqualityTest checks that every load-path wire code is in the contract's code enums.
     val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
