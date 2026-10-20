@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -94,12 +95,17 @@ class PackSchemasTest {
     }
 
     @Test
-    void vendoredMdNamesEveryBundledSchemaFile() throws IOException {
-        String vendored = System.getProperty("charter.vendoredMd");
-        assertThat(vendored).as("system property charter.vendoredMd").isNotNull();
-        String text = Files.readString(Path.of(vendored));
-        for (String kind : bundledKinds()) {
-            assertThat(text).as(kind).contains("`" + kind + "`");
+    void everySchemaFileOfTheRepositoryIsListedInFileKinds() throws IOException {
+        String root = System.getProperty("charter.repositoryRoot");
+        assertThat(root).as("system property charter.repositoryRoot").isNotNull();
+        try (Stream<Path> files = Files.list(Path.of(root, "contracts/packs/schemas"))) {
+            List<String> onDisk = files.map(p -> p.getFileName().toString())
+                    .filter(name -> name.endsWith(".schema.json"))
+                    .map(name -> name.substring(0, name.length() - ".schema.json".length()))
+                    .toList();
+            assertThat(onDisk)
+                    .as("schema files in contracts/packs/schemas")
+                    .containsExactlyInAnyOrderElementsOf(bundledKinds());
         }
     }
 

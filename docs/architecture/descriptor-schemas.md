@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and DRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -18,10 +18,11 @@ audience:
 
 The structural authority for every descriptor file is the set of JSON Schemas in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas)
-(14 schemas), imported from core's models and owned here under
+(14 schemas), canonical here and edited in place under
 [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and
-[ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/); every change made on import is
-listed in `contracts/packs/VENDORED.md`. The service's YAML adapter validates against them. The authored
+[ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) (first imported from core's models;
+the import's changes are tabled in the
+[mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)). The service's YAML adapter validates against them. The authored
 files and how they nest are drawn in the [pack write model](#pack-write-model). The other diagrams on this
 page were drawn from core's models and sources (cited in each section) before the schemas
 landed; where one differs from a schema, the schema wins. Notation in the field diagrams: `+` required, `-`

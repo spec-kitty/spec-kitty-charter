@@ -349,10 +349,44 @@ it. `pack_level: null` used to load with a `pack_level_missing` diagnostic. An a
 schemas in `contracts/packs/schemas/` are canonical here and edited in place, and core pulls
 them. The one-time import tooling is deleted: `scripts/packs/sync_schemas.py` and
 `contracts/packs/VENDORED.md`. The import's changes C1-C16 stay recorded in this mission's
-research and plan and in git history.
+research ([Import changes C1-C16](#import-changes-c1-c16)) and in git history.
 
 **R21 (2026-10-20, operator, at the pre-PR review).** The vendored `packs/internal` copy keeps
 the four-file local edit main made in `19cc37f` (the validate-pr-body asset and its manifest, the
 fragment title and the semi-auto-delivery procedure). The edit goes upstream to open-packs; until
 the pin moves, `PROVENANCE.md` lists the delta and a test fails on any other difference from the
 pinned checkout.
+
+## Import changes C1-C16
+
+The record of the one-time import of core's pack models (R20 retired the import tooling,
+`scripts/packs/sync_schemas.py` and `contracts/packs/VENDORED.md`; the files are in git history
+before the commit `refactor(packs): the pack schemas are canonical here; retire the import tooling (R20)`).
+Origin: core commit `9554e7b26afe7a61519f7744d0147346ab36f197`, pydantic `2.14.1`, export call
+`Model.model_json_schema(mode="validation")` for each of the 14 models. The schemas in
+`contracts/packs/schemas/` are canonical here and edited in place; the table says what the import
+changed in the export. Divergence register entries cite these ids.
+
+| Id | Files | Change | Ruling |
+|---|---|---|---|
+| C1 | all 14 | Add `$schema` (Draft 2020-12) and `$id` (`https://schemas.spec-kitty.ai/charter/packs/<kind>.schema.json`); every `$ref` is local, every IRI ends in `.json` | R1, P5 |
+| C2 | all with nested objects | Every object schema with `properties` gets `additionalProperties: false`; free-form maps stay open. The export already closed 12 of 14 models; the transform closed 8 nested schemas of `agent-profile` and 13 of `charter` | spec open item 1 |
+| C3 | `graph-shard`, `org-fragment` | URN pattern `^(<node_kinds>):[A-Za-z0-9_/.-]+$` on every edge `source` and `target` and on the shard node `urn`; core's `glossary` and `glossary_scope` kinds are refused; a bare local id in a fragment is refused | R6, R15 |
+| C4 | `graph-shard` | Node `kind` is an enum of the 15 `node_kinds`; an `allOf` of `if kind == K then urn matches ^K:` per kind | R4 (research) |
+| C5 | `org-fragment` | Node `kind` is an enum of the 15 fragment plurals; node `id` gets `minLength: 1` and `^[A-Za-z0-9_/.-]+$`; `mission_steps` and `mission_type` refused, `actions` and `anti_patterns` accepted | R14, P9 |
+| C6 | `org-fragment` | `pack_name`, `source_kind`, `source_ref`, `layer_index` and `provenance_marker` removed (and `required` with them); the closed top level refuses them | R7 |
+| C7 | `graph-shard`, `org-fragment` | `Relation` enum is core's plus `impacts` (16 values, `in_tension_with` kept); the fragment edge `relation` becomes a `$ref` to it; no `extends` alias | P2, ADR-0009 D1; DIV-018 |
+| C8 | `graph-shard` | `generated_by` optional; `generated_at` stays required | R8 |
+| C9 | `pack-descriptor` | `pack_version` required at every level, a non-null string with `minLength: 1`; `pack_level` not required (an enum when present); top-level `additionalProperties: true` (unknown and retired keys are reported by the adapter) | R3, R4, R5, R13 |
+| C10 | `agent-profile`, `org-charter` | Coercions dropped: `roles` items get `^[a-z][a-z0-9_-]*$`; integers stay integers, a scalar `role` and `schema_version: "1"` are refused (the last three already held in the export) | R9 |
+| C11 | `directive` | Lenient adherence is an `if/then` on `enforcement == lenient-adherence` requiring a non-empty `explicit_allowances`; the `agent-profile` routing and concurrency bounds already held in the export | FR-005f |
+| C12 | `graph-shard`, `org-fragment` | Optional edge `impacts` of `type: number`; no range in the schema (the strength rule stays in the domain) | ADR-0009 D1; DIV-018 |
+| C13 | all | `anyOf [T, null]` kept as exported and collapsed in the domain; the one exception is `pack_version` (C9) | plan |
+| C14 | all | No pattern rewritten: the export's patterns already use only anchors, classes and alternation | R2 (research) |
+| C15 | `charter` | Takes C1 and C2 only | P7 |
+| C16 | `graph-shard` | Edge `provenance` removed: a merge-time marker core stamps, not authored data | P10; DIV-019 |
+
+Known difference (C7): the schema's `Relation` enum keeps the legacy `in_tension_with` (16 values)
+so existing graph documents still validate; the service's `Relation.java` has 15 and reads
+`in_tension_with` as `impacts` with strength -1. The vocabulary equality test allows exactly that
+one difference.

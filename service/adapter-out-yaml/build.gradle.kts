@@ -63,10 +63,11 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
 
 tasks.test {
     useJUnitPlatform { excludeTags("open-packs") }
-    // PackSchemasTest checks that VENDORED.md names every bundled schema, reading it from the repository.
-    val vendored = packContracts.file("VENDORED.md")
-    inputs.file(vendored).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("vendoredMd")
-    systemProperty("charter.vendoredMd", vendored.asFile.absolutePath)
+    // PackSchemasTest checks that every schema file in the repository is bundled and listed in file-kinds.yaml;
+    // PlantedFilesTest reads the repository's conformance files. Both find the repository by this property.
+    val schemaFiles = packContracts.dir("schemas")
+    inputs.dir(schemaFiles).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("packSchemaFiles")
+    systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
     // VocabularyEqualityTest checks that every load-path wire code is in the contract's code enums.
     val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
     inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")

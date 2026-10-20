@@ -20,7 +20,7 @@ audience:
 A **descriptor** is a YAML file that declares one charter component. This page lists each
 descriptor kind. The structural authority is the set of JSON Schemas in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas),
-imported from core's models and owned here ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/));
+canonical here, first imported from core's models ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/));
 this page explains them and does not restate them. Where this page and a schema disagree about structure, the schema
 wins. Core ([`spec-kitty/spec-kitty`](https://github.com/spec-kitty/spec-kitty)) stays the oracle for
 governance content, and every deliberate difference is in the
