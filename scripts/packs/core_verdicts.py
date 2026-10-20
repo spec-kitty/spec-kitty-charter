@@ -24,7 +24,6 @@ docs/conformance/divergences.yaml. A proposed id that the register does not list
 import importlib.metadata
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -33,7 +32,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PLANTED = ROOT / "service/adapter-out-yaml/src/test/resources/planted"
-VENDORED = ROOT / "contracts/packs/VENDORED.md"
+# The core commit the plants were judged against (the commit the divergence register cites).
+CORE_COMMIT = "9554e7b26afe7a61519f7744d0147346ab36f197"
 OUT = PLANTED / "core-verdicts.json"
 
 # plant -> id of the divergence that explains why core's verdict and the service's differ. The test fails a plant
@@ -88,9 +88,8 @@ def core_commit() -> str:
     commit = subprocess.run(
         ["git", "-C", checkout, "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
-    pinned = re.search(r"core commit: `([0-9a-f]{40})`", VENDORED.read_text(encoding="utf-8"))
-    if not pinned or pinned.group(1) != commit:
-        raise VerdictError(f"the installed core is at {commit}, not the commit VENDORED.md pins")
+    if commit != CORE_COMMIT:
+        raise VerdictError(f"the installed core is at {commit}, not the pinned CORE_COMMIT {CORE_COMMIT}")
     return commit
 
 

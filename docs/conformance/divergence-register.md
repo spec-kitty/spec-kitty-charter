@@ -113,9 +113,10 @@ exists (cutover stage 3).
 
 The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
 and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
-The schema changes behind the entries are listed one by one in
-[`contracts/packs/VENDORED.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/VENDORED.md),
-which links back here. Each entry states core's behavior, the service's, the rationale, the
+The schemas are canonical in this repository and edited in place (R20). The changes the one-time
+import made to core's export, C1-C16, are tabled in the mission's
+[`research.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16),
+and the evidence lines below cite them by id. Each entry states core's behavior, the service's, the rationale, the
 ruling, its status and the evidence.
 
 ### DIV-001: An action that is not a graph node, in the action-context answer
@@ -162,7 +163,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/packs/pack_descriptor.py:143-148`
-  - Charter: `contracts/packs/VENDORED.md, C9 (and the C13 exception for pack_version)`
+  - Charter: `contracts/packs/schemas/pack-descriptor.schema.json: pack_version is required at every level as a non-empty string (import change C9, and its C13 exception; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
   - Charter: `docs/adr/0017-pack-schemas-imported-as-canonical-json-schema.md, Amendment 2026-10-19`
 
 ### DIV-005: Unknown keys in pack.yaml
@@ -175,7 +176,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/packs/pack_descriptor.py:88` (`extra="forbid"`)
   - Core: `offering/drg/org_pack_loader.py:547-560` (the second report, when `drg/fragment.yaml` exists)
-  - Charter: `contracts/packs/VENDORED.md, C9`
+  - Charter: `contracts/packs/schemas/pack-descriptor.schema.json: the top level stays open, so an unknown key is reported by the adapter and not refused (import change C9; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-006: Retired pack.yaml fields, such as accompanies_doctrine_pack
 
@@ -186,7 +187,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/packs/retired_fields.py:84-91`
-  - Charter: `contracts/packs/VENDORED.md, C9`
+  - Charter: `contracts/packs/schemas/pack-descriptor.schema.json: the top level stays open and pack_level is optional, so a retired key is reported by the adapter (import change C9; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-007: Edge endpoints in graph shards and org fragments
 
@@ -197,7 +198,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/merge.py:580-660`
-  - Charter: `contracts/packs/VENDORED.md, C3`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json: every edge endpoint matches the URN pattern, so a bare local id is refused (import change C3; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-008: Org-fragment header fields pack_name, source_kind, source_ref, layer_index, provenance_marker
 
@@ -208,7 +209,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/org_pack_loader.py:648-655`
-  - Charter: `contracts/packs/VENDORED.md, C6`
+  - Charter: `contracts/packs/schemas/org-fragment.schema.json: the five header fields are removed from the closed top level (import change C6; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-009: Graph shard generated_by
 
@@ -219,7 +220,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:441`
-  - Charter: `contracts/packs/VENDORED.md, C8`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json: generated_by is not required (import change C8; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-010: Lenient value conversions
 
@@ -233,7 +234,7 @@ ruling, its status and the evidence.
   - Core: `offering/agent_profiles/profile.py:54-55` and `:93` (role lowercasing in `Role`)
   - Core: `activation/org_charter.py:217-235` (`schema_version` "1" to an integer)
   - Core: pydantic lax mode, no strict config (a quoted number to an integer)
-  - Charter: `contracts/packs/VENDORED.md, C10`
+  - Charter: `contracts/packs/schemas/agent-profile.schema.json and org-charter.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-011: Org-fragment node kinds
 
@@ -245,7 +246,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/drg/org_pack_loader.py:72-100` (`mission_steps` is the canonical plural; `mission_step_contracts` is the input alias)
   - Core: `offering/drg/org_pack_loader.py:118-139`
-  - Charter: `contracts/packs/VENDORED.md, C5`
+  - Charter: `contracts/packs/schemas/org-fragment.schema.json: the node kind is an enum of the 15 fragment plurals (import change C5; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-012: URN node kinds
 
@@ -256,7 +257,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:61-66`
-  - Charter: `contracts/packs/VENDORED.md, C3 and C4`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json: the URN pattern and one prefix-equals-kind branch per node kind (import changes C3 and C4; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
   - Charter: `contracts/packs/file-kinds.yaml`
 
 ### DIV-013: Nested sections of an agent profile and of charter.yaml
@@ -267,7 +268,7 @@ ruling, its status and the evidence.
 - **Ruling:** spec open review item 1 (the closure of nested sections)
 - **Status:** open, since 2026-10-19
 - **Evidence:**
-  - Charter: `contracts/packs/VENDORED.md, C2 (the ledger lists every closed schema)`
+  - Charter: `contracts/packs/schemas/agent-profile.schema.json and charter.schema.json: the nested sections are closed with additionalProperties false (import change C2, 8 and 13 closed schemas; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
   - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/spec.md, open review item 1`
 
 ### DIV-014: Nested tactics under built-in/tactics/<sub>/
@@ -290,7 +291,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/merge.py:100-102`
-  - Charter: `contracts/packs/VENDORED.md, C7`
+  - Charter: `contracts/packs/schemas/org-fragment.schema.json: the edge relation is a reference to the Relation enum, which has no extends (import change C7; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-016: The asset MIME type check
 
@@ -323,7 +324,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:83-148`
-  - Charter: `contracts/packs/VENDORED.md, C7, C12 and Known differences`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json and org-fragment.schema.json: the Relation enum adds impacts and keeps in_tension_with, and an edge has an optional impacts number (import changes C7 and C12, and the known C7 difference; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-019: Edge provenance
 
@@ -334,7 +335,7 @@ ruling, its status and the evidence.
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:409-412`
-  - Charter: `contracts/packs/VENDORED.md, C16`
+  - Charter: `contracts/packs/schemas/graph-shard.schema.json: the edge has no provenance property (import change C16; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-020: Fragment node id grammar
 
@@ -346,7 +347,7 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/drg/org_pack_loader.py:371`
   - Charter: `service/adapter-out-yaml/src/test/resources/planted/c5-fragment-node-id-unsafe` (core verdict in planted/core-verdicts.json: ok, no findings)
-  - Charter: `contracts/packs/VENDORED.md, C5`
+  - Charter: `contracts/packs/schemas/org-fragment.schema.json: the node id has minLength 1 and the pattern ^[A-Za-z0-9_/.-]+$ (import change C5; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
 
 ### DIV-021: charter.yaml inside a pack
 

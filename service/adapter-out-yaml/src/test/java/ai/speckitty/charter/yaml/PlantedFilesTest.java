@@ -293,12 +293,11 @@ class PlantedFilesTest {
     // ---- core's verdict, recorded and derived --------------------------------------------------------------------
 
     private static Path repositoryRoot() {
-        String vendored = System.getProperty("charter.vendoredMd");
-        if (vendored == null) {
-            throw new IllegalStateException("charter.vendoredMd is not set by the build");
+        String root = System.getProperty("charter.repositoryRoot");
+        if (root == null) {
+            throw new IllegalStateException("charter.repositoryRoot is not set by the build");
         }
-        // <root>/contracts/packs/VENDORED.md
-        return Path.of(vendored).getParent().getParent().getParent();
+        return Path.of(root);
     }
 
     private static List<JsonNode> records() throws IOException {

@@ -1,8 +1,9 @@
 # Single data authority for the pack vocabulary (plan, "Vocabulary kept in sync").
 #
-# Read by scripts/packs/sync_schemas.py (to generate the URN alternation, the per-kind URN
-# prefix branches and the fragment kind enum), by the Java adapter and by the tests. A kind is
-# added here first; the schemas are then regenerated and `sync_schemas.py --check` proves it.
+# Read by the Java adapter and by the tests. The schemas in schemas/ are edited in place (R20);
+# the URN alternation, the per-kind URN prefix branches and the fragment kind enum in them
+# repeat the kind lists below, and VocabularyEqualityTest fails when they differ. A kind is
+# added here and in the schemas in the same change.
 #
 # Shape
 #   node_kinds       The service's DRG node kind tokens (NodeKind.java), in schema order.
@@ -15,8 +16,8 @@
 #   `match` is a glob over the file's path relative to the directory that holds the pack
 #   directories (`<checkout>/packs/`), written with forward slashes. `*` matches within one path
 #   segment, `**/` matches zero or more whole segments, every other character is literal.
-#   No file may match more than one rule across `files` and `exclusions`; the probe
-#   (`sync_schemas.py --probe`) fails on an overlap, and on a file that matches nothing.
+#   No file may match more than one rule across `files` and `exclusions`; the open-packs
+#   acceptance test fails on an overlap, and on a file that matches nothing.
 
 node_kinds:
   - directive

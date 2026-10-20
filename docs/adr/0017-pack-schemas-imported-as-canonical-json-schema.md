@@ -2,7 +2,7 @@
 title: "ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema"
 description: Core's pack and artifact models are exported to JSON Schema and owned here; the YAML adapter validates packs with networknt, and the domain keeps the rules a schema cannot express.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -30,7 +30,8 @@ taken on 2026-10-19, this one is provisional: it is revisited as the system evol
 triggers under [Revisit when](#revisit-when).
 
 See [Amendment 2026-10-19](#amendment-2026-10-19-operator-rulings): the operator's rulings of that
-day refine decision 2 and the points it touches.
+day refine decision 2 and the points it touches. See [Amendment 2026-10-20](#amendment-2026-10-20-r20-the-dependency-is-flipped):
+the schemas are edited here and core pulls them; the import tooling is retired.
 
 ## Amendment 2026-10-19 (operator rulings)
 
@@ -38,8 +39,8 @@ The operator ruled on 2026-10-19. The rulings refine or override
 the decisions below. The original text stays. Each point it changes is annotated here and, where the amended text
 stands in decision 2, marked inline. Every
 difference from core that follows is in the [divergence register](/conformance/divergence-register/),
-and every change to the imported schemas is in
-[`VENDORED.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/VENDORED.md).
+and every change the import made to the schemas (C1-C16) is tabled in
+[the mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16).
 
 ### Decision changes
 
@@ -58,7 +59,7 @@ and every change to the imported schemas is in
 - **URNs take the 15 kinds the service models** (R15). Core's `glossary` and `glossary_scope` are
   refused. DIV-012.
 - **Shard `generated_by` is optional** (R8). The service is laxer than core here. DIV-009.
-- **The `impacts` relation and edge strength are modeled** (ADR-0009 D1, VENDORED C7 and C12). Core
+- **The `impacts` relation and edge strength are modeled** (ADR-0009 D1, import changes C7 and C12). Core
   has neither yet; the contract leads and core aligns at the cutover. DIV-018.
 - **Edge `provenance` is not authored** (plan call P10). It is a merge-time marker that core
   stamps. DIV-019.
@@ -71,7 +72,7 @@ and every change to the imported schemas is in
   to a schema and 107 are excluded, each class with a reason.
 - **The lost validators.** The list of custom validators that do not survive the export gains
   `routing_priority`, `max_concurrent_tasks`, lenient adherence and the retired-field rejections.
-  The schemas now encode the first three where a schema can express them (VENDORED C11). The
+  The schemas now encode the first three where a schema can express them (import change C11). The
   retired-field rejections become warnings (R13).
 
 ## Context
@@ -99,11 +100,24 @@ An investigation on 2026-10-19 (core `9554e7b2`, open-packs `7f063ae`) found:
   check, the fragment kind vocabulary and unique step ids. Two lenient conversions also do not
   survive: a scalar `role` coerced to `roles`, and `schema_version: "1"` coerced to an integer.
 
+## Amendment 2026-10-20 (R20: the dependency is flipped)
+
+The operator ruled on 2026-10-20 (R20, at the pre-PR review). The dependency is flipped: the
+schemas in `contracts/packs/schemas/` are canonical here and are edited in place, and core pulls
+them. `contracts/packs/VENDORED.md` and `scripts/packs/sync_schemas.py` are retired, so decision 1's
+`VENDORED.md` and the "imported from core" wording below describe the one-time import only. The
+import's changes C1-C16 are recorded in
+[the mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)
+and in git history. The risk "the imported schemas and core's models drift" now reads: core adapts
+to the schemas, and the doctor parity test (#115) compares verdicts with core's.
+
 ## Decision
 
 1. **Import the exported schemas as this repository's canonical pack schemas**, one file per pack
-   file kind, under `contracts/packs/schemas/`. A `VENDORED.md` records their origin (core's
-   models at a named commit, `model_json_schema(mode="validation")`) and every change made here.
+   file kind, under `contracts/packs/schemas/`. *(Amended 2026-10-20: the import was one-time. The
+   origin, core's models at commit `9554e7b2` exported with `model_json_schema(mode="validation")`,
+   and every change made on import are recorded in the mission research; the schemas are now
+   edited here and core pulls them. See [Amendment](#amendment-2026-10-20-r20-the-dependency-is-flipped), R20.)*
 2. **Change them on import:**
    - add `$schema` and `$id`;
    - close the nested sections that stay open;
@@ -139,8 +153,9 @@ An investigation on 2026-10-19 (core `9554e7b2`, open-packs `7f063ae`) found:
 
 ### Risks
 
-- The imported schemas and core's models drift. Mitigation: `VENDORED.md` lists every change,
-  and the doctor parity test (#115) compares verdicts with core's.
+- The schemas and core's models drift. Mitigation: the divergence register lists every difference,
+  and the doctor parity test (#115) compares verdicts with core's. *(Amended 2026-10-20, R20: the
+  schemas are canonical here; the import's change list is in the mission research.)*
 
 ## Alternatives considered
 

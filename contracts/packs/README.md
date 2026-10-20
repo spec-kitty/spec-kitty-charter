@@ -2,9 +2,15 @@
 
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
 descriptor, graph shards, the org fragment, the org charter, the nine artifact kinds, and the
-project `charter.yaml`. They are canonical here (ADR-0015); core aligns to them. They were
-imported from core and changed on import, and every change is listed in
-[`VENDORED.md`](VENDORED.md).
+project `charter.yaml`.
+
+These schemas are canonical in this repository and are edited in place; core consumes them
+([ADR-0015](../../docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md) decisions 1, 2
+and 5, ruling R20). Their history is a one-time import from core commit `9554e7b2` with changes C1-C16,
+recorded in the mission's
+[`research.md`](../../kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)
+and in git history. Where a schema differs from core's behavior, the
+[divergence register](../../docs/conformance/divergence-register.md) says why.
 
 ## Files
 
@@ -12,7 +18,6 @@ imported from core and changed on import, and every change is listed in
 |---|---|
 | `schemas/<kind>.schema.json` | One schema per kind, 14 in all |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, and the reviewed exclusions |
-| `VENDORED.md` | Origin, every change from core's export, and the reproducibility rule |
 
 ## Validate a file
 
@@ -32,11 +37,8 @@ imported from core and changed on import, and every change is listed in
 
 All references are local, so nothing is fetched. The `$id` values are identifiers only.
 
-## Regenerate and check
+## Change a schema
 
-```bash
-~/.venv-sk/bin/python -I scripts/packs/sync_schemas.py          # regenerate
-~/.venv-sk/bin/python -I scripts/packs/sync_schemas.py --check  # fail on any difference
-```
-
-Do not edit a schema by hand: change the script or `file-kinds.yaml`, then regenerate.
+Edit the schema in `schemas/` and, when the change touches a node kind, a fragment plural or a file
+rule, `file-kinds.yaml` in the same commit. `VocabularyEqualityTest`, `PackSchemasTest` and the
+open-packs round-trip fail when the schemas, `file-kinds.yaml` and the service disagree.
