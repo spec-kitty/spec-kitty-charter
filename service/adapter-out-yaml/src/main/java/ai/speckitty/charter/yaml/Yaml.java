@@ -39,9 +39,14 @@ final class Yaml {
         }
     }
 
+    /** The schema loading and dumping share, so a string that would read back as null is quoted when it is written. */
+    static Schema schema() {
+        return new NullFormsSchema();
+    }
+
     static LoadSettings settings() {
         return LoadSettings.builder()
-                .setSchema(new NullFormsSchema())
+                .setSchema(schema())
                 .setAllowDuplicateKeys(false)
                 .setCodePointLimit(Integer.MAX_VALUE)
                 .setLabel("charter")
