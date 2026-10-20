@@ -1,0 +1,16 @@
+{
+  "covers": [
+    "C10",
+    "R9"
+  ],
+  "findings": [
+    {
+      "code": "org_charter_schema_error",
+      "severity": "blocking",
+      "file": "org-charter.yaml",
+      "place": [
+        "schema_version"
+      ]
+    }
+  ]
+}

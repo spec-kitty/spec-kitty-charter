@@ -154,6 +154,13 @@ class PackDescriptorReaderTest {
                 .containsExactly("pack.yaml of qa: pack_id must be a string");
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"~", "Null", "NULL"})
+    void aPlainNullFormInARequiredStringIsRefusedLikeAnExplicitNull(String form) {
+        assertThat(details("pack_id: 01ABC\npack_version: 1.0.0\nname: " + form + "\n"))
+                .containsExactly("pack.yaml of qa: name must be a string");
+    }
+
     @Test
     void anUnknownPackLevelIsTheKeywordEnumNamingTheToken() {
         assertThat(details(VALID + "pack_level: galactic\n"))

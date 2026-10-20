@@ -1,0 +1,18 @@
+{
+  "covers": [
+    "C3",
+    "R6"
+  ],
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/tactic.graph.yaml",
+      "place": [
+        "edges",
+        "0",
+        "source"
+      ]
+    }
+  ]
+}

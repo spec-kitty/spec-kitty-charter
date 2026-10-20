@@ -1,0 +1,4 @@
+nodes:
+- id: 'bad id!'
+  kind: tactics
+edges: []

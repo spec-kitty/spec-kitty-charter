@@ -1,0 +1,5 @@
+id: DIRECTIVE_001
+schema_version: '1.0'
+title: T
+intent: i
+enforcement: lenient-adherence

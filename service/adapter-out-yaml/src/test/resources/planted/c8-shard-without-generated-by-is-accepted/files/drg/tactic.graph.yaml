@@ -1,0 +1,6 @@
+schema_version: '1.0'
+generated_at: S
+nodes:
+- urn: tactic:a
+  kind: tactic
+edges: []

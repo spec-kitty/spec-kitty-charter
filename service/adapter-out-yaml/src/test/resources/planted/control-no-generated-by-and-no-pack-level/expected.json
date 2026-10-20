@@ -1,0 +1,22 @@
+{
+  "covers": [
+    "C8",
+    "C9",
+    "R8"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "pack_level_missing",
+      "severity": "warning",
+      "file": "pack.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "diagnostics": [
+      "pack_level_missing"
+    ]
+  }
+}

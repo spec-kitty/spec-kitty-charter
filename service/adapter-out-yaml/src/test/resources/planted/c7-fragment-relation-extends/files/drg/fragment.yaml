@@ -1,0 +1,5 @@
+nodes: []
+edges: 
+- source: directive:DIRECTIVE_010
+  target: directive:DIRECTIVE_010
+  relation: extends

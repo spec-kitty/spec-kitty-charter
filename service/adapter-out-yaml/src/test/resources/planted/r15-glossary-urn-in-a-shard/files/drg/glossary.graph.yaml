@@ -1,0 +1,7 @@
+schema_version: '1.0'
+generated_at: S
+generated_by: planted
+nodes:
+- urn: glossary:term
+  kind: glossary
+edges: []

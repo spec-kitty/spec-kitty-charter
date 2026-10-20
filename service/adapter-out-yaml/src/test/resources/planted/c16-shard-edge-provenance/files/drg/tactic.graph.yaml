@@ -1,0 +1,11 @@
+schema_version: '1.0'
+generated_at: S
+generated_by: planted
+nodes:
+- urn: tactic:a
+  kind: tactic
+edges:
+- source: tactic:a
+  target: tactic:a
+  relation: suggests
+  provenance: org

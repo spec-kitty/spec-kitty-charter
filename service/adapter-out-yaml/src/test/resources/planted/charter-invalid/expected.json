@@ -1,0 +1,13 @@
+{
+  "covers": [
+    "P7"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "charter.yaml",
+      "place": []
+    }
+  ]
+}

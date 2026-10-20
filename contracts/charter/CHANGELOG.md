@@ -194,6 +194,15 @@ was cut under either label. `Added` lists what this version holds that the first
   <key> must be a string` instead of `pack.yaml of <name> has no <key>`; the code is unchanged. An
   absent key keeps its answer. Scenario "A pack descriptor whose pack_level is an explicit null is
   refused" in `packs.feature` pins the first.
+- A plain `~`, `Null` or `NULL` in any pack file is now null (#114, R18; behavior change, no schema
+  change), as core's parser reads it. In `pack.yaml` a null in a required string field is therefore
+  refused like an explicit `null`: `pack_unreadable`, `pack.yaml of <name>: <key> must be a
+  string`. Before, it was read as the string `~`, `Null` or `NULL`. Quoted forms stay strings.
+- A pack file whose bytes are not valid UTF-8 is now a parse failure, coded by its file kind (#114,
+  R17; behavior change, no schema change). A shard or the fragment is refused as
+  `drg_schema_error`, `<pack>/<file> is not valid YAML: the file is not valid UTF-8`; a
+  `pack.yaml` as `pack_unreadable`, `<pack>/pack.yaml is not valid YAML`. Before, every such file
+  was `pack_unreadable`, `<pack>/<file> cannot be read`. An I/O failure keeps `cannot be read`.
 
 ### Action context and the seam surface
 

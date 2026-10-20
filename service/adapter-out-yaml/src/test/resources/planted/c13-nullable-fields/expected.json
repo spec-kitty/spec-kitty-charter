@@ -1,0 +1,9 @@
+{
+  "covers": [
+    "C13"
+  ],
+  "proven_by": [
+    "charter-domain:PackPolicyVocabularyTest#aNullableAnyOfCollapsesToTheNonNullBranch",
+    "charter-domain:PackPolicyVocabularyTest#theRealNullableShapeWithNoAnyOfErrorCollapsesToTheNonNullBranch"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "covers": [
+    "C15"
+  ],
+  "proven_by": [
+    "adapter-out-yaml:PackSchemasTest#theBundleLoadsAndEveryKindIsKnown",
+    "plant:charter-valid",
+    "plant:charter-invalid"
+  ]
+}

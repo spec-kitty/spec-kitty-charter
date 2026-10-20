@@ -129,8 +129,9 @@ public final class PackPolicy {
     }
 
     /**
-     * Runs every rule: the level rules, the descriptor rules, the schema and parse findings of unreadable files, the
-     * graph rules of the graph documents that were read, and the step, artifact and asset rules of a full read.
+     * Runs every rule: the level rules, the descriptor rules, the schema and parse findings of unreadable files (the
+     * load path's and, for a full read, every other classified file's), the graph rules of the graph documents that
+     * were read, and the step, artifact and asset rules of a full read.
      *
      * @param contents what the adapter read
      * @return the verdict, with the findings in precedence order
@@ -152,6 +153,9 @@ public final class PackPolicy {
                     findings.addAll(graph(name, read.value()).findings());
                 case FileRead.Absent<RawGraph> absent -> {}
             }
+        }
+        for (FileRead.Unreadable<?> file : contents.unreadableFiles()) {
+            findings.addAll(unreadable(name, file));
         }
         findings.addAll(stepRules(contents.stepContracts()));
         findings.addAll(artifactRules(contents.artifacts()));

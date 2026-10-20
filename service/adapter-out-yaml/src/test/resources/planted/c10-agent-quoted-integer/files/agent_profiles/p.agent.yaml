@@ -1,0 +1,7 @@
+profile-id: p
+name: P
+roles: [implementer]
+purpose: x
+specialization:
+  primary-focus: f
+routing-priority: '50'

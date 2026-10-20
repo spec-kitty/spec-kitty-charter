@@ -1,0 +1,17 @@
+{
+  "covers": [
+    "FR-009"
+  ],
+  "findings": [
+    {
+      "code": "duplicate_step_id",
+      "severity": "blocking",
+      "file": "mission_step_contracts/c.step-contract.yaml",
+      "place": [
+        "steps",
+        "2",
+        "id"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "covers": [
+    "C11"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "directives/d.directive.yaml",
+      "place": []
+    }
+  ]
+}

@@ -77,6 +77,11 @@ final class OpenPacksCorpus {
         }
     }
 
+    /** The directory that holds the pack directories: {@code <checkout>/packs}. */
+    static Path packsDirectory() {
+        return root().resolve("packs");
+    }
+
     /** Every {@code *.yaml} file under {@code packs/}, sorted. */
     static List<Path> yamlFiles() throws IOException {
         try (Stream<Path> walk = Files.walk(root().resolve("packs"))) {

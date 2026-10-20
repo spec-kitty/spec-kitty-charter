@@ -1,0 +1,22 @@
+{
+  "covers": [
+    "R5"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "pack_unknown_key",
+      "severity": "warning",
+      "file": "pack.yaml",
+      "place": [
+        "mystery"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "diagnostics": [
+      "pack_unknown_key"
+    ]
+  }
+}

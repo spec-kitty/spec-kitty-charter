@@ -1,0 +1,5 @@
+nodes: []
+edges: 
+- source: glossary:term
+  target: directive:DIRECTIVE_010
+  relation: suggests

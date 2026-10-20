@@ -1,0 +1,6 @@
+catalog:
+  mission: m
+  template_set: t
+governance:
+  performance:
+    cli_timeout_seconds: .nan

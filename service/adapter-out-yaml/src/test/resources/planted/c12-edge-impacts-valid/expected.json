@@ -1,0 +1,12 @@
+{
+  "covers": [
+    "C12",
+    "P11"
+  ],
+  "configuredLevel": "org",
+  "findings": [],
+  "load": {
+    "level": "org",
+    "loads": true
+  }
+}

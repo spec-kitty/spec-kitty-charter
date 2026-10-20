@@ -1,0 +1,17 @@
+{
+  "covers": [
+    "C10",
+    "R9"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "agent_profiles/p.agent.yaml",
+      "place": [
+        "roles",
+        "0"
+      ]
+    }
+  ]
+}

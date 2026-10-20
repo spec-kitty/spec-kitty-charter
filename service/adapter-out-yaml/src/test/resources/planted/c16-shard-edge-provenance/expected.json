@@ -1,0 +1,17 @@
+{
+  "covers": [
+    "C16",
+    "P10"
+  ],
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/tactic.graph.yaml",
+      "place": [
+        "edges",
+        "0"
+      ]
+    }
+  ]
+}
