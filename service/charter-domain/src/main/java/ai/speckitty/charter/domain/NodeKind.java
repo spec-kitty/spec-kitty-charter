@@ -73,4 +73,19 @@ public enum NodeKind {
     public static NodeKind of(ArtifactKind kind) {
         return valueOf(kind.name());
     }
+
+    /**
+     * The node kind a fragment node names by its plural {@code kind} (R14: one name per concept; core's aliases are
+     * refused).
+     *
+     * @param plural the plural kind as written in {@code drg/fragment.yaml}
+     * @return the node kind, or empty when the name is not one of the 15 plurals
+     */
+    public static Optional<NodeKind> fromPlural(String plural) {
+        return switch (plural) {
+            case "mission_types" -> Optional.of(MISSION_TYPE);
+            case "actions" -> Optional.of(ACTION);
+            default -> ArtifactKind.fromPlural(plural).map(NodeKind::of);
+        };
+    }
 }
