@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-20 — Packs are validated against the canonical pack schemas, and the domain owns the pack-level policy](/changelog/2026-10-20-pack-schemas-and-level-policy/)
 - [2026-10-20 — The contract is published as 0.x, and the release gate breaks on a 0.x minor](/changelog/2026-10-20-contract-0x-versioning/)
 - [2026-10-20 — Packs, offering and activations, proposed](/changelog/2026-10-20-packs-resource-model-proposal/)
 - [2026-10-19 — The action-context read walks the offering, and the seam surface is reshaped](/changelog/2026-10-19-action-context-read-and-seam-surface/)
