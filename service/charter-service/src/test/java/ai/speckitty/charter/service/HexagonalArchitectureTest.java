@@ -79,6 +79,38 @@ class HexagonalArchitectureTest {
                 .check(classes);
     }
 
+    /**
+     * The port signatures of the domain name only domain, {@code java} and JSpecify types (belt and braces atop
+     * {@link #theCoreIsPlainJava}). The selector includes the test-only {@code archsample} package so that the
+     * known-bad control can aim this very rule at the sample; the production import excludes tests, so the sample
+     * never reaches the production check.
+     *
+     * <p>SC-002 ("100% of access through the port") is near-vacuous for this vertical, since no domain caller
+     * reaches storage yet. This rule and its known-bad control are the real guard.
+     */
+    private static final ArchRule PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES = classes()
+            .that()
+            .areInterfaces()
+            .and()
+            .resideInAnyPackage("ai.speckitty.charter.domain..", "ai.speckitty.charter.service.archsample..")
+            .should()
+            .onlyDependOnClassesThat()
+            .resideInAnyPackage("ai.speckitty.charter.domain..", "java..", "org.jspecify.annotations..");
+
+    @Test
+    void portSignaturesNameOnlyDomainTypes() {
+        PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES.check(classes);
+    }
+
+    @Test
+    void thePortSignatureRuleFailsOnAPortThatNamesAnInfrastructureType() {
+        JavaClasses sample = new ClassFileImporter().importPackages("ai.speckitty.charter.service.archsample");
+        assertThatThrownBy(() -> PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES.check(sample))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("DomainWithInfraImport")
+                .hasMessageContaining("FilesystemPackElementRepository");
+    }
+
     @Test
     void transportTypesStayInTheInboundAdapter() {
         noClasses()

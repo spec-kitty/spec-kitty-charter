@@ -70,7 +70,20 @@ class PackDescriptorReaderTest {
         assertThat(descriptor.name()).isEqualTo("spec-kitty-internal");
         assertThat(descriptor.declaredLevel()).contains(PackLevel.ORG);
         assertThat(descriptor.requiresCore()).contains(">=4.0,<5");
+        assertThat(descriptor.activeCharter()).contains("org-charter.yaml");
+        assertThat(descriptor.packDrg()).contains("drg/fragment.yaml");
         assertThat(descriptor.undeclaredKeys()).isEmpty();
+    }
+
+    @Test
+    void anAbsentOrNullActiveCharterAndPackDrgAreEmpty() {
+        PackDescriptor absent = read(VALID);
+        PackDescriptor nulls = read(VALID + "active_charter: null\npack_drg: ~\n");
+
+        assertThat(absent.activeCharter()).isEmpty();
+        assertThat(absent.packDrg()).isEmpty();
+        assertThat(nulls.activeCharter()).isEmpty();
+        assertThat(nulls.packDrg()).isEmpty();
     }
 
     @Test
