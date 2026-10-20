@@ -107,6 +107,15 @@ was cut under either label. `Added` lists what this version holds that the first
   "The answer carries the load findings of the offering, as the pack listing does" in
   `action_context.feature` gives its org pack `qa` a `drg/fragment.yaml` instead of a root
   `qa.graph.yaml`; its answer is unchanged.
+- Scenario "A graph shard that is not valid YAML is refused as a DRG document" in `packs.feature`
+  (#114, R17): pins `drg_schema_error` for a shard that is not YAML; the body is compared apart from
+  `detail`, which is the parser's own words.
+- Scenario "A pack descriptor whose pack_level is an explicit null is refused" in `packs.feature`
+  (#114, R19): pins `pack_unreadable` with the detail `pack.yaml of <name>: pack_level must be a
+  string`.
+- Scenario "A fragment that carries a header field is refused" in `packs.feature` (#114, R7): a
+  fragment with `pack_name` is refused as `drg_schema_error`, with the detail
+  `<pack>/drg/fragment.yaml: unknown key 'pack_name'`.
 
 ### Changed
 
@@ -183,8 +192,7 @@ was cut under either label. `Added` lists what this version holds that the first
 - A graph shard or fragment that is not valid YAML is refused as `drg_schema_error` (#114, R17;
   behavior change, no schema change: the code is already a `CharterRefusalCode` value). It was
   `pack_unreadable`. The detail `<pack>/<file> is not valid YAML: <first line of the parser's
-  message>` is unchanged. A `pack.yaml` that is not valid YAML keeps `pack_unreadable`. Scenario
-  "A graph shard that is not valid YAML is refused as a DRG document" in `packs.feature` pins it.
+  message>` is unchanged. A `pack.yaml` that is not valid YAML keeps `pack_unreadable`.
   The scenarios "A pack file rewritten while it is parsed is stale, not unreadable" in
   `errors.feature` and "A refresh of a pack that cannot be loaded is refused with the pack's code"
   in `refresh.feature` expect `drg_schema_error` for their invalid shard (was `pack_unreadable`).
@@ -197,8 +205,7 @@ was cut under either label. `Added` lists what this version holds that the first
   `pack_version` or `name` is refused with `pack.yaml of <name>: <key> must be a string` instead
   of `pack.yaml of <name> has no <key>`; the code is unchanged. An absent key keeps its answer.
   `parent_pack`, `requires_core`, `active_charter` and `pack_drg` are nullable in the schema and
-  still accept `null`. Scenario "A pack descriptor whose pack_level is an explicit null is
-  refused" in `packs.feature` pins the first.
+  still accept `null`.
 - A plain `~`, `Null` or `NULL` in any pack file is now null (#114, R18; behavior change, no schema
   change), as core's parser reads it. In `pack.yaml` a null in a required string field is therefore
   refused like an explicit `null`: `pack_unreadable`, `pack.yaml of <name>: <key> must be a
@@ -208,6 +215,31 @@ was cut under either label. `Added` lists what this version holds that the first
   `drg_schema_error`, `<pack>/<file> is not valid YAML: the file is not valid UTF-8`; a
   `pack.yaml` as `pack_unreadable`, `pack.yaml of <name> is not valid YAML`. Before, every such file
   was `pack_unreadable`, `<pack>/<file> cannot be read`. An I/O failure keeps `cannot be read`.
+- Pack files on the load path are validated against the schemas in `contracts/packs/schemas`
+  (#114; behavior change, no schema change in this contract: the codes are already
+  `CharterRefusalCode` values). Each of these used to load (`200`) and is now refused. In a
+  graph shard or the fragment, with `drg_schema_error`:
+  - a fragment that carries a header field (`pack_name`, `source_kind`, `layer_index`, and any
+    other key the fragment schema does not declare), `<pack>/drg/fragment.yaml: unknown key
+    '<key>'` (R7, which the scenario "A fragment that carries a header field is refused" pins);
+  - a fragment edge with `when` (a shard edge keeps it), `<pack>/drg/fragment.yaml edge: unknown
+    key 'when'`;
+  - a fragment node id that is not `<kind>:<id>`-safe, such as `a:b`, `<pack>/drg/fragment.yaml:
+    node id 'a:b' is not <kind>:<id>-safe`;
+  - an explicit `edges:` with no value (`null`) in a fragment, `<pack>/drg/fragment.yaml edges:
+    expected a list`; an absent `edges` key still loads;
+  - a shard without `schema_version`, `generated_at` or `nodes`, `<pack>/<file>: missing '<key>'`;
+  - a shard `schema_version` that is not the string `1.0` (`2` is not a string, `'2.0'` does not
+    match the pattern `^1\.0$`), `'schema_version' must be a string` or `'schema_version' does not
+    match its pattern`;
+  - a shard `generated_by` or `generated_at` that is not a string, `'<key>' must be a string`;
+  - a shard node `tags` that is not a list, `<pack>/<file> tags: expected a list`.
+
+  In `pack.yaml`, with `pack_unreadable`: a `requires_core` or `active_charter` that is not a string
+  (`requires_core: 3`), `pack.yaml of <name>: <key> must be a string`.
+
+  One shape is accepted that was refused: a shard node with `provenance`, which the shard schema
+  declares (it was `drg_schema_error`, `unknown key 'provenance'`).
 - An empty `pack_version` in `pack.yaml` is refused with its own detail (#114, R4; behavior
   change, no schema change: the code is already `pack_unreadable`). The `pack-descriptor` schema
   gives `pack_version` a `minLength` of 1, so `pack_version: ''` is `pack_unreadable` (`500`) with
