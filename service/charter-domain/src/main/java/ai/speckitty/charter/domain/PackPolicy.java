@@ -763,7 +763,11 @@ public final class PackPolicy {
             case "minLength" ->
                 fragmentNodeId && v.args().containsKey("kind")
                         ? o + ": " + emptyId(v.args().get("kind"))
-                        : fallback(o, v);
+                        : descriptor
+                                        && place == Place.ROOT_FIELD
+                                        && v.value().filter(String::isEmpty).isPresent()
+                                ? o + ": " + key + " must not be empty"
+                                : fallback(o, v);
             case "pattern" -> patternDetail(v, o, place, key, fragmentNodeId, value);
             case "enum" -> enumDetail(v, o, descriptor, place, key, value);
             case "const" -> o + ": '" + key + "' has an unsupported value '" + value + "'";

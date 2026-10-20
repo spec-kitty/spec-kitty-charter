@@ -251,6 +251,20 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
+    void anEmptyDescriptorStringNamesItsKey() {
+        assertDetail(
+                violation(PACK_YAML, List.of("pack_version"), "minLength", null, "", Map.of("0", "1")),
+                "pack.yaml of qa: pack_version must not be empty");
+    }
+
+    @Test
+    void aDescriptorMinLengthOffTheRootUsesTheFallback() {
+        assertDetail(
+                violation(PACK_YAML, List.of("extra", "0"), "minLength", null, "", Map.of("0", "1")),
+                "pack.yaml of qa: '/extra/0' breaks schema keyword 'minLength'");
+    }
+
+    @Test
     void theIdPatternOnAnEmptyIdGivesTheSameTextOnceNotTwice() {
         SchemaViolation minLength = violation(
                 FRAGMENT, List.of("nodes", "0", "id"), "minLength", null, "", Map.of("0", "1", "kind", "directives"));
@@ -476,8 +490,8 @@ class PackPolicyVocabularyTest {
     @Test
     void aDescriptorKeywordWithoutARowUsesTheDescriptorOriginInTheFallback() {
         assertDetail(
-                violation(PACK_YAML, List.of("pack_id"), "minLength", null, "", Map.of()),
-                "pack.yaml of qa: '/pack_id' breaks schema keyword 'minLength'");
+                violation(PACK_YAML, List.of("pack_id"), "maxLength", null, "", Map.of()),
+                "pack.yaml of qa: '/pack_id' breaks schema keyword 'maxLength'");
     }
 
     @Test

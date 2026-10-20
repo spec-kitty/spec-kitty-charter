@@ -204,4 +204,10 @@ class PackDescriptorReaderTest {
                     .containsExactly("pack.yaml of qa: name must be a string");
         }
     }
+
+    @Test
+    void anEmptyPackVersionIsRefusedWithItsOwnDetail() {
+        assertThat(details("pack_id: 01ABC\npack_version: ''\nname: qa\n"))
+                .containsExactly("pack.yaml of qa: pack_version must not be empty");
+    }
 }
