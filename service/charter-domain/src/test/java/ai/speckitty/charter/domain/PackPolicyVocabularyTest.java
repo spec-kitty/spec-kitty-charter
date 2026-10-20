@@ -470,6 +470,17 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
+    void twoNonNullTypeViolationsAtOnePointerAreBothKept() {
+        // Only a branch that expects null is dropped, and only beside one that does not: a oneOf of a string and an
+        // integer that the value matches neither of says both.
+        assertThat(details(
+                        typeAt(SHARD, "boolean", "string", "nodes", "0", "x"),
+                        typeAt(SHARD, "boolean", "integer", "nodes", "0", "x")))
+                .containsExactly(
+                        "qa/tactic.graph.yaml: 'x' must be a string", "qa/tactic.graph.yaml: 'x' must be an integer");
+    }
+
+    @Test
     void anAnyOfWithoutNestedTypeViolationsUsesTheFallback() {
         assertDetail(
                 violation(SHARD, List.of("nodes", "0", "x"), "anyOf", null, null, Map.of()),
