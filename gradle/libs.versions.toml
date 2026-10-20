@@ -8,6 +8,8 @@ assertj = "3.27.7"
 archunit = "1.5.1"
 cucumber = "8.0.4"
 snakeyaml-engine = "3.2"
+# networknt json-schema-validator: reviewed under DIRECTIVE_051 (mission pack-schemas-and-level-policy-01M5AFMA, research R2).
+json-schema-validator = "3.0.8"
 # Quality gates (operator-vetted 2026-10-18; research.md section 10). jqwik is excluded (C-008).
 spotless = "8.10.3"
 palantir-java-format = "2.101.0"
@@ -45,6 +47,9 @@ cucumber-spring = { module = "io.cucumber:cucumber-spring" }
 cucumber-junit-platform-engine = { module = "io.cucumber:cucumber-junit-platform-engine" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
+slf4j-api = { module = "org.slf4j:slf4j-api" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }

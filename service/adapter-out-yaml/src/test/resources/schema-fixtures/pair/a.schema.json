@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/a.schema.json",
+  "type": "object",
+  "properties": {
+    "b": {
+      "$ref": "https://schemas.spec-kitty.ai/charter/packs/b.schema.json"
+    }
+  }
+}

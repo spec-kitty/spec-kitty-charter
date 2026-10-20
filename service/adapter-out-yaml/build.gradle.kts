@@ -6,6 +6,28 @@ plugins {
 dependencies {
     api(project(":charter-domain"))
     implementation(catalog.lib("snakeyaml-engine"))
+    // networknt json-schema-validator validates pack files against contracts/packs/schemas (ADR-0017).
+    // The Spring Boot BOM is used here only to pin Jackson 3 and slf4j to the versions the service runs;
+    // networknt's own Jackson (3.2.x) and slf4j pins are excluded so the service classpath does not move.
+    implementation(platform(catalog.lib("spring-boot-bom")))
+    implementation(catalog.lib("json-schema-validator")) {
+        exclude(group = "tools.jackson.core")
+        exclude(group = "tools.jackson.dataformat", module = "jackson-dataformat-yaml")
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
+    implementation(catalog.lib("jackson-databind"))
+    implementation(catalog.lib("slf4j-api"))
+}
+
+// The pack schemas and the file-kind table are bundled as main resources under packs/, so that
+// classpath:packs/schemas/<kind>.schema.json and classpath:packs/file-kinds.yaml resolve offline. The copy
+// is a declared input of processResources, so a schema change re-runs the tests.
+val packContracts = rootProject.layout.projectDirectory.dir("contracts/packs")
+tasks.processResources {
+    from(packContracts) {
+        include("schemas/*.schema.json", "file-kinds.yaml")
+        into("packs")
+    }
 }
 
 // The open-packs round-trip: every YAML file of spec-kitty-open-packs must survive the file-based
@@ -39,5 +61,11 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     }
 }
 
-tasks.test { useJUnitPlatform { excludeTags("open-packs") } }
+tasks.test {
+    useJUnitPlatform { excludeTags("open-packs") }
+    // PackSchemasTest checks that VENDORED.md names every bundled schema, reading it from the repository.
+    val vendored = packContracts.file("VENDORED.md")
+    inputs.file(vendored).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("vendoredMd")
+    systemProperty("charter.vendoredMd", vendored.asFile.absolutePath)
+}
 tasks.check { dependsOn(openPacksRoundTrip) }
