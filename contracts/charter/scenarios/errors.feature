@@ -113,7 +113,7 @@ Feature: Failures outside the charter's refusals
     When I GET "/info"
     Then the response status is 200
 
-  Scenario Outline: A pack file rewritten while it is parsed is stale, not unreadable
+  Scenario Outline: A pack file rewritten while it is parsed is stale, not a schema error
     The shard becomes invalid YAML after the first digest and stays so: the load fails, the
     inputs are digested again, and they differ from the first digest. The failure is the change's,
     not the pack's, so the read answers stale_input and not drg_schema_error. (A shard restored
