@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -61,10 +61,15 @@ The cutover path, the work that keeps the contract releasable, and the conforman
 | #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; the switch-over is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
-| #13 | Core ingests the contract | Roadmap step 6 |
+| #13 | Core ingests the contract: generated client and routing proxy | Roadmap step 6; the contract is core's seam from 0.1.0 ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/), Proposed) |
 | #14 | Read shadow | Roadmap step 7; stage 2, which stages 3 and 4 build on |
-| #113 | Reshape the reserved contract 1.0 surface | Changing it after the first release is breaking |
-| #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor; waits on #113 |
+| #124 | Publish the contract as 0.x, with a minor-level release gate | The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/), Proposed) |
+| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
+| #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor; the first is 0.1.0, waiting on #124 and #119 |
+| #44, #125 | Active charters: design, and the activation set as a 0.x minor | Core's deny-list work codes against it ([ADR-0020](/adr/0020-offering-and-activations/), Proposed) |
+| #126 | The `/offering` move, the API root and `_links`, as a 0.x minor | Closed response shapes, so they must land before 1.0.0 ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
+| #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
+| #128 | Mint contract 1.0.0 | The first route switched to the service needs it ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/) D6) |
 | #46 | `x-stability-level` for provisional operations | The release gate must not report a change to a provisional operation as breaking |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
 | #48 | Pack-level policy in the domain | Do it before #11 adds the org and project layers |
@@ -115,7 +120,6 @@ These follow the evidence each stage needs in
 | Issue | Title | Why it is here |
 |---|---|---|
 | #24 | Design spike: deployable charter backend service | Marked backlog by its own scope note |
-| #44 | Design: register an active charter configuration by ULID handle | For discussion; a step towards hosted deployment |
 
 ## Decided on 2026-10-19
 
