@@ -1,6 +1,6 @@
 ---
 title: "ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation"
-description: Proposes that the published 1.0 contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
+description: Proposes that the published contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: ADR
@@ -13,13 +13,14 @@ related:
   - adr/0015-charter-repository-is-canonical-for-charter-structure
   - adr/0016-conformance-corpus-harness-over-core-cli
   - adr/0020-offering-and-activations
+  - adr/0022-contract-versions-start-at-0-x
   - architecture/strangler-transition
   - api/service-contract
 audience:
   - profile: core-maintainer
     guidance_text: Read this for what core adopts now, how the proxy routes each operation, and what switching one operation takes.
   - profile: charter-service-contributor
-    guidance_text: Read this for why contract 1.0 is on core's critical path and what may change after it.
+    guidance_text: Read this for why publishing the contract is on core's critical path.
   - profile: contract-consumer
     guidance_text: Read this for how the published contract becomes the compatibility contract between core and the charter.
 ---
@@ -64,7 +65,9 @@ The operator set a different approach on 2026-10-20:
 
 ### D1. The published contract is the seam (ruled)
 
-The released 1.0 contract is the compatibility contract between core and the charter. Core's seam
+The published contract is the compatibility contract between core and the charter. It is
+published as 0.x while it iterates, and 1.0.0 follows once it is stable
+([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Core's seam
 exposes the generated client's operations and DTOs, and code above the seam uses only those. A
 shape the seam needs that the contract lacks is requested here as an issue, because this
 repository owns the contract (ADR-0015); core does not add it locally.
@@ -72,7 +75,8 @@ repository owns the contract (ADR-0015); core does not add it locally.
 ### D2. Core vendors a client generated from the released bundle, now (ruled)
 
 Core vendors the released, checksummed bundle (#45) and generates a Python client from it. It does
-so as soon as 1.0 is published, before any operation is served by the service.
+so as soon as 0.1.0 is published, before any operation is served by the service, and
+regenerates on every 0.x minor it adopts (ADR-0022 D3).
 
 - **Generator (default):** `openapi-generator` with its `python` generator, at a pinned version. It
   is the generator this repository already uses for the server interfaces, so both sides resolve
@@ -118,16 +122,13 @@ are removed (#76). This replaces ADR-0010 D4's single switch-over with a sequenc
 reversible ones; the point of no return is still the removal of the Python reads. Rejected: one
 switch for every operation, which keeps the risk the proxy exists to remove.
 
-### D6. Contract 1.0 is on core's critical path, and that is accepted (ruled)
+### D6. Publishing the contract is on core's critical path, and that is accepted (ruled)
 
-Core's adoption waits on the release. The order is:
-
-1. the pre-1.0 reshape (`_links`, the `/offering` move, the reserved activation set, the
-   hosted-first changes of ADR-0020 D12);
-2. the release (#45);
-3. core vendors the client and builds the proxy (#13).
-
-The slowdown is the price of a contract both sides code against from the start.
+Core's adoption waits on the first release. The slowdown is the price of a contract both sides
+code against from the start. Under ADR-0022 the first release is 0.1.0, published from today's
+contract once [#119](https://github.com/spec-kitty/spec-kitty-charter/issues/119) is fixed, so the
+wait is short: the reshape of ADR-0019 and ADR-0020 follows in 0.x minors, with core regenerating
+on each one. The first route switched to the service needs 1.0.0 (ADR-0022 D6).
 
 ## Consequences
 
@@ -143,7 +144,8 @@ The slowdown is the price of a contract both sides code against from the start.
 
 ### Negative
 
-- Core waits for 1.0, and the reshape before it is large.
+- Core waits for 0.1.0, and every breaking 0.x minor costs it a regeneration and an adapter
+  change.
 - The in-process backend must translate core's Python into contract shapes, including refusal codes
   and revisions. That adapter is work core would not otherwise do.
 - Between the first and the last switch, two backends answer different operations. A command that
@@ -155,7 +157,8 @@ The slowdown is the price of a contract both sides code against from the start.
   loosely, the shadow compares the adapter, not the behavior. Mitigation: the corpus runs against
   the CLI (ADR-0016), not the adapter, and the in-process backend uses the contract's JSON Schemas
   to validate what it returns.
-- **1.0 freezes a shape that proves wrong.** Mitigation: additive contract sets (ADR-0009). A wrong
+- **1.0.0 freezes a shape that proves wrong.** Mitigation: the shapes are used by core through
+  0.x first (ADR-0022), and after 1.0.0 additive contract sets apply (ADR-0009). A wrong
   reserved operation is replaced by a new one in an additive set; while it is reserved, only the
   in-process backend serves it, so no client depends on the service's behavior for it.
 
@@ -171,7 +174,7 @@ Rejected: ADR-0001 says no response shape is hand-written on either side.
 
 ## Revisit when
 
-- The generator cannot represent a 1.0 shape (closed schemas, `oneOf`, the open `_links` map).
+- The generator cannot represent a contract shape (closed schemas, `oneOf`, the open `_links` map).
 - A switched operation needs a fallback to stay usable, which would contradict D5.
 
 ## Requests to core

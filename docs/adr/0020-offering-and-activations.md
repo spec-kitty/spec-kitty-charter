@@ -1,6 +1,6 @@
 ---
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
-description: Proposes /offering for what can be used and /activations for active charters the service stores, reserved activation writes in 1.0, and a hosted-first contract.
+description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: ADR
@@ -15,12 +15,13 @@ related:
   - adr/0017-pack-schemas-imported-as-canonical-json-schema
   - adr/0018-action-context-read-and-seam-access-surface
   - adr/0019-packs-resource-model-and-hypermedia
+  - adr/0022-contract-versions-start-at-0-x
   - architecture/offering-and-activation
   - architecture/packs-resource-model
   - api/service-contract
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this for the offering tree, the activation document, the two build modes and what must land before the 1.0 tag.
+    guidance_text: Read this for the offering tree, the activation document, the two build modes and what must land before 1.0.0.
   - profile: core-maintainer
     guidance_text: Read this for how core registers or builds an activation, why its local file becomes a fetched copy, and the requests to core.
   - profile: contract-consumer
@@ -86,8 +87,9 @@ A design squad (architecture, core-fidelity and contract-review lenses) ran on 2
 this record. Its findings that shape the decisions:
 
 - **No release exists.** No tag is cut and [#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)
-  is open, so the release gate has no baseline and every reshape below is free for the contract.
-  After the tag, each one is breaking.
+  is open. The contract is published as 0.x until it is stable
+  ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)), so every reshape below can land in a
+  0.x minor. After 1.0.0, each one is breaking.
 - **Core computes activation from many keys.** `activated_<plural>` for eleven kinds (three-state:
   absent, empty, a list), `activated_kinds`, `mission_type_activations` (absent means none, unlike
   every other key), presets with replace semantics, org `required_*` merged in at write time, a
@@ -123,7 +125,7 @@ packs the service is configured with or has registered (ADR-0005). It names no p
 never project-effective. An activation document may name its own packs (D4); until it does, it
 uses the service's offering.
 
-The action-context read moves under it before 1.0, with no alias:
+The action-context read moves under it before 1.0.0, with no alias:
 `GET /offering/mission-types/{missionType}/actions/{action}/context`. Its operation id,
 parameters, schema, refusals and headers are unchanged, and it stays the unfiltered walk of
 ADR-0018 D1.
@@ -168,7 +170,7 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
   artifacts) and `_links`. A config file carries no links and no server fields, so it is wrapped,
   not extended.
 
-`ActivationConfig`, in outline (the schema issue fixes every field before the tag):
+`ActivationConfig`, in outline (the schema issue fixes every field before 1.0.0):
 
 | Field | Meaning | Core's key today |
 |---|---|---|
@@ -260,11 +262,12 @@ run showed a required directive not served under an existing allow list; the ser
 recorded in the [divergence register](/conformance/divergence-register/) as an intended
 divergence. Rejected: matching core, which would serve a charter that breaks its own pack policy.
 
-### D8. The activation operations are declared in contract 1.0 and answer `501` until built (ruled: reserved)
+### D8. The activation operations are declared early and answer `501` until built (ruled: reserved)
 
-Every operation of D3, D6 and D7 is declared in full in 1.0: request body, success responses,
-refusals and headers. A request body or a success status added to an existing operation later is
-breaking, so declaring only the path would reserve nothing. Each reserved operation also:
+Every operation of D3, D6 and D7 is declared in full in an early 0.x minor, ahead of the other
+reshapes, because core's deny-list work codes against it (ADR-0022 D5): request body, success
+responses, refusals and headers. After 1.0.0 a request body or a success status added to an
+existing operation is breaking, so declaring only the path would reserve nothing. Each reserved operation also:
 
 - declares a `501 Not Implemented` `Problem` with no code;
 - carries `x-reserved: {contractSet: activation, issue: "#…"}`;
@@ -303,7 +306,7 @@ class.
 The lint rule `error-responses-are-problems` is amended so `201` and `204` are success statuses,
 and ADR-0018 D10's "200 only" is superseded.
 
-### D10. Refusal codes and `CharterRefusal` fields are reserved before the tag (default)
+### D10. Refusal codes and `CharterRefusal` fields are reserved before 1.0.0 (default)
 
 The codes of D9 enter `CharterRefusalCode` with `x-refusal` entries and `raised: false`.
 `CharterRefusal` gains two optional members, because it is closed and they cannot be added after
@@ -324,10 +327,10 @@ pack of level `project` (ADR-0005) before a document names it in `packs`. An act
 holds choices, never content. Rejected: uploading project content inside the document, which mixes
 packs and activations.
 
-### D12. The contract becomes hosted-first before the tag (default)
+### D12. The contract becomes hosted-first before 1.0.0 (default)
 
-Every place the 1.0 contract assumes a per-worktree daemon that reads project files is reshaped
-before the tag, in the same change as the reserved activation set:
+Every place the contract assumes a per-worktree daemon that reads project files is reshaped
+before 1.0.0, in a 0.x minor:
 
 - **Security scheme.** An issuer-backed bearer (`oauth2`, client credentials for core, with
   `openIdConnect` discovery) with scopes `offering:read`, `activation:read` and
@@ -363,9 +366,9 @@ before the tag, in the same change as the reserved activation set:
 
 ### Negative
 
-- Contract 1.0 grows: four schemas, about twelve reserved operations, three conditional headers,
+- The contract grows: four schemas, about twelve reserved operations, three conditional headers,
   six refusal codes, two `CharterRefusal` members, a security scheme with scopes and three lint
-  rules, all before the tag.
+  rules, all before 1.0.0.
 - The activation set must be built before cutover stage 3, not after stage 5, which moves work
   forward.
 - Core must change its plan: the unmerged deny-list branch, its seam and its ADR
@@ -376,8 +379,8 @@ before the tag, in the same change as the reserved activation set:
 ### Risks
 
 - **The reserved surface is wrong once built.** Mitigation: the operations stay `501` until each
-  lands with its scenarios, and the schema issue settles every field before the tag; a reserved
-  shape that proves wrong before the tag is still free to change.
+  lands with its scenarios, and the schema issue settles every field before 1.0.0. In 0.x, a reserved
+  shape that proves wrong in core's integration changes in the next minor.
 - **Normalized ids surprise core.** A file core registered comes back with canonical spellings.
   Mitigation: core stores what it fetches (D5), and the `ETag` changes only with meaning, not
   spelling.
@@ -403,14 +406,13 @@ accepts and ignores `readOnly` members is fragile in generated clients.
 
 ### E: `PATCH` with `application/merge-patch+json` for incremental changes
 
-Rejected for 1.0: it adds a second media type and validation path, and merge-patch replaces whole
+Rejected for now: it adds a second media type and validation path, and merge-patch replaces whole
 lists, which is the wrong semantics for id sets. It can be added later as a new operation.
 
-### F: ship 1.0 without the activation set, add it in 1.1
+### F: add the activation set late, after the other reshapes
 
-ADR-0009 D4 allows it, because new paths are additive. Rejected by the operator's ruling to reserve
-the writes in 1.0, and because the closed shapes (security scopes, refusal codes,
-`CharterRefusal` members) would have to be reserved anyway.
+New paths are additive, so this is allowed. Rejected by the operator's ruling to reserve the
+writes, and because core's deny-list work needs the document and operations first.
 
 ## Revisit when
 
@@ -420,10 +422,10 @@ the writes in 1.0, and because the closed shapes (security scopes, refusal codes
 - A hosted deployment needs tenancy beyond per-token activation entitlements.
 - The schema issue shows a field of the outline above cannot be canonical.
 
-## Open questions before the tag
+## Open questions before 1.0.0
 
-These need a ruling before [#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45),
-because each is a closed shape:
+These need a ruling before 1.0.0, because each is a closed shape. Core's integration on 0.x
+(ADR-0022) should inform them:
 
 1. **Provenance per entry.** Should the document keep, per artifact, the last decision (how, when,
    by whom), as core's deny-list branch proposes? If so, is `by` an opaque actor id?
@@ -448,7 +450,7 @@ because each is a closed shape:
 ## References
 
 - [Offering and activation](/architecture/offering-and-activation/), the design.
-- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/),
+- [ADR-0022](/adr/0022-contract-versions-start-at-0-x/), [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/),
   [ADR-0013](/adr/0013-persistent-deactivation/), [ADR-0012](/adr/0012-pack-mutability-policy/),
   [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/),
   [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),

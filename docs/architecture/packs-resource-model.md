@@ -89,7 +89,7 @@ in [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/#relation-names).
 
 ```json
 {
-  "contractVersion": "1.0.0",
+  "contractVersion": "0.2.0",
   "_links": {
     "self": { "href": "/api/v1/" },
     "info": { "href": "/api/v1/info" },
