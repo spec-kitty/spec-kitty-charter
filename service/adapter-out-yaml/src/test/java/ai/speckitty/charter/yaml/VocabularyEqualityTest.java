@@ -147,6 +147,34 @@ class VocabularyEqualityTest {
                         .toList());
     }
 
+    @Test
+    void theInspectorsArtifactSchemaKindsAreTheMappedSchemasThatDeclareAnId() throws IOException {
+        Set<String> expected = new TreeSet<>();
+        for (PackFileKind.FileRule rule : PackFileKind.bundled().fileRules()) {
+            try (InputStream in = VocabularyEqualityTest.class.getResourceAsStream(
+                    "/packs/schemas/" + rule.schema() + ".schema.json")) {
+                Map<?, ?> properties = (Map<?, ?>)
+                        JsonMapper.builder().build().readValue(in, Map.class).get("properties");
+                if (properties != null && properties.containsKey("id")) {
+                    expected.add(rule.schema());
+                }
+            }
+        }
+
+        assertThat(FileSystemPackInspector.artifactKinds()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(FileSystemPackInspector.artifactKinds())
+                .as("the eight kinds that were listed by hand")
+                .containsExactlyInAnyOrder(
+                        "directive",
+                        "tactic",
+                        "styleguide",
+                        "toolguide",
+                        "paradigm",
+                        "procedure",
+                        "mission-step-contract",
+                        "asset");
+    }
+
     // ---- relations ---------------------------------------------------------------------------------
 
     @Test
