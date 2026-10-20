@@ -15,6 +15,7 @@ related:
   - adr/0017-pack-schemas-imported-as-canonical-json-schema
   - adr/0018-action-context-read-and-seam-access-surface
   - adr/0019-packs-resource-model-and-hypermedia
+  - adr/0021-contract-first-seam-generated-client-and-routing-proxy
   - adr/0022-contract-versions-start-at-0-x
   - architecture/offering-and-activation
   - architecture/packs-resource-model

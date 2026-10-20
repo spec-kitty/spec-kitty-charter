@@ -130,7 +130,7 @@ the conventions in [Development conventions](/development/).
 | Method | Path | Proposed operationId | Purpose | Inventory issue |
 |---|---|---|---|---|
 | `GET` | `/` | `getApiRoot` | The API root: links to every top-level resource | — |
-| `GET` | `/packs/{packId}` | `getPack` | One pack: today's `PackSummary` fields | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}` | `getPack` | One pack: today's `PackSummary` fields | — |
 | `GET` | `/packs/{packId}/artifacts` | `listPackArtifacts` | The pack's artifacts, `?kind=`, paged with `PageInfo` | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96), [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106) (glossary) |
 | `GET` | `/packs/{packId}/artifacts/{kind}/{artifactId}` | `getPackArtifact` | One artifact with its body | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |

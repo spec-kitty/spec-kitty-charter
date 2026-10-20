@@ -30,7 +30,7 @@ seam and the shadow comparison run in core and the service runs from this reposi
 > ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 >
 > **Proposed** ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)):
-> core adopts a client generated from the published 1.0 contract now, behind a proxy that routes
+> core adopts a client generated from the published contract (0.1.0 first, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)) now, behind a proxy that routes
 > each operation to core's Python, a shadow or the service. Stages 2 to 4 then happen one
 > operation at a time, each switch fail closed.
 

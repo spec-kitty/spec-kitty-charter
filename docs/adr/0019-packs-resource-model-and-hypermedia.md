@@ -12,6 +12,7 @@ related:
   - adr/0015-charter-repository-is-canonical-for-charter-structure
   - adr/0018-action-context-read-and-seam-access-surface
   - adr/0020-offering-and-activations
+  - adr/0022-contract-versions-start-at-0-x
   - architecture/packs-resource-model
   - architecture/pack-registration-distribution
   - api/service-contract
