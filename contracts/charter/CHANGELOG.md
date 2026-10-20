@@ -185,14 +185,16 @@ was cut under either label. `Added` lists what this version holds that the first
   The scenarios "A pack file rewritten while it is parsed is stale, not unreadable" in
   `errors.feature` and "A refresh of a pack that cannot be loaded is refused with the pack's code"
   in `refresh.feature` expect `drg_schema_error` for their invalid shard (was `pack_unreadable`).
-- An explicit `null` in `pack.yaml` is no longer read as absent (#114, R4; behavior change, no schema
-  change: the codes are already `CharterRefusalCode` and `DiagnosticCode` values). The
-  `pack-descriptor` schema is the authority, and it requires a string wherever the key is present.
-  `pack_level: null` used to load with a `pack_level_missing` diagnostic (`200`); it is now refused
-  with `pack_unreadable` (`500`) and the detail `pack.yaml of <name>: pack_level must be a string`.
-  An explicit `null` `pack_id`, `pack_version` or `name` is refused with `pack.yaml of <name>:
-  <key> must be a string` instead of `pack.yaml of <name> has no <key>`; the code is unchanged. An
-  absent key keeps its answer. Scenario "A pack descriptor whose pack_level is an explicit null is
+- An explicit `null` in a `pack.yaml` plain-string field is no longer read as absent (#114, R19;
+  behavior change, no schema change: the codes are already `CharterRefusalCode` and
+  `DiagnosticCode` values). It covers the four fields the `pack-descriptor` schema types as a plain
+  string: `pack_id`, `pack_version`, `name` and `pack_level`. `pack_level: null` used to load with a
+  `pack_level_missing` diagnostic (`200`); it is now refused with `pack_unreadable` (`500`) and the
+  detail `pack.yaml of <name>: pack_level must be a string`. An explicit `null` `pack_id`,
+  `pack_version` or `name` is refused with `pack.yaml of <name>: <key> must be a string` instead
+  of `pack.yaml of <name> has no <key>`; the code is unchanged. An absent key keeps its answer.
+  `parent_pack`, `requires_core`, `active_charter` and `pack_drg` are nullable in the schema and
+  still accept `null`. Scenario "A pack descriptor whose pack_level is an explicit null is
   refused" in `packs.feature` pins the first.
 - A plain `~`, `Null` or `NULL` in any pack file is now null (#114, R18; behavior change, no schema
   change), as core's parser reads it. In `pack.yaml` a null in a required string field is therefore

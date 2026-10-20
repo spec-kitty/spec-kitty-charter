@@ -51,18 +51,11 @@ class PlantedFilesTest {
     private static final String CORE_PIN = "9554e7b26afe7a61519f7744d0147346ab36f197";
 
     /**
-     * Divergences found by WP08 that the register does not list yet (its owner folds them in at closeout). An id here
-     * is accepted only while the register lacks it; once the register has it, the register's entry counts.
+     * Divergences found by a planted-file comparison that the register does not list yet. An id here is accepted only
+     * while the register lacks it; once the register has it, the register's entry counts. Empty: DIV-020..025 are
+     * registered.
      */
-    static final Map<String, String> PROPOSED = Map.of(
-            "DIV-020", "Org-fragment node ids are minLength 1 and [A-Za-z0-9_/.-]+ (C5); core accepts any string",
-            "DIV-021",
-                    "charter.yaml inside a pack is validated against charter.schema.json; core's pack validate never reads it",
-            "DIV-022", "org_fragment_missing on a bare-path validation; core refuses a missing fragment at load only",
-            "DIV-023", "A root *.graph.yaml is validated; core's pack validate reads only drg/*.graph.yaml",
-            "DIV-024",
-                    "pack_level_missing on a bare path: core advises, the service has no configured level and says nothing",
-            "DIV-025", "A UTF-16 file with a byte order mark is not UTF-8 and not YAML here; core's parser decodes it");
+    static final Map<String, String> PROPOSED = Map.of();
 
     /** Core's findings that need the built-in layer or are outside this mission (contracts/pack-finding-codes.md). */
     private static final Set<String> EXCLUDED_CATEGORIES = Set.of(

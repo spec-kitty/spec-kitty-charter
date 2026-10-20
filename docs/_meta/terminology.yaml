@@ -44,4 +44,4 @@ allow:
     reason: states the rule (Mission, not "feature")
   - path: docs/conformance/divergence-register.md
     term: mission-steps-fragment-kind
-    reason: records core's mission_steps as the refused alias in the divergence entry
+    reason: records core's canonical mission_steps as the refused name in the divergence entry
