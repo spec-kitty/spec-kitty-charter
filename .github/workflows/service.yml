@@ -43,10 +43,6 @@ concurrency:
   group: service-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.workflow == 'service' }}
 
-env:
-  # The open-packs commit the round-trip runs against. Raise it in its own change.
-  OPEN_PACKS_REF: 7f063aecbdede29d05cc4d5fc9a5b13f9c7434d7
-
 jobs:
   verify:
     runs-on: ubuntu-24.04
@@ -59,11 +55,22 @@ jobs:
           # contract-charter-v* tags and refuses a shallow clone, so fetch the full history and tags.
           fetch-depth: 0
 
+      # The pin lives in gradle.properties only (openPacksRef); Gradle reads it too.
+      - name: Read the open-packs pin
+        id: open-packs-pin
+        run: |
+          ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
+          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Check out spec-kitty-open-packs
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           repository: spec-kitty/spec-kitty-open-packs
-          ref: ${{ env.OPEN_PACKS_REF }}
+          ref: ${{ steps.open-packs-pin.outputs.ref }}
           path: .open-packs
 
       - name: Set up Java 25

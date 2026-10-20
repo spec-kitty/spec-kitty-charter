@@ -1,8 +1,3 @@
-pack_name: spec-kitty-internal
-source_kind: local_path
-source_ref: packs/internal
-layer_index: 1
-provenance_marker: org
 nodes:
   - id: spk-internal-glossary
     kind: glossary_packs
@@ -221,90 +216,90 @@ edges:
   # already ships publicly, rather than re-authoring it. Targets are
   # fully-qualified <kind>:<id> DRG URNs (singular kind), verified present in
   # packs/built-in/.
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "procedure:red-main-release-discipline"
     relation: refines
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "tactic:pr-agent-worktree-isolation"
     relation: refines
   # No-full-heavy-suite directive reconciles with (does not duplicate) the
   # built-in test-run discipline and red-main policy: bounded/single test
   # runs, and reds outside blast radius are CI's to report, not to chase
   # by widening the local run.
-  - source: NO_FULL_HEAVY_SUITES_IN_MISSION
+  - source: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     target: "tactic:no-parallel-duplicate-test-runs"
     relation: refines
-  - source: NO_FULL_HEAVY_SUITES_IN_MISSION
+  - source: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     target: "procedure:red-main-release-discipline"
     relation: refines
   # The built-in post-merge adjudication procedure inventories failing gates;
   # this directive bounds how a mission agent runs them locally (named gate
   # files, never the whole architectural directory).
-  - source: NO_FULL_HEAVY_SUITES_IN_MISSION
+  - source: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     target: "procedure:post-merge-arch-gate-adjudication"
     relation: refines
   # Postmortem authoring chain (all targets are local nodes declared above).
   # The procedure suggests the writing styleguide and the branded-deliverable
   # tactic; the tactic requires the generation toolguide; the toolguide requires
   # the generator asset.
-  - source: project-evolution-postmortem
+  - source: "procedure:project-evolution-postmortem"
     target: "styleguide:report-writing"
     relation: suggests
-  - source: project-evolution-postmortem
+  - source: "procedure:project-evolution-postmortem"
     target: "tactic:branded-deliverable"
     relation: suggests
   # Executive-debrief chain: the generation procedure suggests its styleguide and
   # reuses the branded-deliverable discipline; the styleguide refines the general
   # report-writing styleguide rather than restating its voice rules.
-  - source: executive-debrief-generation
+  - source: "procedure:executive-debrief-generation"
     target: "styleguide:executive-debrief"
     relation: suggests
-  - source: executive-debrief-generation
+  - source: "procedure:executive-debrief-generation"
     target: "tactic:branded-deliverable"
     relation: suggests
-  - source: executive-debrief
+  - source: "styleguide:executive-debrief"
     target: "styleguide:report-writing"
     relation: refines
-  - source: branded-deliverable
+  - source: "tactic:branded-deliverable"
     target: "toolguide:branded-document-generation"
     relation: requires
-  - source: branded-document-generation
+  - source: "toolguide:branded-document-generation"
     target: "asset:spec-kitty-branded-pdf"
     relation: requires
   # Repository-specific refinements of repository-agnostic built-in Charter Pack artifacts.
   # Each internal node refines the built-in artefact it specialises.
-  - source: spec-kitty-arch-gate-adjudication
+  - source: "procedure:spec-kitty-arch-gate-adjudication"
     target: "procedure:post-merge-arch-gate-adjudication"
     relation: refines
-  - source: spec-kitty-arch-gate-adjudication
+  - source: "procedure:spec-kitty-arch-gate-adjudication"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: spec-kitty-red-main-policy
+  - source: "procedure:spec-kitty-red-main-policy"
     target: "procedure:red-main-release-discipline"
     relation: refines
-  - source: spec-kitty-package-tiers
+  - source: "styleguide:spec-kitty-package-tiers"
     target: "styleguide:tiered-standards"
     relation: refines
-  - source: spec-kitty-tracker-labels
+  - source: "styleguide:spec-kitty-tracker-labels"
     target: "styleguide:planning-and-tracking"
     relation: refines
   # The terminology guard moved here from built-in with its outbound edges.
-  - source: terminology-guard
+  - source: "toolguide:terminology-guard"
     target: "directive:DIRECTIVE_044"
     relation: suggests
-  - source: terminology-guard
+  - source: "toolguide:terminology-guard"
     target: "tactic:canonical-source-unification"
     relation: suggests
-  - source: terminology-guard
+  - source: "toolguide:terminology-guard"
     target: "tactic:occurrence-classification-workflow"
     relation: suggests
-  - source: spec-kitty-docs-lint-config
+  - source: "styleguide:spec-kitty-docs-lint-config"
     target: "styleguide:common-docs"
     relation: refines
-  - source: spec-kitty-gate-non-vacuity-exemplar
+  - source: "tactic:spec-kitty-gate-non-vacuity-exemplar"
     target: "tactic:architectural-gate-non-vacuity"
     relation: refines
-  - source: spec-kitty-ratchet-cost
+  - source: "tactic:spec-kitty-ratchet-cost"
     target: "tactic:frozen-baseline-shrink-only-ratchet"
     relation: refines
   # Backlog-triage authoring chain (moved from built-in). Ported
@@ -313,96 +308,96 @@ edges:
   # nodes (moscow-scoping-lens, issue-triage-state-machine,
   # planning-and-tracking, github-tracker) -- an internal node referencing a
   # built-in one is allowed; only the reverse direction is forbidden.
-  - source: tracker-backlog-iterative-deepening
+  - source: "tactic:tracker-backlog-iterative-deepening"
     target: "procedure:tracker-organisation-workflow"
     relation: suggests
-  - source: tracker-backlog-iterative-deepening
+  - source: "tactic:tracker-backlog-iterative-deepening"
     target: "tactic:moscow-scoping-lens"
     relation: suggests
-  - source: tracker-organisation-workflow
+  - source: "procedure:tracker-organisation-workflow"
     target: "tactic:tracker-backlog-iterative-deepening"
     relation: requires
-  - source: tracker-organisation-workflow
+  - source: "procedure:tracker-organisation-workflow"
     target: "tactic:moscow-scoping-lens"
     relation: requires
-  - source: tracker-organisation-workflow
+  - source: "procedure:tracker-organisation-workflow"
     target: "procedure:issue-triage-state-machine"
     relation: requires
-  - source: tracker-organisation-workflow
+  - source: "procedure:tracker-organisation-workflow"
     target: "styleguide:planning-and-tracking"
     relation: suggests
-  - source: tracker-organisation-workflow
+  - source: "procedure:tracker-organisation-workflow"
     target: "toolguide:github-tracker"
     relation: suggests
   # Test-suite quality assessment chain: the procedure requires the scan
   # toolguide, which requires the scanner asset; the review itself applies the
   # built-in test doctrine rather than restating it.
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "toolguide:test-quality-triage"
     relation: requires
-  - source: test-quality-triage
+  - source: "toolguide:test-quality-triage"
     target: "asset:test-quality-scan"
     relation: requires
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "styleguide:test-desiderata-and-boundaries"
     relation: suggests
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "styleguide:testing-principles"
     relation: suggests
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "directive:DIRECTIVE_041"
     relation: suggests
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "procedure:development-assist-test-cleanup"
     relation: suggests
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "procedure:adversarial-squad-deployment"
     relation: suggests
-  - source: test-suite-quality-assessment
+  - source: "procedure:test-suite-quality-assessment"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
   # Cloud-session dispatch binds the per-kind doctrine rather than restating it.
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "directive:DIRECTIVE_025"
     relation: suggests
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "directive:RECONCILE_CHANGE_SCOPE_TENSIONS"
     relation: suggests
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "procedure:refactoring"
     relation: suggests
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "procedure:test-first-bug-fixing"
     relation: suggests
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "procedure:test-suite-quality-assessment"
     relation: suggests
   # Cloud dispatch binds the runner-side semi-auto standing orders by reference
   # rather than re-typing them into every prompt.
-  - source: cloud-session-dispatch
+  - source: "procedure:cloud-session-dispatch"
     target: "procedure:semi-auto-delivery"
     relation: suggests
   # Semi-auto delivery binds the bounded-test and operator-signal contracts it
   # enforces, and suggests the closeout, red-first and review doctrine its steps name.
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "directive:OPERATOR_SIGNAL_CONTRACT"
     relation: requires
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "procedure:mission-wrap-up-sequence"
     relation: suggests
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "procedure:test-first-bug-fixing"
     relation: suggests
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "procedure:adversarial-squad-deployment"
     relation: suggests
-  - source: semi-auto-delivery
+  - source: "procedure:semi-auto-delivery"
     target: "tactic:clean-linear-commit-history"
     relation: suggests
   # Dual-mode pack skill: requires the standing-orders procedure (both modes) and
@@ -418,86 +413,86 @@ edges:
     relation: suggests
   # Triage pass: binds the label scheme and the backlog workflow rather than
   # restating them.
-  - source: issue-triage-pass
+  - source: "procedure:issue-triage-pass"
     target: "styleguide:spec-kitty-tracker-labels"
     relation: requires
-  - source: issue-triage-pass
+  - source: "procedure:issue-triage-pass"
     target: "procedure:tracker-organisation-workflow"
     relation: suggests
-  - source: issue-triage-pass
+  - source: "procedure:issue-triage-pass"
     target: "tactic:model-task-routing"
     relation: suggests
-  - source: issue-triage-pass
+  - source: "procedure:issue-triage-pass"
     target: "agent_profile:planner-priti"
     relation: suggests
   # Issue-to-Mission delivery: the close-out sequence and the squad, tracer-file,
   # red-first and test doctrine are owned elsewhere; this procedure binds them.
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "procedure:mission-wrap-up-sequence"
     relation: requires
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "procedure:adversarial-squad-deployment"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "procedure:mission-tracer-files"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "procedure:test-first-bug-fixing"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "directive:DIRECTIVE_041"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "tactic:model-task-routing"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "tactic:clean-linear-commit-history"
     relation: suggests
-  - source: issue-to-mission-delivery
+  - source: "procedure:issue-to-mission-delivery"
     target: "agent_profile:planner-priti"
     relation: suggests
   # The landing procedure binds the doctrine its steps name.
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "directive:DIRECTIVE_041"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "directive:DIRECTIVE_045"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "procedure:adversarial-squad-deployment"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "procedure:development-assist-test-cleanup"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "tactic:clean-linear-commit-history"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "tactic:model-task-routing"
     relation: suggests
-  - source: landing-contributor-prs
+  - source: "procedure:landing-contributor-prs"
     target: "agent_profile:reviewer-renata"
     relation: suggests
   # Charter-offering scenario extraction binds the authoring styleguide it
   # follows, the bounded-run directive (e2e read as evidence, not run as a
   # heavy suite), the squad procedure for promise extraction and litmus review,
   # and the built-in non-vacuity doctrine every scenario is judged against.
-  - source: charter-offering-scenario-extraction
+  - source: "procedure:charter-offering-scenario-extraction"
     target: "styleguide:feature-and-scenario-authoring"
     relation: requires
-  - source: charter-offering-scenario-extraction
+  - source: "procedure:charter-offering-scenario-extraction"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: charter-offering-scenario-extraction
+  - source: "procedure:charter-offering-scenario-extraction"
     target: "procedure:adversarial-squad-deployment"
     relation: suggests
-  - source: charter-offering-scenario-extraction
+  - source: "procedure:charter-offering-scenario-extraction"
     target: "styleguide:test-desiderata-and-boundaries"
     relation: suggests
   # Pack skills: each requires the procedure that carries its substance.
@@ -531,28 +526,28 @@ edges:
   # Executive-debrief tooling: the procedure requires the collector and suggests the
   # renderer and the long-form generator; the renderer requires the template, which
   # requires the logo and the three font files it loads by relative path.
-  - source: executive-debrief-generation
+  - source: "procedure:executive-debrief-generation"
     target: "asset:debrief-collector"
     relation: requires
-  - source: executive-debrief-generation
+  - source: "procedure:executive-debrief-generation"
     target: "asset:debrief-renderer"
     relation: suggests
-  - source: executive-debrief-generation
+  - source: "procedure:executive-debrief-generation"
     target: "asset:spec-kitty-branded-pdf"
     relation: suggests
-  - source: debrief-renderer
+  - source: "asset:debrief-renderer"
     target: "asset:debrief-template"
     relation: requires
-  - source: debrief-template
+  - source: "asset:debrief-template"
     target: "asset:debrief-logo"
     relation: requires
-  - source: debrief-template
+  - source: "asset:debrief-template"
     target: "asset:debrief-font-falling-sky-regular"
     relation: requires
-  - source: debrief-template
+  - source: "asset:debrief-template"
     target: "asset:debrief-font-falling-sky-bold"
     relation: requires
-  - source: debrief-template
+  - source: "asset:debrief-template"
     target: "asset:debrief-font-falling-sky-extrabold"
     relation: requires
   # Pack skill: requires the procedure and the styleguide that carry the substance.

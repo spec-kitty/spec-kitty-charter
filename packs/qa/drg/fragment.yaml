@@ -1,12 +1,8 @@
 # The pack's DRG fragment, the only DRG file an org Charter Pack may ship.
 # Read by `charter pack validate`, `doctor charter-packs`, `charter context`
 # and profile health.
-# pack_name/source_kind/source_ref/layer_index are overwritten at load time
-# by the operator-side org-pack loader; the values below are placeholders.
-pack_name: qa
-source_kind: local_path
-source_ref: "."
-layer_index: 1
+# Edge endpoints are URNs (<kind>:<id>), local nodes included. The pack's name,
+# source and layer come from the operator's configuration, never from this file.
 nodes:
 - id: QA_001
   kind: directives

@@ -14,6 +14,10 @@ dependencies {
 val openPacksDir = providers.gradleProperty("openPacksDir")
     .orElse(rootProject.layout.projectDirectory.dir("../spec-kitty-open-packs").asFile.absolutePath)
 
+// The pin: gradle.properties (openPacksRef) is its single source of truth, read here and by CI. It is validated
+// when the task runs, never at configuration time, and is a task input so a new pin is never answered from the cache.
+val openPacksRef = providers.gradleProperty("openPacksRef")
+
 val testSourceSet = sourceSets.test.get()
 val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     group = "verification"
@@ -24,6 +28,15 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
+    val ref = openPacksRef
+    inputs.property("openPacksRef", ref.orElse(""))
+    doFirst {
+        val pin = ref.orNull
+        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
+            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
+        }
+        systemProperty("charter.openPacksRef", pin)
+    }
 }
 
 tasks.test { useJUnitPlatform { excludeTags("open-packs") } }
