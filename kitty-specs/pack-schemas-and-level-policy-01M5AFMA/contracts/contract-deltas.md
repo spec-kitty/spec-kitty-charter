@@ -6,7 +6,7 @@ scenario and gets a line under `## 1.0.0-SNAPSHOT` in `contracts/charter/CHANGEL
 | # | File | Change | Ruling | Breaking-change check |
 |---|------|--------|--------|-----------------------|
 | D1 | `schemas/DiagnosticCode.yaml` | Add the enum value `pack_unknown_key` | R5 | oasdiff `response-property-enum-value-added` would be breaking against a 1.x baseline. There is no `contract-charter-v*` tag, so the gate passes. Risk K3 |
-| D2 | `schemas/CharterRefusalCode.yaml` | The `unresolved_edge_endpoint` description says it is no longer raised (endpoints are URNs) | R6 | Description only, compatible (`compatible-descriptions-reworded` fixture) |
+| D2 | `schemas/CharterRefusalCode.yaml` | The `unresolved_edge_endpoint` description says it is no longer raised (endpoints are URNs), and its `x-refusal` entry flips to `raised: false` | R6 | The schema change is the description only, compatible (`compatible-descriptions-reworded` fixture); `x-refusal` is an extension oasdiff does not read, so the flag flip is recorded in the contract `CHANGELOG.md` and enforced by the scenario "The refusal codes the contract marks raised are exactly those an operation raises" |
 | D3 | `scenarios/packs.feature` | New: a `pack.yaml` with an undeclared key loads with a `pack_unknown_key` diagnostic | R5 | — |
 | D4 | `scenarios/packs.feature` | Changed: a bare edge endpoint → `drg_schema_error`, "edge endpoint 'QA_404' is not a URN" | R6 | — |
 | D5 | `scenarios/packs.feature` | New: `requires_core: banana` → `pack_unreadable` | R3 | — |
