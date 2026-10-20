@@ -18,7 +18,7 @@ final class ContractVersion {
     /**
      * The contract version.
      *
-     * @return the contract's {@code info.version}, for example {@code 1.0.0}
+     * @return the contract's {@code info.version}, for example {@code 0.1.0}
      */
     static String value() {
         return VALUE;

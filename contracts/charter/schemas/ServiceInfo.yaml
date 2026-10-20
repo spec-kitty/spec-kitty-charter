@@ -11,7 +11,7 @@ properties:
   contractVersion:
     type: string
     description: >-
-      The info.version of the contract the service was built against, for example 1.0.0. The
+      The info.version of the contract the service was built against, for example 0.1.0. The
       contract is one document, so this version names every operation the service serves; an
       additive contract set is new operations in that document and a minor version.
     x-source:
