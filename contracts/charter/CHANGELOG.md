@@ -245,6 +245,10 @@ was cut under either label. `Added` lists what this version holds that the first
   gives `pack_version` a `minLength` of 1, so `pack_version: ''` is `pack_unreadable` (`500`) with
   the detail `pack.yaml of <name>: pack_version must not be empty`. The detail is the same for
   any other plain-string field the schema gives a `minLength`; it has one today.
+- `CharterRefusalCode` names the mutability-policy epic #55 (ADR-0012, steps #57 to #61), not #48,
+  as the work that will raise `governance_policy_violation` (description only, #114): #48 is the
+  pack-level policy and raises nothing. The scenario "governance_policy_violation is reserved" in
+  `errors.feature` and `scenarios/README.md` say the same.
 
 ### Action context and the seam surface
 
@@ -315,8 +319,8 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
   unseen.
 - `/info` refuses `stale_input` when its second digest is refused, as the other reads do.
   `stale_input` is logged at INFO, without a stack trace.
-- `governance_policy_violation` stays reserved: a declared pin, enforced by a unit test, until #48
-  raises it.
+- `governance_policy_violation` stays reserved: a declared pin, enforced by a unit test, until the
+  mutability-policy epic #55 raises it.
 - `CharterRefusalCode` carries the machine-readable `x-refusal` map (`status`, `retryable`,
   `raised`) for all nine codes. The description adds the 401 and 403 dispatch sentence: they have
   no charter code and are transport failures.

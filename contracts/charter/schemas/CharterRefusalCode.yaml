@@ -15,7 +15,8 @@ description: >-
 
   One code is reserved for the work that raises it, so that adding it is no breaking change (ADR-0009):
   governance_policy_violation will refuse an offering in which a lower-tier pack breaks the mutability
-  policy of the pack that owns an artifact (#48). No operation of this version raises it. Its scenario is
+  policy of the pack that owns an artifact (the mutability-policy epic #55, ADR-0012, steps #57 to
+  #61). No operation of this version raises it. Its scenario is
   a declaration pin, not behavior: it asserts only what the x-refusal map below declares, and a unit test of
   the service fails when any main class other than the enum and its title mapping names the code.
 

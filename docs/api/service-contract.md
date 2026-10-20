@@ -197,7 +197,7 @@ writes come after the read stages, one at a time: charter document save and comp
 - `stale_input` is raised by every read: inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` is reserved: it is declared and pinned by a scenario and a unit
-  test, and raised by nothing until the pack mutability policy lands (#48).
+  test, and raised by nothing until the pack mutability policy lands (epic #55).
 - **401 and 403 are transport failures, not refusals.** They are `Problem` bodies without a
   charter code: 401 is a missing, malformed or wrong token, 403 is a browser request. The seam
   treats both as transport failures. They carry no fingerprint.

@@ -152,8 +152,8 @@ Feature: Failures outside the charter's refusals
   Scenario: governance_policy_violation is reserved
     A declaration pin, not behavior. No operation of this version raises the code: the unit test
     ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it, and issue #48, which will raise it, deletes that test. Nothing here calls the
-    service.
+    names it, and the mutability-policy epic #55 (ADR-0012, steps #57 to #61), which will raise
+    it, deletes that test. Nothing here calls the service.
     Then the contract declares the refusal code "governance_policy_violation"
     And the contract says "governance_policy_violation" is answered with status 500
     And the contract says "governance_policy_violation" may not be retried
