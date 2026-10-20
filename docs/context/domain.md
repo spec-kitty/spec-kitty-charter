@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-10-14T00:00:00Z
+updated: 2026-10-19T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -23,7 +23,10 @@ These terms are defined in the core repository (`docs/context/charter.md`,
 `docs/context/governance.md`, core ADR [`2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md) (charter offering, active charter and presets) and core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)). They are
 repeated here because the Java domain model must use them unchanged. If a definition here
 and the core glossary disagree, the core glossary wins until this repository's contract
-becomes the source of record for that term; flag the drift.
+becomes the source of record for that term; flag the drift. Since
+[ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) this repository is
+canonical for the charter structure and the Charter Pack schemas, so the terms of those are
+defined here; for every other term this repository does not own, the pointer to core stays.
 
 This page is the short orientation. The [Glossary](/glossary/) holds the full entries,
 imported from the core glossary.
@@ -79,11 +82,34 @@ contract").
 | Term | Meaning |
 |---|---|
 | **Artifact kind** | One of the members of core's `ArtifactKind` enum, which is the single authority for each kind's facts. The kinds and their facts are tabulated in the [Logical model](/architecture/logical-model/#artifact-kinds). The Java domain derives from the same facts and does not restate them. |
-| **DRG** | The Doctrine Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, and others). An edge endpoint is a URN `<kind>:<id>` or a bare id the fragment's own nodes declare; anything else is refused at merge time (`unresolved_edge_endpoint`). |
+| **DRG** | The Doctrine Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, and others). An edge endpoint is a URN `<kind>:<id>`, always; anything else is refused as `drg_schema_error`. |
 | **`specializes_from`** | Profile lineage, declared as a DRG edge between two `agent_profile` nodes, never as a per-profile field. |
 | **`enhances` / `overrides`** | `enhances` merges fields and keeps the action sequence and step inputs and outputs; `overrides` replaces in full. Silently dropping steps is refused. |
 | **Cascade** | Activating an artifact follows its DRG `requires` and `suggests` edges to the artifacts it needs. Deactivation skips artifacts another active artifact still references. |
 | **Layer merge** | Built-in, org and project layers merge into one active graph under the semantics of core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (doctrine layer merge semantics). |
+
+## Pack findings and levels
+
+| Term | Meaning |
+|---|---|
+| **Pack finding** | One judgement on a pack file, with a code, a severity (blocking or warning), the file, the place in it and a detail. A blocking finding on a load-path file becomes a refusal; a warning becomes a diagnostic. |
+| **Declared level** | The `pack_level` a pack states in its own `pack.yaml`. It is optional; a pack that states none gets the diagnostic `pack_level_missing`. |
+| **Configured level** | The level the operator's configuration places a pack at: built-in, `charter_packs.org.packs`, or the project layer. A declared level that differs from it refuses the pack with `pack_level_mismatch`. |
+
+## Node kinds in an org fragment
+
+One name per concept, with no aliases. A fragment node names its kind with the plural of an
+artifact kind, or with `mission_types`, `actions` or `anti_patterns`.
+
+| Term | Meaning |
+|---|---|
+| **Mission step contract** | The steps of one action of one mission type; the fragment kind is `mission_step_contracts`. Avoid `mission_steps`. In core `mission_steps` is the canonical name and `mission_step_contracts` its back-compat alias; the service's canonical choice is the reverse, and it refuses `mission_steps`. |
+| **Action** | One step of a mission type's workflow, the node `action:<mission-type>/<action>`; the fragment kind is `actions`. Core refuses it in a fragment. |
+| **Anti-pattern** | A node that good artifacts `reject`; it has no descriptor file. The fragment kind is `anti_patterns`. Core refuses it in a fragment. |
+| **Mission type** | A declared kind of mission, the node `mission_type:<id>`; the fragment kind is `mission_types`. Avoid the singular `mission_type` as a kind name in a fragment: it is refused. |
+
+The authored pack files are drawn in the
+[pack write model](/architecture/descriptor-schemas/#pack-write-model).
 
 ## Operations
 

@@ -59,8 +59,9 @@ flowchart LR
    `pack_level_mismatch`. A missing level does not stop the load: it is the diagnostic
    `pack_level_missing`, and [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml) in the contract states when it applies.
 2. **Merge.** The three layers merge into one graph under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Edge
-   endpoints resolve to `<kind>:<id>` URNs or to bare ids the fragment declares; anything
-   else is an `unresolved_edge_endpoint` conflict. Edges from an org pack's `drg/fragment.yaml`
+   endpoints are URNs `<kind>:<id>` everywhere, so there is no endpoint resolution step and
+   `unresolved_edge_endpoint` is no longer raised (DIV-007); a value that is not a URN never
+   gets this far, because the load refuses it as `drg_schema_error`. Edges from an org pack's `drg/fragment.yaml`
    land in the same graph that cascade reads; they are not kept on a separate,
    diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
    mutability level is checked against what later packs do to it: a change the level does not

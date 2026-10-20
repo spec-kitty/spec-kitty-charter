@@ -30,6 +30,10 @@ avoid:
     pattern: '\bcharter (?:bundle|offering) pack\b'
     prefer: Charter Pack
     reason: a Charter Pack is the distributable bundle; Charter Bundle is the .kittify/charter tree
+  - term: mission-steps-fragment-kind
+    pattern: '\bmission_steps\b'
+    prefer: mission_step_contracts
+    reason: the service's one name for the fragment node kind (R14); core's mission_steps is refused here
 
 allow:
   - path: docs/context/domain.md
@@ -38,3 +42,6 @@ allow:
   - path: docs/guides/contributing.md
     term: feature
     reason: states the rule (Mission, not "feature")
+  - path: docs/conformance/divergence-register.md
+    term: mission-steps-fragment-kind
+    reason: records core's mission_steps as the refused alias in the divergence entry

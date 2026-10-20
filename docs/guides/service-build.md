@@ -24,12 +24,20 @@ How to build the charter service and run every check CI runs.
   A machine without Java 25 can pass `-Pcharter.javaVersion=21` for a local build; CI never
   does.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
-  (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. CI checks out the
-  commit pinned in `.github/workflows/service.yml`.
+  (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. The checkout must be
+  clean and at `openPacksRef` in `gradle.properties` (currently
+  `01edb4ebab308249a10ed4a4a01d77741ac1d14b`); the build refuses otherwise, and prints the
+  command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
+  stash or clean the checkout).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
   last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
   you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
-  never does.
+  never does. `verifyAll` in any shallow clone needs `-PcontractBaseline=none`, because the build
+  refuses a shallow clone before it looks at tags. In a full clone, the check needs the
+  `contract-charter-v*` tag of its baseline, merged into HEAD: the newest release the CHANGELOG
+  records with the contract's major version. A release whose tag is not yet merged (as on a
+  release PR) is skipped, and a new major version has no baseline, so it needs no tag. Fetch the
+  tags if one is missing.
 - **Network access on the first run.** The contract checks download vacuum and oasdiff at
   pinned versions and verify each archive's SHA-256 before using it (Linux and macOS, x86-64
   and arm64).
@@ -115,3 +123,7 @@ so a new or changed artifact needs its checksum recorded:
 Review the diff of `gradle/verification-metadata.xml`; never edit it by hand. The vacuum and
 oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksums are pinned
 in `contracts/build.gradle.kts`.
+
+A module that is not a Spring module may still import the Spring Boot BOM as a platform, to
+pin a transitive dependency to the version the service uses. `adapter-out-yaml` does this for
+the Jackson and slf4j versions that networknt's JSON Schema validator brings in.
