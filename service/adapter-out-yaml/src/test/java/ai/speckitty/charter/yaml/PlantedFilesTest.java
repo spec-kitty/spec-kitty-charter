@@ -439,15 +439,12 @@ class PlantedFilesTest {
 
     /** The {@code open} entries of {@code docs/conformance/divergences.yaml}, by id. */
     private static Map<String, String> openDivergences() throws IOException {
-        Path file = repositoryRoot().resolve("docs/conformance/divergences.yaml");
-        Object parsed = Yaml.load(Files.readString(file, StandardCharsets.UTF_8));
         Map<String, String> open = new LinkedHashMap<>();
-        for (Object entry : (List<?>) parsed) {
-            Map<?, ?> row = (Map<?, ?>) entry;
+        DivergenceRegister.entries(repositoryRoot()).forEach((id, row) -> {
             if ("open".equals(row.get("status"))) {
-                open.put(String.valueOf(row.get("id")), String.valueOf(row.get("surface")));
+                open.put(id, String.valueOf(row.get("surface")));
             }
-        }
+        });
         return open;
     }
 
