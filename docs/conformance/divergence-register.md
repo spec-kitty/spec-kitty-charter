@@ -32,7 +32,7 @@ reused.
 Entries are grouped by block, one block per mission, so that two missions never share an id:
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
-- **Pack schemas (DIV-001..019, ADR-0017)** is below, after the context-read block. DIV-001 and
+- **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
@@ -109,7 +109,7 @@ need no entry here. For an activated case the harness asserts both sides (ADR-00
 The seam does not switch its context read to the service until R9's effective-context operation
 exists (cutover stage 3).
 
-## Pack schemas (DIV-001..019, ADR-0017)
+## Pack schemas (DIV-001..025, ADR-0017)
 
 The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
 and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
@@ -237,12 +237,13 @@ ruling, its status and the evidence.
 
 ### DIV-011: Org-fragment node kinds
 
-- **Core:** Accepts the aliases mission_steps and mission_type, and refuses actions and anti_patterns (offering/drg/org_pack_loader.py:118-139).
-- **Service:** One name per concept, 15 plurals. actions and anti_patterns are accepted. mission_steps and mission_type are refused; mission_step_contracts is the one name.
+- **Core:** Canonical fragment kind name is mission_steps, with mission_step_contracts kept as the back-compat alias; also accepts the mission_type singular alias, and refuses actions and anti_patterns (offering/drg/org_pack_loader.py:72-100, 118-139).
+- **Service:** One name per concept, 15 plurals. The canonical name is the reverse of core's: mission_step_contracts is the one name, and core's canonical mission_steps is refused, as is mission_type. actions and anti_patterns are accepted.
 - **Rationale:** One name per concept, with no aliases. The glossary records the canonical names.
 - **Ruling:** R14 (2026-10-19); plan call P9
 - **Status:** open, since 2026-10-19
 - **Evidence:**
+  - Core: `offering/drg/org_pack_loader.py:72-100` (`mission_steps` is the canonical plural; `mission_step_contracts` is the input alias)
   - Core: `offering/drg/org_pack_loader.py:118-139`
   - Charter: `contracts/packs/VENDORED.md, C5`
 
@@ -295,7 +296,7 @@ ruling, its status and the evidence.
 
 - **Core:** Asks the platform for the type, so the answer can depend on the system's mime.types files (offering/packs/pack_validator.py:1377-1510).
 - **Service:** Uses a fixed extension table taken from Python's built-in table of MIME types, without the system files.
-- **Rationale:** A verdict must not depend on the machine it runs on. A possible difference is recorded.
+- **Rationale:** A verdict must not depend on the machine it runs on. A possible difference is recorded. An example: .xml is text/xml in the fixed table but application/xml in Debian's /etc/mime.types, and .yaml, .yml, .ttf and .woff2 are unknown to the fixed table while Debian's file lists them (application/yaml, font/ttf, font/woff2).
 - **Ruling:** plan call P8; R16
 - **Status:** open, since 2026-10-19
 - **Evidence:**
@@ -334,6 +335,75 @@ ruling, its status and the evidence.
 - **Evidence:**
   - Core: `offering/drg/models.py:409-412`
   - Charter: `contracts/packs/VENDORED.md, C16`
+
+### DIV-020: Fragment node id grammar
+
+- **Core:** Accepts any string as a fragment node id (offering/drg/org_pack_loader.py:371, `id: str`); the plant `bad id!` passes `pack validate`.
+- **Service:** Requires minLength 1 and the pattern ^[A-Za-z0-9_/.-]+$ (C5, P9). The plant is refused.
+- **Rationale:** A node id becomes part of a URN and a path, so it takes a safe grammar. No open-packs node id falls outside it.
+- **Ruling:** R11 register decision (2026-10-20, operator); plan call P9
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/drg/org_pack_loader.py:371`
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/c5-fragment-node-id-unsafe` (core verdict in planted/core-verdicts.json: ok, no findings)
+  - Charter: `contracts/packs/VENDORED.md, C5`
+
+### DIV-021: charter.yaml inside a pack
+
+- **Core:** Never reads it: `charter pack validate` has no leg for charter.yaml (only org-charter.yaml, offering/packs/pack_validator.py:595-604).
+- **Service:** Validates it with charter.schema.json, including cli_timeout_seconds, which refuses .nan and .inf.
+- **Rationale:** A file the pack ships should be checked against the schema that describes it, and a non-finite timeout is never meant.
+- **Ruling:** R11 register decision (2026-10-20, operator)
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:595-604` (the only charter leg is org-charter.yaml)
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/charter-invalid` and `.../charter-cli-timeout-not-a-number` (core verdicts in planted/core-verdicts.json: ok, no findings)
+
+### DIV-022: org_fragment_missing in validate mode on a bare path
+
+- **Core:** validate_pack is ok for a pack with no drg/fragment.yaml; only the loader refuses it, with OrgPackMissingError (offering/drg/org_pack_loader.py:626-628; offering/packs/pack_validator.py:893-900).
+- **Service:** Validate mode blocks with org_fragment_missing on a bare path.
+- **Rationale:** The doctor should report at validation time what the load refuses later.
+- **Ruling:** R11 register decision (2026-10-20, operator)
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/drg/org_pack_loader.py:626-628`
+  - Core: `offering/packs/pack_validator.py:893-900`
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/org-fragment-missing` (core verdict in planted/core-verdicts.json: ok, no findings)
+
+### DIV-023: A root *.graph.yaml in a pack
+
+- **Core:** Reads only drg/*.graph.yaml and drg/fragment.yaml (offering/packs/pack_validator.py:507, 845); a root shard is never validated.
+- **Service:** Validates a root *.graph.yaml like any shard.
+- **Rationale:** A graph file the pack ships should be checked wherever it sits.
+- **Ruling:** R11 register decision (2026-10-20, operator)
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:507` (drg_dir = pack_dir / "drg")
+  - Core: `offering/packs/pack_validator.py:845` (_DRG_GRAPH_GLOB)
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/c3-root-shard-urn-malformed` (core verdict in planted/core-verdicts.json: ok, no findings)
+
+### DIV-024: pack_level_missing on a bare path with no configured level
+
+- **Core:** Advises PACK_LEVEL_MISSING whenever pack.yaml has no pack_level key (offering/packs/pack_validator.py:746-766).
+- **Service:** Raises no pack_level_missing on a bare path, where no level is configured to compare with.
+- **Rationale:** Without a configured position the service has no level to expect, so it stays silent instead of advising.
+- **Ruling:** R11 register decision (2026-10-20, operator)
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:746-766`
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/control-no-pack-level-on-a-bare-path` (core verdict in planted/core-verdicts.json: one PACK_LEVEL_MISSING advisory)
+
+### DIV-025: UTF-16 with a byte order mark
+
+- **Core:** Decodes it: the artifact scan hands the path to the YAML parser, which detects the encoding (offering/packs/pack_validator.py:288, 301), and accepts the plant.
+- **Service:** A UTF-16 file with a byte order mark is not UTF-8 and so not valid YAML here; it is refused.
+- **Rationale:** Pack files are UTF-8, and one reading of every file keeps a verdict the same on every machine.
+- **Ruling:** R11 register decision (2026-10-20, operator)
+- **Status:** open, since 2026-10-20
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:288` and `:301` (`_yaml_parser().load(path)`, no explicit encoding)
+  - Charter: `service/adapter-out-yaml/src/test/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
 
 ## Adding an entry
 
