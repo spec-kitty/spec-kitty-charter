@@ -1,15 +1,17 @@
-# Pack descriptor for the Spec Kitty internal (org-tier) Charter Pack, vendored
-# into this repository (see PROVENANCE.md). It is the in-house / maintainer org
-# pack, loaded via .kittify/config.yaml -> charter_packs.org.packs.
+# Authored pack descriptor for the Spec Kitty internal (org-tier) Charter Pack.
+# This repository is the CANONICAL home of spec-kitty-internal (see
+# PROVENANCE.md): the in-house / maintainer org pack, registered for this repo's
+# own governance via .kittify/config.yaml -> charter_packs.org.packs.
 #
-# The internal pack is UNSHARDED: it carries a single drg/fragment.yaml and an
-# org-charter.yaml active charter -- so it declares the active-charter and DRG
-# pointers explicitly here. It has NO pack-manifest.yaml.
+# Authored, hand-edited data (never machine-rewritten). This pack is UNSHARDED:
+# it carries a single drg/fragment.yaml and an org-charter.yaml active charter,
+# so it declares the org pack_level and the active-charter and DRG pointers
+# explicitly (required by the current core PackDescriptor). No pack-manifest.yaml.
 #
-# pack_id is the pack's canonical identity. Its minting authority and drift
-# guards live upstream in the originating pack source, not in this repository
-# (see PROVENANCE.md); this is a vendored mirror and does not re-mint it.
+# pack_id is the canonical identity, minted and owned here; downstream repos
+# (e.g. spec-kitty-charter) mirror it verbatim and must not re-mint or diverge it.
 pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+pack_version: 1.0.0
 parent_pack: null
 name: spec-kitty-internal
 pack_level: org

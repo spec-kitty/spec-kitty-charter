@@ -18,7 +18,7 @@ them. Read them there for the reasoning behind each artifact.
 | --- | --- |
 | Directive ids `QA-00N` became `QA_00N`. | Current Spec Kitty resolves org-pack directives only in the underscore form. Before the change, `charter context --include directive:QA-001` found nothing for any of the six directives. |
 | `spec-kitty doctrine asset path` became `spec-kitty charter pack asset path`. | The `doctrine` command group was removed in the 4.x Charter Pack cutover. |
-| `pack_name` in `drg/fragment.yaml` is `qa`; `org-charter.yaml` names the org `spec-kitty-qa` and uses schema version 2. | Namespacing, and the schema version `charter org init` writes. |
+| `drg/fragment.yaml` carries no provenance header (the pack name `qa` comes from the consumer's registration); `org-charter.yaml` names the org `spec-kitty-qa` and uses schema version 2. | Namespacing, and the schema version `charter org init` writes. |
 | Added QA_007 (promise traceability), QA_008 (reproductions gate releases), the `qa-promise-elicitation` tactic, the `qa-promise-page` styleguide, the `qa-description-to-acceptance-ci` procedure, the `qa-promise-trace-lint` asset and toolguide, and two templates. | The promise -> scenario -> acceptance CI layer (from private-packs PR #1). |
 | `qa_result_ingest.py` reads test cases from fenced ```yaml blocks in the work-package body, with self-test Pair15. | Fixes spec-kitty-qa-pack#5: the template puts cases in the body (WPMetadata forbids them in the frontmatter), but the ingester read only the frontmatter, so a template-conformant mission ingested `cases_total: 0` with exit 0. |
 | Removed `qa.graph.yaml`, `missions/qa/governance-profile.yaml`, the `qa-reviewer-quinn` placeholder profile, the empty `paradigms/` and every `.gitkeep`. | The empty pack-root graph and the duplicate governance profile are not read (the mission type still activates and creates missions without them); the placeholder profile carried no content and nothing referenced it. |
@@ -53,3 +53,7 @@ under `charter_packs.org.packs`:
   reported `verdict: ready`, 1 of 1 requirements covered.
 - Asset self-tests: `qa_result_ingest.py` 16 of 16, `qa_carrier_lint.py` 38 of 38,
   `qa_promise_trace_lint.py` 12 of 12.
+
+## Vendored copy
+
+Re-vendored from `spec-kitty-open-packs` `packs/qa` at commit `01edb4ebab308249a10ed4a4a01d77741ac1d14b` (main, after PR #52 landed: URN-only fragment endpoints) on 2026-10-19. This file and `README.md` are local and differ from upstream on purpose; everything else in this directory is the upstream copy. The commit is pinned by `openPacksRef` in `gradle.properties`.

@@ -4,16 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.domain.CharterPack;
-import ai.speckitty.charter.domain.Diagnostic;
 import ai.speckitty.charter.domain.DoctrineGraph;
-import ai.speckitty.charter.domain.PackLevel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -37,56 +33,12 @@ import org.snakeyaml.engine.v2.common.ScalarStyle;
 @Tag("open-packs")
 class OpenPacksRoundTripTest {
 
-    /**
-     * The load diagnostics of every pack of the pinned corpus (OPEN_PACKS_REF), under the ratified strict rule:
-     * a pack without pack.yaml, or whose pack.yaml has no pack_level, is diagnosed at every level. Bringing
-     * the packs up to the rule is spec-kitty-open-packs #47; a pack added to or fixed in the corpus changes this
-     * table on purpose.
-     */
-    private static final Map<String, List<Diagnostic>> DIAGNOSTICS = Map.of(
-            "built-in", List.of(),
-            "cave-kitty", List.of(noPackYaml("cave-kitty")),
-            "event-driven", List.of(noPackYaml("event-driven")),
-            "internal",
-                    List.of(new Diagnostic(
-                            Diagnostic.Code.PACK_LEVEL_MISSING,
-                            "pack.yaml of internal has no pack_level; the configured level org is used")),
-            "qa", List.of(noPackYaml("qa")));
-
-    private static Diagnostic noPackYaml(String orgPack) {
-        return new Diagnostic(
-                Diagnostic.Code.PACK_LEVEL_MISSING,
-                "org pack " + orgPack + " has no pack.yaml; the configured level org is used");
-    }
-
-    private static Path openPacks() {
-        String dir = System.getProperty("charter.openPacksDir");
-        if (dir == null || !Files.isDirectory(Path.of(dir, "built-in"))) {
-            throw new IllegalStateException("No spec-kitty-open-packs checkout at '" + dir
-                    + "'; pass -PopenPacksDir=<checkout>. The round-trip never skips.");
-        }
-        return Path.of(dir);
-    }
-
-    private static List<Path> yamlFiles(Path root) throws IOException {
-        List<Path> files = new ArrayList<>();
-        for (String top : List.of("built-in", "packs")) {
-            try (Stream<Path> walk = Files.walk(root.resolve(top))) {
-                walk.filter(Files::isRegularFile)
-                        .filter(p ->
-                                p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
-                        .sorted()
-                        .forEach(files::add);
-            }
-        }
-        return files;
-    }
-
     @TestFactory
     Stream<DynamicTest> everyYamlFileRoundTrips() throws IOException {
-        Path root = openPacks();
-        List<Path> files = yamlFiles(root);
-        assertThat(files).as("YAML files under built-in/ and packs/").hasSizeGreaterThan(100);
+        OpenPacksCorpus.assertPinned();
+        Path root = OpenPacksCorpus.root();
+        List<Path> files = OpenPacksCorpus.yamlFiles();
+        assertThat(files).as("YAML files under packs/").hasSize(OpenPacksCorpus.YAML_FILE_COUNT);
         return files.stream()
                 .map(file -> dynamicTest(root.relativize(file).toString(), () -> {
                     byte[] bytes = Files.readAllBytes(file);
@@ -117,24 +69,18 @@ class OpenPacksRoundTripTest {
 
     @TestFactory
     Stream<DynamicTest> everyPackLoadsAndItsGraphRoundTrips() throws IOException {
-        Path root = openPacks();
-        List<PackLocation> packs = new ArrayList<>();
-        packs.add(new PackLocation("built-in", PackLevel.BUILT_IN, root.resolve("built-in")));
-        try (Stream<Path> dirs = Files.list(root.resolve("packs"))) {
-            dirs.filter(Files::isDirectory)
-                    .sorted()
-                    .forEach(dir -> packs.add(new PackLocation(dir.getFileName().toString(), PackLevel.ORG, dir)));
-        }
+        OpenPacksCorpus.assertPinned();
+        List<PackLocation> packs = OpenPacksCorpus.packs();
         assertThat(packs)
                 .extracting(PackLocation::name)
                 .as("packs of the corpus")
-                .containsExactlyInAnyOrderElementsOf(DIAGNOSTICS.keySet());
+                .containsExactlyInAnyOrderElementsOf(OpenPacksCorpus.DIAGNOSTICS.keySet());
         return packs.stream()
                 .map(location -> dynamicTest(location.name(), () -> {
                     CharterPack pack = FileSystemCharterPackRepository.loadPack(location);
                     assertThat(pack.diagnostics())
                             .as("diagnostics of " + location.name())
-                            .containsExactlyElementsOf(DIAGNOSTICS.get(location.name()));
+                            .containsExactlyElementsOf(OpenPacksCorpus.DIAGNOSTICS.get(location.name()));
                     DoctrineGraph graph = pack.graph();
                     assertThat(graph.nodes()).as("nodes of " + location.name()).isNotEmpty();
                     DoctrineGraph reread = GraphDocumentReader.read(
