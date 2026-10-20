@@ -35,7 +35,8 @@ follows are in [Development conventions](/development/).
 ```text
 /                                         API root (proposed)
 ├── info                                  service info (built)
-├── offering                              the charter, merged: see Offering and activation (ADR-0020)
+├── offering                              the offer side, merged: see Offering and activation (ADR-0020)
+├── activations                           the active charters (ADR-0020)
 └── packs                                 the packs this service knows (GET built; POST proposed)
     ├── refresh                           controller: re-read the packs (built)
     └── {packId}                          one pack (proposed)
@@ -50,8 +51,8 @@ follows are in [Development conventions](/development/).
 ```
 
 `{packId}` is the pack's `pack_id` ULID from `pack.yaml`. The merged offering of the packs in
-force, the action-context read and the activation documents are not under `/packs`; they are the
-`/offering` layer, in [Offering and activation](/architecture/offering-and-activation/).
+force, the action-context read and the activation documents are not under `/packs`; they are
+`/offering` and `/activations`, in [Offering and activation](/architecture/offering-and-activation/).
 
 ## The link graph
 
@@ -60,6 +61,7 @@ flowchart LR
   root["/"] -->|packs| packs["/packs"]
   root -->|info| info["/info"]
   root -->|offering| off["/offering"]
+  root -->|activations| acts["/activations"]
   packs -->|item| pack["/packs/{packId}"]
   packs -->|refresh| refresh["/packs/refresh"]
   packs -->|register| packs
@@ -97,6 +99,8 @@ in [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/#relation-names).
 }
 ```
 
+An `activations` link joins the root once the activation writes are built (ADR-0020 D8).
+
 The action-context read is reached from `/offering`, not from the root.
 
 `GET /packs/01M4P01D5TWB5FKZGNNQG3943R`:
@@ -132,7 +136,7 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 | Resource | Application | Domain |
 |---|---|---|
 | `/`, `/info` | `ServiceInfoQuery` | none |
-| `/offering…` | see [Offering and activation](/architecture/offering-and-activation/#how-each-resource-maps-onto-the-service) | |
+| `/offering…`, `/activations…` | see [Offering and activation](/architecture/offering-and-activation/#how-each-resource-maps-onto-the-service) | |
 | `/packs`, `/packs/refresh` | `PackListingQuery` | `CharterOffering`, `CharterPack` |
 | `/packs/{packId}` | a pack query over the same load | `CharterPack`, `PackDescriptor` |
 | `/packs/{packId}/artifacts…` | an artifact query | the artifact repositories (R2) |

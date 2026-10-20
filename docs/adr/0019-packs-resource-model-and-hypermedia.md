@@ -33,7 +33,8 @@ audience:
 triggers under [Revisit when](#revisit-when). The design is in
 [Packs resource model](/architecture/packs-resource-model/); the conventions it follows are in
 [Development conventions](/development/). The charter itself, which this record first named
-`/charter`, is designed in [ADR-0020](/adr/0020-offering-and-activations/) as `/offering`.
+`/charter`, is designed in [ADR-0020](/adr/0020-offering-and-activations/) as two top-level
+resources: `/offering` and `/activations`.
 
 Decisions marked **(default)** follow the 2026-10-20 design squad's recommendation and are open in
 review.
@@ -76,9 +77,9 @@ existing response after the 1.0 tag is breaking.
 
 1. **`/packs` has one meaning: the packs this service knows.** Today those are the configured
    packs; once registration lands, the registered ones too. The merged offering of the packs in
-   force is the charter, a separate layer at `/offering`, and an activation document chooses from
-   it. Both are decided in [ADR-0020](/adr/0020-offering-and-activations/). `/packs` never answers
-   merged content or a client's choices.
+   force is `/offering`, and the active charters that choose from it are `/activations`. Both are
+   decided in [ADR-0020](/adr/0020-offering-and-activations/). `/packs` never answers merged
+   content or a client's choices.
 2. **Every pack is a resource, and its contents are sub-resources.** The proposed map:
 
    | Method | Path | What it is |
@@ -145,8 +146,8 @@ existing response after the 1.0 tag is breaking.
   links, so a path can change without a breaking change for clients that follow links.
 - The read inventory gets a home for five reads (R2, R3 per pack, R4, R11, R12) in one consistent
   tree instead of five unrelated paths.
-- `/packs` keeps one meaning when registration lands; the merged offering gets its own layer,
-  `/offering` (ADR-0020), instead of overloading the collection.
+- `/packs` keeps one meaning when registration lands; the merged offering and the active
+  charters get their own resources (ADR-0020) instead of overloading the collection.
 
 ### Negative
 

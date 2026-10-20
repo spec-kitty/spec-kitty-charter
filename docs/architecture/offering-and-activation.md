@@ -23,10 +23,18 @@ audience:
 
 # Offering and activation
 
-The design behind [ADR-0020](/adr/0020-offering-and-activations/). `/packs` is what exists
-([Packs resource model](/architecture/packs-resource-model/)); `/offering` is the charter: what
-the packs in force offer, merged. An **activation** is a document the service stores that chooses
-from that offering. Its key, `activationId`, is opaque: the service knows nothing of projects.
+The design behind [ADR-0020](/adr/0020-offering-and-activations/). The API has three top-level
+resources, one for each concept in the glossary:
+
+- **`/packs`** — the Charter Packs this service knows
+  ([Packs resource model](/architecture/packs-resource-model/)).
+- **`/offering`** — the Charter offering, the offer side: what can be used, merged from the packs
+  in force.
+- **`/activations`** — Active charters, the activation side: which of the offering is in force for
+  one activation, and the effective charter that follows.
+
+An activation is a document the service stores. Its key, `activationId`, is opaque: the service
+knows nothing of projects.
 
 > **Status:** design only, proposed by ADR-0020. Today only the action-context read exists, at
 > `/mission-types/{missionType}/actions/{action}/context`; it moves under `/offering` before the
@@ -37,24 +45,24 @@ from that offering. Its key, `activationId`, is opaque: the service knows nothin
 ```text
 /                                              API root
 ├── info
-├── packs …                                    layer 1: what exists (ADR-0019)
-└── offering                                   layer 2: the charter, merged
-    ├── artifacts{?kind}                       merged artifacts with policy facts        R2
-    │   └── {kind}/{artifactId}                one artifact, with provenance             R2
-    ├── graph                                  the merged graph                          R3
-    ├── presets                                presets the packs in force offer          R4
-    ├── kinds                                  the kind taxonomy                         R18
-    ├── mission-types/{missionType}/actions/{action}                                     R5
-    │   └── context{?depth}                    the walk (built; moved before 1.0)        R1
-    └── activations                            POST: create, service-minted id (reserved)
-        └── {activationId}                     PUT, GET, DELETE (reserved)               R9
-            ├── selections/{kind}/{artifactId} PUT select (cascade), DELETE unselect
-            ├── exclusions/{kind}/{artifactId} PUT deactivate, DELETE re-activate
-            ├── presets/{presetId}             PUT apply a preset
-            ├── artifacts{?kind,state}         effective: state, policy, reason          R9
-            ├── skipped                        the skipped report                        R9
-            ├── graph                          the activation-filtered graph             R9
-            └── mission-types/{missionType}/actions/{action}/context{?depth}   effective  R9
+├── packs …                                    Charter Packs: what exists (ADR-0019)
+├── offering                                   the offer side: what can be used
+│   ├── artifacts{?kind}                       merged artifacts with policy facts        R2
+│   │   └── {kind}/{artifactId}                one artifact, with provenance             R2
+│   ├── graph                                  the merged graph                          R3
+│   ├── presets                                presets the packs in force offer          R4
+│   ├── kinds                                  the kind taxonomy                         R18
+│   └── mission-types/{missionType}/actions/{action}                                     R5
+│       └── context{?depth}                    the walk (built; moved before 1.0)        R1
+└── activations                                the activation side; POST: create, service-minted id
+    └── {activationId}                         PUT, GET, DELETE                          R9
+        ├── selections/{kind}/{artifactId}     PUT select (cascade), DELETE unselect
+        ├── exclusions/{kind}/{artifactId}     PUT deactivate, DELETE re-activate
+        ├── presets/{presetId}                 PUT apply a preset
+        ├── artifacts{?kind,state}             effective: state, policy, reason          R9
+        ├── skipped                            the skipped report                        R9
+        ├── graph                              the activation-filtered graph             R9
+        └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
 ```
 
 Every resource under `activations` is declared in contract 1.0 and answers `501` until it is
@@ -65,7 +73,7 @@ built (ADR-0020 D8). The R-numbers are the read inventory's
 
 | | The walk | The effective context |
 |---|---|---|
-| Path | `/offering/mission-types/{mt}/actions/{a}/context` | `/offering/activations/{id}/mission-types/{mt}/actions/{a}/context` |
+| Path | `/offering/mission-types/{mt}/actions/{a}/context` | `/activations/{id}/mission-types/{mt}/actions/{a}/context` |
 | Schema | `ActionContext` | `EffectiveActionContext` |
 | Answers | What the offering says governs the action | What applies under one activation: filtered, with exclusions and the skipped report |
 | Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` |
@@ -92,7 +100,7 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
   },
   "summary": { "active": 41, "inactive": 212, "excluded": 1, "required": 1, "locked": 0, "skipped": 2 },
   "_links": {
-    "self": { "href": "/api/v1/offering/activations/4b1f6c1e-6d2a-4bb5-9a1f-1c0f0c8d2e11" },
+    "self": { "href": "/api/v1/activations/4b1f6c1e-6d2a-4bb5-9a1f-1c0f0c8d2e11" },
     "offering": { "href": "/api/v1/offering" }
   }
 }
@@ -116,7 +124,7 @@ Core already has a document, for example after migrating a project's flat keys.
 sequenceDiagram
   participant Core as Core seam
   participant Svc as Charter service
-  Core->>Svc: PUT /offering/activations/{id} (ActivationConfig)
+  Core->>Svc: PUT /activations/{id} (ActivationConfig)
   alt new id
     Svc-->>Core: 201 Created, Location, ETag, Activation
   else existing id
@@ -137,18 +145,18 @@ Core runs its interview against the service.
 sequenceDiagram
   participant Core as Core seam
   participant Svc as Charter service
-  Core->>Svc: PUT /offering/activations/{id}, If-None-Match: *, {"schemaVersion": 1}
+  Core->>Svc: PUT /activations/{id}, If-None-Match: *, {"schemaVersion": 1}
   Svc-->>Core: 201 Created, ETag r1
   Core->>Svc: PUT …/presets/{presetId}, If-Match: r1
   Svc-->>Core: 200 ActivationChange, ETag r2
   Core->>Svc: PUT …/exclusions/directive/EVD_004, If-Match: r2
   Svc-->>Core: 200 ActivationChange, ETag r3
-  Core->>Svc: GET /offering/activations/{id}
+  Core->>Svc: GET /activations/{id}
   Svc-->>Core: 200 Activation, ETag r3
   Core->>Core: store Activation.config as the local file
 ```
 
-- Instead of the first `PUT`, a client without an id of its own sends `POST /offering/activations`
+- Instead of the first `PUT`, a client without an id of its own sends `POST /activations`
   and reads the minted id from `Location`.
 - Every sub-resource write needs `If-Match`. Without it the answer is `428`; with a stale one,
   `412`, and the client fetches again before it retries.
@@ -171,40 +179,82 @@ sequenceDiagram
 |---|---|---|
 | `/offering`, `/offering/artifacts…`, `graph`, `presets`, `kinds`, `mission-types…` | offering queries | `CharterOffering`, `DoctrineGraph` |
 | `/offering/…/context` | `ActionContextQuery` (built) | the walk (ADR-0018) |
-| `/offering/activations…` writes | activation use cases | `ActivationConfig`, cascade, deny list; `ActivationRepository` port |
-| `/offering/activations/{id}/…` reads | effective-set queries | the effective-set algebra over the offering and the document |
+| `/activations…` writes | activation use cases | `ActivationConfig`, cascade, deny list; `ActivationRepository` port |
+| `/activations/{id}/…` reads | effective-set queries | the effective-set algebra over the offering and the document |
 
 The `ActivationRepository` port sits in the storage ring with the pack store
 ([Pack registration and distribution](/architecture/pack-registration-distribution/)). Links are
 built in the REST adapter, as for packs.
 
-## Proposed contract scenarios
+## Proposed scenarios
 
-These are proposed, not bound.
+These are proposed, not bound. They describe what a client does, not which endpoint it calls, so
+they hold whatever the paths become; the step definitions map each step onto the contract.
 
 ```gherkin
-@contract @reserved
-Scenario: A reserved activation operation answers 501
-  When I PUT an activation document for the id "a-1"
-  Then the response status is 501
-  And the response is a Problem without a code
+Feature: One project can hold a separate active charter per branch
+  A mission that changes the charter trials it on its own branch. The other
+  missions keep the charter on main until the branch merges. The service
+  knows nothing of projects or branches: core picks one activation per branch.
 
-Scenario: A fetched document registers unchanged
-  Given an activation "a-1" is stored
-  When I GET "/offering/activations/a-1"
-  And I PUT its config back to the same URL
-  Then the response status is 200
-  And the ETag is unchanged
+  Background:
+    Given the offering holds the built-in pack and the org pack "event-driven"
+    And the org pack "event-driven" offers the preset "event-driven"
+    And the activation "proj-main" is registered with the built-in directives selected
 
-Scenario: A stale write is refused
-  Given an activation "a-1" at revision r1 was changed to r2
-  When I PUT an exclusion with If-Match r1
-  Then the response status is 412
+  Scenario: A governance mission trials a preset without changing main's charter
+    Given I retrieve the activation "proj-main"
+    When I register its document as the new activation "proj-gov-trial"
+    Then the activation "proj-gov-trial" is created
+    When I apply the preset "event-driven" to the activation "proj-gov-trial"
+    Then the change is accepted
+    And the effective active charter of "proj-gov-trial" for implementing a software-dev mission includes the directive "EVD_001"
+    And the effective active charter of "proj-main" for implementing a software-dev mission does not include the directive "EVD_001"
+    And the activation "proj-main" is unchanged
 
-Scenario: A required artifact cannot be deactivated
-  Given the org pack requires the directive "NO_FULL_HEAVY_SUITES_IN_MISSION"
-  When I PUT an exclusion for that directive
-  Then the response status is 409
-  And the refusal code is "artifact_required"
-  And the refusal names the requiring pack
+  Scenario: Merging the branch promotes its charter to main
+    Given the activation "proj-gov-trial" has the preset "event-driven" applied
+    When I retrieve the activation "proj-gov-trial"
+    And I register its document as the activation "proj-main", based on the revision of "proj-main" I hold
+    Then the registration is accepted
+    And the activation "proj-main" has the same revision as "proj-gov-trial"
+    And the effective active charter of "proj-main" for implementing a software-dev mission includes the directive "EVD_001"
+
+  Scenario: Main changed while the branch was open
+    Given I hold the revision of "proj-main" from when the branch started
+    And another mission deactivated the directive "DIRECTIVE_003" in "proj-main"
+    When I register the document of "proj-gov-trial" as the activation "proj-main", based on the revision I hold
+    Then the registration is refused because "proj-main" changed since that revision
+    And the activation "proj-main" still deactivates the directive "DIRECTIVE_003"
+
+  Scenario: The branch activation is removed after the merge
+    When I remove the activation "proj-gov-trial"
+    Then the activation "proj-gov-trial" is removed
+    When I remove the activation "proj-gov-trial"
+    Then the removal is refused because the activation "proj-gov-trial" does not exist
 ```
+
+```gherkin
+Feature: The activation document round-trips, and the pack policy holds
+
+  Scenario: A retrieved document registers unchanged
+    Given the activation "a-1" is registered
+    When I retrieve the activation "a-1"
+    And I register its document as the activation "a-1"
+    Then the registration is accepted
+    And the revision of "a-1" is unchanged
+
+  Scenario: A required artifact cannot be deactivated
+    Given the org pack "internal" requires the directive "NO_FULL_HEAVY_SUITES_IN_MISSION"
+    And the activation "a-1" is registered
+    When I deactivate the directive "NO_FULL_HEAVY_SUITES_IN_MISSION" in the activation "a-1"
+    Then the change is refused because the pack "internal" requires the artifact
+    And the activation "a-1" is unchanged
+
+  Scenario: An activation operation that is not built yet says so
+    When I register an activation document as the activation "a-1"
+    Then the request is refused as not implemented yet
+```
+
+The last scenario holds only while the operation is reserved; it is removed when the operation is
+built.

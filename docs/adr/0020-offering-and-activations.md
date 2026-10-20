@@ -1,6 +1,6 @@
 ---
-title: "ADR-0020: The offering is the charter, and activations are documents the service stores"
-description: Proposes /offering as the charter, activation documents the service stores under an opaque id, reserved activation writes in 1.0, and a hosted-first contract.
+title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
+description: Proposes /offering for what can be used and /activations for active charters the service stores, reserved activation writes in 1.0, and a hosted-first contract.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: ADR
@@ -27,7 +27,7 @@ audience:
     guidance_text: Read this for the activation resources, their status codes and how concurrent writes are refused.
 ---
 
-# ADR-0020: The offering is the charter, and activations are documents the service stores
+# ADR-0020: The offering and activations are separate resources, and the service stores activations
 
 ## Status
 
@@ -57,7 +57,7 @@ If accepted, this record supersedes or amends, point by point:
   over `config.yaml` and `charter.yaml`), decision 9 (the worktree token and browser refusal as
   contract behavior) and decision 10's "200 is the only success status" (D9, D12).
 - [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 1's `/charter` resource,
-  which this record names and designs as `/offering`.
+  which this record splits into `/offering` and `/activations`.
 
 ## Context
 
@@ -103,12 +103,20 @@ this record. Its findings that shape the decisions:
 
 ## Decision
 
-### D1. Two layers: `/packs` is what exists, `/offering` is the charter (ruled)
+### D1. Three top-level resources, one per domain concept (ruled)
 
-`/packs` is the packs this service knows (ADR-0019). `/offering` is the merged offering of the
-packs in force: its artifacts with provenance, its graph, its presets, kinds, mission types and
-actions. "Charter" and "offering" name the same space; there is no `/charter` resource and no
-third layer.
+The resources follow the glossary, so developers and users find the concept they already know:
+
+| Resource | Concept | What it answers |
+|---|---|---|
+| `/packs` | Charter Pack | The packs this service knows (ADR-0019) |
+| `/offering` | Charter offering, the offer side | What can be used: the merged offering of the packs in force, with its artifacts and provenance, graph, presets, kinds, mission types and actions |
+| `/activations` | Active charter, the activation side | Which of it is in force for one activation, and the effective charter that follows (D2, D7) |
+
+The offering deals with what can be used and never with a client's choices; an activation deals
+with the effective charter and never restates the offering. There is no `/charter` resource:
+"charter" names both sides together. Nesting activations under `/offering` was rejected because
+it blurs the two concepts.
 
 `/offering` is the **service's configured offering**: the built-in pack plus the org and project
 packs the service is configured with or has registered (ADR-0005). It names no project, so it is
@@ -131,18 +139,16 @@ port in the storage ring (ADR-0005 D4, ADR-0006). It never reads a project's fil
   charters are therefore two activations, not a conflict inside one.
 - **The id is opaque.** Pattern `^[A-Za-z0-9][A-Za-z0-9-]{0,63}$`, which a UUID and a ULID both
   satisfy. The service never parses it.
-- **Placement (default):** `/offering/activations/{activationId}`. An activation is the offering
-  seen through one stored choice, so it sits under `/offering`, which keeps the two layers of D1.
-  Rejected: the top-level `/activations/{activationId}` from the operator's first example, which
-  adds a third top-level noun, and `/projects/{projectId}/…`, which brings back the project
-  concept the ruling removed.
+- **Placement (ruled):** `/activations/{activationId}`, a top-level resource (D1). Rejected:
+  `/offering/activations/…`, which mixes the offer side and the activation side, and
+  `/projects/{projectId}/…`, which brings back the project concept the ruling removed.
 
 ### D3. A client can choose the id, or the service can mint it (ruled)
 
 | Operation | Who picks the id | Answer |
 |---|---|---|
-| `PUT /offering/activations/{activationId}` | The client | `201 Created` with `Location` and `ETag` when it created the document; `200` when it replaced one |
-| `POST /offering/activations` | The service, a ULID | `201 Created` with `Location` and `ETag` |
+| `PUT /activations/{activationId}` | The client | `201 Created` with `Location` and `ETag` when it created the document; `200` when it replaced one |
+| `POST /activations` | The service, a ULID | `201 Created` with `Location` and `ETag` |
 
 A `PUT` with `If-None-Match: *` creates only: if the document exists the answer is `412`. Core
 can use its existing `project.uuid`, or any id of its own, with `PUT`; a client without a stable
@@ -196,13 +202,13 @@ to register it (mode 1, D6) or after the operator chooses to overwrite.
 ### D6. Two ways to build a document
 
 **Mode 1, register.** Core sends its existing file:
-`PUT /offering/activations/{activationId}` with an `ActivationConfig` body. `If-Match` is optional:
+`PUT /activations/{activationId}` with an `ActivationConfig` body. `If-Match` is optional:
 without it the write is last-writer-wins, because core's file is what it means to register.
 
 **Mode 2, build and fetch.**
 
 1. **Create an empty document.** `PUT` with `If-None-Match: *` and `{"schemaVersion": 1}`, or
-   `POST /offering/activations`. An empty document means every kind takes its default, so every
+   `POST /activations`. An empty document means every kind takes its default, so every
    offering artifact except skills is active; core then narrows it.
 2. **Configure it** with sub-resource writes. Each one needs `If-Match: <revision>` and answers
    `200` with an `ActivationChange` (the new `revision`, the ids applied, the skipped report and
@@ -221,13 +227,13 @@ without it the write is last-writer-wins, because core's file is what it means t
    records only the user's choice, never the cascade (ADR-0013 D3). A preset expands into
    `selected` when it is applied and never removes a deny entry, so writing the document back
    never applies a preset twice.
-3. **Finalize.** `GET /offering/activations/{activationId}`; core stores `config` as its local
+3. **Finalize.** `GET /activations/{activationId}`; core stores `config` as its local
    file.
 
 **Round trip.** For every stored document, a `PUT` of its `config` answers `200` with the same
 `ETag`. A contract scenario and a property test pin this.
 
-`DELETE /offering/activations/{activationId}` removes a document: `204`, honoring `If-Match`. A
+`DELETE /activations/{activationId}` removes a document: `204`, honoring `If-Match`. A
 second `DELETE` is a `404` `activation_not_found` **(default**; rejected: `204` again, which hides
 a client's mistaken id).
 
@@ -316,7 +322,7 @@ The vendored `Problem` is unchanged. Rejected: a `422` with prose only, which le
 Project-tier content (synthesized artifacts and project-authored directives) is registered as a
 pack of level `project` (ADR-0005) before a document names it in `packs`. An activation document
 holds choices, never content. Rejected: uploading project content inside the document, which mixes
-the two layers.
+packs and activations.
 
 ### D12. The contract becomes hosted-first before the tag (default)
 
