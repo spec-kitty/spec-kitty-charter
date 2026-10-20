@@ -94,7 +94,7 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   `x-provisional` part of `../openapi.yaml`.
 - `@reserved`: the scenario pins a *declaration*, never behavior. It must also carry `@contract`, call no
   operation, and name in its description the unit test that enforces "raised by no operation of this version" and
-  the issue that will raise the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #48). The
+  the issue that will raise the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #55). The
   charter's refusal score is therefore reported as eight behavioral codes plus one declared.
 
 ## Rules

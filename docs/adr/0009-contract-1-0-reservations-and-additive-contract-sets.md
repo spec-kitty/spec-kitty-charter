@@ -166,4 +166,4 @@ bullet. The reserved `depth` was an integer from 1 to 1 that counted scope hops.
 it with no maximum. The info operation, the three headers and the governance fingerprint stay as
 reserved here, with their inputs and rules in ADR-0018 (decisions D7, D8 and D11). Decision 2
 still holds: `stale_input` is now raised, and `governance_policy_violation` stays reserved until
-issue #48 lands. The original decision text above is unchanged.
+the mutability-policy epic [#55](https://github.com/spec-kitty/spec-kitty-charter/issues/55) lands. The original decision text above is unchanged.
