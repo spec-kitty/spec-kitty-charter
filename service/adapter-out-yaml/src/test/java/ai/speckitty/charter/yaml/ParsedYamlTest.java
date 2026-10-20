@@ -1,6 +1,7 @@
 package ai.speckitty.charter.yaml;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.domain.PackContents.FileRead;
 import ai.speckitty.charter.domain.PackContents.RawGraph;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.domain.PackFinding;
 import ai.speckitty.charter.domain.PackFindingCode;
 import ai.speckitty.charter.domain.PackPolicy;
 import ai.speckitty.charter.yaml.GraphDocumentReader.Shape;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
@@ -108,6 +110,61 @@ class ParsedYamlTest {
         ParsedYaml parsed = ParsedYaml.parse("[".repeat(1_000_000) + "]".repeat(1_000_000), "x.yaml");
         assertThat(parsed.failure()).isNotNull();
         assertThat(parsed.failure().firstLine()).isEqualTo(TOO_DEEP);
+    }
+
+    // ---- aliases that expand past the node budget ---------------------------------------------------
+
+    private static final String TOO_LARGE = "the document is too large";
+
+    /** About 300 bytes that expand to 3^16 (43 million) paths: each level lists the one below three times. */
+    private static String aliasBomb(int levels) {
+        StringBuilder sb = new StringBuilder("l0: &l0 [aaaaaaaaaaaaaaaaaaaaaaaaaa]\n");
+        for (int i = 1; i <= levels; i++) {
+            sb.append("l%d: &l%d [*l%d, *l%d, *l%d]\n".formatted(i, i, i - 1, i - 1, i - 1));
+        }
+        return sb.toString();
+    }
+
+    @Test
+    void anAliasBombIsAPackUnreadableForPackYamlWithinTheTimeout() {
+        FileRead<PackDescriptor> read = assertTimeoutPreemptively(
+                Duration.ofSeconds(2), () -> PackDescriptorReader.read(DESCRIPTOR + aliasBomb(16)));
+        assertThat(read).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
+                .isEqualTo(TOO_LARGE);
+        assertThat(PackPolicy.unreadable("qa", (FileRead.Unreadable<PackDescriptor>) read))
+                .singleElement()
+                .satisfies(f -> {
+                    assertThat(f.code()).isEqualTo(PackFindingCode.PACK_UNREADABLE);
+                    assertThat(f.detail()).isEqualTo("pack.yaml of qa is not valid YAML");
+                });
+    }
+
+    @Test
+    void anAliasBombInAShardOrFragmentIsADrgSchemaErrorWithinTheTimeout() {
+        String bomb = aliasBomb(16);
+        FileRead<RawGraph> shard = assertTimeoutPreemptively(
+                Duration.ofSeconds(2),
+                () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
+        assertThat(findings(shard)).singleElement().satisfies(f -> {
+            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_LARGE);
+        });
+        FileRead<RawGraph> fragment = assertTimeoutPreemptively(
+                Duration.ofSeconds(2), () -> GraphDocumentReader.read("nodes: []\n" + bomb, Shape.FRAGMENT, FRAGMENT));
+        assertThat(findings(fragment)).singleElement().satisfies(f -> {
+            assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
+            assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_LARGE);
+        });
+    }
+
+    @Test
+    void aDocumentJustWithinTheNodeBudgetIsStillRead() {
+        // 1 root + 1 key's list + 99_998 scalars = exactly MAX_NODES nodes.
+        String within = "k: [" + "1, ".repeat(ParsedYaml.MAX_NODES - 3) + "1]\n";
+        assertThat(ParsedYaml.parse(within, "x.yaml").failure()).isNull();
+        String over = "k: [" + "1, ".repeat(ParsedYaml.MAX_NODES - 2) + "1]\n";
+        assertThat(ParsedYaml.parse(over, "x.yaml").failure()).isNotNull();
     }
 
     // ---- a scalar that is no string, number, boolean or null --------------------------------------

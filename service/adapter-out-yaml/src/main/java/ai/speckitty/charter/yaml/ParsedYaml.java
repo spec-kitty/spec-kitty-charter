@@ -18,7 +18,8 @@ import org.snakeyaml.engine.v2.events.Event;
  *
  * <p>A file counts as not YAML, with the parser's first line as the reason, when the parser refuses it, when a
  * mapping has a key that is not a string (a schema validator cannot tell {@code 1} from {@code "1"}), or when the
- * document is nested too deeply or contains itself, which no validator can walk, or when it holds a scalar that is
+ * document is nested too deeply, expands past {@link #MAX_NODES} nodes through aliases, or contains itself, which no
+ * validator can walk, or when it holds a scalar that is
  * no string, number, boolean or null ({@code !!binary} is the one the parser makes), which a validator cannot judge.
  * The depth is counted over the parser's event stream, which is read with an explicit stack, before the document is
  * composed: the composer recurses once per level, so a document nested deeper than the JVM stack would overflow it. No
@@ -36,7 +37,17 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
     /** The most collections that may be nested inside one another; real packs nest fewer than ten. */
     private static final int MAX_DEPTH = 200;
 
+    /**
+     * The most nodes a document may expand to, a shared (aliased) node counted each time it is reached. The loader
+     * shares an aliased node, so a document of a few hundred bytes can chain aliases into billions of paths and make
+     * every walk over it, the validator's included, run for minutes or exhaust the heap. Real packs hold under two
+     * thousand nodes a file (the largest open-packs file has about 1 700); 100 000 leaves fifty times that and keeps
+     * the walk to milliseconds.
+     */
+    static final int MAX_NODES = 100_000;
+
     private static final String TOO_DEEP = "the document is nested too deeply";
+    private static final String TOO_LARGE = "the document is too large";
     private static final String NOT_PLAIN = "a value is not a string, a number, a boolean or null";
 
     /**
@@ -56,7 +67,7 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
         } catch (RuntimeException e) {
             return failed(file, firstLine(e));
         }
-        String problem = problem(document, 0, Collections.newSetFromMap(new IdentityHashMap<>()));
+        String problem = problem(document, 0, Collections.newSetFromMap(new IdentityHashMap<>()), new int[1]);
         return problem == null ? new ParsedYaml(document, null) : failed(file, problem);
     }
 
@@ -88,7 +99,10 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
     }
 
     /** The first reason a loaded document cannot be validated, or {@code null} when it can. */
-    private static @Nullable String problem(@Nullable Object value, int depth, Set<Object> path) {
+    private static @Nullable String problem(@Nullable Object value, int depth, Set<Object> path, int[] nodes) {
+        if (++nodes[0] > MAX_NODES) {
+            return TOO_LARGE;
+        }
         if (!(value instanceof Map<?, ?>) && !(value instanceof Collection<?>)) {
             return plain(value) ? null : NOT_PLAIN;
         }
@@ -104,14 +118,14 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
                     if (!(entry.getKey() instanceof String)) {
                         return "a mapping key is not a string";
                     }
-                    String problem = problem(entry.getValue(), depth + 1, path);
+                    String problem = problem(entry.getValue(), depth + 1, path, nodes);
                     if (problem != null) {
                         return problem;
                     }
                 }
             } else if (value instanceof Collection<?> items) {
                 for (Object item : items) {
-                    String problem = problem(item, depth + 1, path);
+                    String problem = problem(item, depth + 1, path, nodes);
                     if (problem != null) {
                         return problem;
                     }
