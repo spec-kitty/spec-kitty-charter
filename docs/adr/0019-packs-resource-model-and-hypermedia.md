@@ -1,6 +1,6 @@
 ---
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
-description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before the 1.0 tag.
+description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: ADR
@@ -17,7 +17,7 @@ related:
   - api/service-contract
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this for the pack resource tree, the Links component and what must land before the 1.0 tag.
+    guidance_text: Read this for the pack resource tree, the Links component and what must land before 1.0.0.
   - profile: contract-consumer
     guidance_text: Read this for how to find a pack and its contents by following links instead of building URLs.
   - profile: core-maintainer
@@ -71,7 +71,8 @@ Two gaps follow:
 ADR-0007 decision 4 chose a reusable `Links` component for hypermedia, but no schema has one.
 Response schemas are closed (`additionalProperties: false`), so under
 [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) a field added to an
-existing response after the 1.0 tag is breaking.
+existing response after 1.0.0 is breaking. Until then the contract is 0.x, and a minor version may
+break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
 
 ## Decision
 
@@ -105,7 +106,7 @@ existing response after the 1.0 tag is breaking.
    success schema carries a required `_links` property that references it; `Problem` and
    `CharterRefusal` keep their shape. `_links` maps a relation name to a link object
    `{href, templated?, method?, title?}`; the link object is closed, and the map's keys are open.
-   - **Why open keys.** A closed set of keys per resource would freeze every relation in 1.0: a
+   - **Why open keys.** A closed set of keys per resource would freeze every relation at 1.0.0: a
      relation added later is a new response property, which the release gate reports as
      breaking. With open keys a new relation is additive, and only the link object is frozen.
    - **What keeps it honest.** The closure checker reports a schema-valued
@@ -113,7 +114,7 @@ existing response after the 1.0 tag is breaking.
      values reference the link object, pinned by a fixture. A lint rule checks every relation
      key the contract's examples use against the relation table. Clients must tolerate a
      relation they do not know, which HAL clients already do.
-   - Rejected: closed per-resource link schemas, which reserve every future relation in 1.0.
+   - Rejected: closed per-resource link schemas, which reserve every future relation at 1.0.0.
    - **Relation names** are the IANA registered ones where one fits (`self`, `collection`,
      `item`, `next`, `prev`, `first`, `last`, `edit`); charter relations are lowercase and
      hyphenated. The one relation table is in [Hypermedia and HATEOAS](/development/hypermedia-hateoas/);
@@ -123,11 +124,11 @@ existing response after the 1.0 tag is breaking.
    - A link is present only when its action is available to this caller in this state, and only
      when its target is built: a link never points to a reserved operation (ADR-0020 D8). A
      client follows links; it does not build paths.
-4. **The hypermedia lands before the 1.0 tag; the new operations follow additively.** The
+4. **The hypermedia lands before 1.0.0; the new operations follow additively.** The
    `Links` component, `GET /`, and `_links` on every existing success schema (`PackListing`,
    which the refresh also answers, `PackSummary`, `ActionContext`, `ServiceInfo`) change closed
-   response schemas, so they must land before the first release
-   ([#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)). With open relation keys,
+   response schemas, so they must land before 1.0.0. In 0.x they arrive in a minor version
+   (ADR-0022). With open relation keys,
    the per-pack operations are new paths and new relations, both additive under ADR-0009; each
    lands when its read-inventory issue decides it. Until `GET /packs/{packId}` is built, a pack
    listing item carries no `self` link.
@@ -151,7 +152,7 @@ existing response after the 1.0 tag is breaking.
 
 ### Negative
 
-- Every success schema grows a required `_links` property before the 1.0 tag, and every handler
+- Every success schema grows a required `_links` property before 1.0.0, and every handler
   has to build links. The contract scenarios and the conformance mapping (ADR-0016) must account
   for them.
 - A pack without a `pack.yaml` has no `packId` today (`PackSummary.packId` is nullable), so it has

@@ -50,6 +50,7 @@ stands.
 | [0019](/adr/0019-packs-resource-model-and-hypermedia/) | ADR-0019: Packs are a navigable REST resource with hypermedia links | Proposed | 2026-10-20 |
 | [0020](/adr/0020-offering-and-activations/) | ADR-0020: The offering and activations are separate resources, and the service stores activations | Proposed | 2026-10-20 |
 | [0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) | ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation | Proposed | 2026-10-20 |
+| [0022](/adr/0022-contract-versions-start-at-0-x/) | ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable | Proposed | 2026-10-20 |
 
 ## Core decisions this repository builds on
 

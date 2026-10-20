@@ -121,7 +121,7 @@ A path names a resource, never an action. Every resource is one of four archetyp
 - **Every operation needs the worktree token** (`Authorization: Bearer …`, ADR-0018). A browser
   request (an `Origin` or `Sec-Fetch-*` header, or a `Host` other than loopback) is a 403, checked
   first; then a missing or wrong token is a 401. Both answer before the request is routed.
-- **Proposed hosted-first reshape** (ADR-0020 D12, before the 1.0 tag): the token becomes an
+- **Proposed hosted-first reshape** (ADR-0020 D12, before 1.0.0): the token becomes an
   issuer-backed bearer with scopes (`offering:read`, `activation:read`, `activation:write`);
   the per-worktree token and the browser refusal move to a local deployment profile;
   `Charter-Worktree` becomes `Charter-Instance`; the fingerprint covers pack files only.
@@ -139,6 +139,10 @@ changes:
 ## Versioning
 
 - **The contract version is `info.version`.** There is no version in a path beyond `/api/v1`.
+- **0.x first** (proposed, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): the contract is
+  published as `0.y.z` while core's integration shapes it. A 0.x minor may break and says so in a
+  `### Breaking` CHANGELOG subsection; a patch may not. The rules below hold within a 0.x minor,
+  and across every 1.x release once 1.0.0 is minted.
 - **Response schemas are closed** (`additionalProperties: false`), so adding a response property,
   a response enum value or a refusal code is a breaking change. Adding an operation is not: new
   capabilities arrive as additive contract sets (ADR-0009).

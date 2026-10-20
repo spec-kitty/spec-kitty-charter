@@ -2,7 +2,7 @@
 title: Versioning and compatibility
 description: How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -46,6 +46,11 @@ Core versions this surface, not this repository; it stays in core until the cuto
   and the release's conformance corpus must pass against every implementation still
   answering.
 - The URL prefix `/api/v1` changes only with a major version.
+- **Proposed** ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): the contract is
+  published as `0.y.z` while it iterates with core's generated client. In 0.x a minor version may
+  break, with a `### Breaking` CHANGELOG subsection, and a patch may not; core pins one `0.y.z`.
+  1.0.0 is minted once the contract is stable, and the rules above apply from then on. The prefix
+  stays `/api/v1` through 0.x.
 
 ## Between the two surfaces
 

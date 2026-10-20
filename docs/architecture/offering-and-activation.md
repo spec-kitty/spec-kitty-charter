@@ -37,8 +37,8 @@ An activation is a document the service stores. Its key, `activationId`, is opaq
 knows nothing of projects.
 
 > **Status:** design only, proposed by ADR-0020. Today only the action-context read exists, at
-> `/mission-types/{missionType}/actions/{action}/context`; it moves under `/offering` before the
-> 1.0 tag. [What the labels mean](/#status).
+> `/mission-types/{missionType}/actions/{action}/context`; it moves under `/offering` in a 0.x
+> minor ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). [What the labels mean](/#status).
 
 ## The resource tree
 
@@ -53,7 +53,7 @@ knows nothing of projects.
 │   ├── presets                                presets the packs in force offer          R4
 │   ├── kinds                                  the kind taxonomy                         R18
 │   └── mission-types/{missionType}/actions/{action}                                     R5
-│       └── context{?depth}                    the walk (built; moved before 1.0)        R1
+│       └── context{?depth}                    the walk (built; moved in a 0.x minor)    R1
 └── activations                                the activation side; POST: create, service-minted id
     └── {activationId}                         PUT, GET, DELETE                          R9
         ├── selections/{kind}/{artifactId}     PUT select (cascade), DELETE unselect
@@ -65,8 +65,8 @@ knows nothing of projects.
         └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
 ```
 
-Every resource under `activations` is declared in contract 1.0 and answers `501` until it is
-built (ADR-0020 D8). The R-numbers are the read inventory's
+Every resource under `activations` is declared in an early 0.x minor and answers `501` until it
+is built (ADR-0020 D8). The R-numbers are the read inventory's
 ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
 
 ## Two answers for one action
