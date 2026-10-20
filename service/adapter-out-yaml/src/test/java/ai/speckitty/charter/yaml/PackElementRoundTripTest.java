@@ -192,6 +192,29 @@ class PackElementRoundTripTest {
         assertThat(refetched.descriptor()).isEqualTo(original.descriptor());
     }
 
+    /**
+     * Pre-PR review fold: a top-level {@code pack.yaml} key the schema does not declare is captured on read
+     * (as an undeclared key) but deliberately dropped on write-back, because the writer serializes from the model
+     * and the model holds only the key name, not its value. This pins that documented, intentional loss so that a
+     * future change preserving such keys is a conscious one. It is the seam the paused
+     * pack-registration-distribution mission must respect: model a new {@code pack.yaml} key on {@link PackDescriptor}
+     * before writing through this port, or the write erases it.
+     */
+    @Test
+    void anUndeclaredDescriptorKeyIsCapturedOnReadButDroppedOnWriteBack(@TempDir Path host) throws IOException {
+        PackLocator location = at(PackFixtures.copyOf("pack-undeclared", host));
+
+        PackDescriptor read = repository.fetch(location).descriptor();
+        assertThat(read.undeclaredKeys()).containsExactly("experimental_note");
+
+        repository.write(location, read);
+        PackDescriptor refetched = repository.fetch(location).descriptor();
+
+        assertThat(refetched.undeclaredKeys()).isEmpty();
+        assertThat(refetched.packId()).isEqualTo(read.packId());
+        assertThat(refetched.name()).isEqualTo(read.name());
+    }
+
     /** FR-008: one fetch reports the bad file and still returns the valid descriptor and tactics. */
     @Test
     void anInvalidTacticIsReportedWhileTheValidElementsAreStillReturned(@TempDir Path host) throws IOException {
