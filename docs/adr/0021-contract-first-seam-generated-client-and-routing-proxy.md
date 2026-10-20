@@ -12,6 +12,7 @@ related:
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0015-charter-repository-is-canonical-for-charter-structure
   - adr/0016-conformance-corpus-harness-over-core-cli
+  - adr/0019-packs-resource-model-and-hypermedia
   - adr/0020-offering-and-activations
   - adr/0022-contract-versions-start-at-0-x
   - architecture/strangler-transition
