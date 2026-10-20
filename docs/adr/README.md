@@ -48,6 +48,7 @@ stands.
 | [0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) | ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema | Accepted (provisional) | 2026-10-19 |
 | [0018](/adr/0018-action-context-read-and-seam-access-surface/) | ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh | Accepted (provisional) | 2026-10-19 |
 | [0019](/adr/0019-packs-resource-model-and-hypermedia/) | ADR-0019: Packs are a navigable REST resource with hypermedia links | Proposed | 2026-10-20 |
+| [0020](/adr/0020-offering-and-activations/) | ADR-0020: The offering is the charter, and activations are documents the service stores | Proposed | 2026-10-20 |
 
 ## Core decisions this repository builds on
 

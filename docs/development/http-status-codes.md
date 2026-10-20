@@ -10,6 +10,7 @@ related:
   - development/rest-resource-conventions
   - development/hypermedia-hateoas
   - adr/0018-action-context-read-and-seam-access-surface
+  - adr/0020-offering-and-activations
   - api/service-contract
 audience:
   - profile: charter-service-contributor
@@ -26,7 +27,9 @@ This page is the rule for status codes in the charter API. It describes the cont
 `contracts/charter/schemas/CharterRefusalCode.yaml` (its `x-refusal` map gives every code its
 status, whether a client may retry and whether this version raises it), the shared responses in
 `contracts/charter/responses/`, and [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/).
-Where the contract and this page disagree, the contract wins and this page is wrong.
+Where the contract and this page disagree, the contract wins and this page is wrong. Rows marked
+*proposed* come from [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) and
+[ADR-0020](/adr/0020-offering-and-activations/) and are not in the contract yet.
 
 ## How a client dispatches
 
@@ -35,49 +38,56 @@ Where the contract and this page disagree, the contract wins and this page is wr
    `code`). Branch on `code`, never on `title`. The same request is refused the same way again
    unless the code is retryable (`internal_error`, `stale_input`) or the packs change.
 3. **Non-2xx without a `code`:** a **transport or routing failure**, a plain `Problem`: an unknown
-   path, a missing method, an unacceptable media type, a bad parameter, a missing token or a
-   browser request. It says nothing about the charter.
+   path, a missing method, an unacceptable media type, a bad parameter, a missing token, a
+   browser request, a failed precondition or an operation not built yet. It says nothing about
+   the charter.
 
-Every non-2xx body is `application/problem+json`, and every response carries the `Charter-*`
-headers ([REST conventions](/development/rest-resource-conventions/#headers-every-response-carries)).
+Retry classes: **no** (fix the request), **yes** (`internal_error`, `stale_input`), and **after a
+re-read** (412: fetch the resource again, then write against the new `ETag`).
+
+Every non-2xx body is `application/problem+json`. Every response declares the `Charter-*` headers,
+except the servlet container's own 400s
+([REST conventions](/development/rest-resource-conventions/#headers-every-response-carries)).
 
 ## 2xx: success
 
 | Code | Meaning | Used here | Body |
 |---|---|---|---|
-| 200 OK | The read or the action succeeded | Every operation | The declared success schema |
-| 201 Created | A new resource exists; `Location` names it | Not used yet. Proposed for register (`POST /packs`), with `Location: /packs/{packId}` | The created resource |
+| 200 OK | The read or the action succeeded | Every built operation. Proposed: an activation replaced, or changed through a sub-resource, with `ETag` | The declared success schema |
+| 201 Created | A new resource exists; `Location` names it | Proposed: register (`POST /packs`); an activation created by `PUT` or `POST`, with `ETag`. Needs the lint rule `error-responses-are-problems` amended (ADR-0020 D9) | The created resource |
 | 202 Accepted | Work was queued, not done | Not used. Only if an action becomes asynchronous; it then links to a status resource | A status resource |
-| 204 No Content | Success with nothing to return | Not used. Every operation answers a body | None |
+| 204 No Content | Success with nothing to return | Proposed: `DELETE` of an activation only. Every other operation answers a body | None |
 
 ## 3xx: redirection
 
 | Code | Meaning | Used here | Body |
 |---|---|---|---|
-| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | Not used yet. `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if conditional reads are added | None |
+| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | Not used yet. An activation's `ETag`, `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if conditional reads are added | None |
 
 ## 4xx: the request is wrong
 
 | Code | Meaning | Used here | Body | Retry |
 |---|---|---|---|---|
-| 400 Bad Request | The request is malformed | A `depth` outside 0 to 2; a non-empty body on `POST /packs/refresh` | `Problem`, no code | No, fix the request |
+| 400 Bad Request | The request is malformed | A `depth` outside 0 to 2; a non-empty body on `POST /packs/refresh`. Proposed: a body that is not valid JSON | `Problem`, no code | No, fix the request |
 | 401 Unauthorized | No valid credentials | No worktree token, a malformed `Authorization` header or a wrong token. Answered before routing, so an unknown path is a 401 before a 404. Carries `WWW-Authenticate: Bearer` | `Problem`, no code | After fixing the token |
-| 403 Forbidden | Credentials do not matter: the request is refused | A browser request: an `Origin`, `Sec-Fetch-Site` or `Sec-Fetch-Mode` header, or a `Host` other than `localhost`, `127.0.0.1` or `[::1]`. Checked before the token | `Problem`, no code | No |
-| 404 Not Found | The resource does not exist | A path the contract does not define (no code); a mission type or action that is not a graph node (`mission_type_not_found`, `action_not_found`) | `Problem`, or `CharterRefusal` | No |
-| 405 Method Not Allowed | The path exists, the method does not | A method a path does not declare; carries `Allow` | `Problem`, no code | No |
+| 403 Forbidden | The request is refused whatever its credentials | A browser request: an `Origin`, `Sec-Fetch-Site` or `Sec-Fetch-Mode` header, or a `Host` other than `localhost`, `127.0.0.1` or `[::1]`. Checked before the token. Proposed: this guard moves to a local deployment profile (ADR-0020 D12); a token lacking a scope is a 403 | `Problem`, no code | No |
+| 404 Not Found | The resource does not exist | A path the contract does not define (no code); a mission type or action that is not a graph node (`mission_type_not_found`, `action_not_found`). Proposed: `activation_not_found` (also for an activation the token may not see), `artifact_not_found`, `preset_not_found` | `Problem`, or `CharterRefusal` | No |
+| 405 Method Not Allowed | The path exists, the method does not | A method a path does not have; carries `Allow`. Service behavior: the contract does not declare it per path | `Problem`, no code | No |
 | 406 Not Acceptable | No representation the client accepts | `Accept` excludes `application/json` | `Problem`, no code | No |
-| 409 Conflict | The request conflicts with current state | Not used yet. The candidate for register when the pack id or slug is already taken | — | — |
+| 409 Conflict | The request conflicts with current state | Proposed: `artifact_required`, `artifact_locked`, a deactivation the pack policy forbids, naming the pack; register when the pack id is taken | `CharterRefusal` | No |
 | 410 Gone | The resource existed and was removed for good | Not used. Only if registered packs can be revoked and their ids are not reused | — | — |
-| 412 Precondition Failed | An `If-Match` precondition failed | Not used. Only with conditional writes | — | — |
-| 415 Unsupported Media Type | The request body's type is not accepted | Not used yet. Applies once an operation takes a body (register) | — | — |
-| 422 Unprocessable Content | The body is well formed but invalid | Not used yet. The candidate for a register body that fails validation | — | — |
-| 429 Too Many Requests | Rate limited; carries `Retry-After` | Not used. The service is per worktree, on loopback | — | — |
+| 412 Precondition Failed | `If-Match` or `If-None-Match` failed | Proposed: a write against a stale activation revision, or a create-only `PUT` on an existing activation | `Problem`, no code | After a re-read |
+| 415 Unsupported Media Type | The request body's type is not accepted | Proposed: a write whose `Content-Type` is not `application/json` | `Problem`, no code | No |
+| 422 Unprocessable Content | The body is well formed but invalid | Proposed: `activation_invalid`, with `violations` (JSON Pointer, code, detail) | `CharterRefusal` | No |
+| 428 Precondition Required | The write needs a precondition | Proposed: a sub-resource write on an activation without `If-Match` | `Problem`, no code | After adding `If-Match` |
+| 429 Too Many Requests | Rate limited; carries `Retry-After` | Not used. A hosted deployment may rate-limit; the contract does not declare it yet | — | — |
 
 ## 5xx: the service or its offering failed
 
 | Code | Meaning | Used here | Body | Retry |
 |---|---|---|---|---|
 | 500 Internal Server Error | The service cannot answer | Every offering refusal: `pack_level_mismatch`, `pack_unreadable`, `drg_schema_error`, `unresolved_edge_endpoint` (not retryable); `internal_error` and `stale_input` (retryable). `governance_policy_violation` is reserved (500, not raised yet) | `CharterRefusal` | Only for `internal_error` and `stale_input` |
+| 501 Not Implemented | The operation is declared but not built | Proposed: every operation marked `x-reserved` (ADR-0020 D8). Never a 405: the contract declares the method | `Problem`, no code | No |
 | 503 Service Unavailable | Temporarily unable to serve; may carry `Retry-After` | Not used. See the open questions | — | — |
 
 `internal_error` is the only code for a failure no other code names. Its `detail` is a generic
@@ -96,8 +106,7 @@ code.
 
 ## Open questions
 
-These are for review, not decisions. They belong to the follow-up of [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), which proposes the
-operations that will need new codes.
+These are for review, not decisions. They belong to the follow-up of ADR-0019 and ADR-0020.
 
 1. **Offering-configuration refusals are 500.** `pack_level_mismatch`, `pack_unreadable`,
    `drg_schema_error` and `unresolved_edge_endpoint` describe a misconfigured offering. A 500 is
@@ -106,6 +115,7 @@ operations that will need new codes.
    invalid).
 2. **`stale_input` is a retryable 500.** The conventional alternatives are 503 with `Retry-After`,
    or 409 (the state changed under the request).
-3. **Register and distribute refusals.** ADR-0007 decision 7 names `PACK_ENGINE_INCOMPATIBLE`,
-   `INTEGRITY_FAILURE` and `SOURCE_UNREACHABLE`. Which status each takes is open: 422 or 409 for an
+3. **Register and distribute refusals.** ADR-0007 decision 7 names three failures. On the
+   wire they become snake_case codes: `pack_engine_incompatible`, `integrity_failure` and
+   `source_unreachable`. Which status each takes is open: 422 or 409 for an
    incompatible or conflicting pack, 502 for an unreachable source.

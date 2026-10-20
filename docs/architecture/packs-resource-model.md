@@ -8,6 +8,8 @@ kind: Explanation
 related:
   - adr/0019-packs-resource-model-and-hypermedia
   - adr/0007-rest-hateoas-contract-of-record
+  - adr/0020-offering-and-activations
+  - architecture/offering-and-activation
   - architecture/pack-registration-distribution
   - architecture/contract-and-dtos
   - api/service-contract
@@ -31,24 +33,25 @@ follows are in [Development conventions](/development/).
 ## The resource tree
 
 ```text
-/                                         API root
+/                                         API root (proposed)
 ├── info                                  service info (built)
-├── mission-types/{missionType}/actions/{action}/context   action-context read (built)
+├── offering                              the charter, merged: see Offering and activation (ADR-0020)
 └── packs                                 the packs this service knows (GET built; POST proposed)
-    ├── refresh                           controller: re-read packs and configuration (built)
+    ├── refresh                           controller: re-read the packs (built)
     └── {packId}                          one pack (proposed)
         ├── artifacts                     ?kind=, paged
         │   └── {kind}/{artifactId}       one artifact with its body
         ├── graph                         the nodes and edges this pack declares
         ├── presets                       activation presets
-        ├── assets/{path}                 one asset file
+        ├── assets                        the pack's asset paths
+        │   └── {path}                    one asset file
         ├── resolution                    read-only resolution state
         └── distributions                 POST: distribute this pack
 ```
 
-`{packId}` is the pack's `pack_id` ULID from `pack.yaml`. The composition of the charter (which
-packs are in force for this worktree, in which merge order, and the merged graph) is not under
-`/packs`; it gets its own resource, `/charter`, designed next.
+`{packId}` is the pack's `pack_id` ULID from `pack.yaml`. The merged offering of the packs in
+force, the action-context read and the activation documents are not under `/packs`; they are the
+`/offering` layer, in [Offering and activation](/architecture/offering-and-activation/).
 
 ## The link graph
 
@@ -56,7 +59,7 @@ packs are in force for this worktree, in which merge order, and the merged graph
 flowchart LR
   root["/"] -->|packs| packs["/packs"]
   root -->|info| info["/info"]
-  root -->|mission-types| mt["/mission-types"]
+  root -->|offering| off["/offering"]
   packs -->|item| pack["/packs/{packId}"]
   packs -->|refresh| refresh["/packs/refresh"]
   packs -->|register| packs
@@ -64,15 +67,19 @@ flowchart LR
   pack -->|artifacts| arts["/packs/{packId}/artifacts"]
   pack -->|graph| graph["/packs/{packId}/graph"]
   pack -->|presets| presets["/packs/{packId}/presets"]
+  pack -->|assets| assets["/packs/{packId}/assets"]
   pack -->|resolution| res["/packs/{packId}/resolution"]
   pack -->|distribute| dist["/packs/{packId}/distributions"]
+  pack -->|offering| off
   arts -->|item| art["/packs/{packId}/artifacts/{kind}/{artifactId}"]
   arts -->|next| arts
   art -->|up| pack
 ```
 
-A link appears only when its action is available. `register` and `distribute` are absent until
-registration is built; `distribute` is absent on a pack that has nothing to distribute.
+A link appears only when its action is available and its target is built. `register` and
+`distribute` are absent until registration is built; `distribute` is absent on a pack that has
+nothing to distribute; `offering` appears only on a pack in force. The relation names are the ones
+in [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/#relation-names).
 
 ## Example responses
 
@@ -83,16 +90,14 @@ registration is built; `distribute` is absent on a pack that has nothing to dist
   "contractVersion": "1.0.0",
   "_links": {
     "self": { "href": "/api/v1/" },
-    "packs": { "href": "/api/v1/packs" },
     "info": { "href": "/api/v1/info" },
-    "mission-types": { "href": "/api/v1/mission-types" },
-    "action-context": {
-      "href": "/api/v1/mission-types/{missionType}/actions/{action}/context{?depth}",
-      "templated": true
-    }
+    "packs": { "href": "/api/v1/packs" },
+    "offering": { "href": "/api/v1/offering" }
   }
 }
 ```
+
+The action-context read is reached from `/offering`, not from the root.
 
 `GET /packs/01M4P01D5TWB5FKZGNNQG3943R`:
 
@@ -127,6 +132,7 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 | Resource | Application | Domain |
 |---|---|---|
 | `/`, `/info` | `ServiceInfoQuery` | none |
+| `/offering…` | see [Offering and activation](/architecture/offering-and-activation/#how-each-resource-maps-onto-the-service) | |
 | `/packs`, `/packs/refresh` | `PackListingQuery` | `CharterOffering`, `CharterPack` |
 | `/packs/{packId}` | a pack query over the same load | `CharterPack`, `PackDescriptor` |
 | `/packs/{packId}/artifacts…` | an artifact query | the artifact repositories (R2) |
@@ -143,8 +149,9 @@ The registration suites already assume this tree. They name `POST /packs`,
 `POST /packs/{packId}/distributions` and `GET /packs/{packId}/resolution`, and a `RegisteredPack`
 with `self`, `resolve`, `verify`, `distribute` and `source` links. Under ADR-0019 `resolve` and
 `verify` are not separate links: resolution is a read-only projection (`resolution`), and
-verification is part of distribution (ADR-0007 decision 7). `source` stays: it links the source
-the pack was registered from.
+verification is part of distribution (ADR-0007 decision 7). This supersedes the example relations
+of ADR-0007 decision 4; the registration suites change when registration is built. `source`
+stays: it links the source the pack was registered from.
 
 ## Proposed contract scenarios
 

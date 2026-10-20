@@ -1,0 +1,454 @@
+---
+title: "ADR-0020: The offering is the charter, and activations are documents the service stores"
+description: Proposes /offering as the charter, activation documents the service stores under an opaque id, reserved activation writes in 1.0, and a hosted-first contract.
+doc_status: draft
+updated: 2026-10-20T00:00:00Z
+type: ADR
+kind: ADR
+related:
+  - adr/0009-contract-1-0-reservations-and-additive-contract-sets
+  - adr/0010-cutover-scope-and-seam-boundary
+  - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
+  - adr/0012-pack-mutability-policy
+  - adr/0013-persistent-deactivation
+  - adr/0015-charter-repository-is-canonical-for-charter-structure
+  - adr/0017-pack-schemas-imported-as-canonical-json-schema
+  - adr/0018-action-context-read-and-seam-access-surface
+  - adr/0019-packs-resource-model-and-hypermedia
+  - architecture/offering-and-activation
+  - architecture/packs-resource-model
+  - api/service-contract
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read this for the offering tree, the activation document, the two build modes and what must land before the 1.0 tag.
+  - profile: core-maintainer
+    guidance_text: Read this for how core registers or builds an activation, why its local file becomes a fetched copy, and the requests to core.
+  - profile: contract-consumer
+    guidance_text: Read this for the activation resources, their status codes and how concurrent writes are refused.
+---
+
+# ADR-0020: The offering is the charter, and activations are documents the service stores
+
+## Status
+
+**Proposed** — 2026-10-20. Decider: Stijn Dejongh (operator). It is provisional once accepted, and
+it is revisited on the triggers under [Revisit when](#revisit-when). The design is in
+[Offering and activation](/architecture/offering-and-activation/).
+
+Operator rulings of 2026-10-19 and 2026-10-20 are marked **(ruled)** below. Decisions marked
+**(default)** follow the design squad's recommendation and are open in review: each names the
+alternative it rejected, so the operator can overturn it before the record is accepted.
+
+If accepted, this record supersedes or amends, point by point:
+
+- [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), Risks: "reserve
+  only names and types, never structures". The activation document's structure is reserved in
+  1.0 (D8).
+- [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/) decision 2: "activation's own state
+  logic stays in core". The state moves to the service (D5).
+- [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) decision 2 (one daemon per
+  worktree) becomes one deployment profile, and decision 4 (pack locations and fingerprints from
+  `config.yaml`) is withdrawn (D12). Its revisit trigger "a hosted or shared service (#24, #44)"
+  has fired.
+- [ADR-0013](/adr/0013-persistent-deactivation/) decisions 1, 6 and 7: the ledger is not a file
+  in the project, core does not own it, and activation does not wait for a later contract set
+  (D4, D5, D8).
+- [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) decision 8 (fingerprint
+  over `config.yaml` and `charter.yaml`), decision 9 (the worktree token and browser refusal as
+  contract behavior) and decision 10's "200 is the only success status" (D9, D12).
+- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 1's `/charter` resource,
+  which this record names and designs as `/offering`.
+
+## Context
+
+ADR-0019 gave `/packs` one meaning and left the composition of the charter, "which packs are in
+force and in which merge order", to a resource it named `/charter`. The cutover read inventory
+(epic [#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)) needs that resource for
+the merged graph (R3, [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97)), mission
+types (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)) and, above all, the
+effective sets (R9, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), which
+gate cutover stage 3 (ADR-0018 D5).
+
+Today's records assume one service per worktree that reads the project's `config.yaml` and
+`charter.yaml` (ADR-0011 D4, ADR-0018 D8), and an activation ledger that is a file in the project,
+owned by core (ADR-0013 D1, D6). The operator overturned that premise on 2026-10-20:
+
+> We will never read a project's config directly. This service is intended to be stand-alone,
+> and hosted-first. Any activation of charter elements must therefore happen against an
+> identifier, and stored on the service's repository.
+>
+> Core owns the interview, and the config is written there. It either registers the existing
+> activation config in the web service, or it uses the web service to create an empty one, which it
+> then configures through API calls. When in the second mode, core finalizes by fetching the full
+> activation config file, so it can store it locally.
+
+A design squad (architecture, core-fidelity and contract-review lenses) ran on 2026-10-20 before
+this record. Its findings that shape the decisions:
+
+- **No release exists.** No tag is cut and [#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)
+  is open, so the release gate has no baseline and every reshape below is free for the contract.
+  After the tag, each one is breaking.
+- **Core computes activation from many keys.** `activated_<plural>` for eleven kinds (three-state:
+  absent, empty, a list), `activated_kinds`, `mission_type_activations` (absent means none, unlike
+  every other key), presets with replace semantics, org `required_*` merged in at write time, a
+  language filter, context-scoped activations and, on the unmerged core branch
+  `core-align-3-persistent-deactivation`, `deactivated_<plural>` deny lists. `locked` is not in
+  core.
+- **Core's behavior has gaps a service must not copy.** On a scratch project with core 4.0.0rc8,
+  `activate directive EVD_003` failed with "Unknown directive ID" although a preset had written that
+  id, the allow list then mixed spellings, an org-required directive was not served under an
+  explicit allow list, and the cascade report was text only.
+- **The core branch rejects unknown top-level keys** in its new `.kittify/charter/activation.yaml`.
+  A file that must round-trip with a service document cannot do that.
+
+## Decision
+
+### D1. Two layers: `/packs` is what exists, `/offering` is the charter (ruled)
+
+`/packs` is the packs this service knows (ADR-0019). `/offering` is the merged offering of the
+packs in force: its artifacts with provenance, its graph, its presets, kinds, mission types and
+actions. "Charter" and "offering" name the same space; there is no `/charter` resource and no
+third layer.
+
+`/offering` is the **service's configured offering**: the built-in pack plus the org and project
+packs the service is configured with or has registered (ADR-0005). It names no project, so it is
+never project-effective. An activation document may name its own packs (D4); until it does, it
+uses the service's offering.
+
+The action-context read moves under it before 1.0, with no alias:
+`GET /offering/mission-types/{missionType}/actions/{action}/context`. Its operation id,
+parameters, schema, refusals and headers are unchanged, and it stays the unfiltered walk of
+ADR-0018 D1.
+
+### D2. An activation is a stored document keyed by an opaque `activationId` (ruled; placement default)
+
+The service stores activation documents in its own repository, behind an `ActivationRepository`
+port in the storage ring (ADR-0005 D4, ADR-0006). It never reads a project's files.
+
+- **The key is `activationId`, not a project id (ruled).** The charter service is agnostic of
+  projects; project management can live in a separate domain. A client decides what one
+  activation stands for: one project, one branch of a project, or one worktree. Per-branch
+  charters are therefore two activations, not a conflict inside one.
+- **The id is opaque.** Pattern `^[A-Za-z0-9][A-Za-z0-9-]{0,63}$`, which a UUID and a ULID both
+  satisfy. The service never parses it.
+- **Placement (default):** `/offering/activations/{activationId}`. An activation is the offering
+  seen through one stored choice, so it sits under `/offering`, which keeps the two layers of D1.
+  Rejected: the top-level `/activations/{activationId}` from the operator's first example, which
+  adds a third top-level noun, and `/projects/{projectId}/…`, which brings back the project
+  concept the ruling removed.
+
+### D3. A client can choose the id, or the service can mint it (ruled)
+
+| Operation | Who picks the id | Answer |
+|---|---|---|
+| `PUT /offering/activations/{activationId}` | The client | `201 Created` with `Location` and `ETag` when it created the document; `200` when it replaced one |
+| `POST /offering/activations` | The service, a ULID | `201 Created` with `Location` and `ETag` |
+
+A `PUT` with `If-None-Match: *` creates only: if the document exists the answer is `412`. Core
+can use its existing `project.uuid`, or any id of its own, with `PUT`; a client without a stable
+id of its own uses `POST`.
+
+### D4. The activation document is minted here, in camelCase, and core maps to it (ruled)
+
+Two schemas, both closed, both minted in this repository (ADR-0015):
+
+- **`ActivationConfig`** is the document: only the state a client authors. It is the `PUT` body,
+  the `config` member of every answer, and the file core stores locally. Its JSON Schema lives at
+  `contracts/offering/schemas/ActivationConfig.schema.json` (JSON Schema 2020-12, the
+  [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) pattern), and the OpenAPI
+  contract references it.
+- **`Activation`** is the resource: `activationId`, `revision`, `config` (an `ActivationConfig`),
+  a derived `summary` (counts of active, inactive, excluded, required, locked and skipped
+  artifacts) and `_links`. A config file carries no links and no server fields, so it is wrapped,
+  not extended.
+
+`ActivationConfig`, in outline (the schema issue fixes every field before the tag):
+
+| Field | Meaning | Core's key today |
+|---|---|---|
+| `schemaVersion` | `1` | — |
+| `packs` | Nullable; pack ids in merge order. `null` means the service's offering (D1) | `charter_packs` in `config.yaml` |
+| `activatedKinds` | Nullable kind list; absent means every kind | `activated_kinds` |
+| `missionTypes` | Mission types in force; absent means **none** | `mission_type_activations` |
+| `selected` | Map from kind to an id list; a kind that is absent takes its default (all, except `skill`: org-required only) | `activated_<plural>` |
+| `deactivated` | Map from kind to a non-empty id list: the user's deny list | `deactivated_<plural>` (core branch) |
+| `languages` | Nullable language list | `catalog.languages` |
+| `contextActivations` | Artifacts active only in one mission type or action | `governance.activations` |
+| `appliedPresets` | Provenance only: which presets were applied, when | not persisted today |
+
+The wire names are camelCase like the rest of the contract; core maps its snake_case keys at its
+seam. The document stores **canonical form**: ids are spelled as the offering's artifact ids
+(a write may use another known spelling, and is normalized; an unknown id is `422`), lists are
+deduplicated and sorted, empty deny lists are omitted, and keys are in schema order.
+`revision` and the `ETag` are the `sha256:` digest of the RFC 8785 (JCS) serialization of the
+canonical config, so two equivalent writes give the same strong `ETag`, and `GET` is byte-stable
+for one revision.
+
+Not stored, because it is derived from the packs: the org `required_*` floor, `locked` and other
+mutability levels (ADR-0012), the set of available artifacts, and the skipped report.
+
+### D5. The service is the authority; core's file is a fetched copy (ruled)
+
+Once a document is stored, the service's copy is the one in force. Core's local file is what it
+last fetched. When they differ, the service wins and core fetches again; core sends its file only
+to register it (mode 1, D6) or after the operator chooses to overwrite.
+
+### D6. Two ways to build a document
+
+**Mode 1, register.** Core sends its existing file:
+`PUT /offering/activations/{activationId}` with an `ActivationConfig` body. `If-Match` is optional:
+without it the write is last-writer-wins, because core's file is what it means to register.
+
+**Mode 2, build and fetch.**
+
+1. **Create an empty document.** `PUT` with `If-None-Match: *` and `{"schemaVersion": 1}`, or
+   `POST /offering/activations`. An empty document means every kind takes its default, so every
+   offering artifact except skills is active; core then narrows it.
+2. **Configure it** with sub-resource writes. Each one needs `If-Match: <revision>` and answers
+   `200` with an `ActivationChange` (the new `revision`, the ids applied, the skipped report and
+   `_links`):
+
+   | Change | Request |
+   |---|---|
+   | Select, with cascade | `PUT …/selections/{kind}/{artifactId}`, body `{"includeDeactivated": false}` |
+   | Unselect | `DELETE …/selections/{kind}/{artifactId}` |
+   | Deactivate | `PUT …/exclusions/{kind}/{artifactId}` |
+   | Re-activate | `DELETE …/exclusions/{kind}/{artifactId}` |
+   | Apply a preset | `PUT …/presets/{presetId}` |
+   | Change a scalar field (`languages`, `missionTypes`, `activatedKinds`) | A read-modify-write `PUT` of the whole document with `If-Match` |
+
+   A cascade stops at a deactivated artifact and reports it, as ADR-0013 D4 says; deactivation
+   records only the user's choice, never the cascade (ADR-0013 D3). A preset expands into
+   `selected` when it is applied and never removes a deny entry, so writing the document back
+   never applies a preset twice.
+3. **Finalize.** `GET /offering/activations/{activationId}`; core stores `config` as its local
+   file.
+
+**Round trip.** For every stored document, a `PUT` of its `config` answers `200` with the same
+`ETag`. A contract scenario and a property test pin this.
+
+`DELETE /offering/activations/{activationId}` removes a document: `204`, honoring `If-Match`. A
+second `DELETE` is a `404` `activation_not_found` **(default**; rejected: `204` again, which hides
+a client's mistaken id).
+
+### D7. Effective reads are sub-resources of an activation
+
+The project-effective reads of R9 are resources under the activation, with their own closed
+schemas, never a filter on the offering's reads (ADR-0018 D1 and its rejected `activationFiltered`
+flag):
+
+| Resource | Answer |
+|---|---|
+| `GET …/{activationId}/artifacts{?kind,state}` | Each artifact with its `state` (`active`, `inactive`, `excluded`), its policy facts (`required`, `policy`) and a closed `reason` |
+| `GET …/{activationId}/skipped` | The skipped report (ADR-0013 D4) |
+| `GET …/{activationId}/graph` | The activation-filtered graph |
+| `GET …/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | The effective action context, `EffectiveActionContext` |
+
+Each effective answer carries the activation's `revision` beside `governanceFingerprint`, so a
+cached answer is tied to both the document and the offering.
+
+**Required and locked artifacts are a floor at read time (default).** An artifact a pack requires
+or locks (ADR-0012 D7) is active whatever the document says, and writing a document that
+deactivates one is refused. Core today promotes `required_*` only at write time, and the squad's
+run showed a required directive not served under an existing allow list; the service's answer is
+recorded in the [divergence register](/conformance/divergence-register/) as an intended
+divergence. Rejected: matching core, which would serve a charter that breaks its own pack policy.
+
+### D8. The activation operations are declared in contract 1.0 and answer `501` until built (ruled: reserved)
+
+Every operation of D3, D6 and D7 is declared in full in 1.0: request body, success responses,
+refusals and headers. A request body or a success status added to an existing operation later is
+breaking, so declaring only the path would reserve nothing. Each reserved operation also:
+
+- declares a `501 Not Implemented` `Problem` with no code;
+- carries `x-reserved: {contractSet: activation, issue: "#…"}`;
+- is placed under its own tag, `Activation`, so its generated interface is implemented by one
+  controller that answers `501`;
+- is pinned by a `@contract @reserved` scenario that it answers `501`, as reserved refusal codes
+  are pinned today.
+
+New lint rules check the shape: `x-reserved-shape`, a reserved operation declares `501`, and a
+built operation does not. No link advertises a reserved operation (ADR-0019 D3). When an operation
+is built, its `501` and `x-reserved` are removed, which is not breaking.
+
+These are the service's own writes behind its storage port, not core's Python until stage 5
+(ADR-0010 D3). They gate R9 and therefore cutover stage 3 (ADR-0018 D5).
+
+### D9. Status codes and refusals for writes
+
+| Status | When | Body |
+|---|---|---|
+| `200` | A replace, a sub-resource write, every read | The declared schema, with `ETag` |
+| `201` | A `PUT` or `POST` that created a document | `Activation`, with `Location` and `ETag` |
+| `204` | `DELETE` of a document | None |
+| `404` | `activation_not_found`, `artifact_not_found`, `preset_not_found` | `CharterRefusal` |
+| `409` | `artifact_required`, `artifact_locked`: a deactivation the pack policy forbids; nothing is stored | `CharterRefusal` naming the pack |
+| `412` | `If-Match` or `If-None-Match` failed | `Problem`, no code |
+| `415` | A body that is not `application/json` | `Problem`, no code |
+| `422` | `activation_invalid`: a well-formed document naming an unknown pack, kind or artifact, or failing the schema | `CharterRefusal` with `violations` |
+| `428` | A sub-resource write without `If-Match` | `Problem`, no code |
+| `501` | A reserved operation (D8) | `Problem`, no code |
+
+`412` and `428` are HTTP preconditions, not charter facts, so they carry no code **(default**;
+rejected: `activation_precondition_failed` codes, which would duplicate the status). `412` clears
+after the client fetches the document again; the status-code rules gain that "retry after re-read"
+class.
+
+The lint rule `error-responses-are-problems` is amended so `201` and `204` are success statuses,
+and ADR-0018 D10's "200 only" is superseded.
+
+### D10. Refusal codes and `CharterRefusal` fields are reserved before the tag (default)
+
+The codes of D9 enter `CharterRefusalCode` with `x-refusal` entries and `raised: false`.
+`CharterRefusal` gains two optional members, because it is closed and they cannot be added after
+the tag:
+
+- `pack`: the `packId` that requires or locks the artifact (ADR-0012 D7 asks that the refusal name
+  the pack);
+- `violations`: a list of `{pointer, code, detail}` for a `422`, where `pointer` is an RFC 6901
+  JSON Pointer into the body.
+
+The vendored `Problem` is unchanged. Rejected: a `422` with prose only, which leaves core to parse
+`detail`.
+
+### D11. The project's own content is a pack (default)
+
+Project-tier content (synthesized artifacts and project-authored directives) is registered as a
+pack of level `project` (ADR-0005) before a document names it in `packs`. An activation document
+holds choices, never content. Rejected: uploading project content inside the document, which mixes
+the two layers.
+
+### D12. The contract becomes hosted-first before the tag (default)
+
+Every place the 1.0 contract assumes a per-worktree daemon that reads project files is reshaped
+before the tag, in the same change as the reserved activation set:
+
+- **Security scheme.** An issuer-backed bearer (`oauth2`, client credentials for core, with
+  `openIdConnect` discovery) with scopes `offering:read`, `activation:read` and
+  `activation:write`, declared on every operation, the reserved ones included. The per-worktree
+  token of ADR-0018 D9 becomes a **local deployment profile** that issues a bearer holding every
+  scope. Rejected: keeping `charterWorktreeToken` as the only scheme, whose name and description
+  bind the contract to one client on loopback.
+- **Per-activation authorization.** A token is entitled to a set of activation ids. A request for
+  an activation the token may not see is answered as `404 activation_not_found`, so ids do not
+  leak. Rejected: a coded `403`, which confirms the id exists.
+- **Browser and loopback guard.** The `Host`, `Origin` and `Sec-Fetch-*` refusal becomes part of
+  the local deployment profile, out of the `@contract` scenarios. A hosted deployment uses CORS
+  policy, which is not contract.
+- **Headers and service info.** `Charter-Worktree` becomes `Charter-Instance`, the opaque id of the
+  serving instance, and `ServiceInfo.worktree` becomes `instance`. Rejected: dropping the header,
+  which loses the stale-daemon check ADR-0011 relies on.
+- **Fingerprint.** `Charter-Source-Fingerprint` and `governanceFingerprint` cover pack files only.
+  The scenario that refuses `pack_unreadable` on `project-config/config.yaml` and the
+  `charter.project-config-dir` property are removed. An activation's freshness is its `revision`.
+
+## Consequences
+
+### Positive
+
+- One service can serve many clients and many activations, so hosting needs no 2.0.
+- Core's interview stays in core, and the result is stored where every reader of the charter can
+  reach it. The cutover's R9 gate reads one stored document instead of re-deriving a project's
+  files.
+- The activation document is one schema with a byte-stable round trip, so core's local copy can
+  never drift silently: a changed copy has a different `ETag`.
+- Per-branch or per-worktree charters need no special case: they are different ids.
+- Core's id-spelling and required-floor gaps are fixed at the source instead of copied.
+
+### Negative
+
+- Contract 1.0 grows: four schemas, about twelve reserved operations, three conditional headers,
+  six refusal codes, two `CharterRefusal` members, a security scheme with scopes and three lint
+  rules, all before the tag.
+- The activation set must be built before cutover stage 3, not after stage 5, which moves work
+  forward.
+- Core must change its plan: the unmerged deny-list branch, its seam and its ADR
+  `4.x/2026-10-16-1` (activation stays in core until after GA) are overtaken.
+- `PUT` without `If-Match` is last-writer-wins. Mode 1 accepts that on purpose; two clients
+  registering the same id unconditionally can overwrite each other.
+
+### Risks
+
+- **The reserved surface is wrong once built.** Mitigation: the operations stay `501` until each
+  lands with its scenarios, and the schema issue settles every field before the tag; a reserved
+  shape that proves wrong before the tag is still free to change.
+- **Normalized ids surprise core.** A file core registered comes back with canonical spellings.
+  Mitigation: core stores what it fetches (D5), and the `ETag` changes only with meaning, not
+  spelling.
+- **Authorization is under-specified.** Which identity may write which activation is decided by the
+  deployment's issuer. Mitigation: the contract fixes the scopes and the `404` rule; tenancy is a
+  later record (ADR-0005).
+
+## Alternatives considered
+
+### B: the service reads the project's files
+
+Keeps today's per-worktree design. Rejected by the operator's hosted-first ruling.
+
+### C: the activation stays in core, and the service only answers reads it is sent
+
+The seam would push the activation with every effective read. Rejected: every reader would need
+core's files, and two readers could send two different activations for one project.
+
+### D: one schema with `readOnly` server fields instead of an envelope
+
+Rejected: a config file must not carry links or a revision, and a closed request schema that
+accepts and ignores `readOnly` members is fragile in generated clients.
+
+### E: `PATCH` with `application/merge-patch+json` for incremental changes
+
+Rejected for 1.0: it adds a second media type and validation path, and merge-patch replaces whole
+lists, which is the wrong semantics for id sets. It can be added later as a new operation.
+
+### F: ship 1.0 without the activation set, add it in 1.1
+
+ADR-0009 D4 allows it, because new paths are additive. Rejected by the operator's ruling to reserve
+the writes in 1.0, and because the closed shapes (security scopes, refusal codes,
+`CharterRefusal` members) would have to be reserved anyway.
+
+## Revisit when
+
+- Core's interview needs a change the sub-resource writes cannot express.
+- A second domain (project management) needs to look up activations by something other than their
+  id.
+- A hosted deployment needs tenancy beyond per-token activation entitlements.
+- The schema issue shows a field of the outline above cannot be canonical.
+
+## Open questions before the tag
+
+These need a ruling before [#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45),
+because each is a closed shape:
+
+1. **Provenance per entry.** Should the document keep, per artifact, the last decision (how, when,
+   by whom), as core's deny-list branch proposes? If so, is `by` an opaque actor id?
+2. **Context activations.** Does `contextActivations` stay in the document, or move to the effective
+   read as a derived fact?
+3. **The `Links` shape** (ADR-0019 D3) applies here too: the activation resources carry many
+   relations.
+
+## Requests to core
+
+- **Stop the flat file from rejecting the document.** The unmerged branch
+  `core-align-3-persistent-deactivation` writes `.kittify/charter/activation.yaml` and rejects
+  unknown top-level keys. Under D5 that file becomes the fetched `ActivationConfig`. Map it at the
+  seam, or store the document as fetched; either way, change the reader before the branch merges.
+- **Register instead of reading locally.** After the interview, the seam registers the document
+  (mode 1) or builds it (mode 2), and stores what it fetches.
+- **Pick the id.** Use `project.uuid` with `PUT`, or another stable id core already keeps.
+- **Fix the id spelling gap.** `charter activate` must accept every spelling a preset writes; the
+  service normalizes, but core's own commands should not fail on its own output.
+- **Amend core ADR `4.x/2026-10-16-1`.** Activation state moves to the service for the cutover.
+
+## References
+
+- [Offering and activation](/architecture/offering-and-activation/), the design.
+- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/),
+  [ADR-0013](/adr/0013-persistent-deactivation/), [ADR-0012](/adr/0012-pack-mutability-policy/),
+  [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/),
+  [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),
+  [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/).
+- [Development conventions](/development/): [HTTP status codes](/development/http-status-codes/),
+  [Hypermedia and HATEOAS](/development/hypermedia-hateoas/).
+- Issues: [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44) (register an active
+  charter), [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) (R9),
+  [#24](https://github.com/spec-kitty/spec-kitty-charter/issues/24) (hosted service).
