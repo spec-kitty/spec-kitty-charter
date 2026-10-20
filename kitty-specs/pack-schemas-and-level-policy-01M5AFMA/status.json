@@ -1,0 +1,191 @@
+{
+  "event_count": 115,
+  "last_event_id": "01M5BSBMKX76Y568N04PFACHXC",
+  "materialized_at": "2026-10-20T04:33:18.973136+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-schemas-and-level-policy-01M5AFMA",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 10,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSAV1G7B7DEA7C8V0E2EJX",
+      "last_transition_at": "2026-10-20T04:32:52.784984+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP01-domain-finding-model-and-pack-level-policy/review-cycle-1.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP01-domain-finding-model-and-pack-level-policy/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 16458,
+      "shell_pid_created_at": "1792433900.46"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSAKHTF93N614PR2TEWRX2",
+      "last_transition_at": "2026-10-20T04:32:45.114992+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP02-canonical-pack-schemas/review-cycle-2.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP02-canonical-pack-schemas/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 22037,
+      "shell_pid_created_at": "1792434569.18"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSAYN3T91F4BPMBKAPT55F",
+      "last_transition_at": "2026-10-20T04:32:56.483927+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP03-open-packs-catch-up-and-pin/review-cycle-1.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP03-open-packs-catch-up-and-pin/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 25173,
+      "shell_pid_created_at": "1792434911.82"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSB2DYWGYNTWSWQSRB0R77",
+      "last_transition_at": "2026-10-20T04:33:00.350893+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP04-validator-dependency-and-schema-loading/review-cycle-1.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP04-validator-dependency-and-schema-loading/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 31086,
+      "shell_pid_created_at": "1792435470.53"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSB5ZP8H4CQZ43Y966FFJ9",
+      "last_transition_at": "2026-10-20T04:33:03.990610+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP05-domain-vocabulary-and-graph-rules/review-cycle-2.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP05-domain-vocabulary-and-graph-rules/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 10385,
+      "shell_pid_created_at": "1792437281.91"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSB9N5ZC4QFQK8ZJWXV15M",
+      "last_transition_at": "2026-10-20T04:33:07.749768+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP06-validate-mode-domain-rules/review-cycle-2.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP06-validate-mode-domain-rules/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 17756,
+      "shell_pid_created_at": "1792438641.28"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSBDFSYZD9JYKJERZMVD2H",
+      "last_transition_at": "2026-10-20T04:33:11.673080+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP07-adapter-load-path-and-contract-changes/review-cycle-3.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP07-adapter-load-path-and-contract-changes/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 2710,
+      "shell_pid_created_at": "1792441996.95"
+    },
+    "WP08": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSBH2HGY1WKRXWBFTW6PKH",
+      "last_transition_at": "2026-10-20T04:33:15.345214+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP08-validate-mode-and-open-packs-acceptance/review-cycle-2.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP08-validate-mode-and-open-packs-acceptance/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 3884,
+      "shell_pid_created_at": "1792467374.55"
+    },
+    "WP09": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSAQ3TTDXHYPP5FXGX70MK",
+      "last_transition_at": "2026-10-20T04:32:48.762157+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP09-divergence-register-and-adr-amendment/review-cycle-2.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP09-divergence-register-and-adr-amendment/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 31086,
+      "shell_pid_created_at": "1792435470.53"
+    },
+    "WP10": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5BSBMKX76Y568N04PFACHXC",
+      "last_transition_at": "2026-10-20T04:33:18.973136+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-schemas-and-level-policy-01M5AFMA-coord/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/tasks/WP10-architecture-docs-glossary-write-model/review-cycle-3.md",
+        "reference": "review-cycle://pack-schemas-and-level-policy-01M5AFMA/WP10-architecture-docs-glossary-write-model/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 14965,
+      "shell_pid_created_at": "1792443543.85"
+    }
+  }
+}
