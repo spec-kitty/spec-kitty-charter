@@ -195,6 +195,20 @@ class GraphDocumentReaderTest {
     }
 
     @Test
+    void aNonFiniteLabelHasTheTextOfANumberLabelAndTheNullBranchIsCollapsed() {
+        for (String number : List.of("1.5", ".nan", "-.inf")) {
+            var shard = unreadable(
+                    HEADER + "nodes: [{urn: 'tactic:x', kind: tactic, label: " + number + "}]\nedges: []\n",
+                    Shape.SHARD,
+                    SHARD);
+            assertThat(PackPolicy.unreadable("qa", shard))
+                    .extracting(PackFinding::detail)
+                    .as(number)
+                    .containsExactly("qa/tactic.graph.yaml: 'label' must be a string");
+        }
+    }
+
+    @Test
     void anUndeclaredNonFiniteRootKeyOfAShardGivesExactlyOneFinding() {
         assertThat(unreadable(HEADER + "nodes: []\nedges: []\nextra: .nan\n", Shape.SHARD, SHARD)
                         .violations())

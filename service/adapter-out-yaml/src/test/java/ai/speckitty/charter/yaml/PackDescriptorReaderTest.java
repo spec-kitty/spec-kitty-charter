@@ -194,4 +194,14 @@ class PackDescriptorReaderTest {
                     assertThat(v.value()).contains("NaN");
                 });
     }
+
+    @Test
+    void aNonFiniteNumberWhereAStringIsDeclaredHasTheTextOfAnyOtherNumber() {
+        for (String number : List.of("1.5", ".nan", ".inf", "-.inf", "1e400")) {
+            assertThat(PackPolicy.unreadable("qa", unreadable(VALID.replace("name: qa", "name: " + number))))
+                    .extracting(PackFinding::detail)
+                    .as(number)
+                    .containsExactly("pack.yaml of qa: name must be a string");
+        }
+    }
 }
