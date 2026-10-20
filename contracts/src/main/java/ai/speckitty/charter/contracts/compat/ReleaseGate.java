@@ -37,16 +37,22 @@ import java.util.stream.IntStream;
  *       must be the commit of that tag ({@code git tag --points-at HEAD}): it is then compared against itself. Any
  *       later commit is refused until the next {@code -SNAPSHOT} is opened (heading and {@code info.version}
  *       together), so a change after a release never hides under the released version.</li>
- *   <li><b>Same major only.</b> The baseline is the newest recorded release, other than a pending one, with the
- *       major version of {@code info.version}. Its tag must be merged into HEAD; when it is not, the gate refuses
- *       rather than fall back to an older release. With no such release there is no baseline, and the gate says
- *       so and passes: {@code 2.0.0-SNAPSHOT} with only 1.x releases is not compared.</li>
- *   <li><b>Breaking subsection.</b> When the major version of {@code info.version} is above that of the previous
+ *   <li><b>Same major only.</b> The baseline is the newest recorded release, other than a pending one, in the
+ *       <i>release line</i> of {@code info.version}: from 1.0.0 the line is the major version ({@code 1.x}); while
+ *       the major is 0 it is the major and minor ({@code 0.2.x}), since in 0.x a minor version may break and a patch
+ *       may not (ADR-0022). The baseline's tag must be merged into HEAD; when it is not, the gate refuses rather
+ *       than fall back to an older release. With no such release there is no baseline, and the gate says so and
+ *       passes: {@code 2.0.0-SNAPSHOT} with only 1.x releases is not compared, nor is {@code 0.2.0-SNAPSHOT} with
+ *       only 0.1.x releases.</li>
+ *   <li><b>Breaking subsection.</b> When the release line of {@code info.version} is above that of the previous
  *       release (the newest released heading below the top heading), the top section must hold a
- *       {@code ### Breaking} subsection.</li>
- *   <li><b>Major bump, for information.</b> On a major bump that passes the Breaking rule, the newest release of the
- *       earlier major whose tag is merged into HEAD is named ({@link #previousMajorBaseline}) so the build can show
- *       what the new major breaks. It never fails the build.</li>
+ *       {@code ### Breaking} subsection. That is a major bump ({@code 1.4.0} to {@code 2.0.0-SNAPSHOT}, and
+ *       {@code 0.3.0} to {@code 1.0.0-SNAPSHOT}) or, while the major is 0, a minor bump ({@code 0.1.2} to
+ *       {@code 0.2.0-SNAPSHOT}).</li>
+ *   <li><b>Breaking bump, for information.</b> On a bump of the release line that passes the Breaking rule, the
+ *       previous release, the newest of the earlier line, is named when its tag is merged into HEAD
+ *       ({@link #previousBreakingBaseline}), so the build can show what the new major, or the new 0.x minor,
+ *       breaks. It never fails the build.</li>
  *   <li><b>Baseline is the release.</b> The contract archived at the baseline tag has an {@code info.version} equal
  *       to the version the tag names ({@link #baselineRefusal}), so a tag moved onto a later commit is not
  *       compared against as if it were the release.</li>
@@ -155,6 +161,21 @@ public final class ReleaseGate {
         String tag() {
             return TAG_PREFIX + text;
         }
+
+        /** Whether this version is in the same release line as another: the major, and while it is 0 the minor. */
+        boolean sameLine(Version other) {
+            return major == other.major && (major > 0 || minor == other.minor);
+        }
+
+        /** Whether this version's release line is above another's: a higher major, or a higher 0.x minor. */
+        boolean lineAbove(Version other) {
+            return major > other.major || (major == 0 && other.major == 0 && minor > other.minor);
+        }
+
+        /** The release line, {@code 2.x} or {@code 0.3.x}. */
+        String line() {
+            return major > 0 ? major + ".x" : "0." + minor + ".x";
+        }
     }
 
     /**
@@ -206,14 +227,17 @@ public final class ReleaseGate {
         boolean pending = top.released() && !mergedTags.contains(top.tag());
         List<Version> candidates = pending ? released.subList(1, released.size()) : released;
         Optional<Version> baseline =
-                candidates.stream().filter(v -> v.major() == top.major()).findFirst();
+                candidates.stream().filter(v -> v.sameLine(top)).findFirst();
         if (baseline.isEmpty()) {
             return new Decision.NoBaseline("No released baseline: "
                     + (pending ? "pending release " + top.text() + "; " : "")
                     + (candidates.isEmpty()
                             ? "contracts/charter/CHANGELOG.md records no released version before this one."
-                            : "contracts/charter/CHANGELOG.md records no released " + top.major() + ".x version,"
-                                    + " and a new major version is not compared with an older one."));
+                            : "contracts/charter/CHANGELOG.md records no released " + top.line() + " version,"
+                                    + (top.major() > 0
+                                            ? " and a new major version is not compared with an older one."
+                                            : " and a new minor version of 0.x is not compared with an older"
+                                                    + " one.")));
         }
         String tag = baseline.get().tag();
         if (!mergedTags.contains(tag)) {
@@ -246,23 +270,24 @@ public final class ReleaseGate {
     }
 
     /**
-     * The release a major bump is shown against, for information only: when the top section raises the major
-     * version above that of the previous release, that release's tag, provided it is merged into HEAD.
+     * The release a breaking bump is shown against, for information only: when the top section raises the release
+     * line above that of the previous release (a major bump, or a minor bump while the major is 0), that release's
+     * tag, provided it is merged into HEAD.
      *
      * @param infoVersion the {@code info.version} of the contract
      * @param changelog   the text of the contract's CHANGELOG
      * @param mergedTags  the {@code contract-charter-v*} tags merged into HEAD
-     * @return the tag of the previous release, or empty when this is no major bump, the CHANGELOG gates refuse, or
-     *         that tag is not merged into HEAD
+     * @return the tag of the previous release, or empty when this is no breaking bump, the CHANGELOG gates refuse,
+     *         or that tag is not merged into HEAD
      */
-    public static Optional<String> previousMajorBaseline(String infoVersion, String changelog, Set<String> mergedTags) {
+    public static Optional<String> previousBreakingBaseline(String infoVersion, String changelog, Set<String> mergedTags) {
         List<Section> sections = sections(changelog);
         if (changelogRefusal(infoVersion, sections).isPresent()) {
             return Optional.empty();
         }
         Version top = sections.getFirst().version().orElseThrow();
         return previousRelease(sections)
-                .filter(previous -> previous.major() < top.major())
+                .filter(top::lineAbove)
                 .map(Version::tag)
                 .filter(mergedTags::contains);
     }
@@ -282,7 +307,7 @@ public final class ReleaseGate {
                         "The CHANGELOG gates pass: info.version " + infoVersion + " equals the top CHANGELOG heading.");
     }
 
-    /** The version gate (rules 1 and 2) and the Breaking subsection (rule 6). */
+    /** The heading, order and version gates (rules 1 to 3) and the Breaking subsection (rule 8). */
     private static Optional<Decision.Refused> changelogRefusal(String infoVersion, List<Section> sections) {
         Optional<Version> info = Version.parse(infoVersion);
         if (info.isEmpty()) {
@@ -314,9 +339,10 @@ public final class ReleaseGate {
             return unordered;
         }
         Optional<Version> previous = previousRelease(sections);
-        if (previous.isPresent() && info.get().major() > previous.get().major() && !top.breaking()) {
-            return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md raises the major"
-                    + " version from " + previous.get().text() + " to " + infoVersion + " but has no ### Breaking"
+        if (previous.isPresent() && info.get().lineAbove(previous.get()) && !top.breaking()) {
+            return refuse("The top section " + infoVersion + " of contracts/charter/CHANGELOG.md raises the "
+                    + (info.get().major() > previous.get().major() ? "major version" : "minor version of 0.x")
+                    + " from " + previous.get().text() + " to " + infoVersion + " but has no ### Breaking"
                     + " subsection; list what breaks there.");
         }
         return Optional.empty();

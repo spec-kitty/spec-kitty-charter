@@ -442,7 +442,8 @@ abstract class CompatibilityFixtures : ContractToolTask() {
  * The oasdiff breaking-change check of the bundle against the bundle of a released contract. Which release is the
  * baseline is the release gate's decision (`ai.speckitty.charter.contracts.compat.ReleaseGate`, whose class Javadoc
  * is the authority; DM 01M5986KJ7B18K7GQ25E47J989): `info.version` equals the top CHANGELOG heading, only
- * `contract-charter-v*` tags merged into HEAD count, only a release of the same major version is a baseline, and
+ * `contract-charter-v*` tags merged into HEAD count, only a release of the same line is a baseline (the same major
+ * version, and while the major is 0 the same minor: ADR-0022), and
  * a pending release (released heading, no tag yet) is compared against the previous release, and a commit after a
  * release's tag is refused until the next -SNAPSHOT is opened. A shallow clone fails,
  * because a released contract's tag may be missing. `-PcontractBaseline=none` skips the comparison on purpose and
@@ -525,27 +526,29 @@ abstract class CheckContractCompatibility @Inject constructor(
     }
 
     /**
-     * On a major bump, shows what the new major breaks against the newest release of the earlier major: the oasdiff
-     * report, for information only. Nothing here fails the build; a problem is logged and the check goes on.
+     * On a breaking bump (a major bump, or a minor bump while the major is 0), shows what the new version breaks
+     * against the previous release, the newest of the earlier line: the oasdiff report, for information only. Nothing
+     * here fails the build; a problem is logged and the check goes on.
      */
-    private fun reportOnPreviousMajor(repo: String, tagsFile: File, work: File) {
-        val (exit, lines, _) = runGate("--previous-major", openapi.get().asFile.absolutePath,
+    private fun reportOnPreviousBreaking(repo: String, tagsFile: File, work: File) {
+        val (exit, lines, _) = runGate("--previous-breaking", openapi.get().asFile.absolutePath,
             changelog.get().asFile.absolutePath, tagsFile.path)
         val first = lines.firstOrNull().orEmpty()
-        if (exit != 0 || !first.startsWith("PREVIOUS_MAJOR ")) return
-        val tag = first.removePrefix("PREVIOUS_MAJOR ")
+        if (exit != 0 || !first.startsWith("PREVIOUS_BREAKING ")) return
+        val tag = first.removePrefix("PREVIOUS_BREAKING ")
         try {
             val previous = bundledRelease(repo, tag, work)
             val (code, output) = breaking(oasdiff.get().asFile, severityLevels.get().asFile, previous, bundle.get().asFile)
             val verdict = when (code) {
-                0 -> "the new major breaks nothing"
-                1 -> "the new major breaks:"
+                0 -> "the new version breaks nothing"
+                1 -> "the new version breaks:"
                 else -> "oasdiff exited $code:"
             }
-            logger.lifecycle("Information only (a major bump may break; this does not fail the build): compared with " +
+            logger.lifecycle("Information only (a major bump, or a minor bump of 0.x, may break; this does not fail " +
+                "the build): compared with " +
                 "$tag, $verdict" + if (output.isBlank()) "" else "\n$output")
         } catch (e: GradleException) {
-            logger.warn("Could not compare the major bump with $tag (information only): ${e.message}")
+            logger.warn("Could not compare the breaking bump with $tag (information only): ${e.message}")
         }
     }
 
@@ -585,7 +588,7 @@ abstract class CheckContractCompatibility @Inject constructor(
         val headTagsFile = File(work, "head-tags.txt")
         headTagsFile.writeText(headTagList)
         val (decision, message) = gate("--git", tagsFile.path, headTagsFile.path)
-        reportOnPreviousMajor(repo, tagsFile, work)
+        reportOnPreviousBreaking(repo, tagsFile, work)
         if (decision == "NONE") {
             logger.lifecycle(message)
             return
