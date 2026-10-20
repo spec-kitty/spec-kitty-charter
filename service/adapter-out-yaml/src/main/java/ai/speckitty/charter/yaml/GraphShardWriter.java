@@ -50,6 +50,7 @@ public final class GraphShardWriter {
         DumpSettings settings = DumpSettings.builder()
                 .setDefaultFlowStyle(FlowStyle.BLOCK)
                 .setWidth(4096)
+                .setSchema(Yaml.schema())
                 .build();
         return new Dump(settings).dumpToString(root);
     }

@@ -3,6 +3,8 @@ package ai.speckitty.charter.yaml;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.domain.DoctrineGraph;
+import ai.speckitty.charter.domain.DrgEdge;
+import ai.speckitty.charter.domain.DrgNode;
 import ai.speckitty.charter.domain.NodeKind;
 import ai.speckitty.charter.domain.PackContents.FileRead;
 import ai.speckitty.charter.domain.PackContents.RawEdge;
@@ -151,6 +153,24 @@ class GraphDocumentReaderTest {
         assertThat(graph.outgoing(new Urn(NodeKind.TACTIC, "t"), Relation.IMPACTS))
                 .singleElement()
                 .satisfies(e -> assertThat(e.impacts()).contains(0.75));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"~", "Null", "NULL"})
+    void aStringThatReadsAsNullIsQuotedWhenWrittenSoItIsNotLostOnTheWayBack(String text) {
+        Urn tactic = new Urn(NodeKind.TACTIC, "t");
+        Urn directive = new Urn(NodeKind.DIRECTIVE, "d");
+        DoctrineGraph graph = new DoctrineGraph(
+                List.of(new DrgNode(tactic, Optional.of(text)), new DrgNode(directive, Optional.empty())),
+                List.of(new DrgEdge(
+                        tactic, directive, Relation.REQUIRES, Optional.empty(), Optional.of(text), Optional.of(text))));
+
+        String written = GraphShardWriter.write(graph);
+        assertThat(written).contains("label: '" + text + "'", "when: '" + text + "'", "reason: '" + text + "'");
+
+        RawGraph reread = read(written, Shape.SHARD, "w.graph.yaml");
+        assertThat(reread.nodes().get(0).label()).contains(text);
+        assertThat(PackPolicy.graph("qa", reread).graph()).isEqualTo(graph);
     }
 
     @Test
