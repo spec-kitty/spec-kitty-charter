@@ -46,7 +46,7 @@ stands.
 | [0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) | ADR-0015: This repository is canonical for the charter structure, responses, contracts and pack schemas | Accepted (provisional) | 2026-10-19 |
 | [0016](/adr/0016-conformance-corpus-harness-over-core-cli/) | ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |
 | [0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) | ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema | Accepted (provisional), with Amendments 2026-10-19 and 2026-10-20 | 2026-10-20 |
-| [0018](/adr/0018-action-context-read-and-seam-access-surface/) | ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh | Accepted (provisional) | 2026-10-19 |
+| [0018](/adr/0018-action-context-read-and-seam-access-surface/) | ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh | Accepted (provisional), with Amendment 2026-10-20 | 2026-10-20 |
 | [0019](/adr/0019-packs-resource-model-and-hypermedia/) | ADR-0019: Packs are a navigable REST resource with hypermedia links | Proposed | 2026-10-20 |
 | [0020](/adr/0020-offering-and-activations/) | ADR-0020: The offering and activations are separate resources, and the service stores activations | Proposed | 2026-10-20 |
 | [0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) | ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation | Proposed | 2026-10-20 |
