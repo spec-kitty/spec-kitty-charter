@@ -1,10 +1,11 @@
 # Divergence register, machine-readable: the form of every entry of both blocks of
 # divergence-register.md, the human-readable page, which presents them (the pack-schema entries
-# one by one, the context-read entries in a table). DivergenceRegisterTest fails when an id is
-# listed twice here or is on one of the two and not the other. The blocks are pack schemas
-# (DIV-001..099, ADR-0017) and context read (DIV-101..110, ADR-0018). Consumers: the conformance
-# gate (#72) and the pack doctor parity test (#115) read this file; a difference from core that is
-# not listed here with status `open` fails them.
+# one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
+# when an id is listed twice here or is on one of the two and not the other. The blocks are pack
+# schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018) and activation
+# (DIV-201..202, ADR-0020, proposed). Consumers: the conformance gate (#72) and the pack doctor
+# parity test (#115) read this file; a difference from core that is not listed here with status
+# `open` fails them, so a `proposed` entry is not yet enforced.
 #
 # Schema, one list item per divergence:
 #   id         DIV-NNN, unique, never reused
@@ -15,6 +16,8 @@
 #   ruling     the decision that makes it deliberate (open-questions, spec ruling R, plan call P, ADR)
 #   status     open (the difference stands) | aligned (core now agrees) | retired (no longer relevant)
 #              | withdrawn (recorded in error or twice; the id stays taken)
+#              | proposed (recorded ahead of the operation being built; page-only intent, not yet
+#                enforced by the gate)
 #   since      date the entry was added, YYYY-MM-DD
 #   evidence   list of strings: core file:line, charter file, import change id (C1-C16, see the mission research), corpus case
 #   note       optional: why an entry is withdrawn, aligned or retired
@@ -547,3 +550,37 @@
   since: 2026-10-19
   evidence:
     - "corpus case: suggested-artifact-requires"
+
+- id: DIV-201
+  surface: A required or locked artifact under an explicit allow list that omits it, on read
+  core: Does not add it under such an allow list; doctor and list warn.
+  service: Keeps it active on read even under an allow list that omits it (ADR-0020 D7).
+  rationale: >-
+    A required or locked floor is not opt-out: the read keeps it active so the allow list cannot
+    silently drop a required artifact. Proposed with the activation resource; the operation is not
+    built yet, so the gate does not enforce it.
+  ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
+  status: proposed
+  since: 2026-10-20
+  note: >-
+    Page-only until the activation operations are built; recorded here so the page and this file
+    list the same ids. Not enforced by the gate while the status is proposed.
+  evidence:
+    - "corpus case: required-under-allow-list"
+
+- id: DIV-202
+  surface: The required floor of an activation
+  core: Promotes org required_* into the allow list at write time.
+  service: Derives the required floor from the packs at read time and never stores it (ADR-0020 D4).
+  rationale: >-
+    Deriving the floor at read time keeps it correct as packs change, rather than freezing a
+    written copy. Proposed with the activation resource; the operation is not built yet, so the
+    gate does not enforce it.
+  ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
+  status: proposed
+  since: 2026-10-20
+  note: >-
+    Page-only until the activation operations are built; recorded here so the page and this file
+    list the same ids. Not enforced by the gate while the status is proposed.
+  evidence:
+    - "corpus case: required-promoted-at-write"

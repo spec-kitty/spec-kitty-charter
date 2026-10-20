@@ -39,15 +39,18 @@ Entries are grouped by block, one block per mission, so that two missions never 
 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
-is for programs: it holds every built entry (the context-read and pack-schema blocks) and
-documents its own schema at the top; the proposed activation block is page-only until its
-operations are built. Each entry has a status:
+is for programs: it holds every entry of all three blocks (pack schemas, context read, and the
+proposed activation block) and documents its own schema at the top. The proposed activation
+entries carry status `proposed`, so the gate does not enforce them until their operations are
+built. Each entry has a status:
 
 - `open`: the difference stands.
 - `aligned`: core now agrees, so the difference is gone.
 - `retired`: the surface no longer exists or no longer matters.
 - `withdrawn`: the entry should not have been made, for example because another entry records
   the same difference. Its id stays taken.
+- `proposed`: the difference is recorded ahead of its operation being built; it is page-only
+  intent, and the gate does not enforce it until the status becomes `open`.
 
 The conformance gate (#72) and the pack doctor parity test (#115) read `divergences.yaml`; a
 difference from core that the register does not list with status `open` fails them. The parity
