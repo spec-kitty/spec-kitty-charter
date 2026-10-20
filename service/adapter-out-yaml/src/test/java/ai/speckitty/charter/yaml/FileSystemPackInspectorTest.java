@@ -10,10 +10,12 @@ import ai.speckitty.charter.domain.PackContents.RawGraph;
 import ai.speckitty.charter.domain.PackDescriptor;
 import ai.speckitty.charter.domain.PackInspector.Scope;
 import ai.speckitty.charter.domain.PackLevel;
+import ai.speckitty.charter.domain.PackPolicy;
 import ai.speckitty.charter.domain.PackRoot;
 import ai.speckitty.charter.domain.RefusalCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -127,6 +129,32 @@ class FileSystemPackInspectorTest {
                     .isEqualTo(new PackContents.ParseFailure("tactic.graph.yaml", "the file is not valid UTF-8"));
             assertThat(unreadable(contents.fragment()).parse())
                     .isEqualTo(new PackContents.ParseFailure("drg/fragment.yaml", "the file is not valid UTF-8"));
+        }
+    }
+
+    /**
+     * A {@code pack.yaml} with 217 unknown keys, {@code N} and {@code Nx} mixed, made the old segment order a cycle, and
+     * both the load and the judge threw TimSort's "Comparison method violates its general contract!".
+     */
+    @Test
+    void aPackYamlWithManyUnknownKeysOfMixedIndexOrderIsLoadedAndJudgedInATotalOrder(@TempDir Path dir)
+            throws IOException, URISyntaxException {
+        Files.copy(
+                Path.of(FileSystemPackInspectorTest.class
+                        .getResource("/pack-order/pack.yaml")
+                        .toURI()),
+                dir.resolve("pack.yaml"));
+        PackRoot project = new PackRoot("demo", Optional.of(PackLevel.PROJECT), dir.toString());
+
+        for (Scope scope : Scope.values()) {
+            PackContents contents = INSPECTOR.inspect(project, scope);
+            assertThat(PackPolicy.judge(contents).findings())
+                    .extracting(f -> f.place().get(0))
+                    .as("every unknown key once, indexes by value first")
+                    .hasSize(217)
+                    .startsWith("16", "20", "21")
+                    .endsWith("967x");
+            assertThat(PackPolicy.load(contents).diagnostics()).hasSize(217);
         }
     }
 
