@@ -1,0 +1,18 @@
+{
+  "covers": [
+    "P7",
+    "C15"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "charter.yaml",
+      "place": [
+        "governance",
+        "performance",
+        "cli_timeout_seconds"
+      ]
+    }
+  ]
+}

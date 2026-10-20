@@ -1,0 +1,19 @@
+{
+  "covers": [
+    "C9",
+    "R4"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "pack_unreadable",
+      "severity": "blocking",
+      "file": "pack.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "refusal": "pack_unreadable"
+  }
+}

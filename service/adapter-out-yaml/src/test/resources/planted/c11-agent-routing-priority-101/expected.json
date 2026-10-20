@@ -1,0 +1,15 @@
+{
+  "covers": [
+    "C11"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "agent_profiles/p.agent.yaml",
+      "place": [
+        "routing-priority"
+      ]
+    }
+  ]
+}

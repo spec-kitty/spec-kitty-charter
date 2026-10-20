@@ -76,20 +76,32 @@ final class PackFileKind {
     private final List<ExclusionRule> exclusionRules;
     private final List<Compiled> compiled;
 
-    private PackFileKind(
-            List<String> nodeKinds,
-            Map<String, String> fragmentKinds,
-            List<FileRule> fileRules,
-            List<ExclusionRule> exclusionRules) {
-        this.nodeKinds = List.copyOf(nodeKinds);
-        this.fragmentKinds = Map.copyOf(fragmentKinds);
-        this.fileRules = List.copyOf(fileRules);
-        this.exclusionRules = List.copyOf(exclusionRules);
+    /**
+     * A table read from the text of a {@code file-kinds.yaml}, which the tests use to classify with a changed copy.
+     *
+     * @param yaml the table's YAML text
+     * @throws IllegalStateException when the text is not a well-formed table
+     */
+    PackFileKind(String yaml) {
+        this(parse(yaml));
+    }
+
+    private PackFileKind(Table table) {
+        this.nodeKinds = List.copyOf(table.nodeKinds());
+        this.fragmentKinds = Map.copyOf(table.fragmentKinds());
+        this.fileRules = List.copyOf(table.fileRules());
+        this.exclusionRules = List.copyOf(table.exclusionRules());
         List<Compiled> all = new ArrayList<>();
         fileRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
         exclusionRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
         this.compiled = List.copyOf(all);
     }
+
+    private record Table(
+            List<String> nodeKinds,
+            Map<String, String> fragmentKinds,
+            List<FileRule> fileRules,
+            List<ExclusionRule> exclusionRules) {}
 
     /** The table bundled with this adapter, read once. */
     static PackFileKind bundled() {
@@ -167,7 +179,11 @@ final class PackFileKind {
     }
 
     private static PackFileKind load() {
-        Object root = Yaml.load(readResource());
+        return new PackFileKind(readResource());
+    }
+
+    private static Table parse(String yaml) {
+        Object root = Yaml.load(yaml);
         Map<String, Object> table = map(root, RESOURCE);
         List<String> nodeKinds = strings(table.get("node_kinds"), "node_kinds");
         Map<String, String> fragments = new LinkedHashMap<>();
@@ -182,7 +198,7 @@ final class PackFileKind {
             Map<String, Object> rule = map(entry, "exclusions");
             exclusions.add(new ExclusionRule(string(rule, "match"), string(rule, "reason")));
         }
-        return new PackFileKind(nodeKinds, fragments, files, exclusions);
+        return new Table(nodeKinds, fragments, files, exclusions);
     }
 
     private static String readResource() {

@@ -1,0 +1,19 @@
+{
+  "covers": [
+    "R18"
+  ],
+  "findings": [
+    {
+      "code": "pack_unreadable",
+      "severity": "blocking",
+      "file": "pack.yaml",
+      "place": [
+        "name"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "refusal": "pack_unreadable"
+  }
+}

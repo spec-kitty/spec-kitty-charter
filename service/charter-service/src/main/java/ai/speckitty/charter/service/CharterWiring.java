@@ -3,11 +3,13 @@ package ai.speckitty.charter.service;
 import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.Fingerprint;
 import ai.speckitty.charter.domain.PackLevel;
+import ai.speckitty.charter.domain.PackValidation;
 import ai.speckitty.charter.read.ActionContextQuery;
 import ai.speckitty.charter.read.ConsistentLoad;
 import ai.speckitty.charter.read.PackListingQuery;
 import ai.speckitty.charter.read.ServiceInfoQuery;
 import ai.speckitty.charter.yaml.FileSystemCharterPackRepository;
+import ai.speckitty.charter.yaml.FileSystemPackInspector;
 import ai.speckitty.charter.yaml.PackLocation;
 import ai.speckitty.charter.yaml.ProjectConfigSources;
 import java.io.IOException;
@@ -66,6 +68,12 @@ public class CharterWiring {
     @Bean
     FileSystemCharterPackRepository charterPackRepository(PackLocations locations) {
         return new FileSystemCharterPackRepository(locations);
+    }
+
+    /** Validate mode (FR-010) over the file-based inspector: the seam the pack doctor (#115) composes. */
+    @Bean
+    PackValidation packValidation() {
+        return new PackValidation(new FileSystemPackInspector());
     }
 
     /** The pack files and the project configuration files, as one fingerprint; injected by its own type. */

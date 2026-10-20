@@ -1,0 +1,13 @@
+{
+  "covers": [
+    "R16"
+  ],
+  "findings": [
+    {
+      "code": "duplicate_artifact_id",
+      "severity": "blocking",
+      "file": "tactics/b.tactic.yaml",
+      "place": []
+    }
+  ]
+}

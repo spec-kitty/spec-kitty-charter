@@ -1,0 +1,18 @@
+{
+  "covers": [
+    "C3",
+    "FR-010"
+  ],
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "tactic.graph.yaml",
+      "place": [
+        "nodes",
+        "0",
+        "urn"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+id: c
+schema_version: '1.0'
+action: plan
+mission: m
+steps:
+- id: first
+  description: d
+- id: second
+  description: d
+- id: first
+  description: d

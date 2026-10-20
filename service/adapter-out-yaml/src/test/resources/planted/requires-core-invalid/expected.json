@@ -1,0 +1,19 @@
+{
+  "covers": [
+    "R3"
+  ],
+  "findings": [
+    {
+      "code": "requires_core_invalid",
+      "severity": "blocking",
+      "file": "pack.yaml",
+      "place": [
+        "requires_core"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "refusal": "pack_unreadable"
+  }
+}

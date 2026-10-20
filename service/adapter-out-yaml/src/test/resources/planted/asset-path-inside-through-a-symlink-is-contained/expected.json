@@ -1,0 +1,12 @@
+{
+  "covers": [
+    "R16"
+  ],
+  "findings": [],
+  "symlinks": [
+    {
+      "link": "assets/in",
+      "target": "real"
+    }
+  ]
+}

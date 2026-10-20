@@ -1,0 +1,19 @@
+{
+  "covers": [
+    "R16"
+  ],
+  "findings": [
+    {
+      "code": "asset_path_escape",
+      "severity": "blocking",
+      "file": "assets/a.asset.yaml",
+      "place": []
+    }
+  ],
+  "symlinks": [
+    {
+      "link": "assets/out",
+      "target": "/"
+    }
+  ]
+}

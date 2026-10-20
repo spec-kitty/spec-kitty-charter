@@ -1,0 +1,29 @@
+{
+  "covers": [
+    "C3",
+    "C4",
+    "R15"
+  ],
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/glossary.graph.yaml",
+      "place": [
+        "nodes",
+        "0",
+        "kind"
+      ]
+    },
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/glossary.graph.yaml",
+      "place": [
+        "nodes",
+        "0",
+        "urn"
+      ]
+    }
+  ]
+}

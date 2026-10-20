@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * What {@link PackPolicy} concludes about a pack.
  *
- * @param files the classified files of the pack
+ * @param files the classified files of the pack; a YAML file no rule classifies is left out, as core leaves it out
+ *     of its verdict (#115)
  * @param findings every finding, in precedence order
  */
 public record PackVerdict(List<ClassifiedFile> files, List<PackFinding> findings) {

@@ -1,0 +1,13 @@
+{
+  "covers": [
+    "R16"
+  ],
+  "findings": [
+    {
+      "code": "asset_mime_invalid",
+      "severity": "blocking",
+      "file": "assets/a.asset.yaml",
+      "place": []
+    }
+  ]
+}

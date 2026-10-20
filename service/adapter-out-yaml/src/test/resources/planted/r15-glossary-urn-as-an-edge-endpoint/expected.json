@@ -1,0 +1,23 @@
+{
+  "covers": [
+    "C3",
+    "R15"
+  ],
+  "configuredLevel": "org",
+  "findings": [
+    {
+      "code": "drg_schema_error",
+      "severity": "blocking",
+      "file": "drg/fragment.yaml",
+      "place": [
+        "edges",
+        "0",
+        "source"
+      ]
+    }
+  ],
+  "load": {
+    "level": "org",
+    "refusal": "drg_schema_error"
+  }
+}

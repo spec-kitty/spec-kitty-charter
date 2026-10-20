@@ -1,0 +1,17 @@
+{
+  "covers": [
+    "R16"
+  ],
+  "findings": [
+    {
+      "code": "org_fragment_missing",
+      "severity": "blocking",
+      "file": "pack.yaml",
+      "place": []
+    }
+  ],
+  "load": {
+    "level": "org",
+    "refusal": "pack_unreadable"
+  }
+}

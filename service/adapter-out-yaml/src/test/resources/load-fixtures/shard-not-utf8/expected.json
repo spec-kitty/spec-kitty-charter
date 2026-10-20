@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "built-in",
+    "level": "built-in"
+  },
+  "refusal": {
+    "code": "drg_schema_error",
+    "detail": "built-in/directive.graph.yaml is not valid YAML: the file is not valid UTF-8"
+  }
+}

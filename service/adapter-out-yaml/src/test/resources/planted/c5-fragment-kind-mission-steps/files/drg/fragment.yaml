@@ -1,0 +1,4 @@
+nodes:
+- id: x
+  kind: mission_steps
+edges: []

@@ -50,7 +50,8 @@ class PackPolicyRulesTest {
                 List.of(),
                 steps,
                 artifacts,
-                assets);
+                assets,
+                List.of());
     }
 
     private static PackContents withDescriptor(Optional<String> requiresCore, List<String> undeclared) {
@@ -194,6 +195,7 @@ class PackPolicyRulesTest {
                 List.of(),
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of());
 
         assertThat(PackPolicy.judge(contents).findings())
@@ -213,6 +215,7 @@ class PackPolicyRulesTest {
                 descriptor,
                 List.of(),
                 fragment,
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),

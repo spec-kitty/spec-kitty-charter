@@ -1,0 +1,7 @@
+nodes:
+- id: local-t
+  kind: tactics
+edges:
+- source: local-t
+  target: directive:DIRECTIVE_010
+  relation: suggests

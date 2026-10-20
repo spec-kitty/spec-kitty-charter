@@ -3,12 +3,15 @@ package ai.speckitty.charter.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.domain.PackLevel;
+import ai.speckitty.charter.domain.PackRoot;
+import ai.speckitty.charter.domain.PackValidation;
 import ai.speckitty.charter.read.ServiceInfoQuery;
 import ai.speckitty.charter.yaml.PackLocation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -113,5 +116,20 @@ class CharterWiringTest {
             Files.writeString(directory.resolve("config.yaml"), "b");
             assertThat(query.answer().sourceFingerprint()).isNotEqualTo(before);
         });
+    }
+
+    @Test
+    void validateModeIsWiredOverTheFileBasedInspector(@TempDir Path dir) throws IOException {
+        Files.writeString(
+                dir.resolve("pack.yaml"),
+                "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
+        Files.createDirectories(dir.resolve("drg"));
+        Files.writeString(dir.resolve("drg/fragment.yaml"), "nodes: []\nedges: []\n");
+
+        runner.run(context -> assertThat(context.getBean(PackValidation.class)
+                        .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString()))
+                        .findings())
+                .extracting(f -> f.code().name())
+                .containsExactly("PACK_UNKNOWN_KEY"));
     }
 }

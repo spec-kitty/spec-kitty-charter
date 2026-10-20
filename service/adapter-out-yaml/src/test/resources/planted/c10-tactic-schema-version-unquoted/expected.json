@@ -1,0 +1,16 @@
+{
+  "covers": [
+    "C10",
+    "R9"
+  ],
+  "findings": [
+    {
+      "code": "artifact_schema_error",
+      "severity": "blocking",
+      "file": "tactics/a.tactic.yaml",
+      "place": [
+        "schema_version"
+      ]
+    }
+  ]
+}

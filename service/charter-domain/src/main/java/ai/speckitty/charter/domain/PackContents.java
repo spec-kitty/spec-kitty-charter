@@ -18,6 +18,8 @@ import org.jspecify.annotations.Nullable;
  * @param stepContracts the step ids each step contract declares; filled by a full read only
  * @param artifacts the kind and id each artifact declares; filled by a full read only
  * @param assets the path and MIME type each asset declares; filled by a full read only
+ * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact, an
+ *     org charter, a project charter or a graph document outside the load path; filled by a full read only
  */
 public record PackContents(
         PackRoot root,
@@ -27,7 +29,8 @@ public record PackContents(
         List<ClassifiedFile> files,
         List<StepContractFacts> stepContracts,
         List<ArtifactFacts> artifacts,
-        List<AssetFacts> assets) {
+        List<AssetFacts> assets,
+        List<FileRead.Unreadable<?>> unreadableFiles) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -39,6 +42,7 @@ public record PackContents(
      * @param stepContracts the step contract facts
      * @param artifacts the artifact facts
      * @param assets the asset facts
+     * @param unreadableFiles the other files that could not be read
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -49,6 +53,7 @@ public record PackContents(
         stepContracts = List.copyOf(stepContracts);
         artifacts = List.copyOf(artifacts);
         assets = List.copyOf(assets);
+        unreadableFiles = List.copyOf(unreadableFiles);
     }
 
     /**
