@@ -130,6 +130,23 @@ Feature: Pack listing and load refusals
       {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"}
       """
 
+  Scenario: A fragment that carries a header field is refused
+    A fragment has no header: the shard-only keys (pack_name, source_kind, layer_index and the like) are not
+    declared by the fragment schema, so a fragment that carries one is refused, not read.
+    Given the org pack "qa" with the file "drg/fragment.yaml":
+      """
+      pack_name: qa
+      nodes: []
+      edges: []
+      """
+    When I GET "/packs"
+    Then the response status is 500
+    And the problem code is "drg_schema_error"
+    And the response body is:
+      """
+      {"title": "Invalid DRG document", "status": 500, "code": "drg_schema_error", "detail": "qa/drg/fragment.yaml: unknown key 'pack_name'"}
+      """
+
   Scenario: A graph shard with an unknown key is refused
     Given the built-in pack "built-in" with the file "directive.graph.yaml":
       """
