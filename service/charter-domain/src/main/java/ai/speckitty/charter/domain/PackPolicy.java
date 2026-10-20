@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * The single owner of the pack rules: it chooses every code and writes every text. It is pure; an adapter reads
@@ -32,6 +31,20 @@ public final class PackPolicy {
             PackFindingCode.PACK_LEVEL_MISSING,
             PackFindingCode.PACK_LEVEL_MISMATCH,
             PackFindingCode.ORG_FRAGMENT_MISSING);
+
+    /** The schema keywords the detail vocabulary has a row for; every other keyword gets the fixed fallback text. */
+    private static final Set<String> VOCABULARY_KEYWORDS = Set.of(
+            "type",
+            "additionalProperties",
+            "required",
+            "minLength",
+            "pattern",
+            "enum",
+            "const",
+            "minItems",
+            "minimum",
+            "maximum",
+            "exclusiveMinimum");
 
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
@@ -131,6 +144,7 @@ public final class PackPolicy {
             case FileRead.Read<PackDescriptor> read -> findings.addAll(descriptorRules(name, read.value()));
             case FileRead.Absent<PackDescriptor> absent -> {}
         }
+        findings.addAll(orgFragmentRules(name, contents));
         for (FileRead<RawGraph> document : documents(contents)) {
             switch (document) {
                 case FileRead.Unreadable<RawGraph> bad -> findings.addAll(unreadable(name, bad));
@@ -147,6 +161,44 @@ public final class PackPolicy {
     }
 
     // ---- single-pack rules a schema cannot express ---------------------------------------------
+
+    /**
+     * An org pack is its fragment: when the pack is at the org level and {@code drg/fragment.yaml} is absent, the pack
+     * has no graph to contribute (R16). The level is the configured one, or for a bare path the declared one. An
+     * unreadable fragment is not a missing one; its own finding speaks.
+     */
+    private static List<PackFinding> orgFragmentRules(String name, PackContents contents) {
+        if (!(contents.fragment() instanceof FileRead.Absent<RawGraph>) || !isOrgPack(contents)) {
+            return List.of();
+        }
+        return List.of(new PackFinding(
+                PackFindingCode.ORG_FRAGMENT_MISSING,
+                PACK_YAML,
+                List.of(),
+                "org pack " + name + " has no " + FRAGMENT));
+    }
+
+    private static boolean isOrgPack(PackContents contents) {
+        Optional<PackLevel> configured = contents.root().configuredLevel();
+        if (configured.isPresent()) {
+            return configured.get() == PackLevel.ORG;
+        }
+        return contents.descriptor() instanceof FileRead.Read<PackDescriptor> read
+                && read.value()
+                        .declaredLevel()
+                        .filter(level -> level == PackLevel.ORG)
+                        .isPresent();
+    }
+
+    /**
+     * Whether the detail vocabulary has a row for a schema keyword.
+     *
+     * @param keyword the schema keyword
+     * @return {@code true} when a violation of the keyword gets a text of its own, not the fixed fallback
+     */
+    public static boolean handles(String keyword) {
+        return VOCABULARY_KEYWORDS.contains(keyword);
+    }
 
     private static final String REQUIRES_CORE = "requires_core";
 
@@ -348,9 +400,8 @@ public final class PackPolicy {
      * Loads a pack, building the graph from the facts: refuses with the first blocking finding on the load path, or
      * builds the pack with the warnings on the load path as its diagnostics.
      *
-     * <p>The graph is built from the shards in name order and then the fragment, the order the adapter merged them
-     * in before. This is the same projection of {@link #judge} as {@link #load(PackContents, DoctrineGraph)}, so a
-     * graph finding, a schema finding and a parse failure all refuse here.
+     * <p>The graph is built from the shards in name order and then the fragment. The load is a projection of
+     * {@link #judge}, so a graph finding, a schema finding and a parse failure all refuse here.
      *
      * @param contents what the adapter read
      * @return the loaded pack
@@ -359,27 +410,6 @@ public final class PackPolicy {
      * @throws IllegalArgumentException when the pack has no configured level: a bare path is validate-only
      */
     public static CharterPack load(PackContents contents) {
-        return loadWith(contents, () -> mergedGraph(contents));
-    }
-
-    /**
-     * Loads a pack with a graph the caller built: refuses with the first blocking finding on the load path, or
-     * builds the pack with the warnings on the load path as its diagnostics.
-     *
-     * <p>Transitional: the adapter calls this until it passes raw graph facts; then this overload is deleted.
-     *
-     * @param contents what the adapter read
-     * @param graph the pack's graph, which the adapter built from the same files
-     * @return the loaded pack
-     * @throws CharterRefusal when a finding on the load path blocks, including the parse or schema finding of an
-     *     unreadable file
-     * @throws IllegalArgumentException when the pack has no configured level: a bare path is validate-only
-     */
-    public static CharterPack load(PackContents contents, DoctrineGraph graph) {
-        return loadWith(contents, () -> graph);
-    }
-
-    private static CharterPack loadWith(PackContents contents, Supplier<DoctrineGraph> graph) {
         PackLevel configured = contents.root()
                 .configuredLevel()
                 .orElseThrow(() -> new IllegalArgumentException("load needs a configured level"));
@@ -402,7 +432,7 @@ public final class PackPolicy {
                 contents.root().name(),
                 configured,
                 descriptor,
-                graph.get(),
+                mergedGraph(contents),
                 findings.stream().map(PackFinding::toDiagnostic).toList());
     }
 
@@ -569,9 +599,8 @@ public final class PackPolicy {
      *
      * <p>The code of a parse failure follows the file kind, like every other finding (R17): {@code pack_unreadable} for
      * {@code pack.yaml}, {@code drg_schema_error} for a shard or the fragment, {@code org_charter_schema_error} for the
-     * org charter and {@code artifact_schema_error} for any other file. A file that is unreadable without a parse
-     * failure or any violation (which a producer should not send) gets a plain "is unreadable" text under the same
-     * code, so it still refuses.
+     * org charter and {@code artifact_schema_error} for any other file. An {@link FileRead.Unreadable} holds exactly
+     * one of a parse failure and schema violations, so every unreadable file has a finding.
      *
      * @param packName the pack's configured name
      * @param unreadable the file that could not be read
@@ -585,9 +614,6 @@ public final class PackPolicy {
                     ? origin(packName, file) + " is not valid YAML"
                     : origin(packName, file) + " is not valid YAML: " + parse.firstLine();
             return List.of(new PackFinding(codeFor(file), file, List.of(), text));
-        }
-        if (unreadable.violations().isEmpty()) {
-            return List.of(new PackFinding(codeFor(file), file, List.of(), origin(packName, file) + " is unreadable"));
         }
         return schemaFindings(packName, unreadable.violations());
     }

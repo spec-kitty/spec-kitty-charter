@@ -83,7 +83,8 @@ public record PackContents(
         }
 
         /**
-         * The file exists but could not be parsed, or broke its schema.
+         * The file exists but could not be parsed, or broke its schema: exactly one of {@code parse} and
+         * {@code violations} says why.
          *
          * @param file the pack-relative path
          * @param parse the parse failure; {@code null} when the file parsed
@@ -93,15 +94,21 @@ public record PackContents(
         record Unreadable<T>(String file, @Nullable ParseFailure parse, List<SchemaViolation> violations)
                 implements FileRead<T> {
             /**
-             * Checks the path and copies the violations.
+             * Checks the path, copies the violations and checks that exactly one of the parse failure and the
+             * violations is given: a file that is unreadable has a reason, and only one.
              *
              * @param file the pack-relative path
              * @param parse the parse failure, possibly {@code null}
              * @param violations the schema violations
+             * @throws IllegalArgumentException when both or neither of the parse failure and the violations are given
              */
             public Unreadable {
                 Objects.requireNonNull(file, "file");
                 violations = List.copyOf(violations);
+                if ((parse != null) == !violations.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "exactly one of a parse failure and schema violations must be given: " + file);
+                }
             }
         }
 

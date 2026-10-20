@@ -1,0 +1,7 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- source: tactic:t
+  target: tactic:u
+  relation: inspires

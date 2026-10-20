@@ -113,7 +113,7 @@ Feature: Refreshing the packs
       """
     When I POST "/packs/refresh"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "drg_schema_error"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A refresh whose packs change while it is answered is refused with stale_input

@@ -1,0 +1,5 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- {source: directive:a, target: directive:b, relation: in_tension_with, reason: both decide the depth}

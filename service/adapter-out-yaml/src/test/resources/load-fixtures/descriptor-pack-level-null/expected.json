@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "pack_unreadable",
+    "detail": "pack.yaml of qa: pack_level must be a string"
+  }
+}

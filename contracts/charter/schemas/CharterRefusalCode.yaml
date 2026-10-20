@@ -30,6 +30,10 @@ description: >-
   the service and may be retried, and so may stale_input, whose inputs changed during the read;
   every other code is a deterministic refusal, and the same read is refused the same way again
   until the request or the configured packs change.
+
+  unresolved_edge_endpoint is no longer raised: a graph edge endpoint is a URN, and an endpoint
+  that is not one is refused as drg_schema_error. The value stays in the enum so that the
+  contract keeps accepting it.
 type: string
 enum:
   - mission_type_not_found
@@ -65,7 +69,7 @@ x-refusal:
   unresolved_edge_endpoint:
     status: 500
     retryable: false
-    raised: true
+    raised: false
   internal_error:
     status: 500
     retryable: true

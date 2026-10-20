@@ -1,0 +1,18 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes:
+- {urn: tactic:n0, kind: tactic}
+- {urn: tactic:n1, kind: tactic}
+- {urn: tactic:n2, kind: tactic}
+- {urn: tactic:n3, kind: tactic}
+- {urn: tactic:n4, kind: tactic}
+- {urn: tactic:n5, kind: tactic}
+- {urn: tactic:n6, kind: tactic}
+- {urn: tactic:n7, kind: tactic}
+- {urn: tactic:n8, kind: tactic}
+- {urn: tactic:n9, kind: tactic}
+- {urn: nope, kind: widget}
+edges:
+- source: tactic:t
+  target: tactic:u
+  relation: inspires

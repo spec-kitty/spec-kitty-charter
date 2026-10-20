@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "pack_level_mismatch",
+    "detail": "Pack 'qa' is configured as org but declares pack_level built-in"
+  }
+}

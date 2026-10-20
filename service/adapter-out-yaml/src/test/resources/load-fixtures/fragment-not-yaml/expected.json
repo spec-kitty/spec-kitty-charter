@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "drg_schema_error",
+    "detail": "qa/drg/fragment.yaml is not valid YAML: while parsing a flow node"
+  }
+}

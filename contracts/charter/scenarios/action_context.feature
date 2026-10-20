@@ -920,11 +920,10 @@ Feature: Action-scoped context
 
   Scenario: The answer carries the load findings of the offering, as the pack listing does
     An org pack without a pack.yaml loads at its configured level, with the diagnostic that
-    GET /packs reports for it. The hot read shows it without a second call.
-    Given the org pack "qa" with the file "qa.graph.yaml":
+    GET /packs reports for it. The hot read shows it without a second call. The pack carries the
+    drg/fragment.yaml an org pack needs.
+    Given the org pack "qa" with the file "drg/fragment.yaml":
       """
-      schema_version: '1.0'
-      generated_at: STATIC
       nodes: []
       edges: []
       """

@@ -7,7 +7,6 @@ import ai.speckitty.charter.domain.CharterRefusal;
 import ai.speckitty.charter.domain.PackLevel;
 import ai.speckitty.charter.domain.RefusalCode;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,31 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class FileSystemCharterPackRepositoryTest {
 
-    private static final PackLocation QA = new PackLocation("qa", PackLevel.ORG, Path.of("qa"));
-
-    @Test
-    void theGraphShardsOfAListingAreItsGraphYamlFilesSortedByName() {
-        assertThat(FileSystemCharterPackRepository.graphShards(
-                        Stream.of(Path.of("qa/b.graph.yaml"), Path.of("qa/pack.yaml"), Path.of("qa/a.graph.yaml")),
-                        QA,
-                        p -> true))
-                .containsExactly(Path.of("qa/a.graph.yaml"), Path.of("qa/b.graph.yaml"));
-    }
-
-    @Test
-    void aListingThatFailsWhileItIsReadIsRefusedAsAnUnreadablePack() {
-        IOException cause = new IOException("gone");
-        Stream<Path> failing = Stream.of(Path.of("qa/a.graph.yaml")).peek(p -> {
-            throw new UncheckedIOException(cause);
-        });
-
-        assertThatThrownBy(() -> FileSystemCharterPackRepository.graphShards(failing, QA, p -> true))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
-                .hasMessage("pack qa cannot be listed")
-                .hasCause(cause);
-    }
-
+    /** R17 (operator ruling, contract delta D8): a graph document that is not YAML is a DRG schema error. */
     static Stream<String> malformedShards() {
         return Stream.of(
                 "nodes: [\n",
@@ -66,7 +41,7 @@ class FileSystemCharterPackRepositoryTest {
 
         assertThatThrownBy(() -> FileSystemCharterPackRepository.loadPack(new PackLocation("qa", PackLevel.ORG, pack)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
                     assertThat(refusal.getMessage()).startsWith("qa/tactic.graph.yaml is not valid YAML: ");
                     assertThat(refusal.getMessage())
                             .as("the parser's reason, not an empty tail")
@@ -77,6 +52,15 @@ class FileSystemCharterPackRepositoryTest {
                             .doesNotContain(System.getProperty("user.home"))
                             .doesNotContain(Path.of("").toAbsolutePath().toString())
                             .doesNotContain("\n");
+                });
+    }
+
+    @Test
+    void aPackThatIsNoDirectoryIsRefusedWhenLoadedToo(@TempDir Path dir) {
+        assertThatThrownBy(() -> repository(dir.resolve("missing")).load())
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(r.getMessage()).isEqualTo("pack qa is not a directory");
                 });
     }
 

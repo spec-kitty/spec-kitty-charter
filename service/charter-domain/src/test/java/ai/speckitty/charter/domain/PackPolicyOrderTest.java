@@ -46,15 +46,17 @@ class PackPolicyOrderTest {
     }
 
     private static List<String> places(FileRead<RawGraph> shard) {
-        return PackPolicy.judge(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), absentFragment()))
+        return PackPolicy.judge(contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment()))
                 .findings()
                 .stream()
                 .map(f -> "/" + String.join("/", f.place()))
                 .toList();
     }
 
-    private static FileRead<RawGraph> absentFragment() {
-        return new FileRead.Absent<>("drg/fragment.yaml");
+    /** A fragment that was read and is empty: an org pack has one, so no {@code org_fragment_missing} fires. */
+    private static FileRead<RawGraph> emptyFragment() {
+        return new FileRead.Read<>(
+                "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
     }
 
     @Test
@@ -80,7 +82,7 @@ class PackPolicyOrderTest {
     void anUnreadablePackYamlComesBeforeEverything() {
         FileRead<PackDescriptor> bad =
                 new FileRead.Unreadable<>("pack.yaml", new PackContents.ParseFailure("pack.yaml", "oops"), List.of());
-        PackContents c = contents(bad, List.of(broken("a.graph.yaml", fallback("a.graph.yaml"))), absentFragment());
+        PackContents c = contents(bad, List.of(broken("a.graph.yaml", fallback("a.graph.yaml"))), emptyFragment());
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(PackFinding::file)
                 .containsExactly("pack.yaml", "a.graph.yaml");
@@ -191,7 +193,7 @@ class PackPolicyOrderTest {
                         fallback("pack.yaml", "name"),
                         fallback("pack.yaml", "pack_version"),
                         fallback("pack.yaml", "pack_id")));
-        PackContents c = contents(bad, List.of(), absentFragment());
+        PackContents c = contents(bad, List.of(), emptyFragment());
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(f -> f.place().get(0))
                 .containsExactly("pack_id", "pack_version", "name");
@@ -204,7 +206,7 @@ class PackPolicyOrderTest {
                 fallback("a.graph.yaml", "edges", "0", "impacts"),
                 fallback("a.graph.yaml", "nodes", "10", "label"),
                 unknownKey("a.graph.yaml", "surprise"));
-        PackContents c = contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), absentFragment());
+        PackContents c = contents(descriptor(Optional.of(PackLevel.ORG)), List.of(shard), emptyFragment());
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(PackFinding::detail)
                 .containsExactly(
@@ -216,7 +218,7 @@ class PackPolicyOrderTest {
     @Test
     void aTwoFaultPackRefusesWithTheShardsFindingNotTheLevelMismatch() {
         FileRead<RawGraph> shard = broken("a.graph.yaml", unknownKey("a.graph.yaml", "surprise"));
-        PackContents c = contents(descriptor(Optional.of(PackLevel.BUILT_IN)), List.of(shard), absentFragment());
+        PackContents c = contents(descriptor(Optional.of(PackLevel.BUILT_IN)), List.of(shard), emptyFragment());
         List<PackFinding> findings = PackPolicy.judge(c).findings();
         assertThat(findings)
                 .extracting(PackFinding::code)
@@ -240,7 +242,7 @@ class PackPolicyOrderTest {
         PackContents c = contents(
                 descriptor(Optional.of(PackLevel.ORG)),
                 List.of(new FileRead.Read<>("a.graph.yaml", raw)),
-                absentFragment());
+                emptyFragment());
         assertThat(PackPolicy.judge(c).findings())
                 .extracting(PackFinding::place)
                 .containsExactly(List.of("nodes", "1"), List.of("edges", "0"));

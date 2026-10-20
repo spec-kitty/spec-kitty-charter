@@ -1,29 +1,26 @@
 package ai.speckitty.charter.yaml;
 
-import ai.speckitty.charter.domain.ArtifactKind;
-import ai.speckitty.charter.domain.CharterRefusal;
-import ai.speckitty.charter.domain.DoctrineGraph;
-import ai.speckitty.charter.domain.DrgEdge;
-import ai.speckitty.charter.domain.DrgNode;
-import ai.speckitty.charter.domain.NodeKind;
-import ai.speckitty.charter.domain.RefusalCode;
-import ai.speckitty.charter.domain.Relation;
-import ai.speckitty.charter.domain.Urn;
+import ai.speckitty.charter.domain.PackContents.FileRead;
+import ai.speckitty.charter.domain.PackContents.RawEdge;
+import ai.speckitty.charter.domain.PackContents.RawGraph;
+import ai.speckitty.charter.domain.PackContents.RawNode;
+import ai.speckitty.charter.domain.PackContents.SchemaViolation;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reads the two DRG document shapes into a {@link DoctrineGraph}: a built-in graph shard
- * ({@code <kind>.graph.yaml}: nodes by {@code urn}) and an org fragment ({@code drg/fragment.yaml}:
- * nodes by {@code id} with a plural {@code kind}). Unknown keys are refused, as core does. A legacy
- * {@code in_tension_with} edge is read as {@code impacts} with strength -1, the meaning core ADR 2026-07-26-3 gives
- * it, until core migrates its graphs.
+ * Reads the two DRG document shapes as facts: a built-in graph shard ({@code <kind>.graph.yaml}: nodes by
+ * {@code urn}) and an org fragment ({@code drg/fragment.yaml}: nodes by {@code id} with a plural {@code kind}).
+ *
+ * <p>The reader decides nothing. A document that is not YAML is {@link FileRead.Unreadable} with the parse failure; a
+ * document that breaks its bundled schema ({@code graph-shard} or {@code org-fragment}) is {@link FileRead.Unreadable}
+ * with the validator's facts; any other document is read as written, with nothing bound or defaulted. Every code and
+ * every text is {@code PackPolicy}'s, including the legacy {@code in_tension_with} mapping, which stays the word on
+ * the page here. It never throws on content.
  */
 public final class GraphDocumentReader {
 
@@ -35,16 +32,6 @@ public final class GraphDocumentReader {
         FRAGMENT
     }
 
-    private static final Set<String> SHARD_KEYS =
-            Set.of("schema_version", "generated_at", "generated_by", "nodes", "edges");
-    private static final Set<String> SHARD_NODE_KEYS = Set.of("urn", "kind", "label", "tags");
-    private static final Set<String> FRAGMENT_KEYS =
-            Set.of("pack_name", "source_kind", "source_ref", "layer_index", "provenance_marker", "nodes", "edges");
-    private static final Set<String> FRAGMENT_NODE_KEYS = Set.of("id", "kind", "title", "body_path");
-    private static final Set<String> EDGE_KEYS = Set.of("source", "target", "relation", "impacts", "when", "reason");
-    private static final String LEGACY_TENSION = "in_tension_with";
-    private static final double LEGACY_TENSION_STRENGTH = -1.0;
-
     private GraphDocumentReader() {}
 
     /**
@@ -52,188 +39,130 @@ public final class GraphDocumentReader {
      *
      * @param text the document's YAML text
      * @param shape which of the two shapes the document has
-     * @param origin the pack-relative name of the document, used in refusal details
-     * @return the document's nodes and edges, in declared order
-     * @throws ai.speckitty.charter.domain.CharterRefusal with {@code PACK_UNREADABLE} when the text is not YAML,
-     *     {@code DRG_SCHEMA_ERROR} when the document breaks its shape's schema (an {@code impacts} edge without a
-     *     strength in [-1, 1] or another edge with one included), or {@code UNRESOLVED_EDGE_ENDPOINT}
-     *     when an edge endpoint is neither a URN nor a bare id the document declares
+     * @param file the pack-relative path of the document
+     * @return the document as written, or why it could not be read
      */
-    public static DoctrineGraph read(String text, Shape shape, String origin) {
-        Object document;
-        try {
-            document = Yaml.load(text);
-        } catch (RuntimeException e) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, origin + " is not valid YAML: " + firstLine(e), e);
+    public static FileRead<RawGraph> read(String text, Shape shape, String file) {
+        ParsedYaml parsed = ParsedYaml.parse(text, file);
+        if (parsed.failure() != null) {
+            return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
         }
-        Map<String, Object> root = mapping(document, origin);
-        checkKeys(root, shape == Shape.SHARD ? SHARD_KEYS : FRAGMENT_KEYS, origin);
-        List<DrgNode> nodes = new ArrayList<>();
-        Map<String, Urn> declaredIds = new HashMap<>();
-        for (Object item : list(root.get("nodes"), origin + " nodes")) {
-            Map<String, Object> node = mapping(item, origin + " node");
-            DrgNode parsed = shape == Shape.SHARD ? shardNode(node, origin) : fragmentNode(node, origin);
-            nodes.add(parsed);
-            declaredIds.putIfAbsent(parsed.urn().id(), parsed.urn());
+        Object document = parsed.document();
+        List<SchemaViolation> violations =
+                PackSchemas.bundled().validate(shape == Shape.SHARD ? "graph-shard" : "org-fragment", file, document);
+        if (!violations.isEmpty()) {
+            return new FileRead.Unreadable<>(file, null, withSiblingFacts(violations, document, shape));
         }
-        List<DrgEdge> edges = new ArrayList<>();
-        for (Object item : list(root.get("edges"), origin + " edges")) {
-            Map<String, Object> edge = mapping(item, origin + " edge");
-            checkKeys(edge, EDGE_KEYS, origin + " edge");
-            String relationToken = string(edge, "relation", origin);
-            boolean legacyTension = relationToken.equals(LEGACY_TENSION);
-            Relation relation = legacyTension
-                    ? Relation.IMPACTS
-                    : Relation.fromToken(relationToken)
-                            .orElseThrow(() -> schema(origin, "unknown relation '" + relationToken + "'"));
-            Optional<Double> impacts = optionalNumber(edge, "impacts", origin);
-            if (legacyTension) {
-                if (impacts.isPresent()) {
-                    throw schema(origin, "an in_tension_with edge has no 'impacts'");
-                }
-                impacts = Optional.of(LEGACY_TENSION_STRENGTH);
-            }
-            checkStrength(relation, impacts, origin);
-            edges.add(new DrgEdge(
-                    endpoint(string(edge, "source", origin), declaredIds, origin),
-                    endpoint(string(edge, "target", origin), declaredIds, origin),
-                    relation,
-                    impacts,
-                    optionalString(edge, "when", origin),
-                    optionalString(edge, "reason", origin)));
-        }
-        return new DoctrineGraph(nodes, edges);
+        return new FileRead.Read<>(file, raw(document, shape, file));
     }
 
-    private static DrgNode shardNode(Map<String, Object> node, String origin) {
-        checkKeys(node, SHARD_NODE_KEYS, origin + " node");
-        String token = string(node, "urn", origin);
-        Urn urn = Urn.parse(token).orElseThrow(() -> schema(origin, "node urn '" + token + "' is not <kind>:<id>"));
-        String kind = string(node, "kind", origin);
-        if (!kind.equals(urn.kind().token())) {
-            throw schema(origin, "node " + urn + " declares kind '" + kind + "'");
+    // ---- the document as written -----------------------------------------------------------------
+
+    private static RawGraph raw(@Nullable Object document, Shape shape, String file) {
+        if (!(document instanceof Map<?, ?> root)) {
+            throw new IllegalStateException(file + " passed the schema but is no mapping");
         }
-        return new DrgNode(urn, optionalString(node, "label", origin));
+        List<RawNode> nodes = new ArrayList<>();
+        for (Object item : items(root, "nodes")) {
+            Map<?, ?> node = (Map<?, ?>) item;
+            nodes.add(
+                    shape == Shape.SHARD
+                            ? new RawNode(string(node, "urn"), string(node, "kind"), optionalString(node, "label"))
+                            : new RawNode(string(node, "id"), string(node, "kind"), optionalString(node, "title")));
+        }
+        List<RawEdge> edges = new ArrayList<>();
+        for (Object item : items(root, "edges")) {
+            Map<?, ?> edge = (Map<?, ?>) item;
+            edges.add(new RawEdge(
+                    string(edge, "source"),
+                    string(edge, "target"),
+                    string(edge, "relation"),
+                    edge.get("impacts") instanceof Number n ? Optional.of(n.doubleValue()) : Optional.empty(),
+                    optionalString(edge, "when"),
+                    optionalString(edge, "reason")));
+        }
+        return new RawGraph(file, shape == Shape.SHARD ? RawGraph.Shape.SHARD : RawGraph.Shape.FRAGMENT, nodes, edges);
     }
 
-    private static DrgNode fragmentNode(Map<String, Object> node, String origin) {
-        checkKeys(node, FRAGMENT_NODE_KEYS, origin + " node");
-        String id = string(node, "id", origin);
-        String plural = string(node, "kind", origin);
-        if (id.isEmpty()) {
-            throw schema(origin, "a node of kind '" + plural + "' has an empty id");
-        }
-        NodeKind kind = pluralKind(plural)
-                .orElseThrow(() -> schema(origin, "node " + id + " has unknown kind '" + plural + "'"));
-        return new DrgNode(new Urn(kind, id), optionalString(node, "title", origin));
+    /** The list under {@code key}; the schema has checked that it is a list of mappings when it is there. */
+    private static List<?> items(Map<?, ?> root, String key) {
+        return root.get(key) instanceof List<?> list ? list : List.of();
     }
 
-    private static Optional<NodeKind> pluralKind(String plural) {
-        return switch (plural) {
-            case "mission_types" -> Optional.of(NodeKind.MISSION_TYPE);
-            case "actions" -> Optional.of(NodeKind.ACTION);
-            default -> ArtifactKind.fromPlural(plural).map(NodeKind::of);
-        };
+    /** A string the schema has already required; anything else means the reader and the schema have drifted apart. */
+    private static String string(Map<?, ?> map, String key) {
+        if (map.get(key) instanceof String s) {
+            return s;
+        }
+        throw new IllegalStateException("'" + key + "' passed the schema but is not a string");
     }
 
-    /** An endpoint is a URN of a known node kind, or a bare id the same document declares. */
-    private static Urn endpoint(String token, Map<String, Urn> declaredIds, String origin) {
-        return Urn.parse(token)
-                .or(() -> Optional.ofNullable(declaredIds.get(token)))
-                .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.UNRESOLVED_EDGE_ENDPOINT,
-                        origin + ": edge endpoint '" + token + "' is neither a URN nor an id this document declares"));
+    private static Optional<String> optionalString(Map<?, ?> map, String key) {
+        return map.get(key) instanceof String s ? Optional.of(s) : Optional.empty();
     }
 
-    /** A mapping whose keys are all strings, copied in document order; anything else is refused. */
-    private static Map<String, Object> mapping(@Nullable Object value, String what) {
-        if (!(value instanceof Map<?, ?> map)) {
-            throw schema(what, "expected a mapping");
-        }
-        Map<String, Object> copy = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : map.entrySet()) {
-            if (!(entry.getKey() instanceof String key)) {
-                throw schema(what, "expected a mapping");
-            }
-            copy.put(key, entry.getValue());
-        }
-        return copy;
-    }
-
-    private static List<?> list(@Nullable Object value, String what) {
-        if (value == null) {
-            return List.of();
-        }
-        if (value instanceof List<?> items) {
-            return items;
-        }
-        throw schema(what, "expected a list");
-    }
-
-    private static void checkKeys(Map<String, Object> map, Set<String> allowed, String what) {
-        map.keySet().stream()
-                .filter(k -> !allowed.contains(k))
-                .sorted()
-                .findFirst()
-                .ifPresent(k -> {
-                    throw schema(what, "unknown key '" + k + "'");
-                });
-    }
-
-    private static String string(Map<String, Object> map, String key, String origin) {
-        return optionalString(map, key, origin).orElseThrow(() -> schema(origin, "missing '" + key + "'"));
-    }
-
-    private static Optional<String> optionalString(Map<String, Object> map, String key, String origin) {
-        Object value = map.get(key);
-        if (value == null) {
-            return Optional.empty();
-        }
-        if (value instanceof String s) {
-            return Optional.of(s);
-        }
-        throw schema(origin, "'" + key + "' must be a string");
-    }
-
-    /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */
-    private static void checkStrength(Relation relation, Optional<Double> impacts, String origin) {
-        if (relation != Relation.IMPACTS) {
-            if (impacts.isPresent()) {
-                throw schema(origin, "a " + relation.token() + " edge has no 'impacts'");
-            }
-            return;
-        }
-        double strength = impacts.orElseThrow(() -> schema(origin, "an impacts edge is missing 'impacts'"));
-        if (!DrgEdge.isStrength(strength)) {
-            throw schema(origin, "'impacts' " + strength + " is outside [-1, 1]");
-        }
-    }
-
-    private static Optional<Double> optionalNumber(Map<String, Object> map, String key, String origin) {
-        Object value = map.get(key);
-        if (value == null) {
-            return Optional.empty();
-        }
-        if (value instanceof Number n) {
-            return Optional.of(n.doubleValue());
-        }
-        throw schema(origin, "'" + key + "' must be a number");
-    }
-
-    private static CharterRefusal schema(String origin, String problem) {
-        return new CharterRefusal(RefusalCode.DRG_SCHEMA_ERROR, origin + ": " + problem);
-    }
+    // ---- the facts the validator does not emit ---------------------------------------------------
 
     /**
-     * The first non-blank line of the parser's message: what it was doing or found, as {@code while parsing a block
-     * mapping}. Its later lines hold the position and a snippet of the document, so nothing of the host reaches
-     * the detail; the parser is given no file name, only the label {@code charter}.
+     * Adds the named facts of {@code PackPolicy}'s vocabulary contract to the violations that need them:
+     * {@code kind}, the sibling plural kind of a fragment node, on a violation of its {@code id}; and {@code id} (a
+     * fragment node) or {@code urn} (a shard node), the sibling identity, on an {@code enum} violation of its
+     * {@code kind}. The validator reports only the offending place; the node's other fields come from the document.
      */
-    private static String firstLine(RuntimeException e) {
-        return String.valueOf(e.getMessage())
-                .lines()
-                .filter(l -> !l.isBlank())
-                .findFirst()
-                .orElse(e.getClass().getSimpleName());
+    private static List<SchemaViolation> withSiblingFacts(
+            List<SchemaViolation> violations, @Nullable Object document, Shape shape) {
+        List<SchemaViolation> enriched = new ArrayList<>();
+        for (SchemaViolation violation : violations) {
+            Map<String, String> sibling = siblingFacts(violation, document, shape);
+            if (sibling.isEmpty()) {
+                enriched.add(violation);
+                continue;
+            }
+            Map<String, String> args = new LinkedHashMap<>(violation.args());
+            args.putAll(sibling);
+            enriched.add(new SchemaViolation(
+                    violation.file(),
+                    violation.pointer(),
+                    violation.keyword(),
+                    violation.property(),
+                    violation.value(),
+                    args));
+        }
+        return enriched;
+    }
+
+    private static Map<String, String> siblingFacts(SchemaViolation violation, @Nullable Object document, Shape shape) {
+        List<String> pointer = violation.pointer();
+        if (pointer.size() != 3 || !"nodes".equals(pointer.get(0)) || !(document instanceof Map<?, ?> root)) {
+            return Map.of();
+        }
+        Map<?, ?> node = nodeAt(root, pointer.get(1));
+        if (node == null) {
+            return Map.of();
+        }
+        String field = pointer.get(2);
+        if (shape == Shape.FRAGMENT && "id".equals(field) && node.get("kind") instanceof String kind) {
+            return Map.of("kind", kind);
+        }
+        if ("kind".equals(field) && "enum".equals(violation.keyword())) {
+            String identity = shape == Shape.FRAGMENT ? "id" : "urn";
+            if (node.get(identity) instanceof String value) {
+                return Map.of(identity, value);
+            }
+        }
+        return Map.of();
+    }
+
+    private static @Nullable Map<?, ?> nodeAt(Map<?, ?> root, String index) {
+        if (!(root.get("nodes") instanceof List<?> nodes)) {
+            return null;
+        }
+        int position;
+        try {
+            position = Integer.parseInt(index);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return position >= 0 && position < nodes.size() && nodes.get(position) instanceof Map<?, ?> map ? map : null;
     }
 }

@@ -1,0 +1,17 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "diagnostics": [
+    {
+      "code": "pack_level_missing",
+      "detail": "org pack qa has no pack.yaml; the configured level org is used"
+    }
+  ],
+  "nodeCount": 3,
+  "edgeCount": 1,
+  "edges": [
+    "directive:QA_001 suggests directive:DIRECTIVE_010"
+  ]
+}

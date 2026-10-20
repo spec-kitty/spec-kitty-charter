@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "pack_unreadable",
+    "detail": "org pack qa has no drg/fragment.yaml"
+  }
+}

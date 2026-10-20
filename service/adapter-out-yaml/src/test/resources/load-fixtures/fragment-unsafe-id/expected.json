@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "drg_schema_error",
+    "detail": "qa/drg/fragment.yaml: node id 'a b' is not <kind>:<id>-safe"
+  }
+}

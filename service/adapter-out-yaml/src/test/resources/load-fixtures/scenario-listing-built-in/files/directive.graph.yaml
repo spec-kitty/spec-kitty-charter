@@ -1,0 +1,7 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes:
+- urn: directive:DIRECTIVE_010
+  kind: directive
+  label: Specification Fidelity Requirement
+edges: []

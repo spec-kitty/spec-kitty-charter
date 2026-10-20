@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "pack_unreadable",
+    "detail": "pack.yaml of qa: requires_core 'banana' is not a PEP 440 version specifier"
+  }
+}
