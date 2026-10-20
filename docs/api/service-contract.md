@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -119,6 +119,37 @@ The action-context walk (#95) and the reserved 1.0 surface (`depth`, `ServiceInf
 fingerprint inputs, the per-worktree token and refresh) are decided and built
 ([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113),
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)).
+
+## Proposed: packs resources (ADR-0019)
+
+[ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) (Proposed) gives `/packs` one
+meaning, the packs this service knows, and makes every pack a resource whose contents are
+sub-resources. The design is in [Packs resource model](/architecture/packs-resource-model/), and
+the conventions in [Development conventions](/development/).
+
+| Method | Path | Proposed operationId | Purpose | Inventory issue |
+|---|---|---|---|---|
+| `GET` | `/` | `getApiRoot` | The API root: links to every top-level resource | — |
+| `GET` | `/packs/{packId}` | `getPack` | One pack: descriptor, source, counts, diagnostics | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}/artifacts` | `listPackArtifacts` | The pack's artifacts, `?kind=`, paged with `PageInfo` | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96), [#106](https://github.com/spec-kitty/spec-kitty-charter/issues/106) (glossary) |
+| `GET` | `/packs/{packId}/artifacts/{kind}/{artifactId}` | `getPackArtifact` | One artifact with its body | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) |
+| `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
+| `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
+| `GET` | `/packs/{packId}/assets/{path}` | `getPackAsset` | One asset file | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
+| `POST` | `/packs` | `registerPack` | Register a pack (ADR-0005); `201` with `Location` | — |
+| `GET` | `/packs/{packId}/resolution` | `getPackResolution` | Read-only resolution state (ADR-0007 decision 7) | — |
+| `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
+
+`{packId}` is the pack's `pack_id` ULID. The composition of the charter (which packs are in force
+for this worktree, in which merge order, and the merged graph) is a separate resource, `/charter`,
+still to be designed ([#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97),
+[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)).
+
+**Before the 1.0 tag** ([#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)): the
+closed `Links` component, `GET /`, and a required `_links` on every existing response
+(`PackListing`, `PackSummary`, the refresh answer, `ActionContext`, `ServiceInfo`). These change
+closed response schemas, so they are breaking after the tag. The per-pack operations are new
+paths and can follow additively.
 
 ## Planned write surface (later)
 

@@ -45,6 +45,8 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
   the Javadoc of the service, and the Python package surface, which is designed only.
 - [Conformance](/conformance/) — where the service answers differently from core on purpose,
   in one divergence register.
+- [Development](/development/) — the conventions for changing the API: resource naming,
+  hypermedia links and HTTP status codes.
 - [Guides](/guides/) — contributing, building the service and building the docsite.
 - [Changelog](/changelog/) — dated record of notable changes.
 

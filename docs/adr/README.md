@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: ADR
 kind: Hub
 audience:
@@ -47,6 +47,7 @@ stands.
 | [0016](/adr/0016-conformance-corpus-harness-over-core-cli/) | ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |
 | [0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) | ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema | Accepted (provisional) | 2026-10-19 |
 | [0018](/adr/0018-action-context-read-and-seam-access-surface/) | ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh | Accepted (provisional) | 2026-10-19 |
+| [0019](/adr/0019-packs-resource-model-and-hypermedia/) | ADR-0019: Packs are a navigable REST resource with hypermedia links | Proposed | 2026-10-20 |
 
 ## Core decisions this repository builds on
 
