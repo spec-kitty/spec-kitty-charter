@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/graph-shard.schema.json",
+  "$defs": {
+    "DRGEdge": {
+      "additionalProperties": false,
+      "description": "A typed, directed relationship between two nodes.",
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string",
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string",
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
+        },
+        "relation": {
+          "$ref": "#/$defs/Relation"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "When"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "impacts": {
+          "title": "Impacts",
+          "description": "Edge strength. Core's DRGEdge has none; ADR-0009 D1 rules that the contract leads.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "relation"
+      ],
+      "title": "DRGEdge",
+      "type": "object"
+    },
+    "DRGNode": {
+      "additionalProperties": false,
+      "description": "A single addressable doctrine artifact node.",
+      "properties": {
+        "urn": {
+          "title": "Urn",
+          "type": "string",
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string",
+          "enum": [
+            "directive",
+            "tactic",
+            "styleguide",
+            "toolguide",
+            "paradigm",
+            "procedure",
+            "agent_profile",
+            "mission_step_contract",
+            "glossary_pack",
+            "skill",
+            "anti_pattern",
+            "asset",
+            "template",
+            "action",
+            "mission_type"
+          ]
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provenance"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "urn",
+        "kind"
+      ],
+      "title": "DRGNode",
+      "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "directive"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^directive:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "tactic"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^tactic:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "styleguide"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^styleguide:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "toolguide"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^toolguide:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "paradigm"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^paradigm:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "procedure"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^procedure:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "agent_profile"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^agent_profile:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mission_step_contract"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^mission_step_contract:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "glossary_pack"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^glossary_pack:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "skill"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^skill:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "anti_pattern"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^anti_pattern:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "asset"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^asset:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "template"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^template:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "action"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^action:"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mission_type"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "urn": {
+                "pattern": "^mission_type:"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Relation": {
+      "description": "Typed edge relations in the DRG.\n\nLineage vs. delegation vs. augmentation are three distinct concepts and\nMUST NOT be conflated (FR-001, FR-002):\n\n- ``SPECIALIZES_FROM`` (lineage): a profile/artifact derives from a parent,\n  narrowing or extending it. This is a *static composition* relation used\n  for inheritance/specialization (FR-001). It is deliberately separate from\n  ``DELEGATES_TO`` so lineage never leaks into runtime handoff traversal.\n- ``DELEGATES_TO`` (delegation): a *runtime handoff* relation -- one agent\n  hands work to another at execution time (FR-002). It is never inferred\n  from lineage.\n- ``ENHANCES`` / ``OVERRIDES`` (augmentation pair, FR-014, mission\n  ``charter-ux-and-org-pack-vocabulary-01KSAF14``): a pack artifact declares\n  ``enhances: <id>`` to field-merge into a built-in, or ``overrides: <id>``\n  to declare a full replacement.\n- ``REPLACES`` is retained for backward compatibility with existing\n  hand-authored fragments (R-2).\n- ``REFINES`` (refinement, #2079): an artifact narrows or sharpens the\n  applicability or meaning of the target (a parent or built-in) without\n  replacing it. It is distinct from ``APPLIES`` (an action applies a\n  directive/tactic) and from ``SPECIALIZES_FROM`` (static profile/artifact\n  lineage): a refinement is a first-class, traversable relation, never a\n  synonym for ``APPLIES``. Previously the org→DRG bridge silently downgraded\n  ``refines`` to ``APPLIES`` (a dead sink); it is now preserved end-to-end.\n- ``IN_TENSION_WITH`` / ``RECONCILES_TENSION`` / ``REJECTS`` (tension\n  vocabulary, mission ``doctrine-tension-edges-01KY1WPC``, FR-001/002/003):\n  three distinct relations that must not be confused with each other or\n  with the relations above.\n\n  - ``IN_TENSION_WITH`` is **symmetric and non-transitive**: two co-valid,\n    co-activatable artefacts compete on the same decision, and neither is\n    deprecated by the other. It is stored as a single canonical edge\n    (lexicographically-smaller URN as source, C-002) and queried from\n    either endpoint via :meth:`DRGGraph.edges_from`/:meth:`DRGGraph.edges_to`.\n    It must NOT be confused with ``REPLACES``/supersession -- tension does\n    not mean one side wins or is retired.\n  - ``RECONCILES_TENSION`` is **directional**, from an active\n    reconciliation artefact to one side of a tension pair. A pair counts\n    as resolved only when an active artefact carries this edge to BOTH\n    sides; a single edge to one side leaves the pair \"half-reconciled\"\n    and still flagged (FR-002). It is never synthesized from\n    ``IN_TENSION_WITH`` -- it must be authored explicitly.\n  - ``REJECTS`` is **directional**, from a good artefact to a marked\n    anti-pattern/smell node (``NodeKind.ANTI_PATTERN``). Unlike\n    ``IN_TENSION_WITH`` the target is not a competing equal -- it is a\n    named bad practice, not a co-valid rule -- and unlike ``REPLACES`` the\n    target was never a valid rule the rejecting artefact supersedes.\n\n``IMPACTS`` is added by this repository (WP02 C7): core has no such member yet. ADR-0009 D1 rules that the contract leads and core aligns at the cutover.",
+      "enum": [
+        "requires",
+        "suggests",
+        "applies",
+        "scope",
+        "vocabulary",
+        "instantiates",
+        "replaces",
+        "delegates_to",
+        "specializes_from",
+        "enhances",
+        "overrides",
+        "refines",
+        "in_tension_with",
+        "reconciles_tension",
+        "rejects",
+        "impacts"
+      ],
+      "title": "Relation",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Top-level DRG graph document (``graph.yaml``).",
+  "properties": {
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "generated_by": {
+      "title": "Generated By",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/DRGNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/DRGEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "nodes",
+    "edges"
+  ],
+  "title": "DRGGraph",
+  "type": "object"
+}

@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-step-contract.schema.json",
+  "$defs": {
+    "ArtifactKind": {
+      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "template",
+        "asset",
+        "glossary_pack",
+        "anti_pattern",
+        "skill"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "DelegatesTo": {
+      "additionalProperties": false,
+      "description": "Delegation link from a contract step to doctrine artifacts.\n\nThe ``kind`` identifies the artifact type (paradigm, tactic,\ndirective, etc.). The ``candidates`` list names which artifacts\n*could* concretize this step — the charter's selections determine\nwhich one actually applies at runtime.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "candidates": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Candidates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "candidates"
+      ],
+      "title": "DelegatesTo",
+      "type": "object"
+    },
+    "GateBinding": {
+      "additionalProperties": false,
+      "description": "A transition-gate binding declared on a mission step contract.\n\nBinds a WP-lane edge (``on_transition``, ``\"<from_lane>-><to_lane>\"``) to\na named handler resolved by plain dict lookup in the runtime\n``GATE_REGISTRY`` (:mod:`specify_cli.review.gate_registry`). A binding is\na **relationship/configuration on an existing artefact** — contract/\naction-level, not a standalone activatable ``gate`` kind (C-001). It\nrides the existing, runtime-wired ``mission_step_contract`` kind (FR-006);\nactivation gates on the *owning contract's* URN, never on ``handler``\n(which is a registry name, not a DRG candidate).\n\n``handler_kind`` is an inert-in-half-A discriminator (FR-005, C-002):\n``\"asset\"`` validates and round-trips byte-stable but is never executed\nuntil a future half-B asset executor lands (#2599). This keeps the\nfrozen, ``extra=\"forbid\"`` schema forward-compatible without forcing a\nbreaking ``schema_version`` bump when that executor arrives.\n\n``fail_open`` is likewise inert in half A (see the field comment below):\n``_mt_dispatch_one_gate`` wraps every handler unconditionally fail-open\nper C-003 (the two-hard-stops invariant), so ``fail_open: false`` must\nNEVER enable fail-closed behaviour today. It is reserved, byte-stable\nforward-compat for a future per-binding policy — not a live knob.",
+      "properties": {
+        "on_transition": {
+          "title": "On Transition",
+          "type": "string"
+        },
+        "handler": {
+          "title": "Handler",
+          "type": "string"
+        },
+        "handler_kind": {
+          "default": "mission_step_contract",
+          "enum": [
+            "mission_step_contract",
+            "asset"
+          ],
+          "title": "Handler Kind",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "fail_open": {
+          "default": true,
+          "title": "Fail Open",
+          "type": "boolean"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provenance"
+        }
+      },
+      "required": [
+        "on_transition",
+        "handler",
+        "schema_version"
+      ],
+      "title": "GateBinding",
+      "type": "object"
+    },
+    "MissionStepContractStep": {
+      "additionalProperties": false,
+      "description": "A single step inside a legacy :class:`MissionStepContract`.\n\nThis is the LEGACY shape used by ``*.step-contract.yaml`` files and\nby the runtime contract registry. The unified mission-step model\nowned by ``MissionType`` is\n:class:`charter.offering.missions.models.MissionStep`; that class is the\ncanonical surface for new mission-step authoring (FR-011).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "command": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Command"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/MissionStepInput"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "delegates_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DelegatesTo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "guidance": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Guidance"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "MissionStepContractStep",
+      "type": "object"
+    },
+    "MissionStepInput": {
+      "additionalProperties": false,
+      "description": "Declared runtime input for a command-backed mission step.",
+      "properties": {
+        "flag": {
+          "minLength": 1,
+          "title": "Flag",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "optional": {
+          "default": false,
+          "title": "Optional",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "flag",
+        "source"
+      ],
+      "title": "MissionStepInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Legacy contract defining the structural steps of a mission action.\n\nA step contract replaces inline governance prose in command\ntemplates with a structured, schema-validated sequence of steps.\nEach step may delegate its concretization to doctrine artifacts via\n``delegates_to`` and/or carry freeform ``guidance`` for\nstep-specific instructions.\n\n``gates`` is a **contract/action-level** field (not per-step): a gate\nbinds an action's transition, not an individual step (data-model.md §3).\nIt defaults to an empty list so the 15 pre-existing built-in contracts\nkeep loading unchanged; this is an additive, backward-compatible schema\nevolution (FR-005) and does not require bumping ``schema_version`` on\nexisting contracts — see ``save()`` for the matching byte-stability\nguarantee (NFR-004).",
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "action": {
+      "title": "Action",
+      "type": "string"
+    },
+    "mission": {
+      "title": "Mission",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/MissionStepContractStep"
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "gates": {
+      "items": {
+        "$ref": "#/$defs/GateBinding"
+      },
+      "title": "Gates",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "schema_version",
+    "action",
+    "mission",
+    "steps"
+  ],
+  "title": "MissionStepContract",
+  "type": "object"
+}

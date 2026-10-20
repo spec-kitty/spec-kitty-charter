@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/styleguide.schema.json",
+  "$defs": {
+    "AntiPattern": {
+      "additionalProperties": false,
+      "description": "An anti-pattern example within a styleguide.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "bad_example": {
+          "title": "Bad Example",
+          "type": "string"
+        },
+        "good_example": {
+          "title": "Good Example",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "bad_example",
+        "good_example"
+      ],
+      "title": "AntiPattern",
+      "type": "object"
+    },
+    "Pattern": {
+      "additionalProperties": false,
+      "description": "A positive code-pattern example within a styleguide.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "bad_example": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bad Example"
+        },
+        "good_example": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Good Example"
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "title": "Pattern",
+      "type": "object"
+    },
+    "StyleguideScope": {
+      "description": "Scope category for a styleguide.",
+      "enum": [
+        "code",
+        "docs",
+        "architecture",
+        "testing",
+        "operations",
+        "glossary"
+      ],
+      "title": "StyleguideScope",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A style and convention guide for a specific scope.\n\nStyleguides define principles, anti-patterns, and quality tests\nfor consistent governance across a domain area.",
+  "properties": {
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/StyleguideScope"
+    },
+    "principles": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Principles",
+      "type": "array"
+    },
+    "patterns": {
+      "items": {
+        "$ref": "#/$defs/Pattern"
+      },
+      "minItems": 1,
+      "title": "Patterns",
+      "type": "array"
+    },
+    "anti_patterns": {
+      "items": {
+        "$ref": "#/$defs/AntiPattern"
+      },
+      "minItems": 1,
+      "title": "Anti Patterns",
+      "type": "array"
+    },
+    "tooling": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Tooling",
+      "type": "object"
+    },
+    "quality_test": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Quality Test"
+    },
+    "applies_to_languages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Applies To Languages",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "type": "string"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "structural_lint_config": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional machine-parseable policy block a companion lint script LOADS as its single source of truth (e.g. the common-docs styleguide's docs_structural_lint.py config — FR-011). Plain nested scalars/lists/mappings only; a styleguide with no companion lint omits this field.",
+      "title": "Structural Lint Config"
+    }
+  },
+  "required": [
+    "id",
+    "schema_version",
+    "title",
+    "scope",
+    "principles"
+  ],
+  "title": "Styleguide",
+  "type": "object"
+}

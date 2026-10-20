@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/org-fragment.schema.json",
+  "$defs": {
+    "_OrgDRGEdge": {
+      "additionalProperties": false,
+      "description": "One typed edge in an organisation-tier DRG fragment.\n\nMirrors the contract YAML example shape: ``source`` + ``target`` +\n``relation`` (a ``Relation`` value).\n\n``reason`` is the **author's own rationale** and nothing else. Machine\nprovenance lives on :class:`_ProjectedOrgDRGEdge.generated_reason`, a field\nthis class does not declare — so with ``extra=\"forbid\"`` a fragment cannot\nwrite one, and anything reaching ``reason`` came from a governance author.\nThat is the whole discriminator :func:`charter.offering.drg.merge\n._warn_discarded_edge_rationale` needs; see that docstring for why reading\n\"has a reason\" as \"an author wrote a reason\" was a defect.",
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string",
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string",
+          "pattern": "^(directive|tactic|styleguide|toolguide|paradigm|procedure|agent_profile|mission_step_contract|glossary_pack|skill|anti_pattern|asset|template|action|mission_type):[A-Za-z0-9_/.-]+$"
+        },
+        "relation": {
+          "$ref": "#/$defs/Relation"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "impacts": {
+          "title": "Impacts",
+          "description": "Edge strength. Core's DRGEdge has none; ADR-0009 D1 rules that the contract leads.",
+          "type": "number"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "relation"
+      ],
+      "title": "_OrgDRGEdge",
+      "type": "object"
+    },
+    "_OrgDRGNode": {
+      "additionalProperties": false,
+      "description": "One node in an organisation-tier DRG fragment.\n\nShape matches the contract YAML example: ``id`` + plural ``kind`` +\n``title`` + optional ``body_path``. Distinct from\n``charter.offering.drg.models.DRGNode`` (URN-based). The merge bridges the two\nby minting URNs at merge time (handled in ``charter.drg``).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_/.-]+$"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string",
+          "enum": [
+            "directives",
+            "tactics",
+            "styleguides",
+            "toolguides",
+            "paradigms",
+            "procedures",
+            "agent_profiles",
+            "mission_step_contracts",
+            "glossary_packs",
+            "skills",
+            "anti_patterns",
+            "assets",
+            "templates",
+            "mission_types",
+            "actions"
+          ]
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "body_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Body Path"
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "title": "_OrgDRGNode",
+      "type": "object"
+    },
+    "Relation": {
+      "description": "Typed edge relations in the DRG.\n\nLineage vs. delegation vs. augmentation are three distinct concepts and\nMUST NOT be conflated (FR-001, FR-002):\n\n- ``SPECIALIZES_FROM`` (lineage): a profile/artifact derives from a parent,\n  narrowing or extending it. This is a *static composition* relation used\n  for inheritance/specialization (FR-001). It is deliberately separate from\n  ``DELEGATES_TO`` so lineage never leaks into runtime handoff traversal.\n- ``DELEGATES_TO`` (delegation): a *runtime handoff* relation -- one agent\n  hands work to another at execution time (FR-002). It is never inferred\n  from lineage.\n- ``ENHANCES`` / ``OVERRIDES`` (augmentation pair, FR-014, mission\n  ``charter-ux-and-org-pack-vocabulary-01KSAF14``): a pack artifact declares\n  ``enhances: <id>`` to field-merge into a built-in, or ``overrides: <id>``\n  to declare a full replacement.\n- ``REPLACES`` is retained for backward compatibility with existing\n  hand-authored fragments (R-2).\n- ``REFINES`` (refinement, #2079): an artifact narrows or sharpens the\n  applicability or meaning of the target (a parent or built-in) without\n  replacing it. It is distinct from ``APPLIES`` (an action applies a\n  directive/tactic) and from ``SPECIALIZES_FROM`` (static profile/artifact\n  lineage): a refinement is a first-class, traversable relation, never a\n  synonym for ``APPLIES``. Previously the org→DRG bridge silently downgraded\n  ``refines`` to ``APPLIES`` (a dead sink); it is now preserved end-to-end.\n- ``IN_TENSION_WITH`` / ``RECONCILES_TENSION`` / ``REJECTS`` (tension\n  vocabulary, mission ``doctrine-tension-edges-01KY1WPC``, FR-001/002/003):\n  three distinct relations that must not be confused with each other or\n  with the relations above.\n\n  - ``IN_TENSION_WITH`` is **symmetric and non-transitive**: two co-valid,\n    co-activatable artefacts compete on the same decision, and neither is\n    deprecated by the other. It is stored as a single canonical edge\n    (lexicographically-smaller URN as source, C-002) and queried from\n    either endpoint via :meth:`DRGGraph.edges_from`/:meth:`DRGGraph.edges_to`.\n    It must NOT be confused with ``REPLACES``/supersession -- tension does\n    not mean one side wins or is retired.\n  - ``RECONCILES_TENSION`` is **directional**, from an active\n    reconciliation artefact to one side of a tension pair. A pair counts\n    as resolved only when an active artefact carries this edge to BOTH\n    sides; a single edge to one side leaves the pair \"half-reconciled\"\n    and still flagged (FR-002). It is never synthesized from\n    ``IN_TENSION_WITH`` -- it must be authored explicitly.\n  - ``REJECTS`` is **directional**, from a good artefact to a marked\n    anti-pattern/smell node (``NodeKind.ANTI_PATTERN``). Unlike\n    ``IN_TENSION_WITH`` the target is not a competing equal -- it is a\n    named bad practice, not a co-valid rule -- and unlike ``REPLACES`` the\n    target was never a valid rule the rejecting artefact supersedes.\n\n``IMPACTS`` is added by this repository (WP02 C7): core has no such member yet. ADR-0009 D1 rules that the contract leads and core aligns at the cutover.",
+      "enum": [
+        "requires",
+        "suggests",
+        "applies",
+        "scope",
+        "vocabulary",
+        "instantiates",
+        "replaces",
+        "delegates_to",
+        "specializes_from",
+        "enhances",
+        "overrides",
+        "refines",
+        "in_tension_with",
+        "reconciles_tension",
+        "rejects",
+        "impacts"
+      ],
+      "title": "Relation",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A loaded organisation-tier DRG fragment with provenance metadata.\n\nOne instance per configured ``charter_packs.org.packs`` entry. The loader\n(:func:`load_org_pack`) produces a single fragment per pack root.\n``layer_index`` (1..N) is assigned by the caller\n(``charter.drg.load_org_drg``) once it knows the declaration order.\n``provenance_marker`` is the fixed string ``\"org\"`` — every node and\nedge from this fragment is tagged ``source: org:<pack_name>`` in the\nresolved DRG (see ``charter.drg.merge_three_layers``).",
+  "properties": {
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/_OrgDRGNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/_OrgDRGEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    }
+  },
+  "title": "OrgDRGFragment",
+  "type": "object"
+}

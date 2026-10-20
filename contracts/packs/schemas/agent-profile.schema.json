@@ -1,0 +1,458 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/agent-profile.schema.json",
+  "$defs": {
+    "ArtifactRef": {
+      "description": "Reference to a doctrine artifact with usage rationale.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rationale"
+      ],
+      "title": "ArtifactRef",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "CollaborationContract": {
+      "description": "Agent collaboration patterns and outputs.",
+      "properties": {
+        "handoff-to": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Handoff-To",
+          "type": "array"
+        },
+        "handoff-from": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Handoff-From",
+          "type": "array"
+        },
+        "works-with": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Works-With",
+          "type": "array"
+        },
+        "output-artifacts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Output-Artifacts",
+          "type": "array"
+        },
+        "operating-procedures": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Operating-Procedures",
+          "type": "array"
+        },
+        "canonical-verbs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Canonical-Verbs",
+          "type": "array"
+        }
+      },
+      "title": "CollaborationContract",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "DirectiveRef": {
+      "description": "Reference to a directive with usage rationale.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "rationale"
+      ],
+      "title": "DirectiveRef",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "ModeDefault": {
+      "description": "Available reasoning mode with description.",
+      "properties": {
+        "mode": {
+          "title": "Mode",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "use-case": {
+          "title": "Use-Case",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "description",
+        "use-case"
+      ],
+      "title": "ModeDefault",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "SelfReviewProtocol": {
+      "description": "Checklist an agent runs before handing off work.",
+      "properties": {
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/SelfReviewStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "title": "SelfReviewProtocol",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "SelfReviewStep": {
+      "description": "A single step in the self-review protocol.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "command": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Command"
+        },
+        "gate": {
+          "title": "Gate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "gate"
+      ],
+      "title": "SelfReviewStep",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Specialization": {
+      "description": "Agent specialization definition - what it focuses on and avoids.",
+      "properties": {
+        "primary-focus": {
+          "title": "Primary-Focus",
+          "type": "string"
+        },
+        "secondary-awareness": {
+          "default": "",
+          "title": "Secondary-Awareness",
+          "type": "string"
+        },
+        "avoidance-boundary": {
+          "default": "",
+          "title": "Avoidance-Boundary",
+          "type": "string"
+        },
+        "success-definition": {
+          "default": "",
+          "title": "Success-Definition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary-focus"
+      ],
+      "title": "Specialization",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "SpecializationContext": {
+      "description": "Declarative conditions defining when a specialist is preferred.",
+      "properties": {
+        "languages": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Languages",
+          "type": "array"
+        },
+        "frameworks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Frameworks",
+          "type": "array"
+        },
+        "file-patterns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "File-Patterns",
+          "type": "array"
+        },
+        "domain-keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Domain-Keywords",
+          "type": "array"
+        },
+        "writing-style": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Writing-Style",
+          "type": "array"
+        },
+        "complexity-preference": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Complexity-Preference",
+          "type": "array"
+        }
+      },
+      "title": "SpecializationContext",
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "description": "Rich agent behavioral identity.\n\nDefines WHO an agent IS through a section structure:\n1. Purpose - mandate (what it does/doesn't do)\n2. Specialization - focus, awareness, boundaries\n3. Collaboration Contract - handoffs, outputs, verbs\n4. Mode Defaults - available reasoning modes\n5. Initialization Declaration - startup acknowledgment\n6. Doctrine references - ``*-references`` (directive/tactic/toolguide/\n   styleguide), the canonical DRG-provisioned context surface\n\n(The retired ``context-sources.*`` bare-string surface was removed in\nmission ``doctrine-drg-silent-drop-boundary-01M0PE7E``; authored references\nlive solely on the top-level ``*-references`` fields.)",
+  "properties": {
+    "profile-id": {
+      "title": "Profile-Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "schema-version": {
+      "default": "1.0",
+      "pattern": "^(1\\.0|2)$",
+      "title": "Schema-Version",
+      "type": "string"
+    },
+    "roles": {
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_-]*$"
+      },
+      "minItems": 1,
+      "title": "Roles",
+      "type": "array"
+    },
+    "avatar-image": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Avatar-Image"
+    },
+    "capabilities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "routing-priority": {
+      "default": 50,
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Routing-Priority",
+      "type": "integer"
+    },
+    "max-concurrent-tasks": {
+      "default": 5,
+      "exclusiveMinimum": 0,
+      "title": "Max-Concurrent-Tasks",
+      "type": "integer"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "effort": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effort"
+    },
+    "purpose": {
+      "title": "Purpose",
+      "type": "string"
+    },
+    "specialization": {
+      "$ref": "#/$defs/Specialization"
+    },
+    "collaboration": {
+      "$ref": "#/$defs/CollaborationContract"
+    },
+    "mode-defaults": {
+      "items": {
+        "$ref": "#/$defs/ModeDefault"
+      },
+      "title": "Mode-Defaults",
+      "type": "array"
+    },
+    "initialization-declaration": {
+      "default": "",
+      "title": "Initialization-Declaration",
+      "type": "string"
+    },
+    "sentinel": {
+      "default": false,
+      "title": "Sentinel",
+      "type": "boolean"
+    },
+    "specialization-context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SpecializationContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "applies_to_languages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Applies To Languages",
+      "type": "array"
+    },
+    "directive-references": {
+      "items": {
+        "$ref": "#/$defs/DirectiveRef"
+      },
+      "title": "Directive-References",
+      "type": "array"
+    },
+    "tactic-references": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Tactic-References",
+      "type": "array"
+    },
+    "toolguide-references": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Toolguide-References",
+      "type": "array"
+    },
+    "styleguide-references": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Styleguide-References",
+      "type": "array"
+    },
+    "self-review-protocol": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SelfReviewProtocol"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "excluding": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Excluding"
+    }
+  },
+  "required": [
+    "profile-id",
+    "name",
+    "roles",
+    "purpose",
+    "specialization"
+  ],
+  "title": "AgentProfile",
+  "type": "object"
+}

@@ -1,0 +1,899 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/charter.schema.json",
+  "$defs": {
+    "ActivationEntry": {
+      "additionalProperties": false,
+      "description": "One entry in the charter-level activation registry.\n\nShape (per data-model.md §3 and contracts/activation-registry.md)::\n\n    activations:\n      - activation_context:\n          mission_type: software-dev   # optional, defaults to wildcard\n          action: implement            # optional, defaults to wildcard\n        charter_pack_id: very-serious-developers\n        artifact_id: caveman-comments\n        artifact_kind: styleguides     # optional disambiguator\n\nWildcards\n---------\nAbsence of a slot in ``activation_context`` is equivalent to the\nexplicit wildcard tokens ``any`` / ``generic`` — both forms match every\nconcrete value. This keeps operator-authored entries terse while still\nallowing the explicit wildcard for clarity.\n\nRetired field\n-------------\n``charter_pack_id`` replaced an earlier field name (#3732, OD-1). An entry\nthat still carries the retired name is rejected with ``RETIRED_PACK_FIELD``\nnaming the replacement (the table lives in\n``charter.offering.packs.retired_fields``, scope\n``SCOPE_ACTIVATION_ENTRY``), for both the project\n``charter.yaml`` and an ``org-charter.yaml``; there is no alias (C-001).",
+      "properties": {
+        "activation_context": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Activation Context",
+          "type": "object"
+        },
+        "charter_pack_id": {
+          "title": "Charter Pack Id",
+          "type": "string"
+        },
+        "artifact_id": {
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Kind"
+        }
+      },
+      "required": [
+        "activation_context",
+        "charter_pack_id",
+        "artifact_id"
+      ],
+      "title": "ActivationEntry",
+      "type": "object"
+    },
+    "BranchStrategyConfig": {
+      "description": "Git branch strategy and rules.",
+      "properties": {
+        "main_branch": {
+          "default": "main",
+          "title": "Main Branch",
+          "type": "string"
+        },
+        "dev_branch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dev Branch"
+        },
+        "rules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "title": "BranchStrategyConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "CharterCatalog": {
+      "description": "The DERIVED-but-committed ``catalog`` projection (charter contract G2).\n\nMirrors the retired ``references.yaml`` body verbatim: ``mission``,\n``template_set``, ``languages``, ``references``. Kept honest by the\ncatalog<->activation parity check (``consistency_check.py``) plus\nfreshness (data-model.md Landmine 2 extension).\n\n``languages`` is nullable (issue #3292 fix): ``None`` distinguishes \"no\nactive-language signal was found at compile time\" from a genuinely\npersisted empty list. ``charter.activation.language_scope.infer_repo_languages``\n(the single authority both this compiler and the active charter\nservice's language gate consume) treats a ``None``/absent field as \"keep looking,\nthen admit all\" and a present-but-empty list as authoritative \"admit\nnone\" — collapsing the former into the latter on write is exactly the\ncompile-then-read feedback loop #3292 closes. See that function's\ndocstring for the full resolution contract.",
+      "properties": {
+        "mission": {
+          "title": "Mission",
+          "type": "string"
+        },
+        "template_set": {
+          "title": "Template Set",
+          "type": "string"
+        },
+        "languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Languages"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/CharterCatalogReference"
+          },
+          "title": "References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mission",
+        "template_set"
+      ],
+      "title": "CharterCatalog",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "CharterCatalogReference": {
+      "description": "One reference item inside the charter.yaml ``catalog`` projection.\n\nMirrors the retired ``references.yaml`` reference-item shape (charter\ncontract G2): ``catalog`` is byte-equivalent in content to that file's\nbody, so parity/resolving consumers (``consistency_check.py``) see\nidentical data.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "source_path": {
+          "title": "Source Path",
+          "type": "string"
+        },
+        "local_path": {
+          "title": "Local Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "summary",
+        "source_path",
+        "local_path"
+      ],
+      "title": "CharterCatalogReference",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "CharterTestingConfig": {
+      "description": "Testing requirements extracted from charter.",
+      "properties": {
+        "min_coverage": {
+          "default": 0,
+          "title": "Min Coverage",
+          "type": "integer"
+        },
+        "tdd_required": {
+          "default": false,
+          "title": "Tdd Required",
+          "type": "boolean"
+        },
+        "framework": {
+          "default": "",
+          "title": "Framework",
+          "type": "string"
+        },
+        "type_checking": {
+          "default": "",
+          "title": "Type Checking",
+          "type": "string"
+        }
+      },
+      "title": "CharterTestingConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "CharterYamlMetadata": {
+      "additionalProperties": false,
+      "description": "``charter.yaml``'s ``metadata`` block (charter contract G4).\n\nDeliberately narrower than :class:`ExtractionMetadata`: Landmine 2\n(data-model.md) retires the self-referential ``charter_hash`` (a hash of\n``charter.yaml`` cannot live *inside* ``charter.yaml`` — chicken-egg)\nalong with ``extraction_mode``/``sections_parsed``, which have no\nmeaning once ``governance``/``directives``/activation are hand-authored\nrather than extracted. ``bundle_schema_version`` is KEPT — read by\n``versioning.py``.",
+      "properties": {
+        "generated_at": {
+          "default": "",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "bundle_schema_version": {
+          "default": 2,
+          "title": "Bundle Schema Version",
+          "type": "integer"
+        }
+      },
+      "title": "CharterYamlMetadata",
+      "type": "object"
+    },
+    "CommitConfig": {
+      "description": "Commit message conventions.",
+      "properties": {
+        "convention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Convention"
+        }
+      },
+      "title": "CommitConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Directive": {
+      "description": "A single numbered directive from the charter.\n\nCross-artifact applicability is now expressed via graph edges in\nthe ``packs/built-in/*.graph.yaml`` fragments rather than an inline\n``applies_to`` field\n(Phase 1 excision — mission\n``excise-doctrine-curation-and-inline-references-01KP54J6`` WP02).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "severity": {
+          "default": "warn",
+          "title": "Severity",
+          "type": "string"
+        },
+        "references": {
+          "items": {
+            "type": "string"
+          },
+          "title": "References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "Directive",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "DirectivesConfig": {
+      "description": "Collection of directives extracted from charter.",
+      "properties": {
+        "directives": {
+          "items": {
+            "$ref": "#/$defs/Directive"
+          },
+          "title": "Directives",
+          "type": "array"
+        }
+      },
+      "title": "DirectivesConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GovernanceCharterConfig": {
+      "description": "The ``governance.charter`` block: the charter-authored selection of governance artifacts.\n\nField naming mirrors the corresponding ``ActiveCharterService`` property\nname (e.g. ``selected_styleguides`` mirrors\n``ActiveCharterService.styleguides``). The ``selected_<kind>`` field set is\npinned against the ``ArtifactKind``-derived kind tables by\n``tests/architectural/test_kind_table_derivation.py``\n(``test_overlayable_is_the_selected_fields_minus_the_non_overlaid_kinds``).\nThe former property-introspection guard\n(``test_artifact_selection_completeness.py``) no longer exists.",
+      "properties": {
+        "selected_paradigms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Paradigms",
+          "type": "array"
+        },
+        "selected_directives": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Directives",
+          "type": "array"
+        },
+        "selected_tactics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Tactics",
+          "type": "array"
+        },
+        "selected_styleguides": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Styleguides",
+          "type": "array"
+        },
+        "selected_toolguides": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Toolguides",
+          "type": "array"
+        },
+        "selected_procedures": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Procedures",
+          "type": "array"
+        },
+        "selected_agent_profiles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Agent Profiles",
+          "type": "array"
+        },
+        "selected_mission_step_contracts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Mission Step Contracts",
+          "type": "array"
+        },
+        "selected_glossary_packs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Glossary Packs",
+          "type": "array"
+        },
+        "selected_assets": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Selected Assets",
+          "type": "array"
+        },
+        "available_tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Available Tools",
+          "type": "array"
+        },
+        "template_set": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template Set"
+        },
+        "authority_paths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Authority Paths",
+          "type": "array"
+        },
+        "governance_references": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Governance References",
+          "type": "array"
+        }
+      },
+      "title": "GovernanceCharterConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GovernanceConfig": {
+      "description": "Top-level governance configuration.",
+      "properties": {
+        "testing": {
+          "$ref": "#/$defs/CharterTestingConfig"
+        },
+        "quality": {
+          "$ref": "#/$defs/QualityConfig"
+        },
+        "commits": {
+          "$ref": "#/$defs/CommitConfig"
+        },
+        "performance": {
+          "$ref": "#/$defs/PerformanceConfig"
+        },
+        "branch_strategy": {
+          "$ref": "#/$defs/BranchStrategyConfig"
+        },
+        "charter": {
+          "$ref": "#/$defs/GovernanceCharterConfig"
+        },
+        "activations": {
+          "items": {
+            "$ref": "#/$defs/ActivationEntry"
+          },
+          "title": "Activations",
+          "type": "array"
+        },
+        "retrospective": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetrospectiveGovernance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enforcement": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Enforcement",
+          "type": "object"
+        }
+      },
+      "title": "GovernanceConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "PerformanceConfig": {
+      "description": "Performance and scale requirements.",
+      "properties": {
+        "cli_timeout_seconds": {
+          "default": 2.0,
+          "title": "Cli Timeout Seconds",
+          "type": "number"
+        },
+        "dashboard_max_wps": {
+          "default": 100,
+          "title": "Dashboard Max Wps",
+          "type": "integer"
+        }
+      },
+      "title": "PerformanceConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "QualityConfig": {
+      "description": "Code quality requirements.",
+      "properties": {
+        "linting": {
+          "default": "",
+          "title": "Linting",
+          "type": "string"
+        },
+        "pr_approvals": {
+          "default": 1,
+          "title": "Pr Approvals",
+          "type": "integer"
+        },
+        "pre_commit_hooks": {
+          "default": false,
+          "title": "Pre Commit Hooks",
+          "type": "boolean"
+        }
+      },
+      "title": "QualityConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "RetrospectiveGovernance": {
+      "description": "The authored ``governance.retrospective:`` block of ``charter.yaml``.\n\nFR-005a of mission ``doctrine-charter-split-unification``. Before this\nmodel existed, ``GovernanceConfig`` had no ``retrospective`` field, so an\noperator-authored block was silently DROPPED on\n``GovernanceConfig.model_validate`` and the retrospective policy could only\nresolve from ``charter.md`` YAML frontmatter — a *resolving* read of the\ndisplay-only companion, the invariant violation FR-005 closes.\n\nKeys mirror ``retrospective.policy._KNOWN_KEYS`` exactly so the block can be\nhanded to ``_apply_block_to_policy`` verbatim. As with\n:class:`RetrospectiveGovernancePermissions`, every field is optional and\ndefaults to ``None`` (== unclaimed), so a partial charter block overrides\nonly the keys it actually authors.",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "timing": {
+          "anyOf": [
+            {
+              "enum": [
+                "post_completion",
+                "before_completion"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timing"
+        },
+        "failure_policy": {
+          "anyOf": [
+            {
+              "enum": [
+                "warn",
+                "block"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failure Policy"
+        },
+        "write_record": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Write Record"
+        },
+        "generate_proposals": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generate Proposals"
+        },
+        "apply_proposals": {
+          "anyOf": [
+            {
+              "enum": [
+                "require_human",
+                "low_risk_auto"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply Proposals"
+        },
+        "permissions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetrospectiveGovernancePermissions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "precedence": {
+          "anyOf": [
+            {
+              "enum": [
+                "charter",
+                "config"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precedence"
+        },
+        "generator": {
+          "anyOf": [
+            {
+              "const": "python",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generator"
+        },
+        "strict_keys": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strict Keys"
+        }
+      },
+      "title": "RetrospectiveGovernance",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "RetrospectiveGovernancePermissions": {
+      "description": "Granular retrospective capability flags, as authored in ``charter.yaml``.\n\nPURE DATA (mission ``doctrine-charter-split-unification`` FR-005a,\nresearch.md D3): the runtime counterpart\n``specify_cli.retrospective.policy.RetrospectivePermissions`` is deliberately\nNOT imported here — the charter layer must not depend upward on\n``specify_cli`` (policed by the FR-008 architectural gate). The two shapes\nare kept key-for-key aligned instead, and the resolver reads this block as a\nplain dict.\n\nEvery flag is three-state ``bool | None``: ``None`` == \"the charter does not\nclaim this key\", which is what keeps ``charter.md`` frontmatter a\n*contributing* secondary source (C-003) rather than being wholesale\noverridden by invented defaults. The runtime defaults live in\n``retrospective.policy.default_policy`` and are applied there, never here.",
+      "properties": {
+        "write_record": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Write Record"
+        },
+        "inspect_mission_artifacts": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inspect Mission Artifacts"
+        },
+        "propose_glossary_changes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propose Glossary Changes"
+        },
+        "propose_drg_changes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propose Drg Changes"
+        },
+        "propose_doctrine_changes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Propose Doctrine Changes"
+        },
+        "apply_low_risk_changes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply Low Risk Changes"
+        },
+        "apply_structural_changes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply Structural Changes"
+        }
+      },
+      "title": "RetrospectiveGovernancePermissions",
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "description": "The structured shape of the git-tracked, authorable ``charter.yaml``.\n\nContract: ``kitty-specs/consolidate-charter-bundle-01KXSYB9/contracts/\ncharter-yaml-schema.md``.\n\n⚠ Activation is FLAT AT THE ROOT (paula BLOCKER-1) — the ten\n``activated_*`` / ``mission_type_activations`` fields below are NOT\nnested under an ``activation:`` key, matching the activation presets\n(``packs/built-in/presets/<name>.yaml``), so\n``pack_context._read_activated_*`` / ``_read_list_key`` and\n``activation_engine.commit_plan`` read/write them unchanged.\n``model_config`` forbids extra fields, which doubles as the structural\nguard against a stray nested ``activation:`` mapping creeping back in\n(a nested mapping is not a declared field on this model, so\n``extra=\"forbid\"`` rejects it).\n\nEach ``activated_*`` field is three-state (charter contract G3):\n``None`` == absent key == the kind is unrestricted (every available\nartifact of it is effective); ``[]`` == explicit fail-closed empty; a\nnon-empty list == the activated set.",
+  "properties": {
+    "schema_version": {
+      "default": "2.0.0",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "governance": {
+      "$ref": "#/$defs/GovernanceConfig"
+    },
+    "directives": {
+      "$ref": "#/$defs/DirectivesConfig"
+    },
+    "catalog": {
+      "$ref": "#/$defs/CharterCatalog"
+    },
+    "activated_kinds": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Kinds"
+    },
+    "mission_type_activations": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mission Type Activations"
+    },
+    "activated_directives": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Directives"
+    },
+    "activated_tactics": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Tactics"
+    },
+    "activated_styleguides": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Styleguides"
+    },
+    "activated_toolguides": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Toolguides"
+    },
+    "activated_paradigms": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Paradigms"
+    },
+    "activated_procedures": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Procedures"
+    },
+    "activated_agent_profiles": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Agent Profiles"
+    },
+    "activated_mission_step_contracts": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Mission Step Contracts"
+    },
+    "overrides": {
+      "additionalProperties": true,
+      "title": "Overrides",
+      "type": "object"
+    },
+    "metadata": {
+      "$ref": "#/$defs/CharterYamlMetadata"
+    }
+  },
+  "required": [
+    "catalog"
+  ],
+  "title": "CharterYaml",
+  "type": "object"
+}

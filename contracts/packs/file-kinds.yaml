@@ -1,0 +1,151 @@
+# Single data authority for the pack vocabulary (plan, "Vocabulary kept in sync").
+#
+# Read by scripts/packs/sync_schemas.py (to generate the URN alternation, the per-kind URN
+# prefix branches and the fragment kind enum), by the Java adapter and by the tests. A kind is
+# added here first; the schemas are then regenerated and `sync_schemas.py --check` proves it.
+#
+# Shape
+#   node_kinds       The service's DRG node kind tokens (NodeKind.java), in schema order.
+#   artifact_kinds   The artifact kind tokens (ArtifactKind.java). Each is also a node kind.
+#   fragment_kinds   Fragment node `kind` plural -> node kind. One name per concept (R14).
+#   files            Rules that map a pack file to the schema that validates it.
+#   exclusions       Rules for YAML files that have no schema, each with a reviewable reason.
+#
+# Matching
+#   `match` is a glob over the file's path relative to the directory that holds the pack
+#   directories (`<checkout>/packs/`), written with forward slashes. `*` matches within one path
+#   segment, `**/` matches zero or more whole segments, every other character is literal.
+#   No file may match more than one rule across `files` and `exclusions`; the probe
+#   (`sync_schemas.py --probe`) fails on an overlap, and on a file that matches nothing.
+
+node_kinds:
+  - directive
+  - tactic
+  - styleguide
+  - toolguide
+  - paradigm
+  - procedure
+  - agent_profile
+  - mission_step_contract
+  - glossary_pack
+  - skill
+  - anti_pattern
+  - asset
+  - template
+  - action
+  - mission_type
+
+artifact_kinds:
+  - directive
+  - tactic
+  - styleguide
+  - toolguide
+  - paradigm
+  - procedure
+  - agent_profile
+  - mission_step_contract
+  - glossary_pack
+  - skill
+  - anti_pattern
+  - asset
+  - template
+
+fragment_kinds:
+  directives: directive
+  tactics: tactic
+  styleguides: styleguide
+  toolguides: toolguide
+  paradigms: paradigm
+  procedures: procedure
+  agent_profiles: agent_profile
+  mission_step_contracts: mission_step_contract
+  glossary_packs: glossary_pack
+  skills: skill
+  anti_patterns: anti_pattern
+  assets: asset
+  templates: template
+  mission_types: mission_type
+  actions: action
+
+files:
+  - match: "*/pack.yaml"
+    schema: pack-descriptor
+  - match: "**/*.graph.yaml"
+    schema: graph-shard
+  - match: "*/drg/fragment.yaml"
+    schema: org-fragment
+  - match: "*/org-charter.yaml"
+    schema: org-charter
+  - match: "**/*.directive.yaml"
+    schema: directive
+  - match: "**/*.tactic.yaml"
+    schema: tactic
+  - match: "**/*.styleguide.yaml"
+    schema: styleguide
+  - match: "**/*.toolguide.yaml"
+    schema: toolguide
+  - match: "**/*.paradigm.yaml"
+    schema: paradigm
+  - match: "**/*.procedure.yaml"
+    schema: procedure
+  - match: "**/*.agent.yaml"
+    schema: agent-profile
+  - match: "**/*.step-contract.yaml"
+    schema: mission-step-contract
+  - match: "**/*.asset.yaml"
+    schema: asset
+  # A project file. It is not expected inside a pack; the rule exists so that a stray one is
+  # validated, not silently ignored.
+  - match: "**/charter.yaml"
+    schema: charter
+
+exclusions:
+  - match: "**/mission-steps/**/step.yaml"
+    reason: >-
+      Mission step definitions are runtime files, not step-contract artifacts. No model in core
+      at 9554e7b2 validates them against a pack schema.
+  - match: "**/actions/*/index.yaml"
+    reason: >-
+      Action indexes list the doctrine an action loads. No model in core at 9554e7b2.
+  - match: "**/missions/*/mission.yaml"
+    reason: >-
+      Mission definitions are runtime files. No model in core at 9554e7b2 is exported as a pack
+      schema.
+  - match: "**/missions/*/mission-runtime.yaml"
+    reason: >-
+      Mission runtime sidecars. No model in core at 9554e7b2 is exported as a pack schema.
+  - match: "**/missions/*/expected-artifacts.yaml"
+    reason: >-
+      Expected-artifact manifests of a mission. No model in core at 9554e7b2 is exported as a
+      pack schema.
+  - match: "**/governance-profile.yaml"
+    reason: >-
+      Governance profiles of a mission or mission type. No model in core at 9554e7b2 is exported
+      as a pack schema.
+  - match: "**/mission_types/*.yaml"
+    reason: >-
+      Mission-type definitions. No model in core at 9554e7b2 is exported as a pack schema.
+  - match: "**/presets/*.yaml"
+    reason: >-
+      Activation presets. Core resolves them by name and has no pack-schema model at 9554e7b2.
+  - match: "**/*.skill.yaml"
+    reason: >-
+      Skill artifacts. Core has no skill model at 9554e7b2, so no schema exists to import.
+  - match: "**/*.glossary-pack.yaml"
+    reason: >-
+      Glossary-pack artifacts. Core has no glossary-pack model at 9554e7b2, so no schema exists
+      to import.
+  - match: "**/*.config.yaml"
+    reason: >-
+      Tool configuration shipped as an asset (for example the structural lint config). Free
+      form, with no model in core at 9554e7b2.
+  - match: "*/pack-manifest.yaml"
+    reason: >-
+      The generated manifest of a pack (constituents and hashes), machine-written and never
+      authored. No model in core at 9554e7b2 is exported as a pack schema.
+  - match: "built-in.source.yaml"
+    reason: >-
+      The source declaration of the built-in pack. No model in core at 9554e7b2.
+  - match: "**/templates/plan-field-declaration.yaml"
+    reason: >-
+      A mission template's plan-field declaration. No model in core at 9554e7b2.

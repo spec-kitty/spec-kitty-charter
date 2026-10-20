@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/pack-descriptor.schema.json",
+  "additionalProperties": true,
+  "description": "Authored descriptor for a pack's identity and lineage.\n\nFields\n------\npack_id : str\n    Stable, immutable ULID (26 chars). Sole runtime identity for the pack.\n    Minted once at creation; never changed. Mirrors the ``mission_id`` model.\npack_version : str\n    Semantic versioning string. Author-managed **for the built-in pack only**.\n    For fetched/org packs, ``pack_version`` remains generated provenance on the\n    manifest side (see data-model.md). Consumers read authored-when-present,\n    else generated.\nparent_pack : str | None\n    ULID of the parent pack, if this pack extends another. Resolved via\n    identity→key adapter feeding ``extends.resolve_extends_order``.\n    ``None`` for root packs. An unresolvable ``parent_pack`` (pre-backfill)\n    fails closed, never silently degrades.\nname : str\n    Human-readable handle. No longer the identity key; used for display and\n    in resolved commands. Resolver disambiguates with no silent fallback.\npack_level : PackTier\n    The declared Charter Pack tier (``built-in`` / ``org`` / ``project``),\n    reusing the single :data:`kernel.pack_tiers.PackTier` authority — no new\n    enum. Required; an unknown value is a schema error.\nrequires_core : str | None\n    An optional PEP 440 version-specifier range (e.g. ``\">=4.0,<5.0\"``)\n    naming the Spec Kitty core versions this pack supports. Validated as a\n    :class:`packaging.specifiers.SpecifierSet`; an unparsable value is a\n    schema error naming the field. ``None`` means no constraint.\nactive_charter : str | None\n    An optional pack-relative path to the active-charter file\n    (``org-charter.yaml`` for an org pack). A plain string here; in-pack\n    path resolution (no ``..`` escape) is validated by ``charter pack\n    validate`` (WP02), not at model time.\npack_drg : str | None\n    An optional pack-relative path to the DRG source. A plain string here;\n    in-pack path resolution is validated by ``charter pack validate``.",
+  "properties": {
+    "pack_id": {
+      "description": "Stable ULID identity (26 chars); immutable sole runtime identity.",
+      "title": "Pack Id",
+      "type": "string"
+    },
+    "pack_version": {
+      "title": "Pack Version",
+      "description": "Semantic version string; required at every pack level, non-null and non-empty.",
+      "type": "string",
+      "minLength": 1
+    },
+    "parent_pack": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Parent pack ULID; None for root packs.",
+      "title": "Parent Pack"
+    },
+    "name": {
+      "description": "Human-readable handle; not the runtime identity.",
+      "title": "Name",
+      "type": "string"
+    },
+    "pack_level": {
+      "description": "Declared Charter Pack tier: built-in, org or project. Optional; when present it is one of the three.",
+      "enum": [
+        "built-in",
+        "org",
+        "project"
+      ],
+      "title": "Pack Level",
+      "type": "string"
+    },
+    "requires_core": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional PEP 440 version-specifier range of supported core versions.",
+      "title": "Requires Core"
+    },
+    "active_charter": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional pack-relative path to the active-charter file.",
+      "title": "Active Charter"
+    },
+    "pack_drg": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional pack-relative path to the DRG source.",
+      "title": "Pack Drg"
+    }
+  },
+  "required": [
+    "pack_id",
+    "name",
+    "pack_version"
+  ],
+  "title": "PackDescriptor",
+  "type": "object"
+}
