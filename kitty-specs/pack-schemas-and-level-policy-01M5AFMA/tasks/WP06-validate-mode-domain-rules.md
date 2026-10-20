@@ -191,9 +191,8 @@ Red tests, then:
 **Steps**:
 
 1. Commit `service/charter-domain/pit-targets.init.gradle`. It reads `-Dpit.classes` and
-   `-Dpit.tests` into the pitest extension's `targetClasses` and `targetTests`. A working reference is
-   the implementer's local PIT init script (not committed);
-   adapt it. Add a short comment on its use.
+   `-Dpit.tests` into the pitest extension's `targetClasses` and `targetTests`. Add a short
+   comment on its use.
 2. Run:
 
    ```
