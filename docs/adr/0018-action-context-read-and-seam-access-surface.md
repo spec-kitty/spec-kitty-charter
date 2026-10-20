@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -32,6 +32,9 @@ it on its own merits, not as a copy of core"). Confirmation is pending in the pu
 handover. Four rulings of the same day are operator-confirmed and marked so below: decisions
 D2 (DIV-110 kept), D5 (R9 gates cutover stage 3), D6 (tensions go to the creed set) and D10
 (refresh as `POST /packs/refresh`).
+
+**Amendment 2026-10-20** (R17 of the pack-schema mission): D11's note on which scenario pins
+`pack_unreadable` is amended. The point is annotated where it stands.
 
 This record supersedes, point by point:
 
@@ -242,6 +245,11 @@ fingerprint check alone would answer. The path is not `/refresh` and the answer 
 - **Residual window.** A change after the second digest, or one reverted between the two (ABA),
   goes unseen.
 - `pack_unreadable` is pinned by a scenario with a graph shard that is not valid YAML.
+  *(Amended 2026-10-20, R17: a graph shard that is not valid YAML is now `drg_schema_error`, so that
+  scenario no longer pins `pack_unreadable`. The pin is the `errors.feature` scenario in which
+  `config.yaml` is a directory. A `pack.yaml` that is not valid YAML keeps `pack_unreadable`. See
+  [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and the contract
+  changelog.)*
 - `governance_policy_violation` stays reserved. It is pinned by a `@contract @reserved`
   scenario and an enforcing unit test: no main class references it except the enum and its title
   mapping. Runner B's #48 deletes that test when it raises the code. The score is 8 behavioral
