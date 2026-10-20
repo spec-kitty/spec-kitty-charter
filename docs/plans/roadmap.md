@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -28,7 +28,7 @@ spec-kitty#6188 moved the imports onto the offering seam, as core ADR
 
 | # | Step | Done when | Depends on |
 |---|---|---|---|
-| 1 | **Contract skeleton.** `contracts/charter/` with `info`, `servers`, the shared `Problem` schema, and the first read path: action-scoped context, keyed by mission type and action. | The charter's own contract checks pass and a `1.0.0-SNAPSHOT` bundle is built (core's tools do not run here; [open question 18](/plans/open-questions/)) | ADR-0002 ruling |
+| 1 | **Contract skeleton.** `contracts/charter/` with `info`, `servers`, the shared `Problem` schema, and the first read path: action-scoped context, keyed by mission type and action. | The charter's own contract checks pass and a `0.1.0-SNAPSHOT` bundle is built (core's tools do not run here; [open question 18](/plans/open-questions/)) | ADR-0002 ruling |
 | 2 | **Gradle build.** Multi-project build with the modules in [Hexagonal service](/architecture/hexagonal-service/), strict dependency verification, and a dependency-direction test. | An empty domain and a generated `charter-api` compile; the direction test fails a planted violation; `./gradlew verifyAll` runs green on Java 25 in CI | 1 |
 | 3 | **Conformance corpus, first slice.** Built-in pack only: load, merge, default preset, action-scoped context for each mission type and action, at depths 0, 1 and 2 (the seam maps first load to 2, a recorded load to 1). Expected results come from a harness here over core's existing CLI, mapped onto the contract shape, with deliberate differences in a reviewed register ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). | The harness produces the first slice from open-packs and fixture projects, and the corpus is published with the contract | 1, the reads decided by the inventory (#94) |
 | 4 | **Domain and YAML read adapter.** Load packs with `pack_level` checks, merge layers, activation, cascade. | The first corpus slice passes against Java | 2, 3 |
@@ -55,7 +55,7 @@ As of 2026-10-18, steps 1 and 2 are brought under governance by the Mission
 ([changelog](/changelog/2026-10-18-retroactive-contract-and-build-mission/)).
 
 - **Step 1, done.** `contracts/charter/` holds
-  `1.0.0-SNAPSHOT`, unreleased, with two read paths (`GET /packs`,
+  `0.1.0-SNAPSHOT`, unreleased, with two read paths (`GET /packs`,
   `GET /mission-types/{missionType}/actions/{action}/context`), the vendored `_shared`
   vocabulary and the contract scenarios. The charter's own contract checks run in the build
   (`./gradlew :contracts:check`): its lint ruleset with at least one planted fixture per

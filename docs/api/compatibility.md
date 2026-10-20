@@ -18,7 +18,7 @@ audience:
 
 How the charter service contract is versioned and what a consumer can rely on across releases, and the rules core's in-process seam surface follows until the cutover retires it. The rules derive from the `charter.offering.api` docstring in core (`src/charter/offering/api.py`), core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) and [Contract and DTOs](/architecture/contract-and-dtos/). No Python package ships from this repository ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)).
 
-> **Partly built.** The service contract exists at `1.0.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python surface below is core's, not a package of this repository. See the [API overview](/api/).
+> **Partly built.** The service contract exists at `0.1.0-SNAPSHOT`, and its build checks that response schemas are closed and runs the breaking-change check; no contract version is released yet. The Python surface below is core's, not a package of this repository. See the [API overview](/api/).
 
 ## Core's in-process seam surface
 
@@ -39,18 +39,22 @@ Core versions this surface, not this repository; it stays in core until the cuto
   `-SNAPSHOT` suffix.
 - Response schemas are **closed** (`additionalProperties: false`), so any response change is a
   new schema version and a new contract release.
-- A breaking-change check compares the contract with its last released version. A breaking
-  change needs a new major version and a core-side migration of its generated DTOs. How the
-  released version is found: [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
+- The contract is published as `0.y.z` while it iterates with core's generated client, and
+  1.0.0 is minted once the operator judges it stable (ADR-0022 (proposed in [#123](https://github.com/spec-kitty/spec-kitty-charter/pull/123))).
+- A breaking-change check compares the contract with its last released version of the same
+  line: from 1.0.0 the same major version, and while the major is 0 the same `0.y`. A breaking
+  change needs a new line and a core-side migration of its generated DTOs:
+  - while the major is 0, a minor bump (`0.y` to `0.(y+1)`) may break, and a patch may not;
+  - from 1.0.0, a major bump may break, and a minor or a patch may not.
+- A bump that may break needs a `### Breaking` subsection in the contract `CHANGELOG.md` that
+  lists each break. The build then shows what the new version breaks against the previous
+  release, for information only. How the released version is found:
+  [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same change,
   and the release's conformance corpus must pass against every implementation still
   answering.
-- The URL prefix `/api/v1` changes only with a major version.
-- **Proposed** ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): the contract is
-  published as `0.y.z` while it iterates with core's generated client. In 0.x a minor version may
-  break, with a `### Breaking` CHANGELOG subsection, and a patch may not; core pins one `0.y.z`.
-  1.0.0 is minted once the contract is stable, and the rules above apply from then on. The prefix
-  stays `/api/v1` through 0.x.
+- The URL prefix `/api/v1` stays through 0.x and at 1.0.0; it names the API generation that
+  1.0.0 stabilizes, not the release number. After 1.0.0 it changes only with a major version.
 
 ## Between the two surfaces
 
