@@ -206,7 +206,7 @@ was cut under either label. `Added` lists what this version holds that the first
 - A pack file whose bytes are not valid UTF-8 is now a parse failure, coded by its file kind (#114,
   R17; behavior change, no schema change). A shard or the fragment is refused as
   `drg_schema_error`, `<pack>/<file> is not valid YAML: the file is not valid UTF-8`; a
-  `pack.yaml` as `pack_unreadable`, `<pack>/pack.yaml is not valid YAML`. Before, every such file
+  `pack.yaml` as `pack_unreadable`, `pack.yaml of <name> is not valid YAML`. Before, every such file
   was `pack_unreadable`, `<pack>/<file> cannot be read`. An I/O failure keeps `cannot be read`.
 - An empty `pack_version` in `pack.yaml` is refused with its own detail (#114, R4; behavior
   change, no schema change: the code is already `pack_unreadable`). The `pack-descriptor` schema
