@@ -44,11 +44,12 @@ class CharterOfferingTest {
     }
 
     @Test
-    void aDescriptorDeclaringAnotherLevelIsRefused() {
-        PackDescriptor builtIn = new PackDescriptor("id", "1.0.0", Optional.empty(), "x", PackLevel.BUILT_IN);
+    void aDescriptorDeclaringAnotherLevelIsAProgrammingError() {
+        PackDescriptor builtIn = new PackDescriptor(
+                "id", "1.0.0", Optional.empty(), "x", Optional.of(PackLevel.BUILT_IN), Optional.empty(), List.of());
         assertThatThrownBy(() ->
                         new CharterPack("x", PackLevel.ORG, Optional.of(builtIn), DoctrineGraph.empty(), List.of()))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH));
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Pack 'x' is configured as org but declares pack_level built-in");
     }
 }

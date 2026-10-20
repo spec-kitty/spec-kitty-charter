@@ -52,7 +52,14 @@ class PackListingQueryTest {
         CharterPack org = new CharterPack(
                 "acme",
                 PackLevel.ORG,
-                Optional.of(new PackDescriptor("acme", "2.0.0", Optional.of("base"), "Acme", PackLevel.ORG)),
+                Optional.of(new PackDescriptor(
+                        "acme",
+                        "2.0.0",
+                        Optional.of("base"),
+                        "Acme",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        List.of())),
                 new DoctrineGraph(
                         List.of(new DrgNode(TYPE, Optional.empty()), new DrgNode(D1, Optional.empty())),
                         List.of(DrgEdge.of(TYPE, D1, Relation.SCOPE))),

@@ -1,6 +1,12 @@
 package ai.speckitty.charter.domain;
 
-/** Port: loads the configured charter offering. Implementations live in outbound adapters. */
+/**
+ * Port: loads the configured charter offering. Implementations live in outbound adapters.
+ *
+ * <p>The file-system implementation composes the domain's {@link PackPolicy}: it reads the files into
+ * {@link PackContents} and {@code PackPolicy} decides the outcome. Issue 115 moves that composition into an
+ * application-ring use case.
+ */
 public interface CharterPackRepository {
 
     /**
