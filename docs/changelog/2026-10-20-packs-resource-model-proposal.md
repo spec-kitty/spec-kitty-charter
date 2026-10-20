@@ -22,28 +22,25 @@ audience:
 
 ## What changed
 
-- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) (Proposed) gives `/packs` one
-  meaning, the packs this service knows. It makes every pack a resource whose artifacts, graph,
-  presets and assets are sub-resources, adds an API root, and makes ADR-0007's `Links` component
-  concrete: a map with open relation keys and a closed link object.
-- [ADR-0020](/adr/0020-offering-and-activations/) (Proposed) adds two top-level resources:
-  `/offering`, what can be used, merged from the packs in force, with the action-context read
-  moved under it before 1.0.0; and `/activations`, the active charters. An activation is a camelCase document the service stores under an opaque `activationId`. Core
-  either registers its document or builds one through the API and fetches it. The service is
-  authoritative once activation routes to it; core keeps its own files and maps them. The activation operations are declared in
-  the contract early and answer `501` until built. The contract becomes hosted-first before 1.0.0.
-- [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) (Proposed) makes
-  the published contract core's seam now: core vendors a generated client, and a proxy routes
-  each operation to core's Python or to the service, switching one operation at a time.
-- [ADR-0022](/adr/0022-contract-versions-start-at-0-x/) (Proposed) publishes the contract as
-  0.x while it iterates with core's generated client: a 0.x minor may break, a patch may not, and
-  1.0.0 is minted once the contract is stable. The first release, 0.1.0, is today's contract.
+- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/): every pack is a resource with
+  sub-resources, there is an API root, and `Links` has open relation keys and a closed link
+  object.
+- [ADR-0020](/adr/0020-offering-and-activations/): two more top-level resources.
+  - `/offering` is what can be used; the action-context read moves under it.
+  - `/activations` holds active charters, which the service stores under an opaque
+    `activationId`.
+  - Core registers its content or builds it through the API, and maps it to its own files.
+  - Core's response to the handover is folded in. The two remaining divergences are DIV-201 and
+    DIV-202 in the [divergence register](/conformance/divergence-register/).
+- [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/): the published
+  contract is core's seam now, through a generated client and a proxy that switches one operation
+  at a time.
+- [ADR-0022](/adr/0022-contract-versions-start-at-0-x/): the contract is published as 0.x until
+  it is stable. A minor may break and a patch may not. The first release is 0.1.0.
 - [Packs resource model](/architecture/packs-resource-model/) and
-  [Offering and activation](/architecture/offering-and-activation/) hold the resource trees, link
-  graphs, request sequences, examples and proposed contract scenarios.
-- The [service contract](/api/service-contract/) lists the proposed operations and what must land
-  before 1.0.0.
-- A new [Development conventions](/development/) section documents REST resource naming,
-  hypermedia, conditional requests and the HTTP status codes the contract uses and proposes.
+  [Offering and activation](/architecture/offering-and-activation/) hold the designs. The
+  [service contract](/api/service-contract/) lists the proposed operations.
+- New [Development conventions](/development/) cover REST resources, hypermedia, conditional
+  requests and HTTP status codes.
 
-The contract itself is unchanged.
+All four records are Proposed. The contract itself is unchanged.

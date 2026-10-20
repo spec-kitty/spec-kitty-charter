@@ -185,6 +185,18 @@ Rejected: ADR-0001 says no response shape is hand-written on either side.
   the in-process backend, in contract shapes.
 - Amend core ADR `2026-10-03-1` (staged ownership) for the per-operation switch.
 
+**Core's response, 2026-10-20** (activation ledger mission `persistent-deactivation-ledger-01M59YAA`):
+
+- The approach is accepted, and the mission's work becomes the in-process backend.
+- The seam module is `charter.activation.activation_contract`, exported through
+  `charter.activation.api`. It maps core's files to the contract, computes the revision,
+  translates refusals and builds the skipped report.
+- The proxy and the generated client live in `specify_cli`.
+- Switching activation to the charter surface is a core 4.0 GA deliverable: epic
+  spec-kitty/spec-kitty#6518, on core milestone #11.
+- Core's blocking dependencies are this repository's #119 (before 0.1.0) and #125 (the
+  activation minor).
+
 ## References
 
 - [ADR-0020](/adr/0020-offering-and-activations/), [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/),

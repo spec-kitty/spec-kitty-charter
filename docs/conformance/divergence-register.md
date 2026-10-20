@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service's answers and core's, each with a stable id and the corpus case that pins it.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-20T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -29,6 +29,7 @@ Entries are grouped by block, one block per mission, so that two missions never 
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
 - **Pack schemas (DIV-001..019)** is added by the pack-schema mission (runner B).
+- **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
 - The machine-readable `divergences.yaml` comes with that mission.
 
 The first three entries of the context-read block lived in the provisional section of
@@ -90,3 +91,24 @@ exists (cutover stage 3).
 
 Give it the next free id in its block, state both answers, name the corpus case, and cite the ruling. Link the
 entry from the contract scenario that pins it.
+
+## Activation (DIV-201..202, ADR-0020), proposed
+
+Proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with core's
+activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries
+(core response, mirrored on #9). Both are to be settled before the first activation operation is
+routed to the service ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) D5).
+
+| Id | The charter answers | Core answers | Corpus case |
+|---|---|---|---|
+| DIV-201 | A required or locked artifact is active on read, even under an explicit allow list that omits it (ADR-0020 D7) | Does not add it under such an allow list; doctor and list warn | `required-under-allow-list` |
+| DIV-202 | The required floor is derived from the packs at read time and never stored (ADR-0020 D4) | Promotes org `required_*` into the allow list at write time | `required-promoted-at-write` |
+
+Not divergences, because the contract matches core:
+
+- `activate` and `deactivate` semantics (ADR-0020 D6, by ruling);
+- preset `--force` (`{"force": true}`);
+- derived `languages`, which core's seam does not send.
+
+Unknown and stale deny entries are refused by the contract and dropped by core's seam at export.
+That is an export rule, not a divergence.
