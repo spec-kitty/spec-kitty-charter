@@ -54,9 +54,17 @@ Which release is the baseline is decided by the release gate, `ReleaseGate`
 ([`ReleaseGate.java`](../src/main/java/ai/speckitty/charter/contracts/compat/ReleaseGate.java)), whose
 class Javadoc is the authority on the rules and their messages (DM 01M5986KJ7B18K7GQ25E47J989). In
 short: after checking the CHANGELOG against `info.version` and the git tags, it names the newest
-release of the same major version whose tag is merged into HEAD, and a release with no such tag yet
-is *pending* and is compared against the previous one. A released contract is tagged
-`contract-charter-v<version>`.
+release of the same line whose tag is merged into HEAD, and a release with no such tag yet is
+*pending* and is compared against the previous one. A released contract is tagged
+`contract-charter-v<version>` (`contract-charter-v0.1.0`).
+
+The line is the major version from 1.0.0, and the major and minor while the major is 0
+(ADR-0022): the contract is published as 0.x while it iterates with core, a 0.x minor may break
+and a patch may not. So `0.2.1-SNAPSHOT` is compared against the newest 0.2 release, and
+`0.2.0-SNAPSHOT` with only 0.1 releases has no baseline and passes. A bump of the line (a 0.x
+minor bump, `0.3.0` to `1.0.0`, or a major bump after that) needs a `### Breaking` subsection in
+its CHANGELOG section, and the check then shows the oasdiff report against the previous release
+for information only; it does not fail on it.
 
 A missing baseline is a stated fact, never an artifact of the checkout:
 
@@ -71,7 +79,8 @@ A missing baseline is a stated fact, never an artifact of the checkout:
 This is the one release procedure.
 
 1. In a pull request, set `info.version` of `../charter/openapi.yaml` to the release (`1.1.0`) and
-   turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for a new major). The
+   turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for a new major, or for
+   a new minor while the major is 0). The
    check reports "pending release 1.1.0" while no tag for it is merged into HEAD, and compares
    against the previous release.
 2. After the merge, tag `main` at the merge commit: `git tag contract-charter-v1.1.0 <merge commit>`

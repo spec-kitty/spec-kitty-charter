@@ -24,7 +24,7 @@ The planned operations, error model and transports of the charter service's Open
 
 ## The contract files
 
-The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `1.0.0-SNAPSHOT`, unreleased:
+The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `0.1.0-SNAPSHOT`, unreleased (published as 0.x until it is stable, ADR-0022 (proposed in [#123](https://github.com/spec-kitty/spec-kitty-charter/pull/123))):
 
 - [`openapi.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml): the header and the map from each path to its file;
 - `paths/`, `schemas/`, `parameters/`, `responses/` and `examples/`: one definition per file;
