@@ -6,9 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.domain.PackContents.FileRead;
 import ai.speckitty.charter.domain.PackContents.RawGraph;
 import ai.speckitty.charter.domain.PackContents.SchemaViolation;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class PackPolicyOrderTest {
@@ -317,11 +321,103 @@ class PackPolicyOrderTest {
     }
 
     @Test
-    void anIndexOfEighteenDigitsIsTooLongToBeAnIndexAndSortsAsText() {
+    void anIndexOfEighteenDigitsSortsByValueLikeAnyOther() {
         assertThat(places(broken(
                         "a.graph.yaml",
                         fallback("a.graph.yaml", "nodes", "100000000000000000"),
                         fallback("a.graph.yaml", "nodes", "99999999999999999"))))
-                .containsExactly("/nodes/100000000000000000", "/nodes/99999999999999999");
+                .containsExactly("/nodes/99999999999999999", "/nodes/100000000000000000");
+    }
+
+    // ---- the order of the places within a file is total (a TimSort contract violation was a 500) --------
+
+    private static PackFinding at(String key) {
+        return new PackFinding(PackFindingCode.PACK_UNKNOWN_KEY, "pack.yaml", List.of(key), "d");
+    }
+
+    /** Indexes of every length, with leading zeros, empty, keys that start with digits, and declared keys. */
+    private static final List<String> SAMPLE = List.of(
+            "",
+            "0",
+            "00",
+            "7",
+            "07",
+            "007",
+            "9",
+            "10",
+            "010",
+            "7x",
+            "10x",
+            "1a",
+            "N",
+            "Nx",
+            "name",
+            "pack_id",
+            "pack_version",
+            "99999999999999999",
+            "999999999999999999",
+            "9999999999999999999",
+            "10000000000000000000",
+            "010000000000000000000",
+            "12345678901234567890",
+            "12345678901234567891",
+            "9223372036854775807",
+            "9223372036854775808",
+            "18446744073709551616x");
+
+    @Test
+    void theOrderOfPlacesIsAntisymmetricAndTransitiveOverAFixedSample() {
+        List<PackFinding> all = SAMPLE.stream().map(PackPolicyOrderTest::at).toList();
+        for (PackFinding a : all) {
+            for (PackFinding b : all) {
+                assertThat(Integer.signum(PackPolicy.PRECEDENCE.compare(a, b)))
+                        .as("antisymmetry of %s and %s", a.place(), b.place())
+                        .isEqualTo(-Integer.signum(PackPolicy.PRECEDENCE.compare(b, a)));
+                for (PackFinding c : all) {
+                    if (PackPolicy.PRECEDENCE.compare(a, b) <= 0 && PackPolicy.PRECEDENCE.compare(b, c) <= 0) {
+                        assertThat(PackPolicy.PRECEDENCE.compare(a, c))
+                                .as("transitivity of %s, %s, %s", a.place(), b.place(), c.place())
+                                .isLessThanOrEqualTo(0);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void indexesSortByValueBeforeEveryOtherKeyAndLeadingZerosDoNotChangeTheValue() {
+        List<PackFinding> sorted = new ArrayList<>(Stream.of(
+                        "pack_id", "10", "Nx", "9", "07", "1a", "7", "", "12345678901234567890", "9223372036854775808")
+                .map(PackPolicyOrderTest::at)
+                .toList());
+        sorted.sort(PackPolicy.PRECEDENCE);
+        assertThat(sorted.stream().map(f -> f.place().get(0)))
+                .containsExactly(
+                        "07", "7", "9", "10", "9223372036854775808", "12345678901234567890", "pack_id", "", "1a", "Nx");
+    }
+
+    @Test
+    void manyShuffledMixesSortWithoutAnExceptionAndToOneOrder() {
+        Random random = new Random(20260620);
+        List<PackFinding> reference = SAMPLE.stream()
+                .map(PackPolicyOrderTest::at)
+                .sorted(PackPolicy.PRECEDENCE)
+                .toList();
+        for (int round = 0; round < 500; round++) {
+            List<PackFinding> shuffled = new ArrayList<>(reference);
+            Collections.shuffle(shuffled, random);
+            shuffled.sort(PackPolicy.PRECEDENCE);
+            assertThat(shuffled).isEqualTo(reference);
+        }
+        // Many keys at once, the shape that made TimSort check its contract: 217 keys of "N" and "Nx" mixed.
+        for (int round = 0; round < 200; round++) {
+            List<PackFinding> keys = new ArrayList<>();
+            for (int i = 0; i < 32 + random.nextInt(200); i++) {
+                int n = random.nextInt(2000);
+                keys.add(at(random.nextBoolean() ? Integer.toString(n) : n + "x"));
+            }
+            keys.sort(PackPolicy.PRECEDENCE);
+            assertThat(keys).isSortedAccordingTo(PackPolicy.PRECEDENCE);
+        }
     }
 }

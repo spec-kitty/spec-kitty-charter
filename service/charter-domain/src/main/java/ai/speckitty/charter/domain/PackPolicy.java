@@ -894,9 +894,29 @@ public final class PackPolicy {
         return Integer.compare(a.size(), b.size());
     }
 
+    /**
+     * A total order over the segments of a place: an index (digits only, any length) sorts before any other segment;
+     * two indexes by value, compared without parsing, by length after the leading zeros and then by digit, and
+     * {@code 07} before {@code 7} when they are the same value; any other two by the rank of the declared key and then
+     * by code unit. Deciding index-or-not first is what keeps it transitive. Comparing an index with a key by code
+     * unit while two indexes compare by value is a cycle ({@code 9 < 10} by value, {@code 10 < 1a} and {@code 1a < 9}
+     * by code unit), which {@code List.sort} refuses with an {@link IllegalArgumentException}.
+     */
     private static int compareSegments(List<String> keys, String a, String b) {
-        if (isIndex(a) && isIndex(b)) {
-            return Long.compare(Long.parseLong(a), Long.parseLong(b));
+        boolean indexA = isIndex(a);
+        boolean indexB = isIndex(b);
+        if (indexA != indexB) {
+            return indexA ? -1 : 1;
+        }
+        if (indexA) {
+            String digitsA = withoutLeadingZeros(a);
+            String digitsB = withoutLeadingZeros(b);
+            int byLength = Integer.compare(digitsA.length(), digitsB.length());
+            if (byLength != 0) {
+                return byLength;
+            }
+            int byDigits = digitsA.compareTo(digitsB);
+            return byDigits != 0 ? byDigits : a.compareTo(b);
         }
         int rankA = rank(keys, a);
         int rankB = rank(keys, b);
@@ -904,7 +924,15 @@ public final class PackPolicy {
     }
 
     private static boolean isIndex(String segment) {
-        return !segment.isEmpty() && segment.length() < 18 && segment.chars().allMatch(c -> c >= '0' && c <= '9');
+        return !segment.isEmpty() && segment.chars().allMatch(c -> c >= '0' && c <= '9');
+    }
+
+    private static String withoutLeadingZeros(String digits) {
+        int first = 0;
+        while (first < digits.length() - 1 && digits.charAt(first) == '0') {
+            first++;
+        }
+        return digits.substring(first);
     }
 
     /** The position of a declared key; unknown keys rank after every known one. */
