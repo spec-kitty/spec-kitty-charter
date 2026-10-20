@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -116,6 +117,14 @@ class PackSchemasTest {
         assertThatThrownBy(() -> fixture("broken-type", "x"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("x.schema.json");
+    }
+
+    @Test
+    void aSchemaThatIsNotJsonIsRefusedWithTheFileNamedAndTheParseErrorAsItsCause() {
+        assertThatThrownBy(() -> fixture("malformed-json", "x"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageStartingWith("x.schema.json is not valid JSON: ")
+                .hasCauseInstanceOf(JacksonException.class);
     }
 
     @Test
