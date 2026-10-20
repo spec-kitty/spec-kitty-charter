@@ -354,7 +354,7 @@ class ReleaseGateTest {
 
         @Test
         void aMajorBumpNamesTheNewestReleaseOfTheEarlierMajor() {
-            assertThat(ReleaseGate.previousMajorBaseline(
+            assertThat(ReleaseGate.previousBreakingBaseline(
                             "2.0.0-SNAPSHOT",
                             changelog(BREAKING_TWO, "## 1.1.0\n", "## 1.0.0\n"),
                             Set.of("contract-charter-v1.1.0", "contract-charter-v1.0.0")))
@@ -363,7 +363,7 @@ class ReleaseGateTest {
 
         @Test
         void aPendingMajorReleaseNamesItToo() {
-            assertThat(ReleaseGate.previousMajorBaseline(
+            assertThat(ReleaseGate.previousBreakingBaseline(
                             "2.0.0",
                             changelog("## 2.0.0\n\n### Breaking\n", "## 1.1.0\n"),
                             Set.of("contract-charter-v1.1.0")))
@@ -372,7 +372,7 @@ class ReleaseGateTest {
 
         @Test
         void aSameMajorVersionNamesNothing() {
-            assertThat(ReleaseGate.previousMajorBaseline(
+            assertThat(ReleaseGate.previousBreakingBaseline(
                             "1.2.0-SNAPSHOT",
                             changelog("## 1.2.0-SNAPSHOT\n", "## 1.1.0\n"),
                             Set.of("contract-charter-v1.1.0")))
@@ -381,7 +381,7 @@ class ReleaseGateTest {
 
         @Test
         void aMajorBumpWithoutABreakingSubsectionNamesNothing() {
-            assertThat(ReleaseGate.previousMajorBaseline(
+            assertThat(ReleaseGate.previousBreakingBaseline(
                             "2.0.0-SNAPSHOT",
                             changelog("## 2.0.0-SNAPSHOT\n", "## 1.1.0\n"),
                             Set.of("contract-charter-v1.1.0")))
@@ -390,14 +390,127 @@ class ReleaseGateTest {
 
         @Test
         void aReleaseWhoseTagIsNotMergedNamesNothing() {
-            assertThat(ReleaseGate.previousMajorBaseline(
+            assertThat(ReleaseGate.previousBreakingBaseline(
                             "2.0.0-SNAPSHOT", changelog(BREAKING_TWO, "## 1.1.0\n"), Set.of()))
                     .isEmpty();
         }
 
         @Test
         void theFirstVersionNamesNothing() {
-            assertThat(ReleaseGate.previousMajorBaseline("1.0.0-SNAPSHOT", SNAPSHOT_ONLY, Set.of()))
+            assertThat(ReleaseGate.previousBreakingBaseline("1.0.0-SNAPSHOT", SNAPSHOT_ONLY, Set.of()))
+                    .isEmpty();
+        }
+    }
+
+    @Nested
+    class ZeroMajor {
+
+        private static final String TAGS_01 = "contract-charter-v0.1.0";
+
+        @Test
+        void theFirstZeroSnapshotHasNoBaseline() {
+            Decision decision = decide("0.1.0-SNAPSHOT", changelog("## 0.1.0-SNAPSHOT\n\n### Added\n"), Set.of());
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(decision.message()).contains("records no released version");
+        }
+
+        @Test
+        void aZeroPatchIsComparedWithTheReleaseOfTheSameMinor() {
+            Decision decision =
+                    decide("0.1.1-SNAPSHOT", changelog("## 0.1.1-SNAPSHOT\n", "## 0.1.0\n"), Set.of(TAGS_01));
+            assertThat(decision).isEqualTo(new Decision.Compare(TAGS_01, "compared against 0.1.0"));
+        }
+
+        @Test
+        void aPendingZeroPatchReleaseIsComparedWithThePreviousPatch() {
+            Decision decision = decide("0.1.1", changelog("## 0.1.1\n", "## 0.1.0\n"), Set.of(TAGS_01));
+            assertThat(decision)
+                    .isEqualTo(new Decision.Compare(TAGS_01, "pending release 0.1.1: compared against 0.1.0"));
+        }
+
+        @Test
+        void aZeroPatchIsNotComparedWithAnOlderMinor() {
+            Decision decision = decide(
+                    "0.2.1-SNAPSHOT",
+                    changelog("## 0.2.1-SNAPSHOT\n", "## 0.2.0\n\n### Breaking\n", "## 0.1.0\n"),
+                    Set.of(TAGS_01, "contract-charter-v0.2.0"));
+            assertThat(decision).isEqualTo(new Decision.Compare("contract-charter-v0.2.0", "compared against 0.2.0"));
+        }
+
+        @Test
+        void aZeroSnapshotWithOnlyAnOlderMinorReleasedHasNoBaseline() {
+            Decision decision = decide(
+                    "0.2.0-SNAPSHOT",
+                    changelog("## 0.2.0-SNAPSHOT\n\n### Breaking\n\n- dropped x\n", "## 0.1.0\n"),
+                    Set.of(TAGS_01));
+            assertThat(decision).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(decision.message())
+                    .contains("no released 0.2.x version")
+                    .contains("a new minor version of 0.x is not compared with an older one");
+        }
+
+        @Test
+        void aZeroMinorBumpWithoutABreakingSubsectionIsRefused() {
+            Decision decision = decide(
+                    "0.2.0-SNAPSHOT",
+                    changelog("## 0.2.0-SNAPSHOT\n\n### Changed\n", "## 0.1.0\n"),
+                    Set.of(TAGS_01));
+            assertThat(decision).isInstanceOf(Decision.Refused.class);
+            assertThat(decision.message())
+                    .contains("raises the minor version of 0.x from 0.1.0 to 0.2.0-SNAPSHOT")
+                    .contains("no ### Breaking");
+            assertThat(ReleaseGate.decideWithoutGit("0.2.0-SNAPSHOT", changelog("## 0.2.0-SNAPSHOT\n", "## 0.1.0\n")))
+                    .isInstanceOf(Decision.Refused.class);
+        }
+
+        @Test
+        void aPendingZeroMinorReleaseNeedsItsBreakingSubsectionToo() {
+            assertThat(decide("0.2.0", changelog("## 0.2.0\n", "## 0.1.0\n"), Set.of(TAGS_01)))
+                    .isInstanceOf(Decision.Refused.class);
+            Decision passes =
+                    decide("0.2.0", changelog("## 0.2.0\n\n### Breaking\n", "## 0.1.0\n"), Set.of(TAGS_01));
+            assertThat(passes).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(passes.message()).contains("pending release 0.2.0").contains("no released 0.2.x version");
+        }
+
+        @Test
+        void aZeroMinorBumpWithABreakingSubsectionNamesTheNewestReleaseOfThePreviousMinor() {
+            String log = changelog("## 0.2.0-SNAPSHOT\n\n### Breaking\n", "## 0.1.3\n", "## 0.1.0\n");
+            assertThat(ReleaseGate.previousBreakingBaseline(
+                            "0.2.0-SNAPSHOT", log, Set.of(TAGS_01, "contract-charter-v0.1.3")))
+                    .contains("contract-charter-v0.1.3");
+            assertThat(ReleaseGate.previousBreakingBaseline("0.2.0-SNAPSHOT", log, Set.of(TAGS_01)))
+                    .isEmpty();
+        }
+
+        @Test
+        void aZeroPatchNamesNothing() {
+            assertThat(ReleaseGate.previousBreakingBaseline(
+                            "0.1.1-SNAPSHOT", changelog("## 0.1.1-SNAPSHOT\n", "## 0.1.0\n"), Set.of(TAGS_01)))
+                    .isEmpty();
+        }
+
+        @Test
+        void theStepFromZeroToOneIsAMajorBumpAndNeedsABreakingSubsection() {
+            Set<String> tags = Set.of("contract-charter-v0.3.0");
+            Decision refused = decide("1.0.0-SNAPSHOT", changelog("## 1.0.0-SNAPSHOT\n", "## 0.3.0\n"), tags);
+            assertThat(refused).isInstanceOf(Decision.Refused.class);
+            assertThat(refused.message()).contains("raises the major version from 0.3.0 to 1.0.0-SNAPSHOT");
+            String log = changelog("## 1.0.0-SNAPSHOT\n\n### Breaking\n", "## 0.3.0\n");
+            Decision passes = decide("1.0.0-SNAPSHOT", log, tags);
+            assertThat(passes).isInstanceOf(Decision.NoBaseline.class);
+            assertThat(passes.message()).contains("no released 1.x version");
+            assertThat(ReleaseGate.previousBreakingBaseline("1.0.0-SNAPSHOT", log, tags))
+                    .contains("contract-charter-v0.3.0");
+        }
+
+        @Test
+        void aOneXMinorBumpStillNeedsNoBreakingSubsectionAndNamesNothing() {
+            String log = changelog("## 1.1.0-SNAPSHOT\n", "## 1.0.0\n\n### Breaking\n", "## 0.3.0\n");
+            Set<String> tags = Set.of("contract-charter-v0.3.0", "contract-charter-v1.0.0");
+            assertThat(decide("1.1.0-SNAPSHOT", log, tags))
+                    .isEqualTo(new Decision.Compare("contract-charter-v1.0.0", "compared against 1.0.0"));
+            assertThat(ReleaseGate.previousBreakingBaseline("1.1.0-SNAPSHOT", log, tags))
                     .isEmpty();
         }
     }
