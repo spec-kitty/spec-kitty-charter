@@ -142,4 +142,125 @@ class PackPolicyTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("load needs a configured level");
     }
+
+    // ---- load(contents): the graph comes from the facts -----------------------------------------
+
+    private static PackContents withShard(
+            FileRead<RawGraph> shard, FileRead<RawGraph> fragment, FileRead<PackDescriptor> descriptor) {
+        return new PackContents(
+                new PackRoot("qa", Optional.of(PackLevel.ORG), "loc"),
+                descriptor,
+                List.of(shard),
+                fragment,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    private static RawGraph shard(String file, List<PackContents.RawNode> nodes, List<PackContents.RawEdge> edges) {
+        return new RawGraph(file, RawGraph.Shape.SHARD, nodes, edges);
+    }
+
+    private static PackContents.RawNode node(String urn, String kind) {
+        return new PackContents.RawNode(urn, kind, Optional.empty());
+    }
+
+    private static PackContents.RawEdge edge(String source, String target, String relation) {
+        return new PackContents.RawEdge(source, target, relation, Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    @Test
+    void loadBuildsTheGraphFromTheShardsThenTheFragment() {
+        RawGraph fragment = new RawGraph(
+                "drg/fragment.yaml",
+                RawGraph.Shape.FRAGMENT,
+                List.of(node("f", "tactics")),
+                List.of(edge("tactic:f", "tactic:a", "requires")));
+        PackContents c = withShard(
+                new FileRead.Read<>(
+                        "a.graph.yaml", shard("a.graph.yaml", List.of(node("tactic:a", "tactic")), List.of())),
+                new FileRead.Read<>("drg/fragment.yaml", fragment),
+                descriptor("qa", Optional.of(PackLevel.ORG)));
+        CharterPack pack = PackPolicy.load(c);
+        assertThat(pack.graph().nodes()).extracting(n -> n.urn().toString()).containsExactly("tactic:a", "tactic:f");
+        assertThat(pack.graph().edges()).hasSize(1);
+        assertThat(pack.diagnostics()).isEmpty();
+    }
+
+    @Test
+    void loadKeepsTheWarningsAsDiagnosticsLikeTheTransitionalOverload() {
+        PackContents c = withShard(
+                new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
+                new FileRead.Absent<>("drg/fragment.yaml"),
+                new FileRead.Absent<>("pack.yaml"));
+        assertThat(PackPolicy.load(c).diagnostics())
+                .extracting(Diagnostic::code)
+                .containsExactly(Diagnostic.Code.PACK_LEVEL_MISSING);
+    }
+
+    @Test
+    void loadRefusesWithTheFirstGraphFindingBeforeBuildingAnything() {
+        PackContents c = withShard(
+                new FileRead.Read<>(
+                        "a.graph.yaml",
+                        shard("a.graph.yaml", List.of(), List.of(edge("tactic:a", "QA_404", "requires")))),
+                new FileRead.Absent<>("drg/fragment.yaml"),
+                descriptor("qa", Optional.of(PackLevel.ORG)));
+        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
+            assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: edge endpoint 'QA_404' is not a URN");
+        });
+    }
+
+    @Test
+    void loadRefusesAnUnreadableDescriptorWithItsOwnTextAndCode() {
+        PackContents c = withShard(
+                new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
+                new FileRead.Absent<>("drg/fragment.yaml"),
+                new FileRead.Unreadable<>(
+                        "pack.yaml", new PackContents.ParseFailure("pack.yaml", "while scanning"), List.of()));
+        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is not valid YAML");
+        });
+        assertThatThrownBy(() -> PackPolicy.load(c, DoctrineGraph.empty()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    @Test
+    void loadRefusesAnUnreadableShardWithDrgSchemaErrorAndTheParseText() {
+        PackContents c = withShard(
+                new FileRead.Unreadable<>(
+                        "a.graph.yaml",
+                        new PackContents.ParseFailure("a.graph.yaml", "while parsing a block mapping"),
+                        List.of()),
+                new FileRead.Absent<>("drg/fragment.yaml"),
+                descriptor("qa", Optional.of(PackLevel.ORG)));
+        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
+            assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml is not valid YAML: while parsing a block mapping");
+        });
+    }
+
+    @Test
+    void anUnreadableDescriptorWithNeitherAParseFailureNorViolationsStillRefuses() {
+        PackContents c = withShard(
+                new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
+                new FileRead.Absent<>("drg/fragment.yaml"),
+                new FileRead.Unreadable<>("pack.yaml", null, List.of()));
+        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is unreadable");
+        });
+    }
+
+    @Test
+    void loadWithoutAConfiguredLevelIsAProgrammingError() {
+        PackContents c = contents("qa", Optional.empty(), new FileRead.Absent<>("pack.yaml"));
+        assertThatThrownBy(() -> PackPolicy.load(c))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("load needs a configured level");
+    }
 }
