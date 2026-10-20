@@ -11,6 +11,8 @@ import ai.speckitty.charter.domain.PackPolicy;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** The reader reports {@code pack.yaml} as facts; the texts below are the ones {@link PackPolicy} writes from them. */
 class PackDescriptorReaderTest {
@@ -154,8 +156,8 @@ class PackDescriptorReaderTest {
                 .containsExactly("pack.yaml of qa: pack_id must be a string");
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"~", "Null", "NULL"})
+    @ParameterizedTest
+    @ValueSource(strings = {"~", "Null", "NULL"})
     void aPlainNullFormInARequiredStringIsRefusedLikeAnExplicitNull(String form) {
         assertThat(details("pack_id: 01ABC\npack_version: 1.0.0\nname: " + form + "\n"))
                 .containsExactly("pack.yaml of qa: name must be a string");
@@ -177,9 +179,8 @@ class PackDescriptorReaderTest {
                         "pack.yaml of qa: requires_core must be a string");
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(
-            strings = {"extra: .nan\n", "extra: {a: .inf}\n", "extra: [null, .nan]\n", "extra: [-.inf, 1e400]\n"})
+    @ParameterizedTest
+    @ValueSource(strings = {"extra: .nan\n", "extra: {a: .inf}\n", "extra: [null, .nan]\n", "extra: [-.inf, 1e400]\n"})
     void aNonFiniteNumberInAnUndeclaredKeyIsAcceptedLikeAnyOtherValue(String extra) {
         assertThat(read(VALID + extra).undeclaredKeys()).containsExactly("extra");
     }
