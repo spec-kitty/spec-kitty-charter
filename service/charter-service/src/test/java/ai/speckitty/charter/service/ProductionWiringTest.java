@@ -55,12 +55,10 @@ class ProductionWiringTest {
                 edges: []
                 """);
         write("qa/drg/fragment.yaml", """
-                pack_name: qa
                 nodes: []
                 edges: []
                 """);
         write("audit/drg/fragment.yaml", """
-                pack_name: audit
                 nodes: []
                 edges: []
                 """);

@@ -76,6 +76,7 @@ public enum PackFindingCode {
     public Diagnostic.Code diagnostic() {
         return switch (this) {
             case PACK_LEVEL_MISSING -> Diagnostic.Code.PACK_LEVEL_MISSING;
+            case PACK_UNKNOWN_KEY -> Diagnostic.Code.PACK_UNKNOWN_KEY;
             default -> throw new IllegalStateException(name() + " has no diagnostic on the load path");
         };
     }

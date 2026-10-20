@@ -15,7 +15,10 @@ public enum RefusalCode {
     PACK_UNREADABLE("pack_unreadable"),
     /** A graph document breaks the DRG schema, for example with an unknown key or relation. */
     DRG_SCHEMA_ERROR("drg_schema_error"),
-    /** An edge endpoint is neither a URN nor a bare id its fragment declares. */
+    /**
+     * An edge endpoint is neither a URN nor a bare id its fragment declares. No longer raised: an endpoint is a URN,
+     * and one that is not is {@link #DRG_SCHEMA_ERROR}. The code stays so that the contract keeps accepting it.
+     */
     UNRESOLVED_EDGE_ENDPOINT("unresolved_edge_endpoint"),
     /**
      * The service failed in a way no other code names. No load or query raises it: the inbound adapter refuses

@@ -19,7 +19,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -252,5 +254,87 @@ class PackSchemasTest {
         assertThat(node.get("n").isNull()).isTrue();
         assertThat(node.get("l").get(0).isIntegralNumber()).isTrue();
         assertThat(node.get("l").get(1).isString()).isTrue();
+    }
+
+    // ---- numbers that are not finite --------------------------------------------------------------
+
+    private static List<SchemaViolation> violationsAt(String kind, String yaml, String... pointer) {
+        return PackSchemas.bundled().validate(kind, "x.yaml", Yaml.load(yaml)).stream()
+                .filter(v -> v.pointer().equals(List.of(pointer)))
+                .toList();
+    }
+
+    @ParameterizedTest
+    @CsvSource({".inf,Infinity", "-.inf,-Infinity", ".nan,NaN", "1e400,Infinity", "-1e400,-Infinity"})
+    void aNonFiniteRoutingPriorityBreaksTypeAndIsReportedAsTheFileStatesIt(String written, String reported) {
+        assertThat(violationsAt("agent-profile", "routing-priority: " + written + "\n", "routing-priority"))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("type");
+                    assertThat(v.value()).contains(reported);
+                });
+    }
+
+    @ParameterizedTest
+    @CsvSource({".inf,Infinity", "-.inf,-Infinity", ".nan,NaN"})
+    void aNonFiniteMaxConcurrentTasksIsReportedWithTheFilesValueNeverZero(String written, String reported) {
+        assertThat(violationsAt("agent-profile", "max-concurrent-tasks: " + written + "\n", "max-concurrent-tasks"))
+                .isNotEmpty()
+                .allSatisfy(v -> assertThat(v.value()).contains(reported))
+                .extracting(SchemaViolation::keyword)
+                .contains("type");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".nan", ".inf", "-.inf", "1e400"})
+    void aNonFiniteSchemaVersionOfTheOrgCharterIsRefused(String written) {
+        assertThat(violationsAt("org-charter", "schema_version: " + written + "\n", "schema_version"))
+                .singleElement()
+                .satisfies(v -> assertThat(v.keyword()).isEqualTo("type"));
+    }
+
+    @Test
+    void aHugeIntegerIsAnIntegerOutOfRangeNotAnInvalidNumber() {
+        String huge = "123456789012345678901234567890123456789";
+        assertThat(violationsAt("agent-profile", "routing-priority: " + huge + "\n", "routing-priority"))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("maximum");
+                    assertThat(v.value()).contains(huge);
+                });
+    }
+
+    @Test
+    void aNonFiniteNumberWhereAStringIsDeclaredIsRefusedAsTheWrongType() {
+        assertThat(violationsAt("pack-descriptor", "pack_id: 01ABC\npack_version: 1.0.0\nname: .nan\n", "name"))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("type");
+                    assertThat(v.value()).contains("NaN");
+                });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {".nan", ".inf", "-.inf", "1e400"})
+    void aNonFiniteImpactsIsNoSchemaFindingBecauseTheDomainJudgesItsRange(String written) {
+        String shard =
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: "
+                        + written + "}\n";
+        assertThat(PackSchemas.bundled().validate("graph-shard", "x.graph.yaml", Yaml.load(shard)))
+                .isEmpty();
+        String fragment = "nodes: []\nedges:\n- {source: tactic:t, target: tactic:u, relation: impacts, impacts: "
+                + written + "}\n";
+        assertThat(PackSchemas.bundled().validate("org-fragment", "drg/fragment.yaml", Yaml.load(fragment)))
+                .isEmpty();
+    }
+
+    @Test
+    void theConversionNeverHandsTheValidatorAFiniteStandIn() {
+        JsonNode node = PackSchemas.toTree(Yaml.load("a: .nan\nb: [.inf, -.inf]\n"));
+        assertThat(node.get("a").isNumber()).isFalse();
+        assertThat(node.get("b").get(0).isNumber()).isFalse();
+        assertThat(node.get("a").asString()).isEqualTo("NaN");
+        assertThat(node.get("b").get(0).asString()).isEqualTo("Infinity");
+        assertThat(node.get("b").get(1).asString()).isEqualTo("-Infinity");
     }
 }

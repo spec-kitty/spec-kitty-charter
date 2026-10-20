@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "drg_schema_error",
+    "detail": "qa/tactic.graph.yaml is not valid YAML: while constructing a mapping"
+  }
+}

@@ -28,6 +28,10 @@ class PackPolicyRulesTest {
 
     private static final String MANIFEST = "assets/logo.asset.yaml";
 
+    /** A fragment that was read and is empty: an org pack has one, so no {@code org_fragment_missing} fires. */
+    private static final FileRead<RawGraph> EMPTY_FRAGMENT = new FileRead.Read<>(
+            "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
+
     private static PackDescriptor descriptor(Optional<String> requiresCore, List<String> undeclared) {
         return new PackDescriptor(
                 "01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), requiresCore, undeclared);
@@ -42,7 +46,7 @@ class PackPolicyRulesTest {
                 new PackRoot("qa", Optional.of(PackLevel.ORG), "loc"),
                 descriptor,
                 List.of(),
-                new FileRead.Absent<RawGraph>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 List.of(),
                 steps,
                 artifacts,
@@ -90,19 +94,18 @@ class PackPolicyRulesTest {
     void theRequiresCoreRefusalIsPackUnreadableWithTheExactText() {
         PackContents contents = withDescriptor(Optional.of("~=1"), List.of());
 
-        assertThatThrownBy(() -> PackPolicy.load(contents, DoctrineGraph.empty()))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                    assertThat(refusal.getMessage())
-                            .isEqualTo("pack.yaml of qa: requires_core '~=1' is not a PEP 440 version specifier");
-                });
+        assertThatThrownBy(() -> PackPolicy.load(contents)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.getMessage())
+                    .isEqualTo("pack.yaml of qa: requires_core '~=1' is not a PEP 440 version specifier");
+        });
     }
 
     @ParameterizedTest
     @ValueSource(strings = {">=4.0.0rc7,<5", "", ">=1.0", "~=1.4.5"})
     void aValidRequiresCoreGivesNoFinding(String requiresCore) {
         assertThat(judge(withDescriptor(Optional.of(requiresCore), List.of()))).isEmpty();
-        assertThat(PackPolicy.load(withDescriptor(Optional.of(requiresCore), List.of()), DoctrineGraph.empty()))
+        assertThat(PackPolicy.load(withDescriptor(Optional.of(requiresCore), List.of())))
                 .isNotNull();
     }
 
@@ -113,8 +116,11 @@ class PackPolicyRulesTest {
 
     @Test
     void anUnreadableDescriptorGivesNoRequiresCoreFinding() {
-        PackContents contents =
-                contents(new FileRead.Unreadable<>("pack.yaml", null, List.of()), List.of(), List.of(), List.of());
+        PackContents contents = contents(
+                new FileRead.Unreadable<>("pack.yaml", new PackContents.ParseFailure("pack.yaml", "x"), List.of()),
+                List.of(),
+                List.of(),
+                List.of());
         assertThat(judge(contents)).noneMatch(f -> f.code() == PackFindingCode.REQUIRES_CORE_INVALID);
     }
 
@@ -153,9 +159,20 @@ class PackPolicyRulesTest {
     }
 
     @Test
-    void theUnknownKeyCodeIsAWarningWithoutADiagnosticYet() {
+    void theUnknownKeyCodeIsAWarningThatProjectsOntoItsDiagnostic() {
         assertThat(PackFindingCode.PACK_UNKNOWN_KEY.severity()).isEqualTo(PackFindingCode.Severity.WARNING);
-        assertThatThrownBy(PackFindingCode.PACK_UNKNOWN_KEY::diagnostic).isInstanceOf(IllegalStateException.class);
+        assertThat(PackFindingCode.PACK_UNKNOWN_KEY.diagnostic()).isEqualTo(Diagnostic.Code.PACK_UNKNOWN_KEY);
+        assertThat(Diagnostic.Code.PACK_UNKNOWN_KEY.token()).isEqualTo("pack_unknown_key");
+    }
+
+    @Test
+    void anUndeclaredKeyLoadsWithItsDiagnosticAndItsPinnedText() {
+        CharterPack pack = PackPolicy.load(withDescriptor(Optional.empty(), List.of("surprise")));
+
+        assertThat(pack.diagnostics())
+                .containsExactly(new Diagnostic(
+                        Diagnostic.Code.PACK_UNKNOWN_KEY,
+                        "pack.yaml of qa declares unknown key 'surprise'; it is ignored"));
     }
 
     @Test
@@ -173,7 +190,7 @@ class PackPolicyRulesTest {
                                 Optional.of("banana"),
                                 List.of("zeta"))),
                 List.of(),
-                new FileRead.Absent<RawGraph>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -185,6 +202,124 @@ class PackPolicyRulesTest {
                         PackFindingCode.REQUIRES_CORE_INVALID,
                         PackFindingCode.PACK_UNKNOWN_KEY,
                         PackFindingCode.PACK_LEVEL_MISMATCH);
+    }
+
+    // ---- org_fragment_missing --------------------------------------------------------------------
+
+    private static PackContents orgPack(
+            Optional<PackLevel> configured, FileRead<PackDescriptor> descriptor, FileRead<RawGraph> fragment) {
+        return new PackContents(
+                new PackRoot("lonely", configured, "loc"),
+                descriptor,
+                List.of(),
+                fragment,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    private static FileRead<PackDescriptor> declaring(Optional<PackLevel> level) {
+        return new FileRead.Read<>(
+                "pack.yaml",
+                new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "lonely", level, Optional.empty(), List.of()));
+    }
+
+    private static final FileRead<RawGraph> NO_FRAGMENT = new FileRead.Absent<>("drg/fragment.yaml");
+
+    private static List<PackFinding> fragmentFindings(PackContents contents) {
+        return PackPolicy.judge(contents).findings().stream()
+                .filter(f -> f.code() == PackFindingCode.ORG_FRAGMENT_MISSING)
+                .toList();
+    }
+
+    @Test
+    void aConfiguredOrgPackWithoutAFragmentIsBlockingWithThePinnedText() {
+        PackContents contents = orgPack(Optional.of(PackLevel.ORG), declaring(Optional.of(PackLevel.ORG)), NO_FRAGMENT);
+
+        List<PackFinding> findings = fragmentFindings(contents);
+
+        assertThat(findings)
+                .containsExactly(new PackFinding(
+                        PackFindingCode.ORG_FRAGMENT_MISSING,
+                        "pack.yaml",
+                        List.of(),
+                        "org pack lonely has no drg/fragment.yaml"));
+        assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
+        assertThatThrownBy(() -> PackPolicy.load(contents)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.getMessage()).isEqualTo("org pack lonely has no drg/fragment.yaml");
+        });
+    }
+
+    @Test
+    void aConfiguredOrgPackWithNoDescriptorEitherIsStillRefusedForItsFragment() {
+        assertThat(fragmentFindings(
+                        orgPack(Optional.of(PackLevel.ORG), new FileRead.Absent<>("pack.yaml"), NO_FRAGMENT)))
+                .hasSize(1);
+    }
+
+    @Test
+    void aConfiguredOrgPackWithAFragmentIsFine() {
+        assertThat(fragmentFindings(
+                        orgPack(Optional.of(PackLevel.ORG), declaring(Optional.of(PackLevel.ORG)), EMPTY_FRAGMENT)))
+                .isEmpty();
+    }
+
+    @Test
+    void aConfiguredBuiltInPackNeedsNoFragment() {
+        assertThat(fragmentFindings(orgPack(
+                        Optional.of(PackLevel.BUILT_IN), declaring(Optional.of(PackLevel.BUILT_IN)), NO_FRAGMENT)))
+                .isEmpty();
+        assertThat(fragmentFindings(
+                        orgPack(Optional.of(PackLevel.BUILT_IN), new FileRead.Absent<>("pack.yaml"), NO_FRAGMENT)))
+                .isEmpty();
+    }
+
+    @Test
+    void aBarePathIsJudgedByItsDeclaredLevel() {
+        assertThat(fragmentFindings(orgPack(Optional.empty(), declaring(Optional.of(PackLevel.ORG)), NO_FRAGMENT)))
+                .extracting(PackFinding::detail)
+                .containsExactly("org pack lonely has no drg/fragment.yaml");
+        assertThat(fragmentFindings(orgPack(Optional.empty(), declaring(Optional.of(PackLevel.BUILT_IN)), NO_FRAGMENT)))
+                .isEmpty();
+        assertThat(fragmentFindings(orgPack(Optional.empty(), declaring(Optional.empty()), NO_FRAGMENT)))
+                .isEmpty();
+        assertThat(fragmentFindings(orgPack(Optional.empty(), new FileRead.Absent<>("pack.yaml"), NO_FRAGMENT)))
+                .isEmpty();
+    }
+
+    @Test
+    void anUnreadableFragmentIsNotAMissingOne() {
+        FileRead<RawGraph> broken = new FileRead.Unreadable<>(
+                "drg/fragment.yaml", new PackContents.ParseFailure("drg/fragment.yaml", "x"), List.of());
+
+        assertThat(fragmentFindings(orgPack(Optional.of(PackLevel.ORG), declaring(Optional.of(PackLevel.ORG)), broken)))
+                .isEmpty();
+    }
+
+    @Test
+    void theMissingFragmentIsPackWideSoItComesAfterTheLevelFindingAndTheFileFindings() {
+        PackContents contents = orgPack(
+                Optional.of(PackLevel.ORG),
+                new FileRead.Read<>(
+                        "pack.yaml",
+                        new PackDescriptor(
+                                "01ABC",
+                                "1.0.0",
+                                Optional.empty(),
+                                "lonely",
+                                Optional.of(PackLevel.PROJECT),
+                                Optional.of("banana"),
+                                List.of())),
+                NO_FRAGMENT);
+
+        assertThat(PackPolicy.judge(contents).findings())
+                .extracting(PackFinding::code)
+                .containsExactly(
+                        PackFindingCode.REQUIRES_CORE_INVALID,
+                        PackFindingCode.PACK_LEVEL_MISMATCH,
+                        PackFindingCode.ORG_FRAGMENT_MISSING);
     }
 
     // ---- duplicate_step_id -----------------------------------------------------------------------
@@ -589,7 +724,7 @@ class PackPolicyRulesTest {
                 List.of(new ArtifactFacts("t/a.yaml", "tactic", "x"), new ArtifactFacts("t/b.yaml", "tactic", "x")),
                 List.of(asset("../logo.png", "text/plain", false)));
 
-        assertThat(PackPolicy.load(contents, DoctrineGraph.empty())).isNotNull();
+        assertThat(PackPolicy.load(contents)).isNotNull();
         assertThat(PackPolicy.judge(contents).findings())
                 .extracting(PackFinding::code)
                 .contains(

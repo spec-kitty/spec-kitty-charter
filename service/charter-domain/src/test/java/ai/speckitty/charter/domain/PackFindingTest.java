@@ -50,6 +50,13 @@ class PackFindingTest {
     }
 
     @Test
+    void theUnknownKeyWarningProjectsOntoItsDiagnosticAndHasNoRefusal() {
+        assertThat(finding(PackFindingCode.PACK_UNKNOWN_KEY).toDiagnostic())
+                .isEqualTo(new Diagnostic(Diagnostic.Code.PACK_UNKNOWN_KEY, "the detail"));
+        assertThatThrownBy(PackFindingCode.PACK_UNKNOWN_KEY::refusal).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void theOtherLoadPathBlockingCodesProjectOntoTheirRefusals() {
         assertThat(finding(PackFindingCode.PACK_UNREADABLE).code().refusal()).isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(finding(PackFindingCode.REQUIRES_CORE_INVALID).code().refusal())
@@ -62,7 +69,9 @@ class PackFindingTest {
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aValidateOnlyCodeHasNoWireValue(PackFindingCode code) {
-        if (LOAD_PATH_BLOCKING.contains(code) || code == PackFindingCode.PACK_LEVEL_MISSING) {
+        if (LOAD_PATH_BLOCKING.contains(code)
+                || code == PackFindingCode.PACK_LEVEL_MISSING
+                || code == PackFindingCode.PACK_UNKNOWN_KEY) {
             return;
         }
         assertThatThrownBy(code::refusal).isInstanceOf(IllegalStateException.class);

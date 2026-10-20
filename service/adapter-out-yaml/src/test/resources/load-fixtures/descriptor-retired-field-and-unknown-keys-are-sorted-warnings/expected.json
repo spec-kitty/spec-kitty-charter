@@ -1,0 +1,18 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "diagnostics": [
+    {
+      "code": "pack_unknown_key",
+      "detail": "pack.yaml of qa declares unknown key 'accompanies_doctrine_pack'; it is ignored"
+    },
+    {
+      "code": "pack_unknown_key",
+      "detail": "pack.yaml of qa declares unknown key 'zeta'; it is ignored"
+    }
+  ],
+  "nodeCount": 0,
+  "edgeCount": 0
+}

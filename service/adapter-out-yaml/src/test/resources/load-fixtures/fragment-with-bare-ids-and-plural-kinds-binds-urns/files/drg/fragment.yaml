@@ -1,0 +1,10 @@
+nodes:
+- id: QA_001
+  kind: directives
+  title: Traceability
+- {id: plan, kind: actions}
+- {id: dev, kind: mission_types}
+edges:
+- source: directive:QA_001
+  target: directive:DIRECTIVE_010
+  relation: suggests

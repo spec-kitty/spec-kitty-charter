@@ -67,5 +67,9 @@ tasks.test {
     val vendored = packContracts.file("VENDORED.md")
     inputs.file(vendored).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("vendoredMd")
     systemProperty("charter.vendoredMd", vendored.asFile.absolutePath)
+    // VocabularyEqualityTest checks that every load-path wire code is in the contract's code enums.
+    val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
+    inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
+    systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
 }
 tasks.check { dependsOn(openPacksRoundTrip) }

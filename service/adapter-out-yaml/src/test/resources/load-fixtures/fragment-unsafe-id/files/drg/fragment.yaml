@@ -1,0 +1,2 @@
+nodes:
+- {id: 'a b', kind: directives}

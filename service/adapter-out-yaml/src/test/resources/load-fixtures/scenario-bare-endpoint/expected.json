@@ -1,0 +1,10 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "refusal": {
+    "code": "drg_schema_error",
+    "detail": "qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN"
+  }
+}

@@ -6,10 +6,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.domain.PackContents.FileRead;
 import ai.speckitty.charter.domain.PackContents.RawGraph;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PackPolicyTest {
+
+    /** A fragment that was read and is empty: an org pack has one, so no {@code org_fragment_missing} fires. */
+    private static final FileRead<RawGraph> EMPTY_FRAGMENT = new FileRead.Read<>(
+            "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
 
     private static FileRead<PackDescriptor> descriptor(String name, Optional<PackLevel> declared) {
         return new FileRead.Read<>(
@@ -24,7 +34,7 @@ class PackPolicyTest {
                 descriptor,
                 List.of(new FileRead.Read<>(
                         "a.graph.yaml", new RawGraph("a.graph.yaml", RawGraph.Shape.SHARD, List.of(), List.of()))),
-                new FileRead.Absent<>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -83,7 +93,10 @@ class PackPolicyTest {
     @Test
     void anUnreadableDescriptorHasNoLevelFinding() {
         assertThat(PackPolicy.level(
-                        "qa", Optional.of(PackLevel.ORG), new FileRead.Unreadable<>("pack.yaml", null, List.of())))
+                        "qa",
+                        Optional.of(PackLevel.ORG),
+                        new FileRead.Unreadable<>(
+                                "pack.yaml", new PackContents.ParseFailure("pack.yaml", "x"), List.of())))
                 .isEmpty();
     }
 
@@ -106,18 +119,16 @@ class PackPolicyTest {
     void loadRefusesWithTheMismatchAndItsDetail() {
         PackContents c =
                 contents("rogue", Optional.of(PackLevel.ORG), descriptor("rogue", Optional.of(PackLevel.BUILT_IN)));
-        assertThatThrownBy(() -> PackPolicy.load(c, DoctrineGraph.empty()))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
-                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH);
-                    assertThat(r.getMessage())
-                            .isEqualTo("Pack 'rogue' is configured as org but declares pack_level built-in");
-                });
+        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH);
+            assertThat(r.getMessage()).isEqualTo("Pack 'rogue' is configured as org but declares pack_level built-in");
+        });
     }
 
     @Test
     void loadBuildsThePackWithTheWarningsAsDiagnostics() {
         PackContents c = contents("qa", Optional.of(PackLevel.ORG), new FileRead.Absent<>("pack.yaml"));
-        CharterPack pack = PackPolicy.load(c, DoctrineGraph.empty());
+        CharterPack pack = PackPolicy.load(c);
         assertThat(pack.name()).isEqualTo("qa");
         assertThat(pack.level()).isEqualTo(PackLevel.ORG);
         assertThat(pack.descriptor()).isEmpty();
@@ -130,7 +141,7 @@ class PackPolicyTest {
     @Test
     void loadKeepsTheDescriptorAndHasNoDiagnosticWhenTheLevelsAgree() {
         PackContents c = contents("qa", Optional.of(PackLevel.ORG), descriptor("qa", Optional.of(PackLevel.ORG)));
-        CharterPack pack = PackPolicy.load(c, DoctrineGraph.empty());
+        CharterPack pack = PackPolicy.load(c);
         assertThat(pack.descriptor()).isPresent();
         assertThat(pack.diagnostics()).isEmpty();
     }
@@ -138,7 +149,7 @@ class PackPolicyTest {
     @Test
     void loadNeedsAConfiguredLevel() {
         PackContents c = contents("qa", Optional.empty(), new FileRead.Absent<>("pack.yaml"));
-        assertThatThrownBy(() -> PackPolicy.load(c, DoctrineGraph.empty()))
+        assertThatThrownBy(() -> PackPolicy.load(c))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("load needs a configured level");
     }
@@ -189,10 +200,10 @@ class PackPolicyTest {
     }
 
     @Test
-    void loadKeepsTheWarningsAsDiagnosticsLikeTheTransitionalOverload() {
+    void loadKeepsTheWarningsAsDiagnostics() {
         PackContents c = withShard(
                 new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
-                new FileRead.Absent<>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 new FileRead.Absent<>("pack.yaml"));
         assertThat(PackPolicy.load(c).diagnostics())
                 .extracting(Diagnostic::code)
@@ -205,7 +216,7 @@ class PackPolicyTest {
                 new FileRead.Read<>(
                         "a.graph.yaml",
                         shard("a.graph.yaml", List.of(), List.of(edge("tactic:a", "QA_404", "requires")))),
-                new FileRead.Absent<>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 descriptor("qa", Optional.of(PackLevel.ORG)));
         assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
@@ -217,14 +228,14 @@ class PackPolicyTest {
     void loadRefusesAnUnreadableDescriptorWithItsOwnTextAndCode() {
         PackContents c = withShard(
                 new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
-                new FileRead.Absent<>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 new FileRead.Unreadable<>(
                         "pack.yaml", new PackContents.ParseFailure("pack.yaml", "while scanning"), List.of()));
         assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
             assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is not valid YAML");
         });
-        assertThatThrownBy(() -> PackPolicy.load(c, DoctrineGraph.empty()))
+        assertThatThrownBy(() -> PackPolicy.load(c))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
@@ -236,7 +247,7 @@ class PackPolicyTest {
                         "a.graph.yaml",
                         new PackContents.ParseFailure("a.graph.yaml", "while parsing a block mapping"),
                         List.of()),
-                new FileRead.Absent<>("drg/fragment.yaml"),
+                EMPTY_FRAGMENT,
                 descriptor("qa", Optional.of(PackLevel.ORG)));
         assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
@@ -245,15 +256,21 @@ class PackPolicyTest {
     }
 
     @Test
-    void anUnreadableDescriptorWithNeitherAParseFailureNorViolationsStillRefuses() {
-        PackContents c = withShard(
-                new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),
-                new FileRead.Absent<>("drg/fragment.yaml"),
-                new FileRead.Unreadable<>("pack.yaml", null, List.of()));
-        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
-            assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(r.getMessage()).isEqualTo("pack.yaml of qa is unreadable");
-        });
+    void anUnreadableFileHasExactlyOneOfAParseFailureAndSchemaViolations() {
+        PackContents.ParseFailure parse = new PackContents.ParseFailure("a.yaml", "while scanning");
+        PackContents.SchemaViolation violation = new PackContents.SchemaViolation(
+                "a.yaml", List.of("x"), "type", Optional.empty(), Optional.empty(), java.util.Map.of());
+
+        assertThatThrownBy(() -> new FileRead.Unreadable<RawGraph>("a.yaml", null, List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("a.yaml");
+        assertThatThrownBy(() -> new FileRead.Unreadable<RawGraph>("a.yaml", parse, List.of(violation)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("a.yaml");
+        assertThat(new FileRead.Unreadable<RawGraph>("a.yaml", parse, List.of()).violations())
+                .isEmpty();
+        assertThat(new FileRead.Unreadable<RawGraph>("a.yaml", null, List.of(violation)).parse())
+                .isNull();
     }
 
     @Test
@@ -262,5 +279,86 @@ class PackPolicyTest {
         assertThatThrownBy(() -> PackPolicy.load(c))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("load needs a configured level");
+    }
+
+    // ---- the keywords the vocabulary has a row for ----------------------------------------------------
+
+    private static PackContents.SchemaViolation violation(
+            String file,
+            List<String> pointer,
+            String keyword,
+            String property,
+            String value,
+            Map<String, String> args) {
+        return new PackContents.SchemaViolation(
+                file, pointer, keyword, Optional.ofNullable(property), Optional.ofNullable(value), args);
+    }
+
+    private static String textOf(PackContents.SchemaViolation violation) {
+        return PackPolicy.schemaFindings("qa", List.of(violation)).get(0).detail();
+    }
+
+    /** One canonical violation, with the facts the vocabulary needs, for each keyword that has a row. */
+    static Stream<Arguments> keywordsWithARow() {
+        String fragment = "drg/fragment.yaml";
+        return Stream.of(
+                Arguments.of(
+                        "type",
+                        violation(
+                                "pack.yaml",
+                                List.of("pack_id"),
+                                "type",
+                                null,
+                                "x",
+                                Map.of("0", "array", "1", "string"))),
+                Arguments.of(
+                        "additionalProperties",
+                        violation("a.graph.yaml", List.of(), "additionalProperties", "x", null, Map.of())),
+                Arguments.of("required", violation("a.graph.yaml", List.of(), "required", "nodes", null, Map.of())),
+                Arguments.of(
+                        "minLength",
+                        violation(
+                                fragment,
+                                List.of("nodes", "0", "id"),
+                                "minLength",
+                                null,
+                                "",
+                                Map.of("kind", "directives"))),
+                Arguments.of(
+                        "pattern",
+                        violation(
+                                fragment,
+                                List.of("nodes", "0", "id"),
+                                "pattern",
+                                null,
+                                "a b",
+                                Map.of("kind", "directives"))),
+                Arguments.of("enum", violation("pack.yaml", List.of("pack_level"), "enum", null, "x", Map.of())),
+                Arguments.of(
+                        "const", violation("a.graph.yaml", List.of("schema_version"), "const", null, "2", Map.of())),
+                Arguments.of(
+                        "minItems",
+                        violation(
+                                "a.graph.yaml", List.of("nodes"), "minItems", null, null, Map.of("0", "1", "1", "0"))),
+                Arguments.of("minimum", violation("a.graph.yaml", List.of("n"), "minimum", null, "-5", Map.of())),
+                Arguments.of("maximum", violation("a.graph.yaml", List.of("n"), "maximum", null, "5", Map.of())),
+                Arguments.of(
+                        "exclusiveMinimum",
+                        violation("a.graph.yaml", List.of("n"), "exclusiveMinimum", null, "0", Map.of())));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("keywordsWithARow")
+    void aKeywordWithARowIsHandledAndGetsATextOfItsOwn(String keyword, PackContents.SchemaViolation violation) {
+        assertThat(PackPolicy.handles(keyword)).isTrue();
+        assertThat(textOf(violation)).doesNotContain("breaks schema keyword");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"anyOf", "oneOf", "format", "dependentRequired", "contains", ""})
+    void aKeywordWithoutARowIsNotHandledAndGetsTheFixedFallback(String keyword) {
+        assertThat(PackPolicy.handles(keyword)).isFalse();
+        assertThat(textOf(violation("a.graph.yaml", List.of("nodes", "0"), keyword, null, null, Map.of())))
+                .isEqualTo("qa/a.graph.yaml: '/nodes/0' breaks schema keyword '" + keyword + "'");
     }
 }

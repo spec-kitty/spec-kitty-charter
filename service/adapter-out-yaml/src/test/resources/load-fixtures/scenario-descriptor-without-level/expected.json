@@ -1,0 +1,14 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "diagnostics": [
+    {
+      "code": "pack_level_missing",
+      "detail": "pack.yaml of qa has no pack_level; the configured level org is used"
+    }
+  ],
+  "nodeCount": 0,
+  "edgeCount": 0
+}

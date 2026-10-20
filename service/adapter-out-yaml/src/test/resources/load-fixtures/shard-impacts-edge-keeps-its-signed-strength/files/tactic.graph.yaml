@@ -1,0 +1,6 @@
+schema_version: '1.0'
+generated_at: STATIC
+nodes: []
+edges:
+- {source: tactic:t, target: tactic:u, relation: impacts, impacts: 0.75}
+- {source: tactic:u, target: tactic:t, relation: impacts, impacts: -1}

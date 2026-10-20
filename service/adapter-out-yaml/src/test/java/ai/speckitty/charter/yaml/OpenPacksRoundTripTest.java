@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.domain.CharterPack;
 import ai.speckitty.charter.domain.DoctrineGraph;
+import ai.speckitty.charter.domain.PackContents.FileRead;
+import ai.speckitty.charter.domain.PackContents.RawGraph;
+import ai.speckitty.charter.domain.PackPolicy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -83,10 +86,12 @@ class OpenPacksRoundTripTest {
                             .containsExactlyElementsOf(OpenPacksCorpus.DIAGNOSTICS.get(location.name()));
                     DoctrineGraph graph = pack.graph();
                     assertThat(graph.nodes()).as("nodes of " + location.name()).isNotEmpty();
-                    DoctrineGraph reread = GraphDocumentReader.read(
-                            GraphShardWriter.write(graph),
-                            GraphDocumentReader.Shape.SHARD,
-                            location.name() + " (written)");
+                    FileRead<RawGraph> written = GraphDocumentReader.read(
+                            GraphShardWriter.write(graph), GraphDocumentReader.Shape.SHARD, "written.graph.yaml");
+                    assertThat(written).as("the written shard reads back").isInstanceOf(FileRead.Read.class);
+                    DoctrineGraph reread = PackPolicy.graph(
+                                    location.name(), ((FileRead.Read<RawGraph>) written).value())
+                            .graph();
                     assertThat(reread).isEqualTo(graph);
                 }));
     }

@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "name": "qa",
+    "level": "org"
+  },
+  "diagnostics": [],
+  "nodeCount": 0,
+  "edgeCount": 2,
+  "edges": [
+    "tactic:t impacts tactic:u 0.75",
+    "tactic:u impacts tactic:t -1.0"
+  ]
+}

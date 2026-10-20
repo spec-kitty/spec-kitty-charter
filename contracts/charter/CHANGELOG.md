@@ -94,6 +94,19 @@ was cut under either label. `Added` lists what this version holds that the first
   fingerprint. See "Action context and the seam surface" below.)*
 - Steps for digests and headers: `Then the response body, apart from "<field>", is:`, the
   field and header steps, and remembering a field to compare it later (`scenarios/README.md`).
+- `DiagnosticCode` value `pack_unknown_key` (#114, operator ruling R5): a key in `pack.yaml` that
+  the pack descriptor schema does not declare, a retired field included, is reported as a
+  diagnostic and ignored, not refused. Scenario "A pack descriptor with an undeclared key loads
+  with a diagnostic" in `packs.feature` pins the answer.
+- Scenario "A pack descriptor whose requires_core is not a version specifier is refused" in
+  `packs.feature` (#114, R3): `requires_core: banana` is refused as `pack_unreadable`, with the
+  detail `pack.yaml of <name>: requires_core '<v>' is not a PEP 440 version specifier`.
+- Scenario "An org pack without a drg/fragment.yaml is refused" in `packs.feature` (#114, R16): an
+  org pack with no `drg/fragment.yaml` is refused as `pack_unreadable`, with the detail
+  `org pack <name> has no drg/fragment.yaml`. Before, it loaded with an empty graph. The scenario
+  "The answer carries the load findings of the offering, as the pack listing does" in
+  `action_context.feature` gives its org pack `qa` a `drg/fragment.yaml` instead of a root
+  `qa.graph.yaml`; its answer is unchanged.
 
 ### Changed
 
@@ -150,6 +163,37 @@ was cut under either label. `Added` lists what this version holds that the first
   this version does not answer carries the three headers. *(Renamed "A bad request carries the
   contract version and the worktree, not the fingerprint", and it asserts there is no
   fingerprint. See "Action context and the seam surface" below.)*
+- `CharterRefusalCode` value `unresolved_edge_endpoint` is no longer raised (#114, R6): graph edge
+  endpoints are URNs, and an endpoint that is not one is refused as `drg_schema_error`. The value
+  stays in the enum; its description changed and its `x-refusal` entry says `raised: false`.
+  Scenario "Every other refusal code is raised by an operation" in `errors.feature` no longer lists
+  it and is renamed "The refusal codes the contract marks raised are exactly those an operation
+  raises".
+- Scenario "A bare edge endpoint the fragment does not declare is refused" in `packs.feature` is
+  renamed "A bare edge endpoint is refused as not a URN" and expects `drg_schema_error` ("Invalid
+  DRG document") with the detail `qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN`
+  (#114, R6). It was `unresolved_edge_endpoint`.
+- Scenario fixtures in `packs.feature` (#114, R6, R7, R16): fragment edge endpoints are URNs
+  (`directive:QA_001`), the `pack_name` header is dropped from fragments (the fragment schema has
+  no such key), and the org packs `internal` and `rogue` carry a minimal `drg/fragment.yaml`. Their
+  pinned answers are unchanged.
+- A graph shard or fragment that is not valid YAML is refused as `drg_schema_error` (#114, R17;
+  behavior change, no schema change: the code is already a `CharterRefusalCode` value). It was
+  `pack_unreadable`. The detail `<pack>/<file> is not valid YAML: <first line of the parser's
+  message>` is unchanged. A `pack.yaml` that is not valid YAML keeps `pack_unreadable`. Scenario
+  "A graph shard that is not valid YAML is refused as a DRG document" in `packs.feature` pins it.
+  The scenarios "A pack file rewritten while it is parsed is stale, not unreadable" in
+  `errors.feature` and "A refresh of a pack that cannot be loaded is refused with the pack's code"
+  in `refresh.feature` expect `drg_schema_error` for their invalid shard (was `pack_unreadable`).
+- An explicit `null` in `pack.yaml` is no longer read as absent (#114, R4; behavior change, no schema
+  change: the codes are already `CharterRefusalCode` and `DiagnosticCode` values). The
+  `pack-descriptor` schema is the authority, and it requires a string wherever the key is present.
+  `pack_level: null` used to load with a `pack_level_missing` diagnostic (`200`); it is now refused
+  with `pack_unreadable` (`500`) and the detail `pack.yaml of <name>: pack_level must be a string`.
+  An explicit `null` `pack_id`, `pack_version` or `name` is refused with `pack.yaml of <name>:
+  <key> must be a string` instead of `pack.yaml of <name> has no <key>`; the code is unchanged. An
+  absent key keeps its answer. Scenario "A pack descriptor whose pack_level is an explicit null is
+  refused" in `packs.feature` pins the first.
 
 ### Action context and the seam surface
 

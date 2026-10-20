@@ -116,7 +116,7 @@ Feature: Failures outside the charter's refusals
   Scenario Outline: A pack file rewritten while it is parsed is stale, not unreadable
     The shard becomes invalid YAML after the first digest and stays so: the load fails, the
     inputs are digested again, and they differ from the first digest. The failure is the change's,
-    not the pack's, so the read answers stale_input and not pack_unreadable. (A shard restored
+    not the pack's, so the read answers stale_input and not drg_schema_error. (A shard restored
     before the second digest goes unseen; the contract documents that window.)
     Given a pack file is rewritten to invalid YAML while the next read is answered
     When I send <method> "<path>"
@@ -125,7 +125,7 @@ Feature: Failures outside the charter's refusals
     And the response has no "Charter-Source-Fingerprint" header
     When I send <method> "<path>"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "drg_schema_error"
 
     Examples:
       | method | path                                                  |
@@ -159,16 +159,16 @@ Feature: Failures outside the charter's refusals
     And the contract says "governance_policy_violation" may not be retried
     And the contract says "governance_policy_violation" is raised by no operation
 
-  Scenario: Every other refusal code is raised by an operation
+  Scenario: The refusal codes the contract marks raised are exactly those an operation raises
     The contract's machine-readable x-refusal map agrees with the behavior of this suite: each
     refusal a scenario observes has the status and the raised flag the contract declares for its
-    code, and these are all the codes raised.
+    code, and these are all the codes raised. unresolved_edge_endpoint is no longer raised: an
+    edge endpoint that is not a URN is drg_schema_error.
     Then the contract says exactly these refusal codes are raised by an operation:
       | mission_type_not_found     |
       | action_not_found           |
       | pack_level_mismatch        |
       | pack_unreadable            |
       | drg_schema_error           |
-      | unresolved_edge_endpoint   |
       | internal_error             |
       | stale_input                |

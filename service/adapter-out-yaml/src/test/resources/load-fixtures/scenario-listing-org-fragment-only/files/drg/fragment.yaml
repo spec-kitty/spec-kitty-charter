@@ -1,0 +1,8 @@
+nodes:
+- id: QA_001
+  kind: directives
+  title: QA Traceability Mandatory
+edges:
+- source: directive:QA_001
+  target: directive:DIRECTIVE_010
+  relation: suggests

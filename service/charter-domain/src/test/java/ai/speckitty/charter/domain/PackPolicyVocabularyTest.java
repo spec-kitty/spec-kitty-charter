@@ -120,22 +120,6 @@ class PackPolicyVocabularyTest {
     }
 
     @Test
-    void anUnreadableShardOrFragmentWithNeitherParseFailureNorViolationsIsADrgSchemaError() {
-        for (String file : List.of(SHARD, FRAGMENT)) {
-            assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(file, null, List.of())))
-                    .containsExactly(new PackFinding(
-                            PackFindingCode.DRG_SCHEMA_ERROR, file, List.of(), "qa/" + file + " is unreadable"));
-        }
-    }
-
-    @Test
-    void anUnreadableDescriptorWithNeitherParseFailureNorViolationsStaysPackUnreadable() {
-        assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(PACK_YAML, null, List.of())))
-                .containsExactly(new PackFinding(
-                        PackFindingCode.PACK_UNREADABLE, PACK_YAML, List.of(), "pack.yaml of qa is unreadable"));
-    }
-
-    @Test
     void aDescriptorParseFailureHasNoParserLine() {
         List<PackFinding> findings = PackPolicy.unreadable(
                 "qa", new FileRead.Unreadable<>(PACK_YAML, new ParseFailure(PACK_YAML, "while scanning"), List.of()));
