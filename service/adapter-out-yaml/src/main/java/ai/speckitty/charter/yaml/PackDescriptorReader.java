@@ -55,7 +55,9 @@ final class PackDescriptorReader {
                         required(root, "name"),
                         level,
                         optional(root, "requires_core"),
-                        undeclared));
+                        undeclared,
+                        optional(root, "active_charter"),
+                        optional(root, "pack_drg")));
     }
 
     /** A string the schema has already required; anything else means the reader and the schema have drifted apart. */
