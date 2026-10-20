@@ -1,0 +1,438 @@
+# Divergence register, machine-readable: every entry of both blocks of divergence-register.md, the
+# human-readable page, which is rendered from this file entry by entry. The blocks are pack schemas
+# (DIV-001..099, ADR-0017) and context read (DIV-101..110, ADR-0018). Consumers: the conformance
+# gate (#72) and the pack doctor parity test (#115) read this file; a difference from core that is
+# not listed here with status `open` fails them.
+#
+# Schema, one list item per divergence:
+#   id         DIV-NNN, unique, never reused
+#   surface    the file, field or behavior that differs
+#   core       what core does at the pinned commit 9554e7b2
+#   service    what this repository does
+#   rationale  why the difference is deliberate
+#   ruling     the decision that makes it deliberate (open-questions, spec ruling R, plan call P, ADR)
+#   status     open (the difference stands) | aligned (core now agrees) | retired (no longer relevant)
+#              | withdrawn (recorded in error or twice; the id stays taken)
+#   since      date the entry was added, YYYY-MM-DD
+#   evidence   list of strings: core file:line, charter file, VENDORED.md change id, corpus case
+#   note       optional: why an entry is withdrawn, aligned or retired
+#
+# Evidence paths of core are relative to core's src/charter/ unless they start with a repository name.
+- id: DIV-001
+  surface: An action that is not a graph node, in the action-context answer
+  core: Falls back to the non-bootstrap context (activation/context.py).
+  service: Answers 404 action_not_found.
+  rationale: >-
+    A silent fallback hides a wrong action name. The contract refuses it and the shadow comparison
+    maps the refusal to core's fallback.
+  ruling: contracts/charter/CHANGELOG.md, Provisional (the second item); ADR-0016 decision 4
+  status: withdrawn
+  since: 2026-10-19
+  note: Recorded as DIV-101 in the context-read block; the id stays taken.
+  evidence:
+    - "core: activation/context.py"
+    - "charter: contracts/charter/CHANGELOG.md#provisional, the second item"
+
+- id: DIV-002
+  surface: A scope edge to a node the graph does not declare
+  core: Skips that artifact (activation/context_renderers/delivery_table.py).
+  service: Lists the artifact with a null label.
+  rationale: >-
+    The contract states the dangling edge instead of dropping it, so a consumer can see the
+    defect. The scenario pins this answer and says core omits it.
+  ruling: contracts/charter/CHANGELOG.md, Provisional (the third item); ADR-0016 decision 4
+  status: withdrawn
+  since: 2026-10-19
+  note: Recorded as DIV-102 in the context-read block; the id stays taken.
+  evidence:
+    - "core: activation/context_renderers/delivery_table.py"
+    - "charter: contracts/charter/CHANGELOG.md#provisional, the third item"
+
+- id: DIV-003
+  surface: pack_level_missing, the diagnostic for a missing pack level
+  core: An advisory, not at every level and not for a pack with no pack.yaml (offering/packs/pack_validator.py:727-767).
+  service: >-
+    A non-blocking diagnostic at every level and for a pack with no pack.yaml. It becomes a
+    refusal when core ADR 2026-10-11-2 closes its deprecation window.
+  rationale: The service is deliberately stricter than core. Open-packs was brought into line.
+  ruling: open-questions Q13 (2026-10-18); contracts/charter/CHANGELOG.md, Provisional (the PackSummary.diagnostics item)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/pack_validator.py:727-767"
+    - "core: offering/drg/org_pack_loader.py:519-566"
+    - "charter: contracts/charter/CHANGELOG.md#provisional, the PackSummary.diagnostics item"
+    - "charter: docs/plans/open-questions.md, Q13"
+
+- id: DIV-004
+  surface: pack.yaml, pack_version
+  core: Required for built-in packs only (offering/packs/pack_descriptor.py:143-148).
+  service: >-
+    Required at every level, as a non-empty string. A missing, null or empty value is refused by
+    the schema.
+  rationale: >-
+    One rule for every pack level. Q13 already requires it and open-packs declares it everywhere,
+    so no real pack changes.
+  ruling: open-questions Q13 (2026-10-18); R4 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/pack_descriptor.py:143-148"
+    - "charter: contracts/packs/VENDORED.md, C9 (and the C13 exception for pack_version)"
+    - "charter: docs/adr/0017-pack-schemas-imported-as-canonical-json-schema.md, Amendment 2026-10-19"
+
+- id: DIV-005
+  surface: Unknown keys in pack.yaml
+  core: Reported as an error. Core reports the key twice, as a drg and as a pack finding, when the pack has a drg/fragment.yaml, and once otherwise.
+  service: >-
+    Tolerated, with a warning on the pack listing: the diagnostic pack_unknown_key. The schema's
+    top level stays open for this.
+  rationale: >-
+    A newer pack should still register on an older service, and the author is told about the key.
+    The operator chose tolerance with a warning.
+  ruling: R5 (2026-10-19); plan call P1
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/pack_descriptor.py:88 (extra=\"forbid\")"
+    - "core: offering/drg/org_pack_loader.py:547-560 (the second report, when drg/fragment.yaml exists)"
+    - "charter: contracts/packs/VENDORED.md, C9"
+
+- id: DIV-006
+  surface: Retired pack.yaml fields, such as accompanies_doctrine_pack
+  core: Refused with a blocking finding (offering/packs/retired_fields.py:84-91).
+  service: Warned like any unknown key (pack_unknown_key).
+  rationale: >-
+    One rule for every key the schema does not declare. This is laxer than core and is accepted.
+  ruling: R13 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/retired_fields.py:84-91"
+    - "charter: contracts/packs/VENDORED.md, C9"
+
+- id: DIV-007
+  surface: Edge endpoints in graph shards and org fragments
+  core: >-
+    A fragment endpoint may be a bare local id, resolved first against the pack's own nodes, then as
+    a URN, then against the built-in layer (offering/drg/merge.py:580-660).
+  service: URNs everywhere. A bare local id is refused with drg_schema_error by the schema pattern.
+  rationale: >-
+    One form for every endpoint, checked by the schema alone. The open-packs migration rewrote the
+    84 bare endpoints it had.
+  ruling: R6 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/merge.py:580-660"
+    - "charter: contracts/packs/VENDORED.md, C3"
+
+- id: DIV-008
+  surface: Org-fragment header fields pack_name, source_kind, source_ref, layer_index, provenance_marker
+  core: Accepted, and overwritten from the operator's configuration (offering/drg/org_pack_loader.py:648-655).
+  service: Not authored. A fragment that carries one is refused as an unknown key.
+  rationale: >-
+    Core's own comment calls the pack-side copies advisory. Authored data should not carry values
+    the loader replaces.
+  ruling: R7 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/org_pack_loader.py:648-655"
+    - "charter: contracts/packs/VENDORED.md, C6"
+
+- id: DIV-009
+  surface: Graph shard generated_by
+  core: Required (offering/drg/models.py:441).
+  service: Optional. generated_at stays required.
+  rationale: >-
+    The service is laxer than core here. Nothing reads the value, and a hand-written shard has no
+    generator.
+  ruling: R8 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/models.py:441"
+    - "charter: contracts/packs/VENDORED.md, C8"
+
+- id: DIV-010
+  surface: Lenient value conversions
+  core: >-
+    Converts a scalar role to roles, accepts schema_version "1" as an integer, lowercases role
+    names and reads a quoted number as an integer.
+  service: None of these is done. Each is refused by the schema.
+  rationale: >-
+    A file is judged as written. No open-packs file relies on a conversion.
+  ruling: R9 (2026-10-19); ADR-0017 Amendment 2026-10-19
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/agent_profiles/profile.py:294-327 (scalar role to roles)"
+    - "core: offering/agent_profiles/profile.py:54-55 and :93 (role lowercasing in Role)"
+    - "core: activation/org_charter.py:217-235 (schema_version \"1\" to an integer)"
+    - "core: pydantic lax mode, no strict config (a quoted number to an integer)"
+    - "charter: contracts/packs/VENDORED.md, C10"
+
+- id: DIV-011
+  surface: Org-fragment node kinds
+  core: >-
+    Accepts the aliases mission_steps and mission_type, and refuses actions and anti_patterns
+    (offering/drg/org_pack_loader.py:118-139).
+  service: >-
+    One name per concept, 15 plurals. actions and anti_patterns are accepted. mission_steps and
+    mission_type are refused; mission_step_contracts is the one name.
+  rationale: One name per concept, with no aliases. The glossary records the canonical names.
+  ruling: R14 (2026-10-19); plan call P9
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/org_pack_loader.py:118-139"
+    - "charter: contracts/packs/VENDORED.md, C5"
+
+- id: DIV-012
+  surface: URN node kinds
+  core: Also accepts the kinds glossary and glossary_scope, both NodeKind members (offering/drg/models.py:61-66).
+  service: The 15 node kinds the service models. glossary and glossary_scope are refused.
+  rationale: The service has no node of those kinds, and the URN pattern is generated from the kinds it models.
+  ruling: R15 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/models.py:61-66"
+    - "charter: contracts/packs/VENDORED.md, C3 and C4"
+    - "charter: contracts/packs/file-kinds.yaml"
+
+- id: DIV-013
+  surface: Nested sections of an agent profile and of charter.yaml
+  core: Ignores unknown keys in nested sections (extra="ignore" on 8 agent-profile and 13 charter.yaml sections).
+  service: Refuses them. Every nested section with declared properties is closed.
+  rationale: >-
+    A misspelled nested key should not pass in silence. No open-packs file is affected, which the
+    corpus probe re-checks.
+  ruling: spec open review item 1 (the closure of nested sections)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "charter: contracts/packs/VENDORED.md, C2 (the ledger lists every closed schema)"
+    - "charter: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/spec.md, open review item 1"
+
+- id: DIV-014
+  surface: Nested tactics under built-in/tactics/<sub>/
+  core: >-
+    validate_pack does not scan the 89 nested files, although the runtime loads them
+    (offering/packs/pack_validator.py).
+  service: Validated like any tactic.
+  rationale: A file the runtime loads should be checked.
+  ruling: spec open review item 2 (nested tactics are validated)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/pack_validator.py:291-295 (_scan_files: recursive glob only for styleguides and assets)"
+    - "charter: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Corpus"
+
+- id: DIV-015
+  surface: The relation alias extends in a fragment edge
+  core: Aliased at merge time (offering/drg/merge.py:100-102).
+  service: Refused. The relation is a Relation value with no aliases.
+  rationale: R14's one-name rule, applied to relations. The Java reader refuses it today.
+  ruling: plan call P2
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/merge.py:100-102"
+    - "charter: contracts/packs/VENDORED.md, C7"
+
+- id: DIV-016
+  surface: The asset MIME type check
+  core: >-
+    Asks the platform for the type, so the answer can depend on the system's mime.types files
+    (offering/packs/pack_validator.py:1377-1510).
+  service: >-
+    Uses a fixed extension table taken from Python's built-in table of MIME types,
+    without the system files.
+  rationale: A verdict must not depend on the machine it runs on. A possible difference is recorded.
+  ruling: plan call P8; R16
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/packs/pack_validator.py:1377-1510"
+    - "charter: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md, call P8"
+
+- id: DIV-017
+  surface: Validate mode, an invalid pack.yaml
+  core: >-
+    Stops at an invalid pack.yaml, so defects in the other files go unreported (research R3).
+  service: Validate mode collects every finding. Loading stays fail-fast.
+  rationale: >-
+    The doctor wants the full list in one run. The comparison for #115 lists this as a known
+    difference.
+  ruling: FR-010; plan call P12; plan section "#115 doctor parity test design"
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "charter: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, R3 and R5"
+    - "charter: kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md, rule row P14"
+
+- id: DIV-018
+  surface: The impacts relation and the edge impacts strength
+  core: Has neither yet. The relation enum has no impacts member (offering/drg/models.py:83-148).
+  service: >-
+    Models both. The schema's Relation enum is core's 15 values, including the legacy in_tension_with, plus impacts, 16 in all, and an edge may carry
+    a numeric impacts strength. The legacy in_tension_with stays in the schema and is read by the
+    service as impacts with strength -1.
+  rationale: >-
+    The contract leads and core aligns at the cutover. The service's own Relation type has 15
+    values, the same set without in_tension_with, which is a known difference.
+  ruling: ADR-0009 D1; ADR-0014 D-2; plan call P11
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/models.py:83-148"
+    - "charter: contracts/packs/VENDORED.md, C7, C12 and Known differences"
+
+- id: DIV-019
+  surface: Edge provenance
+  core: >-
+    A merge-time marker that core stamps on each edge (offering/drg/models.py:409-412).
+  service: Not authored. An edge in a graph shard that carries provenance is refused.
+  rationale: >-
+    Runtime provenance is not authored data. This applies the principle of R7. No open-packs edge
+    carries it.
+  ruling: plan call P10; R7
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "core: offering/drg/models.py:409-412"
+    - "charter: contracts/packs/VENDORED.md, C16"
+
+# Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
+# ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence
+# names the conformance corpus case that pins each entry.
+- id: DIV-101
+  surface: An action that is not a graph node, in the action-context answer
+  core: Its non-bootstrap context.
+  service: Answers 404 action_not_found for an action that is not a graph node.
+  rationale: >-
+    Decided in ADR-0018. The shadow comparison maps the charter's 404 action_not_found to core's
+    fallback and counts the pair as matching.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: action-not-a-node"
+
+- id: DIV-102
+  surface: A scope target the graph does not declare, in the action-context answer
+  core: Skips it (and R9's filter drops such edges).
+  service: Lists the scope target the graph does not declare, with a null label.
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: undeclared-scope-target"
+
+- id: DIV-103
+  surface: A load error, in the action-context answer
+  core: An empty answer with a warning.
+  service: Refuses the load error (500, with the pack's refusal code).
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: unreadable-pack"
+
+- id: DIV-104
+  surface: Walking scope from the mission-type node, in the action-context answer
+  core: >-
+    Documents the mission-type node's scope edges as the entry point of the activation cascade,
+    not of this walk.
+  service: Walks scope from the action node only, so no divergence remains.
+  rationale: >-
+    The plan-point squad found that walking scope from the mission-type node adds 30 to 49
+    artifacts on plan, documentation and research actions against core's 0 to 14.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: withdrawn
+  since: 2026-10-19
+  evidence: []
+  note: Withdrawn; the service walks scope from the action node only, as core does.
+
+- id: DIV-105
+  surface: The shape of the action-context answer
+  core: Unordered sets.
+  service: An ordered answer with relation, via, hops and diagnostics.
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: every case (mapping)"
+
+- id: DIV-106
+  surface: Vocabulary targets, in the action-context answer
+  core: Computes glossary_scopes and discards it.
+  service: >-
+    Lists vocabulary targets as entries with relation vocabulary; the seam drops them from
+    delivery.
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: vocabulary-walk"
+
+- id: DIV-107
+  surface: Activation, selection roots, the language filter and the directive allowlist
+  core: One filtered, selected answer.
+  service: >-
+    Answers the offering's walk only; activation, selection roots, the language filter and the
+    directive allowlist are the effective-context operation's (R9, #103).
+  rationale: >-
+    Decided in ADR-0018. An activated case is compared two ways (ADR-0018 D5): the charter equals
+    core run without activation keys, and core run with them is a subset of the charter's answer.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: activated-project"
+    - "corpus case: selected-roots"
+    - "corpus case: language-filtered"
+    - "corpus case: directive-allowlist"
+
+- id: DIV-108
+  surface: The tension annotation, in the action-context answer
+  core: An annotation over in_tension_with pairs.
+  service: No tension annotation until the creed set (#16, #77).
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: tension-pair"
+
+- id: DIV-109
+  surface: The artifact kinds the action-context answer lists
+  core: Delivery slots exclude paradigm, template and agent profile (seam-side).
+  service: Every walked kind, including paradigm, template and agent profile.
+  rationale: Decided in ADR-0018.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19)
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: undelivered-kind"
+
+- id: DIV-110
+  surface: The hard dependencies of suggested artifacts, in the action-context answer
+  core: Lists a suggested artifact without its requires.
+  service: Lists the hard dependencies (requires, transitive) of suggested artifacts.
+  rationale: >-
+    Core's own docstring calls requires "hard dependencies", and its selection closure follows
+    them, yet its walk lists a suggested artifact without them. Suggestions of required artifacts
+    are not followed, as in core. The walk evidence (72 cells over open-packs) is 65 identical and
+    7 differing only by DIV-110.
+  ruling: ADR-0018; operator ruling R10 (2026-10-19); kept by operator ruling of 2026-10-19
+  status: open
+  since: 2026-10-19
+  evidence:
+    - "corpus case: suggested-artifact-requires"

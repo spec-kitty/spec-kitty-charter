@@ -10,6 +10,8 @@ related:
   - adr/0006-onion-vertical-slices-archunit
   - adr/0012-pack-mutability-policy
   - adr/0015-charter-repository-is-canonical-for-charter-structure
+  - adr/0009-contract-1-0-reservations-and-additive-contract-sets
+  - conformance/divergence-register
 audience:
   - profile: pack-author
     guidance_text: Read this for the schema your pack files are validated against, and what changed from core's models.
@@ -26,6 +28,51 @@ audience:
 **Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator). Like every decision
 taken on 2026-10-19, this one is provisional: it is revisited as the system evolves, on the
 triggers under [Revisit when](#revisit-when).
+
+See [Amendment 2026-10-19](#amendment-2026-10-19-operator-rulings): the operator's rulings of that
+day refine decision 2 and the points it touches.
+
+## Amendment 2026-10-19 (operator rulings)
+
+The operator ruled on 2026-10-19. The rulings refine or override
+the decisions below. The original text stays. Each point it changes is annotated here and, where the amended text
+stands in decision 2, marked inline. Every
+difference from core that follows is in the [divergence register](/conformance/divergence-register/),
+and every change to the imported schemas is in
+[`VENDORED.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/VENDORED.md).
+
+### Decision changes
+
+- **`pack_version` is required at every level** (R4). Open-questions Q13 holds over decision 2's
+  "a built-in pack declares `pack_version`". The value is a non-empty string. Register entry DIV-004.
+- **All lenient conversions are dropped** (R9). These are decision 2's two (a scalar `role` read as
+  `roles`, and `schema_version: "1"` read as an integer), plus role lowercasing and the
+  string-to-integer conversion. A file is judged as written. Register entry DIV-010.
+- **The fragment header fields are not authored** (R7). `pack_name`, `source_kind`, `source_ref`,
+  `layer_index` and `provenance_marker` are refused as unknown keys. DIV-008.
+- **Edge endpoints are URNs only** (R6), in shards and in fragments. A bare local id is refused. DIV-007.
+- **Unknown and retired `pack.yaml` keys are warned, not refused** (R5, R13), with the diagnostic
+  `pack_unknown_key`. DIV-005 and DIV-006.
+- **Fragment node kinds have one name per concept** (R14), with no aliases. `actions` and
+  `anti_patterns` are accepted; `mission_steps` and `mission_type` are refused. DIV-011.
+- **URNs take the 15 kinds the service models** (R15). Core's `glossary` and `glossary_scope` are
+  refused. DIV-012.
+- **Shard `generated_by` is optional** (R8). The service is laxer than core here. DIV-009.
+- **The `impacts` relation and edge strength are modeled** (ADR-0009 D1, VENDORED C7 and C12). Core
+  has neither yet; the contract leads and core aligns at the cutover. DIV-018.
+- **Edge `provenance` is not authored** (plan call P10). It is a merge-time marker that core
+  stamps. DIV-019.
+
+### Corrections to Context
+
+- **The corpus count.** The investigation counted 299 artifact files. That is 275 artifact files
+  under core's scanner, plus 14 shards, 4 fragments, 2 `pack.yaml` files and 4 `org-charter.yaml`
+  files. At the pinned open-packs commit the service classifies all 516 YAML files: 409 are mapped
+  to a schema and 107 are excluded, each class with a reason.
+- **The lost validators.** The list of custom validators that do not survive the export gains
+  `routing_priority`, `max_concurrent_tasks`, lenient adherence and the retired-field rejections.
+  The schemas now encode the first three where a schema can express them (VENDORED C11). The
+  retired-field rejections become warnings (R13).
 
 ## Context
 
@@ -61,9 +108,11 @@ An investigation on 2026-10-19 (core `9554e7b2`, open-packs `7f063ae`) found:
    - add `$schema` and `$id`;
    - close the nested sections that stay open;
    - encode the URN patterns, the fragment kind vocabulary and the rule that a built-in pack
-     declares `pack_version`;
+     declares `pack_version`; *(Amended 2026-10-19: every pack declares it, as a non-empty string;
+     see [Amendment](#amendment-2026-10-19-operator-rulings), R4.)*
    - drop the two lenient conversions (`role` to `roles`, `schema_version: "1"`), which no
-     open-packs file needs.
+     open-packs file needs. *(Amended 2026-10-19: all lenient conversions are dropped, also role
+     lowercasing and string-to-integer; see [Amendment](#amendment-2026-10-19-operator-rulings), R9.)*
 3. **The YAML adapter validates with networknt json-schema-validator.** It runs in
    `adapter-out-yaml` only, over the tree snakeyaml-engine already loads, through Jackson. The
    domain records stay hand-written, as [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)

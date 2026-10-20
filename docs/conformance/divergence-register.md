@@ -1,19 +1,23 @@
 ---
 title: Divergence register
-description: The single register of every deliberate difference between the charter service's answers and core's, each with a stable id and the corpus case that pins it.
+description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: API
 kind: Reference
 related:
+  - adr/0015-charter-repository-is-canonical-for-charter-structure
   - adr/0016-conformance-corpus-harness-over-core-cli
+  - adr/0017-pack-schemas-imported-as-canonical-json-schema
   - adr/0018-action-context-read-and-seam-access-surface
   - api/service-contract
 audience:
   - profile: contract-consumer
     guidance_text: Read this to know where the service answers differently from core on purpose, and how the seam maps each difference.
   - profile: charter-service-contributor
-    guidance_text: Read this before changing a walk rule, and add an entry here when an answer differs from core on purpose.
+    guidance_text: Read this before changing a walk rule or a pack rule, and add an entry here when an answer differs from core on purpose.
+  - profile: pack-author
+    guidance_text: Read this to see where a pack is judged differently from core's validator.
 ---
 
 # Divergence register
@@ -28,9 +32,27 @@ reused.
 Entries are grouped by block, one block per mission, so that two missions never share an id:
 
 - **Context read (DIV-101..110, ADR-0018)** is below.
-- **Pack schemas (DIV-001..019)** is added by the pack-schema mission (runner B).
+- **Pack schemas (DIV-001..019, ADR-0017)** is below, after the context-read block. DIV-001 and
+  DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
+  recorded there.
 - **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
-- The machine-readable `divergences.yaml` comes with that mission.
+
+The register has two forms of one list. This page is for readers. The file
+[`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
+is for programs: it holds every built entry (the context-read and pack-schema blocks) and
+documents its own schema at the top; the proposed activation block is page-only until its
+operations are built. Each entry has a status:
+
+- `open`: the difference stands.
+- `aligned`: core now agrees, so the difference is gone.
+- `retired`: the surface no longer exists or no longer matters.
+- `withdrawn`: the entry should not have been made, for example because another entry records
+  the same difference. Its id stays taken.
+
+The conformance gate (#72) and the pack doctor parity test (#115) read `divergences.yaml`; a
+difference from core that the register does not list with status `open` fails them. The parity
+test's design is in the mission plan, section
+[#115 doctor parity test design](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md#115-doctor-parity-test-design-fr-016-designed-not-implemented).
 
 The first three entries of the context-read block lived in the provisional section of
 [`contracts/charter/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md).
@@ -87,10 +109,238 @@ need no entry here. For an activated case the harness asserts both sides (ADR-00
 The seam does not switch its context read to the service until R9's effective-context operation
 exists (cutover stage 3).
 
+## Pack schemas (DIV-001..019, ADR-0017)
+
+The pack-schema mission (#114) decided these in [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
+and its amendment of 2026-10-19. Core's behavior is cited at the pinned core commit `9554e7b2`.
+The schema changes behind the entries are listed one by one in
+[`contracts/packs/VENDORED.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/packs/VENDORED.md),
+which links back here. Each entry states core's behavior, the service's, the rationale, the
+ruling, its status and the evidence.
+
+### DIV-001: An action that is not a graph node, in the action-context answer
+
+- **Core:** Falls back to the non-bootstrap context (activation/context.py).
+- **Service:** Answers 404 action_not_found.
+- **Rationale:** A silent fallback hides a wrong action name. The contract refuses it and the shadow comparison maps the refusal to core's fallback.
+- **Ruling:** contracts/charter/CHANGELOG.md, Provisional (the second item); ADR-0016 decision 4
+- **Status:** withdrawn. The same difference is recorded as DIV-101 in the context-read block above.
+- **Evidence:**
+  - Core: `activation/context.py`
+  - Charter: [`contracts/charter/CHANGELOG.md`, Provisional, the second item](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md#provisional)
+
+### DIV-002: A scope edge to a node the graph does not declare
+
+- **Core:** Skips that artifact (activation/context_renderers/delivery_table.py).
+- **Service:** Lists the artifact with a null label.
+- **Rationale:** The contract states the dangling edge instead of dropping it, so a consumer can see the defect. The scenario pins this answer and says core omits it.
+- **Ruling:** contracts/charter/CHANGELOG.md, Provisional (the third item); ADR-0016 decision 4
+- **Status:** withdrawn. The same difference is recorded as DIV-102 in the context-read block above.
+- **Evidence:**
+  - Core: `activation/context_renderers/delivery_table.py`
+  - Charter: [`contracts/charter/CHANGELOG.md`, Provisional, the third item](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md#provisional)
+
+### DIV-003: pack_level_missing, the diagnostic for a missing pack level
+
+- **Core:** An advisory, not at every level and not for a pack with no pack.yaml (offering/packs/pack_validator.py:727-767).
+- **Service:** A non-blocking diagnostic at every level and for a pack with no pack.yaml. It becomes a refusal when core ADR 2026-10-11-2 closes its deprecation window.
+- **Rationale:** The service is deliberately stricter than core. Open-packs was brought into line.
+- **Ruling:** open-questions Q13 (2026-10-18); contracts/charter/CHANGELOG.md, Provisional (the PackSummary.diagnostics item)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:727-767`
+  - Core: `offering/drg/org_pack_loader.py:519-566`
+  - Charter: [`contracts/charter/CHANGELOG.md`, Provisional, the `PackSummary.diagnostics` item](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md#provisional)
+  - Charter: `docs/plans/open-questions.md, Q13`
+
+### DIV-004: pack.yaml, pack_version
+
+- **Core:** Required for built-in packs only (offering/packs/pack_descriptor.py:143-148).
+- **Service:** Required at every level, as a non-empty string. A missing, null or empty value is refused by the schema.
+- **Rationale:** One rule for every pack level. Q13 already requires it and open-packs declares it everywhere, so no real pack changes.
+- **Ruling:** open-questions Q13 (2026-10-18); R4 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/pack_descriptor.py:143-148`
+  - Charter: `contracts/packs/VENDORED.md, C9 (and the C13 exception for pack_version)`
+  - Charter: `docs/adr/0017-pack-schemas-imported-as-canonical-json-schema.md, Amendment 2026-10-19`
+
+### DIV-005: Unknown keys in pack.yaml
+
+- **Core:** Reported as an error. Core reports the key twice, as a drg and as a pack finding, when the pack has a drg/fragment.yaml, and once otherwise.
+- **Service:** Tolerated, with a warning on the pack listing: the diagnostic pack_unknown_key. The schema's top level stays open for this.
+- **Rationale:** A newer pack should still register on an older service, and the author is told about the key. The operator chose tolerance with a warning.
+- **Ruling:** R5 (2026-10-19); plan call P1
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/pack_descriptor.py:88` (`extra="forbid"`)
+  - Core: `offering/drg/org_pack_loader.py:547-560` (the second report, when `drg/fragment.yaml` exists)
+  - Charter: `contracts/packs/VENDORED.md, C9`
+
+### DIV-006: Retired pack.yaml fields, such as accompanies_doctrine_pack
+
+- **Core:** Refused with a blocking finding (offering/packs/retired_fields.py:84-91).
+- **Service:** Warned like any unknown key (pack_unknown_key).
+- **Rationale:** One rule for every key the schema does not declare. This is laxer than core and is accepted.
+- **Ruling:** R13 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/retired_fields.py:84-91`
+  - Charter: `contracts/packs/VENDORED.md, C9`
+
+### DIV-007: Edge endpoints in graph shards and org fragments
+
+- **Core:** A fragment endpoint may be a bare local id, resolved first against the pack's own nodes, then as a URN, then against the built-in layer (offering/drg/merge.py:580-660).
+- **Service:** URNs everywhere. A bare local id is refused with drg_schema_error by the schema pattern.
+- **Rationale:** One form for every endpoint, checked by the schema alone. The open-packs migration rewrote the 84 bare endpoints it had.
+- **Ruling:** R6 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/merge.py:580-660`
+  - Charter: `contracts/packs/VENDORED.md, C3`
+
+### DIV-008: Org-fragment header fields pack_name, source_kind, source_ref, layer_index, provenance_marker
+
+- **Core:** Accepted, and overwritten from the operator's configuration (offering/drg/org_pack_loader.py:648-655).
+- **Service:** Not authored. A fragment that carries one is refused as an unknown key.
+- **Rationale:** Core's own comment calls the pack-side copies advisory. Authored data should not carry values the loader replaces.
+- **Ruling:** R7 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/org_pack_loader.py:648-655`
+  - Charter: `contracts/packs/VENDORED.md, C6`
+
+### DIV-009: Graph shard generated_by
+
+- **Core:** Required (offering/drg/models.py:441).
+- **Service:** Optional. generated_at stays required.
+- **Rationale:** The service is laxer than core here. Nothing reads the value, and a hand-written shard has no generator.
+- **Ruling:** R8 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/models.py:441`
+  - Charter: `contracts/packs/VENDORED.md, C8`
+
+### DIV-010: Lenient value conversions
+
+- **Core:** Converts a scalar role to roles, accepts schema_version "1" as an integer, lowercases role names and reads a quoted number as an integer.
+- **Service:** None of these is done. Each is refused by the schema.
+- **Rationale:** A file is judged as written. No open-packs file relies on a conversion.
+- **Ruling:** R9 (2026-10-19); ADR-0017 Amendment 2026-10-19
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/agent_profiles/profile.py:294-327` (scalar role to roles)
+  - Core: `offering/agent_profiles/profile.py:54-55` and `:93` (role lowercasing in `Role`)
+  - Core: `activation/org_charter.py:217-235` (`schema_version` "1" to an integer)
+  - Core: pydantic lax mode, no strict config (a quoted number to an integer)
+  - Charter: `contracts/packs/VENDORED.md, C10`
+
+### DIV-011: Org-fragment node kinds
+
+- **Core:** Accepts the aliases mission_steps and mission_type, and refuses actions and anti_patterns (offering/drg/org_pack_loader.py:118-139).
+- **Service:** One name per concept, 15 plurals. actions and anti_patterns are accepted. mission_steps and mission_type are refused; mission_step_contracts is the one name.
+- **Rationale:** One name per concept, with no aliases. The glossary records the canonical names.
+- **Ruling:** R14 (2026-10-19); plan call P9
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/org_pack_loader.py:118-139`
+  - Charter: `contracts/packs/VENDORED.md, C5`
+
+### DIV-012: URN node kinds
+
+- **Core:** Also accepts the kinds glossary and glossary_scope, both NodeKind members (offering/drg/models.py:61-66).
+- **Service:** The 15 node kinds the service models. glossary and glossary_scope are refused.
+- **Rationale:** The service has no node of those kinds, and the URN pattern is generated from the kinds it models.
+- **Ruling:** R15 (2026-10-19)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/models.py:61-66`
+  - Charter: `contracts/packs/VENDORED.md, C3 and C4`
+  - Charter: `contracts/packs/file-kinds.yaml`
+
+### DIV-013: Nested sections of an agent profile and of charter.yaml
+
+- **Core:** Ignores unknown keys in nested sections (extra="ignore" on 8 agent-profile and 13 charter.yaml sections).
+- **Service:** Refuses them. Every nested section with declared properties is closed.
+- **Rationale:** A misspelled nested key should not pass in silence. No open-packs file is affected, which the corpus probe re-checks.
+- **Ruling:** spec open review item 1 (the closure of nested sections)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Charter: `contracts/packs/VENDORED.md, C2 (the ledger lists every closed schema)`
+  - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/spec.md, open review item 1`
+
+### DIV-014: Nested tactics under built-in/tactics/<sub>/
+
+- **Core:** validate_pack does not scan the 89 nested files, although the runtime loads them (offering/packs/pack_validator.py).
+- **Service:** Validated like any tactic.
+- **Rationale:** A file the runtime loads should be checked.
+- **Ruling:** spec open review item 2 (nested tactics are validated)
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:291-295` (`_scan_files`: recursive glob only for styleguides and assets)
+  - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Corpus`
+
+### DIV-015: The relation alias extends in a fragment edge
+
+- **Core:** Aliased at merge time (offering/drg/merge.py:100-102).
+- **Service:** Refused. The relation is a Relation value with no aliases.
+- **Rationale:** R14's one-name rule, applied to relations. The Java reader refuses it today.
+- **Ruling:** plan call P2
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/merge.py:100-102`
+  - Charter: `contracts/packs/VENDORED.md, C7`
+
+### DIV-016: The asset MIME type check
+
+- **Core:** Asks the platform for the type, so the answer can depend on the system's mime.types files (offering/packs/pack_validator.py:1377-1510).
+- **Service:** Uses a fixed extension table taken from Python's built-in table of MIME types, without the system files.
+- **Rationale:** A verdict must not depend on the machine it runs on. A possible difference is recorded.
+- **Ruling:** plan call P8; R16
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:1377-1510`
+  - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md, call P8`
+
+### DIV-017: Validate mode, an invalid pack.yaml
+
+- **Core:** Stops at an invalid pack.yaml, so defects in the other files go unreported (research R3).
+- **Service:** Validate mode collects every finding. Loading stays fail-fast.
+- **Rationale:** The doctor wants the full list in one run. The comparison for #115 lists this as a known difference.
+- **Ruling:** FR-010; plan call P12; plan section "#115 doctor parity test design"
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, R3 and R5`
+  - Charter: `kitty-specs/pack-schemas-and-level-policy-01M5AFMA/plan.md, rule row P14`
+
+### DIV-018: The impacts relation and the edge impacts strength
+
+- **Core:** Has neither yet. The relation enum has no impacts member (offering/drg/models.py:83-148).
+- **Service:** Models both. The schema's Relation enum is core's 15 values, including the legacy in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. The legacy in_tension_with stays in the schema and is read by the service as impacts with strength -1.
+- **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference.
+- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/models.py:83-148`
+  - Charter: `contracts/packs/VENDORED.md, C7, C12 and Known differences`
+
+### DIV-019: Edge provenance
+
+- **Core:** A merge-time marker that core stamps on each edge (offering/drg/models.py:409-412).
+- **Service:** Not authored. An edge in a graph shard that carries provenance is refused.
+- **Rationale:** Runtime provenance is not authored data. This applies the principle of R7. No open-packs edge carries it.
+- **Ruling:** plan call P10; R7
+- **Status:** open, since 2026-10-19
+- **Evidence:**
+  - Core: `offering/drg/models.py:409-412`
+  - Charter: `contracts/packs/VENDORED.md, C16`
+
 ## Adding an entry
 
 Give it the next free id in its block, state both answers, name the corpus case, and cite the ruling. Link the
-entry from the contract scenario that pins it.
+entry from the contract scenario that pins it. Add it to
+[`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
+too, with the same id and status.
 
 ## Activation (DIV-201..202, ADR-0020), proposed
 
