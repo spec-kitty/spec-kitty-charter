@@ -252,8 +252,8 @@ fingerprint check alone would answer. The path is not `/refresh` and the answer 
   changelog.)*
 - `governance_policy_violation` stays reserved. It is pinned by a `@contract @reserved`
   scenario and an enforcing unit test: no main class references it except the enum and its title
-  mapping. Runner B's #48 deletes that test when it raises the code. The score is 8 behavioral
-  codes plus 1 declared of 9.
+  mapping. The mutability-policy epic #55 (ADR-0012) deletes that test when it raises the code. The
+  score is 8 behavioral codes plus 1 declared of 9.
 - `CharterRefusalCode` carries a machine-readable `x-refusal` map (status, retryable, raised) for
   all nine codes.
 
