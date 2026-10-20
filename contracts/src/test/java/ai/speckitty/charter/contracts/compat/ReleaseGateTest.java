@@ -452,9 +452,7 @@ class ReleaseGateTest {
         @Test
         void aZeroMinorBumpWithoutABreakingSubsectionIsRefused() {
             Decision decision = decide(
-                    "0.2.0-SNAPSHOT",
-                    changelog("## 0.2.0-SNAPSHOT\n\n### Changed\n", "## 0.1.0\n"),
-                    Set.of(TAGS_01));
+                    "0.2.0-SNAPSHOT", changelog("## 0.2.0-SNAPSHOT\n\n### Changed\n", "## 0.1.0\n"), Set.of(TAGS_01));
             assertThat(decision).isInstanceOf(Decision.Refused.class);
             assertThat(decision.message())
                     .contains("raises the minor version of 0.x from 0.1.0 to 0.2.0-SNAPSHOT")
@@ -467,8 +465,7 @@ class ReleaseGateTest {
         void aPendingZeroMinorReleaseNeedsItsBreakingSubsectionToo() {
             assertThat(decide("0.2.0", changelog("## 0.2.0\n", "## 0.1.0\n"), Set.of(TAGS_01)))
                     .isInstanceOf(Decision.Refused.class);
-            Decision passes =
-                    decide("0.2.0", changelog("## 0.2.0\n\n### Breaking\n", "## 0.1.0\n"), Set.of(TAGS_01));
+            Decision passes = decide("0.2.0", changelog("## 0.2.0\n\n### Breaking\n", "## 0.1.0\n"), Set.of(TAGS_01));
             assertThat(passes).isInstanceOf(Decision.NoBaseline.class);
             assertThat(passes.message()).contains("pending release 0.2.0").contains("no released 0.2.x version");
         }

@@ -280,7 +280,8 @@ public final class ReleaseGate {
      * @return the tag of the previous release, or empty when this is no breaking bump, the CHANGELOG gates refuse,
      *         or that tag is not merged into HEAD
      */
-    public static Optional<String> previousBreakingBaseline(String infoVersion, String changelog, Set<String> mergedTags) {
+    public static Optional<String> previousBreakingBaseline(
+            String infoVersion, String changelog, Set<String> mergedTags) {
         List<Section> sections = sections(changelog);
         if (changelogRefusal(infoVersion, sections).isPresent()) {
             return Optional.empty();
