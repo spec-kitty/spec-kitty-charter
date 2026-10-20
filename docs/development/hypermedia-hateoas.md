@@ -114,7 +114,7 @@ used.
 | `kinds` | `/api/v1/offering/kinds` | `GET` | The offering | Proposed |
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
-| `activations` | `/api/v1/offering/activations` | `POST` | The offering, once activation writes are built | Proposed |
+| `activations` | `/api/v1/activations` | `POST` | Root, once activation writes are built | Proposed |
 | `edit` | The activation | `PUT` | An activation, once writes are built | Proposed |
 | `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
 | `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |

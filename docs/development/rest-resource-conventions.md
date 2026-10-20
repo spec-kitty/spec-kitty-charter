@@ -39,8 +39,8 @@ A path names a resource, never an action. Every resource is one of four archetyp
 | Archetype | What it is | Name | Example in this contract |
 |---|---|---|---|
 | Document | One thing | Singular noun or an id | `/info`; `/packs/{packId}` (proposed) |
-| Collection | A server-managed set; `POST` adds a member and the server names it | Plural noun | `/packs`; `POST /offering/activations` (proposed) |
-| Store | A client-managed set; `PUT` puts a member at an id the client chose | Plural noun | `/offering/activations/{activationId}` (proposed) |
+| Collection | A server-managed set; `POST` adds a member and the server names it | Plural noun | `/packs`; `POST /activations` (proposed) |
+| Store | A client-managed set; `PUT` puts a member at an id the client chose | Plural noun | `/activations/{activationId}` (proposed) |
 | Controller | A procedure no method expresses | A verb, as the last segment | `POST /packs/refresh` |
 
 - **Rule:** plural nouns for collections, singular nouns for documents, a verb only for a controller.

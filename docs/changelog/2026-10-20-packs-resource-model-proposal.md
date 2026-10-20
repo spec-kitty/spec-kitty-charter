@@ -8,6 +8,7 @@ kind: Changelog
 related:
   - adr/0019-packs-resource-model-and-hypermedia
   - adr/0020-offering-and-activations
+  - adr/0021-contract-first-seam-generated-client-and-routing-proxy
   - architecture/packs-resource-model
   - architecture/offering-and-activation
   - api/service-contract
@@ -24,12 +25,15 @@ audience:
   meaning, the packs this service knows. It makes every pack a resource whose artifacts, graph,
   presets and assets are sub-resources, adds an API root, and makes ADR-0007's `Links` component
   concrete: a map with open relation keys and a closed link object.
-- [ADR-0020](/adr/0020-offering-and-activations/) (Proposed) makes `/offering` the charter, the
-  merged offering of the packs in force, and moves the action-context read under it before 1.0.
-  An activation is a camelCase document the service stores under an opaque `activationId`. Core
+- [ADR-0020](/adr/0020-offering-and-activations/) (Proposed) adds two top-level resources:
+  `/offering`, what can be used, merged from the packs in force, with the action-context read
+  moved under it before 1.0; and `/activations`, the active charters. An activation is a camelCase document the service stores under an opaque `activationId`. Core
   either registers its document or builds one through the API and fetches it. The service is
   authoritative, and core's file is a fetched copy. The activation operations are declared in
   contract 1.0 and answer `501` until built. The contract becomes hosted-first before the tag.
+- [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) (Proposed) makes
+  the published 1.0 contract core's seam now: core vendors a generated client, and a proxy routes
+  each operation to core's Python or to the service, switching one operation at a time.
 - [Packs resource model](/architecture/packs-resource-model/) and
   [Offering and activation](/architecture/offering-and-activation/) hold the resource trees, link
   graphs, request sequences, examples and proposed contract scenarios.

@@ -142,7 +142,7 @@ the conventions in [Development conventions](/development/).
 | `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
 
 `{packId}` is the pack's `pack_id` ULID. The merged offering of the packs in force is the
-`/offering` layer below.
+`/offering` resource below.
 
 **Before the 1.0 tag** ([#45](https://github.com/spec-kitty/spec-kitty-charter/issues/45)): the
 `Links` component, `GET /`, and a required `_links` on every existing success schema
@@ -152,9 +152,10 @@ These change closed response schemas, so they are breaking after the tag. With o
 
 ## Proposed: offering and activations (ADR-0020)
 
-[ADR-0020](/adr/0020-offering-and-activations/) (Proposed) makes `/offering` the charter: the
-merged offering of the packs in force. An activation is a document the service stores under an
-opaque `activationId`; the service never reads a project's files. The design, with the request
+[ADR-0020](/adr/0020-offering-and-activations/) (Proposed) adds two top-level resources:
+`/offering`, the offer side (what can be used, merged from the packs in force), and
+`/activations`, the activation side (active charters). An activation is a document the service
+stores under an opaque `activationId`; the service never reads a project's files. The design, with the request
 sequences, is in [Offering and activation](/architecture/offering-and-activation/).
 
 | Method | Path | Purpose | Inventory issue |
@@ -164,8 +165,8 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/offering/graph`, `/offering/presets`, `/offering/kinds` | The merged graph, offered presets, the kind taxonomy | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97), [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) |
 | `GET` | `/offering/mission-types…` | Mission types and the action index | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) |
 | `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
-| `POST` | `/offering/activations` | Create an empty activation; the service mints the id. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44) |
-| `PUT`, `GET`, `DELETE` | `/offering/activations/{activationId}` | Register or replace, read, remove an activation. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44), [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
+| `POST` | `/activations` | Create an empty activation; the service mints the id. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44) |
+| `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | Register or replace, read, remove an activation. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44), [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | Change one choice, with `If-Match`. Reserved | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | The effective reads (R9). Reserved; R9 gates cutover stage 3 | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
 
