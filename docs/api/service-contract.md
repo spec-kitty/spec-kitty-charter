@@ -173,7 +173,7 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 **Before 1.0.0** (the activation set first, in an early 0.x minor): the move of the action-context read; every activation operation declared
 in full with `x-reserved` and a `501`; the `ActivationConfig`, `Activation`, `ActivationChange`
 and skipped-report schemas; `ETag`, `If-Match` and `If-None-Match`; the activation refusal codes
-and `CharterRefusal`'s `pack` and `violations`; and the hosted-first reshape of the security
+and `CharterRefusal`'s `requiredBy` and `violations`; and the hosted-first reshape of the security
 scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
 
 ## Planned write surface (later)
