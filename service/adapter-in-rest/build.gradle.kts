@@ -47,3 +47,11 @@ val serviceVersion = tasks.register("serviceVersionResource") {
     }
 }
 sourceSets.main { resources.srcDir(serviceVersion) }
+
+// ServiceVersionTest checks the written version against the root project's own, which can equal the contract version
+// (both are 0.1.0-SNAPSHOT today), so the test cannot tell the two sources apart by their values alone.
+tasks.named<Test>("test") {
+    val projectVersion = rootProject.version.toString()
+    inputs.property("projectVersion", projectVersion)
+    systemProperty("charter.projectVersion", projectVersion)
+}
