@@ -168,7 +168,7 @@
       "criterion_id": "FR-017",
       "description": "Verify FR-017 is satisfied",
       "proof_type": "inspection",
-      "evidence": "open-packs PR #52 merged; clone /home/user/spec-kitty-open-packs at 01edb4e clean: 4 org fragments have no header fields and 0 bare endpoints (internal 202 endpoints URN); gradle.properties openPacksRef=01edb4eb... (merge commit); packs/internal and packs/qa YAML identical to open-packs (diff -r, excl. local PROVENANCE/README); round-trip + acceptance green at pin",
+      "evidence": "open-packs PR #52 merged; clone /home/user/spec-kitty-open-packs at 01edb4e clean: 4 org fragments have no header fields and 0 bare endpoints (internal 202 endpoints URN); gradle.properties openPacksRef=01edb4eb... (merge commit); packs/qa equals open-packs at the pin and packs/internal equals it except the four-file local delta of main's 19cc37f (validate-pr-body.py and its asset manifest, drg/fragment.yaml title, semi-auto-delivery procedure; R21, going upstream in open-packs#59), excluding the local PROVENANCE.md and README.md; VendoredPacksTest (run by openPacksRoundTrip) fails on any other difference, on a file missing from the copy and on a stale allow-list entry; round-trip + acceptance green at pin",
       "pass_fail": "pass",
       "verified_by": "claude",
       "verified_at": "2026-10-20T04:18:52.726177+00:00",

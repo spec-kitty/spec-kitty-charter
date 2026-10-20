@@ -50,6 +50,10 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
+    // VendoredPacksTest compares the vendored packs of this repository with the pinned checkout.
+    val vendoredPacks = rootProject.layout.projectDirectory.dir("packs")
+    inputs.dir(vendoredPacks).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("vendoredPacks")
+    systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
     val ref = openPacksRef
     inputs.property("openPacksRef", ref.orElse(""))
     doFirst {
