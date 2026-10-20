@@ -169,6 +169,9 @@ was cut under either label. `Added` lists what this version holds that the first
   Scenario "Every other refusal code is raised by an operation" in `errors.feature` no longer lists
   it and is renamed "The refusal codes the contract marks raised are exactly those an operation
   raises".
+- The `OfferingUnreadable` response description gives `drg_schema_error` instead of
+  `unresolved_edge_endpoint` as its example code, since the latter is no longer raised (description
+  only, #114).
 - Scenario "A bare edge endpoint the fragment does not declare is refused" in `packs.feature` is
   renamed "A bare edge endpoint is refused as not a URN" and expects `drg_schema_error` ("Invalid
   DRG document") with the detail `qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN`
