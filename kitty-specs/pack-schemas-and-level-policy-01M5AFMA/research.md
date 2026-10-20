@@ -344,3 +344,15 @@ schema types as a plain string (`pack_id`, `pack_version`, `name`, `pack_level`)
 it. `pack_level: null` used to load with a `pack_level_missing` diagnostic. An absent key keeps
 "has no <key>" and, for `pack_level`, the `pack_level_missing` diagnostic. The nullable fields
 (`parent_pack`, `requires_core`, `active_charter`, `pack_drg`) still accept `null`.
+
+**R20 (2026-10-20, operator, at the pre-PR review).** The dependency is flipped: the pack
+schemas in `contracts/packs/schemas/` are canonical here and edited in place, and core pulls
+them. The one-time import tooling is deleted: `scripts/packs/sync_schemas.py` and
+`contracts/packs/VENDORED.md`. The import's changes C1-C16 stay recorded in this mission's
+research and plan and in git history.
+
+**R21 (2026-10-20, operator, at the pre-PR review).** The vendored `packs/internal` copy keeps
+the four-file local edit main made in `19cc37f` (the validate-pr-body asset and its manifest, the
+fragment title and the semi-auto-delivery procedure). The edit goes upstream to open-packs; until
+the pin moves, `PROVENANCE.md` lists the delta and a test fails on any other difference from the
+pinned checkout.
