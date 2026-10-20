@@ -4,10 +4,14 @@ import ai.speckitty.charter.domain.CharterOffering;
 import ai.speckitty.charter.domain.CharterPack;
 import ai.speckitty.charter.domain.CharterPackRepository;
 import ai.speckitty.charter.domain.CharterRefusal;
-import ai.speckitty.charter.domain.Diagnostic;
 import ai.speckitty.charter.domain.DoctrineGraph;
 import ai.speckitty.charter.domain.Fingerprint;
+import ai.speckitty.charter.domain.PackContents;
+import ai.speckitty.charter.domain.PackContents.FileRead;
+import ai.speckitty.charter.domain.PackContents.RawGraph;
 import ai.speckitty.charter.domain.PackDescriptor;
+import ai.speckitty.charter.domain.PackPolicy;
+import ai.speckitty.charter.domain.PackRoot;
 import ai.speckitty.charter.domain.PackSources;
 import ai.speckitty.charter.domain.RefusalCode;
 import java.io.IOException;
@@ -84,35 +88,44 @@ public final class FileSystemCharterPackRepository implements CharterPackReposit
         if (!Files.isDirectory(root)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " is not a directory");
         }
-        Optional<PackDescriptor> descriptor = Optional.empty();
-        List<Diagnostic> diagnostics = new ArrayList<>();
+        FileRead<PackDescriptor> descriptor = new FileRead.Absent<>("pack.yaml");
         Path packYaml = root.resolve("pack.yaml");
         if (Files.isRegularFile(packYaml)) {
-            PackDescriptorReader.Result result =
-                    PackDescriptorReader.read(read(packYaml, location), location.name(), location.level());
-            descriptor = Optional.of(result.descriptor());
-            diagnostics.addAll(result.diagnostics());
-        } else {
-            diagnostics.add(new Diagnostic(
-                    Diagnostic.Code.PACK_LEVEL_MISSING,
-                    location.level().token() + " pack " + location.name() + " has no pack.yaml; the configured level "
-                            + location.level().token() + " is used"));
+            descriptor = new FileRead.Read<>(
+                    "pack.yaml", PackDescriptorReader.read(read(packYaml, location), location.name()));
         }
         DoctrineGraph graph = DoctrineGraph.empty();
+        List<FileRead<RawGraph>> shardFacts = new ArrayList<>();
         for (Path shard : shards(root, location)) {
             graph = graph.merge(GraphDocumentReader.read(
                     read(shard, location),
                     GraphDocumentReader.Shape.SHARD,
                     location.name() + "/" + root.relativize(shard)));
+            // The graph above is the real one; the facts only report that the shard is there.
+            String file = root.relativize(shard).toString();
+            shardFacts.add(new FileRead.Read<>(file, new RawGraph(file, RawGraph.Shape.SHARD, List.of(), List.of())));
         }
+        FileRead<RawGraph> fragmentFacts = new FileRead.Absent<>("drg/fragment.yaml");
         Path fragment = root.resolve("drg").resolve("fragment.yaml");
         if (Files.isRegularFile(fragment)) {
             graph = graph.merge(GraphDocumentReader.read(
                     read(fragment, location),
                     GraphDocumentReader.Shape.FRAGMENT,
                     location.name() + "/drg/fragment.yaml"));
+            fragmentFacts = new FileRead.Read<>(
+                    "drg/fragment.yaml",
+                    new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
         }
-        return new CharterPack(location.name(), location.level(), descriptor, graph, diagnostics);
+        PackContents contents = new PackContents(
+                new PackRoot(location.name(), Optional.of(location.level()), root.toString()),
+                descriptor,
+                shardFacts,
+                fragmentFacts,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+        return PackPolicy.load(contents, graph);
     }
 
     private static List<Path> shards(Path root, PackLocation location) {

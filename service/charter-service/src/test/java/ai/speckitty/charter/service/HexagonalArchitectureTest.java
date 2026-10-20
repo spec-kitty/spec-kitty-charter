@@ -5,7 +5,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.domain.Diagnostic;
+import ai.speckitty.charter.domain.PackFindingCode;
 import ai.speckitty.charter.domain.RefusalCode;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -114,6 +117,124 @@ class HexagonalArchitectureTest {
         assertThatThrownBy(() -> onlyTheInboundAdapterNamesInternalError().check(outside))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("UsesInternalError");
+    }
+
+    private static DescribedPredicate<JavaClass> namedWithPrefix(String... prefixes) {
+        return DescribedPredicate.describe(
+                "named with one of the prefixes " + String.join(", ", prefixes),
+                c -> java.util.Arrays.stream(prefixes).anyMatch(c.getName()::startsWith));
+    }
+
+    /**
+     * Rule A: only the pack policy and the enums themselves name {@code Diagnostic.Code.PACK_LEVEL_MISSING}. The
+     * prefix match covers the synthetic {@code $1} and {@code $SwitchMap} classes of a switch over the enum.
+     */
+    private static ArchRule onlyThePolicyNamesTheMissingDiagnosticRule() {
+        return noClasses()
+                .that(DescribedPredicate.not(namedWithPrefix(
+                        "ai.speckitty.charter.domain.PackPolicy",
+                        "ai.speckitty.charter.domain.PackFindingCode",
+                        "ai.speckitty.charter.domain.Diagnostic")))
+                .should()
+                .accessField(Diagnostic.Code.class, "PACK_LEVEL_MISSING");
+    }
+
+    /**
+     * Rule B: only the pack policy, the enums and the inbound adapter name {@code RefusalCode.PACK_LEVEL_MISMATCH};
+     * {@code RefusalHandler$1} reads it with {@code getstatic}.
+     */
+    private static ArchRule onlyThePolicyNamesTheMismatchRefusalRule() {
+        return noClasses()
+                .that(DescribedPredicate.not(namedWithPrefix(
+                        "ai.speckitty.charter.domain.PackPolicy",
+                        "ai.speckitty.charter.domain.PackFindingCode",
+                        "ai.speckitty.charter.domain.RefusalCode",
+                        "ai.speckitty.charter.rest.")))
+                .should()
+                .accessField(RefusalCode.class, "PACK_LEVEL_MISMATCH");
+    }
+
+    /**
+     * Rule C: only the pack policy and the finding enum name the pack-level finding codes, which closes the
+     * {@code new PackFinding(...).toDiagnostic()} bypass.
+     */
+    private static ArchRule onlyThePolicyNamesThePackLevelFindingsRule() {
+        return noClasses()
+                .that(DescribedPredicate.not(namedWithPrefix(
+                        "ai.speckitty.charter.domain.PackPolicy", "ai.speckitty.charter.domain.PackFindingCode")))
+                .should()
+                .accessField(PackFindingCode.class, "PACK_LEVEL_MISSING")
+                .orShould()
+                .accessField(PackFindingCode.class, "PACK_LEVEL_MISMATCH");
+    }
+
+    @Test
+    void onlyThePolicyNamesThePackLevelFindings() {
+        onlyThePolicyNamesThePackLevelFindingsRule().check(classes);
+    }
+
+    @Test
+    void thePackLevelFindingRuleFailsOnAClassOutsideThePolicy() {
+        JavaClasses outside = new ClassFileImporter().importPackages("ai.speckitty.charter.service.packlevelfixture");
+        assertThatThrownBy(() -> onlyThePolicyNamesThePackLevelFindingsRule().check(outside))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("BuildsFindingDirectly");
+    }
+
+    /**
+     * Rule D: only the YAML adapter depends on {@code com.networknt}, so the validator never leaks into the
+     * domain or the other adapters.
+     */
+    private static ArchRule onlyTheYamlAdapterUsesNetworkntRule() {
+        return noClasses()
+                .that()
+                .resideOutsideOfPackage("ai.speckitty.charter.yaml..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("com.networknt..");
+    }
+
+    @Test
+    void onlyThePolicyNamesTheMissingDiagnostic() {
+        onlyThePolicyNamesTheMissingDiagnosticRule().check(classes);
+    }
+
+    @Test
+    void onlyThePolicyNamesTheMismatchRefusal() {
+        onlyThePolicyNamesTheMismatchRefusalRule().check(classes);
+    }
+
+    @Test
+    void onlyTheYamlAdapterUsesNetworknt() {
+        onlyTheYamlAdapterUsesNetworkntRule().check(classes);
+    }
+
+    // The rules check field access. Enum.valueOf("PACK_LEVEL_MISSING") or values() would get around them; no
+    // production code does that today.
+    @Test
+    void theMissingDiagnosticRuleFailsOnAClassOutsideThePolicy() {
+        JavaClasses outside = new ClassFileImporter().importPackages("ai.speckitty.charter.service.packlevelfixture");
+        assertThatThrownBy(() -> onlyThePolicyNamesTheMissingDiagnosticRule().check(outside))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("BuildsMissingDiagnostic");
+    }
+
+    @Test
+    void theMismatchRefusalRuleFailsOnAClassOutsideThePolicy() {
+        JavaClasses outside = new ClassFileImporter().importPackages("ai.speckitty.charter.service.packlevelfixture");
+        assertThatThrownBy(() -> onlyThePolicyNamesTheMismatchRefusalRule().check(outside))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("RefusesWithMismatch");
+    }
+
+    // The stand-in exists only to prove that the networknt rule bites without the real dependency.
+    @Test
+    void theNetworkntRuleFailsOnAClassOutsideTheYamlAdapter() {
+        JavaClasses outside = new ClassFileImporter()
+                .importPackages("ai.speckitty.charter.service.networkntfixture", "com.networknt.fixture");
+        assertThatThrownBy(() -> onlyTheYamlAdapterUsesNetworkntRule().check(outside))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UsesNetworkntStandIn");
     }
 
     /**

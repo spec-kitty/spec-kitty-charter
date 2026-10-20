@@ -28,8 +28,9 @@ public record CharterPack(
      * @param descriptor the pack's {@code pack.yaml}, when it has one
      * @param graph the pack's graph
      * @param diagnostics the load findings
-     * @throws CharterRefusal with {@link RefusalCode#PACK_LEVEL_MISMATCH} when the descriptor declares a level other
-     *     than {@code level}
+     * @throws IllegalArgumentException when the descriptor declares a level other than {@code level}: a programming
+     *     error, because {@link PackPolicy} refuses such a pack with {@link RefusalCode#PACK_LEVEL_MISMATCH} before
+     *     one is built
      */
     public CharterPack {
         Objects.requireNonNull(name, "name");
@@ -37,12 +38,10 @@ public record CharterPack(
         Objects.requireNonNull(descriptor, "descriptor");
         Objects.requireNonNull(graph, "graph");
         diagnostics = List.copyOf(diagnostics);
-        descriptor.ifPresent(d -> {
-            if (d.level() != level) {
-                throw new CharterRefusal(
-                        RefusalCode.PACK_LEVEL_MISMATCH,
-                        "Pack '" + name + "' is configured as " + level.token() + " but declares pack_level "
-                                + d.level().token());
+        descriptor.flatMap(PackDescriptor::declaredLevel).ifPresent(declared -> {
+            if (declared != level) {
+                throw new IllegalArgumentException("Pack '" + name + "' is configured as " + level.token()
+                        + " but declares pack_level " + declared.token());
             }
         });
     }

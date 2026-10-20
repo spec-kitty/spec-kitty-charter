@@ -18,7 +18,8 @@ class GovernanceFingerprintTest {
             List.of(DrgEdge.of(A, B, Relation.SCOPE), DrgEdge.impacts(B, C, -0.5), DrgEdge.of(A, C, Relation.SCOPE));
 
     private static CharterOffering offering(String version, List<DrgNode> nodes, List<DrgEdge> edges) {
-        PackDescriptor descriptor = new PackDescriptor("01PACK", version, Optional.empty(), "b", PackLevel.BUILT_IN);
+        PackDescriptor descriptor = new PackDescriptor(
+                "01PACK", version, Optional.empty(), "b", Optional.of(PackLevel.BUILT_IN), Optional.empty(), List.of());
         return new CharterOffering(List.of(new CharterPack(
                 "b", PackLevel.BUILT_IN, Optional.of(descriptor), new DoctrineGraph(nodes, edges), List.of())));
     }
