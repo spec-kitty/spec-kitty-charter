@@ -30,7 +30,7 @@ audience:
   `/offering`, what can be used, merged from the packs in force, with the action-context read
   moved under it before 1.0.0; and `/activations`, the active charters. An activation is a camelCase document the service stores under an opaque `activationId`. Core
   either registers its document or builds one through the API and fetches it. The service is
-  authoritative, and core's file is a fetched copy. The activation operations are declared in
+  authoritative once activation routes to it; core keeps its own files and maps them. The activation operations are declared in
   the contract early and answer `501` until built. The contract becomes hosted-first before 1.0.0.
 - [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) (Proposed) makes
   the published contract core's seam now: core vendors a generated client, and a proxy routes

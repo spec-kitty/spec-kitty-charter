@@ -107,8 +107,8 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
 ```
 
 The values are illustrative and the field list is an outline; the schema issue fixes it.
-`config` is the `ActivationConfig`: the whole document a client authors, and the file core
-stores. Everything else is the service's: `revision` (also the `ETag`), the derived `summary`
+`config` is the `ActivationConfig`: the whole document a client authors. Core keeps its own file
+layout and maps it to and from `config` in one seam module. Everything else is the service's: `revision` (also the `ETag`), the derived `summary`
 and the links. Write links (`edit`, `select`, `exclude`, …) appear only once the writes are built.
 
 **Canonical form.** The service stores ids as the offering's artifact ids, sorted and without
@@ -130,7 +130,7 @@ sequenceDiagram
   else existing id
     Svc-->>Core: 200 OK, ETag, Activation
   end
-  Core->>Core: store Activation.config as the local file
+  Core->>Core: map Activation.config onto its own files
 ```
 
 Refusals: `422 activation_invalid` (unknown pack, kind or artifact, with `violations`),
@@ -153,7 +153,7 @@ sequenceDiagram
   Svc-->>Core: 200 ActivationChange, ETag r3
   Core->>Svc: GET /activations/{id}
   Svc-->>Core: 200 Activation, ETag r3
-  Core->>Core: store Activation.config as the local file
+  Core->>Core: map Activation.config onto its own files
 ```
 
 - Instead of the first `PUT`, a client without an id of its own sends `POST /activations`
@@ -168,7 +168,7 @@ sequenceDiagram
 | Item | Held by | Notes |
 |---|---|---|
 | The interview, `answers.yaml`, the charter text and compile | Core | Unchanged |
-| The activation document | The service | Core's file is the last fetched copy; the service wins on divergence |
+| The activation document | Core's files until activation routes to the service, then the service | Core keeps its own file layout and maps it to `ActivationConfig` in one seam module; after the switch the service wins on divergence |
 | First-load state (`context-state.json`) | Core | Sent as `depth` (ADR-0011 D3) |
 | Project-tier content | The service, as a registered pack of level `project` | ADR-0020 D11 |
 | `required_*`, `locked`, available artifacts | Derived from the packs | Never stored in the document |

@@ -23,7 +23,7 @@ audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the offering tree, the activation document, the two build modes and what must land before 1.0.0.
   - profile: core-maintainer
-    guidance_text: Read this for how core registers or builds an activation, why its local file becomes a fetched copy, and the requests to core.
+    guidance_text: Read this for how core registers or builds an activation, how its seam maps its own files, and the requests to core.
   - profile: contract-consumer
     guidance_text: Read this for the activation resources, their status codes and how concurrent writes are refused.
 ---
@@ -161,7 +161,7 @@ id of its own uses `POST`.
 Two schemas, both closed, both minted in this repository (ADR-0015):
 
 - **`ActivationConfig`** is the document: only the state a client authors. It is the `PUT` body,
-  the `config` member of every answer, and the file core stores locally. Its JSON Schema lives at
+  the `config` member of every answer, and what core's seam maps its own files to and from. Its JSON Schema lives at
   `contracts/offering/schemas/ActivationConfig.schema.json` (JSON Schema 2020-12, the
   [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) pattern), and the OpenAPI
   contract references it.
@@ -175,18 +175,32 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
 | Field | Meaning | Core's key today |
 |---|---|---|
 | `schemaVersion` | `1` | — |
-| `packs` | Nullable; pack ids in merge order. `null` means the service's offering (D1) | `charter_packs` in `config.yaml` |
-| `activatedKinds` | Nullable kind list; absent means every kind | `activated_kinds` |
+| `packs` | Pack ids in merge order; a later pack wins over an earlier one. Absent means the service's offering (D1) | `charter_packs` in `config.yaml` |
+| `activatedKinds` | Kind list; absent means every kind | `activated_kinds` |
 | `missionTypes` | Mission types in force; absent means **none** | `mission_type_activations` |
 | `selected` | Map from kind to an id list; a kind that is absent takes its default (all, except `skill`: org-required only) | `activated_<plural>` |
-| `deactivated` | Map from kind to a non-empty id list: the user's deny list | `deactivated_<plural>` (core branch) |
-| `languages` | Nullable language list | `catalog.languages` |
+| `deactivated` | Map from a known kind to a non-empty id list: the user's deny list | `deactivated_<plural>` (core branch) |
+| `languages` | Language list, as authored; core's derived languages are not sent | `catalog.languages` |
 | `contextActivations` | Artifacts active only in one mission type or action | `governance.activations` |
 | `appliedPresets` | Provenance only: which presets were applied, when | not persisted today |
 
+**Three states, exactly as core has them** (core response, 2026-10-20): for `activatedKinds`,
+`missionTypes`, `languages` and each `selected.<kind>`, an absent key is the default, `[]` is
+empty, and a list is that set. `null` is not a value.
+
+**Content alignment, not file shape (ruled, 2026-10-20, on the core side).** Core keeps its own
+file layout: `.kittify/charter/activation.yaml` holds the activation keys, while `packs`,
+`languages` and `contextActivations` stay in `config.yaml` and `charter.yaml`. Core's seam maps
+those files to and from `ActivationConfig` in one module. The contract fixes the content, not
+where core keeps it.
+
 The wire names are camelCase like the rest of the contract; core maps its snake_case keys at its
-seam. The document stores **canonical form**: ids are spelled as the offering's artifact ids
-(a write may use another known spelling, and is normalized; an unknown id is `422`), lists are
+seam. The document stores **canonical form**:
+
+- ids are spelled as the declared id (the tail of the artifact's URN). A write may use another
+  known spelling, and is normalized. An unknown id is `422 activation_invalid`, and so is a
+  `deactivated` key for an unknown kind;
+- lists are
 deduplicated and sorted, empty deny lists are omitted, and keys are in schema order.
 `revision` and the `ETag` are the `sha256:` digest of the RFC 8785 (JCS) serialization of the
 canonical config, so two equivalent writes give the same strong `ETag`, and `GET` is byte-stable
@@ -195,17 +209,19 @@ for one revision.
 Not stored, because it is derived from the packs: the org `required_*` floor, `locked` and other
 mutability levels (ADR-0012), the set of available artifacts, and the skipped report.
 
-### D5. The service is the authority; core's file is a fetched copy (ruled)
+### D5. The service is the authority once activation routes to it (ruled)
 
-Once a document is stored, the service's copy is the one in force. Core's local file is what it
-last fetched. When they differ, the service wins and core fetches again; core sends its file only
-to register it (mode 1, D6) or after the operator chooses to overwrite.
+Once an activation operation is routed to the service (ADR-0021 D5, after 1.0.0), the service's
+document is the one in force. Core's files then hold what its seam last mapped from a fetched
+document. When they differ, the service wins and core fetches again; core sends its content only
+to register it (mode 1, D6) or after the operator chooses to overwrite. Until then, core's files
+are the authority, behind the in-process backend.
 
 ### D6. Two ways to build a document
 
-**Mode 1, register.** Core sends its existing file:
+**Mode 1, register.** Core sends its existing content, mapped by its seam:
 `PUT /activations/{activationId}` with an `ActivationConfig` body. `If-Match` is optional:
-without it the write is last-writer-wins, because core's file is what it means to register.
+without it the write is last-writer-wins, because core's content is what it means to register.
 
 **Mode 2, build and fetch.**
 
@@ -218,19 +234,46 @@ without it the write is last-writer-wins, because core's file is what it means t
 
    | Change | Request |
    |---|---|
-   | Select, with cascade | `PUT …/selections/{kind}/{artifactId}`, body `{"includeDeactivated": false}` |
+   | Select, with cascade | `PUT …/selections/{kind}/{artifactId}`, body `{"cascade": "<scope>", "includeDeactivated": false}` |
    | Unselect | `DELETE …/selections/{kind}/{artifactId}` |
-   | Deactivate | `PUT …/exclusions/{kind}/{artifactId}` |
+   | Deactivate, with optional cascade | `PUT …/exclusions/{kind}/{artifactId}`, body `{"cascade": "<scope>"}` |
    | Re-activate | `DELETE …/exclusions/{kind}/{artifactId}` |
-   | Apply a preset | `PUT …/presets/{presetId}` |
+   | Apply a preset | `PUT …/presets/{presetId}`, body `{"force": false}` |
    | Change a scalar field (`languages`, `missionTypes`, `activatedKinds`) | A read-modify-write `PUT` of the whole document with `If-Match` |
 
-   A cascade stops at a deactivated artifact and reports it, as ADR-0013 D4 says; deactivation
-   records only the user's choice, never the cascade (ADR-0013 D3). A preset expands into
-   `selected` when it is applied and never removes a deny entry, so writing the document back
-   never applies a preset twice.
-3. **Finalize.** `GET /activations/{activationId}`; core stores `config` as its local
-   file.
+   **The operations carry core's verbs (ruled, 2026-10-20).** Each one is a single write with
+   one new revision:
+   - **select** adds the id to `selected` and clears the id's own exclusion, as `charter activate`
+     does (ADR-0013 D3);
+   - **deactivate** adds the id to `deactivated` and removes it from `selected`, as
+     `charter deactivate` does;
+   - **unselect** and **re-activate** are the narrow operations: each changes one list only.
+
+   **Cascades:**
+   - `cascade` names one of core's cascade scopes; the schema issue fixes the list.
+   - A mission type can be a cascade source: `{kind}` is `mission-type`.
+   - A cascading select stops at a deactivated artifact and reports it (ADR-0013 D4), unless
+     `includeDeactivated` is `true`, which clears the exclusions the walk reaches.
+   - A cascading deactivate removes the reached artifacts from `selected` but records a deny
+     entry only for the named id (ADR-0013 D3), and keeps an artifact another active one still
+     references.
+
+   **Presets:** a preset expands into `selected` when it is applied, so writing the document back
+   never applies it twice.
+   - Without `force`, it never removes a deny entry.
+   - With `"force": true` (ruled, 2026-10-20, matching core's `--preset … --force`), it clears the
+     exclusions for the ids the preset lists and reports them in the change.
+3. **Finalize.** `GET /activations/{activationId}`; core's seam maps `config` back onto its
+   files.
+
+**The skipped report** (`SkippedReport`) takes core's structure, which is already structured,
+in camelCase:
+
+- `skippedByScope`;
+- `skippedDeactivated`, each entry with `viaRequires` and `requiredBy`;
+- `unreachedBehindDeactivated`;
+- for a cascading deactivate, `skippedShared`, each entry with the active artifact that still
+  references it.
 
 **Round trip.** For every stored document, a `PUT` of its `config` answers `200` with the same
 `ETag`. A contract scenario and a property test pin this.
@@ -291,12 +334,16 @@ These are the service's own writes behind its storage port, not core's Python un
 | `201` | A `PUT` or `POST` that created a document | `Activation`, with `Location` and `ETag` |
 | `204` | `DELETE` of a document | None |
 | `404` | `activation_not_found`, `artifact_not_found`, `preset_not_found` | `CharterRefusal` |
-| `409` | `artifact_required`, `artifact_locked`: a deactivation the pack policy forbids; nothing is stored | `CharterRefusal` naming the pack |
+| `409` | `artifact_required`, `artifact_locked`: a deactivation the pack policy forbids, whether by a deactivate call or a registered document that holds a deny entry on a required or locked id; nothing is stored | `CharterRefusal` naming every requiring pack |
 | `412` | `If-Match` or `If-None-Match` failed | `Problem`, no code |
 | `415` | A body that is not `application/json` | `Problem`, no code |
-| `422` | `activation_invalid`: a well-formed document naming an unknown pack, kind or artifact, or failing the schema | `CharterRefusal` with `violations` |
+| `422` | `activation_invalid`: a well-formed document naming an unknown pack, kind or artifact (a `deactivated` key for an unknown kind included), or failing the schema | `CharterRefusal` with `violations` |
 | `428` | A sub-resource write without `If-Match` | `Problem`, no code |
 | `501` | A reserved operation (D8) | `Problem`, no code |
+
+**Stale and unknown deny entries are refused (ruled, 2026-10-20).** A document is never stored
+with a deny entry the service would ignore. Core treats such entries as inert, so its seam drops
+them, or asks the user, before it registers.
 
 `412` and `428` are HTTP preconditions, not charter facts, so they carry no code **(default**;
 rejected: `activation_precondition_failed` codes, which would duplicate the status). `412` clears
@@ -312,8 +359,9 @@ The codes of D9 enter `CharterRefusalCode` with `x-refusal` entries and `raised:
 `CharterRefusal` gains two optional members, because it is closed and they cannot be added after
 the tag:
 
-- `pack`: the `packId` that requires or locks the artifact (ADR-0012 D7 asks that the refusal name
-  the pack);
+- `requiredBy`: a list of `{packId, via}`, one entry per pack that requires or locks the artifact,
+  where `via` names the `extends:` chain it is inherited through. ADR-0012 D7 asks that the refusal
+  name the pack, and core can name several (core response, 2026-10-20);
 - `violations`: a list of `{pointer, code, detail}` for a `422`, where `pointer` is an RFC 6901
   JSON Pointer into the body.
 
@@ -359,8 +407,9 @@ before 1.0.0, in a 0.x minor:
 - Core's interview stays in core, and the result is stored where every reader of the charter can
   reach it. The cutover's R9 gate reads one stored document instead of re-deriving a project's
   files.
-- The activation document is one schema with a byte-stable round trip, so core's local copy can
-  never drift silently: a changed copy has a different `ETag`.
+- The activation document is one schema with a byte-stable round trip, and core computes the same
+  revision, so core's mapped content can never drift silently: a changed copy has a different
+  `ETag`.
 - Per-branch or per-worktree charters need no special case: they are different ids.
 - Core's id-spelling and required-floor gaps are fixed at the source instead of copied.
 
@@ -381,9 +430,9 @@ before 1.0.0, in a 0.x minor:
 - **The reserved surface is wrong once built.** Mitigation: the operations stay `501` until each
   lands with its scenarios, and the schema issue settles every field before 1.0.0. In 0.x, a reserved
   shape that proves wrong in core's integration changes in the next minor.
-- **Normalized ids surprise core.** A file core registered comes back with canonical spellings.
-  Mitigation: core stores what it fetches (D5), and the `ETag` changes only with meaning, not
-  spelling.
+- **Normalized ids surprise core.** Content core registered comes back with canonical spellings.
+  Mitigation: core emits declared ids already (its response of 2026-10-20), and the `ETag` changes
+  only with meaning, not spelling.
 - **Authorization is under-specified.** Which identity may write which activation is decided by the
   deployment's issuer. Mitigation: the contract fixes the scopes and the `404` rule; tenancy is a
   later record (ADR-0005).
@@ -436,16 +485,19 @@ These need a ruling before 1.0.0, because each is a closed shape. Core's integra
 
 ## Requests to core
 
-- **Stop the flat file from rejecting the document.** The unmerged branch
-  `core-align-3-persistent-deactivation` writes `.kittify/charter/activation.yaml` and rejects
-  unknown top-level keys. Under D5 that file becomes the fetched `ActivationConfig`. Map it at the
-  seam, or store the document as fetched; either way, change the reader before the branch merges.
-- **Register instead of reading locally.** After the interview, the seam registers the document
-  (mode 1) or builds it (mode 2), and stores what it fetches.
+- **Map the document in one place.** Core keeps its file layout (D4). One seam module maps
+  `.kittify/charter/activation.yaml`, `config.yaml` and `charter.yaml` to and from
+  `ActivationConfig`, computes the revision, and translates refusals. Accepted in core's response
+  of 2026-10-20 (`charter.activation.activation_contract`).
+- **Register instead of reading locally, once routed.** After the switch (ADR-0021 D5), the seam
+  registers the document (mode 1) or builds it (mode 2), and maps back what it fetches.
 - **Pick the id.** Use `project.uuid` with `PUT`, or another stable id core already keeps.
 - **Fix the id spelling gap.** `charter activate` must accept every spelling a preset writes; the
   service normalizes, but core's own commands should not fail on its own output.
 - **Amend core ADR `4.x/2026-10-16-1`.** Activation state moves to the service for the cutover.
+  Accepted in core's response of 2026-10-20: the service is authoritative after the 1.0.0
+  cutover, and switching to the charter surface is a core 4.0 GA deliverable
+  (spec-kitty/spec-kitty#6518).
 
 ## References
 
