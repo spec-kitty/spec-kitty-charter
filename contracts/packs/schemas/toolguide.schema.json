@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/toolguide.schema.json",
+  "additionalProperties": false,
+  "description": "A tool-specific governance guide.",
+  "properties": {
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "tool": {
+      "title": "Tool",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "guide_path": {
+      "pattern": "^[^/].*\\.md$",
+      "title": "Guide Path",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "commands": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Commands",
+      "type": "array"
+    },
+    "applies_to_languages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Applies To Languages",
+      "type": "array"
+    },
+    "last_updated": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Updated"
+    },
+    "references": {
+      "items": {
+        "type": "string"
+      },
+      "title": "References",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "schema_version",
+    "tool",
+    "title",
+    "guide_path",
+    "summary"
+  ],
+  "title": "Toolguide",
+  "type": "object"
+}

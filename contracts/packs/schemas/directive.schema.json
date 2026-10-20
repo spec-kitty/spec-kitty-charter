@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/directive.schema.json",
+  "$defs": {
+    "ArtifactKind": {
+      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "template",
+        "asset",
+        "glossary_pack",
+        "anti_pattern",
+        "skill"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "DirectiveReference": {
+      "additionalProperties": false,
+      "description": "Cross-artifact reference within a directive.\n\n``when``/``reason`` are optional curated edge metadata carried symmetrically\nwith the DRG edge the extractor mints from this reference\n(:class:`charter.offering.drg.models.DRGEdge`): ``when`` is the activation trigger and\n``reason`` the rationale. They exist so a defensible relationship can live in\nsource-artifact frontmatter (single canonical authority) rather than the\nhand-authored overlay — the #3009 residual promotions\n(mission ``kind-complete-cascade-orphan-wiring-01M0FQCD``). Both default to\n``None`` so every pre-existing ``{type, id}`` reference is unchanged.",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "When"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "DirectiveReference",
+      "type": "object"
+    },
+    "Enforcement": {
+      "description": "Enforcement level for a directive.\n\nOrdering is rank-driven (:data:`_ENFORCEMENT_RANK`), not the lexical\n``str`` comparison ``StrEnum`` would otherwise inherit -- see\n:meth:`__lt__`. ``==``, hashing, and JSON/str serialization are\nuntouched: only the four ordering dunders are overridden, so\n``Enforcement.REQUIRED == \"required\"`` and\n``json.dumps(Enforcement.REQUIRED)``-style value serialization keep\nworking exactly as before (FR-001).",
+      "enum": [
+        "required",
+        "lenient-adherence",
+        "advisory"
+      ],
+      "title": "Enforcement",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A constraint-oriented governance rule.\n\nDirectives define WHAT must be done (or avoided) with an enforcement\nlevel. Relationships to the tactics that describe HOW live in\n``packs/built-in/*.graph.yaml`` as typed edges; they are no longer embedded\nas inline ``tactic_refs`` on this model.",
+  "properties": {
+    "id": {
+      "pattern": "^[A-Z][A-Z0-9_-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "intent": {
+      "title": "Intent",
+      "type": "string"
+    },
+    "enforcement": {
+      "$ref": "#/$defs/Enforcement"
+    },
+    "scope": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scope"
+    },
+    "procedures": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Procedures",
+      "type": "array"
+    },
+    "integrity_rules": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Integrity Rules",
+      "type": "array"
+    },
+    "validation_criteria": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Validation Criteria",
+      "type": "array"
+    },
+    "explicit_allowances": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Explicit Allowances",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/DirectiveReference"
+      },
+      "title": "References",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "schema_version",
+    "title",
+    "intent",
+    "enforcement"
+  ],
+  "title": "Directive",
+  "type": "object",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "enforcement": {
+            "const": "lenient-adherence"
+          }
+        },
+        "required": [
+          "enforcement"
+        ]
+      },
+      "then": {
+        "properties": {
+          "explicit_allowances": {
+            "minItems": 1
+          }
+        },
+        "required": [
+          "explicit_allowances"
+        ]
+      }
+    }
+  ]
+}

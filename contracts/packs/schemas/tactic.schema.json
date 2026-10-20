@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/tactic.schema.json",
+  "$defs": {
+    "ArtifactKind": {
+      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "template",
+        "asset",
+        "glossary_pack",
+        "anti_pattern",
+        "skill"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "TacticReference": {
+      "additionalProperties": false,
+      "description": "Cross-artifact reference within a tactic or step.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "title": "When",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "id",
+        "when"
+      ],
+      "title": "TacticReference",
+      "type": "object"
+    },
+    "TacticStep": {
+      "additionalProperties": false,
+      "description": "A single step within a tactic.",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "examples": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Examples",
+          "type": "array"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/TacticReference"
+          },
+          "title": "References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "TacticStep",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A reusable behavior pattern with ordered steps.\n\nTactics describe HOW to achieve a goal through concrete,\nordered steps with optional cross-artifact references.",
+  "properties": {
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "purpose": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Purpose"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/TacticStep"
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "failure_modes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Failure Modes",
+      "type": "array"
+    },
+    "applies_to_languages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Applies To Languages",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/TacticReference"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "id",
+    "schema_version",
+    "name",
+    "steps"
+  ],
+  "title": "Tactic",
+  "type": "object"
+}

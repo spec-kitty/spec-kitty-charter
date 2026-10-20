@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/asset.schema.json",
+  "additionalProperties": false,
+  "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.",
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "mime": {
+      "minLength": 1,
+      "title": "Mime",
+      "type": "string"
+    },
+    "path": {
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "id",
+    "mime",
+    "path"
+  ],
+  "title": "AssetManifest",
+  "type": "object"
+}

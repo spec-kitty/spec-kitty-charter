@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/paradigm.schema.json",
+  "$defs": {
+    "ArtifactKind": {
+      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "template",
+        "asset",
+        "glossary_pack",
+        "anti_pattern",
+        "skill"
+      ],
+      "title": "ArtifactKind",
+      "type": "string"
+    },
+    "ParadigmReference": {
+      "additionalProperties": false,
+      "description": "Typed cross-artifact reference from a paradigm.\n\nThe sanctioned structured form (``{type, id}``) — distinct from the retired\nlegacy ``tactic_refs`` / ``paradigm_refs`` inline-name fields excised in\nmission ``excise-doctrine-curation-and-inline-references-01KP54J6``. ``type``\naccepts the full :class:`ArtifactKind` vocabulary, so a paradigm may reference\na tactic, procedure, agent profile, etc. The DRG extractor mints the\ncorresponding ``paradigm -> <ref>`` edge at graph-generation time.",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "ParadigmReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A worldview-level framing that guides doctrine interpretation.\n\nRelationships to directives use the inline ``directive_refs`` list; richer\ncross-artifact relationships (paradigm -> tactic / procedure / agent_profile)\nuse the structured ``references`` list. The retired legacy ``tactic_refs`` /\n``paradigm_refs`` inline-name fields remain rejected (FR-028).",
+  "properties": {
+    "schema_version": {
+      "pattern": "^1\\.0$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "directive_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Directive Refs",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/ParadigmReference"
+      },
+      "title": "References",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "summary"
+  ],
+  "title": "Paradigm",
+  "type": "object"
+}
