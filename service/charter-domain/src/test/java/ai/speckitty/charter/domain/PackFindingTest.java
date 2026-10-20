@@ -24,18 +24,19 @@ class PackFindingTest {
     }
 
     @Test
-    void onlyTheLevelMissingCodeIsAWarning() {
+    void onlyTheLevelMissingAndUnknownKeyCodesAreWarnings() {
         assertThat(EnumSet.allOf(PackFindingCode.class).stream()
                         .filter(c -> c.severity() == PackFindingCode.Severity.WARNING))
-                .containsExactly(PackFindingCode.PACK_LEVEL_MISSING);
+                .containsExactlyInAnyOrder(PackFindingCode.PACK_LEVEL_MISSING, PackFindingCode.PACK_UNKNOWN_KEY);
     }
 
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aFindingTakesItsSeverityFromItsCode(PackFindingCode code) {
-        PackFindingCode.Severity expected = code == PackFindingCode.PACK_LEVEL_MISSING
-                ? PackFindingCode.Severity.WARNING
-                : PackFindingCode.Severity.BLOCKING;
+        PackFindingCode.Severity expected =
+                code == PackFindingCode.PACK_LEVEL_MISSING || code == PackFindingCode.PACK_UNKNOWN_KEY
+                        ? PackFindingCode.Severity.WARNING
+                        : PackFindingCode.Severity.BLOCKING;
         assertThat(finding(code).severity()).isEqualTo(expected);
     }
 

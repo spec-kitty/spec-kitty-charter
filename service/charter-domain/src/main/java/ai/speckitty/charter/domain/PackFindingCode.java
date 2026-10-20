@@ -10,6 +10,8 @@ public enum PackFindingCode {
     PACK_UNREADABLE(Severity.BLOCKING),
     /** {@code requires_core} is not a valid specifier set. */
     REQUIRES_CORE_INVALID(Severity.BLOCKING),
+    /** {@code pack.yaml} has a key the schema does not declare; it is ignored. */
+    PACK_UNKNOWN_KEY(Severity.WARNING),
     /** An org pack has no {@code drg/fragment.yaml}. */
     ORG_FRAGMENT_MISSING(Severity.BLOCKING),
     /** A graph document breaks the DRG schema. */
