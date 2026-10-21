@@ -1,0 +1,86 @@
+# DIRECTIVE_035 occurrence map — screaming-architecture slice migration (IC-02).
+# Behaviour-preserving rename/move of the whole service onto the ADR-0006 slice layout.
+# Each of the 8 standard categories has an explicit action. The YAML pack FORMAT
+# (pack.yaml keys, schema ids) is NOT renamed — only Java modules/packages/structure.
+#
+# Target module set: kernel (kernel.domain + kernel.validation), packs
+# (packs.{domain,application,infra.storage,infra.api}), bootstrap, charter-api (unchanged),
+# charter-reports (aggregation-only — update its serviceModules map), contracts (verify).
+
+module_moves:
+  - from: service/charter-domain        # ai.speckitty.charter.domain
+    to:   split -> service/kernel (ai.speckitty.charter.kernel.domain, shared Pack/DRG vocab)
+                 + service/packs  (ai.speckitty.charter.packs.domain, pack-management behaviour + new aggregate)
+  - new:  service/kernel                 # ai.speckitty.charter.kernel.validation (pure guard lib; NESTED in kernel per DM 01M5F6RC — NOT a separate module)
+  - from: service/charter-read-app       # ai.speckitty.charter.read
+    to:   service/packs (ai.speckitty.charter.packs.application)
+  - from: service/adapter-out-yaml       # ai.speckitty.charter.yaml
+    to:   service/packs (ai.speckitty.charter.packs.infra.storage)   # keep Yaml... class names
+  - from: service/adapter-in-rest        # ai.speckitty.charter.rest
+    to:   service/packs (ai.speckitty.charter.packs.infra.api)
+  - from: service/charter-service        # ai.speckitty.charter.service
+    to:   service/bootstrap (ai.speckitty.charter.bootstrap)
+  - keep: service/charter-api            # generated contract DTOs (unchanged)
+  - aggregation-only: service/charter-reports   # NO java sources; a build-aggregation module (javadoc+coverage). Its `serviceModules` map (build.gradle.kts) hard-asserts it = exactly the hand-written service projects -> MUST update to {kernel, packs, bootstrap} or verifyAll breaks. NOT a slice.
+  - verify: contracts                    # top-level contracts/ (OpenAPI checks + ClosureChecker/Vocabulary in contracts/src). Part of verifyAll. Verify its closure vocabulary / package references survive the rename (scoped, likely no change).
+
+# WP split (priti): IC-02 migrates BOTTOM-UP, one WP per source module, verifyAll green at each step
+# (Gradle project() edges break the instant a consumer's dep is renamed):
+#   02a charter-domain -> kernel.domain (+ scaffold kernel.validation)   [innermost first]
+#   02b charter-domain(pack types) -> packs.domain
+#   02c charter-read-app -> packs.application
+#   02d adapter-out-yaml -> packs.infra.storage
+#   02e adapter-in-rest  -> packs.infra.api
+#   02f charter-service  -> bootstrap  (+ settings.gradle, charter-reports serviceModules, build-logic)
+# Each module's ArchUnit rule change CO-LANDS with its move (no vacuous-gate window).
+
+categories:
+  code_symbols:
+    action: rename-packages
+    detail: >
+      Rewrite every `package ai.speckitty.charter.{domain,read,yaml,rest,service}..` declaration to its
+      slice/layer target. Class names preserved EXCEPT format-specific classes keep `Yaml…`
+      (YamlDumpEmitter, YamlSerializationStrategy). PackElementRepository + PackLocator are SUPERSEDED
+      (not renamed) by the new ports + identifier VOs in IC-04/05 — NOT part of IC-02. PackElementViolation
+      is KEPT (it is the new PackInspectionQuery return type).
+  import_paths:
+    action: rewrite-imports
+    detail: Every `import ai.speckitty.charter.{domain,read,yaml,rest,service}.*` updated; mechanical, follows code_symbols.
+  filesystem_paths:
+    action: move-modules
+    detail: >
+      Move module dirs per module_moves; update settings.gradle include/projectDir, every per-module
+      build.gradle.kts (inter-module project() deps; spring/networknt/snakeyaml placements), build-logic
+      convention plugins if they name modules, and service/charter-reports build.gradle.kts `serviceModules` map.
+  serialized_keys:
+    action: none
+    detail: pack.yaml / *.tactic.yaml keys + schema ids are the stable persistence format; not renamed. No serialized key references a Java package.
+  cli_commands:
+    action: none
+    detail: No CLI / spec-kitty invocation references the renamed Java modules/packages.
+  user_facing_strings:
+    action: verify-none
+    detail: REST paths / OpenAPI operationIds / HATEOAS relations unchanged (inbound surface moves package, keeps its contract). Verify no user-facing string embeds the old package name.
+  tests_fixtures:
+    action: move-with-modules
+    detail: >
+      Test sources move with their modules; HexagonalArchitectureTest + its archsample/networkntfixture seams -> bootstrap.
+      Fixture resources (roundtrip-fixtures, vendored-packs) move to the owning slice's test resources.
+      The old PackElement*Test battery is REPLACED in IC-04/05 (new ports), not moved here.
+
+archunit_rules_rewrite:
+  file: HexagonalArchitectureTest (moves to bootstrap test sources)
+  action: inventory-ALL-and-map-each    # NOT just "the 6 hardcoded rules" — the live test has ~10 production guard families + known-bad controls (20 @Test). Map EACH: port / keep-as-supplement / retire-with-reason.
+  rules:
+    - dependenciesPointInward (layeredArchitecture): PORT -> ADR-0006 ONION_DEPENDS_INWARD over kernel/<slice>.domain/application/infra.storage/infra.api; add ENTRYPOINT_OVER_APPLICATION, PORTS_LIVE_IN_DOMAIN, STORAGE_RETURNS_DOMAIN, SLICES_DO_NOT_CROSS.
+    - theCoreIsPlainJava (DOMAIN_IS_PURE): PORT -> allow java + ..kernel.. (BROADENED to include kernel.validation per DM 01M5F6RC) + jspecify + own-slice domain. NEW validation-purity rule: ..kernel.validation.. -> {java, jspecify} only (+ known-bad).
+    - portSignaturesNameOnlyDomainTypes (+ known-bad): KEEP -> extend allow-list to ..kernel.domain.. + ..kernel.validation.. (ports may name Constraint/Evaluation).
+    - transportTypesStayInTheInboundAdapter: PORT -> TRANSPORT_STAYS_IN_ADAPTER over ..packs.infra.api.. + charter-api.
+    - onlyTheInboundAdapterRefusesWithInternalError (+ known-bad): KEEP-as-supplement -> repoint to ..packs.infra.api...
+    - onlyThePolicyNamesThePackLevelFindings (+ known-bad): KEEP-as-supplement -> repoint PackPolicy to ..packs.domain...
+    - onlyThePolicyNamesTheMissingDiagnostic / onlyThePolicyNamesTheMismatchRefusal (+ known-bads): KEEP-as-supplement -> repoint to ..packs.domain...
+    - onlyTheYamlAdapterUsesNetworknt (+ known-bad, networkntfixture): KEEP-as-supplement -> RESOLVER_OWNS_NETWORK is worded for git/HTTP/cache; keep an explicit "only ..packs.infra.storage.. depends on com.networknt" rule.
+    - everyHandWrittenMainPackageIsNullMarked (+ known-bad): KEEP -> covers the new kernel/packs/validation packages too.
+    - noMainClassDependsOnATestSeam (+ known-bad): KEEP -> unchanged intent.
+    - GENERATED_API_NOT_IN_DOMAIN: ADD (ADR-0006) -> ..domain.. imports nothing from charter-api.
+  note: No guard silently dropped; each known-bad control co-located in the NEW packages to defeat glob vacuity.
