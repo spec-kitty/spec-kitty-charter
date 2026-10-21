@@ -43,3 +43,6 @@ __pycache__/
 build/
 .kotlin/
 .open-packs/
+
+# Aggregate lifecycle telemetry (not per-mission; machine-local)
+kitty-ops/lifecycle.jsonl

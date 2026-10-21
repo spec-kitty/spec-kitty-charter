@@ -1,0 +1,245 @@
+package ai.speckitty.charter.packs.domain;
+
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+/**
+ * The fixed extension to MIME type table behind the {@code asset_mime_invalid} rule.
+ *
+ * <p>It is Python's built-in strict table, not the live one: core's {@code mimetypes.guess_type} also reads platform
+ * files such as {@code /etc/mime.types}, so this table can differ from core on a host that maps an extension
+ * differently (plan call P8, divergence DIV-016). The lookup follows {@code mimetypes.MimeTypes._guess_file_type}:
+ * the suffix map first ({@code .tgz} to {@code .tar.gz}), then one encoding extension peeled off, then the
+ * lower-cased extension. A path whose extension is unknown has no expected type. URL-style paths ({@code data:} and
+ * other schemes) are not modelled; an asset path is a relative file path.
+ *
+ * <p>Generated from Python 3.13.16: ~/.venv-sk/bin/python -I scripts/packs/mime_table.py
+ */
+final class AssetMimeTable {
+
+    private static final Map<String, String> TYPES = pairs(
+            ".3g2", "audio/3gpp2",
+            ".3gp", "audio/3gpp",
+            ".3gpp", "audio/3gpp",
+            ".3gpp2", "audio/3gpp2",
+            ".a", "application/octet-stream",
+            ".aac", "audio/aac",
+            ".adts", "audio/aac",
+            ".ai", "application/postscript",
+            ".aif", "audio/x-aiff",
+            ".aifc", "audio/x-aiff",
+            ".aiff", "audio/x-aiff",
+            ".ass", "audio/aac",
+            ".au", "audio/basic",
+            ".avi", "video/x-msvideo",
+            ".avif", "image/avif",
+            ".bat", "text/plain",
+            ".bcpio", "application/x-bcpio",
+            ".bin", "application/octet-stream",
+            ".bmp", "image/bmp",
+            ".c", "text/plain",
+            ".cdf", "application/x-netcdf",
+            ".cpio", "application/x-cpio",
+            ".csh", "application/x-csh",
+            ".css", "text/css",
+            ".csv", "text/csv",
+            ".dll", "application/octet-stream",
+            ".doc", "application/msword",
+            ".dot", "application/msword",
+            ".dvi", "application/x-dvi",
+            ".eml", "message/rfc822",
+            ".eps", "application/postscript",
+            ".etx", "text/x-setext",
+            ".exe", "application/octet-stream",
+            ".gif", "image/gif",
+            ".gtar", "application/x-gtar",
+            ".h", "text/plain",
+            ".h5", "application/x-hdf5",
+            ".hdf", "application/x-hdf",
+            ".heic", "image/heic",
+            ".heif", "image/heif",
+            ".htm", "text/html",
+            ".html", "text/html",
+            ".ico", "image/vnd.microsoft.icon",
+            ".ief", "image/ief",
+            ".jpe", "image/jpeg",
+            ".jpeg", "image/jpeg",
+            ".jpg", "image/jpeg",
+            ".js", "text/javascript",
+            ".json", "application/json",
+            ".ksh", "text/plain",
+            ".latex", "application/x-latex",
+            ".loas", "audio/aac",
+            ".m1v", "video/mpeg",
+            ".m3u", "application/vnd.apple.mpegurl",
+            ".m3u8", "application/vnd.apple.mpegurl",
+            ".man", "application/x-troff-man",
+            ".markdown", "text/markdown",
+            ".md", "text/markdown",
+            ".me", "application/x-troff-me",
+            ".mht", "message/rfc822",
+            ".mhtml", "message/rfc822",
+            ".mif", "application/x-mif",
+            ".mjs", "text/javascript",
+            ".mov", "video/quicktime",
+            ".movie", "video/x-sgi-movie",
+            ".mp2", "audio/mpeg",
+            ".mp3", "audio/mpeg",
+            ".mp4", "video/mp4",
+            ".mpa", "video/mpeg",
+            ".mpe", "video/mpeg",
+            ".mpeg", "video/mpeg",
+            ".mpg", "video/mpeg",
+            ".ms", "application/x-troff-ms",
+            ".n3", "text/n3",
+            ".nc", "application/x-netcdf",
+            ".nq", "application/n-quads",
+            ".nt", "application/n-triples",
+            ".nws", "message/rfc822",
+            ".o", "application/octet-stream",
+            ".obj", "application/octet-stream",
+            ".oda", "application/oda",
+            ".opus", "audio/opus",
+            ".p12", "application/x-pkcs12",
+            ".p7c", "application/pkcs7-mime",
+            ".pbm", "image/x-portable-bitmap",
+            ".pdf", "application/pdf",
+            ".pfx", "application/x-pkcs12",
+            ".pgm", "image/x-portable-graymap",
+            ".pl", "text/plain",
+            ".png", "image/png",
+            ".pnm", "image/x-portable-anymap",
+            ".pot", "application/vnd.ms-powerpoint",
+            ".ppa", "application/vnd.ms-powerpoint",
+            ".ppm", "image/x-portable-pixmap",
+            ".pps", "application/vnd.ms-powerpoint",
+            ".ppt", "application/vnd.ms-powerpoint",
+            ".ps", "application/postscript",
+            ".pwz", "application/vnd.ms-powerpoint",
+            ".py", "text/x-python",
+            ".pyc", "application/x-python-code",
+            ".pyo", "application/x-python-code",
+            ".qt", "video/quicktime",
+            ".ra", "audio/x-pn-realaudio",
+            ".ram", "application/x-pn-realaudio",
+            ".ras", "image/x-cmu-raster",
+            ".rdf", "application/xml",
+            ".rgb", "image/x-rgb",
+            ".roff", "application/x-troff",
+            ".rst", "text/x-rst",
+            ".rtf", "text/rtf",
+            ".rtx", "text/richtext",
+            ".sgm", "text/x-sgml",
+            ".sgml", "text/x-sgml",
+            ".sh", "application/x-sh",
+            ".shar", "application/x-shar",
+            ".snd", "audio/basic",
+            ".so", "application/octet-stream",
+            ".src", "application/x-wais-source",
+            ".srt", "text/plain",
+            ".sv4cpio", "application/x-sv4cpio",
+            ".sv4crc", "application/x-sv4crc",
+            ".svg", "image/svg+xml",
+            ".swf", "application/x-shockwave-flash",
+            ".t", "application/x-troff",
+            ".tar", "application/x-tar",
+            ".tcl", "application/x-tcl",
+            ".tex", "application/x-tex",
+            ".texi", "application/x-texinfo",
+            ".texinfo", "application/x-texinfo",
+            ".tif", "image/tiff",
+            ".tiff", "image/tiff",
+            ".tr", "application/x-troff",
+            ".trig", "application/trig",
+            ".tsv", "text/tab-separated-values",
+            ".txt", "text/plain",
+            ".ustar", "application/x-ustar",
+            ".vcf", "text/x-vcard",
+            ".vtt", "text/vtt",
+            ".wasm", "application/wasm",
+            ".wav", "audio/x-wav",
+            ".webm", "video/webm",
+            ".webmanifest", "application/manifest+json",
+            ".webp", "image/webp",
+            ".wiz", "application/msword",
+            ".wsdl", "application/xml",
+            ".xbm", "image/x-xbitmap",
+            ".xlb", "application/vnd.ms-excel",
+            ".xls", "application/vnd.ms-excel",
+            ".xml", "text/xml",
+            ".xpdl", "application/xml",
+            ".xpm", "image/x-xpixmap",
+            ".xsl", "application/xml",
+            ".xwd", "image/x-xwindowdump",
+            ".zip", "application/zip");
+
+    private static final Map<String, String> SUFFIXES = pairs(
+            ".svgz", ".svg.gz",
+            ".taz", ".tar.gz",
+            ".tbz2", ".tar.bz2",
+            ".tgz", ".tar.gz",
+            ".txz", ".tar.xz",
+            ".tz", ".tar.gz");
+
+    private static final Set<String> ENCODINGS =
+            Collections.unmodifiableSet(new TreeSet<>(Set.of(".Z", ".br", ".bz2", ".gz", ".xz")));
+
+    private AssetMimeTable() {}
+
+    /**
+     * What the table expects of a path.
+     *
+     * @param extension the lower-cased extension the type was looked up by, with its dot
+     * @param type the expected MIME type
+     */
+    record Expectation(String extension, String type) {}
+
+    /**
+     * The type the table gives a path, as {@code mimetypes.guess_type(path)[0]} does without platform files.
+     *
+     * @param path the declared asset path
+     * @return the expectation, or empty when the extension is not in the table
+     */
+    static Optional<Expectation> expected(String path) {
+        String[] split = splitExt(path);
+        String base = split[0];
+        String ext = split[1];
+        while (SUFFIXES.containsKey(ext.toLowerCase(Locale.ROOT))) {
+            split = splitExt(base + SUFFIXES.get(ext.toLowerCase(Locale.ROOT)));
+            base = split[0];
+            ext = split[1];
+        }
+        if (ENCODINGS.contains(ext)) {
+            ext = splitExt(base)[1];
+        }
+        String lower = ext.toLowerCase(Locale.ROOT);
+        String type = TYPES.get(lower);
+        return type == null ? Optional.empty() : Optional.of(new Expectation(lower, type));
+    }
+
+    private static String[] splitExt(String path) {
+        int sep = path.lastIndexOf('/');
+        int dot = path.lastIndexOf('.');
+        if (dot > sep) {
+            for (int i = sep + 1; i < dot; i++) {
+                if (path.charAt(i) != '.') {
+                    return new String[] {path.substring(0, dot), path.substring(dot)};
+                }
+            }
+        }
+        return new String[] {path, ""};
+    }
+
+    private static Map<String, String> pairs(String... keyValues) {
+        Map<String, String> map = new TreeMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            map.put(keyValues[i], keyValues[i + 1]);
+        }
+        return Collections.unmodifiableMap(map);
+    }
+}

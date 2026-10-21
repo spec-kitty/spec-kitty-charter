@@ -1,0 +1,9 @@
+{
+  "covers": [
+    "C14"
+  ],
+  "proven_by": [
+    "packs:PackSchemasTest#theBundleLoadsAndEveryKindIsKnown",
+    "packs:OpenPacksAcceptanceTest#everyMappedFileOfEveryPackValidates"
+  ]
+}

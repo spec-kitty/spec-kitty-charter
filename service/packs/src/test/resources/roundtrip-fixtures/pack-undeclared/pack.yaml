@@ -1,0 +1,5 @@
+pack_id: 01M5DEH8ROUNDTRIPUNDECLARED
+pack_version: 1.0.0
+name: roundtrip-undeclared
+pack_level: org
+experimental_note: a top-level key the pack-descriptor schema does not declare

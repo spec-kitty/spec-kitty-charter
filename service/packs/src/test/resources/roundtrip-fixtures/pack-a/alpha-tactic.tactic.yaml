@@ -1,0 +1,32 @@
+id: alpha-tactic
+schema_version: '1.0'
+name: Alpha tactic
+purpose: Prove that every field survives.
+steps:
+  - title: First step
+    description: Do the first thing.
+    examples:
+      - first example
+      - second example
+    references:
+      - name: Nested reference
+        type: directive
+        id: nested-directive
+        when: during the first step
+  - title: Second step
+failure_modes:
+  - drifts silently
+  - drops a field
+references:
+  - name: Gamma
+    type: tactic
+    id: gamma-tactic
+    when: always
+  - name: Delta
+    type: styleguide
+    id: delta-style
+    when: when styling
+  - name: Gamma again
+    type: tactic
+    id: gamma-tactic
+    when: on a second look

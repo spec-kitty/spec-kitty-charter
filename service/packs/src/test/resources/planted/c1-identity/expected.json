@@ -1,0 +1,9 @@
+{
+  "covers": [
+    "C1"
+  ],
+  "proven_by": [
+    "packs:PackSchemasTest#eachBundledSchemaDeclaresDraft2020AndAnIdUnderThePrefix",
+    "packs:PackSchemasTest#everyIdAndRefEndsInJsonOrIsLocal"
+  ]
+}

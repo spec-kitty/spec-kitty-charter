@@ -15,7 +15,7 @@ properties:
       contract is one document, so this version names every operation the service serves; an
       additive contract set is new operations in that document and a minor version.
     x-source:
-      path: service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/ContractVersion.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ContractVersion.java
       symbol: ContractVersion.value
   serviceVersion:
     type: string
@@ -24,7 +24,7 @@ properties:
       The version of the service build, a semantic version with an optional pre-release, for
       example 0.1.0-SNAPSHOT. It is the service's own and is independent of contractVersion.
     x-source:
-      path: service/adapter-in-rest/src/main/java/ai/speckitty/charter/rest/ServiceVersion.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ServiceVersion.java
       symbol: ServiceVersion.value
   worktree:
     type: string
@@ -45,5 +45,5 @@ properties:
       presence marker, so an absent file and an empty one differ. It changes whenever an input
       does and names no host path. Adding an input in a later version changes values, not shape.
     x-source:
-      path: service/adapter-out-yaml/src/main/java/ai/speckitty/charter/yaml/ProjectConfigSources.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProjectConfigSources.java
       symbol: ProjectConfigSources.fingerprint

@@ -1,6 +1,6 @@
 name: Mutation testing (nightly)
 
-# PIT mutation testing of the plain-Java core (charter-domain and charter-read-app, the modules with
+# PIT mutation testing of the plain-Java core (kernel, the module with
 # charter.domain-conventions), spec FR-009. `./gradlew pitest` is its own task, never part of `check`, and
 # this workflow has no pull-request trigger, so no pull-request run invokes it or waits for it.
 # Each module's HTML and XML report lists the killed and surviving mutants and the score; both go up as
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 60
     steps:
       # No spec-kitty-open-packs checkout: PIT runs only the unit tests of the core modules; the
-      # open-packs round-trip lives in adapter-out-yaml, which PIT does not target.
+      # open-packs round-trip lives in packs (infra.storage), which PIT does not target.
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
