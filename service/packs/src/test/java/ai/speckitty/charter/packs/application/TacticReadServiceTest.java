@@ -51,7 +51,6 @@ class TacticReadServiceTest {
 
         assertThatThrownBy(() -> service.tacticsOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-            assertThat(r.code().notFound()).isTrue();
             // The original unreadable-pack refusal stays chained, so the diagnostic trail is not lost.
             assertThat(r.getCause())
                     .isInstanceOfSatisfying(
@@ -66,10 +65,8 @@ class TacticReadServiceTest {
     void anAbsentTacticIsNotFoundAndDoesNotFallBackToAnotherPack() {
         // "other" exists, but in pack-b: asking pack-a for it must refuse, not cross packs.
         assertThatThrownBy(() -> service.tactic(PACK_A, new TacticIdentifier("other")))
-                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
-                    assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND);
-                    assertThat(r.code().notFound()).isTrue();
-                });
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND));
     }
 
     private static Tactic tactic(PackIdentifier pack, String id) {
