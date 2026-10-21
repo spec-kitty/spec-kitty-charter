@@ -1,4 +1,3 @@
 files:
-  - Action.yaml
-  - Depth.yaml
-  - MissionType.yaml
+  - PackId.yaml
+  - TacticId.yaml

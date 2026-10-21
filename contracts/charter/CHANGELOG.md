@@ -15,6 +15,27 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Tactic retrieval; pack listing and action context removed (mission application-edge-read-path)
+
+The inbound contract changes (C-004) while it is still `0.1.0-SNAPSHOT`.
+
+- Added: `listPackTactics`, `GET /packs/{packId}/tactics` (tag `Tactics`), a `200` array of `Tactic`;
+  `getPackTactic`, `GET /packs/{packId}/tactics/{tacticId}`, a `200` `Tactic`. Both answer `404` with the new
+  `TacticNotFound` response, a `CharterRefusal`.
+- Added: schemas `Tactic`, `TacticStep`, `TacticReference`; parameters `PackId`, `TacticId`.
+- Added: `CharterRefusalCode` values `pack_not_found` (the pack is absent or unreadable) and `tactic_not_found`
+  (the pack has no such tactic), both `404`, not retryable, raised.
+- Removed: `listPacks`, `GET /packs`; `refreshPacks`, `POST /packs/refresh`; the action-context operation,
+  `GET /mission-types/{missionType}/actions/{action}/context`. With them go the schemas `PackListing`,
+  `PackSummary`, `ActionContext`, `GuidanceEntry`, the parameters `Action`, `Depth`, `MissionType`, their
+  examples, and the scenario features `packs.feature`, `refresh.feature` and `action_context.feature`.
+- Kept: `GET /info`. The vocabulary schemas `Diagnostic`, `DiagnosticCode`, `NodeKind`, `PackLevel`, `Relation`,
+  `Urn` and `Slug` stay although no operation references them now: the load-path vocabulary test reads them.
+  `mission_type_not_found` and `action_not_found` stay in `CharterRefusalCode`, now marked not raised: the
+  queries behind them are gone. So are `pack_level_mismatch` and `drg_schema_error`, which only the removed
+  offering load raised. The `errors.feature`, `service.feature` and `security.feature` probes moved to `/info` and
+  the tactic paths.
+
 ### Added
 
 - The `@contract` tag on the contract scenarios in `scenarios/`, which selects them, and the

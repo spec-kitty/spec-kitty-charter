@@ -13,21 +13,17 @@ servers:
 security:
   - charterWorktreeToken: []
 tags:
-  - name: Packs
-    description: The Charter Packs of the charter offering.
-  - name: Context
-    description: Action-scoped governance context.
+  - name: Tactics
+    description: The tactics of a Charter Pack.
   - name: Service
     description: What the service says about itself.
 paths:
   /info:
     $ref: paths/info.yaml
-  /packs:
-    $ref: paths/packs.yaml
-  /packs/refresh:
-    $ref: paths/packs_refresh.yaml
-  /mission-types/{missionType}/actions/{action}/context:
-    $ref: paths/mission-types_missionType_actions_action_context.yaml
+  /packs/{packId}/tactics:
+    $ref: paths/packs_packId_tactics.yaml
+  /packs/{packId}/tactics/{tacticId}:
+    $ref: paths/packs_packId_tactics_tacticId.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

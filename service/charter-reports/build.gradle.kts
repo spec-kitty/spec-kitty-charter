@@ -27,7 +27,7 @@ plugins {
 val serviceModules = linkedMapOf(
     "kernel" to "ai.speckitty.charter.kernel",
     "packs" to "ai.speckitty.charter.packs",
-    "bootstrap" to "ai.speckitty.charter.bootstrap",
+    "deployable" to "ai.speckitty.charter.deployable",
 )
 
 // Fail closed when the list and the service disagree: every project under service/ that applies

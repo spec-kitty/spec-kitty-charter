@@ -1,0 +1,17 @@
+description: >-
+  The pack is absent or unreadable, or the pack has no such tactic, refused with 404. The code is
+  pack_not_found or tactic_not_found. A client error: the request named something that is not there.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      tactic-not-found:
+        $ref: ../examples/CharterRefusal.tactic-not-found.yaml

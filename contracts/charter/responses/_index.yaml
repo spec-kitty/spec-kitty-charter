@@ -2,4 +2,5 @@ files:
   - ActionNotFound.yaml
   - Forbidden.yaml
   - OfferingUnreadable.yaml
+  - TacticNotFound.yaml
   - Unauthorized.yaml

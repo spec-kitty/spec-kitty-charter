@@ -1,0 +1,6 @@
+summary: The pack has no such tactic.
+value:
+  title: Tactic not found
+  status: 404
+  code: tactic_not_found
+  detail: Pack 01ABC has no tactic adr-drafting.

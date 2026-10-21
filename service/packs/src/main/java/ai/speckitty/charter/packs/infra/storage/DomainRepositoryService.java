@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
-import ai.speckitty.charter.packs.domain.PackInspectionQuery;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
- * {@link PackDescriptorRepository}, {@link PackRepository} and {@link PackInspectionQuery} over the filesystem.
+ * {@link PackDescriptorRepository} and {@link PackRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -39,8 +38,7 @@ import org.springframework.stereotype.Service;
  * to and from the domain entities by hand, and only domain types leave the service.
  */
 @Service
-public final class DomainRepositoryService
-        implements TacticRepository, PackDescriptorRepository, PackRepository, PackInspectionQuery {
+public final class DomainRepositoryService implements TacticRepository, PackDescriptorRepository, PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -57,16 +55,13 @@ public final class DomainRepositoryService
     private final SerializationStrategy strategy;
 
     /**
-     * A service over the YAML format.
+     * A service over the injected format.
      *
      * @param locations the configured pack locations
+     * @param strategy the serialization format
      */
     @Autowired
-    public DomainRepositoryService(Locations locations) {
-        this(locations, new YamlSerializationStrategy());
-    }
-
-    DomainRepositoryService(Locations locations, SerializationStrategy strategy) {
+    public DomainRepositoryService(Locations locations, SerializationStrategy strategy) {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
     }
@@ -82,10 +77,7 @@ public final class DomainRepositoryService
     @Override
     public Optional<Tactic> load(PackIdentifier pack, TacticIdentifier tactic) {
         Resolved resolved = resolve(pack);
-        return resolved.store.read(resolved.key).tactics().stream()
-                .filter(dso -> dso.id().equals(tactic.value()))
-                .findFirst()
-                .flatMap(dso -> toEntity(pack, dso));
+        return resolved.store.readTactic(resolved.key, tactic.value()).flatMap(dso -> toEntity(pack, dso));
     }
 
     // ---- PackDescriptorRepository --------------------------------------------------------------------------------
@@ -93,7 +85,7 @@ public final class DomainRepositoryService
     @Override
     public PackDescriptor get(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
-        return toDescriptor(resolved.store.read(resolved.key).descriptor());
+        return toDescriptor(resolved.store.readDescriptor(resolved.key));
     }
 
     @Override
@@ -102,7 +94,7 @@ public final class DomainRepositoryService
         resolved.store.writeDescriptor(resolved.key, toDso(descriptor));
     }
 
-    // ---- PackRepository / PackInspectionQuery --------------------------------------------------------------------
+    // ---- PackRepository --------------------------------------------------------------------
 
     @Override
     public Pack load(PackIdentifier pack) {
@@ -110,8 +102,11 @@ public final class DomainRepositoryService
     }
 
     @Override
-    public List<PackElementViolation> partialReads(PackIdentifier pack) {
-        return assemble(pack).violations();
+    public List<Tactic> tacticsOf(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        return resolved.store.readTactics(resolved.key).stream()
+                .flatMap(dso -> toEntity(pack, dso).stream())
+                .toList();
     }
 
     private Pack assemble(PackIdentifier pack) {
@@ -164,7 +159,7 @@ public final class DomainRepositoryService
 
     private static boolean declaresId(Resolved candidate, PackIdentifier pack) {
         try {
-            return candidate.store.read(candidate.key).descriptor().packId().equals(pack.value());
+            return candidate.store.readDescriptor(candidate.key).packId().equals(pack.value());
         } catch (CharterRefusal unreadable) {
             return false;
         }

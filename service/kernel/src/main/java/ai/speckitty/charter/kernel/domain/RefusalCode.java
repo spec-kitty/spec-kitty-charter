@@ -32,10 +32,13 @@ public enum RefusalCode {
     GOVERNANCE_POLICY_VIOLATION("governance_policy_violation"),
     /**
      * The pack or configuration files changed while the read was answered, so the answer and the fingerprint it
-     * would report might disagree; the read may be retried. Raised by {@code ConsistentLoad} and by the service
-     * info.
+     * would report might disagree; the read may be retried. Raised by the service info.
      */
-    STALE_INPUT("stale_input");
+    STALE_INPUT("stale_input"),
+    /** The asked pack is not one the service has, or its files cannot be read as a pack; the caller asked wrongly. */
+    PACK_NOT_FOUND("pack_not_found"),
+    /** The asked pack has no tactic with the asked identity. */
+    TACTIC_NOT_FOUND("tactic_not_found");
 
     private final String token;
 
@@ -55,9 +58,13 @@ public enum RefusalCode {
     /**
      * Whether the refusal is about what was asked rather than about the offering.
      *
-     * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND} and {@link #ACTION_NOT_FOUND}
+     * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND}
+     *     and {@link #TACTIC_NOT_FOUND}
      */
     public boolean notFound() {
-        return this == MISSION_TYPE_NOT_FOUND || this == ACTION_NOT_FOUND;
+        return this == MISSION_TYPE_NOT_FOUND
+                || this == ACTION_NOT_FOUND
+                || this == PACK_NOT_FOUND
+                || this == TACTIC_NOT_FOUND;
     }
 }

@@ -1,0 +1,7 @@
+name: packId
+in: path
+required: true
+description: The identity of the Charter Pack, as the pack declares it.
+schema:
+  type: string
+  minLength: 1

@@ -6,7 +6,7 @@ import java.util.Optional;
 public interface TacticRepository {
 
     /**
-     * Stores a tactic, replacing the existing tactic of the same identity in its pack.
+     * Upserts a tactic: stores it, creating it when its identity is unknown and replacing it when known.
      *
      * @param tactic the tactic to store
      */

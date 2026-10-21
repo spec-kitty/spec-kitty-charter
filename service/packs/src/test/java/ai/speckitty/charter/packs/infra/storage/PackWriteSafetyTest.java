@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** NFR-003: a write is atomic, stays inside the pack, and replaces existing elements by id only. */
+/** NFR-003: a write is atomic and stays inside the pack. (Create-or-replace by id: {@link TacticSaveContractTest}.) */
 class PackWriteSafetyTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
@@ -95,23 +95,6 @@ class PackWriteSafetyTest {
         // Positive control, same fixture and store: an in-root target is accepted.
         store.writeTactic(PACK, tactic("alpha-tactic", "Written in root"));
         assertThat(Files.readString(pack.resolve(ALPHA_FILE))).contains("Written in root");
-    }
-
-    /** Replace by id only: an unknown id is refused and creates nothing; a known id is replaced (the control). */
-    @Test
-    void anUnknownTacticIdIsRefusedWhileAKnownIdIsReplaced(@TempDir Path host) throws IOException {
-        Path pack = PackFixtures.copyOf("pack-a", host);
-        List<String> namesBefore = fileNames(pack);
-        FilesystemPackStore store = store(host);
-
-        assertThatThrownBy(() -> store.writeTactic(PACK, tactic("brand-new-tactic", "New")))
-                .isInstanceOf(CharterRefusal.class);
-        assertThat(fileNames(pack)).isEqualTo(namesBefore);
-
-        store.writeTactic(PACK, tactic("beta-tactic", "Replaced beta"));
-        assertThat(store.read(PACK).tactics())
-                .anyMatch(t -> t.id().equals("beta-tactic") && t.name().equals("Replaced beta"));
-        assertThat(fileNames(pack)).isEqualTo(namesBefore);
     }
 
     /** An identifier that climbs out of the storage root is refused; a plain one resolves (the control). */

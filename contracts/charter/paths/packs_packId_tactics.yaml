@@ -1,0 +1,36 @@
+get:
+  operationId: listPackTactics
+  summary: List the tactics of a Charter Pack.
+  description: >-
+    The readable tactics of one pack, in the order the pack's storage lists them. A pack that is
+    absent or cannot be read is a 404 pack_not_found. A pack without tactics answers an empty list.
+  tags:
+    - Tactics
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  responses:
+    '200':
+      description: The pack's tactics.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../schemas/Tactic.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/TacticNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
