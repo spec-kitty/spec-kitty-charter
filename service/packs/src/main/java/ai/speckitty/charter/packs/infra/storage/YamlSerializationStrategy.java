@@ -18,6 +18,9 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
 
     private static final String TACTIC_KIND = "tactic";
 
+    /** Constructs the YAML strategy; the storage configuration publishes it as the {@link SerializationStrategy} bean. */
+    public YamlSerializationStrategy() {}
+
     @Override
     public String writeTactic(TacticDso tactic) {
         YamlDumpEmitter emitter = new YamlDumpEmitter()
