@@ -1,0 +1,129 @@
+{
+  "mission_slug": "application-edge-read-path-01M5FQXC",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05 TacticReadService + WP06 TacticController; TacticControllerTest(list/single 200) + TacticReadWiredTest green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:34:49.491210+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05/WP06 absent pack/tactic -> PACK_NOT_FOUND/TACTIC_NOT_FOUND 404 (not INTERNAL_ERROR); TacticControllerTest 404 arms + wired not-found",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:34:51.659772+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05 application @Service orchestrates ports; WP06 thin TacticController (no business logic); reviewed opus",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:34:53.817551+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP07 cutover; grep CharterPack/CharterOffering/CharterPackRepository/PackInspectionQuery/FileSystemCharterPackRepository over src/main EMPTY; one Pack root",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:34:55.932430+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06 OpenAPI removes /packs,/packs/refresh,context + deletes PacksController/ContextController; WP07 rebinds features/steps",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:34:58.060655+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 DeployableConfiguration @ComponentScans layer config pkgs; WP04/05/06 StorageConfiguration/ApplicationConfiguration/ApiConfiguration",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:00.209654+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 deployable aggregate; WP05 TacticReadWiredTest boots storage+application slice through real beans (SC-001/SC-003)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:02.360731+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04 scan-driven DomainRepositoryService + injected SerializationStrategy; WiringRoundTripTest asserts exactly one port bean",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:04.481606+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 upsert save contract; WP04 FilesystemPackStore create+replace arms; TacticSaveContractTest both arms (atomic, contained, non-vacuous)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:06.669195+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 Pack.violations single owner; WP04 partialReads collapsed to the aggregate; PackInspectionQuery removed WP07",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:08.777721+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 APPLICATION_IS_EDGE replaces APPLICATION_IS_PLAIN_JAVA with biting control; domain/kernel purity unchanged; HexagonalArchitectureTest 36 green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:10.946172+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 ADR-0006 revised (application=edge) + hexagonal/patterns docs + regenerated C4/class diagrams; check_docs.py all green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-21T20:35:13.092344+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

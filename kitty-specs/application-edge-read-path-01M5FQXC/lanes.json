@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "mission_slug": "application-edge-read-path-01M5FQXC",
+  "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+  "mission_branch": "kitty/mission-application-edge-read-path-01M5FQXC",
+  "target_branch": "feat/pack-repositories-validation",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/bootstrap/**",
+        "service/deployable/**",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticRepository.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAggregateTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "docs/adr/0006-onion-vertical-slices-archunit.md",
+        "docs/architecture/architectural-patterns-applied.md",
+        "docs/architecture/diagrams/c4-components.puml",
+        "docs/architecture/diagrams/c4-components.svg",
+        "docs/architecture/diagrams/class-diagram.puml",
+        "docs/architecture/diagrams/class-diagram.svg",
+        "docs/architecture/hexagonal-service.md",
+        "docs/changelog/2026-10-21-application-edge-read-path.md",
+        "docs/glossary/ddd-patterns.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/charter/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterOffering.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterPack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterPackRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackInspectionQuery.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d",
+        "lane-e"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-21T19:35:21.944475+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP01"
+  ],
+  "planning_commit_sha": "597ed4b479ac5a4dc55bec6ca00ed22490831d9f"
+}

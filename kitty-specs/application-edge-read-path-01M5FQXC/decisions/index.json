@@ -1,0 +1,151 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-21T17:25:24.248940Z",
+      "decision_id": "01M5FQY34RCCV4DHNS79F5WA5R",
+      "final_answer": "Read-path only. Narrowed further: the new Pack-model read path covers TACTIC retrieval only; descriptor/DRG/other pack artefacts are not retrieved this mission (their read model is not yet ruled). Write ports stay unexposed to HTTP but their save contract is pinned by a port-level contract test.",
+      "input_key": "read_write_boundary",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "read-path only",
+        "read + write endpoints",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Does this mission's functional scope cover only the READ path (list/get pack, context, info over the Pack model), or also wiring WRITE endpoints (save tactic/descriptor) through to HTTP?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T18:07:23.083920Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.read-write-boundary",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T18:07:34.049057Z",
+      "decision_id": "01M5FTB9N1QFJJRWARB5MDW2Z5",
+      "final_answer": "Delete CharterOffering/CharterPack/CharterPackRepository/FileSystemCharterPackRepository outright AND retire the pack-listing (PacksController/PackListingQuery) and action-context (ContextController/ActionContextQuery) endpoints plus ConsistentLoad, since their Pack-model read model is not yet ruled. Tactic retrieval becomes the only live read endpoint this mission; InfoController/ServiceInfoQuery stays. One canonical aggregate root, no coexistence. Removing those endpoints is an inbound REST contract change (handle the OpenAPI contract + regeneration in plan). pack-listing + action-context are a tracked follow-up mission once their models are ruled.",
+      "input_key": "charterpack_reconciliation",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "Delete CharterPack + retire the not-yet-modeled endpoints",
+        "Keep CharterPack as bounded interim for those endpoints only",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Tactics-only is in scope, but pack-listing + action-context endpoints run on CharterOffering/CharterPack and their new models aren't ruled. How to reconcile with 'delete CharterPack outright'?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T18:57:44.808561Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.charterpack-reconciliation",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T19:04:37.539398Z",
+      "decision_id": "01M5FXKRX31S2QK7NZ5Q28RNRJ",
+      "final_answer": "Collection + single-by-id: GET /api/v1/packs/{packId}/tactics (all tactics of a pack) and GET /api/v1/packs/{packId}/tactics/{tacticId} (one). 404-class refusal when pack/tactic absent.",
+      "input_key": "tactic_endpoint_shape",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "GET pack tactics collection + GET one tactic by id",
+        "GET collection only",
+        "GET single tactic by id only",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "What is the inbound REST shape for tactic retrieval?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T19:08:35.985120Z",
+      "resolved_by": null,
+      "slot_key": "plan.api.tactic-endpoint-shape",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T19:04:39.096581Z",
+      "decision_id": "01M5FXKTDRPFBNZ898AWCTWRE8",
+      "final_answer": "Replace APPLICATION_IS_PLAIN_JAVA with a positive APPLICATION_IS_EDGE rule: application may depend on domain, kernel and framework, but must NOT depend on another slice's infra, on storage internals of its own slice beyond the ports, on cross-slice domain, or on deployable. Keep a biting known-bad control (ReachesStorage-style).",
+      "input_key": "application_edge_rule",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "Replace APPLICATION_IS_PLAIN_JAVA with APPLICATION_IS_EDGE (framework allowed; still no cross-slice/deployable deps)",
+        "Delete the application purity rule outright (treat like infra)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How to revise the ArchUnit gate for application-as-edge?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T19:08:37.496686Z",
+      "resolved_by": null,
+      "slot_key": "plan.gate.application-edge-rule",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T19:04:40.616563Z",
+      "decision_id": "01M5FXKVX8F7ETQVXV0KQVBXSN",
+      "final_answer": "Rename bootstrap -> deployable. deployable holds @SpringBootApplication + an aggregate DeployableConfiguration that @Imports each layer's own @Configuration. The current bootstrap wiring (CharterWiring/GuardWiring/PackPersistenceWiring) is redistributed into the per-layer configs. Retarget ONION_ONLY_BOOTSTRAP_COMPOSES_ADAPTERS and the NullMarked/other gate references from bootstrap to deployable.",
+      "input_key": "deployable_package",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "Rename bootstrap -> deployable (redistribute its wiring into per-layer configs)",
+        "New deployable package alongside; delete bootstrap",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How should the deployable composition root relate to the existing bootstrap package?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T19:08:38.990197Z",
+      "resolved_by": null,
+      "slot_key": "plan.structure.deployable-package",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T19:04:42.123331Z",
+      "decision_id": "01M5FXKXCBGSPKVEGRJTCETPQF",
+      "final_answer": "Create-or-update (upsert): save creates the tactic when its id is unknown and replaces it when known. The filesystem adapter gains an atomic create arm (new file in the pack dir) alongside the existing atomic replace. Pinned by a port-level contract test covering both the create and the update arm. Write surface stays HTTP-unexposed this mission (C-006).",
+      "input_key": "save_semantics",
+      "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+      "mission_slug": "application-edge-read-path-01M5FQXC",
+      "opened_by": "cli",
+      "options": [
+        "Replace-existing-only (refuse unknown id)",
+        "Create-or-update (upsert)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "What create-vs-update contract should TacticRepository.save be pinned to?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T19:08:40.516181Z",
+      "resolved_by": null,
+      "slot_key": "plan.contract.save-semantics",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+  "version": 1
+}

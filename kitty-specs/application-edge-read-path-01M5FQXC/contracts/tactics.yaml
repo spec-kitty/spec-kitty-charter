@@ -1,0 +1,72 @@
+# Planning fragment — tactic retrieval operations to merge into contracts/charter/openapi.yaml.
+# Shapes are indicative; implementation reconciles exact component wiring with the split-file _shared/ style.
+paths:
+  /packs/{packId}/tactics:
+    get:
+      operationId: listPackTactics
+      summary: List the tactics of a pack.
+      parameters:
+        - name: packId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The pack's tactics.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Tactic" }
+        "404": { $ref: "../_shared/responses/Problem.yaml" }
+  /packs/{packId}/tactics/{tacticId}:
+    get:
+      operationId: getPackTactic
+      summary: Get one tactic of a pack by identity.
+      parameters:
+        - name: packId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: tacticId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The tactic.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tactic" }
+        "404": { $ref: "../_shared/responses/Problem.yaml" }
+
+components:
+  schemas:
+    Tactic:
+      type: object
+      required: [id, schemaVersion, name, steps]
+      properties:
+        id: { type: string }
+        schemaVersion: { type: string }
+        name: { type: string }
+        purpose: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        steps:
+          type: array
+          items:
+            type: object
+            required: [title]
+            properties:
+              title: { type: string }
+        failureModes:
+          type: array
+          items: { type: string }
+        appliesToLanguages:
+          type: array
+          items: { type: string }
+        references:
+          type: array
+          items:
+            type: object
+            properties:
+              target: { type: string }
