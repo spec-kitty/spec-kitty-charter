@@ -47,6 +47,5 @@ jobs:
         with:
           name: mutation-report
           path: |
-            service/charter-domain/build/reports/pitest
-            service/charter-read-app/build/reports/pitest
+            service/kernel/build/reports/pitest
           if-no-files-found: error
