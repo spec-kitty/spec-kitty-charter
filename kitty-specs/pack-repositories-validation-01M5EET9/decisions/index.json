@@ -1,0 +1,78 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-21T05:27:18.267446Z",
+      "decision_id": "01M5EEV6ZVJPE8GD80S4DN14TX",
+      "final_answer": "Option 1 (split), refined to a type-nature hard-and-fast rule: RECORDS for value objects / data structures / parameter & DTO classes (TacticReference, TacticStep, PackPaths, YAML-row DTOs), with a fluent builder added only where a record is still wide; FINAL CLASSES with a public fluent builder + package-private all-args constructor for ENTITIES (identity + invariants + lifecycle: Tactic, the pack aggregate). Readers parse YAML->DTO records, then assemble domain entities via builders. Aligns with the DDD entity/valueObject glossary entries this mission adds.",
+      "input_key": "record_builder_split",
+      "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+      "mission_slug": "pack-repositories-validation-01M5EET9",
+      "opened_by": "cli",
+      "options": [
+        "Split: records for adapter DTO/DAO, fluent-builder final classes for domain entities",
+        "Builders everywhere (final classes + pkg-private ctor), no separate record DTO layer",
+        "Records everywhere (public canonical ctor + static factories), drop pkg-private-ctor goal"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How should the pack types be modelled, reconciling 'fluent builders + package-private full ctor' with 'use records for DTO/DAO'?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T05:29:17.791373Z",
+      "resolved_by": null,
+      "slot_key": "specify.modeling.record-vs-builder-split",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T11:28:34.398449Z",
+      "decision_id": "01M5F3GQ2YJ4EFBR1PZYNAJD5P",
+      "final_answer": "Adopt ADR-0006 vertical-concern slices NOW: restructure into kernel + packs slice modules with ai.speckitty.charter.<concern>.<layer> packages (domain/application/infra.storage/infra.api) + a bootstrap composition root; validation lives kernel-side; whole-service migration accepted (DIRECTIVE_035 occurrence map). The pack descriptor+tactic repositories/validation feature is delivered ON this slice structure.",
+      "input_key": "adr0006_rename_shape",
+      "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+      "mission_slug": "pack-repositories-validation-01M5EET9",
+      "opened_by": "cli",
+      "options": [
+        "Layer-role rename now, ADR-0006 slices deferred (amend ADR-0006)",
+        "Adopt ADR-0006 vertical slices now (packs slice + kernel)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How should the screaming-architecture rename reconcile with ADR-0006's proposed vertical-slice (domain-concern) layout?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T11:56:55.352569Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.adr0006-slice-vs-layer-rename",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-21T12:25:11.651314Z",
+      "decision_id": "01M5F6RCQ3718XABT4QHEFZFVA",
+      "final_answer": "Nest validation inside the single kernel module as ai.speckitty.charter.kernel.validation (NOT a separate top-level module). ADR-0006 single-kernel model unchanged; DOMAIN_IS_PURE broadens ..kernel.domain.. -> ..kernel..; a validation-purity ArchUnit rule gates ..kernel.validation.. -> {java, jspecify} with a known-bad control. The kernel module holds two pure sub-packages: kernel.domain (Pack/DRG vocab) + kernel.validation (guard lib).",
+      "input_key": "validation_kernel_placement",
+      "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+      "mission_slug": "pack-repositories-validation-01M5EET9",
+      "opened_by": "cli",
+      "options": [
+        "Separate top-level validation module (two inner rings; amend DOMAIN_IS_PURE + ADR-0006)",
+        "Nest as kernel.validation inside the single kernel module (broaden ..kernel.domain.. to ..kernel..)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Where does the pure validation library live, given ADR-0006 has a single kernel ring and DOMAIN_IS_PURE only admits java + ..kernel.domain.. + own domain?",
+      "rationale": null,
+      "resolved_at": "2026-10-21T12:30:35.082117Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.validation-kernel-placement",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+  "version": 1
+}

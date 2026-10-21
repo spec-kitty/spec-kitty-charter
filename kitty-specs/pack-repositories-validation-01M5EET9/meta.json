@@ -1,0 +1,21 @@
+{
+  "contracts": "none",
+  "contracts_rationale": "Internal DDD refactor + whole-service slice migration + a domain repository feature; the inbound REST surface moves package (adapter-in-rest -> packs.infra.api) but its OpenAPI contract is unchanged, and no new endpoint/DTO is introduced. No contracts/ artifacts are authored.",
+  "coordination_branch": "kitty/mission-pack-repositories-validation-01M5EET9",
+  "created_at": "2026-10-21T05:26:47.620372+00:00",
+  "flattened": false,
+  "friendly_name": "Pack repositories and validation module",
+  "mid8": "01M5EET9",
+  "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+  "mission_number": null,
+  "mission_slug": "pack-repositories-validation-01M5EET9",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Addresses operator review of the closed PR #138: the pack descriptor/tactic round-trip gains storage-transparent per-type repositories aggregated into DDD entities, a shared jspecify-only validation module ported from modular-validators for fail-fast guards, Spring bean wiring, and fluent builders — without changing the semantic round-trip invariant or onion layering.",
+  "purpose_tldr": "Reshape pack read/write into per-type repositories and add a shared fail-fast validation module.",
+  "slug": "pack-repositories-validation-01M5EET9",
+  "target_branch": "feat/pack-repositories-validation",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-21T13:10:20.579181+00:00"
+}

@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "mission_slug": "pack-repositories-validation-01M5EET9",
+  "mission_id": "01M5EET91KTXX5JRNFYCSBVE3J",
+  "mission_branch": "kitty/mission-pack-repositories-validation-01M5EET9",
+  "target_branch": "feat/pack-repositories-validation",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/bootstrap/build.gradle.kts",
+        "service/bootstrap/src/test/java/ai/speckitty/charter/bootstrap/SliceSkeletonArchTest.java",
+        "service/kernel/build.gradle.kts",
+        "service/packs/build.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/ArtifactKind.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterRefusal.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/DoctrineGraph.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/DrgEdge.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/DrgNode.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Fingerprint.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/NodeKind.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackDescriptor.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLevel.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Pep440.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Relation.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Urn.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/ArtifactKindTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/DoctrineGraphTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/DrgEdgeTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/GovernanceFingerprintTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/NodeKindTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/Pep440Test.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/UrnTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/**",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/charter-domain/build.gradle.kts",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/AssetMimeTable.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterOffering.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPack.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPackRepository.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackContents.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackElementViolation.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFinding.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackFindingCode.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackInspector.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackPolicy.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackRoot.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackSources.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackValidation.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackVerdict.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/package-info.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/CharterOfferingTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackFindingTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyGraphTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyOrderTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyRulesTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackPolicyVocabularyTest.java",
+        "service/charter-domain/src/test/java/ai/speckitty/charter/domain/PackValidationTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetMimeTable.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterOffering.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterPack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterPackRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Diagnostic.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackElementViolation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackFinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackFindingCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackRoot.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackSources.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackValidation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackVerdict.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/package-info.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/CharterOfferingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackFindingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyOrderTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyRulesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyVocabularyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackValidationTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/charter-read-app/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/adapter-out-yaml/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/package-info.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/adapter-in-rest/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "build-logic/**",
+        "service/bootstrap/src/test/java/ai/speckitty/charter/bootstrap/HexagonalArchitectureTest.java",
+        "service/charter-reports/build.gradle.kts",
+        "service/charter-service/**",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-f"
+      ],
+      "parallel_group": 6
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/validation/**",
+        "service/kernel/src/main/resources/kernel-validation-ATTRIBUTION.md",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/validation/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-g"
+      ],
+      "parallel_group": 7
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackSnapshot.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/Tactic.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/TacticReference.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/TacticStep.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackDescriptorRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackInspectionQuery.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPaths.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticReference.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticStep.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAggregateTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/TacticEntityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-h"
+      ],
+      "parallel_group": 8
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackDescriptorDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SerializationStrategy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/TacticDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlSerializationStrategy.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackWriteSafetyTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-i"
+      ],
+      "parallel_group": 9
+    },
+    {
+      "lane_id": "lane-k",
+      "wp_ids": [
+        "WP11"
+      ],
+      "write_scope": [
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackElementRepository.java",
+        "service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLocator.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-j"
+      ],
+      "parallel_group": 10
+    },
+    {
+      "lane_id": "lane-l",
+      "wp_ids": [
+        "WP12"
+      ],
+      "write_scope": [
+        "service/bootstrap/src/main/java/ai/speckitty/charter/bootstrap/PackPersistenceWiring.java",
+        "service/bootstrap/src/test/java/ai/speckitty/charter/bootstrap/WiringRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-k"
+      ],
+      "parallel_group": 11
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP13"
+      ],
+      "write_scope": [
+        "docs/adr/0006-onion-vertical-slices-archunit.md",
+        "docs/architecture/architectural-patterns-applied.md",
+        "docs/architecture/diagrams/c4-components.puml",
+        "docs/architecture/diagrams/class-diagram.puml",
+        "docs/changelog/2026-10-21-pack-repositories-and-validation.md",
+        "docs/development/code-style-and-conventions.md",
+        "docs/development/how-to-ddd.md",
+        "docs/glossary/ddd-patterns.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-l"
+      ],
+      "parallel_group": 12
+    }
+  ],
+  "computed_at": "2026-10-21T15:05:49.997967+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP13"
+  ],
+  "planning_commit_sha": "801794e169f15e3c5be09d8286383d0af1c9c647"
+}

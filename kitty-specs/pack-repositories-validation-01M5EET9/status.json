@@ -1,0 +1,450 @@
+{
+  "event_count": 88,
+  "last_event_id": "01M5FK64Y18ZTHD6R51FK0Z59J",
+  "materialized_at": "2026-10-21T16:02:25.345882+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-repositories-validation-01M5EET9",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 13,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5F9V00H1A9Z1Z2YZN92RNR0",
+      "last_transition_at": "2026-10-21T13:19:02.673080+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Slice skeleton + bootstrap ArchUnit shell; existing build unaffected (modules not yet in settings)",
+        "Review passed (reviewer-renata, opus): slice skeleton d58ee28, 11 files under service/, settings.gradle untouched, conventions verified, ArchUnit shell non-enforcing, commit trailer present. Matrix #138 triaged not-applicable."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP01-slice-skeleton/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP01-slice-skeleton/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4082606,
+      "shell_pid_created_at": "1792588432.63",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FABQ5ACS1DHVNKVV303M08",
+      "last_transition_at": "2026-10-21T13:28:10.666207+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Migrated 13 kernel.domain classes + tests; registered :kernel in settings + charter-reports serviceModules (green-build necessity); verifyAll green except known open-packs pin",
+        "Review passed: rename-shaped move of 13 firm-kernel classes + 6 tests to ai.speckitty.charter.kernel.domain, git-recognized as renames. Only non-mechanical source change is Pep440 class + isValidSpecifierSet widened to public, justified by live cross-module caller PackPolicy.java:223. kernel imports nothing from charter.domain/packs/frameworks; package-info @NullMarked. Consumer import rewrites across read-app/adapters/service/charter-domain are mechanical; ArchUnit allow-list broadened minimally (kernel.domain added to core, not weakened; full rewrite deferred to WP07 per IC-01). GovernanceFingerprintTest correctly retained in charter-domain. verifyAll green except pre-existing environmental :adapter-out-yaml:openPacksRoundTrip pin mismatch (open-packs at 500e3a77 vs pin 01edb4eb) - not a WP02 regression; all WP02-critical module tests pass on --rerun-tasks. Commit trailer present."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP02-migrate-kernel-domain/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP02-migrate-kernel-domain/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4092155,
+      "shell_pid_created_at": "1792589059.95",
+      "subtasks": {
+        "T005": "done",
+        "T006": "done",
+        "T007": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FAY3NW4DZK1JMVP3MN160R",
+      "last_transition_at": "2026-10-21T13:38:13.308068+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Migrated stable pack classes to packs.domain (+CharterOffering/AssetMimeTable/Diagnostic/PackElementViolation); registered :packs; verifyAll green except known open-packs pin; roundtrip cluster + PackElementRepository/PackLocator left for WP09/WP11",
+        "Review passed: 15 stable pack classes + CharterOffering/AssetMimeTable/Diagnostic/PackElementViolation + 8 tests are git-detected renames into packs.domain; strip-diff confirms package/import-only (zero logic changes). Carve clean: roundtrip cluster (Tactic/TacticStep/TacticReference/PackSnapshot) + retiring ports (PackElementRepository/PackLocator) stayed in charter-domain; no moved class references them; PackElementViolation moved as kept query type; GovernanceFingerprintTest correctly stayed. packs.domain imports only kernel.domain + java/jspecify, @NullMarked package-info present. 44 consumer files = import/FQN rewrites only. Green-necessity edits sound: settings adds packs (WP02 added kernel, WP07 owns charter-domain de-registration - no collision), charter-domain api(:packs), charter-reports serviceModules, HexagonalArchitectureTest allow-lists broadened minimally (packs.domain admitted to Domain layer; policy-name rules repointed) - guard NOT weakened. verifyAll: only red is :adapter-out-yaml:openPacksRoundTrip 12 known open-packs pin-mismatch tests (environment pin, not WP03); touched modules genuinely green on --rerun-tasks (46 tasks). Commit d98f74e carries required trailers."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP03-migrate-packs-domain/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP03-migrate-packs-domain/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4102362,
+      "shell_pid_created_at": "1792589572.61",
+      "subtasks": {
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FBEPK76WX7A3CW4Q506B70",
+      "last_transition_at": "2026-10-21T13:47:16.967072+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Migrated read-app → packs.application; green except known open-packs pin (12 tests); charter-read-app removed + de-registered from settings (settings/gradle verification/reports edited, outside owned_files, guard warned)",
+        "Review PASS (move-only migration, behaviour-preserving). Renames verified clean: all 11 app classes + 4 tests differ only by package line (logic byte-identical); consumers = mechanical import swaps; :charter-read-app dep -> :packs. charter-read-app directory deleted, 0 settings.gradle.kts refs, removed from charter-reports serviceModules; no dangling refs in live code. packs.application depends inward only (api :kernel), no framework imports, package-info @NullMarked. HexagonalArchitectureTest = 1:1 rename swap, guard not weakened. verification-metadata micrometer-observation-1.16.7.pom sha256 INDEPENDENTLY VERIFIED against Maven Central .sha256 sidecar + local sha256sum of downloaded POM (legitimate, not foreign). Build GREEN: --rerun-tasks :packs :adapter-in-rest :charter-service BUILD SUCCESSFUL incl NullAway/ErrorProne/ArchUnit. Anti-pattern checklist 1-8 pass/N-A. FOLLOW-UP (defer-acceptable, NOT tracked anywhere in mission): PIT/gradle-pitest mutation coverage for the application classes was lost (moved from charter-domain/charter-read-app pitest into :packs spring-conventions which has no pitest); docs+mutation-nightly.yml honestly updated to reflect charter-domain-only PIT; unit tests moved with the code and stay green so behaviour is still covered -- wire pitest onto :packs targeting ai.speckitty.charter.packs.* once the slice is assembled (at/after WP07). COORD NOTE for WP07 (single-writer of module-set): charter-read-app already de-registered from settings.gradle.kts + charter-reports here out of build-green necessity (parent-sanctioned) -- WP07's rewrite must expect it already gone. Minor: contracts/charter/schemas/*.yaml x-source path citations still point at deleted charter-read-app paths (stale provenance; lint only checks non-empty+shape, not existence, so build stays green; sweep in the contracts 'verify' step)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP04-migrate-packs-application/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP04-migrate-packs-application/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4111619,
+      "shell_pid_created_at": "1792590114.32",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FC4KJESGYB9XGE4E82DBPP",
+      "last_transition_at": "2026-10-21T13:59:14.766378+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Migrated adapter-out-yaml → packs.infra.storage (Yaml names kept); enabled snakeyaml+networknt in packs; repointed networknt ArchUnit rule; verifyAll green except the known open-packs pin (now under packs.infra.storage)",
+        "Review passed (independent, commit 29faf41). CYCLE JUSTIFICATION REAL: at parent, charter-domain declared api(project(\":packs\")) and the YAML adapter (TacticReader/TacticWriter/FilesystemPackElementRepository) imports the roundtrip cluster (Tactic/TacticStep/TacticReference/PackSnapshot/PackLocator/PackElementRepository) which lived in charter.domain; moving the adapter into :packs would have forced packs->charter-domain->packs. Relocating the 6 cluster types into packs.domain (pack-domain content) is the correct resolution and empties charter-domain, so deleting it is sound. MOVES BEHAVIOUR-PRESERVING: 19 storage classes + 25 tests + resources -> packs.infra.storage (Yaml names kept), 6 cluster classes -> packs.domain, GovernanceFingerprintTest -> packs.domain; all git rename-detected R081-R099, strip-diffs are package+import-only, no logic edits; JSON/py/doc edits are mechanical module-prefix retargeting (adapter-out-yaml:->packs:). CHARTER-DOMAIN DELETION CLEAN: both charter-domain and adapter-out-yaml dirs fully drained, deregistered from settings.gradle.kts + charter-reports serviceModules + charter-service dep; PIT/doc refs repointed to kernel; nothing dropped. BUILD GREEN: verifyAll --rerun-tasks -> only red is :packs:openPacksRoundTrip (12 pin-mismatch tests, env: open-packs checkout 500e3a vs pin 01edb4e, not code); packs:test + charter-service:test/check (ArchUnit/NullAway/ErrorProne/BDD) genuinely green. networknt ArchUnit rule repointed to packs.infra.storage, not weakened; known-bad control still bites. DEVIATIONS (non-blocking, caller-sanctioned expanded scope): settings.gradle.kts edited here (T016 assigned to WP07) - necessary since the module dir was removed; leftover dead 'ai.speckitty.charter.domain..' selectors in HexagonalArchitectureTest are harmless empty-package matchers WP07's full ArchUnit rewrite will clean. DOWNSTREAM: WP07 need no longer delete charter-domain; WP09 now reshapes the cluster in place in packs.domain; WP11 retires PackElementRepository/PackLocator from packs.domain; widened PIT gap over all of :packs tracked as follow-up. Shared files (settings.gradle.kts, charter-service build, HexagonalArchitectureTest) overlap WP06/WP07 - rebase needed."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP05-migrate-packs-infra-storage/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP05-migrate-packs-infra-storage/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4124180,
+      "shell_pid_created_at": "1792590835.89",
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FCH21AHXZBGG12PTHEBY1J",
+      "last_transition_at": "2026-10-21T14:06:02.794122+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Migrated adapter-in-rest → packs.infra.api; enabled webmvc + charter-api in packs; repointed transport/internal_error ArchUnit rules; verifyAll green except known pin",
+        "Review passed: behaviour-preserving move of adapter-in-rest (ai.speckitty.charter.rest) -> packs.infra.api. 18 main + 6 test classes rename-only (package/import/FQN repointings, no logic edits); consumer rewrites (CharterServiceApplication, GuardWiring, GuardWiringTest, ArchUnit, ReservedRefusalCodes) mechanical. adapter-in-rest dir gone, de-registered from settings.gradle.kts + charter-reports serviceModules; charter-service deps :packs not :adapter-in-rest; zero dangling charter.rest refs. packs build: webmvc impl + api(charter-api) added, contract/serviceVersion resource tasks + ServiceVersionTest sysprop carried over with corrected output path ai/speckitty/charter/packs/infra/api/; ContractVersion/ServiceVersion load .properties package-relative, matches. ArchUnit RestIn layer + transport allow-list + onlyTheInboundAdapterRefusesWithInternalError + ReservedRefusalCodes regex all repointed, guards not weakened; known-bad controls still RED-detect. verifyAll green except the 12 known env pin-mismatch tests in :packs:openPacksRoundTrip; :packs:test + :charter-service:test force-reran genuinely green (BDD/cucumber, GuardWiringTest, ArchUnit). ServiceInfo.yaml x-source repointed. Trailer present. COORD NOTE for WP07: WP06 already removed adapter-in-rest from settings.gradle.kts (necessary for green build after dir deletion, though WP06 prompt T019 nominally deferred that to WP07) and touched charter-reports/charter-service build files + ServiceInfo.yaml (outside owned_files) -- WP07 must rebase. transportTypesStayInTheInboundAdapter still has no known-bad control (pre-existing; WP07 could add one)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP06-migrate-packs-infra-api/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP06-migrate-packs-infra-api/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4135822,
+      "shell_pid_created_at": "1792591389.3",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FD6SFDMNDF79VZKPHA2ZD0",
+      "last_transition_at": "2026-10-21T14:17:54.925525+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "charter-service→bootstrap; full ADR-0006 ArchUnit rewrite (dead charter.domain selectors removed, known-bads co-located, supplements kept); verifyAll green except known pin",
+        "Review passed: charter-service→bootstrap rename clean (dir git-moved R096-099, zero charter.service package decls, settings+charter-reports serviceModules+bootstrap deps updated, SliceSkeletonArchTest removed; only residual charter.service is build-logic plugin id charter.service-conventions = acceptable). ArchUnit rewrite is REAL enforcement, NO vacuous rules: all production selectors non-empty (kernel.domain=14, packs.domain=22, application=11, infra.api=18, infra.storage=19, generated api + bootstrap present; classes()-rules backed by 2 real Repository interfaces + 2 real storage impls); every known-bad co-located in the selected package (packs.*.badfixture) or name-prefix-selected (bootstrap.packlevelfixture) and genuinely red-detects; no dead charter.domain.. selector. No guard family dropped vs pre-migration suite; new transport known-bad present. Full :bootstrap:test --rerun-tasks = 254 tests BUILD SUCCESSFUL incl HexagonalArchitectureTest 34/0/0 + BDD/cucumber; verifyAll only red = 12 known :packs:openPacksRoundTrip pin tests (open-packs checkout 500e3a7 != pin 01edb4e, environmental). SLICES profiles.domain.badfixture is test-only. Commit trailer present."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP07-migrate-bootstrap-and-archunit/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP07-migrate-bootstrap-and-archunit/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4143513,
+      "shell_pid_created_at": "1792591933.27",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    },
+    "WP08": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FGAG6PDPCBWYF6E560MYSM",
+      "last_transition_at": "2026-10-21T15:12:22.230223+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "kernel.validation lean jspecify-only port (guard/check); dropped commons-lang3; fixed Constraint.equals; omitted Evidence/dsl; validation-purity ArchUnit rule + known-bad; attribution + ledger; green except known pin",
+        "kernel.validation on the WP07 base; purity rule + known-bad in bootstrap HexagonalArchitectureTest; green except known pin",
+        "Review passed: kernel.validation lean jspecify-only port. Net-new only (15 files +587, zero deletions) on WP07 base; no migration regression. Constraint equals/hashCode value-correct over description+predicate (record; predicate by reference) - upstream description-only defect fixed and controlled. guard() fail-fast throws bespoke ConstraintBreachException naming the breached constraint; check() collect-all returns immutable Rationale, no throw. Evidence/dynamic-descriptions/dsl omitted. Main is pure (grep: only java.* + org.jspecify). VALIDATION_LIBRARY_IS_PURE rule in bootstrap HexagonalArchitectureTest restricts kernel.validation to {self,java,jspecify}; badfixture UsesThirdPartyType->com.networknt.fixture.Stand is bootstrap test-tree only (production import uses DO_NOT_INCLUDE_TESTS) and the bite test asserts AssertionError naming UsesThirdPartyType. KERNEL_IS_PURE also covers it. ModularRulesetTest 7/0 with named positive controls (guard-throws vs valid-no-throw; check-collects vs valid-pass; same-desc/diff-predicate NOT equal vs same-predicate equal+hashcode). ATTRIBUTION Apache-2.0 crediting sddevelopment-be/modular-validators with accurate took/changed/omitted ledger. kernel:test+bootstrap:test green --rerun-tasks (HexagonalArchitectureTest 36/0). verifyAll only red is the 12 known env open-packs pin tests in :packs:openPacksRoundTrip. Commit trailer present. Note: bootstrap HexagonalArchitectureTest + badfixture touch (outside WP08 owned_files) is the documented re-sequencing decision from review-cycle-1 (rule placed in bootstrap on the completed-migration base); WP07 approved and merged into lane-h."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP08-kernel-validation/review-cycle-2.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP08-kernel-validation/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4172850,
+      "shell_pid_created_at": "1792595339.85",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done"
+      }
+    },
+    "WP09": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FGTDBVBJHEEXDGMHQY7V5T",
+      "last_transition_at": "2026-10-21T15:21:03.611362+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Domain model: Pack aggregate + Tactic entity (identity equals) + VO records + identifier VOs + ports; PackPaths folded into PackDescriptor; guards via kernel.validation; retired legacy storage impl/tests to stay green (WP10 brings DSO storage); verifyAll green except known pin",
+        "Review passed: DDD domain model correct. Pack/Tactic are final classes with fluent builder + package-private all-args ctor (no public wide ctor); identity-only equals/hashCode verified (same id/diff fields equal, diff id not). VOs (TacticStep, TacticReference, PackPaths, Pack/TacticIdentifier) are records with value equality + List.copyOf order/dup-preserving. Guards go through ModularRuleset.guard/Constraints -> ConstraintBreachException with full-sentence messages (Pack: foreign-tactic + dup-id; Tactic: empty steps/blank name/blank schemaVersion; step blank title; blank ids). Four ports name only domain/kernel types, signatures match data-model. PackPaths correctly lives in kernel.domain; PackDescriptor now carries PackPaths with 7-arg convenience ctor using PackPaths.none(); Reader/Writer/test callers updated. Legacy storage removed with zero dangling refs; PackElementViolation + YAML/schema plumbing + FileSystemCharterPackRepository KEPT. ArchUnit bad fixtures + message assertion repointed to live types (FileSystemCharterPackRepository/PackRepository/PackIdentifier); bootstrap:test green so rules still bite. Tests carry paired positive controls, no shape-pins. Force-reran :packs:test :bootstrap:test --rerun-tasks (green) and force-reran compileJava(-Werror/ErrorProne/NullAway)+javadoc+checkstyle (all green). Commit trailer present."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP09-domain-model/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP09-domain-model/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4180795,
+      "shell_pid_created_at": "1792595886.48",
+      "subtasks": {
+        "T033": "done",
+        "T034": "done",
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done"
+      }
+    },
+    "WP10": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FHCFRSS6WYW8KRT16Y732S",
+      "last_transition_at": "2026-10-21T15:30:55.897998+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "SerializationStrategy + YamlSerializationStrategy + TacticDso/PackDescriptorDso + filesystem store (atomic/contained/id→path); DSO round-trip literal oracle + mutation control + write-safety failure-injection + symlink-escape; green except known pin",
+        "Review passed: DSO-based persistence storage. DSOs are flat value-equal records mirroring serialized YAML (order/dup-sensitive lists; pack_level raw token + activeCharter/packDrg/undeclaredKeys). SerializationStrategy interface + YamlSerializationStrategy reusing YamlDumpEmitter/ParsedYaml/PackSchemas/PackDescriptorReader; reads return FileRead (broken file = violation, not exception). FilesystemPackStore: atomic temp->injectable Rename (ATOMIC_MOVE), lexical + realpath/symlink containment, replace-by-id-only (unknown id refused, not created, C-008), partial-tolerant read reporting PackElementViolation, missing/unreadable pack.yaml -> CharterRefusal. Round-trip NON-VACUOUS: literal oracle vs hand-written DSOs (nested ref, duplicate gamma, active_charter, pack_drg), oracle-bites guard, write->fresh-dir refetch-equals (not fetch==refetch - writes into placeholder-only dir), mutation controls (name + pack_level refetch different), undeclared-key capture/drop pin. Write-safety NON-VACUOUS: injected-failing-rename atomicity (temp-seen-mid-write, target bytes unchanged, no stray temp) + real-rename positive control; symlink-escape refused + in-root control same store; replace-by-id-only + control; identifier-escape refused + plain control. Green CONFIRMED: only red is :packs:openPacksRoundTrip, all 12 are the open-packs pin-mismatch guard (pin 01edb4eb, checkout moved), NOT WP10 regressions; force-rerun :packs:test (PackRoundTripTest 7/7, PackWriteSafetyTest 5/5) + :bootstrap:test (HexagonalArchitectureTest 36/36 incl STORAGE_RETURNS_DOMAIN + RESOLVER_OWNS_NETWORK) all pass. NOTE: deliverable auto-commit 0761114 lacks Co-Authored-By/Claude-Session trailers - trailer-fix-at-closeout (known). NOTE: pack_id->directory resolution correctly DEFERRED to WP11 (WP10 uses PackIdentifier value as directory name directly under root - documented + containment-tested, not a hidden defect)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP10-persistence-storage/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP10-persistence-storage/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4189563,
+      "shell_pid_created_at": "1792596469.86",
+      "subtasks": {
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done",
+        "T044": "done",
+        "T045": "done",
+        "T046": "done"
+      }
+    },
+    "WP11": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FHS38RN8NA2914J4R4PDEQ",
+      "last_transition_at": "2026-10-21T15:37:49.080861+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "DomainRepositoryService @Service realizes the domain ports; hand-written DSO↔entity mapping; PackIdentifier→directory resolution via configured locations/seam; entity-level round-trip + inspection tests; green except known pin",
+        "Review passed: @Service only on DomainRepositoryService realizing the 4 plain-interface domain ports; no DSO leakage (DSOs package-private, ports return only domain/kernel/JDK types, STORAGE_RETURNS_DOMAIN green); id->dir resolution name-first then declared pack_id with no dirname==id assumption, no-match -> CharterRefusal(PACK_UNREADABLE), fixture exercises both (ULID pack_id vs pack-a dirname); partial-tolerance domain breach -> PackElementViolation(domain) reported via inspection query, not swallowed; save replace-existing-only (C-008) at store; load->Optional.empty for absent, throws only for unconfigured pack; 9 DomainRepositoryServiceTest + 36 ArchUnit genuinely green on --rerun-tasks; retired PackElementRepository/PackLocator absent; trailer present."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP11-persistence-repository/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP11-persistence-repository/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 8957,
+      "shell_pid_created_at": "1792596932.33",
+      "subtasks": {
+        "T047": "done",
+        "T048": "done",
+        "T049": "done",
+        "T050": "done"
+      }
+    },
+    "WP12": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FJ60FDJS1DC0X7P6AKAGFS",
+      "last_transition_at": "2026-10-21T15:44:52.205132+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Wired DomainRepositoryService @Service + Locations bean in bootstrap; production-path wiring test round-trips through the WIRED bean; green except known pin",
+        "Review passed (FR-010/IC-06). PackPersistenceWiring is a @Configuration(proxyBeanMethods=false) in the CharterWiring explicit-@Bean house style: provides a DomainRepositoryService.Locations bean (lambda over CharterWiring.PackLocations, read on every call) and a DomainRepositoryService bean; no domain port/impl touched, no Spring type on any port, no Spring Data. WiringRoundTripTest is @SpringBootTest on CharterServiceApplication, @Autowired of the WIRED TacticRepository/PackRepository by domain port type only, real temp-dir fixture pack via real charter.packs properties; round-trip is non-vacuous (reloaded==renamed AND reloaded.name!=original.name, load-bearing) plus present/absent-id control and PackRepository.load(pack).id()==pack. bootstrap:test --rerun-tasks fully green (WiringRoundTripTest 2/2, plus ProductionWiringTest, HexagonalArchitectureTest/ArchUnit, cucumber Examples) — no duplicate-bean/context-load failure. verifyAll red ONLY on the known open-packs pin-skew tests (checkout d71b2ec vs pin 01edb4e: OpenPacksAcceptance/RoundTrip, ScopeParity, VendoredPacks), an env condition independent of WP12. Anti-pattern checklist all PASS/N/A; trailers present (71b1e7e). @Service/@Bean note: WP11's DomainRepositoryService carries @Service but packs.infra.storage is NOT in the CharterServiceApplication scan base (bootstrap + packs.infra.api only), so the @Service is currently DECORATIVE and WP12 wires via explicit @Bean (consistent with the bootstrap house style). Green with no duplicate bean; genuinely cosmetic. Approved as (a) with a RECONCILE-AT-PRE-PR note: at mission convergence, drop the unscanned @Service on DomainRepositoryService (WP11-owned file) to leave the explicit @Bean as the single wiring signal. First non-framework consumer of the bean lands in WP13."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP12-wiring/review-cycle-1.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP12-wiring/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15957,
+      "shell_pid_created_at": "1792597289.57",
+      "subtasks": {
+        "T051": "done",
+        "T052": "done",
+        "T053": "done"
+      }
+    },
+    "WP13": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5FK64Y18ZTHD6R51FK0Z59J",
+      "last_transition_at": "2026-10-21T16:02:25.345882+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "DDD docs: code-style-and-conventions, how-to-ddd, architectural-patterns-applied (C4+class diagrams), glossary (Domain vs Persistence Entity), changelog, ADR-0006 Accepted; docs charter-service→bootstrap sweep",
+        "Re-drew C4+class diagrams to the realized kernel/packs/bootstrap slices (+re-rendered SVGs); aligned how-to-ddd ArchUnit rule names to the real test; trimmed the mapping paragraph; prose unchanged",
+        "Re-review passed: diagrams realized, rule names aligned, prose intact"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/pack-repositories-validation-01M5EET9-coord/kitty-specs/pack-repositories-validation-01M5EET9/tasks/WP13-docs/review-cycle-2.md",
+        "reference": "review-cycle://pack-repositories-validation-01M5EET9/WP13-docs/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 34959,
+      "shell_pid_created_at": "1792598409.36",
+      "subtasks": {
+        "T054": "done",
+        "T055": "done",
+        "T056": "done",
+        "T057": "done",
+        "T058": "done",
+        "T059": "done",
+        "T060": "done"
+      }
+    }
+  }
+}
