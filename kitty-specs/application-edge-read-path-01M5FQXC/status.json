@@ -1,0 +1,133 @@
+{
+  "event_count": 49,
+  "last_event_id": "01M5G2TZZCHD5HE7MZNS7X8S42",
+  "materialized_at": "2026-10-21T20:35:57.036796+00:00",
+  "mission_number": "",
+  "mission_slug": "application-edge-read-path-01M5FQXC",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TX2GYERZ3KZB06R6ZQDW",
+      "last_transition_at": "2026-10-21T20:35:54.064627+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP01-doctrine-docs/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 159681,
+      "shell_pid_created_at": "1792611505.19"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TVM372CWDPJC68WV5TTS",
+      "last_transition_at": "2026-10-21T20:35:52.579341+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP02-composition-deployable/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 159681,
+      "shell_pid_created_at": "1792611505.19"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TWBEPKNSNZDXKX4PEM39",
+      "last_transition_at": "2026-10-21T20:35:53.326152+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP03-domain-ports/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 159681,
+      "shell_pid_created_at": "1792611505.19"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TXSV44AN75N70YHG7MAY",
+      "last_transition_at": "2026-10-21T20:35:54.811166+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP04-persistence-edge/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 170089,
+      "shell_pid_created_at": "1792612056.72"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TYHCET4ESJ53NAB0S50N",
+      "last_transition_at": "2026-10-21T20:35:55.564701+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP05-application-edge/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 177653,
+      "shell_pid_created_at": "1792612631.51"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TZ8F182RNT27ANSTX0VN",
+      "last_transition_at": "2026-10-21T20:35:56.303124+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP06-inbound-api-contract/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 181521,
+      "shell_pid_created_at": "1792613033.58"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "implement-command",
+      "force_count": 0,
+      "implementer_of_record": "implement-command",
+      "lane": "done",
+      "last_event_id": "01M5G2TZZCHD5HE7MZNS7X8S42",
+      "last_transition_at": "2026-10-21T20:35:57.036796+00:00",
+      "review_result": {
+        "reference": "review-cycle://application-edge-read-path-01M5FQXC/WP07-cutover-delete-scaffolding/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 191032,
+      "shell_pid_created_at": "1792613898.31"
+    }
+  }
+}

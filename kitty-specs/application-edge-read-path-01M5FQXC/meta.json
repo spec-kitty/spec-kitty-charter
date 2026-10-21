@@ -1,0 +1,35 @@
+{
+  "accept_commit": "3c31f3c48b288c60ae8a9e51ef2cdbe90be295db",
+  "acceptance_history": [
+    {
+      "accept_commit": "3c31f3c48b288c60ae8a9e51ef2cdbe90be295db",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-21T20:35:22.887664+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "7d29923238903e240573ae5af97be9b47a29f739"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-21T20:35:22.887664+00:00",
+  "accepted_by": "stijn",
+  "accepted_from_commit": "7d29923238903e240573ae5af97be9b47a29f739",
+  "baseline_merge_commit": "4d1dbf1b9f0ca99da5fe3f756408ac735bedc447",
+  "created_at": "2026-10-21T17:25:01.219508+00:00",
+  "flattened": true,
+  "friendly_name": "Application-edge read path on the Pack model",
+  "merged_at": "2026-10-21T20:36:00.490336+00:00",
+  "merged_commit": "11c505e6c9037ba6bcfc590151d34d96959620f6",
+  "mid8": "01M5FQXC",
+  "mission_id": "01M5FQXCMMF8W6XGB68DJ61PK3",
+  "mission_number": 4,
+  "mission_slug": "application-edge-read-path-01M5FQXC",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Until now the service only proved a persistence-through-domain round-trip; the application and API layers were placeholders on first-pass scaffolding. This mission builds the first real read path end-to-end on the single canonical Pack aggregate, reclassifies the application layer as an outer edge adapter that hosts the service concretizations, gives each layer its own composition configuration aggregated by a deployable entrypoint so modular wired tests are cheap, and removes the first-pass scaffolding outright so there is exactly one model.",
+  "purpose_tldr": "The charter service's first real functional read path, built on the one canonical Pack model with the application layer as an outer edge.",
+  "slug": "application-edge-read-path-01M5FQXC",
+  "status_phase": "1",
+  "target_branch": "feat/pack-repositories-validation",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-21T19:38:27.620407+00:00"
+}
