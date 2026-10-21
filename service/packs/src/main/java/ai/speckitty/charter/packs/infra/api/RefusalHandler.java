@@ -32,7 +32,9 @@ public class RefusalHandler {
      * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise. A
      * server-error (5xx) refusal is logged first with its cause, like {@link ProblemHandler}, so every 500 the
      * service returns leaves a diagnostic trail even though its body names nothing of the failure. {@code stale_input}
-     * is the exception: it is routine and retryable, so it is logged at INFO without the stack trace.
+     * is the exception: it is routine and retryable, so it is logged at INFO without the stack trace. A not-found
+     * that hides an underlying failure (an unreadable pack answered as {@code pack_not_found}) carries that failure
+     * as its cause; the 404 body names nothing of it, so it is logged at WARN here with the cause.
      *
      * @param refusal the domain refusal
      * @return the {@code application/problem+json} response carrying the refusal's code and detail
@@ -44,6 +46,9 @@ public class RefusalHandler {
             LOGGER.info("Refusal " + refusal.code().token() + ": " + refusal.getMessage());
         } else if (!refusal.code().notFound()) {
             LOGGER.error("Server refusal " + refusal.code().token(), refusal);
+        } else if (refusal.getCause() != null) {
+            // A not-found that hides an underlying failure: the 404 body names nothing of it, so keep the trail.
+            LOGGER.warn("Refusal " + refusal.code().token() + " hides a cause", refusal);
         }
         return respond(refusal);
     }

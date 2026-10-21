@@ -78,7 +78,11 @@ public final class TacticReadService {
         }
     }
 
-    /** A pack the storage cannot resolve or read is, to the caller, a pack that is not there. */
+    /**
+     * A pack the storage cannot resolve or read is, to the caller, a pack that is not there. The original
+     * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even
+     * though the 404 body names nothing of it.
+     */
     private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
         if (refused.code() != RefusalCode.PACK_UNREADABLE) {
             return refused;
