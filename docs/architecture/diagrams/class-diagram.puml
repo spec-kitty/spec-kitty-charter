@@ -1,0 +1,150 @@
+@startuml class-diagram
+title Structural class diagram — Charter Offering Service (DDD stereotypes; core vs edge; inward deps)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontColor #15202B
+skinparam ArrowColor #30475E
+skinparam packageStyle rectangle
+skinparam classBorderColor #30475E
+skinparam classFontColor #15202B
+skinparam noteBorderColor #8899A6
+skinparam noteBackgroundColor #F5F8FA
+skinparam legendBackgroundColor #F5F8FA
+
+package "kernel  «CORE shared kernel»" #EDF6FC {
+  package "kernel.domain" #F2F9FD {
+    class PackDescriptor <<ValueObject>> #EAF4FB
+    class PackPaths <<ValueObject>> #EAF4FB
+    class DoctrineGraph <<ValueObject>> #EAF4FB
+    class CharterRefusal <<ValueObject>> #EAF4FB
+  }
+  package "kernel.validation" #E4F1FA {
+    class ModularRuleset <<DomainService>> #D8EBF7 {
+      +guard(Constraint...) void
+      +check(Constraint...) Evaluation
+    }
+    class Constraint <<ValueObject>> #D8EBF7
+  }
+}
+
+package "packs.domain  «CORE»" #F2F9FD {
+  class Pack <<AggregateRoot>> #EAF4FB {
+    +identity() PackIdentifier
+  }
+  class Tactic <<Entity>> #EAF4FB {
+    +identity() TacticIdentifier
+    +pack() PackIdentifier
+    +equals(Object) boolean
+  }
+  class TacticStep <<ValueObject>> #EAF4FB
+  class TacticReference <<ValueObject>> #EAF4FB
+  class PackIdentifier <<ValueObject>> #EAF4FB
+  class TacticIdentifier <<ValueObject>> #EAF4FB
+  interface TacticRepository <<Repository>> #EAF4FB {
+    +save(Tactic) void
+    +load(PackIdentifier, TacticIdentifier) Optional<Tactic>
+  }
+  interface PackDescriptorRepository <<Repository>> #EAF4FB {
+    +get(PackIdentifier) Optional<PackDescriptor>
+    +save(PackDescriptor) void
+  }
+  interface PackRepository <<Repository>> #EAF4FB {
+    +load(PackIdentifier) Optional<Pack>
+  }
+  interface PackInspectionQuery <<Repository>> #EAF4FB {
+    +partialReads(PackIdentifier) List<Violation>
+  }
+}
+
+package "packs.application" #F1F8F4 {
+  class ReadTacticUseCase <<ApplicationService>> #E7F3EC {
+    +readTactic(PackIdentifier, TacticIdentifier) Optional<Tactic>
+  }
+}
+
+package "packs.infra.storage  «EDGE»" #FDF4EE {
+  class DomainRepositoryService <<Adapter>> #FBEEE6 {
+    +save(Tactic) void
+    +load(PackIdentifier, TacticIdentifier) Optional<Tactic>
+  }
+  interface SerializationStrategy <<Strategy>> #FBEEE6 {
+    +serialize(TacticDso) String
+    +deserialize(String) TacticDso
+  }
+  class YamlSerializationStrategy <<Strategy>> #FBEEE6
+  class TacticDso <<DSO>> #FBEEE6 {
+    +equals(Object) boolean
+  }
+}
+
+package "packs.infra.api  «EDGE»" #FDF4EE {
+  class PackRestController <<Adapter>> #FBEEE6 {
+    +getTactic(String pack, String tactic) TacticResponse
+  }
+}
+
+package "bootstrap  «Composition Root»" #F3F4F6 {
+  class PackPersistenceWiring <<CompositionRoot>> #F0F2F4 {
+    +main(String[] args) void
+  }
+}
+
+' --- domain: aggregate containment & identity ---
+Pack "1" *-- "1" PackDescriptor : descriptor
+Pack "1" *-- "0..*" Tactic : tactics
+Pack --> PackIdentifier : identity
+Tactic --> TacticIdentifier : identity
+Tactic --> PackIdentifier : owning pack
+Tactic "1" *-- "0..*" TacticStep : steps
+Tactic "1" *-- "0..*" TacticReference : references
+
+' --- ports return domain types only ---
+PackRepository ..> Pack : assembles
+TacticRepository ..> Tactic
+PackDescriptorRepository ..> PackDescriptor
+Pack ..> ModularRuleset : enforces invariants (packs.domain -> kernel)
+ModularRuleset ..> Constraint : evaluates
+
+' --- application depends on domain ports (DIP) ---
+ReadTacticUseCase ..> PackRepository
+ReadTacticUseCase ..> TacticRepository
+
+' --- storage edge: realization + strategy delegation + mapping ---
+DomainRepositoryService ..|> TacticRepository : realizes port
+YamlSerializationStrategy ..|> SerializationStrategy
+DomainRepositoryService --> SerializationStrategy : delegates (ctor-injected)
+DomainRepositoryService ..> TacticDso : maps DSO <-> entity
+DomainRepositoryService ..> Tactic : inward dep
+YamlSerializationStrategy ..> TacticDso : entity <-> DSO <-> YAML
+
+' --- web edge -> application ---
+PackRestController ..> ReadTacticUseCase
+
+' --- composition root wires the edges ---
+PackPersistenceWiring ..> DomainRepositoryService : component-scan
+PackPersistenceWiring ..> YamlSerializationStrategy : wires strategy
+PackPersistenceWiring ..> PackRestController : wires
+
+note bottom of TacticDso
+  Round-trip fidelity is asserted at the
+  storage edge on the value-equal DSO:
+  fetch(write(fetch(x))) == fetch(x)
+  — NOT on the entity's identity-based equals.
+end note
+note bottom of DomainRepositoryService
+  Future: a @Repository DB sibling adapter
+  is a second impl of the same domain ports.
+end note
+
+legend right
+  <b>Core vs edge</b>
+  Blue = core (kernel.domain, kernel.validation, packs.domain)
+  Green = application · Amber = edge adapters
+  Grey = composition root
+  Stereotypes: «AggregateRoot» «Entity» «ValueObject»
+  «Repository»(port) «ApplicationService» «Adapter»
+  «Strategy» «DSO» «DomainService»
+endlegend
+
+@enduml

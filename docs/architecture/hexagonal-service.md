@@ -19,7 +19,7 @@ audience:
 
 The Gradle modules of the Java service and the one dependency rule that organizes them: infrastructure depends inward on a plain-Java domain.
 
-> **Status:** design, with a first skeleton built. The skeleton under `service/` (`charter-domain`, `charter-read-app`, `charter-api`, `adapter-in-rest`, `adapter-out-yaml`, `charter-service`, convention plugins in `build-logic/`) predates [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) and still uses the horizontal read/write module split; it is reshaped into the slices below once ADR-0006 is accepted. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
+> **Status:** built for the first slice. The skeleton under `service/` is now `kernel`, `packs`, `charter-api` and `bootstrap` (with `charter-reports` and convention plugins in `build-logic/`), the realization of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/); the earlier flat modules (`charter-domain`, `charter-read-app`, `adapter-in-rest`, `adapter-out-yaml`, `charter-service`) are superseded. [Architectural patterns applied](/architecture/architectural-patterns-applied/) shows the realized layout. The further slices in the table below remain design. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
 >
 > **Module shape updated.** [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) partitions the service **top-level by vertical concern slice** (one Gradle module per slice, layers as packages within), not by the earlier horizontal read/write module split. The read/write distinction survives as a **sub-split inside each slice's application ring**, and core ADR `2026-10-03-1`'s staged read-first/write-later strangler runs within that shape. The [pack registration and distribution](/architecture/pack-registration-distribution/) design is the worked example.
 
@@ -41,7 +41,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | Module | Depends on | Holds |
 |---|---|---|
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the DRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
-| `registration` | `kernel` | The pack registration & validation slice: `domain` (models, ports, services), `application` (read/write use cases), `infra` (`api.rest`, reserved `api.graphql`, `storage`) |
+| `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, ports, services), `application` (read/write use cases), `infra` (`api.rest`, reserved `api.graphql`, `storage`) |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, same four layers as packages |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
@@ -76,9 +76,9 @@ infra.storage (file / db / blob /    │
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).
-In today's skeleton, `HexagonalArchitectureTest` (in `charter-service`) pins the inward direction over
-the horizontal modules, and the `charter.domain-conventions` plugin refuses any external dependency in
-the domain and application modules at configuration time.
+`HexagonalArchitectureTest` (in `bootstrap`) pins these directions over the whole service, and the
+`charter.domain-conventions` plugin refuses any external dependency in the domain and application
+modules at configuration time.
 
 ## Three models, kept apart
 

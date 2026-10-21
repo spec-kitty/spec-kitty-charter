@@ -144,7 +144,7 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 | `/packs/{packId}/presets`, `assets` | pack content queries | pack content (R4, R11) |
 | `POST /packs`, `/distributions`, `/resolution` | registration use cases | `RegisteredPack`, `PackResolver` ([Pack registration and distribution](/architecture/pack-registration-distribution/)) |
 
-Links are built in the REST adapter (`adapter-in-rest`), from the use-case answer and the request
+Links are built in the REST adapter (`packs.infra.api`), from the use-case answer and the request
 URL. No link crosses into the application or domain ring (ADR-0007 decision 6).
 
 ## Relation to the registration design

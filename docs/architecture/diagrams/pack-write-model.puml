@@ -2,7 +2,7 @@
 ' Sources:
 '   contracts/packs/schemas/{pack-descriptor,graph-shard,org-fragment,org-charter,asset}.schema.json
 '   contracts/packs/file-kinds.yaml (node kinds, fragment kind vocabulary)
-'   service/charter-domain: PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
+'   service/kernel (kernel.domain): PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
 ' Edges carry no provenance: it is not authored and the schema refuses it (ADR-0017, DIV-019); a shard node may.
 ' charter.schema.json validates the project's charter.yaml, not a pack file, so it is not drawn.
 ' Notation: + required, - optional, [0..1] / [0..*] multiplicity.

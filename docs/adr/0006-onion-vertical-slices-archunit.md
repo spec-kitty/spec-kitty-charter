@@ -2,7 +2,7 @@
 title: "ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit"
 description: The service is onion-layered and cut into vertical concern slices, one Gradle module per slice with layers as packages; ArchUnit enforces inward dependencies and a pure domain.
 doc_status: draft
-updated: 2026-10-18T00:00:00Z
+updated: 2026-10-21T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -11,6 +11,8 @@ related:
   - adr/0007-rest-hateoas-contract-of-record
   - architecture/hexagonal-service
   - architecture/resolution-model
+  - architecture/architectural-patterns-applied
+  - development/how-to-ddd
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the module layout, where each layer lives, and the ArchUnit rules your code must pass.
@@ -24,12 +26,34 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-18. Decider: Stijn Dejongh (operator). This record fixes the internal structure of
+**Accepted** — 2026-10-21 (proposed 2026-10-18), realized by the pack repositories and validation
+mission. Decider: Stijn Dejongh (operator). This record fixes the internal structure of
 the charter offering service. It realizes the operator architecture brief and
 [ADR-0001](/adr/0001-java-service-with-openapi-contract/)'s hexagonal mandate, and is the home that houses
 the pack registration and distribution model of [ADR-0005](/adr/0005-service-registers-and-distributes-packs/).
 It resolves three design-mission Decision Moments (module layout, domain-service implementation placement,
 Gradle granularity).
+
+### Amendment 2026-10-21 — realized
+
+The pack repositories and validation mission (`pack-repositories-validation-01M5EET9`) built this
+decision. The realized module set is:
+
+- **`kernel`** — `kernel.domain` (the shared Pack and DRG vocabulary) and `kernel.validation` (a
+  pure guard library, `java` and `jspecify` only);
+- **`packs`** — the first slice, with the layer packages `domain`, `application`, `infra.storage`
+  (the outbound adapter) and `infra.api` (the inbound adapter);
+- **`bootstrap`** — the composition root;
+- `charter-api` and `charter-reports`, unchanged.
+
+The prior flat, role-named modules (`charter-domain`, `charter-read-app`, `adapter-in-rest`,
+`adapter-out-yaml`, `charter-service`) are superseded by this layout. The layering is now a
+blocking ArchUnit gate: `HexagonalArchitectureTest` in `bootstrap` enforces the onion direction,
+domain and kernel purity, port placement, `STORAGE_RETURNS_DOMAIN`, slice isolation, transport
+confinement and a pure validation library, each with a known-bad control. The rule names in the
+table below are the original design names; the realized rules keep their intent. See
+[Architectural patterns applied](/architecture/architectural-patterns-applied/) and
+[How to DDD here](/development/how-to-ddd/).
 
 ## Context
 

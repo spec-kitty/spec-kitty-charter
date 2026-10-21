@@ -128,7 +128,7 @@ to the schemas, and the doctor parity test (#115) compares verdicts with core's.
      open-packs file needs. *(Amended 2026-10-19: all lenient conversions are dropped, also role
      lowercasing and string-to-integer; see [Amendment](#amendment-2026-10-19-operator-rulings), R9.)*
 3. **The YAML adapter validates with networknt json-schema-validator.** It runs in
-   `adapter-out-yaml` only, over the tree snakeyaml-engine already loads, through Jackson. The
+   `packs.infra.storage` only (formerly `adapter-out-yaml`), over the tree snakeyaml-engine already loads, through Jackson. The
    domain records stay hand-written, as [ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)
    requires. The dependency gets a catalog entry, an exact pin and verification metadata.
 4. **Rules a schema cannot express live in the domain**, with the pack-level policy move (#48):

@@ -34,7 +34,7 @@ stands.
 | [0003](/adr/0003-docs-follow-doc-kitty/) | ADR-0003: Documentation follows the doc-kitty convention | Accepted, with Amendment 2026-10-19 | 2026-10-13 |
 | [0004](/adr/0004-public-api-returns-generated-dtos/) | ADR-0004: The public API returns DTOs generated from the OpenAPI contract | Accepted | 2026-10-14 |
 | [0005](/adr/0005-service-registers-and-distributes-packs/) | ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer | Proposed, with Amendment 2026-10-19 | 2026-10-18 |
-| [0006](/adr/0006-onion-vertical-slices-archunit/) | ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit | Proposed | 2026-10-18 |
+| [0006](/adr/0006-onion-vertical-slices-archunit/) | ADR-0006: Onion layering cut by vertical concern slices, enforced by ArchUnit | Accepted | 2026-10-21 |
 | [0007](/adr/0007-rest-hateoas-contract-of-record/) | ADR-0007: REST-HATEOAS is the v1 contract of record; GraphQL is planned-later, MCP deferred | Proposed | 2026-10-18 |
 | [0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/) | ADR-0008: The Java charter is a rewrite that replaces the Python charter, built against BDD and OpenAPI contracts | Accepted | 2026-10-18 |
 | [0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) | ADR-0009: Contract 1.0 reserves the cutover and impacts surface; new capabilities arrive as additive contract sets | Accepted (provisional), with Amendment 2026-10-19 | 2026-10-19 |

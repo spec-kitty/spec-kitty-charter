@@ -25,6 +25,10 @@ operations themselves are in the [service contract](/api/service-contract/).
   choosing methods, parameters, media types, versioning and the headers every response carries.
 - [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/) — how responses link to what a client
   can do next, the `Links` component and the relation names.
+- [Code style and conventions](/development/code-style-and-conventions/) — how each Java type is
+  modelled, how invariants fail fast, and how tests are named.
+- [How to DDD here](/development/how-to-ddd/) — classifying entities, value objects and
+  aggregates, why identity and persistence fidelity differ, and what not to copy.
 - [HTTP status codes](/development/http-status-codes/) — which status this API answers with, what
   each one means, its body and whether a client may retry.
 
