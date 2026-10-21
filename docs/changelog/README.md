@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-21 — Tactic read path, and the application layer becomes an edge](/changelog/2026-10-21-application-edge-read-path/)
 - [2026-10-21 — Pack repositories, a validation kernel and the slice layout](/changelog/2026-10-21-pack-repositories-and-validation/)
 - [2026-10-20 — Packs are validated against the canonical pack schemas, and the domain owns the pack-level policy](/changelog/2026-10-20-pack-schemas-and-level-policy/)
 - [2026-10-20 — The contract is published as 0.x, and the release gate breaks on a 0.x minor](/changelog/2026-10-20-contract-0x-versioning/)

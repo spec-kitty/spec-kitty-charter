@@ -1,5 +1,5 @@
 @startuml class-diagram
-title Structural class diagram — Charter Offering Service (DDD stereotypes; core vs edge; inward deps)
+title Structural class diagram — Charter Offering Service (DDD stereotypes; pure core vs edge rings; inward deps)
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -57,10 +57,12 @@ package "packs.domain  «CORE»" #F2F9FD {
   }
 }
 
-package "packs.application" #F1F8F4 {
-  class ReadTacticUseCase <<ApplicationService>> #E7F3EC {
-    +readTactic(PackIdentifier, TacticIdentifier) Optional<Tactic>
+package "packs.application  «EDGE»" #FDF4EE {
+  class TacticReadService <<ApplicationService>> #FBEEE6 {
+    +tactics(PackIdentifier) List<Tactic>
+    +tactic(PackIdentifier, TacticIdentifier) Optional<Tactic>
   }
+  class ApplicationConfiguration <<Configuration>> #FBEEE6
 }
 
 package "packs.infra.storage  «EDGE»" #FDF4EE {
@@ -79,13 +81,13 @@ package "packs.infra.storage  «EDGE»" #FDF4EE {
 }
 
 package "packs.infra.api  «EDGE»" #FDF4EE {
-  class PackRestController <<Adapter>> #FBEEE6 {
+  class TacticController <<Adapter>> #FBEEE6 {
     +getTactic(String pack, String tactic) TacticResponse
   }
 }
 
-package "bootstrap  «Composition Root»" #F3F4F6 {
-  class PackPersistenceWiring <<CompositionRoot>> #F0F2F4 {
+package "deployable  «Composition Root»" #F3F4F6 {
+  class DeployableConfiguration <<CompositionRoot>> #F0F2F4 {
     +main(String[] args) void
   }
 }
@@ -106,9 +108,9 @@ PackDescriptorRepository ..> PackDescriptor
 Pack ..> ModularRuleset : enforces invariants (packs.domain -> kernel)
 ModularRuleset ..> Constraint : evaluates
 
-' --- application depends on domain ports (DIP) ---
-ReadTacticUseCase ..> PackRepository
-ReadTacticUseCase ..> TacticRepository
+' --- application edge depends on domain ports (DIP) ---
+TacticReadService ..> PackRepository
+TacticReadService ..> TacticRepository
 
 ' --- storage edge: realization + strategy delegation + mapping ---
 DomainRepositoryService ..|> TacticRepository : realizes port
@@ -118,13 +120,14 @@ DomainRepositoryService ..> TacticDso : maps DSO <-> entity
 DomainRepositoryService ..> Tactic : inward dep
 YamlSerializationStrategy ..> TacticDso : entity <-> DSO <-> YAML
 
-' --- web edge -> application ---
-PackRestController ..> ReadTacticUseCase
+' --- web edge -> application edge ---
+TacticController ..> TacticReadService
 
 ' --- composition root wires the edges ---
-PackPersistenceWiring ..> DomainRepositoryService : component-scan
-PackPersistenceWiring ..> YamlSerializationStrategy : wires strategy
-PackPersistenceWiring ..> PackRestController : wires
+DeployableConfiguration ..> ApplicationConfiguration : imports
+DeployableConfiguration ..> DomainRepositoryService : imports StorageConfiguration (scan)
+DeployableConfiguration ..> YamlSerializationStrategy : wires strategy
+DeployableConfiguration ..> TacticController : imports ApiConfiguration
 
 note bottom of TacticDso
   Round-trip fidelity is asserted at the
@@ -139,8 +142,8 @@ end note
 
 legend right
   <b>Core vs edge</b>
-  Blue = core (kernel.domain, kernel.validation, packs.domain)
-  Green = application · Amber = edge adapters
+  Blue = pure core (kernel.domain, kernel.validation, packs.domain)
+  Amber = edge rings (application, storage, api)
   Grey = composition root
   Stereotypes: «AggregateRoot» «Entity» «ValueObject»
   «Repository»(port) «ApplicationService» «Adapter»

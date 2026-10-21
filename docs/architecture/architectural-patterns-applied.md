@@ -43,7 +43,7 @@ onion architecture (Jeffrey Palermo) and screaming architecture (Robert C. Marti
 service/
   kernel/      ai.speckitty.charter.kernel.{domain, validation}
   packs/       ai.speckitty.charter.packs.{domain, application, infra.storage, infra.api}
-  bootstrap/   ai.speckitty.charter.bootstrap
+  deployable/  ai.speckitty.charter.deployable   (renamed from bootstrap)
   charter-api/ generated contract types
 ```
 
@@ -58,15 +58,24 @@ ones scream the concern.
 | `kernel.domain` | Shared kernel | Vocabulary every slice may read: `PackDescriptor`, `DoctrineGraph`, `Urn`, `RefusalCode` |
 | `kernel.validation` | Shared kernel, pure library | `ModularRuleset`, `Constraint`, `Evaluation`, `Reason`; `java` and `jspecify` only |
 | `packs.domain` | Domain core | Aggregate root `Pack`, child entity `Tactic`, value objects, identifier value objects, ports |
-| `packs.application` | Application ring (use cases) | Contract-neutral read use cases such as `ActionContextQuery` |
+| `packs.application` | Application edge (use cases) | `@Service` read use cases, such as the tactic read service, that orchestrate domain ports. An outer edge, peer to storage; not pure |
 | `packs.infra.storage` | Outbound, driven adapter | `DomainRepositoryService` (`@Service`), `SerializationStrategy`, DSO records |
 | `packs.infra.api` | Inbound, driving adapter | REST controllers, Problem handling, the only users of generated DTOs |
-| `bootstrap` | Composition root | Spring Boot application and wiring; the only code that knows every module |
+| `deployable` | Composition root | The `@SpringBootApplication` and an aggregate `DeployableConfiguration` that imports each layer's `@Configuration`; the only code that knows every module |
 
 Each `domain` package also holds the **ports**: `TacticRepository`, `PackDescriptorRepository`,
 the aggregating `PackRepository` and the `PackInspectionQuery`. Serialization is a **strategy**
 (`SerializationStrategy`, with `YamlSerializationStrategy` today) so a database-backed sibling
 could be added behind the same port.
+
+## Edge rings around a pure core
+
+Only `packs.domain` and `kernel` are pure. `packs.application`, `packs.infra.storage` and
+`packs.infra.api` are peer **edge** rings around them (see the 2026-10-21 revision of
+[ADR-0006](/adr/0006-onion-vertical-slices-archunit/)). Each edge owns a `@Configuration` in a
+`config` sub-package (`ApplicationConfiguration`, `StorageConfiguration`, `ApiConfiguration`). The
+`deployable` module's `DeployableConfiguration` imports them all, so a test can load one slice of
+the wiring without the whole application.
 
 ## The diagrams
 
@@ -81,13 +90,14 @@ The class diagram shows the DDD stereotypes of the types, with the core above th
 The sources are `diagrams/c4-components.puml` and `diagrams/class-diagram.puml`. They show the
 realized layout.
 
-## Walk through: CharterPack to Tactic to steps and references
+## Walk through: Pack to Tactic to steps and references
 
 Reading a tactic through the service touches every ring, once, in order.
 
-1. A client calls the REST contract. A controller in `packs.infra.api` maps the request to a
-   use-case call and never touches storage (`ENTRYPOINT_OVER_APPLICATION`).
-2. The use case in `packs.application` asks a domain port, such as `TacticRepository.load(packId,
+1. A client calls `GET /packs/{packId}/tactics` (or `/tactics/{tacticId}`). A controller in
+   `packs.infra.api` maps the request to an application service call and never touches storage
+   (`ENTRYPOINT_OVER_APPLICATION`).
+2. The `@Service` in `packs.application` asks a domain port, such as `TacticRepository.load(packId,
    tacticId)`, for the tactic. It names only domain types.
 3. `DomainRepositoryService` in `packs.infra.storage` implements that port. It finds the file for
    the identifiers inside the pack root, reads the YAML through the
@@ -105,13 +115,14 @@ A broken element file is excluded from `load` and reported by the `PackInspectio
 bad tactic does not hide the rest of the pack.
 
 The aggregating `PackRepository.load(packId)` assembles a lightweight `Pack` (descriptor plus
-tactics). The older graph-coupled `CharterPack` remains in `packs.domain` for existing behavior,
-with convergence planned for a later mission.
+tactics). `Pack` is the single aggregate root; the earlier graph-coupled `CharterPack` and the
+pack-listing and action-context endpoints are removed.
 
 ## How it is gated
 
-`HexagonalArchitectureTest` in `bootstrap` imports the whole service and enforces the structure:
-inward-only onion dependencies, a pure domain and kernel, ports in the domain and their
+`HexagonalArchitectureTest` in `deployable` imports the whole service and enforces the structure:
+inward-only onion dependencies, a pure domain and kernel, an application edge that stays within
+its slice (`APPLICATION_IS_EDGE`), ports in the domain and their
 implementations in storage, storage returning domain types, transport types confined to the
 inbound adapter, slices not crossing, and a pure validation library. Every rule has a known-bad
 control that proves it can fail. See [Code style and conventions](/development/code-style-and-conventions/).

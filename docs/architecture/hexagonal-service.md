@@ -19,7 +19,7 @@ audience:
 
 The Gradle modules of the Java service and the one dependency rule that organizes them: infrastructure depends inward on a plain-Java domain.
 
-> **Status:** built for the first slice. The skeleton under `service/` is now `kernel`, `packs`, `charter-api` and `bootstrap` (with `charter-reports` and convention plugins in `build-logic/`), the realization of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/); the earlier flat modules (`charter-domain`, `charter-read-app`, `adapter-in-rest`, `adapter-out-yaml`, `charter-service`) are superseded. [Architectural patterns applied](/architecture/architectural-patterns-applied/) shows the realized layout. The further slices in the table below remain design. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
+> **Status:** built for the first slice. The skeleton under `service/` is now `kernel`, `packs`, `charter-api` and `deployable` (renamed from `bootstrap`) (with `charter-reports` and convention plugins in `build-logic/`), the realization of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/); the earlier flat modules (`charter-domain`, `charter-read-app`, `adapter-in-rest`, `adapter-out-yaml`, `charter-service`) are superseded. [Architectural patterns applied](/architecture/architectural-patterns-applied/) shows the realized layout. The further slices in the table below remain design. Core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler) fixes the dependency direction, not the names. [What the labels mean](/#status).
 >
 > **Module shape updated.** [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) partitions the service **top-level by vertical concern slice** (one Gradle module per slice, layers as packages within), not by the earlier horizontal read/write module split. The read/write distinction survives as a **sub-split inside each slice's application ring**, and core ADR `2026-10-03-1`'s staged read-first/write-later strangler runs within that shape. The [pack registration and distribution](/architecture/pack-registration-distribution/) design is the worked example.
 
@@ -46,7 +46,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | `profiles` | `kernel` | The agent-profiles slice, same four layers as packages |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
 | `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here, ADR-0002); referenced only from each slice's `infra.api` |
-| `bootstrap` | every slice | Spring Boot wiring, configuration, loopback binding and credential checks; the composition root — the only module that knows every slice — and owns the ArchUnit gate |
+| `deployable` | every slice | The composition root, renamed from `bootstrap`: the `@SpringBootApplication`, an aggregate `DeployableConfiguration` that imports each layer's `@Configuration`, loopback binding and credential checks. The only module that knows every slice; it owns the ArchUnit gate |
 | `charter-conformance` | the slices, fixtures | Runs the conformance corpus against the service |
 
 Within a slice, the read and write use cases are packages inside its `application` ring, not separate modules: core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)'s staged read-first/write-later strangler runs within each slice.
@@ -63,6 +63,11 @@ infra.storage (file / db / blob /    │
 - Arrows point **inward only**: the entry-point infra ring knows the application ring; the
   application and storage infra rings know the domain ring; the domain ring knows only itself
   and the `kernel` domain.
+- **Only the domain and the kernel are pure.** The `application`, `infra.storage` and `infra.api`
+  rings are peer **edges** around that core. Application use cases are Spring `@Service` beans that
+  orchestrate domain ports ([ADR-0006](/adr/0006-onion-vertical-slices-archunit/) revision
+  2026-10-21). The `APPLICATION_IS_EDGE` rule keeps an application class from reaching another
+  slice's infra, another slice's domain, or `deployable`.
 - The domain is plain Java. It imports no YAML, JSON, HTTP, MCP, GraphQL, database or framework
   library, and carries no infra annotations. Spring and the generated OpenAPI types live in the
   infra adapters only.
@@ -76,7 +81,7 @@ infra.storage (file / db / blob /    │
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).
-`HexagonalArchitectureTest` (in `bootstrap`) pins these directions over the whole service, and the
+`HexagonalArchitectureTest` (in `deployable`) pins these directions over the whole service, and the
 `charter.domain-conventions` plugin refuses any external dependency in the domain and application
 modules at configuration time.
 

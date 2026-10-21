@@ -1,11 +1,11 @@
 @startuml c4-components
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.11.0/C4_Component.puml
 
-title Component diagram — Charter Offering Service (onion / vertical slices; arrows point inward)
+title Component diagram — Charter Offering Service (pure core, edge rings; arrows point inward)
 
 AddElementTag("core",        $bgColor="#1f6f54", $fontColor="#ffffff", $legendText="CORE / DOMAIN (plain Java + jspecify)")
 AddElementTag("validation",  $bgColor="#2e8b6f", $fontColor="#ffffff", $legendText="CORE kernel.validation (java + jspecify only)")
-AddElementTag("app",         $bgColor="#3b5ba5", $fontColor="#ffffff", $legendText="APPLICATION (use cases)")
+AddElementTag("app",         $bgColor="#3b5ba5", $fontColor="#ffffff", $legendText="APPLICATION EDGE (use cases, @Service)")
 AddElementTag("edge",        $bgColor="#b5651d", $fontColor="#ffffff", $legendText="EDGE / ADAPTER (driving + driven)")
 AddElementTag("root",        $bgColor="#6a4c93", $fontColor="#ffffff", $legendText="COMPOSITION ROOT (Spring wiring)")
 AddElementTag("contract",    $bgColor="#8a8d91", $fontColor="#ffffff", $legendText="Generated contract DTOs")
@@ -22,14 +22,15 @@ System_Boundary(svc, "charter offering service") {
   Container_Boundary(packs, "packs  (vertical slice module)") {
 
     Container_Boundary(pdomain, "packs.domain  (CORE)") {
-      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + Tactics. Lightweight (NOT graph-coupled CharterPack).", $tags="core")
+      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + Tactics. The single aggregate root.", $tags="core")
       Component(tactic, "«Entity» Tactic", "plain Java", "Child entity, identity TacticIdentifier within pack; identity-equals.", $tags="core")
       Component(vos, "«ValueObject»s", "plain Java", "TacticStep, TacticReference, PackPaths, PackIdentifier, TacticIdentifier.", $tags="core")
       Component(ports, "«Port» repositories", "framework-free interfaces", "TacticRepository, PackDescriptorRepository, PackRepository + PackInspectionQuery (partial-read).", $tags="core")
     }
 
-    Container_Boundary(papp, "packs.application") {
-      Component(usecases, "Read use cases", "plain Java", "Contract-neutral orchestration over packs.domain; depends inward on packs.domain + kernel.", $tags="app")
+    Container_Boundary(papp, "packs.application  (EDGE · application adapter)") {
+      Component(usecases, "@Service tactic read service", "Spring", "Read path: a pack's tactics (all, by id). Orchestrates packs.domain ports; may use the framework; depends inward on packs.domain + kernel, never on other-slice infra.", $tags="app")
+      Component(appcfg, "ApplicationConfiguration", "@Configuration", "config sub-package; scans packs.application.", $tags="app")
     }
 
     Container_Boundary(pstore, "packs.infra.storage  (EDGE · outbound/driven adapter)") {
@@ -47,14 +48,14 @@ System_Boundary(svc, "charter offering service") {
     Component(apidto, "Generated contract DTOs", "OpenAPI-generated", "Transport types; referenced only by packs.infra.api.", $tags="contract")
   }
 
-  Container_Boundary(rootb, "bootstrap  (COMPOSITION ROOT)") {
-    Component(boot, "Spring wiring / PackPersistenceWiring", "Spring Boot", "Component-scans packs.infra.storage for @Service/@Repository; supplies pack locations; knows every module.", $tags="root")
+  Container_Boundary(rootb, "deployable  (COMPOSITION ROOT, renamed from bootstrap)") {
+    Component(boot, "DeployableConfiguration", "Spring Boot", "@SpringBootApplication host; aggregate config that @Imports ApplicationConfiguration, StorageConfiguration and ApiConfiguration; knows every module.", $tags="root")
   }
 }
 
 Rel(client, rest, "HTTP")
 
-Rel(rest, usecases, "uses")
+Rel(rest, usecases, "calls (tactic read path)")
 Rel(rest, apidto, "maps")
 Rel_Down(usecases, pack, "uses")
 Rel_Down(usecases, kval, "uses (validation)")
@@ -64,8 +65,8 @@ Rel(reposvc, ports, "implements (depends inward on packs.domain)")
 Rel(reposvc, kval, "uses (kernel)")
 
 Rel_U(boot, rest, "wires")
-Rel_U(boot, usecases, "wires")
-Rel_U(boot, reposvc, "wires / component-scans")
+Rel_U(boot, usecases, "wires (imports ApplicationConfiguration)")
+Rel_U(boot, reposvc, "wires (imports StorageConfiguration, scan)")
 
 SHOW_LEGEND()
 @enduml
