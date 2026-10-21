@@ -232,7 +232,7 @@ class PackPolicyOrderTest {
         assertThat(findings)
                 .extracting(PackFinding::code)
                 .containsExactly(PackFindingCode.DRG_SCHEMA_ERROR, PackFindingCode.PACK_LEVEL_MISMATCH);
-        assertThatThrownBy(() -> PackPolicy.load(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+        assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(c)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
             assertThat(r.getMessage()).isEqualTo("qa/a.graph.yaml: unknown key 'surprise'");
         });

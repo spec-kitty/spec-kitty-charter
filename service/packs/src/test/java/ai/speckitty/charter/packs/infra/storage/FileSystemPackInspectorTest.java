@@ -154,7 +154,6 @@ class FileSystemPackInspectorTest {
                     .hasSize(217)
                     .startsWith("16", "20", "21")
                     .endsWith("967x");
-            assertThat(PackPolicy.load(contents).diagnostics()).hasSize(217);
         }
     }
 

@@ -1,6 +1,0 @@
-name: action
-in: path
-required: true
-description: The action within the mission type, for example plan.
-schema:
-  $ref: ../schemas/Slug.yaml

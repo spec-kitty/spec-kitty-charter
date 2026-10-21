@@ -45,6 +45,24 @@ class PackAggregateTest {
     }
 
     @Test
+    @DisplayName("violations are carried by the aggregate and do not affect its tactics or identity")
+    void violationsLiveOnTheAggregateOnly() {
+        var violation = new PackElementViolation("broken.tactic.yaml", "schema", "missing steps");
+        Pack clean = Pack.builder().id(ID).descriptor(DESCRIPTOR).build();
+        Pack partial = Pack.builder()
+                .id(ID)
+                .descriptor(DESCRIPTOR)
+                .violation(violation)
+                .build();
+
+        assertThat(clean.violations()).isEmpty();
+        assertThat(partial.violations()).containsExactly(violation);
+        assertThat(partial.tactics()).isEmpty();
+        assertThat(partial).isEqualTo(clean);
+        assertThatThrownBy(() -> partial.violations().add(violation)).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
     @DisplayName("packs with the same identity are equal whatever they hold; different identity is not")
     void equalityIsByIdentity() {
         Pack bare = Pack.builder().id(ID).descriptor(DESCRIPTOR).build();

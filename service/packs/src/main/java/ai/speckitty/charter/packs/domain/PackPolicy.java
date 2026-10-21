@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.DrgNode;
@@ -396,76 +395,11 @@ public final class PackPolicy {
         return file.endsWith(".graph.yaml") && file.indexOf('/') < 0 ? 2 : 5;
     }
 
-    /**
-     * The one restriction shared by a load and a validation: the files a load reads.
-     *
-     * @param contents what the adapter read
-     * @return {@code pack.yaml}, the root shards and {@code drg/fragment.yaml}, as pack-relative paths
-     */
-    public static List<String> loadPath(PackContents contents) {
-        List<String> files = new ArrayList<>();
-        files.add(PACK_YAML);
-        contents.shards().forEach(shard -> files.add(shard.file()));
-        files.add(FRAGMENT);
-        return List.copyOf(files);
-    }
-
-    /**
-     * Loads a pack, building the graph from the facts: refuses with the first blocking finding on the load path, or
-     * builds the pack with the warnings on the load path as its diagnostics.
-     *
-     * <p>The graph is built from the shards in name order and then the fragment. The load is a projection of
-     * {@link #judge}, so a graph finding, a schema finding and a parse failure all refuse here.
-     *
-     * @param contents what the adapter read
-     * @return the loaded pack
-     * @throws CharterRefusal when a finding on the load path blocks, including the parse or schema finding of an
-     *     unreadable file
-     * @throws IllegalArgumentException when the pack has no configured level: a bare path is validate-only
-     */
-    public static CharterPack load(PackContents contents) {
-        PackLevel configured = contents.root()
-                .configuredLevel()
-                .orElseThrow(() -> new IllegalArgumentException("load needs a configured level"));
-        List<String> loadPath = loadPath(contents);
-        List<PackFinding> findings = judge(contents).findings().stream()
-                .filter(f -> loadPath.contains(f.file()))
-                .toList();
-        for (PackFinding finding : findings) {
-            if (finding.severity() == PackFindingCode.Severity.BLOCKING) {
-                throw finding.toRefusal();
-            }
-        }
-        Optional<PackDescriptor> descriptor = switch (contents.descriptor()) {
-            case FileRead.Read<PackDescriptor> read -> Optional.of(read.value());
-            case FileRead.Absent<PackDescriptor> absent -> Optional.empty();
-            case FileRead.Unreadable<PackDescriptor> unreadable ->
-                throw new IllegalStateException("an unreadable pack.yaml always yields a blocking finding");
-        };
-        return new CharterPack(
-                contents.root().name(),
-                configured,
-                descriptor,
-                mergedGraph(contents),
-                findings.stream().map(PackFinding::toDiagnostic).toList());
-    }
-
     /** The graph documents of a load, in merge order: the shards, then the fragment. */
     private static List<FileRead<RawGraph>> documents(PackContents contents) {
         List<FileRead<RawGraph>> documents = new ArrayList<>(contents.shards());
         documents.add(contents.fragment());
         return documents;
-    }
-
-    private static DoctrineGraph mergedGraph(PackContents contents) {
-        DoctrineGraph merged = DoctrineGraph.empty();
-        for (FileRead<RawGraph> document : documents(contents)) {
-            if (document instanceof FileRead.Read<RawGraph> read) {
-                merged =
-                        merged.merge(graph(contents.root().name(), read.value()).graph());
-            }
-        }
-        return merged;
     }
 
     // ---- graph building ------------------------------------------------------------------------

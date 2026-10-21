@@ -1,0 +1,68 @@
+title: Tactic
+description: One tactic of a Charter Pack, as the pack declares it.
+type: object
+additionalProperties: false
+required: [id, schemaVersion, name, purpose, notes, steps, failureModes, appliesToLanguages, references]
+properties:
+  id:
+    type: string
+    description: The tactic's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.id
+  schemaVersion:
+    type: string
+    description: The schema version the tactic file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.schemaVersion
+  name:
+    type: string
+    description: The tactic's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.name
+  purpose:
+    type: ['string', 'null']
+    description: What the tactic is for; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.purpose
+  notes:
+    type: ['string', 'null']
+    description: Free-form notes of the tactic; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.notes
+  steps:
+    type: array
+    description: The tactic's steps, in the order the file declares them.
+    items:
+      $ref: TacticStep.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.steps
+  failureModes:
+    type: array
+    description: The ways the tactic is known to fail; empty when none are declared.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.failureModes
+  appliesToLanguages:
+    type: array
+    description: The languages the tactic applies to; empty when it is language-neutral.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.appliesToLanguages
+  references:
+    type: array
+    description: The artifacts the tactic points at; empty when none are declared.
+    items:
+      $ref: TacticReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+      symbol: Tactic.references

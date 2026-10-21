@@ -82,6 +82,8 @@ public class RefusalHandler {
             case INTERNAL_ERROR -> "Internal error";
             case GOVERNANCE_POLICY_VIOLATION -> "Governance policy violation";
             case STALE_INPUT -> "Stale input";
+            case PACK_NOT_FOUND -> "Pack not found";
+            case TACTIC_NOT_FOUND -> "Tactic not found";
         };
     }
 }

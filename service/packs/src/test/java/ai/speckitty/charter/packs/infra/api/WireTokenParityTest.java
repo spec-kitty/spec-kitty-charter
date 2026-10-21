@@ -6,13 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
-import ai.speckitty.charter.api.model.Diagnostic;
-import ai.speckitty.charter.api.model.GuidanceEntry;
-import ai.speckitty.charter.api.model.PackSummary;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Relation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -34,34 +28,11 @@ class WireTokenParityTest {
             Function<String, ?> fromValue) {}
 
     private static List<Pair> pairs() {
-        return List.of(
-                new Pair(
-                        "CharterRefusalCode",
-                        tokens(RefusalCode.values(), RefusalCode::token),
-                        values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
-                        CharterRefusal.CodeEnum::fromValue),
-                new Pair(
-                        "DiagnosticCode",
-                        tokens(
-                                ai.speckitty.charter.packs.domain.Diagnostic.Code.values(),
-                                ai.speckitty.charter.packs.domain.Diagnostic.Code::token),
-                        values(Diagnostic.CodeEnum.values(), Diagnostic.CodeEnum::getValue),
-                        Diagnostic.CodeEnum::fromValue),
-                new Pair(
-                        "PackLevel",
-                        tokens(PackLevel.values(), PackLevel::token),
-                        values(PackSummary.LevelEnum.values(), PackSummary.LevelEnum::getValue),
-                        PackSummary.LevelEnum::fromValue),
-                new Pair(
-                        "NodeKind",
-                        tokens(NodeKind.values(), NodeKind::token),
-                        values(GuidanceEntry.KindEnum.values(), GuidanceEntry.KindEnum::getValue),
-                        GuidanceEntry.KindEnum::fromValue),
-                new Pair(
-                        "Relation",
-                        tokens(Relation.values(), Relation::token),
-                        values(GuidanceEntry.RelationEnum.values(), GuidanceEntry.RelationEnum::getValue),
-                        GuidanceEntry.RelationEnum::fromValue));
+        return List.of(new Pair(
+                "CharterRefusalCode",
+                tokens(RefusalCode.values(), RefusalCode::token),
+                values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
+                CharterRefusal.CodeEnum::fromValue));
     }
 
     private static <E> List<String> tokens(E[] constants, Function<E, String> token) {

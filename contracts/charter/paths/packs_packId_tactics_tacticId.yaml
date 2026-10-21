@@ -1,0 +1,35 @@
+get:
+  operationId: getPackTactic
+  summary: Get one tactic of a Charter Pack by identity.
+  description: >-
+    One tactic of one pack. A pack that is absent or cannot be read is a 404 pack_not_found; a pack
+    without that tactic is a 404 tactic_not_found.
+  tags:
+    - Tactics
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/TacticId.yaml
+  responses:
+    '200':
+      description: The tactic.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Tactic.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/TacticNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

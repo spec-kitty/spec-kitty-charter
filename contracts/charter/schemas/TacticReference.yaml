@@ -1,0 +1,30 @@
+title: TacticReference
+description: A pointer from a tactic, or one of its steps, to another artifact.
+type: object
+additionalProperties: false
+required: [name, type, id, when]
+properties:
+  name:
+    type: string
+    description: The referenced artifact's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticReference.java
+      symbol: TacticReference.name
+  type:
+    type: string
+    description: The kind of the referenced artifact.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticReference.java
+      symbol: TacticReference.type
+  id:
+    type: string
+    description: The referenced artifact's identity.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticReference.java
+      symbol: TacticReference.id
+  when:
+    type: string
+    description: When the reference applies.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticReference.java
+      symbol: TacticReference.when

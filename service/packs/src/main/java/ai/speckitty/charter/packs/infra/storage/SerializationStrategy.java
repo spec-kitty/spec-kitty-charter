@@ -8,7 +8,7 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
  *
  * <p>A read never throws on content: text that is not the format or breaks its schema is a {@link FileRead.Unreadable}.
  */
-interface SerializationStrategy {
+public interface SerializationStrategy {
 
     /**
      * Serializes a tactic from scratch.

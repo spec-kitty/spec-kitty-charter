@@ -1,0 +1,7 @@
+name: tacticId
+in: path
+required: true
+description: The identity of the tactic within its pack.
+schema:
+  type: string
+  minLength: 1

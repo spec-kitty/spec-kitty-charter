@@ -21,7 +21,7 @@ listOf(
     "kernel",
     "packs",
     "charter-api",
-    "bootstrap",
+    "deployable",
     // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
     "charter-reports",
 ).forEach { name ->

@@ -2,16 +2,19 @@ title: CharterRefusalCode
 description: >-
   Why the charter refused a read. Codes are part of the contract; consumers branch on them,
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
-  to core's own spellings. mission_type_not_found and action_not_found are 404; every other
+  to core's own spellings. mission_type_not_found, action_not_found, pack_not_found and tactic_not_found are 404; every other
   code is 500. internal_error refuses a failure no other code names; its detail is a generic
   sentence that says nothing about the failure, so every 500 is a refusal.
 
   stale_input is raised: the packs or the project configuration changed while the answer was computed,
-  so the answer and the Charter-Source-Fingerprint it would report might disagree. Every read that loads
-  the offering digests its inputs before and after it loads them and refuses on a difference; so does a
-  read whose load fails when the inputs digest differently afterwards, because the failure was the
-  change's (a half-written file), not the pack's. The read may be retried. A change made after the second
-  digest, or one reverted between the two, goes unseen.
+  so the answer and the Charter-Source-Fingerprint it would report might disagree. The service info
+  digests its inputs twice and refuses on a difference, or when the second digest cannot be taken. The
+  read may be retried. A change made after the second digest, or one reverted between the two, goes unseen.
+
+  mission_type_not_found and action_not_found are no longer raised: the action-context operation that
+  answered them is gone. pack_level_mismatch and drg_schema_error are no longer raised: no operation
+  loads and judges a pack's graph any more. All four values stay in the enum so that the contract
+  keeps accepting them.
 
   One code is reserved for the work that raises it, so that adding it is no breaking change (ADR-0009):
   governance_policy_violation will refuse an offering in which a lower-tier pack breaks the mutability
@@ -46,19 +49,21 @@ enum:
   - internal_error
   - governance_policy_violation
   - stale_input
+  - pack_not_found
+  - tactic_not_found
 x-refusal:
   mission_type_not_found:
     status: 404
     retryable: false
-    raised: true
+    raised: false
   action_not_found:
     status: 404
     retryable: false
-    raised: true
+    raised: false
   pack_level_mismatch:
     status: 500
     retryable: false
-    raised: true
+    raised: false
   pack_unreadable:
     status: 500
     retryable: false
@@ -66,7 +71,7 @@ x-refusal:
   drg_schema_error:
     status: 500
     retryable: false
-    raised: true
+    raised: false
   unresolved_edge_endpoint:
     status: 500
     retryable: false
@@ -82,6 +87,14 @@ x-refusal:
   stale_input:
     status: 500
     retryable: true
+    raised: true
+  pack_not_found:
+    status: 404
+    retryable: false
+    raised: true
+  tactic_not_found:
+    status: 404
+    retryable: false
     raised: true
 x-source:
   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java

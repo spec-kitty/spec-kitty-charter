@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * {@link ParsedYaml} and the bundled {@link PackSchemas}. Scalars are read as their text, an explicit null reads like
  * an absent key, and list order and duplicates are kept both ways.
  */
-final class YamlSerializationStrategy implements SerializationStrategy {
+public final class YamlSerializationStrategy implements SerializationStrategy {
 
     private static final String TACTIC_KIND = "tactic";
 

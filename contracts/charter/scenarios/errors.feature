@@ -34,7 +34,7 @@ Feature: Failures outside the charter's refusals
   Scenario: A request that accepts no representation the operation has is answered with a not-acceptable problem
     The problem is served as application/problem+json although the request does not accept it,
     as RFC 9457 allows for an error response.
-    When I GET "/packs" accepting "text/csv"
+    When I GET "/info" accepting "text/csv"
     Then the response status is 406
     And the response body is:
       """
@@ -43,7 +43,7 @@ Feature: Failures outside the charter's refusals
 
   Scenario: An unexpected failure while the packs are read is refused with internal_error
     Given the service fails unexpectedly while it reads the packs
-    When I GET "/packs"
+    When I GET "/info"
     Then the response status is 500
     And the problem code is "internal_error"
     And the response body is:
@@ -51,14 +51,14 @@ Feature: Failures outside the charter's refusals
       {"title": "Internal error", "status": 500, "code": "internal_error", "detail": "The charter service failed unexpectedly; the failure is logged."}
       """
 
-  Scenario Outline: An input the service cannot read is refused with pack_unreadable
+  Scenario: An input the service cannot read is refused with pack_unreadable
     A directory stands where config.yaml should be a file, so reading it fails with an I/O error
     whoever runs the service (a file made unreadable by its permissions would still be readable to
     root). The input is one the service digests, not a seam: nothing about it changes while the
     read is answered, so the refusal is the first digest's own and permanent, not stale_input. It
     names the file relative to the project configuration directory and says nothing of the host.
     Given the project configuration file "config.yaml" is a directory
-    When I send <method> "<path>"
+    When I GET "/info"
     Then the response status is 500
     And the problem code is "pack_unreadable"
     And the response body, apart from "detail", is:
@@ -68,39 +68,10 @@ Feature: Failures outside the charter's refusals
     And the field "detail" of the response body starts with "project-config/config.yaml cannot be read"
     And the response has no "Charter-Source-Fingerprint" header
 
-    Examples:
-      | method | path                                                  |
-      | GET    | /info                                                 |
-      | GET    | /packs                                                |
-      | GET    | /mission-types/software-dev/actions/plan/context      |
-      | POST   | /packs/refresh                                        |
-
-  Scenario Outline: A read whose packs change while it is answered is refused with stale_input
-    A pack file is rewritten after the read digested its inputs and before it loaded them. The
-    read digests again afterwards, sees the difference, and refuses: the answer and the
-    fingerprint it would report might disagree. The same read, asked again, answers.
-    Given a pack file changes while the next read is answered
-    When I send <method> "<path>"
-    Then the response status is 500
-    And the problem code is "stale_input"
-    And the response body is:
-      """
-      {"title": "Stale input", "status": 500, "code": "stale_input", "detail": "The packs or the project configuration changed while the read was answered; read again."}
-      """
-    And the response has no "Charter-Source-Fingerprint" header
-    When I send <method> "<path>"
-    Then the response status is 200
-
-    Examples:
-      | method | path                                                  |
-      | GET    | /packs                                                |
-      | GET    | /mission-types/software-dev/actions/plan/context      |
-      | POST   | /packs/refresh                                        |
-
   Scenario: A service info whose inputs change while it is answered is refused with stale_input
     /info digests twice and answers only the digest both reads agree on. A pack file rewritten between the two
     digests, or one the second digest can no longer read, makes the answer stale. The same read, asked again,
-    answers. The detail is /info's own: it reads no offering.
+    answers.
     Given a pack file changes while the next read is answered
     When I GET "/info"
     Then the response status is 500
@@ -113,40 +84,14 @@ Feature: Failures outside the charter's refusals
     When I GET "/info"
     Then the response status is 200
 
-  Scenario Outline: A pack file rewritten while it is parsed is stale, not a schema error
-    The shard becomes invalid YAML after the first digest and stays so: the load fails, the
-    inputs are digested again, and they differ from the first digest. The failure is the change's,
-    not the pack's, so the read answers stale_input and not drg_schema_error. (A shard restored
-    before the second digest goes unseen; the contract documents that window.)
-    Given a pack file is rewritten to invalid YAML while the next read is answered
-    When I send <method> "<path>"
-    Then the response status is 500
-    And the problem code is "stale_input"
-    And the response has no "Charter-Source-Fingerprint" header
-    When I send <method> "<path>"
-    Then the response status is 500
-    And the problem code is "drg_schema_error"
-
-    Examples:
-      | method | path                                                  |
-      | GET    | /packs                                                |
-      | GET    | /mission-types/software-dev/actions/plan/context      |
-      | POST   | /packs/refresh                                        |
-
-  Scenario Outline: A read that watches for a change and sees none answers with the digest it verified
-    The negative control of the stale_input scenarios: the same seam, armed to change nothing.
+  Scenario: A read that watches for a change and sees none answers with the digest it verified
+    The negative control of the stale_input scenario: the same seam, armed to change nothing.
     Given no pack file changes while the next read is answered
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
-    And I GET "<path>"
     Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
     And the response header "Charter-Source-Fingerprint" is the remembered "sourceFingerprint"
-
-    Examples:
-      | path                                                  |
-      | /packs                                                |
-      | /mission-types/software-dev/actions/plan/context      |
 
   @reserved
   Scenario: governance_policy_violation is reserved
@@ -162,13 +107,12 @@ Feature: Failures outside the charter's refusals
   Scenario: The refusal codes the contract marks raised are exactly those an operation raises
     The contract's machine-readable x-refusal map agrees with the behavior of this suite: each
     refusal a scenario observes has the status and the raised flag the contract declares for its
-    code, and these are all the codes raised. unresolved_edge_endpoint is no longer raised: an
-    edge endpoint that is not a URN is drg_schema_error.
+    code, and these are all the codes raised. mission_type_not_found and action_not_found are no
+    longer raised: the operations that answered them are gone. unresolved_edge_endpoint, and, with the
+    load that judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation.
     Then the contract says exactly these refusal codes are raised by an operation:
-      | mission_type_not_found     |
-      | action_not_found           |
-      | pack_level_mismatch        |
       | pack_unreadable            |
-      | drg_schema_error           |
       | internal_error             |
       | stale_input                |
+      | pack_not_found             |
+      | tactic_not_found           |

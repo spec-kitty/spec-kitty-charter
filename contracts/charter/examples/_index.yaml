@@ -1,5 +1,4 @@
 files:
-  - ActionContext.software-dev-plan.yaml
   - CharterRefusal.action-not-found.yaml
-  - PackListing.built-in.yaml
+  - CharterRefusal.tactic-not-found.yaml
   - ServiceInfo.one-worktree.yaml

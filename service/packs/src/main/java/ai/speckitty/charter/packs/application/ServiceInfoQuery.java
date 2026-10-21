@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /** The worktree the service serves and the fingerprint of the inputs it answers from (ADR-0011). */
 public final class ServiceInfoQuery {
@@ -42,11 +43,20 @@ public final class ServiceInfoQuery {
      */
     public ServiceInfo answer() {
         String first = sources.fingerprint();
-        String second = ConsistentLoad.digestOrNull(sources);
+        String second = digestOrNull();
         if (!first.equals(second)) {
             throw new CharterRefusal(
                     RefusalCode.STALE_INPUT, "The inputs changed while the service info was read; read it again.");
         }
         return new ServiceInfo(worktree, first);
+    }
+
+    /** The digest now, or {@code null} when an input readable a moment ago no longer is: it changed. */
+    private @Nullable String digestOrNull() {
+        try {
+            return sources.fingerprint();
+        } catch (CharterRefusal unreadable) {
+            return null;
+        }
     }
 }

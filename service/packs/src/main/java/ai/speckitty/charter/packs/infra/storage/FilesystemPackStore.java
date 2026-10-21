@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -30,12 +31,12 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The identifier's value names the pack directory under the storage root. A tactic is located by scanning the
  * pack's {@code *.yaml} files that {@link PackFileKind} classifies as {@code tactic} for the one whose {@code id}
- * matches. A write replaces an existing element by id only: an id with no file is refused, not created. A read never
- * throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
+ * matches. A tactic write is an upsert: a known id replaces its file, an unknown id creates {@code <id>.tactic.yaml}
+ * directly in the pack directory (and never over an existing file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
  * {@code pack.yaml} refuses it.
  *
- * <p>A write serializes from scratch, writes a temporary file beside the target and renames it over the target, so a
- * failure leaves the original untouched and removes the temporary file. A target that resolves, symlinks followed,
+ * <p>A write, replace or create, serializes from scratch, writes a temporary file beside the target and renames it
+ * into place, so a failure leaves the original untouched (or the new file absent) and removes the temporary file. A target that resolves, symlinks followed,
  * outside the pack directory is refused before any byte is written.
  */
 final class FilesystemPackStore {
@@ -128,19 +129,74 @@ final class FilesystemPackStore {
      */
     PackRead read(PackIdentifier id) {
         Path directory = existingDirectory(id);
+        PackDescriptorDso descriptor = descriptorOf(directory, id);
+        List<TacticDso> tactics = new ArrayList<>();
+        List<PackElementViolation> violations = new ArrayList<>();
+        readTactics(directory, tactics, violations);
+        return new PackRead(descriptor, tactics, violations);
+    }
+
+    /**
+     * Reads only a pack's {@code pack.yaml}: no tactic file is opened. This is how an identifier is matched to a pack
+     * without reading every pack's elements.
+     *
+     * @param id the pack
+     * @return the descriptor
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackDescriptorDso readDescriptor(PackIdentifier id) {
+        return descriptorOf(existingDirectory(id), id);
+    }
+
+    /**
+     * Reads the readable tactics of a pack, without its descriptor.
+     *
+     * @param id the pack
+     * @return the readable tactics, in path order
+     */
+    List<TacticDso> readTactics(PackIdentifier id) {
+        List<TacticDso> tactics = new ArrayList<>();
+        readTactics(existingDirectory(id), tactics, new ArrayList<>());
+        return tactics;
+    }
+
+    /**
+     * Reads one tactic: only the file that declares the id is parsed as a tactic.
+     *
+     * @param id the pack
+     * @param tacticId the tactic's id
+     * @return the tactic, or empty when the pack has no readable tactic with that id
+     */
+    Optional<TacticDso> readTactic(PackIdentifier id, String tacticId) {
+        Path directory = existingDirectory(id);
+        return locateTactic(directory, tacticId).flatMap(file -> {
+            String name = directory
+                    .relativize(file)
+                    .toString()
+                    .replace(file.getFileSystem().getSeparator(), "/");
+            return switch (readFile(file, name, text -> strategy.readTactic(text, name))) {
+                case FileRead.Read<TacticDso> good -> Optional.of(good.value());
+                case FileRead.Unreadable<TacticDso> bad -> Optional.empty();
+                case FileRead.Absent<TacticDso> absent -> Optional.empty();
+            };
+        });
+    }
+
+    private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
         Path packYaml = directory.resolve(PACK_YAML);
         if (!Files.isRegularFile(packYaml)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
         }
-        PackDescriptorDso descriptor = switch (readFile(packYaml, PACK_YAML, strategy::readDescriptor)) {
+        return switch (readFile(packYaml, PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
             case FileRead.Unreadable<PackDescriptorDso> bad ->
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + id.value() + " cannot be read");
             case FileRead.Absent<PackDescriptorDso> absent ->
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
         };
-        List<TacticDso> tactics = new ArrayList<>();
-        List<PackElementViolation> violations = new ArrayList<>();
+    }
+
+    private void readTactics(Path directory, List<TacticDso> tactics, List<PackElementViolation> violations) {
         for (String file : tacticFiles(directory)) {
             switch (readFile(directory.resolve(file), file, text -> strategy.readTactic(text, file))) {
                 case FileRead.Read<TacticDso> good -> tactics.add(good.value());
@@ -148,7 +204,6 @@ final class FilesystemPackStore {
                 case FileRead.Absent<TacticDso> absent -> {}
             }
         }
-        return new PackRead(descriptor, tactics, violations);
     }
 
     /**
@@ -163,15 +218,17 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Replaces the file of an existing tactic, found by id.
+     * Upserts a tactic: the file of the tactic with this id is replaced; an unknown id is created as
+     * {@code <id>.tactic.yaml} in the pack directory. Both arms are atomic and contained in the pack.
      *
      * @param id the pack
      * @param tactic what to write
-     * @throws CharterRefusal when the pack has no tactic with that id, or the file resolves outside the pack
+     * @throws CharterRefusal when the file resolves outside the pack, or a new tactic's file name is taken by
+     *     something that is not a tactic with that id
      */
     void writeTactic(PackIdentifier id, TacticDso tactic) {
         Path directory = existingDirectory(id);
-        Path target = locateTactic(directory, tactic.id(), id);
+        Path target = locateTactic(directory, tactic.id()).orElseGet(() -> newTacticFile(directory, tactic.id()));
         writeAtomically(directory, target, strategy.writeTactic(tactic));
     }
 
@@ -186,16 +243,33 @@ final class FilesystemPackStore {
     }
 
     /** The existing tactic file whose {@code id} is {@code tacticId}; the first in path order if several declare it. */
-    private static Path locateTactic(Path directory, String tacticId, PackIdentifier pack) {
+    private static Optional<Path> locateTactic(Path directory, String tacticId) {
         for (String file : tacticFiles(directory)) {
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
             if (parsed.document() instanceof java.util.Map<?, ?> map && tacticId.equals(map.get("id"))) {
-                return directory.resolve(file);
+                return Optional.of(directory.resolve(file));
             }
         }
-        throw new CharterRefusal(
-                RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no tactic with id '" + tacticId + "'");
+        return Optional.empty();
+    }
+
+    /**
+     * The file a new tactic is created at: {@code <id>.tactic.yaml} directly in the pack directory. An id that would
+     * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
+     * so a create never overwrites a file or follows a planted link.
+     */
+    private static Path newTacticFile(Path directory, String tacticId) {
+        Path target = directory.resolve(tacticId + ".tactic.yaml").normalize();
+        if (!directory.equals(target.getParent())) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "tactic id '" + tacticId + "' does not name a file in the pack");
+        }
+        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "cannot create tactic '" + tacticId + "': its file name is taken");
+        }
+        return target;
     }
 
     /** The pack-relative, slash-separated paths of the pack's tactic files, in path order. */

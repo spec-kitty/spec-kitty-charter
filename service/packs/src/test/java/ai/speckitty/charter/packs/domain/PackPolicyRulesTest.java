@@ -99,19 +99,18 @@ class PackPolicyRulesTest {
     void theRequiresCoreRefusalIsPackUnreadableWithTheExactText() {
         PackContents contents = withDescriptor(Optional.of("~=1"), List.of());
 
-        assertThatThrownBy(() -> PackPolicy.load(contents)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage())
-                    .isEqualTo("pack.yaml of qa: requires_core '~=1' is not a PEP 440 version specifier");
-        });
+        assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(contents))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage())
+                            .isEqualTo("pack.yaml of qa: requires_core '~=1' is not a PEP 440 version specifier");
+                });
     }
 
     @ParameterizedTest
     @ValueSource(strings = {">=4.0.0rc7,<5", "", ">=1.0", "~=1.4.5"})
     void aValidRequiresCoreGivesNoFinding(String requiresCore) {
         assertThat(judge(withDescriptor(Optional.of(requiresCore), List.of()))).isEmpty();
-        assertThat(PackPolicy.load(withDescriptor(Optional.of(requiresCore), List.of())))
-                .isNotNull();
     }
 
     @Test
@@ -172,9 +171,7 @@ class PackPolicyRulesTest {
 
     @Test
     void anUndeclaredKeyLoadsWithItsDiagnosticAndItsPinnedText() {
-        CharterPack pack = PackPolicy.load(withDescriptor(Optional.empty(), List.of("surprise")));
-
-        assertThat(pack.diagnostics())
+        assertThat(Judged.diagnostics(withDescriptor(Optional.empty(), List.of("surprise"))))
                 .containsExactly(new Diagnostic(
                         Diagnostic.Code.PACK_UNKNOWN_KEY,
                         "pack.yaml of qa declares unknown key 'surprise'; it is ignored"));
@@ -253,10 +250,11 @@ class PackPolicyRulesTest {
                         List.of(),
                         "org pack lonely has no drg/fragment.yaml"));
         assertThat(findings.get(0).severity()).isEqualTo(PackFindingCode.Severity.BLOCKING);
-        assertThatThrownBy(() -> PackPolicy.load(contents)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage()).isEqualTo("org pack lonely has no drg/fragment.yaml");
-        });
+        assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(contents))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).isEqualTo("org pack lonely has no drg/fragment.yaml");
+                });
     }
 
     @Test
@@ -724,14 +722,13 @@ class PackPolicyRulesTest {
     // ---- validate-only ---------------------------------------------------------------------------
 
     @Test
-    void theValidateOnlyRulesNeverReachTheLoadPath() {
+    void theValidateOnlyRulesAreJudged() {
         PackContents contents = contents(
                 new FileRead.Read<>("pack.yaml", descriptor(Optional.empty(), List.of())),
                 List.of(new StepContractFacts(CONTRACT, List.of("a", "a"))),
                 List.of(new ArtifactFacts("t/a.yaml", "tactic", "x"), new ArtifactFacts("t/b.yaml", "tactic", "x")),
                 List.of(asset("../logo.png", "text/plain", false)));
 
-        assertThat(PackPolicy.load(contents)).isNotNull();
         assertThat(PackPolicy.judge(contents).findings())
                 .extracting(PackFinding::code)
                 .contains(

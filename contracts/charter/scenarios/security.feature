@@ -25,7 +25,7 @@ Feature: The worktree token and the refusal of browsers
       """
 
   Scenario: A request without a token is a 401 that asks for a bearer token
-    When I GET "/packs" without the worktree token
+    When I GET "/info" without the worktree token
     Then the response status is 401
     And the response header "WWW-Authenticate" is "Bearer"
     And the response body is:
@@ -99,7 +99,7 @@ Feature: The worktree token and the refusal of browsers
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario Outline: A request with a Sec-Fetch header is a 403 even with the right token
-    When I GET "/packs" with the header "<header>": "<value>"
+    When I GET "/info" with the header "<header>": "<value>"
     Then the response status is 403
     And the response has no "Charter-Source-Fingerprint" header
 

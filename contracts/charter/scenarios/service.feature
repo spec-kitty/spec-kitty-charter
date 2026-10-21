@@ -31,35 +31,21 @@ Feature: What the service says about itself
     And the field "worktree" of the response body is "scenario-worktree"
     And the field "sourceFingerprint" of the response body is a sha256 digest
 
-  Scenario: Every 200 carries the contract version, the worktree and the source fingerprint it verified
-    The fingerprint is set once, by the read, and equals what /info reports for unchanged inputs.
+  Scenario: The info answer carries the contract version, the worktree and the source fingerprint it verified
+    The fingerprint is set once, by the read, and equals the sourceFingerprint of the body it came with.
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
-    And I GET "/packs"
     Then the response status is 200
     And the response header "Charter-Contract-Version" is the contract version
     And the response header "Charter-Worktree" is "scenario-worktree"
-    And the response header "Charter-Source-Fingerprint" appears once
-    And the response header "Charter-Source-Fingerprint" is the remembered "sourceFingerprint"
-    When I GET "/mission-types/software-dev/actions/plan/context"
-    Then the response status is 200
     And the response header "Charter-Source-Fingerprint" appears once
     And the response header "Charter-Source-Fingerprint" is the remembered "sourceFingerprint"
 
   Scenario: A refusal carries the contract version and the worktree, not the fingerprint
     The fingerprint is the digest a read verified and set on its 200 answer; no refusal carries one.
-    When I GET "/mission-types/software-dev/actions/deploy/context"
+    When I GET "/packs/no-such-pack/tactics"
     Then the response status is 404
-    And the problem code is "action_not_found"
-    And the response header "Charter-Contract-Version" is the contract version
-    And the response header "Charter-Worktree" is "scenario-worktree"
-    And the response has no "Charter-Source-Fingerprint" header
-
-  Scenario: A bad request carries the contract version and the worktree, not the fingerprint
-    The 400 for a depth outside 0 to 2 is the shared Problem, and it carries the
-    same headers as a charter refusal.
-    When I GET "/mission-types/software-dev/actions/plan/context?depth=3"
-    Then the response status is 400
+    And the problem code is "pack_not_found"
     And the response header "Charter-Contract-Version" is the contract version
     And the response header "Charter-Worktree" is "scenario-worktree"
     And the response has no "Charter-Source-Fingerprint" header
@@ -68,7 +54,7 @@ Feature: What the service says about itself
     No refusal carries the source fingerprint; this one still carries the contract version and the
     worktree.
     Given the service fails unexpectedly while it reads the packs
-    When I GET "/packs"
+    When I GET "/info"
     Then the response status is 500
     And the problem code is "internal_error"
     And the response header "Charter-Contract-Version" is the contract version

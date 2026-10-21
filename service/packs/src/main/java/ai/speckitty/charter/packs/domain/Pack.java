@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * {@link Tactic} child entities and the violations found while reading, so a partial-tolerant load can be
  * represented. Two packs are equal when they have the same identity, whatever else they hold.
  *
- * <p>Unlike {@link CharterPack} it holds no doctrine graph. Build one with {@link #builder()}.
+ * <p>It holds no doctrine graph. Build one with {@link #builder()}.
  */
 public final class Pack {
 
@@ -87,7 +87,8 @@ public final class Pack {
     }
 
     /**
-     * The files that could not be read or validated while loading.
+     * The files that could not be read or validated while loading. This is the single, canonical owner of
+     * read-time violations; no other surface may report them.
      *
      * @return an immutable list
      */
