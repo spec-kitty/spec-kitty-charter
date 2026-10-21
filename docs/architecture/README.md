@@ -51,6 +51,8 @@ The design is grounded in three core ADRs and this repository's own records:
   dependency rule.
 - [Contract and DTOs](/architecture/contract-and-dtos/) — the OpenAPI contract, how the core and the
   service generate from it, and how it is versioned.
+- [Architectural patterns applied](/architecture/architectural-patterns-applied/) — the hexagonal,
+  onion and screaming layout as built, with the C4 and class diagrams.
 - [Pack registration and distribution](/architecture/pack-registration-distribution/) — how the service
   registers, stores, verifies and distributes packs of every level: the layering, the four source kinds, the
   trust and lockfile model, the storage ports, and the API surface.

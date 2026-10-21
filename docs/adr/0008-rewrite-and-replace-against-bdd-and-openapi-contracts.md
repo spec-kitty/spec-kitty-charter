@@ -52,7 +52,7 @@ repositories.
    Python charter; it complements the Gherkin scenarios, it does not replace them.
 3. **Open-packs round-trip.** Every YAML file of `spec-kitty-open-packs` (`built-in/` and
    `packs/`) must round-trip through the file-based infrastructure layer
-   (`adapter-out-yaml`): the document model renders it byte for byte, rewriting every scalar
+   (`packs.infra.storage`, formerly `adapter-out-yaml`): the document model renders it byte for byte, rewriting every scalar
    through the model's writer loads to the same data, and every pack loads and its graph
    survives a write and re-read. CI runs it against a pinned open-packs commit, and it never
    skips.

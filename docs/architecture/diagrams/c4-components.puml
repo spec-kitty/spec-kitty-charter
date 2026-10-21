@@ -1,0 +1,71 @@
+@startuml c4-components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.11.0/C4_Component.puml
+
+title Component diagram — Charter Offering Service (onion / vertical slices; arrows point inward)
+
+AddElementTag("core",        $bgColor="#1f6f54", $fontColor="#ffffff", $legendText="CORE / DOMAIN (plain Java + jspecify)")
+AddElementTag("validation",  $bgColor="#2e8b6f", $fontColor="#ffffff", $legendText="CORE kernel.validation (java + jspecify only)")
+AddElementTag("app",         $bgColor="#3b5ba5", $fontColor="#ffffff", $legendText="APPLICATION (use cases)")
+AddElementTag("edge",        $bgColor="#b5651d", $fontColor="#ffffff", $legendText="EDGE / ADAPTER (driving + driven)")
+AddElementTag("root",        $bgColor="#6a4c93", $fontColor="#ffffff", $legendText="COMPOSITION ROOT (Spring wiring)")
+AddElementTag("contract",    $bgColor="#8a8d91", $fontColor="#ffffff", $legendText="Generated contract DTOs")
+
+Person(client, "API client", "Consumes the charter offering REST contract")
+
+System_Boundary(svc, "charter offering service") {
+
+  Container_Boundary(kernel, "kernel  (shared kernel module · CORE)") {
+    Component(kdomain, "kernel.domain", "plain Java", "Shared Pack/DRG vocabulary: PackDescriptor, PackPaths, DoctrineGraph/DRG, PackLevel, Urn/Fingerprint/Pep440, RefusalCode/CharterRefusal, ArtifactKind.", $tags="core")
+    Component(kval, "kernel.validation", "plain Java", "Nested in the kernel, not a separate module. Constraint; ModularRuleset guard() fail-fast / check() collect-all; Evaluation / Reason / Rationale / Constrained.", $tags="validation")
+  }
+
+  Container_Boundary(packs, "packs  (vertical slice module)") {
+
+    Container_Boundary(pdomain, "packs.domain  (CORE)") {
+      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + Tactics. Lightweight (NOT graph-coupled CharterPack).", $tags="core")
+      Component(tactic, "«Entity» Tactic", "plain Java", "Child entity, identity TacticIdentifier within pack; identity-equals.", $tags="core")
+      Component(vos, "«ValueObject»s", "plain Java", "TacticStep, TacticReference, PackPaths, PackIdentifier, TacticIdentifier.", $tags="core")
+      Component(ports, "«Port» repositories", "framework-free interfaces", "TacticRepository, PackDescriptorRepository, PackRepository + PackInspectionQuery (partial-read).", $tags="core")
+    }
+
+    Container_Boundary(papp, "packs.application") {
+      Component(usecases, "Read use cases", "plain Java", "Contract-neutral orchestration over packs.domain; depends inward on packs.domain + kernel.", $tags="app")
+    }
+
+    Container_Boundary(pstore, "packs.infra.storage  (EDGE · outbound/driven adapter)") {
+      Component(reposvc, "@Service DomainRepositoryService", "Spring", "Implements the domain port(s); ctor-injects a SerializationStrategy + FilesystemPackStore; maps DSO <-> entity.", $tags="edge")
+      Component(strategy, "«Strategy» SerializationStrategy", "interface + YamlSerializationStrategy", "entity <-> DSO <-> YAML text. ONE concrete impl today; future @Repository DB sibling of the same port.", $tags="edge")
+      Component(dso, "«DSO» TacticDso / PackDescriptorDso + FilesystemPackStore", "records + store", "Persistence shape. Storage mechanics: atomic temp -> ATOMIC_MOVE, PackIdentifier -> path, pack-root containment.", $tags="edge")
+    }
+
+    Container_Boundary(papi, "packs.infra.api  (EDGE · inbound/driving adapter)") {
+      Component(rest, "REST controllers", "Spring MVC", "Driving adapter; maps contract DTOs <-> use-case calls. Owns internal_error refusal.", $tags="edge")
+    }
+  }
+
+  Container_Boundary(apibnd, "charter-api") {
+    Component(apidto, "Generated contract DTOs", "OpenAPI-generated", "Transport types; referenced only by packs.infra.api.", $tags="contract")
+  }
+
+  Container_Boundary(rootb, "bootstrap  (COMPOSITION ROOT)") {
+    Component(boot, "Spring wiring / PackPersistenceWiring", "Spring Boot", "Component-scans packs.infra.storage for @Service/@Repository; supplies pack locations; knows every module.", $tags="root")
+  }
+}
+
+Rel(client, rest, "HTTP")
+
+Rel(rest, usecases, "uses")
+Rel(rest, apidto, "maps")
+Rel_Down(usecases, pack, "uses")
+Rel_Down(usecases, kval, "uses (validation)")
+Rel_Down(pack, kval, "uses (packs.domain -> kernel)")
+Rel_Down(pack, kdomain, "uses (packs.domain -> kernel)")
+Rel(reposvc, ports, "implements (depends inward on packs.domain)")
+Rel(reposvc, kval, "uses (kernel)")
+
+Rel_U(boot, rest, "wires")
+Rel_U(boot, usecases, "wires")
+Rel_U(boot, reposvc, "wires / component-scans")
+
+SHOW_LEGEND()
+@enduml

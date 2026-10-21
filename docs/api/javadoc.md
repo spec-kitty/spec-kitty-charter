@@ -19,16 +19,14 @@ audience:
 
 **[Open the Javadoc](/javadoc/index.html)**
 
-The Javadoc covers the five hand-written modules of the charter service, one group per
+The Javadoc covers the three hand-written modules of the charter service, one group per
 module on its overview page, with one index and one search across all of them:
 
 | Module | Package | What it holds |
 |---|---|---|
-| `charter-domain` | `ai.speckitty.charter.domain` | Charter meaning and invariants: packs, the Doctrine Reference Graph and the repository ports |
-| `charter-read-app` | `ai.speckitty.charter.read` | The read use cases over the domain |
-| `adapter-out-yaml` | `ai.speckitty.charter.yaml` | The file-based adapter: the YAML document models and the repository adapters that implement those ports over a pack directory |
-| `adapter-in-rest` | `ai.speckitty.charter.rest` | The inbound REST adapter, which implements the generated contract interfaces |
-| `charter-service` | `ai.speckitty.charter.service` | The Spring Boot wiring of the runnable service |
+| `kernel` | `ai.speckitty.charter.kernel` | The shared kernel: the pack and Doctrine Reference Graph vocabulary (`kernel.domain`) and the pure validation library (`kernel.validation`) |
+| `packs` | `ai.speckitty.charter.packs` | The packs slice: the domain and its repository ports, the read use cases (`application`), the file-based storage adapter (`infra.storage`) and the inbound REST adapter (`infra.api`) |
+| `bootstrap` | `ai.speckitty.charter.bootstrap` | The Spring Boot wiring of the runnable service, the composition root |
 
 It does not cover `charter-api`, the module generated from `contracts/charter/openapi.yaml`:
 those types are the contract's, and the [service contract](/api/service-contract/) is where
@@ -38,7 +36,7 @@ link.
 ## How it is built
 
 `./gradlew verifyAll` builds the reference through the `service/charter-reports` project,
-whose `aggregateJavadoc` task runs javadoc over the sources of the five modules with all of
+whose `aggregateJavadoc` task runs javadoc over the sources of the three modules with all of
 javadoc's lint checks on and warnings as errors, so a public type or member without a
 comment, or with a malformed one, fails the build. Each module's own Javadoc runs under the same rules.
 
@@ -52,5 +50,5 @@ To see the reference in a local build of the site, stage it first:
 ./gradlew :charter-reports:stageJavadocForSite   # copies it to site/public/javadoc
 ```
 
-The same project builds the aggregated test coverage report of the five modules
+The same project builds the aggregated test coverage report of the three modules
 (`testCodeCoverageReport`).

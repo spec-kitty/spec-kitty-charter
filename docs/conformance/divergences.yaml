@@ -332,7 +332,7 @@
   since: 2026-10-20
   evidence:
     - "core: offering/drg/org_pack_loader.py:371"
-    - "charter: service/adapter-out-yaml/src/test/resources/planted/c5-fragment-node-id-unsafe (core verdict in planted/core-verdicts.json: ok, no findings)"
+    - "charter: service/packs/src/test/resources/planted/c5-fragment-node-id-unsafe (core verdict in planted/core-verdicts.json: ok, no findings)"
     - "charter: contracts/packs/schemas/org-fragment.schema.json: the node id has minLength 1 and the pattern ^[A-Za-z0-9_/.-]+$ (import change C5; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
 
 - id: DIV-021

@@ -60,9 +60,9 @@ How to build the charter service and run every check CI runs.
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
-| `:charter-service:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
-| `:adapter-out-yaml:openPacksRoundTrip` | Every open-packs YAML file renders byte for byte, survives a rewrite of every scalar, and every pack loads and round-trips its graph. It fails, never skips, without a checkout |
-| `:charter-reports:aggregateJavadoc` | One Javadoc site over the five hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
+| `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
+| `:packs:openPacksRoundTrip` | Every open-packs YAML file renders byte for byte, survives a rewrite of every scalar, and every pack loads and round-trips its graph. It fails, never skips, without a checkout |
+| `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
 The quality gates come from the `charter.hand-written` convention plugin, applied by every
@@ -72,8 +72,8 @@ so it is exempt by construction and still compiles. A new hand-written module un
 also be listed in `service/charter-reports/build.gradle.kts`; the build fails, naming it,
 until it is.
 
-Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on `charter-domain` and
-`charter-read-app`; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
+Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on the hand-written
+service modules; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
 request runs it.
 
 To fix formatting rather than report it, run `./gradlew spotlessApply`.
@@ -125,5 +125,5 @@ oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksu
 in `contracts/build.gradle.kts`.
 
 A module that is not a Spring module may still import the Spring Boot BOM as a platform, to
-pin a transitive dependency to the version the service uses. `adapter-out-yaml` does this for
+pin a transitive dependency to the version the service uses. `packs` does this for
 the Jackson and slf4j versions that networknt's JSON Schema validator brings in.
