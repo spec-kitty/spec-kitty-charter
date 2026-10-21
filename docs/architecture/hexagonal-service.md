@@ -81,9 +81,10 @@ infra.storage (file / db / blob /    │
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).
-`HexagonalArchitectureTest` (in `deployable`) pins these directions over the whole service, and the
-`charter.domain-conventions` plugin refuses any external dependency in the domain and application
-modules at configuration time.
+`HexagonalArchitectureTest` (in `deployable`) pins these directions over the whole service. The
+`kernel` module additionally applies the `charter.domain-conventions` plugin, which refuses any
+external dependency at configuration time — so the kernel is held pure both at build time and by
+ArchUnit, while each slice's `domain` (for example `packs.domain`) is kept pure by ArchUnit.
 
 ## Three models, kept apart
 
