@@ -82,14 +82,19 @@ class HexagonalArchitectureTest {
             .dependOnClassesThat()
             .resideInAnyPackage("..infra..", DEPLOYABLE);
 
-    /** ONION_DEPENDS_INWARD (3/3): nothing depends on the composition root, and only it composes the adapters. */
+    /** ONION_DEPENDS_INWARD (3/3): only the composition root composes the adapters. */
     private static final ArchRule ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS = noClasses()
             .that()
             .resideOutsideOfPackages(PACKS_API, PACKS_STORAGE, DEPLOYABLE)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PACKS_API, PACKS_STORAGE)
-            .orShould()
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE);
+
+    /** ONION_DEPENDS_INWARD (3/3): nothing, the edge rings included, depends on the composition root. */
+    private static final ArchRule ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT = noClasses()
+            .that()
+            .resideOutsideOfPackage(DEPLOYABLE)
+            .should()
             .dependOnClassesThat()
             .resideInAPackage(DEPLOYABLE);
 
@@ -99,6 +104,7 @@ class HexagonalArchitectureTest {
         ONION_DOMAIN_DEPENDS_ON_NOTHING_OUTWARD.check(classes);
         ONION_APPLICATION_DEPENDS_ON_DOMAIN_ONLY.check(classes);
         ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS.check(classes);
+        ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT.check(classes);
     }
 
     @Test
@@ -106,6 +112,10 @@ class HexagonalArchitectureTest {
         assertBites(ONION_DOMAIN_DEPENDS_ON_NOTHING_OUTWARD, ROOT + ".packs.domain.badfixture", "DomainReachesOutward");
         assertBites(ONION_APPLICATION_DEPENDS_ON_DOMAIN_ONLY, ROOT + ".packs.application.badfixture", "ReachesStorage");
         assertBites(ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS, ROOT + ".packs.application.badfixture", "ReachesStorage");
+        assertBites(
+                ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT,
+                ROOT + ".packs.infra.api.badfixture",
+                "ReachesCompositionRoot");
     }
 
     /**
