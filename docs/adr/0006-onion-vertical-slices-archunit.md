@@ -55,6 +55,27 @@ table below are the original design names; the realized rules keep their intent.
 [Architectural patterns applied](/architecture/architectural-patterns-applied/) and
 [How to DDD here](/development/how-to-ddd/).
 
+### Revision 2026-10-21 — the application layer is an outer edge ring
+
+The application-edge read path mission (`application-edge-read-path-01M5FQXC`) reclassifies the
+`application` layer. It is an **outer edge adapter, peer to persistence**, not a pure inner ring.
+Only `domain` and `kernel` are pure. `application`, `infra.storage` and `infra.api` are peer edges
+around that pure core. Application use cases are Spring `@Service` beans that orchestrate domain
+ports; they may use the framework. Status stays Accepted.
+
+- **New rule `APPLICATION_IS_EDGE`** replaces `APPLICATION_IS_PLAIN_JAVA`. `..application..` may
+  depend on `..domain..`, `..kernel..` and the framework. It may not depend on another slice's
+  `infra`, on another slice's `domain`, or on the `deployable` composition root.
+- **Unchanged:** `DOMAIN_IS_PURE`, `NO_INFRA_ANNOTATIONS_IN_DOMAIN`, the kernel purity rules and the
+  pure validation library rule. Domain and kernel stay framework-free, and the build-time
+  dependency rejection still backs them.
+- **Composition root renamed.** The `bootstrap` module becomes `deployable`. Each edge layer owns a
+  `@Configuration` in a `config` sub-package, and an aggregate `DeployableConfiguration` imports
+  them.
+- The decision list item 2 (`entry-point infra → application → domain`) and item 3 (the
+  application ring as a place for plain orchestration) are read with this revision: the direction
+  stays inward, but the application ring is an edge, not part of the pure core.
+
 ## Context
 
 The service is a hexagonal, plain-Java domain behind a generated OpenAPI contract (ADR-0001). The existing

@@ -76,9 +76,9 @@ meaning. The edges list of a graph is how one storage format spells it. If the d
 shaped like the file (nodes, edges, shards), every change to the file format ripples into the
 core, and the language of the domain gets replaced by the language of the storage.
 
-So the aggregate `Pack` is lightweight and meaningful (descriptor, tactics, violations), and the
-graph-coupled `CharterPack` is a transitional type kept for existing behavior. The storage
-adapter derives whatever structure it needs from the meaning.
+So the aggregate `Pack` is lightweight and meaningful (descriptor, tactics, violations), and it is
+now the single pack model: the earlier graph-coupled `CharterPack` transitional type has been
+removed. The storage adapter derives whatever structure it needs from the meaning.
 
 ## A row is not an entity
 

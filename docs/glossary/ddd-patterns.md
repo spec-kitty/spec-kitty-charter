@@ -71,7 +71,7 @@ loading and saving (`TacticRepository`). Ports live in the domain and name only 
 The code that connects a port to the outside world. A **driven** (outbound) adapter implements a
 port, for example `DomainRepositoryService` over the filesystem. A **driving** (inbound) adapter
 calls the application, for example a REST controller. Stereotypes such as `@Service` appear only
-on adapters.
+on adapters and on the application edge; the domain and kernel stay free of them.
 
 {#projection}
 
