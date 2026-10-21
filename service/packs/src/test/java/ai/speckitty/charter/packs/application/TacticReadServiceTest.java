@@ -52,6 +52,10 @@ class TacticReadServiceTest {
         assertThatThrownBy(() -> service.tacticsOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.code().notFound()).isTrue();
+            // The original unreadable-pack refusal stays chained, so the diagnostic trail is not lost.
+            assertThat(r.getCause())
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
         assertThatThrownBy(() -> service.tactic(ABSENT, ALPHA))
                 .isInstanceOfSatisfying(
