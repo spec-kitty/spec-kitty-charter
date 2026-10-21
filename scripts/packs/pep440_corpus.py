@@ -4,7 +4,7 @@
 Run with the venv core pins, isolated:
 
     ~/.venv-sk/bin/python -I scripts/packs/pep440_corpus.py \
-        service/charter-domain/src/test/resources/pep440/specifiers.tsv
+        service/kernel/src/test/resources/pep440/specifiers.tsv
 
 The oracle is packaging.specifiers.SpecifierSet(input): the input is valid when the constructor does not raise.
 The file has '#' header lines (the packaging version and this command), then `input<TAB>valid` rows. The input

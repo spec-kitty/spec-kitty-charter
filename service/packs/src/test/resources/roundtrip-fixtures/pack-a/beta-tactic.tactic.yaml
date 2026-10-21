@@ -1,0 +1,5 @@
+id: beta-tactic
+schema_version: '1.0'
+name: Beta tactic
+steps:
+  - title: Only step

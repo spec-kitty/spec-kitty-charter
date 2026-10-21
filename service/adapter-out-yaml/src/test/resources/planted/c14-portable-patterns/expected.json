@@ -1,9 +1,0 @@
-{
-  "covers": [
-    "C14"
-  ],
-  "proven_by": [
-    "adapter-out-yaml:PackSchemasTest#theBundleLoadsAndEveryKindIsKnown",
-    "adapter-out-yaml:OpenPacksAcceptanceTest#everyMappedFileOfEveryPackValidates"
-  ]
-}

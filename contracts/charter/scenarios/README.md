@@ -3,7 +3,7 @@
 The behavior half of the charter contract (operator decision, 2026-10-18: the Java rewrite is
 built against the contract scenarios and the OpenAPI document). Each scenario names packs by
 their files, calls one operation of `../openapi.yaml` and states the answer. The scenarios are
-language-neutral: the Java service runs them through `charter-service`'s Cucumber suite, and
+language-neutral: the Java service runs them through `bootstrap`'s Cucumber suite, and
 any other implementation may bind the same steps.
 
 ## Step vocabulary

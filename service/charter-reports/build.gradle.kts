@@ -25,11 +25,9 @@ plugins {
 
 /** Each hand-written service module and the one package it holds, in the order the Javadoc overview lists them. */
 val serviceModules = linkedMapOf(
-    "charter-domain" to "ai.speckitty.charter.domain",
-    "charter-read-app" to "ai.speckitty.charter.read",
-    "adapter-out-yaml" to "ai.speckitty.charter.yaml",
-    "adapter-in-rest" to "ai.speckitty.charter.rest",
-    "charter-service" to "ai.speckitty.charter.service",
+    "kernel" to "ai.speckitty.charter.kernel",
+    "packs" to "ai.speckitty.charter.packs",
+    "bootstrap" to "ai.speckitty.charter.bootstrap",
 )
 
 // Fail closed when the list and the service disagree: every project under service/ that applies
@@ -54,7 +52,7 @@ gradle.projectsEvaluated {
 }
 
 // The modules whose sources are documented: exactly these, not what they depend on (charter-api would follow
-// adapter-in-rest otherwise).
+// packs otherwise).
 val apiDocs = configurations.dependencyScope("apiDocs")
 // What the documented sources compile against: the modules' runtime classpath, which carries their
 // `implementation` dependencies too, plus what they use at compile time only.

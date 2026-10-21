@@ -18,12 +18,10 @@ dependencyResolutionManagement {
 rootProject.name = "spec-kitty-charter"
 
 listOf(
-    "charter-domain",
-    "charter-read-app",
+    "kernel",
+    "packs",
     "charter-api",
-    "adapter-in-rest",
-    "adapter-out-yaml",
-    "charter-service",
+    "bootstrap",
     // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
     "charter-reports",
 ).forEach { name ->

@@ -1,0 +1,8 @@
+pack_id: 01M5DEH8ROUNDTRIPFIXTURE0A
+pack_version: 1.2.3
+parent_pack: null
+name: roundtrip-a
+pack_level: org
+requires_core: '>=1.0'
+active_charter: org-charter.yaml
+pack_drg: drg/fragment.yaml

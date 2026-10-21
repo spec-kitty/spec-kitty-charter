@@ -1,5 +1,5 @@
 // The plain-Java core (domain and application modules): no framework, no YAML, no HTTP.
-// The dependency rule itself is pinned by the ArchUnit test in charter-service; this plugin
+// The dependency rule itself is pinned by the ArchUnit test in bootstrap; this plugin
 // only keeps such modules from declaring anything but project dependencies.
 plugins {
     id("charter.java-base")

@@ -4,8 +4,8 @@
 Run with the venv core pins, isolated, from the repository root:
 
     ~/.venv-sk/bin/python -I scripts/packs/path_corpus.py \
-        service/charter-domain/src/test/resources/paths/asset-escape.tsv \
-        service/charter-domain/src/test/resources/paths/artifact-order.txt
+        service/packs/src/test/resources/paths/asset-escape.tsv \
+        service/packs/src/test/resources/paths/artifact-order.txt
 
 Core is read from CORE_SRC (default /home/user/spec-kitty/spec-kitty/src).
 

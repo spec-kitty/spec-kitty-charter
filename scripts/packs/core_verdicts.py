@@ -5,7 +5,7 @@ Run with the venv core pins, isolated, from the repository root (not part of the
 
     ~/.venv-sk/bin/python -I scripts/packs/core_verdicts.py
 
-It writes service/adapter-out-yaml/src/test/resources/planted/core-verdicts.json, one record per directory of
+It writes service/packs/src/test/resources/planted/core-verdicts.json, one record per directory of
 planted/. For each plant that has files it copies the pack into a scratch directory, creates the symlinks the plant's
 expected.json asks for, and runs
 
@@ -31,7 +31,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PLANTED = ROOT / "service/adapter-out-yaml/src/test/resources/planted"
+PLANTED = ROOT / "service/packs/src/test/resources/planted"
 # The core commit the plants were judged against (the commit the divergence register cites).
 CORE_COMMIT = "9554e7b26afe7a61519f7744d0147346ab36f197"
 OUT = PLANTED / "core-verdicts.json"
