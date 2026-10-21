@@ -74,8 +74,8 @@ Only `packs.domain` and `kernel` are pure. `packs.application`, `packs.infra.sto
 `packs.infra.api` are peer **edge** rings around them (see the 2026-10-21 revision of
 [ADR-0006](/adr/0006-onion-vertical-slices-archunit/)). Each edge owns a `@Configuration` in a
 `config` sub-package (`ApplicationConfiguration`, `StorageConfiguration`, `ApiConfiguration`). The
-`deployable` module's `DeployableConfiguration` imports them all, so a test can load one slice of
-the wiring without the whole application.
+`deployable` module's `DeployableConfiguration` component-scans their `config` sub-packages, so a
+test can load one slice of the wiring without the whole application.
 
 ## The diagrams
 

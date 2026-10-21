@@ -67,11 +67,12 @@ ports; they may use the framework. Status stays Accepted.
   depend on `..domain..`, `..kernel..` and the framework. It may not depend on another slice's
   `infra`, on another slice's `domain`, or on the `deployable` composition root.
 - **Unchanged:** `DOMAIN_IS_PURE`, `NO_INFRA_ANNOTATIONS_IN_DOMAIN`, the kernel purity rules and the
-  pure validation library rule. Domain and kernel stay framework-free, and the build-time
-  dependency rejection still backs them.
+  pure validation library rule. Domain and kernel stay framework-free: the `kernel` is backed by the
+  build-time dependency rejection (the `charter.domain-conventions` plugin) as well as ArchUnit,
+  while each slice's `domain` (for example `packs.domain`) is held pure by ArchUnit.
 - **Composition root renamed.** The `bootstrap` module becomes `deployable`. Each edge layer owns a
-  `@Configuration` in a `config` sub-package, and an aggregate `DeployableConfiguration` imports
-  them.
+  `@Configuration` in a `config` sub-package, and an aggregate `DeployableConfiguration`
+  component-scans their `config` sub-packages.
 - The decision list item 2 (`entry-point infra → application → domain`) and item 3 (the
   application ring as a place for plain orchestration) are read with this revision: the direction
   stays inward, but the application ring is an edge, not part of the pure core.
