@@ -42,4 +42,67 @@ public interface SerializationStrategy {
      * @return the descriptor, or why the text is unreadable
      */
     FileRead<PackDescriptorDso> readDescriptor(String text);
+
+    /**
+     * Serializes a directive from scratch.
+     *
+     * @param directive the directive to write
+     * @return the file text
+     */
+    default String writeDirective(DirectiveDso directive) {
+        throw new UnsupportedOperationException("writeDirective is not supported by this strategy");
+    }
+
+    /**
+     * Reads a directive file.
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the directive, or why the text is unreadable
+     */
+    default FileRead<DirectiveDso> readDirective(String text, String file) {
+        throw new UnsupportedOperationException("readDirective is not supported by this strategy");
+    }
+
+    /**
+     * Serializes a styleguide from scratch.
+     *
+     * @param styleguide the styleguide to write
+     * @return the file text
+     */
+    default String writeStyleguide(StyleguideDso styleguide) {
+        throw new UnsupportedOperationException("writeStyleguide is not supported by this strategy");
+    }
+
+    /**
+     * Reads a styleguide file.
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the styleguide, or why the text is unreadable
+     */
+    default FileRead<StyleguideDso> readStyleguide(String text, String file) {
+        throw new UnsupportedOperationException("readStyleguide is not supported by this strategy");
+    }
+
+    /**
+     * Serializes a paradigm from scratch.
+     *
+     * @param paradigm the paradigm to write
+     * @return the file text
+     */
+    default String writeParadigm(ParadigmDso paradigm) {
+        throw new UnsupportedOperationException("writeParadigm is not supported by this strategy");
+    }
+
+    /**
+     * Reads a paradigm file.
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the paradigm, or why the text is unreadable
+     */
+    default FileRead<ParadigmDso> readParadigm(String text, String file) {
+        throw new UnsupportedOperationException("readParadigm is not supported by this strategy");
+    }
 }

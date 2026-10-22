@@ -1,12 +1,15 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.packs.domain.ConfigValue;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -17,6 +20,9 @@ import org.jspecify.annotations.Nullable;
 public final class YamlSerializationStrategy implements SerializationStrategy {
 
     private static final String TACTIC_KIND = "tactic";
+    private static final String DIRECTIVE_KIND = "directive";
+    private static final String STYLEGUIDE_KIND = "styleguide";
+    private static final String PARADIGM_KIND = "paradigm";
 
     /** Constructs the YAML strategy; the storage configuration publishes it as the {@link SerializationStrategy} bean. */
     public YamlSerializationStrategy() {}
@@ -78,6 +84,198 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
                         strings(root, "failure_modes"),
                         strings(root, "applies_to_languages"),
                         references(root)));
+    }
+
+    @Override
+    public String writeDirective(DirectiveDso directive) {
+        List<Map<String, Object>> references = new ArrayList<>();
+        for (DirectiveDso.Reference reference : directive.references()) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("type", reference.type());
+            out.put("id", reference.id());
+            YamlDumpEmitter.scalarInto(out, "when", reference.when());
+            YamlDumpEmitter.scalarInto(out, "reason", reference.reason());
+            references.add(out);
+        }
+        return new YamlDumpEmitter()
+                .scalar("id", directive.id())
+                .scalar("schema_version", directive.schemaVersion())
+                .scalar("title", directive.title())
+                .scalar("intent", directive.intent())
+                .scalar("enforcement", directive.enforcement())
+                .scalar("scope", directive.scope())
+                .strings("procedures", directive.procedures())
+                .strings("integrity_rules", directive.integrityRules())
+                .strings("validation_criteria", directive.validationCriteria())
+                .strings("explicit_allowances", directive.explicitAllowances())
+                .mappings("references", references)
+                .dump();
+    }
+
+    @Override
+    public FileRead<DirectiveDso> readDirective(String text, String file) {
+        return readValidated(DIRECTIVE_KIND, text, file, root -> {
+            List<DirectiveDso.Reference> references = new ArrayList<>();
+            for (Object entry : list(root, "references")) {
+                if (entry instanceof Map<?, ?> r) {
+                    references.add(new DirectiveDso.Reference(
+                            required(r, "type"), required(r, "id"), optional(r, "when"), optional(r, "reason")));
+                }
+            }
+            return new DirectiveDso(
+                    required(root, "id"),
+                    required(root, "schema_version"),
+                    required(root, "title"),
+                    required(root, "intent"),
+                    required(root, "enforcement"),
+                    optional(root, "scope"),
+                    strings(root, "procedures"),
+                    strings(root, "integrity_rules"),
+                    strings(root, "validation_criteria"),
+                    strings(root, "explicit_allowances"),
+                    references);
+        });
+    }
+
+    @Override
+    public String writeStyleguide(StyleguideDso styleguide) {
+        List<Map<String, Object>> patterns = new ArrayList<>();
+        for (StyleguideDso.Pattern pattern : styleguide.patterns()) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("name", pattern.name());
+            out.put("description", pattern.description());
+            YamlDumpEmitter.scalarInto(out, "bad_example", pattern.badExample());
+            YamlDumpEmitter.scalarInto(out, "good_example", pattern.goodExample());
+            patterns.add(out);
+        }
+        List<Map<String, Object>> antiPatterns = new ArrayList<>();
+        for (StyleguideDso.AntiPattern antiPattern : styleguide.antiPatterns()) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("name", antiPattern.name());
+            out.put("description", antiPattern.description());
+            out.put("bad_example", antiPattern.badExample());
+            out.put("good_example", antiPattern.goodExample());
+            antiPatterns.add(out);
+        }
+        YamlDumpEmitter emitter = new YamlDumpEmitter()
+                .scalar("id", styleguide.id())
+                .scalar("schema_version", styleguide.schemaVersion())
+                .scalar("title", styleguide.title())
+                .scalar("scope", styleguide.scope())
+                .strings("principles", styleguide.principles())
+                .mappings("patterns", patterns)
+                .mappings("anti_patterns", antiPatterns);
+        styleguide.tooling().ifPresent(tooling -> emitter.present("tooling", new LinkedHashMap<>(tooling)));
+        emitter.scalar("quality_test", styleguide.qualityTest());
+        styleguide
+                .structuralLintConfig()
+                .ifPresent(config -> emitter.present("structural_lint_config", config.toParsed()));
+        return emitter.strings("applies_to_languages", styleguide.appliesToLanguages())
+                .strings("references", styleguide.references())
+                .dump();
+    }
+
+    @Override
+    public FileRead<StyleguideDso> readStyleguide(String text, String file) {
+        return readValidated(STYLEGUIDE_KIND, text, file, root -> {
+            List<StyleguideDso.Pattern> patterns = new ArrayList<>();
+            for (Object entry : list(root, "patterns")) {
+                if (entry instanceof Map<?, ?> p) {
+                    patterns.add(new StyleguideDso.Pattern(
+                            required(p, "name"),
+                            required(p, "description"),
+                            optional(p, "bad_example"),
+                            optional(p, "good_example")));
+                }
+            }
+            List<StyleguideDso.AntiPattern> antiPatterns = new ArrayList<>();
+            for (Object entry : list(root, "anti_patterns")) {
+                if (entry instanceof Map<?, ?> a) {
+                    antiPatterns.add(new StyleguideDso.AntiPattern(
+                            required(a, "name"),
+                            required(a, "description"),
+                            required(a, "bad_example"),
+                            required(a, "good_example")));
+                }
+            }
+            Optional<Map<String, String>> tooling = Optional.empty();
+            if (root.get("tooling") instanceof Map<?, ?> t) {
+                Map<String, String> ordered = new LinkedHashMap<>();
+                t.forEach((key, value) -> ordered.put(String.valueOf(key), String.valueOf(value)));
+                tooling = Optional.of(ordered);
+            }
+            Optional<ConfigValue> lint = root.get("structural_lint_config") instanceof Map<?, ?> m
+                    ? Optional.of(ConfigValue.of(m))
+                    : Optional.empty();
+            return new StyleguideDso(
+                    required(root, "id"),
+                    required(root, "schema_version"),
+                    required(root, "title"),
+                    required(root, "scope"),
+                    strings(root, "principles"),
+                    patterns,
+                    antiPatterns,
+                    tooling,
+                    optional(root, "quality_test"),
+                    lint,
+                    strings(root, "applies_to_languages"),
+                    strings(root, "references"));
+        });
+    }
+
+    @Override
+    public String writeParadigm(ParadigmDso paradigm) {
+        List<Map<String, Object>> references = new ArrayList<>();
+        for (ParadigmDso.Reference reference : paradigm.references()) {
+            Map<String, Object> out = YamlDumpEmitter.mapping();
+            out.put("type", reference.type());
+            out.put("id", reference.id());
+            references.add(out);
+        }
+        return new YamlDumpEmitter()
+                .scalar("id", paradigm.id())
+                .scalar("schema_version", paradigm.schemaVersion())
+                .scalar("name", paradigm.name())
+                .scalar("summary", paradigm.summary())
+                .strings("directive_refs", paradigm.directiveRefs())
+                .mappings("references", references)
+                .dump();
+    }
+
+    @Override
+    public FileRead<ParadigmDso> readParadigm(String text, String file) {
+        return readValidated(PARADIGM_KIND, text, file, root -> {
+            List<ParadigmDso.Reference> references = new ArrayList<>();
+            for (Object entry : list(root, "references")) {
+                if (entry instanceof Map<?, ?> r) {
+                    references.add(new ParadigmDso.Reference(required(r, "type"), required(r, "id")));
+                }
+            }
+            return new ParadigmDso(
+                    required(root, "id"),
+                    required(root, "schema_version"),
+                    required(root, "name"),
+                    required(root, "summary"),
+                    strings(root, "directive_refs"),
+                    references);
+        });
+    }
+
+    /** Parses, validates against the bundled schema of {@code kind}, then maps the root; never throws on content. */
+    private static <T> FileRead<T> readValidated(String kind, String text, String file, Function<Map<?, ?>, T> mapper) {
+        ParsedYaml parsed = ParsedYaml.parse(text, file);
+        if (parsed.failure() != null) {
+            return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
+        }
+        Object document = parsed.document();
+        List<SchemaViolation> violations = PackSchemas.bundled().validate(kind, file, document);
+        if (!violations.isEmpty()) {
+            return new FileRead.Unreadable<>(file, null, violations);
+        }
+        if (!(document instanceof Map<?, ?> root)) {
+            throw new IllegalStateException("a " + kind + " passed the schema but is no mapping");
+        }
+        return new FileRead.Read<>(file, mapper.apply(root));
     }
 
     @Override
