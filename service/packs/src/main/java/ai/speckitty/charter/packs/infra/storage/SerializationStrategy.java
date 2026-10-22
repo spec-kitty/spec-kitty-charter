@@ -49,9 +49,7 @@ public interface SerializationStrategy {
      * @param directive the directive to write
      * @return the file text
      */
-    default String writeDirective(DirectiveDso directive) {
-        throw new UnsupportedOperationException("writeDirective is not supported by this strategy");
-    }
+    String writeDirective(DirectiveDso directive);
 
     /**
      * Reads a directive file.
@@ -60,9 +58,7 @@ public interface SerializationStrategy {
      * @param file the pack-relative file name, named in a failure
      * @return the directive, or why the text is unreadable
      */
-    default FileRead<DirectiveDso> readDirective(String text, String file) {
-        throw new UnsupportedOperationException("readDirective is not supported by this strategy");
-    }
+    FileRead<DirectiveDso> readDirective(String text, String file);
 
     /**
      * Serializes a styleguide from scratch.
@@ -70,9 +66,7 @@ public interface SerializationStrategy {
      * @param styleguide the styleguide to write
      * @return the file text
      */
-    default String writeStyleguide(StyleguideDso styleguide) {
-        throw new UnsupportedOperationException("writeStyleguide is not supported by this strategy");
-    }
+    String writeStyleguide(StyleguideDso styleguide);
 
     /**
      * Reads a styleguide file.
@@ -81,9 +75,7 @@ public interface SerializationStrategy {
      * @param file the pack-relative file name, named in a failure
      * @return the styleguide, or why the text is unreadable
      */
-    default FileRead<StyleguideDso> readStyleguide(String text, String file) {
-        throw new UnsupportedOperationException("readStyleguide is not supported by this strategy");
-    }
+    FileRead<StyleguideDso> readStyleguide(String text, String file);
 
     /**
      * Serializes a paradigm from scratch.
@@ -91,9 +83,7 @@ public interface SerializationStrategy {
      * @param paradigm the paradigm to write
      * @return the file text
      */
-    default String writeParadigm(ParadigmDso paradigm) {
-        throw new UnsupportedOperationException("writeParadigm is not supported by this strategy");
-    }
+    String writeParadigm(ParadigmDso paradigm);
 
     /**
      * Reads a paradigm file.
@@ -102,7 +92,5 @@ public interface SerializationStrategy {
      * @param file the pack-relative file name, named in a failure
      * @return the paradigm, or why the text is unreadable
      */
-    default FileRead<ParadigmDso> readParadigm(String text, String file) {
-        throw new UnsupportedOperationException("readParadigm is not supported by this strategy");
-    }
+    FileRead<ParadigmDso> readParadigm(String text, String file);
 }
