@@ -29,21 +29,24 @@ public final class Pack {
             }))
             .must(Constraints.of(
                     "Every directive of a pack must belong to that pack.",
-                    pack -> pack.directives.stream().allMatch(child -> child.packId().equals(pack.id))))
+                    pack -> pack.directives.stream()
+                            .allMatch(child -> child.packId().equals(pack.id))))
             .must(Constraints.of("A pack must not hold two directives with the same identifier.", pack -> {
                 var seen = new HashSet<DirectiveIdentifier>();
                 return pack.directives.stream().allMatch(child -> seen.add(child.id()));
             }))
             .must(Constraints.of(
                     "Every styleguide of a pack must belong to that pack.",
-                    pack -> pack.styleguides.stream().allMatch(child -> child.packId().equals(pack.id))))
+                    pack -> pack.styleguides.stream()
+                            .allMatch(child -> child.packId().equals(pack.id))))
             .must(Constraints.of("A pack must not hold two styleguides with the same identifier.", pack -> {
                 var seen = new HashSet<StyleguideIdentifier>();
                 return pack.styleguides.stream().allMatch(child -> seen.add(child.id()));
             }))
             .must(Constraints.of(
                     "Every paradigm of a pack must belong to that pack.",
-                    pack -> pack.paradigms.stream().allMatch(child -> child.packId().equals(pack.id))))
+                    pack -> pack.paradigms.stream()
+                            .allMatch(child -> child.packId().equals(pack.id))))
             .must(Constraints.of("A pack must not hold two paradigms with the same identifier.", pack -> {
                 var seen = new HashSet<ParadigmIdentifier>();
                 return pack.paradigms.stream().allMatch(child -> seen.add(child.id()));
