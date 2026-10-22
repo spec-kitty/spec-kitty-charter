@@ -22,6 +22,7 @@ import ai.speckitty.charter.packs.domain.StyleguideRepository;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
+import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -109,7 +110,7 @@ class DoctrineWiringRoundTripTest {
     @Test
     void theWiredPortsAndSerializerAreOneScanDrivenServiceAndServeTheSeededDirective() {
         assertThat(context.getBeansOfType(DomainRepositoryService.class)).hasSize(1);
-        assertThat(context.getBeansOfType(SerializationStrategy.class)).containsValue(serializer);
+        assertThat(serializer).isInstanceOf(YamlSerializationStrategy.class);
         assertThat(directives).isSameAs(styleguides).isSameAs(paradigms).isSameAs(packRepository);
 
         Directive seeded =
