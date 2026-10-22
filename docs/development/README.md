@@ -21,6 +21,9 @@ Conventions for changing the charter API. Each page states the rule, shows it on
 and names the mistake to avoid. Decisions behind them are in [Decision Records](/adr/); the
 operations themselves are in the [service contract](/api/service-contract/).
 
+- [Service architecture orientation](/development/service-architecture-orientation/) — read this
+  first before touching `service/`: the three patterns, the module map, the inward-only rule, how
+  ArchUnit gates it, and the gotchas that bite.
 - [REST resource conventions](/development/rest-resource-conventions/) — naming paths,
   choosing methods, parameters, media types, versioning and the headers every response carries.
 - [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/) — how responses link to what a client
