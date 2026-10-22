@@ -1,5 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.DrgEdge;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -15,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>It owns its steps and references; their order and duplicates are significant. Build one with {@link #builder()}.
  */
-public final class Tactic {
+public final class Tactic implements CharterArtifact {
 
     private static final ModularRuleset<Tactic> RULES = ModularRuleset.<Tactic>emptyRules()
             .must(Constraints.of("A tactic needs at least one step.", tactic -> !tactic.steps.isEmpty()))
@@ -92,11 +95,44 @@ public final class Tactic {
         return id;
     }
 
+    @Override
+    public ArtifactKind kind() {
+        return ArtifactKind.TACTIC;
+    }
+
+    @Override
+    public String localId() {
+        return id.value();
+    }
+
+    @Override
+    public String label() {
+        return name;
+    }
+
+    @Override
+    public Optional<String> description() {
+        return purpose;
+    }
+
+    @Override
+    public List<DrgEdge> edges() {
+        List<ArtifactEdges.TypedRef> typed = references.stream()
+                .map(ref -> new ArtifactEdges.TypedRef(
+                        ref.type(),
+                        ref.id(),
+                        ref.when().isBlank() ? Optional.empty() : Optional.of(ref.when()),
+                        Optional.empty()))
+                .toList();
+        return ArtifactEdges.build(urn(), typed, NodeKind.of(ArtifactKind.DIRECTIVE), List.of());
+    }
+
     /**
      * The pack that owns this tactic.
      *
      * @return the pack's identifier
      */
+    @Override
     public PackIdentifier packId() {
         return packId;
     }
@@ -106,6 +142,7 @@ public final class Tactic {
      *
      * @return the schema version
      */
+    @Override
     public String schemaVersion() {
         return schemaVersion;
     }
