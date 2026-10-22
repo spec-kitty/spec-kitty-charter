@@ -6,11 +6,26 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.Directive;
+import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
+import ai.speckitty.charter.packs.domain.DirectiveRepository;
+import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.Paradigm;
+import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.ParadigmReference;
+import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Styleguide;
+import ai.speckitty.charter.packs.domain.StyleguideAntiPattern;
+import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
+import ai.speckitty.charter.packs.domain.StyleguidePattern;
+import ai.speckitty.charter.packs.domain.StyleguideRepository;
+import ai.speckitty.charter.packs.domain.StyleguideScope;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticReference;
@@ -38,7 +53,13 @@ import org.springframework.stereotype.Service;
  * to and from the domain entities by hand, and only domain types leave the service.
  */
 @Service
-public final class DomainRepositoryService implements TacticRepository, PackDescriptorRepository, PackRepository {
+public final class DomainRepositoryService
+        implements TacticRepository,
+                DirectiveRepository,
+                StyleguideRepository,
+                ParadigmRepository,
+                PackDescriptorRepository,
+                PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -80,6 +101,50 @@ public final class DomainRepositoryService implements TacticRepository, PackDesc
         return resolved.store.readTactic(resolved.key, tactic.value()).flatMap(dso -> toEntity(pack, dso));
     }
 
+    // ---- DirectiveRepository / StyleguideRepository / ParadigmRepository -----------------------------------------
+
+    @Override
+    public void save(Directive directive) {
+        Resolved pack = resolve(directive.packId());
+        pack.store.writeDirective(pack.key, toDso(directive));
+    }
+
+    @Override
+    public Optional<Directive> load(PackIdentifier pack, DirectiveIdentifier directive) {
+        Resolved resolved = resolve(pack);
+        return resolved.store
+                .readDirective(resolved.key, directive.value())
+                .flatMap(dso -> orEmpty(() -> buildDirective(pack, dso)));
+    }
+
+    @Override
+    public void save(Styleguide styleguide) {
+        Resolved pack = resolve(styleguide.packId());
+        pack.store.writeStyleguide(pack.key, toDso(styleguide));
+    }
+
+    @Override
+    public Optional<Styleguide> load(PackIdentifier pack, StyleguideIdentifier styleguide) {
+        Resolved resolved = resolve(pack);
+        return resolved.store
+                .readStyleguide(resolved.key, styleguide.value())
+                .flatMap(dso -> orEmpty(() -> buildStyleguide(pack, dso)));
+    }
+
+    @Override
+    public void save(Paradigm paradigm) {
+        Resolved pack = resolve(paradigm.packId());
+        pack.store.writeParadigm(pack.key, toDso(paradigm));
+    }
+
+    @Override
+    public Optional<Paradigm> load(PackIdentifier pack, ParadigmIdentifier paradigm) {
+        Resolved resolved = resolve(pack);
+        return resolved.store
+                .readParadigm(resolved.key, paradigm.value())
+                .flatMap(dso -> orEmpty(() -> buildParadigm(pack, dso)));
+    }
+
     // ---- PackDescriptorRepository --------------------------------------------------------------------------------
 
     @Override
@@ -118,6 +183,27 @@ public final class DomainRepositoryService implements TacticRepository, PackDesc
             try {
                 builder.tactic(buildTactic(pack, dso));
             } catch (ConstraintBreachException breach) {
+                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
+            }
+        }
+        for (DirectiveDso dso : read.directives()) {
+            try {
+                builder.directive(buildDirective(pack, dso));
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
+                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
+            }
+        }
+        for (StyleguideDso dso : read.styleguides()) {
+            try {
+                builder.styleguide(buildStyleguide(pack, dso));
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
+                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
+            }
+        }
+        for (ParadigmDso dso : read.paradigms()) {
+            try {
+                builder.paradigm(buildParadigm(pack, dso));
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
             }
         }
@@ -195,6 +281,119 @@ public final class DomainRepositoryService implements TacticRepository, PackDesc
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
         dso.references().forEach(ref -> builder.reference(toEntity(ref)));
         return builder.build();
+    }
+
+    private static <T> Optional<T> orEmpty(java.util.function.Supplier<T> build) {
+        try {
+            return Optional.of(build.get());
+        } catch (ConstraintBreachException | IllegalArgumentException breach) {
+            return Optional.empty();
+        }
+    }
+
+    private static Directive buildDirective(PackIdentifier pack, DirectiveDso dso) {
+        Directive.Builder builder = Directive.builder()
+                .id(new DirectiveIdentifier(dso.id()))
+                .packId(pack)
+                .schemaVersion(dso.schemaVersion())
+                .title(dso.title())
+                .intent(dso.intent())
+                .enforcement(Enforcement.fromToken(dso.enforcement())
+                        .orElseThrow(() -> new IllegalArgumentException("unknown enforcement: " + dso.enforcement())))
+                .scope(dso.scope().orElse(null));
+        dso.procedures().forEach(builder::procedure);
+        dso.integrityRules().forEach(builder::integrityRule);
+        dso.validationCriteria().forEach(builder::validationCriterion);
+        dso.explicitAllowances().forEach(builder::explicitAllowance);
+        dso.references()
+                .forEach(ref ->
+                        builder.reference(new DirectiveReference(ref.type(), ref.id(), ref.when(), ref.reason())));
+        return builder.build();
+    }
+
+    private static DirectiveDso toDso(Directive directive) {
+        return new DirectiveDso(
+                directive.id().value(),
+                directive.schemaVersion(),
+                directive.title(),
+                directive.intent(),
+                directive.enforcement().token(),
+                directive.scope(),
+                directive.procedures(),
+                directive.integrityRules(),
+                directive.validationCriteria(),
+                directive.explicitAllowances(),
+                directive.references().stream()
+                        .map(ref -> new DirectiveDso.Reference(ref.type(), ref.id(), ref.when(), ref.reason()))
+                        .toList());
+    }
+
+    private static Styleguide buildStyleguide(PackIdentifier pack, StyleguideDso dso) {
+        Styleguide.Builder builder = Styleguide.builder()
+                .id(new StyleguideIdentifier(dso.id()))
+                .packId(pack)
+                .schemaVersion(dso.schemaVersion())
+                .title(dso.title())
+                .scope(StyleguideScope.fromToken(dso.scope())
+                        .orElseThrow(() -> new IllegalArgumentException("unknown scope: " + dso.scope())))
+                .tooling(dso.tooling().orElse(null))
+                .qualityTest(dso.qualityTest().orElse(null))
+                .structuralLintConfig(dso.structuralLintConfig().orElse(null));
+        dso.principles().forEach(builder::principle);
+        dso.patterns()
+                .forEach(p -> builder.pattern(
+                        new StyleguidePattern(p.name(), p.description(), p.badExample(), p.goodExample())));
+        dso.antiPatterns()
+                .forEach(a -> builder.antiPattern(
+                        new StyleguideAntiPattern(a.name(), a.description(), a.badExample(), a.goodExample())));
+        dso.appliesToLanguages().forEach(builder::appliesToLanguage);
+        dso.references().forEach(builder::reference);
+        return builder.build();
+    }
+
+    private static StyleguideDso toDso(Styleguide styleguide) {
+        return new StyleguideDso(
+                styleguide.id().value(),
+                styleguide.schemaVersion(),
+                styleguide.title(),
+                styleguide.scope().token(),
+                styleguide.principles(),
+                styleguide.patterns().stream()
+                        .map(p -> new StyleguideDso.Pattern(p.name(), p.description(), p.badExample(), p.goodExample()))
+                        .toList(),
+                styleguide.antiPatterns().stream()
+                        .map(a -> new StyleguideDso.AntiPattern(
+                                a.name(), a.description(), a.badExample(), a.goodExample()))
+                        .toList(),
+                styleguide.tooling(),
+                styleguide.qualityTest(),
+                styleguide.structuralLintConfig(),
+                styleguide.appliesToLanguages(),
+                styleguide.references());
+    }
+
+    private static Paradigm buildParadigm(PackIdentifier pack, ParadigmDso dso) {
+        Paradigm.Builder builder = Paradigm.builder()
+                .id(new ParadigmIdentifier(dso.id()))
+                .packId(pack)
+                .schemaVersion(dso.schemaVersion())
+                .name(dso.name())
+                .summary(dso.summary());
+        dso.directiveRefs().forEach(builder::directiveRef);
+        dso.references().forEach(ref -> builder.reference(new ParadigmReference(ref.type(), ref.id())));
+        return builder.build();
+    }
+
+    private static ParadigmDso toDso(Paradigm paradigm) {
+        return new ParadigmDso(
+                paradigm.id().value(),
+                paradigm.schemaVersion(),
+                paradigm.name(),
+                paradigm.summary(),
+                paradigm.directiveRefs(),
+                paradigm.references().stream()
+                        .map(ref -> new ParadigmDso.Reference(ref.type(), ref.id()))
+                        .toList());
     }
 
     private static TacticReference toEntity(TacticDso.Reference ref) {
