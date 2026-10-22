@@ -1,0 +1,258 @@
+{
+  "event_count": 51,
+  "last_event_id": "01M5JX47CSY63YB0GQ0NZE09DD",
+  "materialized_at": "2026-10-22T22:53:51.385304+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-doctrine-artefacts-01M5JHD0",
+  "mission_type": "",
+  "schema_version": 2,
+  "summary": {
+    "approved": 8,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JVWSS7EYH899P84G7WQNCR",
+      "last_transition_at": "2026-10-22T22:32:19.495546+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent orchestrator review: interface spine minimal & kernel-free, Enforcement stores hyphenated token, ArtifactEdges applies R2 interim relations (SUGGESTS typed / REQUIRES bare) with impacts empty; red-first test green (3/0)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP01-family-spine/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1379376,
+      "shell_pid_created_at": "1792708122.2",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JW68DZJSX7DPSP9P7N1SK1",
+      "last_transition_at": "2026-10-22T22:37:29.407857+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: Directive ruleset correct incl. lenient-adherence⇒explicit_allowances conditional + non-blank procedures; id VO enforces ^[A-Z...]$ via ModularRuleset (ConstraintBreachException, house style — brief's IllegalArgumentException was looser); DSO stores enforcement token; edges wired; 6 tests green with positive controls; net code diff = 5 owned files (stray spotless reformat reverted to net-zero)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP02-directive-domain/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1381673,
+      "shell_pid_created_at": "1792708335.79",
+      "subtasks": {
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JWAWT43J8Y7QEZZ4NXY9QR",
+      "last_transition_at": "2026-10-22T22:40:01.348834+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: Styleguide entity + ruleset (scope enum, principles non-empty, pattern cardinality-when-present), ConfigValue raw-scalar fidelity + non-coercion proof, spine (no description/edges) all correct; MAJOR layering fix applied — ConfigValue relocated to packs.domain (git mv, impl identical), domain no longer imports infra, DSO imports domain (allowed). 8 tests green."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP03-styleguide-domain/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JW30Z7A4K2F6BKYPYZ7E8R",
+      "last_transition_at": "2026-10-22T22:35:43.463184+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: faithful Tactic-pattern entity; ruleset (schema_version/name/summary/non-blank directive_refs) correct; CharterArtifact wiring + edges (DIRECTIVE target, SUGGESTS typed) correct; red-first tests green with positive controls."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP04-paradigm-domain/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1381673,
+      "shell_pid_created_at": "1792708335.79",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JWJEETGR6RTS4GAH7WDQA4",
+      "last_transition_at": "2026-10-22T22:44:08.794862+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: all six read/write methods mirror the tactic precedent; closed-world via PackSchemas.validate per kind with a clean control; round-trip fidelity proven incl. ConfigValue scalar-type preservation (no coercion), nested null, tooling order, and present-empty vs absent (m-5 emitter primitive). 6 tests green; net diff = 4 owned files. Noted: new interface methods are default-throw to avoid breaking an unowned test stub — fold to abstract + fix stub at integration."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP05-serialization-seam/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1390391,
+      "shell_pid_created_at": "1792708812.18",
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done",
+        "T017": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JWT6CT4SE9D2Q4NAQ1CMZD",
+      "last_transition_at": "2026-10-22T22:48:22.682414+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: three ports mirror TacticRepository; FilesystemPackStore generalized to kind-parameterized locate/newFile/kindFiles (tactics route through them, behaviour unchanged); PackRead widened additively (3-arg ctor kept, so unowned PackRoundTripTest compiles); DSO↔entity token mapping via fromToken/.token(); assemble() fills aggregate via WP07 adders; partial-tolerant load (bad token→pack violation) matches Tactic pattern. New-id→new-file / known-id→in-place-replace proven. 4 contract tests + tactic regression (DomainRepositoryServiceTest/PackRoundTripTest/TacticSaveContractTest) all green."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP06-repository-adapter/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1394854,
+      "shell_pid_created_at": "1792709045.07",
+      "subtasks": {
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JWH02NGPJ8B4B68KVBKYCA",
+      "last_transition_at": "2026-10-22T22:43:21.301618+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: Pack gains directive/styleguide/paradigm collections with belongs-to-pack + no-dup-id invariants per kind (tactics unchanged); Tactic retrofit purely additive (implements CharterArtifact: kind/localId/label/description/edges), existing TacticEntityTest & PackAggregateTest pass UNEDITED; 7/5/7 tests green; net diff = 3 owned files. Minor: edges() passes a placeholder bare-target kind with an empty bare list — harmless."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP07-aggregate-retrofit/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1390391,
+      "shell_pid_created_at": "1792708812.18",
+      "subtasks": {
+        "T022": "done",
+        "T023": "done",
+        "T024": "done"
+      }
+    },
+    "WP08": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M5JX47CSY63YB0GQ0NZE09DD",
+      "last_transition_at": "2026-10-22T22:53:51.385304+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Independent review: HexagonalArchitectureTest 38/0 (DOMAIN_IS_PURE, ONION_DEPENDS_INWARD, PORTS_LIVE_IN_DOMAIN, STORAGE_RETURNS_DOMAIN, SLICE_COVERAGE all green — ConfigValue-in-domain proven); corpus round-trip 55 directive/34 styleguide/15 paradigm zero drift; 19 parity cases with same-fixture controls naming exact rule text; 4 real-Spring wiring tests using recursiveComparison (identity-only equals). Corpus test tag/openPacksRoundTrip wiring + pin-to-VendoredPacksTest are existing conventions. 4 new test files only."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-doctrine-artefacts-01M5JHD0/WP08-verification/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1398420,
+      "shell_pid_created_at": "1792709298.94",
+      "subtasks": {
+        "T025": "done",
+        "T026": "done",
+        "T027": "done"
+      }
+    }
+  }
+}
