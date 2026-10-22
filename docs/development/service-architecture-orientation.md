@@ -24,7 +24,7 @@ audience:
 
 Read this before you touch anything under `service/`. It is the mental model the rest of the
 service docs assume: the shape in one sitting, then the traps that cost the most when you miss
-them. It synthesises [Architectural patterns applied](/architecture/architectural-patterns-applied/),
+them. It synthesizes [Architectural patterns applied](/architecture/architectural-patterns-applied/),
 [Hexagonal service](/architecture/hexagonal-service/), [How to DDD here](/development/how-to-ddd/)
 and [Code style and conventions](/development/code-style-and-conventions/) — go to those for the
 depth; start here for the map.
@@ -57,6 +57,10 @@ and `artifacts` are designed, not built.
 | `deployable` | Composition root | The `@SpringBootApplication` and an aggregate `DeployableConfiguration`; renamed from `bootstrap`; the only module that knows every slice |
 | `charter-api` | Generated contract | OpenAPI server interfaces and transport DTOs, referenced only from each slice's `infra.api` |
 
+A fifth hand-written module, `charter-reports`, aggregates the Javadoc and JaCoCo coverage report
+over the other modules and holds no sources of its own, so it carries no rings and is not a concern
+slice.
+
 The read/write (CQRS) distinction is **not** a top-level boundary. It survives as a sub-split
 inside each slice's `application` ring, where core's read-first/write-later strangler runs.
 
@@ -66,7 +70,7 @@ Arrows point inward only. The `infra.api` and `infra.storage` rings depend on `a
 depends on `domain`, which depends on nothing outward except `kernel.domain`. Repository and
 gateway **ports live in the domain**; their implementations live in `infra.storage`.
 
-The idea that reorganises everything is the 2026-10-21 revision of
+The idea that reorganizes everything is the 2026-10-21 revision of
 [ADR-0006](/adr/0006-onion-vertical-slices-archunit/): **only `domain` and `kernel` are pure.**
 `application`, `infra.storage` and `infra.api` are peer **edge** rings around that pure core — not
 a layered stack with `application` as an inner sanctum. Application use cases are Spring `@Service`
@@ -81,10 +85,10 @@ hand-import them), so a test can load one slice's wiring without the whole appli
 ## How it is gated
 
 `HexagonalArchitectureTest`, in `deployable`, imports the whole service and pins every direction
-with named ArchUnit rules: `DOMAIN_IS_PURE`, `NO_INFRA_ANNOTATIONS_IN_DOMAIN`,
+with named ArchUnit rules: `DOMAIN_IS_PURE`, `NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN`,
 `ONION_DEPENDS_INWARD`, `ENTRYPOINT_OVER_APPLICATION`, `STORAGE_RETURNS_DOMAIN`,
-`PORTS_LIVE_IN_DOMAIN`, `SLICES_DO_NOT_CROSS`, `TRANSPORT_STAYS_IN_ADAPTER`, `APPLICATION_IS_EDGE`
-and the kernel and validation-library purity rules.
+`PORTS_LIVE_IN_DOMAIN`, `SLICES_DO_NOT_CROSS`, `SLICE_COVERAGE`, `TRANSPORT_STAYS_IN_ADAPTER`,
+`APPLICATION_IS_EDGE` and the kernel and validation-library purity rules.
 
 **Every rule has a known-bad control** — a small violating fixture the test asserts the rule
 *fails* on. A rule that has never been seen to fail is not proven to guard anything. The `kernel`
@@ -141,7 +145,7 @@ the point here is to name them before you hit them.
 
 ## Where to go next
 
-- [Architectural patterns applied](/architecture/architectural-patterns-applied/) — the realised
+- [Architectural patterns applied](/architecture/architectural-patterns-applied/) — the realized
   layout, the concern-to-pattern-role table, the C4 and class diagrams, and a walk from a request
   through every ring.
 - [Hexagonal service](/architecture/hexagonal-service/) — the Gradle modules and the inward
