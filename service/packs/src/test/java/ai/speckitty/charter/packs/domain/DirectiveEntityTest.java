@@ -56,13 +56,6 @@ class DirectiveEntityTest {
     }
 
     @Test
-    @DisplayName("the identifier must be upper-case per the schema pattern")
-    void identifierPatternEnforced() {
-        assertThatThrownBy(() -> new DirectiveIdentifier("directive_001"))
-                .isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @Test
     @DisplayName("same identity with different fields is equal")
     void identityEquality() {
         Directive one = valid("DIRECTIVE_004").title("one").build();

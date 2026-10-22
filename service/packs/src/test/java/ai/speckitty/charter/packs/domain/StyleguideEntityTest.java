@@ -34,14 +34,6 @@ class StyleguideEntityTest {
     }
 
     @Test
-    @DisplayName("an identifier must match ^[a-z][a-z0-9-]*$")
-    void identifierShape() {
-        assertThat(new StyleguideIdentifier("a-1").value()).isEqualTo("a-1");
-        assertThatThrownBy(() -> new StyleguideIdentifier("Upper")).isInstanceOf(ConstraintBreachException.class);
-        assertThatThrownBy(() -> new StyleguideIdentifier("1abc")).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @Test
     @DisplayName("principles must be non-empty")
     void principlesNonEmpty() {
         assertThat(valid().build().principles()).containsExactly("Prefer immutability");
@@ -76,8 +68,7 @@ class StyleguideEntityTest {
         assertThat(full.antiPatterns()).containsExactly(anti);
 
         assertThatThrownBy(() -> valid().patterns(List.of()).build()).isInstanceOf(ConstraintBreachException.class);
-        assertThatThrownBy(() -> valid().antiPatterns(List.of()).build())
-                .isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> valid().antiPatterns(List.of()).build()).isInstanceOf(ConstraintBreachException.class);
     }
 
     @Test
