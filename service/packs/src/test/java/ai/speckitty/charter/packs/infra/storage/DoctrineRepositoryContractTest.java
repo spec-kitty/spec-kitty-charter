@@ -174,9 +174,7 @@ class DoctrineRepositoryContractTest {
     void aSchemaValidButDomainInvalidDirectiveIsAViolationWhileAValidSiblingStillLoads() throws IOException {
         Directive valid = directive("DIRECTIVE_901", "Valid");
         service.save(valid);
-        Files.writeString(
-                packDirectory.resolve("DIRECTIVE_902.directive.yaml"),
-                """
+        Files.writeString(packDirectory.resolve("DIRECTIVE_902.directive.yaml"), """
                 id: DIRECTIVE_902
                 schema_version: '1.0'
                 title: Blank procedure
