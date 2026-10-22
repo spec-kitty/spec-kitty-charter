@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-23 — Directive, styleguide and paradigm are now first-class pack artefacts](/changelog/2026-10-23-pack-doctrine-artefacts/)
 - [2026-10-22 — A single CI gate check now guards every pull request](/changelog/2026-10-22-ci-gate-required-check/)
 - [2026-10-22 — The architecture gate fails when a concern slice is not registered](/changelog/2026-10-22-slice-coverage-gate/)
 - [2026-10-21 — Tactic read path, and the application layer becomes an edge](/changelog/2026-10-21-application-edge-read-path/)
