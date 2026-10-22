@@ -203,6 +203,36 @@ class DomainRepositoryServiceTest {
             public FileRead<PackDescriptorDso> readDescriptor(String text) {
                 return yaml.readDescriptor(text);
             }
+
+            @Override
+            public String writeDirective(DirectiveDso directive) {
+                return yaml.writeDirective(directive);
+            }
+
+            @Override
+            public FileRead<DirectiveDso> readDirective(String text, String file) {
+                return yaml.readDirective(text, file);
+            }
+
+            @Override
+            public String writeStyleguide(StyleguideDso styleguide) {
+                return yaml.writeStyleguide(styleguide);
+            }
+
+            @Override
+            public FileRead<StyleguideDso> readStyleguide(String text, String file) {
+                return yaml.readStyleguide(text, file);
+            }
+
+            @Override
+            public String writeParadigm(ParadigmDso paradigm) {
+                return yaml.writeParadigm(paradigm);
+            }
+
+            @Override
+            public FileRead<ParadigmDso> readParadigm(String text, String file) {
+                return yaml.readParadigm(text, file);
+            }
         };
         DomainRepositoryService counted = new DomainRepositoryService(
                 () -> List.of(
