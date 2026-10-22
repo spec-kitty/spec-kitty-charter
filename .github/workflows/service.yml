@@ -7,17 +7,8 @@ name: service
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
 # Mutation testing is not here: it runs nightly only (mutation-nightly.yml).
 on:
-  pull_request:
-    paths:
-      - "contracts/**"
-      - "service/**"
-      - "build-logic/**"
-      - "config/**"
-      - "gradle/**"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "gradlew"
-      - ".github/workflows/service.yml"
+  # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
+  # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
   push:
     branches: [main]
     paths:
