@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
@@ -51,6 +52,19 @@ final class YamlDumpEmitter {
     /** Adds a list of mappings when it is not empty; omits the key otherwise. */
     YamlDumpEmitter mappings(String key, List<Map<String, Object>> values) {
         mappingsInto(root, key, values);
+        return this;
+    }
+
+    /**
+     * Adds {@code key: value} verbatim, bypassing the omit-empty rule: a present-but-empty mapping is written as
+     * {@code {}} and nested nulls are written as {@code null}. Callers omit the key themselves when the value is
+     * absent.
+     *
+     * @param key the key
+     * @param value a raw scalar (possibly null), a list, or a mapping, as {@code ConfigValue.toParsed()} yields
+     */
+    YamlDumpEmitter present(String key, @Nullable Object value) {
+        root.put(key, value);
         return this;
     }
 
