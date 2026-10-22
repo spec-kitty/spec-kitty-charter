@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "mission_slug": "pack-doctrine-artefacts-01M5JHD0",
+  "mission_id": "01M5JHD0889JZV6VDA4FMZW5CZ",
+  "mission_branch": "kitty/mission-pack-doctrine-artefacts-01M5JHD0",
+  "target_branch": "feat/pack-doctrine-artefacts",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ArtifactEdges.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/CharterArtifact.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Enforcement.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/CharterArtifactSpineTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveReference.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DirectiveDso.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/DirectiveEntityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguidePattern.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideScope.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ConfigValue.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StyleguideDso.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/StyleguideEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ConfigValueTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmReference.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ParadigmDso.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ParadigmEntityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SerializationStrategy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlDumpEmitter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlSerializationStrategy.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/AggregateRetrofitTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineRepositoryContractTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c",
+        "lane-d",
+        "lane-e",
+        "lane-g"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/DoctrineWiringRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/CharterArtifactFamilyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineValidationParityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDoctrineCorpusRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-e",
+        "lane-f",
+        "lane-g"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-22T22:26:46.980234+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "02e03e18b19ab03485c9e9cdebf63ea8b02f5082"
+}
