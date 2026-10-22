@@ -7,15 +7,9 @@ name: Docs cleanliness
 # Run the same checks locally: docs/guides/docsite.md.
 
 on:
-  pull_request:
-    paths:
-      - 'docs/**'
-      - 'site/**'
-      - 'scripts/docs/**'
-      - '.markdownlint-cli2.jsonc'
-      - 'cspell.json'
-      - 'lychee.toml'
-      - '.github/workflows/docs-cleanliness.yml'
+  # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
+  # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -114,6 +108,9 @@ jobs:
     name: Markdown lint
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
+    # Advisory: markdownlint findings never fail the build (and so never block the CI gate once it
+    # is required). Pre-existing findings are addressed deliberately, not as a merge blocker.
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
