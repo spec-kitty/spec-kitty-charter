@@ -1,4 +1,18 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-22T23:12:35.225105+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "580d61f542de7b165e45d8937a9842719b8f97a9"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-22T23:12:35.225105+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "580d61f542de7b165e45d8937a9842719b8f97a9",
+  "contracts": "none",
+  "contracts_rationale": "This mission models existing canonical pack-artefact shapes (directive/styleguide/paradigm) as domain entities with YAML round-trip; it defines no new service interface or API surface. The authoritative schemas it validates against are the vendored contracts/packs/schemas/*.schema.json (ADR-0017), unchanged here.",
   "coordination_branch": "kitty/mission-pack-doctrine-artefacts-01M5JHD0",
   "created_at": "2026-10-22T19:28:56.088611+00:00",
   "flattened": false,
@@ -9,11 +23,9 @@
   "mission_slug": "pack-doctrine-artefacts-01M5JHD0",
   "mission_type": "software-dev",
   "pr_bound": true,
-  "purpose_context": "The charter service models only the tactic artefact as a rich pack entity today; the other doctrine artefacts are read as generic facts. This mission gives the three prose doctrine artefacts (directive, styleguide, paradigm) the same first-class treatment as the tactic \u2014 typed identity, invariants, storage round-trip and repository access \u2014 so the service can read and write them faithfully, continuing the packs slice without touching the harder asset, profile and mission-type tiers.",
+  "purpose_context": "The charter service models only the tactic artefact as a rich pack entity today; the other doctrine artefacts are read as generic facts. This mission gives the three prose doctrine artefacts (directive, styleguide, paradigm) the same first-class treatment as the tactic — typed identity, invariants, storage round-trip and repository access — so the service can read and write them faithfully, continuing the packs slice without touching the harder asset, profile and mission-type tiers.",
   "purpose_tldr": "Model the directive, styleguide and paradigm charter artefacts as first-class pack entities that survive a YAML round trip.",
   "slug": "pack-doctrine-artefacts-01M5JHD0",
   "target_branch": "feat/pack-doctrine-artefacts",
-  "topology": "coord",
-  "contracts": "none",
-  "contracts_rationale": "This mission models existing canonical pack-artefact shapes (directive/styleguide/paradigm) as domain entities with YAML round-trip; it defines no new service interface or API surface. The authoritative schemas it validates against are the vendored contracts/packs/schemas/*.schema.json (ADR-0017), unchanged here."
+  "topology": "coord"
 }
