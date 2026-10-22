@@ -182,3 +182,6 @@ snakeyaml
 Cockburn
 Palermo
 jspecify
+# service architecture orientation + slice-coverage gate (#141)
+ungated
+parameterizing
