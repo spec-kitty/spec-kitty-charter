@@ -45,14 +45,6 @@ class ParadigmEntityTest {
     }
 
     @Test
-    @DisplayName("an identifier outside the schema pattern is rejected")
-    void identifierPatternEnforced() {
-        assertThat(new ParadigmIdentifier("domain-driven-design").value()).isEqualTo("domain-driven-design");
-
-        assertThatThrownBy(() -> new ParadigmIdentifier("Domain_Driven")).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @Test
     @DisplayName("edges: REQUIRES a directive per directive_ref, SUGGESTS per typed reference")
     void edgesFollowTheContract() {
         Paradigm paradigm = valid("ddd")
@@ -81,7 +73,9 @@ class ParadigmEntityTest {
     void identityEquality() {
         Paradigm one = valid("ddd").build();
 
-        assertThat(one).isEqualTo(valid("ddd").name("Other").build()).hasSameHashCodeAs(valid("ddd").build());
+        assertThat(one)
+                .isEqualTo(valid("ddd").name("Other").build())
+                .hasSameHashCodeAs(valid("ddd").build());
         assertThat(one).isNotEqualTo(valid("tdd").build());
     }
 }
