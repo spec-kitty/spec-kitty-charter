@@ -41,7 +41,9 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          changed="$(git diff --name-only "$BASE" "$HEAD")"
+          # Three-dot (merge-base) diff: exactly the PR's own changes, so main advancing since the
+          # branch point does not fold main-only files in and over-detect a group the PR never touched.
+          changed="$(git diff --name-only "$BASE...$HEAD")"
           printf 'changed files:\n%s\n' "$changed"
           # Mirror the path filters of service.yml and docs-cleanliness.yml exactly; a change to
           # this gate workflow itself re-runs both groups (fail-safe).
