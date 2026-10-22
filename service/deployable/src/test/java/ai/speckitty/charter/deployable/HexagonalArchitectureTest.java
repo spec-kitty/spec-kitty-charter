@@ -365,18 +365,7 @@ class HexagonalArchitectureTest {
         assertBites(sliceDomainDoesNotCross("packs"), ROOT + ".packs.domain.badfixture", "DomainCrossesSlice");
     }
 
-    /**
-     * SLICE_COVERAGE: every vertical concern slice present in the source is registered in {@link #SLICES}. A slice
-     * is any top-level concern under {@code ai.speckitty.charter} that owns a {@code domain} ring; the kernel, the
-     * generated contract ({@code api}) and the composition root ({@code deployable}) are not slices. {@code SLICES}
-     * is otherwise a hand-kept list, so a second slice whose module is added but whose name is never registered
-     * would be silently skipped by the slice-scoped rules ({@code SLICES_DO_NOT_CROSS}, and the {@code packs}-pinned
-     * {@code APPLICATION_IS_EDGE} / {@code PACKS_DOMAIN_IS_PURE}) and ship ungated on a green build. This rule closes
-     * that gap in one direction — a present slice absent from {@code SLICES} fails the build — which makes the list
-     * self-checking. Parameterizing the {@code packs}-pinned rules over {@code SLICES} so each registered slice is
-     * also purity- and edge-gated is the companion follow-up (#140); until then, registering a slice here is
-     * necessary but not on its own sufficient to gate it.
-     */
+    /** The top-level owners that are not concern slices: the shared kernel, the generated contract and the root. */
     private static final java.util.Set<String> NON_SLICE_OWNERS = java.util.Set.of("kernel", "api", "deployable");
 
     /** The slice owning {@code c} when {@code c} resides in a slice's {@code domain} ring, otherwise {@code null}. */
@@ -397,6 +386,22 @@ class HexagonalArchitectureTest {
         return inDomain && !NON_SLICE_OWNERS.contains(owner) ? owner : null;
     }
 
+    /**
+     * SLICE_COVERAGE: every vertical concern slice present in the source is registered in {@link #SLICES}. A slice
+     * is any top-level concern under {@code ai.speckitty.charter} that owns a {@code domain} ring; the kernel, the
+     * generated contract ({@code api}) and the composition root ({@code deployable}) are not slices. {@code SLICES}
+     * is otherwise a hand-kept list, so a second slice whose module is added but whose name is never registered
+     * would be silently skipped by the slice-scoped rules ({@code SLICES_DO_NOT_CROSS}, and the {@code packs}-pinned
+     * {@code APPLICATION_IS_EDGE} / {@code PACKS_DOMAIN_IS_PURE}) and ship ungated on a green build. This rule closes
+     * that gap in one direction — a present slice absent from {@code SLICES} fails the build — which makes the list
+     * self-checking. Parameterizing the {@code packs}-pinned rules over {@code SLICES} so each registered slice is
+     * also purity- and edge-gated is the companion follow-up (#140); until then, registering a slice here is
+     * necessary but not on its own sufficient to gate it.
+     *
+     * <p>Scope: a slice is discovered only by its {@code domain} ring at {@code charter.<owner>.domain}. A would-be
+     * slice with no {@code domain} ring yet, or whose domain ring sits at a non-conventional path, is out of scope
+     * and this rule does not see it.
+     */
     private static final ArchRule EVERY_SLICE_IS_REGISTERED = classes()
             .should(new ArchCondition<JavaClass>("belong to a concern slice registered in SLICES") {
                 @Override
