@@ -1,9 +1,9 @@
 ---
 okf_version: "0.2"
-title: Directive, styleguide and paradigm are now first-class pack artefacts
-description: The charter service models directive, styleguide and paradigm pack artefacts as first-class entities with full YAML round-trip, unified with tactic under a CharterArtifact family.
+title: Directive, styleguide and paradigm are now first-class pack artifacts
+description: The charter service models directive, styleguide and paradigm pack artifacts as first-class entities with full YAML round-trip, unified with tactic under a CharterArtifact family.
 doc_status: active
-updated: 2026-10-23T00:00:00Z
+updated: 2026-10-22T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
@@ -13,10 +13,10 @@ audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the three new pack entities, their repository ports and the CharterArtifact family interface.
   - profile: core-maintainer
-    guidance_text: Read this for how the service now round-trips three more charter artefacts against the canonical open-packs schemas.
+    guidance_text: Read this for how the service now round-trips three more charter artifacts against the canonical open-packs schemas.
 ---
 
-# 2026-10-23 — Directive, styleguide and paradigm are now first-class pack artefacts
+# 2026-10-22 — Directive, styleguide and paradigm are now first-class pack artifacts
 
 Before, the charter service modelled only the **tactic** as a rich pack entity; a
 pack's directives, styleguides and paradigms were read as generic facts and could
@@ -30,7 +30,7 @@ The four kinds are unified by a thin **`CharterArtifact`** family interface
 `urn`) in the packs domain, so the aggregate, the doctrine-reference-graph view and
 reports can treat them uniformly while each kind keeps its own concept-bearing body
 (a directive's enforcement and rules, a styleguide's scope, principles and
-machine-lintable config, a paradigm's summary and the directives it is realized by).
+machine-checkable lint config, a paradigm's summary and the directives it is realized by).
 The existing `Tactic` is retrofitted onto the same interface, and a pack now holds
 its directives, styleguides and paradigms with the same belongs-to-pack and
 no-duplicate-identifier invariants as its tactics.
