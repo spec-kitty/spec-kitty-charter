@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.Directive;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -166,5 +168,28 @@ class DoctrineRepositoryContractTest {
         assertThat(filesEndingWith(".directive.yaml")).isEqualTo(1);
         Pack pack = service.load(PACK);
         assertThat(pack.directives()).hasSize(1);
+    }
+
+    @Test
+    void aSchemaValidButDomainInvalidDirectiveIsAViolationWhileAValidSiblingStillLoads() throws IOException {
+        Directive valid = directive("DIRECTIVE_901", "Valid");
+        service.save(valid);
+        Files.writeString(
+                packDirectory.resolve("DIRECTIVE_902.directive.yaml"),
+                """
+                id: DIRECTIVE_902
+                schema_version: '1.0'
+                title: Blank procedure
+                intent: i
+                enforcement: required
+                procedures: ['']
+                """);
+
+        Pack pack = service.load(PACK);
+
+        assertThat(pack.directives()).containsExactly(valid);
+        assertThat(pack.violations())
+                .extracting(PackElementViolation::file, PackElementViolation::kind)
+                .contains(tuple("DIRECTIVE_902", "domain"));
     }
 }
