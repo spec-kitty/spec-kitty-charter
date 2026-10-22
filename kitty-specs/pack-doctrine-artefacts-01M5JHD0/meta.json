@@ -28,6 +28,7 @@
   "purpose_context": "The charter service models only the tactic artefact as a rich pack entity today; the other doctrine artefacts are read as generic facts. This mission gives the three prose doctrine artefacts (directive, styleguide, paradigm) the same first-class treatment as the tactic — typed identity, invariants, storage round-trip and repository access — so the service can read and write them faithfully, continuing the packs slice without touching the harder asset, profile and mission-type tiers.",
   "purpose_tldr": "Model the directive, styleguide and paradigm charter artefacts as first-class pack entities that survive a YAML round trip.",
   "slug": "pack-doctrine-artefacts-01M5JHD0",
+  "status_phase": "1",
   "target_branch": "feat/pack-doctrine-artefacts",
   "topology": "coord"
 }
