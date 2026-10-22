@@ -35,6 +35,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -179,35 +181,26 @@ public final class DomainRepositoryService
         FilesystemPackStore.PackRead read = resolved.store.read(resolved.key);
         Pack.Builder builder = Pack.builder().id(pack).descriptor(toDescriptor(read.descriptor()));
         read.violations().forEach(builder::violation);
-        for (TacticDso dso : read.tactics()) {
-            try {
-                builder.tactic(buildTactic(pack, dso));
-            } catch (ConstraintBreachException breach) {
-                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
-            }
-        }
-        for (DirectiveDso dso : read.directives()) {
-            try {
-                builder.directive(buildDirective(pack, dso));
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
-            }
-        }
-        for (StyleguideDso dso : read.styleguides()) {
-            try {
-                builder.styleguide(buildStyleguide(pack, dso));
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
-            }
-        }
-        for (ParadigmDso dso : read.paradigms()) {
-            try {
-                builder.paradigm(buildParadigm(pack, dso));
-            } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(dso.id(), "domain", String.valueOf(breach.getMessage())));
-            }
-        }
+        collect(read.tactics(), TacticDso::id, dso -> builder.tactic(buildTactic(pack, dso)), builder);
+        collect(read.directives(), DirectiveDso::id, dso -> builder.directive(buildDirective(pack, dso)), builder);
+        collect(read.styleguides(), StyleguideDso::id, dso -> builder.styleguide(buildStyleguide(pack, dso)), builder);
+        collect(read.paradigms(), ParadigmDso::id, dso -> builder.paradigm(buildParadigm(pack, dso)), builder);
         return builder.build();
+    }
+
+    /**
+     * Adds each readable DSO to the aggregate, failing closed: a domain-invalid element is recorded as a violation
+     * rather than aborting assembly.
+     */
+    private static <D> void collect(List<D> dsos, Function<D, String> fileOf, Consumer<D> add, Pack.Builder builder) {
+        for (D dso : dsos) {
+            try {
+                add.accept(dso);
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
+                builder.violation(
+                        new PackElementViolation(fileOf.apply(dso), "domain", String.valueOf(breach.getMessage())));
+            }
+        }
     }
 
     // ---- identifier to directory ---------------------------------------------------------------------------------
