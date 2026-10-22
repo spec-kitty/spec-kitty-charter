@@ -26,8 +26,13 @@ sealed interface ConfigValue permits ConfigValue.Scalar, ConfigValue.Seq, Config
   timestamp trap. Because one loader produces *both* compared `ConfigValue` trees,
   the round-trip is symmetric by construction.
 - Equality is structural (value equality over the tree); `Mapping` compares by
-  key→value, `Seq` by order. This feeds the `StyleguideDso` record-equality
-  fidelity assertion (NFR-001) the same way the flat fields do.
+  key→value (**order-insensitive**, as `Map.equals` — YAML mapping key order is not
+  semantically significant), `Seq` by order. Emission is still insertion-order-stable
+  by construction (the backing `LinkedHashMap` + order-preserving emit), so a
+  round-trip is deterministic even though equality does not pin key order. This feeds
+  the `StyleguideDso` record-equality fidelity assertion (NFR-001) the same way the
+  flat fields do; "order-stable" in NFR-001 refers to that deterministic emission, not
+  to key-order being part of equality.
 - `tooling` is the simpler case — a `Map<String,String>` held as a `LinkedHashMap`
   (order-preserving for deterministic emit); it needs no `ConfigValue` tree because
   the schema types every value as a string.

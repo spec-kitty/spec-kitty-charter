@@ -118,7 +118,7 @@ has its own nested records — the per-kind reference shapes differ, so none reu
 - `ParadigmDso.Reference(String type, String id)`
 - `StyleguideDso.Pattern(String name, String description, Optional<String> badExample, Optional<String> goodExample)`
 - `StyleguideDso.AntiPattern(String name, String description, String badExample, String goodExample)`
-- `ConfigValue` sealed tree (Scalar/Seq/Mapping) for `structural_lint_config`; `tooling` as `Map<String,String>` (R1).
+- `ConfigValue` sealed tree (Scalar/Seq/Mapping) for `structural_lint_config` — defined in **`packs.domain`** (it is state of the `Styleguide` domain entity; an infra placement would make the domain depend on infra and fail the onion/purity gates). The infra `StyleguideDso` references the domain `ConfigValue` (the allowed infra→domain direction). `tooling` as `Map<String,String>` (R1).
 
 Nullable-scalar fields are `Optional<…>` at the DSO level (absent ≠ present-empty);
 non-nullable lists normalize absent→empty (absence-vs-empty edge case).
@@ -132,8 +132,8 @@ Each `DrgEdge` is `(source = this.urn(), target = Urn(targetKind, refId), relati
 |------|--------------------|-------------|--------------------|-------------|
 | directive | `references[]` (typed) | from `type` via `NodeKind.of(ArtifactKind.fromToken(type).orElseThrow())` | `SUGGESTS` | `when`/`reason` carried |
 | directive | `procedures[]` (bare) | `procedure` | `REQUIRES` | empty |
-| paradigm | `directive_refs[]` (bare) | `directive` | `REQUIRES` | empty |
 | paradigm | `references[]` (typed) | from `type` token | `SUGGESTS` | empty |
+| paradigm | `directive_refs[]` (bare) | `directive` | `REQUIRES` | empty |
 | tactic | `references[]` (typed) | from `type` token | `SUGGESTS` | `when` carried (`""`→empty) |
 | styleguide | — | — | — | no edges |
 
@@ -168,16 +168,19 @@ flowchart TB
     STY[Styleguide]
     PAR[Paradigm]
     TAC[Tactic *retrofit*]
+    CV[ConfigValue]
     REPO[["{Directive,Styleguide,Paradigm}Repository ports"]]
   end
   subgraph infra["packs.infra.storage"]
-    DSO["{Directive,Styleguide,Paradigm}Dso + ConfigValue"]
+    DSO["{Directive,Styleguide,Paradigm}Dso"]
     SER[SerializationStrategy / YamlSerializationStrategy]
     ADAPT[DomainRepositoryService / FilesystemPackStore]
   end
   DIR & STY & PAR & TAC -. implement .-> CA
   CA --> URN & EDGE & AK
   DIR & STY & PAR --> MR
+  STY --> CV
+  DSO --> CV
   ADAPT -. implements .-> REPO
   ADAPT --> DSO
   SER <--> DSO
