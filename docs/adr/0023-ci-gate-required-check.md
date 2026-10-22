@@ -56,7 +56,8 @@ single PR entry point, and require only its terminal job context, **`CI gate / g
   legitimately skipped, and **fails closed** if change detection did not complete.
 
 The per-area workflows lose their direct `pull_request` trigger (they keep `push` on `main`,
-`workflow_call` and `workflow_dispatch`), so nothing double-runs through two PR entry points.
+`workflow_call` and `workflow_dispatch`, and `docs-cleanliness` keeps its weekly `schedule`), so
+nothing double-runs through two PR entry points.
 `markdown-lint` is marked `continue-on-error` so it stays advisory — findings never block the gate.
 `external-links` was already `continue-on-error`. `docs-site.yml` stays a separate, non-required PR
 check (a site-build failure is a publishing concern, not a content regression).
