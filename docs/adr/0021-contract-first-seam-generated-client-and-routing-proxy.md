@@ -1,8 +1,8 @@
 ---
 title: "ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation"
 description: Proposes that the published contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
-doc_status: draft
-updated: 2026-10-20T00:00:00Z
+doc_status: active
+updated: 2026-10-24T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -30,10 +30,10 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-20. Decider: Stijn Dejongh (operator). Decisions marked **(ruled)** are the
-operator's; **(default)** decisions are open in review. It is provisional once accepted.
+**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decisions marked **(ruled)** are
+the operator's; **(default)** decisions stand as decided until revisited. It is provisional.
 
-If accepted, this record amends:
+This record amends:
 
 - [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/) decision 4 ("stages 3 and 4 ship
   together", one switch-over): the switch-over happens one operation at a time, each one fail

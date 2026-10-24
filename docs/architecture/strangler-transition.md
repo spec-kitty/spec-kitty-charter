@@ -2,7 +2,7 @@
 title: Strangler transition
 description: The stages that move charter reads, then writes, from core Python to the Java service, with the evidence for each and the point of no return.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-24T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -29,7 +29,7 @@ seam and the shadow comparison run in core and the service runs from this reposi
 > and 4 and the corpus-only gate are provisional decisions of 2026-10-19
 > ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 >
-> **Proposed** ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)):
+> **Decided, provisionally** ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)):
 > core adopts a client generated from the published contract (0.1.0 first, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)) now, behind a proxy that routes
 > each operation to core's Python, a shadow or the service. Stages 2 to 4 then happen one
 > operation at a time, each switch fail closed.

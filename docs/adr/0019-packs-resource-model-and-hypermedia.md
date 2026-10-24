@@ -1,8 +1,8 @@
 ---
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
-doc_status: draft
-updated: 2026-10-20T00:00:00Z
+doc_status: active
+updated: 2026-10-24T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -29,16 +29,22 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-20. Decider: Stijn Dejongh (operator). Like the decisions of
-2026-10-19, it is provisional once accepted: it is revisited as the system evolves, on the
+**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Like the decisions of
+2026-10-19, it is provisional: it is revisited as the system evolves, on the
 triggers under [Revisit when](#revisit-when). The design is in
 [Packs resource model](/architecture/packs-resource-model/); the conventions it follows are in
 [Development conventions](/development/). The charter itself, which this record first named
 `/charter`, is designed in [ADR-0020](/adr/0020-offering-and-activations/) as two top-level
 resources: `/offering` and `/activations`.
 
-Decisions marked **(default)** follow the 2026-10-20 design squad's recommendation and are open in
-review.
+Decisions marked **(default)** follow the design squad's recommendation; they stand as decided until revisited.
+
+**Implementation note, 2026-10-24.** PR #139 rebuilt the service on one canonical `Pack` aggregate
+and serves tactics at `/packs/{packId}/tactics[/{tacticId}]`, one route per kind, rather than the
+generic `/packs/{packId}/artifacts/{kind}/{artifactId}` of D2. It also removed `GET /packs` and
+`POST /packs/refresh`. Aligning the routes with D2 before more kinds are exposed is tracked in
+[#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126) and
+[#169](https://github.com/spec-kitty/spec-kitty-charter/issues/169).
 
 ## Context
 
