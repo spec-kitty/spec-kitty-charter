@@ -40,7 +40,7 @@ Core versions this surface, not this repository; it stays in core until the cuto
 - Response schemas are **closed** (`additionalProperties: false`), so any response change is a
   new schema version and a new contract release.
 - The contract is published as `0.y.z` while it iterates with core's generated client, and
-  1.0.0 is minted once the operator judges it stable (ADR-0022 (proposed in [#123](https://github.com/spec-kitty/spec-kitty-charter/pull/123))).
+  1.0.0 is minted once the operator judges it stable ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
 - A breaking-change check compares the contract with its last released version of the same
   line: from 1.0.0 the same major version, and while the major is 0 the same `0.y`. A breaking
   change needs a new line and a core-side migration of its generated DTOs:
