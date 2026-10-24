@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-24T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -25,8 +25,9 @@ each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** in effect (2026-10-19). Every open issue is assigned to the milestone listed
-> here. The assignment is provisional, and it changes as the plan does.
+> **Status:** in effect (updated 2026-10-24). The assignment is provisional and changes as the plan
+> does. Fifteen open issues have no milestone yet; they are listed under
+> [Not yet assigned](#not-yet-assigned).
 
 ## The milestones
 
@@ -36,70 +37,76 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
 
-The operator set this definition on 2026-10-19. The cutover runs through the read shadow
-(stage 2, epic #6), then one switch-over in which Java becomes authoritative and the Python
-offering reads retire (stages 3 and 4 ship together, with no Python fallback). The
-conformance corpus alone gates the switch-over. The cutover covers every offering read,
-including activation's reads of offering data; compile keeps a guarded Python read path until
-it is the first write moved to Java. The switch-over is the
-[point of no return](/architecture/strangler-transition/#stepping-back). These are
-provisional decisions, recorded as ADR-0010 and ADR-0011 in the decisions PR. Stage 1 is the
-import move of core ADR `2026-10-12-2` (D-2), carried by epic spec-kitty#6099. It gates 4.0.0
-GA. It is core work, so it is not tracked here, but nothing in this milestone can answer a
-production read without it.
+The operator set this definition on 2026-10-19 and refined how the cutover happens on 2026-10-20
+([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/),
+[ADR-0022](/adr/0022-contract-versions-start-at-0-x/)):
 
-## Proposed distribution
+- **Contract first.** Core vendors a client generated from the published contract (0.x, from
+  0.1.0) and routes every operation through a proxy at its seam. Each operation starts on core's
+  Python.
+- **One operation at a time.** Each operation moves to a shadow (compared with the service), then
+  to the service, on its own, fail closed, with no Python fallback. The conformance corpus gates
+  each move.
+- **1.0.0 before the first remote route.** The contract stays 0.x until the operator judges it
+  stable, and is 1.0.0 before any operation is answered by the service.
+- **Scope.** The cutover covers every offering read, including activation's reads, and the
+  activation store; compile keeps a guarded Python read path until it is the first write moved to
+  Java. Removing the Python reads is the
+  [point of no return](/architecture/strangler-transition/#stepping-back).
+
+Stage 1, the import move of core ADR `2026-10-12-2` (D-2), is done in core (spec-kitty#6188).
+Core makes adopting the charter activation contract a 4.0 GA deliverable (spec-kitty#6518).
+
+## Distribution
 
 ### 4.x cutover
 
 The cutover path, the work that keeps the contract releasable, and the conformance net.
+Delivered so far: issues #7 and #8 (contract and build), #34 (storage behind repository ports,
+in PRs #137 and #139), #44 (decided by ADR-0020), #48 (pack-level policy), #53, #113 (reserved
+surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 
 | Issue | Title | Why it is here |
 |---|---|---|
 | #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
-| #7, #8 | Contract setup; Gradle build | Roadmap steps 1 and 2. Delivered by PR #54, which is still open; both close when it merges |
-| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; the switch-over is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
+| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
+| #45 | Contract release publishing | Core vendors a released, checksummed bundle; the first is 0.1.0 |
+| #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
+| #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0020](/adr/0020-offering-and-activations/)) |
+| #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
+| #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
+| #13 | Core ingests the contract: generated client and routing proxy | Roadmap step 6; the contract is core's seam from 0.1.0 (ADR-0021) |
+| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; each switch is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
-| #13 | Core ingests the contract: generated client and routing proxy | Roadmap step 6; the contract is core's seam from 0.1.0 ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/), Proposed) |
-| #14 | Read shadow | Roadmap step 7; stage 2, which stages 3 and 4 build on |
-| #124 | Publish the contract as 0.x, with a minor-level release gate | The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/), Proposed) |
-| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
-| #45 | Contract release publishing | #13 needs a released, checksummed bundle to vendor; the first is 0.1.0, waiting on #124 and #119 |
-| #44, #125 | Active charters: design, and the activation set as a 0.x minor | Core's deny-list work codes against it ([ADR-0020](/adr/0020-offering-and-activations/), Proposed) |
-| #126 | The `/offering` move, the API root and `_links`, as a 0.x minor | Closed response shapes, so they must land before 1.0.0 ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
-| #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
-| #128 | Mint contract 1.0.0 | The first route switched to the service needs it ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/) D6) |
-| #46 | `x-stability-level` for provisional operations | The release gate must not report a change to a provisional operation as breaking |
+| #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
+| #46 | `x-stability-level` for provisional operations | Under review: no provisional operation remains, and the 0.x rule may cover the need |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
-| #48 | Pack-level policy in the domain | Do it before #11 adds the org and project layers |
 | #50 | Build structure follow-ups | Generate `charter-api` from the released bundle, so only one parser resolves `$ref` |
 | #51 | Supply-chain and CI hygiene | The wrapper checksum and signature ruling belong before the first release |
 | #29 | Epic: behavior-first overhaul (P1 to P3) | The scenarios are the conformance net the cutover relies on |
 | #30, #31, #32, #33 | P1: boundary scenarios, Layer-B harness, doctrine in force, docsite rendering | The P1 outcome |
-| #34 | P3 design spike: storage behind a repository layer | The crosswalk places P3 before step 4. Lower priority than the rest of the milestone; it may slip |
 | #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
-| #53 | Docs cite spec-kitty#645 instead of epic #6099 | A small factual fix to the pages this milestone depends on |
 | #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
-| #114 | Import the pack schemas as canonical | The schemas the YAML adapter validates against ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)) |
 | #115 | Pack doctor parity on open-packs | The first pack goal: Java verdicts match core's validator |
 | #62 to #64, #66, #67 | Persistent deactivation, core side | Fixed in core now, ahead of the cutover, so the corpus records the fixed answers |
 
 #### Stages 3 and 4
 
 These follow the evidence each stage needs in
-[Strangler transition](/architecture/strangler-transition/).
+[Strangler transition](/architecture/strangler-transition/). Under ADR-0021 they happen one
+operation at a time.
 
 | Issue | Stage | Done when |
 |---|---|---|
 | #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
-| #70 Launcher and service lifecycle | 2 | Core starts the service as a daemon per worktree, CI included, and it stops when idle. #14 needs this |
+| #70 Launcher and service lifecycle | 3 | The service runs wherever a routed operation needs it. Needed by the first switch, not before (ADR-0021 D5) |
 | #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)) |
-| #72 Conformance as a blocking gate | 3, 4 | A divergence on the supported corpus fails core's CI. This is the only evidence for the switch-over |
-| #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed: a down or slow service is a named error, and stale input is refused. Freshness is fingerprinted |
-| #74 Java authoritative reads | 3, 4 | The seam answers from Java, in the same release as #76 |
-| #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core. Every read in core goes through the seam to the API, and a ratchet keeps it that way |
+| #72 Conformance as a blocking gate | 3, 4 | A divergence on the supported corpus fails core's CI. It gates each operation's switch |
+| #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed per routed operation: a down or slow service is a named error, and stale input is refused |
+| #74 Java authoritative reads | 3, 4 | Every read is routed to the service |
+| #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core, and a ratchet keeps it that way |
 
 ### Post-cutover
 
@@ -119,7 +126,30 @@ These follow the evidence each stage needs in
 
 | Issue | Title | Why it is here |
 |---|---|---|
-| #24 | Design spike: deployable charter backend service | Marked backlog by its own scope note |
+| #24 | Design spike: deployable charter backend service | Hosting direction now set by ADR-0020 D12; caching and precompute remain open |
+
+### Not yet assigned
+
+Filed after the last distribution, or never placed; to be placed when the milestones are next
+revised.
+
+| Issue | Title | Note |
+|---|---|---|
+| #167 | Own the doctrine-artifact edge-relation table here | Follow-up of PR #170; re-scoped under ADR-0015 |
+| #168 | Toolguide and procedure as first-class pack artifacts | Follow-up of PR #170; after #169 and #171 |
+| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | Follow-up of PR #170 |
+| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Follow-up of PR #170 |
+| #131 | `charter.schema.json` lacks `activated_glossary_packs` | Schema gap found against core |
+| #132 | Remaining YAML scalar differences from core | Conformance detail |
+| #133 | `x-extensible-enum` for open code enums | Contract shape; decide before 1.0.0 |
+| #130 | Narrow the refusal-code enum per HTTP response | Contract shape; decide before 1.0.0 |
+| #120 | The source fingerprint digests exactly the files the pack load reads | Freshness |
+| #121 | Worktree token: refuse a placeholder resolved from the command line | Local deployment profile |
+| #140 | ArchUnit slice-coverage meta-rule | Partly delivered by PR #141 |
+| #166 | CI gate: single-source the path taxonomy | CI hygiene |
+| #134 | `check_docs.py` slugify drops underscores | Docs tooling |
+| #135 | Redraw the older descriptor diagrams on the pack schemas | Docs |
+| #136 | Ask core to carry the pack terms in its glossary | Cross-repository |
 
 ## Decided on 2026-10-19
 

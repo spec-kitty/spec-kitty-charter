@@ -1,8 +1,8 @@
 ---
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
-doc_status: draft
-updated: 2026-10-20T00:00:00Z
+doc_status: active
+updated: 2026-10-24T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -33,15 +33,15 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-20. Decider: Stijn Dejongh (operator). It is provisional once accepted, and
+**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). It is provisional, and
 it is revisited on the triggers under [Revisit when](#revisit-when). The design is in
 [Offering and activation](/architecture/offering-and-activation/).
 
 Operator rulings of 2026-10-19 and 2026-10-20 are marked **(ruled)** below. Decisions marked
-**(default)** follow the design squad's recommendation and are open in review: each names the
-alternative it rejected, so the operator can overturn it before the record is accepted.
+**(default)** follow the design squad's recommendation and stand as decided until revisited; each
+names the alternative it rejected.
 
-If accepted, this record supersedes or amends, point by point:
+This record supersedes or amends, point by point:
 
 - [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), Risks: "reserve
   only names and types, never structures". The activation document's structure is reserved in

@@ -1,8 +1,8 @@
 ---
 title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable"
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
-doc_status: draft
-updated: 2026-10-20T00:00:00Z
+doc_status: active
+updated: 2026-10-24T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -26,10 +26,11 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-20. Decider: Stijn Dejongh (operator). Decision D1 is **(ruled)**; the
-others are **(default)** and open in review. It is provisional once accepted.
+**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decision D1 is **(ruled)**;
+the others are **(default)** and stand as decided until revisited. D1 and D2 are built (#129).
+It is provisional.
 
-If accepted, this record amends:
+This record amends:
 
 - the contract's `info.version`, `1.0.0-SNAPSHOT` since PR #54, which becomes `0.1.0-SNAPSHOT`;
 - [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/): its reservations

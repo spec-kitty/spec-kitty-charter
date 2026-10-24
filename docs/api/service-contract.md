@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-24T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -20,11 +20,11 @@ audience:
 
 The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
 
-> **Partly built.** Three reads and one refresh are in the contract and served by the Java service; the other operations on this page are designed only. See the [API overview](/api/).
+> **Partly built.** Three reads are in the contract and served by the Java service: the service info and a pack's tactics. The other operations on this page are designed only. See the [API overview](/api/).
 
 ## The contract files
 
-The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `0.1.0-SNAPSHOT`, unreleased (published as 0.x until it is stable, ADR-0022 (proposed in [#123](https://github.com/spec-kitty/spec-kitty-charter/pull/123))):
+The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `0.1.0-SNAPSHOT`, unreleased (published as 0.x until it is stable, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)):
 
 - [`openapi.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml): the header and the map from each path to its file;
 - `paths/`, `schemas/`, `parameters/`, `responses/` and `examples/`: one definition per file;
@@ -43,16 +43,26 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 
 | Operation | Answers | Path |
 |---|---|---|
-| `listPacks` | The configured Charter Packs, their levels and versions, with the diagnostics of each | `GET /packs` |
-| `refreshPacks` | Re-reads every configured pack and the project configuration, discards any built read model, and answers the refreshed pack listing with the fingerprint it verified; no request body | `POST /packs/refresh` |
-| `getActionContext` | The offering's walk for one action: the five steps below, each entry with its `relation`, `via` and `hops`, the `depth` it was walked at and the offering's load `diagnostics`; provisional (`x-provisional`) until the conformance corpus decides the registered divergences | `GET /mission-types/{missionType}/actions/{action}/context` |
+| `listPackTactics` | The readable tactics of one pack, in storage order; an absent or unreadable pack is a 404 `pack_not_found` | `GET /packs/{packId}/tactics` |
+| `getPackTactic` | One tactic of one pack by identity; 404 `pack_not_found` or `tactic_not_found` | `GET /packs/{packId}/tactics/{tacticId}` |
 | `getServiceInfo` | The contract version, the service's build version (`serviceVersion`), the worktree it serves and a fingerprint of the sources it answers from | `GET /info` |
 
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
 carries `Charter-Contract-Version` and `Charter-Worktree`. Only a 200 answer carries
 `Charter-Source-Fingerprint`, once, with the digest that read verified; no refusal carries it.
 
+PR #139 (2026-10-21) rebuilt the service on one canonical `Pack` aggregate. It removed
+`listPacks` (`GET /packs`), `refreshPacks` (`POST /packs/refresh`) and `getActionContext`
+(`GET /mission-types/{missionType}/actions/{action}/context`) together with their first-pass
+read model. The tactic reads use one route per kind. ADR-0019 decides a generic
+`/packs/{packId}/artifacts/{kind}/{artifactId}`; aligning the routes, and bringing the offering
+reads back under `/offering`, is [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126).
+
 ### The action-context decision (#95)
+
+> **Not served on `main`.** The operation was removed by PR #139. ADR-0018's decisions below stand
+> for when it returns as `GET /offering/mission-types/{missionType}/actions/{action}/context`
+> (ADR-0020 D1, #126).
 
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) decides what the read
 answers. The contract files are the authority; this section only summarizes them.
@@ -120,9 +130,9 @@ fingerprint inputs, the per-worktree token and refresh) are decided and built
 ([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113),
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)).
 
-## Proposed: packs resources (ADR-0019)
+## Decided, not built: packs resources (ADR-0019)
 
-[ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) (Proposed) gives `/packs` one
+[ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) gives `/packs` one
 meaning, the packs this service knows, and makes every pack a resource whose contents are
 sub-resources. The design is in [Packs resource model](/architecture/packs-resource-model/), and
 the conventions in [Development conventions](/development/).
@@ -150,9 +160,9 @@ the conventions in [Development conventions](/development/).
 These change closed response schemas, so they are breaking after 1.0.0. With open relation keys
 (ADR-0019 D3), the per-pack operations and their relations can follow additively.
 
-## Proposed: offering and activations (ADR-0020)
+## Decided, not built: offering and activations (ADR-0020)
 
-[ADR-0020](/adr/0020-offering-and-activations/) (Proposed) adds two top-level resources:
+[ADR-0020](/adr/0020-offering-and-activations/) adds two top-level resources:
 `/offering`, the offer side (what can be used, merged from the packs in force), and
 `/activations`, the activation side (active charters). An activation is a document the service
 stores under an opaque `activationId`; the service never reads a project's files. The design, with the request
