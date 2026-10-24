@@ -434,7 +434,7 @@ class FileSystemPackInspectorTest {
 
     @Test
     void theGraphShardsOfAListingAreItsGraphYamlFilesSortedByName() {
-        assertThat(FileSystemPackInspector.graphShards(
+        assertThat(PackFileSet.graphShards(
                         Stream.of(Path.of("qa/b.graph.yaml"), Path.of("qa/pack.yaml"), Path.of("qa/a.graph.yaml")),
                         "qa",
                         p -> true))
@@ -448,7 +448,7 @@ class FileSystemPackInspectorTest {
             throw new UncheckedIOException(cause);
         });
 
-        assertThatThrownBy(() -> FileSystemPackInspector.graphShards(failing, "qa", p -> true))
+        assertThatThrownBy(() -> PackFileSet.graphShards(failing, "qa", p -> true))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
                 .hasMessage("pack qa cannot be listed")

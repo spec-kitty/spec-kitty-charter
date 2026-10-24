@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,8 +58,6 @@ import java.util.stream.Stream;
  */
 public final class FileSystemPackInspector implements PackInspector {
 
-    private static final String PACK_YAML = "pack.yaml";
-    private static final String FRAGMENT = "drg/fragment.yaml";
     private static final String NOT_UTF8 = "the file is not valid UTF-8";
 
     /** The fixed length of a chain of symlinks that is followed; as long as the kernel's, which refuses past 40. */
@@ -109,10 +106,10 @@ public final class FileSystemPackInspector implements PackInspector {
         if (!Files.isDirectory(directory)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");
         }
-        FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PACK_YAML);
-        Path packYaml = directory.resolve(PACK_YAML);
+        FileRead<PackDescriptor> descriptor = new FileRead.Absent<>(PackFileSet.PACK_YAML);
+        Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (Files.isRegularFile(packYaml)) {
-            descriptor = read(packYaml, PACK_YAML, name, PackDescriptorReader::read);
+            descriptor = read(packYaml, PackFileSet.PACK_YAML, name, PackDescriptorReader::read);
         }
         List<FileRead<RawGraph>> shards = new ArrayList<>();
         for (Path shard : shards(directory, name)) {
@@ -120,14 +117,14 @@ public final class FileSystemPackInspector implements PackInspector {
             shards.add(read(
                     shard, file, name, text -> GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file)));
         }
-        FileRead<RawGraph> fragment = new FileRead.Absent<>(FRAGMENT);
+        FileRead<RawGraph> fragment = new FileRead.Absent<>(PackFileSet.FRAGMENT);
         Path fragmentYaml = directory.resolve("drg").resolve("fragment.yaml");
         if (Files.isRegularFile(fragmentYaml)) {
             fragment = read(
                     fragmentYaml,
-                    FRAGMENT,
+                    PackFileSet.FRAGMENT,
                     name,
-                    text -> GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, FRAGMENT));
+                    text -> GraphDocumentReader.read(text, GraphDocumentReader.Shape.FRAGMENT, PackFileSet.FRAGMENT));
         }
         if (scope == Scope.LOAD_PATH) {
             return new PackContents(
@@ -165,8 +162,8 @@ public final class FileSystemPackInspector implements PackInspector {
         FullRead(Path directory, String name, List<String> shards) {
             this.directory = directory;
             this.name = name;
-            loadPath.add(PACK_YAML);
-            loadPath.add(FRAGMENT);
+            loadPath.add(PackFileSet.PACK_YAML);
+            loadPath.add(PackFileSet.FRAGMENT);
             loadPath.addAll(shards);
         }
 
@@ -261,6 +258,9 @@ public final class FileSystemPackInspector implements PackInspector {
     /**
      * Every {@code *.yaml} regular file under the pack directory, in the order of Python's {@code PurePath}: segment by
      * segment, a directory before a sibling that extends its name. A symlinked directory is not entered.
+     *
+     * <p>{@code PackFileSet}'s walk, which the store and the fingerprint share, orders by {@link String} instead and
+     * skips vanished entries; this validate-mode walk mirrors core's pathlib order (#115).
      */
     private static List<Path> yamlFiles(Path directory, String packName) {
         try (Stream<Path> walk = Files.walk(directory)) {
@@ -269,7 +269,7 @@ public final class FileSystemPackInspector implements PackInspector {
                             (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))
                     .toList();
         } catch (IOException | UncheckedIOException e) {
-            throw unlistable(packName, e);
+            throw PackFileSet.unlistable(packName, e);
         }
     }
 
@@ -384,29 +384,5 @@ public final class FileSystemPackInspector implements PackInspector {
 
     private static List<Path> shards(Path directory, String name) {
         return PackFileSet.rootShards(directory, name);
-    }
-
-    /**
-     * The graph shards of a pack directory listing: its {@code *.graph.yaml} regular files, sorted by name.
-     *
-     * @param files the directory listing; reading it may fail with an {@link UncheckedIOException}
-     * @param packName the pack the listing belongs to, named in a refusal
-     * @param regularFile whether a listed path is a regular file
-     * @return the shards, sorted
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when reading the listing fails, as when opening it fails
-     */
-    static List<Path> graphShards(Stream<Path> files, String packName, Predicate<Path> regularFile) {
-        try {
-            return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && regularFile.test(p))
-                    .sorted()
-                    .toList();
-        } catch (UncheckedIOException e) {
-            // The JDK always sets the cause; the fallback only satisfies the nullness checker.
-            throw unlistable(packName, Objects.<Exception>requireNonNullElse(e.getCause(), e));
-        }
-    }
-
-    static CharterRefusal unlistable(String packName, Exception cause) {
-        return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + packName + " cannot be listed", cause);
     }
 }
