@@ -105,5 +105,5 @@ x-refusal:
     retryable: false
     raised: true
 x-source:
-  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode
