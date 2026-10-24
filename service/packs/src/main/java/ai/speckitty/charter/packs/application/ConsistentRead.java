@@ -15,6 +15,11 @@ import org.jspecify.annotations.Nullable;
  * <p>This class has no stereotype and is never component-scanned: the deployment holds more than one {@link
  * PackSources}, so the port is not injected by type. A configuration creates it with a {@code @Bean} method and use
  * cases receive the {@code ConsistentRead}, never the port.
+ *
+ * <p>Only a {@link RuntimeException} from the load is compared against the second digest. An {@link Error}, or any
+ * other throwable that is not a {@code RuntimeException}, propagates at once, without the stale comparison. When the
+ * load failed and the second digest then breaks with something that is not a {@link CharterRefusal}, that break
+ * propagates with the load failure added as suppressed.
  */
 public final class ConsistentRead {
 
@@ -57,7 +62,7 @@ public final class ConsistentRead {
         try {
             value = load.get();
         } catch (RuntimeException failed) {
-            if (!first.equals(digestOrNull())) {
+            if (!first.equals(digestAfterFailure(failed))) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail, failed);
             }
             throw failed;
@@ -66,6 +71,16 @@ public final class ConsistentRead {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
         }
         return new Verified<>(value, first);
+    }
+
+    /** The second digest after a failed load; if it breaks in a way that is no refusal, that break keeps the load failure. */
+    private @Nullable String digestAfterFailure(RuntimeException loadFailure) {
+        try {
+            return digestOrNull();
+        } catch (RuntimeException broken) {
+            broken.addSuppressed(loadFailure);
+            throw broken;
+        }
     }
 
     /** The digest now, or {@code null} when an input readable a moment ago no longer is: it changed. */

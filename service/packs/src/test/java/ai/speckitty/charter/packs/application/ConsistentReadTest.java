@@ -79,6 +79,7 @@ class ConsistentReadTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage(STALE);
+        assertThat(events).containsExactly("digest", "load", "digest");
     }
 
     @Test
@@ -103,6 +104,7 @@ class ConsistentReadTest {
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasMessage(STALE)
                 .hasCause(notFound);
+        assertThat(events).containsExactly("digest", "load", "digest");
     }
 
     @Test
@@ -116,6 +118,7 @@ class ConsistentReadTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
                 .hasCause(notFound);
+        assertThat(events).containsExactly("digest", "load", "digest");
     }
 
     @Test
@@ -126,6 +129,7 @@ class ConsistentReadTest {
                     throw broken;
                 })))
                 .isSameAs(broken);
+        assertThat(events).containsExactly("digest", "load", "digest");
     }
 
     @Test
@@ -145,5 +149,29 @@ class ConsistentReadTest {
                     throw refusal(RefusalCode.TACTIC_NOT_FOUND);
                 })))
                 .isSameAs(broken);
+        assertThat(events).containsExactly("digest", "load", "digest");
+    }
+
+    @Test
+    void theLoadFailureIsKeptAsSuppressedWhenTheSecondDigestBreaksAfterIt() {
+        IllegalStateException broken = new IllegalStateException("the digest broke");
+        CharterRefusal notFound = refusal(RefusalCode.TACTIC_NOT_FOUND);
+
+        assertThatThrownBy(() -> reading(D1, broken).read(STALE, loading(() -> {
+                    throw notFound;
+                })))
+                .isSameAs(broken)
+                .hasSuppressedException(notFound);
+    }
+
+    @Test
+    void anErrorFromTheLoadPropagatesWithoutASecondDigest() {
+        AssertionError error = new AssertionError("an Error, not a RuntimeException");
+
+        assertThatThrownBy(() -> reading(D1).read(STALE, loading(() -> {
+                    throw error;
+                })))
+                .isSameAs(error);
+        assertThat(events).containsExactly("digest", "load");
     }
 }
