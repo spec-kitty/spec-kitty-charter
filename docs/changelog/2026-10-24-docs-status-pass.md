@@ -31,6 +31,10 @@ audience:
 - The [service contract](/api/service-contract/) lists what is built on `main`: `GET /info` and
   the tactic reads. PR #139 removed the pack listing, the refresh and the action-context read.
   The action-context decision stands for when that read returns under `/offering`.
+- The [packs resource model](/architecture/packs-resource-model/) and
+  [offering and activation](/architecture/offering-and-activation/) design pages now describe the
+  post-#139 surface in their status callouts, and mark ADR-0019 and ADR-0020 as decided rather
+  than proposed.
 - [Milestones](/plans/milestones/) and the [Roadmap](/plans/roadmap/) describe the contract-first,
   per-operation cutover (ADR-0021, ADR-0022), list what is delivered, and name the open issues
   not yet placed in a milestone.
