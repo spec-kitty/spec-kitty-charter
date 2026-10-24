@@ -16,66 +16,81 @@ import org.springframework.stereotype.Service;
  * Reads a pack's tactics through the repository ports. Both reads are point reads: the list asks the port for the
  * tactics only, and the single read asks for the one tactic, so neither assembles the whole pack aggregate.
  *
- * <p>An absent or unreadable pack, and an absent tactic, are refused with a not-found code ({@link
- * RefusalCode#notFound()}), which the inbound edge answers as a client error rather than as a server fault.
+ * <p>Every read is verified by {@link ConsistentRead}: the inputs are digested before and after the load, and the
+ * answer carries the digest both agree on. A pack the load cannot resolve, and an absent tactic, are refused with a
+ * not-found code ({@link RefusalCode#notFound()}), which the inbound edge answers as a client error; the mapping runs
+ * inside the verified load, so a change of the inputs beats it.
  */
 @Service
 public final class TacticReadService {
 
     private final PackRepository packs;
     private final TacticRepository tactics;
+    private final ConsistentRead read;
 
     /**
      * A service over the injected ports.
      *
      * @param packs the port that lists a pack's tactics
      * @param tactics the port that fetches one tactic
+     * @param read the verifier that digests the inputs before and after each read
      */
     @Autowired
-    public TacticReadService(PackRepository packs, TacticRepository tactics) {
+    public TacticReadService(PackRepository packs, TacticRepository tactics, ConsistentRead read) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.tactics = Objects.requireNonNull(tactics, "tactics");
+        this.read = Objects.requireNonNull(read, "read");
     }
 
     /**
-     * The readable tactics of a pack.
+     * The readable tactics of a pack, with the digest of the inputs they were read from.
      *
      * @param pack the pack's identity
-     * @return the pack's tactics, in the port's stable order
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when the pack is absent or unreadable
+     * @return the pack's tactics, in the port's stable order, and the verified fingerprint
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a configured pack directory or pack file
+     *     cannot be read (refused by the first digest), with {@link RefusalCode#PACK_NOT_FOUND} when no configured
+     *     pack has this identifier, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactics
+     *     were read, whatever the load answered
      */
-    public List<Tactic> tacticsOf(PackIdentifier pack) {
+    public ConsistentRead.Verified<List<Tactic>> tacticsOf(PackIdentifier pack) {
         Objects.requireNonNull(pack, "pack");
-        try {
-            return packs.tacticsOf(pack);
-        } catch (CharterRefusal refused) {
-            throw packRefusal(pack, refused);
-        }
+        return read.read("The inputs changed while the tactics were read; read them again.", () -> {
+            try {
+                return packs.tacticsOf(pack);
+            } catch (CharterRefusal refused) {
+                throw packRefusal(pack, refused);
+            }
+        });
     }
 
     /**
-     * One tactic of a pack.
+     * One tactic of a pack, with the digest of the inputs it was read from.
      *
      * @param pack the pack's identity
      * @param tactic the tactic's identity
-     * @return the tactic
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when the pack is absent or unreadable, or with
-     *     {@link RefusalCode#TACTIC_NOT_FOUND} when the pack has no such tactic
+     * @return the tactic and the verified fingerprint
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a configured pack directory or pack file
+     *     cannot be read (refused by the first digest), with {@link RefusalCode#PACK_NOT_FOUND} when no configured
+     *     pack has this identifier, with {@link RefusalCode#TACTIC_NOT_FOUND} when the pack has no such tactic, or with
+     *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactic was read (a change beats a
+     *     not-found)
      */
-    public Tactic tactic(PackIdentifier pack, TacticIdentifier tactic) {
+    public ConsistentRead.Verified<Tactic> tactic(PackIdentifier pack, TacticIdentifier tactic) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(tactic, "tactic");
-        try {
-            return tactics.load(pack, tactic)
-                    .orElseThrow(() -> new CharterRefusal(
-                            RefusalCode.TACTIC_NOT_FOUND,
-                            "Pack " + pack.value() + " has no tactic " + tactic.value() + "."));
-        } catch (CharterRefusal refused) {
-            if (refused.code() == RefusalCode.TACTIC_NOT_FOUND) {
-                throw refused;
+        return read.read("The inputs changed while the tactic was read; read it again.", () -> {
+            try {
+                return tactics.load(pack, tactic)
+                        .orElseThrow(() -> new CharterRefusal(
+                                RefusalCode.TACTIC_NOT_FOUND,
+                                "Pack " + pack.value() + " has no tactic " + tactic.value() + "."));
+            } catch (CharterRefusal refused) {
+                if (refused.code() == RefusalCode.TACTIC_NOT_FOUND) {
+                    throw refused;
+                }
+                throw packRefusal(pack, refused);
             }
-            throw packRefusal(pack, refused);
-        }
+        });
     }
 
     /**

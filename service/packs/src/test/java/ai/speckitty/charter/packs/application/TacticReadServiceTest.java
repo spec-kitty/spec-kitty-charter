@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
@@ -15,6 +16,7 @@ import ai.speckitty.charter.packs.domain.TacticStep;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 /** The use-case rules over in-memory ports: what is returned, and which refusal an absence becomes. */
@@ -31,23 +33,40 @@ class TacticReadServiceTest {
     private final Map<PackIdentifier, List<Tactic>> stored =
             Map.of(PACK_A, List.of(alpha, beta), PACK_B, List.of(other));
 
-    private final TacticReadService service = new TacticReadService(new InMemoryPacks(), new InMemoryTactics());
+    private static final String D1 = "sha256:" + "1".repeat(64);
+    private static final String D2 = "sha256:" + "2".repeat(64);
+
+    private final AtomicInteger digests = new AtomicInteger();
+    private final TacticReadService service = serviceDigesting(() -> {
+        digests.incrementAndGet();
+        return D1;
+    });
+
+    private TacticReadService serviceDigesting(PackSources sources) {
+        return new TacticReadService(new InMemoryPacks(), new InMemoryTactics(), new ConsistentRead(sources));
+    }
+
+    /** Answers D1, then D2 for every later digest: the inputs changed while the read was answered. */
+    private TacticReadService serviceWhoseInputsChange() {
+        AtomicInteger count = new AtomicInteger();
+        return serviceDigesting(() -> count.incrementAndGet() == 1 ? D1 : D2);
+    }
 
     @Test
     void listsOnlyTheAskedPacksTactics() {
-        assertThat(service.tacticsOf(PACK_A)).containsExactly(alpha, beta);
-        assertThat(service.tacticsOf(PACK_B)).containsExactly(other).doesNotContain(alpha, beta);
+        assertThat(service.tacticsOf(PACK_A).value()).containsExactly(alpha, beta);
+        assertThat(service.tacticsOf(PACK_B).value()).containsExactly(other).doesNotContain(alpha, beta);
     }
 
     @Test
     void readsOneTacticOfTheAskedPack() {
-        assertThat(service.tactic(PACK_A, ALPHA)).isEqualTo(alpha);
+        assertThat(service.tactic(PACK_A, ALPHA).value()).isEqualTo(alpha);
     }
 
     @Test
     void anAbsentPackIsAClientSideNotFoundNotAnInternalError() {
         // Control: the same service answers the present pack, so the refusal is the absence's, not a broken setup.
-        assertThat(service.tacticsOf(PACK_A)).isNotEmpty();
+        assertThat(service.tacticsOf(PACK_A).value()).isNotEmpty();
 
         assertThatThrownBy(() -> service.tacticsOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
@@ -67,6 +86,46 @@ class TacticReadServiceTest {
         assertThatThrownBy(() -> service.tactic(PACK_A, new TacticIdentifier("other")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND));
+    }
+
+    @Test
+    void everyReadDigestsTwiceAndAnswersTheDigestItVerified() {
+        assertThat(service.tacticsOf(PACK_A).fingerprint()).isEqualTo(D1);
+        assertThat(digests).hasValue(2);
+
+        assertThat(service.tactic(PACK_A, ALPHA).fingerprint()).isEqualTo(D1);
+        assertThat(digests).hasValue(4);
+
+        assertThatThrownBy(() -> service.tactic(PACK_A, new TacticIdentifier("missing")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TACTIC_NOT_FOUND));
+        assertThat(digests).hasValue(6);
+    }
+
+    @Test
+    void changedInputsBeatTheListOfAnAbsentPack() {
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tacticsOf(ABSENT))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
+                .hasMessage("The inputs changed while the tactics were read; read them again.");
+    }
+
+    @Test
+    void changedInputsBeatAnAbsentPackAndAnAbsentTactic() {
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tactic(ABSENT, ALPHA))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
+                .hasMessage("The inputs changed while the tactic was read; read it again.");
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tactic(PACK_A, new TacticIdentifier("missing")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void changedInputsRefuseASuccessfulReadToo() {
+        assertThatThrownBy(() -> serviceWhoseInputsChange().tacticsOf(PACK_A))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT));
     }
 
     private static Tactic tactic(PackIdentifier pack, String id) {

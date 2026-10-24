@@ -5,8 +5,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A test seam: the real pack sources, plus one change a scenario arms to happen on disk right after the next digest
- * and before the load that follows it. It lives in test sources only, and the production classes that compute digest,
- * {@code ServiceInfoQuery}, is the one under test.
+ * and before the load that follows it. It lives in test sources only. The scenario configuration wraps it in the one
+ * {@code @Primary ConsistentRead}, so every reader of the seam sees an armed change: {@code ServiceInfoQuery} and
+ * {@code TacticReadService}, which are the classes under test. The change fires on the next digest of any read,
+ * including the harness's own {@code /info} probe after a 200.
  *
  * <p>It tests detection, not comparison: nothing here reports a different digest. The armed change rewrites a real
  * pack file, so the load reads the new bytes and the second digest, computed by the real adapter, differs from the

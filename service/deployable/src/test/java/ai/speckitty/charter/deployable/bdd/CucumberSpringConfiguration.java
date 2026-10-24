@@ -2,11 +2,10 @@ package ai.speckitty.charter.deployable.bdd;
 
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.deployable.CharterWiring;
-import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -41,12 +40,14 @@ public class CucumberSpringConfiguration {
             return new DriftingSources(real);
         }
 
-        /** The production {@link ServiceInfoQuery} over the same seam, so a change armed for /info is seen by it. */
+        /**
+         * The one verifier every read goes through, over {@link DriftingSources}: {@code /info} and the tactic reads
+         * both see a change a scenario armed.
+         */
         @Bean
         @Primary
-        ServiceInfoQuery driftingServiceInfoQuery(
-                @Value("${charter.worktree-id}") String worktree, DriftingSources sources) {
-            return new ServiceInfoQuery(worktree, sources);
+        ConsistentRead driftingConsistentRead(DriftingSources sources) {
+            return new ConsistentRead(sources);
         }
 
         @Bean

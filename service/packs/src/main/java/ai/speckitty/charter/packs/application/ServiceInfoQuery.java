@@ -1,26 +1,22 @@
 package ai.speckitty.charter.packs.application;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.PackSources;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
 /** The worktree the service serves and the fingerprint of the inputs it answers from (ADR-0011). */
 public final class ServiceInfoQuery {
 
     private final String worktree;
-    private final PackSources sources;
+    private final ConsistentRead read;
 
     /**
      * A query for the worktree {@code worktree} over the files {@code sources} names.
      *
      * @param worktree the opaque id of the worktree the service serves
-     * @param sources the pack files port; they are digested afresh for every answer
+     * @param read the verifier that digests the inputs afresh for every answer
      */
-    public ServiceInfoQuery(String worktree, PackSources sources) {
+    public ServiceInfoQuery(String worktree, ConsistentRead read) {
         this.worktree = Objects.requireNonNull(worktree, "worktree");
-        this.sources = Objects.requireNonNull(sources, "sources");
+        this.read = Objects.requireNonNull(read, "read");
     }
 
     /**
@@ -42,21 +38,8 @@ public final class ServiceInfoQuery {
      *     cannot be taken because an input changed while the info was read (retryable: read it again)
      */
     public ServiceInfo answer() {
-        String first = sources.fingerprint();
-        String second = digestOrNull();
-        if (!first.equals(second)) {
-            throw new CharterRefusal(
-                    RefusalCode.STALE_INPUT, "The inputs changed while the service info was read; read it again.");
-        }
-        return new ServiceInfo(worktree, first);
-    }
-
-    /** The digest now, or {@code null} when an input readable a moment ago no longer is: it changed. */
-    private @Nullable String digestOrNull() {
-        try {
-            return sources.fingerprint();
-        } catch (CharterRefusal unreadable) {
-            return null;
-        }
+        ConsistentRead.Verified<String> verified =
+                read.read("The inputs changed while the service info was read; read it again.", () -> worktree);
+        return new ServiceInfo(verified.value(), verified.fingerprint());
     }
 }

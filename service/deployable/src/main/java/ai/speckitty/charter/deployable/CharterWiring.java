@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackValidation;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
@@ -78,11 +79,20 @@ public class CharterWiring {
         return new ProjectConfigSources(packs, projectConfig);
     }
 
+    /**
+     * The one verifier of the freshness rule, over the pack and project configuration files. It has no stereotype:
+     * the deployment holds two {@code PackSources}, so use cases receive this bean, never the port.
+     */
     @Bean
-    ServiceInfoQuery serviceInfoQuery(CharterProperties properties, ProjectConfigSources sources) {
+    ConsistentRead consistentRead(ProjectConfigSources sources) {
+        return new ConsistentRead(sources);
+    }
+
+    @Bean
+    ServiceInfoQuery serviceInfoQuery(CharterProperties properties, ConsistentRead read) {
         String configured = properties.worktreeId();
         return new ServiceInfoQuery(
-                configured == null || configured.isBlank() ? derivedWorktreeId(properties) : configured, sources);
+                configured == null || configured.isBlank() ? derivedWorktreeId(properties) : configured, read);
     }
 
     /**

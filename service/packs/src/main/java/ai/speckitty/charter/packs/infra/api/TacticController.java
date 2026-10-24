@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.Tactic;
 import ai.speckitty.charter.api.model.Tactic1;
 import ai.speckitty.charter.api.model.TacticReference;
 import ai.speckitty.charter.api.model.TacticStep;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.TacticReadService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
@@ -35,15 +36,20 @@ public class TacticController implements TacticsApi {
 
     @Override
     public ResponseEntity<List<Tactic>> listPackTactics(String packId) {
-        return ResponseEntity.ok(tactics.tacticsOf(new PackIdentifier(packId)).stream()
-                .map(TacticController::toDto)
-                .toList());
+        ConsistentRead.Verified<List<ai.speckitty.charter.packs.domain.Tactic>> verified =
+                tactics.tacticsOf(new PackIdentifier(packId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .body(verified.value().stream().map(TacticController::toDto).toList());
     }
 
     @Override
     public ResponseEntity<Tactic1> getPackTactic(String packId, String tacticId) {
-        return ResponseEntity.ok(
-                toSingleDto(tactics.tactic(new PackIdentifier(packId), new TacticIdentifier(tacticId))));
+        ConsistentRead.Verified<ai.speckitty.charter.packs.domain.Tactic> verified =
+                tactics.tactic(new PackIdentifier(packId), new TacticIdentifier(tacticId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .body(toSingleDto(verified.value()));
     }
 
     /**

@@ -14,16 +14,16 @@ class ServiceInfoQueryTest {
 
     @Test
     void answersTheWorktreeAndTheCurrentSourceFingerprint() {
-        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", () -> "sha256:" + "0".repeat(64));
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", new ConsistentRead(() -> "sha256:" + "0".repeat(64)));
         assertThat(query.answer()).isEqualTo(new ServiceInfo("wt-1", "sha256:" + "0".repeat(64)));
         assertThat(query.worktree()).isEqualTo("wt-1");
     }
 
     @Test
     void anUnreadablePackRefusesTheAnswerButNotTheWorktree() {
-        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", () -> {
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", new ConsistentRead(() -> {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack qa is not a directory");
-        });
+        }));
         assertThat(query.worktree()).isEqualTo("wt-1");
         assertThatThrownBy(query::answer)
                 .isInstanceOfSatisfying(
@@ -33,10 +33,10 @@ class ServiceInfoQueryTest {
     @Test
     void digestsTwiceAndAnswersWhenBothAgree() {
         AtomicInteger digests = new AtomicInteger();
-        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", () -> {
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", new ConsistentRead(() -> {
             digests.incrementAndGet();
             return "sha256:" + "1".repeat(64);
-        });
+        }));
 
         assertThat(query.answer().sourceFingerprint()).isEqualTo("sha256:" + "1".repeat(64));
         assertThat(digests).hasValue(2);
@@ -46,7 +46,7 @@ class ServiceInfoQueryTest {
     void refusesStaleInputWhenTheTwoDigestsDiffer() {
         Iterator<String> digests =
                 List.of("sha256:" + "1".repeat(64), "sha256:" + "2".repeat(64)).iterator();
-        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", digests::next);
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", new ConsistentRead(digests::next));
 
         assertThatThrownBy(query::answer)
                 .isInstanceOfSatisfying(
@@ -57,12 +57,12 @@ class ServiceInfoQueryTest {
     @Test
     void aSecondDigestThatCannotBeReadIsAChangeNotAPermanentRefusal() {
         AtomicInteger digests = new AtomicInteger();
-        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", () -> {
+        ServiceInfoQuery query = new ServiceInfoQuery("wt-1", new ConsistentRead(() -> {
             if (digests.incrementAndGet() == 1) {
                 return "sha256:" + "1".repeat(64);
             }
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack file became unreadable");
-        });
+        }));
 
         assertThatThrownBy(query::answer)
                 .isInstanceOfSatisfying(
