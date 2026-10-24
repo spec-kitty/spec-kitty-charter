@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
@@ -43,6 +44,14 @@ class CharterWiringTest {
                         .containsExactly(
                                 new PackLocation("qa", PackLevel.ORG, Path.of("/packs/qa")),
                                 new PackLocation("built-in", PackLevel.BUILT_IN, Path.of("/packs/built-in"))));
+    }
+
+    @Test
+    void oneConsistentReadOverTheProjectConfigSourcesServesEveryRead() {
+        runner.run(context -> {
+            assertThat(context.getBeansOfType(ConsistentRead.class)).hasSize(1);
+            assertThat(context.getBean(ConsistentRead.class)).isNotNull();
+        });
     }
 
     @Test

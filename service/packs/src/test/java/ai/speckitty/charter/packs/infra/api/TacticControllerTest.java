@@ -2,9 +2,11 @@ package ai.speckitty.charter.packs.infra.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.TacticReadService;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -24,6 +26,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class TacticControllerTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+    private static final String DIGEST = "sha256:" + "7".repeat(64);
+    private static final String FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final Tactic alpha = Tactic.builder()
             .id(new TacticIdentifier("alpha"))
@@ -34,8 +38,8 @@ class TacticControllerTest {
             .step(new TacticStep("Step one", Optional.empty(), List.of(), List.of()))
             .build();
 
-    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(
-                    new TacticController(new TacticReadService(new FixedPacks(), new FixedTactics())))
+    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new TacticController(
+                    new TacticReadService(new FixedPacks(), new FixedTactics(), new ConsistentRead(() -> DIGEST))))
             .setControllerAdvice(new RefusalHandler())
             .build();
 
@@ -43,6 +47,7 @@ class TacticControllerTest {
     void listsThePacksTacticsAsJson() throws Exception {
         mvc.perform(get("/api/v1/packs/pack-a/tactics"))
                 .andExpect(status().isOk())
+                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value("alpha"))
@@ -56,6 +61,7 @@ class TacticControllerTest {
     void returnsOneTacticByIdentity() throws Exception {
         mvc.perform(get("/api/v1/packs/pack-a/tactics/alpha"))
                 .andExpect(status().isOk())
+                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
                 .andExpect(jsonPath("$.id").value("alpha"))
                 .andExpect(jsonPath("$.schemaVersion").value("1.0"))
                 .andExpect(jsonPath("$.steps.length()").value(1))
@@ -66,6 +72,7 @@ class TacticControllerTest {
     void anAbsentPackIsA404ProblemNotAServerError() throws Exception {
         mvc.perform(get("/api/v1/packs/absent/tactics"))
                 .andExpect(status().isNotFound())
+                .andExpect(header().doesNotExist(FINGERPRINT))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("pack_not_found"))
                 .andExpect(jsonPath("$.status").value(404));
@@ -75,6 +82,7 @@ class TacticControllerTest {
     void anAbsentTacticIsA404ProblemWhileThePackAnswers() throws Exception {
         mvc.perform(get("/api/v1/packs/pack-a/tactics/missing"))
                 .andExpect(status().isNotFound())
+                .andExpect(header().doesNotExist(FINGERPRINT))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("tactic_not_found"));
     }

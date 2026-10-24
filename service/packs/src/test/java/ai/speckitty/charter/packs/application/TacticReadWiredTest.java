@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.config.StorageConfiguration;
 import java.net.URISyntaxException;
@@ -43,13 +44,29 @@ class TacticReadWiredTest {
             Path pack = Path.of(TacticReadWiredTest.class
                     .getResource("/roundtrip-fixtures/pack-a")
                     .toURI());
-            List<PackLocation> locations = List.of(new PackLocation("pack-a", PackLevel.ORG, pack));
-            return () -> locations;
+            return () -> TacticReadWiredTest.locations(pack);
         }
+
+        /** The verifier is wired by a deployment's configuration, never scanned: this is that wiring in miniature. */
+        @Bean
+        ConsistentRead consistentRead(DomainRepositoryService.Locations locations) {
+            return new ConsistentRead(sources(locations));
+        }
+    }
+
+    private static List<PackLocation> locations(Path pack) {
+        return List.of(new PackLocation("pack-a", PackLevel.ORG, pack));
+    }
+
+    private static FileSystemPackSources sources(DomainRepositoryService.Locations locations) {
+        return new FileSystemPackSources(locations::all);
     }
 
     @Autowired
     private TacticReadService service;
+
+    @Autowired
+    private DomainRepositoryService.Locations locations;
 
     @Autowired
     private ApplicationContext context;
@@ -57,9 +74,20 @@ class TacticReadWiredTest {
     @Test
     void readsTheFixturePacksTacticsThroughTheRealBeans() {
         // Beta is readable and alpha is too; the fixture's broken tactic is left out, not an error.
-        assertThat(service.tacticsOf(PACK)).extracting(Tactic::name).contains("Alpha tactic", "Beta tactic");
-        assertThat(service.tactic(PACK, new TacticIdentifier("alpha-tactic")).packId())
+        assertThat(service.tacticsOf(PACK).value()).extracting(Tactic::name).contains("Alpha tactic", "Beta tactic");
+        assertThat(service.tactic(PACK, new TacticIdentifier("alpha-tactic"))
+                        .value()
+                        .packId())
                 .isEqualTo(PACK);
+    }
+
+    @Test
+    void theVerifiedFingerprintIsTheDigestOfTheConfiguredPackFiles() {
+        String expected = sources(locations).fingerprint();
+
+        assertThat(service.tacticsOf(PACK).fingerprint()).isEqualTo(expected);
+        assertThat(service.tactic(PACK, new TacticIdentifier("alpha-tactic")).fingerprint())
+                .isEqualTo(expected);
     }
 
     @Test

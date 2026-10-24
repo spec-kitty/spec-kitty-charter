@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import jakarta.servlet.DispatcherType;
 import java.util.EnumSet;
@@ -39,7 +40,7 @@ class GuardWiringTest {
     static class Surroundings {
         @Bean
         ServiceInfoQuery serviceInfoQuery() {
-            return new ServiceInfoQuery("wt-1", () -> "sha256:" + "0".repeat(64));
+            return new ServiceInfoQuery("wt-1", new ConsistentRead(() -> "sha256:" + "0".repeat(64)));
         }
 
         @Bean

@@ -13,6 +13,8 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -54,6 +56,33 @@ public class ReadConsistencySteps {
         drift.arm(() -> rewrite(shard(), text -> text.replaceFirst("(?m)^nodes:.*\\R", "nodes:\n" + DRIFTED_NODE)));
     }
 
+    @Given("a tactic file changes while the next read is answered")
+    public void aTacticFileChanges() {
+        Path tactic = tacticFile();
+        drift.arm(() -> {
+            String before = read(tactic);
+            rewrite(tactic, text -> text.replaceFirst("(?m)^name:.*$", "name: Rehearse again"));
+            assertThat(read(tactic))
+                    .as("the drift changed %s", tactic.getFileName())
+                    .isNotEqualTo(before);
+        });
+    }
+
+    @Given("the directory of the pack {string} is missing")
+    public void theDirectoryOfThePackIsMissing(String name) {
+        PackLocation location = packs.locations().stream()
+                .filter(l -> l.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no pack " + name + " is configured"));
+        try (Stream<Path> walk = Files.walk(location.root())) {
+            for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @Given("a pack file is rewritten to invalid YAML while the next read is answered")
     public void aPackFileIsRewrittenToInvalidYaml() {
         drift.arm(() -> rewrite(shard(), text -> "nodes: [\n"));
@@ -67,6 +96,15 @@ public class ReadConsistencySteps {
     @Then("the response header {string} appears once")
     public void headerAppearsOnce(String name) {
         assertThat(http.response().getHeaders(name)).hasSize(1);
+    }
+
+    @Then("the response body is a list with an element whose field {string} is {string}")
+    public void bodyListHasElement(String field, String value) throws Exception {
+        JsonNode body = JSON.readTree(http.body());
+        assertThat(body.isArray()).as("the body is a JSON array: %s", body).isTrue();
+        assertThat(body.valueStream().map(element -> element.path(field).asString()))
+                .as("the %s of the listed elements", field)
+                .contains(value);
     }
 
     @Then("the contract declares the refusal code {string}")
@@ -130,6 +168,32 @@ public class ReadConsistencySteps {
             }
         }
         throw new IllegalStateException("the scenario has no graph shard to change");
+    }
+
+    /** The one {@code *.tactic.yaml} of the scenario's packs; never a shard, whatever it is named. */
+    private Path tacticFile() {
+        List<Path> found = new ArrayList<>();
+        for (PackLocation location : packs.locations()) {
+            try (Stream<Path> files = Files.walk(location.root())) {
+                files.filter(f -> f.getFileName().toString().endsWith(".tactic.yaml"))
+                        .sorted()
+                        .forEach(found::add);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        if (found.size() != 1) {
+            throw new IllegalStateException("the scenario needs exactly one tactic file to change, found " + found);
+        }
+        return found.getFirst();
+    }
+
+    private static String read(Path file) {
+        try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static void rewrite(Path file, UnaryOperator<String> change) {

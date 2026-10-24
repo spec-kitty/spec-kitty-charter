@@ -67,6 +67,12 @@ Keep it small; add a step only when a scenario cannot be written without it.
   rewritten to text that is not YAML and left so. `Given no pack file changes while the next read is answered` —
   the same seam, changing nothing: the negative control. The change is made to a real file on disk, once; the
   service computes both digests itself.
+- `Given a tactic file changes while the next read is answered` — the same seam, with the one `*.tactic.yaml` of the
+  scenario's packs rewritten (its `name:` line; never a graph shard). The step refuses a scenario that configures no
+  tactic file or more than one.
+- `Given the directory of the pack "<name>" is missing` — deletes the configured pack's whole directory, so the first
+  digest cannot read it. To remove a sibling, first write any file to it with the pack step above.
+- `Then the response body is a list with an element whose field "<field>" is "<text>"` — for a JSON array body.
 - `Then the contract declares the refusal code "<code>"`, `... is answered with status <n>`, `... may not be
   retried` and `... is raised by no operation` — read the machine-readable `x-refusal` map of
   `../schemas/CharterRefusalCode.yaml` (`status`, `retryable`, `raised` per code). `Then the contract says exactly
@@ -84,6 +90,13 @@ operation defines must answer the shared `Problem` response. A binding of the st
 language makes the same check. It also checks the fingerprint header of every exchange: a 200 carries
 exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for `/info` and to what
 `/info` answers right after for another read; no other answer carries one.
+
+## Features
+
+- `service.feature`, `errors.feature`, `security.feature`: the service info, the failures outside the refusals, and
+  the worktree guard.
+- `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
+  `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
 
 ## Tags
 

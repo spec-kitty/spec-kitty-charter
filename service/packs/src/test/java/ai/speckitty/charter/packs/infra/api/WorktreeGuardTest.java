@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
@@ -22,10 +23,10 @@ class WorktreeGuardTest {
     private static final String FORBIDDEN = "{\"title\":\"Forbidden\",\"status\":403}";
 
     private final AtomicInteger digests = new AtomicInteger();
-    private final ServiceInfoQuery info = new ServiceInfoQuery("wt-1", () -> {
+    private final ServiceInfoQuery info = new ServiceInfoQuery("wt-1", new ConsistentRead(() -> {
         digests.incrementAndGet();
         return "sha256:" + "0".repeat(64);
-    });
+    }));
     private final ObjectMapper mapper = JsonMapper.builder()
             .addModule(new ProblemJson().problemJsonModule())
             .build();
