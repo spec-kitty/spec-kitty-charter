@@ -44,7 +44,9 @@ and serves tactics at `/packs/{packId}/tactics[/{tacticId}]`, one route per kind
 generic `/packs/{packId}/artifacts/{kind}/{artifactId}` of D2. It also removed `GET /packs` and
 `POST /packs/refresh`. Aligning the routes with D2 before more kinds are exposed is tracked in
 [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126) and
-[#169](https://github.com/spec-kitty/spec-kitty-charter/issues/169).
+[#169](https://github.com/spec-kitty/spec-kitty-charter/issues/169). The success schemas on `main` are now
+`ServiceInfo` and `Tactic`; D4's list of schemas that gain `_links` (`PackListing`, `PackSummary`,
+`ActionContext`) predates #139, and applies to whichever success schemas exist when #126 lands.
 
 ## Context
 
