@@ -65,8 +65,8 @@ As of 2026-10-24.
   ([ADR-0023](/adr/0023-ci-gate-required-check/)).
 - **Step 4, under way.** Packs are validated against the canonical schemas
   ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/), PR #137). The `Pack`
-  aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 adds
-  directive, styleguide and paradigm. Merge, activation and cascade are not built.
+  aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 added
+  directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)). Merge, activation and cascade are not built.
 - **Next.** Two tracks:
   - **unblock core:** fix #119, release 0.1.0 (#45), then publish the activation set as 0.2.0
     (#125);
