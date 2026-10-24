@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "mission_slug": "verified-source-fingerprint-01M5PG7Q",
+  "mission_id": "01M5PG7QXA69H5WSN7WEPR2W2A",
+  "mission_branch": "kitty/mission-verified-source-fingerprint-01M5PG7Q",
+  "target_branch": "fix/verified-source-fingerprint",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/headers/CharterSourceFingerprint.yaml",
+        "contracts/charter/paths/packs_packId_tactics.yaml",
+        "contracts/charter/paths/packs_packId_tactics_tacticId.yaml",
+        "contracts/charter/responses/TacticNotFound.yaml",
+        "contracts/charter/schemas/CharterRefusal.yaml",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "contracts/charter/schemas/ServiceInfo.yaml",
+        "docs/adr/0018-action-context-read-and-seam-access-surface.md",
+        "docs/api/service-contract.md",
+        "docs/architecture/service-lifecycle.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/service.feature",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackSources.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackSources.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackSourcesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetExactnessTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/tactics.feature",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterWiring.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/CharterWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/GuardWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProductionWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/CucumberSpringConfiguration.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/DriftingSources.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReadConsistencySteps.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ConsistentRead.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ServiceInfoQuery.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/TacticReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/TacticController.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ConsistentReadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ServiceInfoQueryTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/TacticReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/TacticReadWiredTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/TacticControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-10-24T08:50:12.708172+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "a3b4ac18332eaec5495071e81d7eaba477b4cbaf"
+}

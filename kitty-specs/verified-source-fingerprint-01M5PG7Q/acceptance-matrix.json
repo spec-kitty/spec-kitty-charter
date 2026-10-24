@@ -1,0 +1,129 @@
+{
+  "mission_slug": "verified-source-fingerprint-01M5PG7Q",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tactics.feature 'A tactic list answers with the source fingerprint it verified' (red on base: header absent; green WP03 2724bdc); TacticControllerTest header==digest; ScenarioHttp @After equality with /info",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:36:58.837168+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tactics.feature 'One tactic answers with the source fingerprint it verified'; TacticControllerTest (WP03 2724bdc)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:04.904749+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "TacticControllerTest no header on 404s; CharterSteps @After 'no fingerprint on a refusal'; stale and pack_unreadable scenarios assert no header (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:09.957349+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tactics.feature stale_input list and single with tactic-file drift + retry 200; ConsistentReadTest rows 2-3b (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:15.274128+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tactics.feature 'A read of an absent tactic whose inputs change is stale, not not-found'; TacticReadServiceTest absent pack/tactic with d1!=d2 -> stale_input; ConsistentReadTest rows 4-5b (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:20.676522+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileSetExactnessTest digest oracle over 200 seeded trees (red on base: e1.tactic.yaml did not change fingerprint); FileSystemPackSourcesTest per-kind cases (WP02 b392b18)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:25.985791+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileSetExactnessTest iff-oracle: decoys and nested shards leave fingerprint unchanged; graph inputs change it; nested-shard-added mutant fails oracle (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:31.244891+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileSet LoadedKind sole enumeration (store has no kind constants); per-LoadedKind @EnumSource planted-omission mutants through FileSystemPackSources.digest fail the oracle (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:36.539534+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileSetExactnessTest load side via FilesystemPackStore.read/tacticsOf + digest side by mutation; expected sets from GeneratedPackTree Shape table only (reviewer verified non-circular) (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:42.132063+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ServiceInfoQuery and TacticReadService both through ConsistentRead; /info stale scenarios in errors.feature unchanged and green; ConsistentReadTest 10 tests over 7 outcome rows (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:47.190116+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "WP01 (approved cycle 2): ADR-0018 amendment 2026-10-24, service-lifecycle.md Freshness, service-contract.md built surface, contract description prose + CHANGELOG; contracts:check, ContractDescriptionsTest, docs checks green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:52.481746+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service.feature 'The source fingerprint follows a tactic file' (red on base at service.feature:107; green WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-24T09:37:57.899105+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

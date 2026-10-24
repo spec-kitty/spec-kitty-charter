@@ -1,0 +1,109 @@
+schema_version: 1
+mission_id: 01M5PG7QXA69H5WSN7WEPR2W2A
+mission_slug: verified-source-fingerprint-01M5PG7Q
+mission_number: 5
+friendly_name: Verified source fingerprint on every read
+mission_type: software-dev
+target_branch: fix/verified-source-fingerprint
+created_at: '2026-10-24T09:39:04.362921+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-10-24T09:39:04.362921+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP02 completed without rejection cycles
+  evidence_refs:
+  - e-008
+- id: h-002
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-008
+not_helpful:
+- id: n-002
+  category: doc
+  summary: analysis-report.md records 3 finding(s)
+  evidence_refs:
+  - e-010
+  details: The analysis-report.md artifact for this mission records 3 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: review_loop
+  summary: WP01 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-009
+  details: WP WP01 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP01-record-the-design.md
+- id: e-006
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP02-one-pack-file-set.md
+- id: e-007
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP03-verified-tactic-reads.md
+- id: e-008
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/status.events.jsonl
+- id: e-009
+  kind: event_range
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/status.events.jsonl
+  range: 01M5PJ6GXMP1V1TJV1RXG76ARR
+- id: e-010
+  kind: file
+  path: kitty-specs/verified-source-fingerprint-01M5PG7Q/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

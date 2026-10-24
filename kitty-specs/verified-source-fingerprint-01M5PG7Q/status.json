@@ -1,0 +1,72 @@
+{
+  "event_count": 26,
+  "last_event_id": "01M5PMDYPHJPQVJRDE8ATEX80C",
+  "materialized_at": "2026-10-24T09:38:50.705812+00:00",
+  "mission_number": "",
+  "mission_slug": "verified-source-fingerprint-01M5PG7Q",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5PMDRNPKAHSEKZAG6ZY4N49",
+      "last_transition_at": "2026-10-24T09:38:44.534595+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/verified-source-fingerprint-01M5PG7Q-coord/kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP01-record-the-design/review-cycle-2.md",
+        "reference": "review-cycle://verified-source-fingerprint-01M5PG7Q/WP01-record-the-design/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 12588,
+      "shell_pid_created_at": "1792832439.26"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5PMDVPAP96C7EY7YA0QNG9W",
+      "last_transition_at": "2026-10-24T09:38:47.626699+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/verified-source-fingerprint-01M5PG7Q-coord/kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP02-one-pack-file-set/review-cycle-1.md",
+        "reference": "review-cycle://verified-source-fingerprint-01M5PG7Q/WP02-one-pack-file-set/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 9900,
+      "shell_pid_created_at": "1792832119.39"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5PMDYPHJPQVJRDE8ATEX80C",
+      "last_transition_at": "2026-10-24T09:38:50.705812+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/verified-source-fingerprint-01M5PG7Q-coord/kitty-specs/verified-source-fingerprint-01M5PG7Q/tasks/WP03-verified-tactic-reads/review-cycle-1.md",
+        "reference": "review-cycle://verified-source-fingerprint-01M5PG7Q/WP03-verified-tactic-reads/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 24443,
+      "shell_pid_created_at": "1792833954.67"
+    }
+  }
+}
