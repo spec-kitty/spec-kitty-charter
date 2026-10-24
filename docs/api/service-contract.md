@@ -84,7 +84,7 @@ answers. The contract files are the authority; this section only summarizes them
 
 ### Known tooling gap
 
-The generator duplicates `Problem` as `Problem1` and `PackListing` as `PackListing1` (a
+The generator duplicates `Problem` as `Problem1` and `Tactic` as `Tactic1` (a
 swagger-parser bug with closed schemas). The wire shape is unaffected; the dedupe is issue #119.
 
 ### Security and freshness
@@ -95,17 +95,18 @@ swagger-parser bug with closed schemas). The wire shape is unaffected; the dedup
   receives the token, a derived worktree id is guessable, and a `${x}` placeholder resolved from
   argv is not refused yet (#121). A browser request (an `Origin` or `Sec-Fetch-*` header, or a
   `Host` whose name is not loopback) is a 403.
-- **Fingerprint.** It covers, per configured pack in order, `pack.yaml`, every loaded file (tactic,
-  directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
+- **Fingerprint.** It covers, per configured pack in order, `pack.yaml`, every file of a loaded kind
+  (today tactic, directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
   `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured
   name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project
   configuration directory, with presence.
-  The graph inputs are digested although no served read loads them yet. A generated-tree test pins that it digests exactly the declared files the load reads
-  (#120).
+  The graph inputs are digested although no served read loads them yet. A generated-tree test
+  pins that it digests exactly the declared files the load reads (#120).
 - **Stale reads.** Every built read digests its inputs before and after it loads, answers 200 with
   the digest it verified, and refuses with `stale_input` on a difference, a failed load included.
-  A configured pack whose directory is missing, or a pack with an unreadable file or a directory
-  that cannot be listed, is a 500 `pack_unreadable` on every read.
+  A configured pack whose directory is missing, or a pack holding a file the fingerprint covers
+  that cannot be read or a directory that cannot be listed, is a 500 `pack_unreadable` on every
+  read. A file that vanishes while a pack is walked, as in an atomic save, is not an error.
 
 Some of the 1.0 contract is reserved for the cutover work before that work exists, because a
 response field added after 1.0 is a breaking change: the `impacts` relation, the reserved
@@ -212,8 +213,9 @@ writes come after the read stages, one at a time: charter document save and comp
   when each applies are defined in [`CharterRefusalCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/CharterRefusalCode.yaml),
   and the load findings that do not stop a read in [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml).
   `CharterRefusalCode` carries a machine-readable `x-refusal` map (status, retryable, raised)
-  for all nine codes.
-- `stale_input` is raised by every built read (`getServiceInfo`, `listPackTactics` and `getPackTactic`): inputs changed while the answer was computed, a failed
+  for all eleven codes.
+- `stale_input` is raised by every built read (`getServiceInfo`, `listPackTactics` and
+  `getPackTactic`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` is reserved: it is declared and pinned by a scenario and a unit
   test, and raised by nothing until the pack mutability policy lands (epic #55).

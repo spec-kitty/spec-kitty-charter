@@ -23,8 +23,12 @@ Description text only: no schema, operation, parameter, response or header decla
   read verified; they refuse with `stale_input` when their inputs change while they are read (#173). The
   source fingerprint covers the tactic, directive, styleguide and paradigm files the service loads
   (#120).
-- Changed: a configured pack whose directory is missing, or a pack with an unreadable file, refuses
-  every read with 500 `pack_unreadable` (a tactic read answered 404 `pack_not_found` before). A load
+- Changed: a configured pack whose directory is missing, a pack holding a file the fingerprint covers
+  that cannot be read, or a pack directory that cannot be listed, refuses every read with 500
+  `pack_unreadable`: a tactic read answered 404 `pack_not_found` before, and `/info` answered 200
+  for an unreadable tactic, directive, styleguide or paradigm file or an unlistable subdirectory,
+  because it digested only `pack.yaml` and the root of each pack. A file that vanishes while a pack
+  is walked (an atomic save) is not an error. A load
   refusal whose inputs changed meanwhile is `stale_input`. The fingerprint's value changes for packs
   that hold loaded-kind files. The descriptions of `Charter-Source-Fingerprint`,
   `ServiceInfo.sourceFingerprint`, `CharterRefusalCode`, `TacticNotFound` and both tactic operations
@@ -48,7 +52,9 @@ The inbound contract changes (C-004) while it is still `0.1.0-SNAPSHOT`.
   `getPackTactic`, `GET /packs/{packId}/tactics/{tacticId}`, a `200` `Tactic`. Both answer `404` with the new
   `TacticNotFound` response, a `CharterRefusal`.
 - Added: schemas `Tactic`, `TacticStep`, `TacticReference`; parameters `PackId`, `TacticId`.
-- Added: `CharterRefusalCode` values `pack_not_found` (the pack is absent or unreadable) and `tactic_not_found`
+- Added: `CharterRefusalCode` values `pack_not_found` (the pack is absent or unreadable; since the verified
+  source fingerprint, an identifier that matches no configured pack, and an unreadable pack is
+  `pack_unreadable`) and `tactic_not_found`
   (the pack has no such tactic), both `404`, not retryable, raised.
 - Removed: `listPacks`, `GET /packs`; `refreshPacks`, `POST /packs/refresh`; the action-context operation,
   `GET /mission-types/{missionType}/actions/{action}/context`. With them go the schemas `PackListing`,
