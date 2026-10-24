@@ -7,8 +7,8 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.packs.infra.storage.PackFileSet.LoadedKind;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -30,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  * Format is the {@link SerializationStrategy}'s business; this class only moves text.
  *
  * <p>The identifier's value names the pack directory under the storage root. A tactic is located by scanning the
- * pack's {@code *.yaml} files that {@link PackFileKind} classifies as {@code tactic} for the one whose {@code id}
+ * pack's tactic files, as {@link PackFileSet} declares them, for the one whose {@code id}
  * matches. A tactic write is an upsert: a known id replaces its file, an unknown id creates {@code <id>.tactic.yaml}
  * directly in the pack directory (and never over an existing file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
  * {@code pack.yaml} refuses it.
@@ -40,12 +39,6 @@ import org.jspecify.annotations.Nullable;
  * outside the pack directory is refused before any byte is written.
  */
 final class FilesystemPackStore {
-
-    private static final String PACK_YAML = "pack.yaml";
-    private static final String TACTIC_KIND = "tactic";
-    private static final String DIRECTIVE_KIND = "directive";
-    private static final String STYLEGUIDE_KIND = "styleguide";
-    private static final String PARADIGM_KIND = "paradigm";
 
     /**
      * The failure-injection seam: the second step of a write, moving the fully written temporary file over the
@@ -162,9 +155,9 @@ final class FilesystemPackStore {
         List<ParadigmDso> paradigms = new ArrayList<>();
         List<PackElementViolation> violations = new ArrayList<>();
         readTactics(directory, tactics, violations);
-        readKind(directory, DIRECTIVE_KIND, strategy::readDirective, directives, violations);
-        readKind(directory, STYLEGUIDE_KIND, strategy::readStyleguide, styleguides, violations);
-        readKind(directory, PARADIGM_KIND, strategy::readParadigm, paradigms, violations);
+        readKind(directory, LoadedKind.DIRECTIVE, strategy::readDirective, directives, violations);
+        readKind(directory, LoadedKind.STYLEGUIDE, strategy::readStyleguide, styleguides, violations);
+        readKind(directory, LoadedKind.PARADIGM, strategy::readParadigm, paradigms, violations);
         return new PackRead(descriptor, tactics, directives, styleguides, paradigms, violations);
     }
 
@@ -201,7 +194,7 @@ final class FilesystemPackStore {
      */
     Optional<TacticDso> readTactic(PackIdentifier id, String tacticId) {
         Path directory = existingDirectory(id);
-        return locate(directory, TACTIC_KIND, tacticId).flatMap(file -> {
+        return locate(directory, LoadedKind.TACTIC, tacticId).flatMap(file -> {
             String name = directory
                     .relativize(file)
                     .toString()
@@ -215,11 +208,11 @@ final class FilesystemPackStore {
     }
 
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
-        Path packYaml = directory.resolve(PACK_YAML);
+        Path packYaml = directory.resolve(PackFileSet.PACK_YAML);
         if (!Files.isRegularFile(packYaml)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + id.value() + " has no pack.yaml");
         }
-        return switch (readFile(packYaml, PACK_YAML, strategy::readDescriptor)) {
+        return switch (readFile(packYaml, PackFileSet.PACK_YAML, strategy::readDescriptor)) {
             case FileRead.Read<PackDescriptorDso> good -> good.value();
             case FileRead.Unreadable<PackDescriptorDso> bad ->
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack.yaml of " + id.value() + " cannot be read");
@@ -229,7 +222,7 @@ final class FilesystemPackStore {
     }
 
     private void readTactics(Path directory, List<TacticDso> tactics, List<PackElementViolation> violations) {
-        for (String file : kindFiles(directory, TACTIC_KIND)) {
+        for (String file : PackFileSet.files(directory, LoadedKind.TACTIC)) {
             switch (readFile(directory.resolve(file), file, text -> strategy.readTactic(text, file))) {
                 case FileRead.Read<TacticDso> good -> tactics.add(good.value());
                 case FileRead.Unreadable<TacticDso> bad -> violations.addAll(violationsOf(bad));
@@ -246,7 +239,7 @@ final class FilesystemPackStore {
      */
     void writeDescriptor(PackIdentifier id, PackDescriptorDso descriptor) {
         Path directory = existingDirectory(id);
-        writeAtomically(directory, directory.resolve(PACK_YAML), strategy.writeDescriptor(descriptor));
+        writeAtomically(directory, directory.resolve(PackFileSet.PACK_YAML), strategy.writeDescriptor(descriptor));
     }
 
     /**
@@ -260,8 +253,8 @@ final class FilesystemPackStore {
      */
     void writeTactic(PackIdentifier id, TacticDso tactic) {
         Path directory = existingDirectory(id);
-        Path target = locate(directory, TACTIC_KIND, tactic.id())
-                .orElseGet(() -> newFile(directory, TACTIC_KIND, tactic.id()));
+        Path target = locate(directory, LoadedKind.TACTIC, tactic.id())
+                .orElseGet(() -> newFile(directory, LoadedKind.TACTIC, tactic.id()));
         writeAtomically(directory, target, strategy.writeTactic(tactic));
     }
 
@@ -274,8 +267,8 @@ final class FilesystemPackStore {
      */
     void writeDirective(PackIdentifier id, DirectiveDso directive) {
         Path directory = existingDirectory(id);
-        Path target = locate(directory, DIRECTIVE_KIND, directive.id())
-                .orElseGet(() -> newFile(directory, DIRECTIVE_KIND, directive.id()));
+        Path target = locate(directory, LoadedKind.DIRECTIVE, directive.id())
+                .orElseGet(() -> newFile(directory, LoadedKind.DIRECTIVE, directive.id()));
         writeAtomically(directory, target, strategy.writeDirective(directive));
     }
 
@@ -287,8 +280,8 @@ final class FilesystemPackStore {
      */
     void writeStyleguide(PackIdentifier id, StyleguideDso styleguide) {
         Path directory = existingDirectory(id);
-        Path target = locate(directory, STYLEGUIDE_KIND, styleguide.id())
-                .orElseGet(() -> newFile(directory, STYLEGUIDE_KIND, styleguide.id()));
+        Path target = locate(directory, LoadedKind.STYLEGUIDE, styleguide.id())
+                .orElseGet(() -> newFile(directory, LoadedKind.STYLEGUIDE, styleguide.id()));
         writeAtomically(directory, target, strategy.writeStyleguide(styleguide));
     }
 
@@ -300,8 +293,8 @@ final class FilesystemPackStore {
      */
     void writeParadigm(PackIdentifier id, ParadigmDso paradigm) {
         Path directory = existingDirectory(id);
-        Path target = locate(directory, PARADIGM_KIND, paradigm.id())
-                .orElseGet(() -> newFile(directory, PARADIGM_KIND, paradigm.id()));
+        Path target = locate(directory, LoadedKind.PARADIGM, paradigm.id())
+                .orElseGet(() -> newFile(directory, LoadedKind.PARADIGM, paradigm.id()));
         writeAtomically(directory, target, strategy.writeParadigm(paradigm));
     }
 
@@ -313,7 +306,7 @@ final class FilesystemPackStore {
      * @return the directive, or empty when the pack has no readable directive with that id
      */
     Optional<DirectiveDso> readDirective(PackIdentifier id, String directiveId) {
-        return readOne(id, DIRECTIVE_KIND, directiveId, strategy::readDirective);
+        return readOne(id, LoadedKind.DIRECTIVE, directiveId, strategy::readDirective);
     }
 
     /**
@@ -324,7 +317,7 @@ final class FilesystemPackStore {
      * @return the styleguide, or empty when the pack has no readable styleguide with that id
      */
     Optional<StyleguideDso> readStyleguide(PackIdentifier id, String styleguideId) {
-        return readOne(id, STYLEGUIDE_KIND, styleguideId, strategy::readStyleguide);
+        return readOne(id, LoadedKind.STYLEGUIDE, styleguideId, strategy::readStyleguide);
     }
 
     /**
@@ -335,7 +328,7 @@ final class FilesystemPackStore {
      * @return the paradigm, or empty when the pack has no readable paradigm with that id
      */
     Optional<ParadigmDso> readParadigm(PackIdentifier id, String paradigmId) {
-        return readOne(id, PARADIGM_KIND, paradigmId, strategy::readParadigm);
+        return readOne(id, LoadedKind.PARADIGM, paradigmId, strategy::readParadigm);
     }
 
     @FunctionalInterface
@@ -343,7 +336,7 @@ final class FilesystemPackStore {
         FileRead<T> read(String text, String file);
     }
 
-    private <T> Optional<T> readOne(PackIdentifier id, String kind, String elementId, KindReader<T> reader) {
+    private <T> Optional<T> readOne(PackIdentifier id, LoadedKind kind, String elementId, KindReader<T> reader) {
         Path directory = existingDirectory(id);
         return locate(directory, kind, elementId).flatMap(file -> {
             String name = directory
@@ -359,8 +352,12 @@ final class FilesystemPackStore {
     }
 
     private <T> void readKind(
-            Path directory, String kind, KindReader<T> reader, List<T> into, List<PackElementViolation> violations) {
-        for (String file : kindFiles(directory, kind)) {
+            Path directory,
+            LoadedKind kind,
+            KindReader<T> reader,
+            List<T> into,
+            List<PackElementViolation> violations) {
+        for (String file : PackFileSet.files(directory, kind)) {
             switch (readFile(directory.resolve(file), file, text -> reader.read(text, file))) {
                 case FileRead.Read<T> good -> into.add(good.value());
                 case FileRead.Unreadable<T> bad -> violations.addAll(violationsOf(bad));
@@ -379,12 +376,12 @@ final class FilesystemPackStore {
         return directory;
     }
 
-    /** The existing tactic file whose {@code id} is {@code tacticId}; the first in path order if several declare it. */
-    private static Optional<Path> locate(Path directory, String kind, String tacticId) {
-        for (String file : kindFiles(directory, kind)) {
+    /** The existing file of the kind whose {@code id} is {@code elementId}; the first in path order if several do. */
+    private static Optional<Path> locate(Path directory, LoadedKind kind, String elementId) {
+        for (String file : PackFileSet.files(directory, kind)) {
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
-            if (parsed.document() instanceof java.util.Map<?, ?> map && tacticId.equals(map.get("id"))) {
+            if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get("id"))) {
                 return Optional.of(directory.resolve(file));
             }
         }
@@ -392,41 +389,23 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The file a new tactic is created at: {@code <id>.tactic.yaml} directly in the pack directory. An id that would
+     * The file a new element is created at: {@code <id>.<kind>.yaml} directly in the pack directory. An id that would
      * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
      * so a create never overwrites a file or follows a planted link.
      */
-    private static Path newFile(Path directory, String kind, String tacticId) {
-        Path target = directory.resolve(tacticId + "." + kind + ".yaml").normalize();
+    private static Path newFile(Path directory, LoadedKind kind, String elementId) {
+        String token = kind.token();
+        Path target = directory.resolve(elementId + "." + token + ".yaml").normalize();
         if (!directory.equals(target.getParent())) {
             throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, kind + " id '" + tacticId + "' does not name a file in the pack");
+                    RefusalCode.PACK_UNREADABLE, token + " id '" + elementId + "' does not name a file in the pack");
         }
         if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
-                    "cannot create " + kind + " '" + tacticId + "': its file name is taken");
+                    "cannot create " + token + " '" + elementId + "': its file name is taken");
         }
         return target;
-    }
-
-    /** The pack-relative, slash-separated paths of the pack's tactic files, in path order. */
-    private static List<String> kindFiles(Path directory, String kind) {
-        // The classification globs are relative to the directory that holds the pack directories.
-        String prefix = directory.getFileName() + "/";
-        try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(p -> p.getFileName().toString().endsWith(".yaml") && Files.isRegularFile(p))
-                    .map(p -> directory
-                            .relativize(p)
-                            .toString()
-                            .replace(p.getFileSystem().getSeparator(), "/"))
-                    .filter(file -> PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped
-                            && kind.equals(mapped.kind()))
-                    .sorted()
-                    .toList();
-        } catch (IOException | UncheckedIOException e) {
-            throw FileSystemPackInspector.unlistable(String.valueOf(directory.getFileName()), e);
-        }
     }
 
     // ---- reading -------------------------------------------------------------------------------------------------

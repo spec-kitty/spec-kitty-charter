@@ -383,11 +383,7 @@ public final class FileSystemPackInspector implements PackInspector {
     }
 
     private static List<Path> shards(Path directory, String name) {
-        try (Stream<Path> files = Files.list(directory)) {
-            return graphShards(files, name, Files::isRegularFile);
-        } catch (IOException e) {
-            throw unlistable(name, e);
-        }
+        return PackFileSet.rootShards(directory, name);
     }
 
     /**

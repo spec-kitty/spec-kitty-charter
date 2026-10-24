@@ -7,9 +7,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 public interface PackSources {
 
     /**
-     * A digest of every file the offering is loaded from: each file's path relative to its pack, under the pack's
-     * configured name, and its bytes, in load order. It changes whenever a loaded file does; it says nothing about
-     * where the files are on the host.
+     * A digest of every pack file the service loads, plus the declared graph inputs, and any other configured input
+     * the adapter digests, in a fixed order: each file's path relative to its pack, under the pack's configured name,
+     * and its bytes. It changes whenever one of those files does; it says nothing about where the files are on the
+     * host.
      *
      * @return {@code sha256:} and 64 lower-case hex digits
      * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a pack or one of its files cannot be read
