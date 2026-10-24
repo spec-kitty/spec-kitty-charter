@@ -47,8 +47,9 @@ public final class TacticReadService {
      *
      * @param pack the pack's identity
      * @return the pack's tactics, in the port's stable order, and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a configured pack directory or pack file
-     *     cannot be read (refused by the first digest), with {@link RefusalCode#PACK_NOT_FOUND} when no configured
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file
+     *     cannot be read (refused by the first digest, which covers every configured pack),
+     *     with {@link RefusalCode#PACK_NOT_FOUND} when no configured
      *     pack has this identifier, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactics
      *     were read, whatever the load answered
      */
@@ -69,8 +70,9 @@ public final class TacticReadService {
      * @param pack the pack's identity
      * @param tactic the tactic's identity
      * @return the tactic and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a configured pack directory or pack file
-     *     cannot be read (refused by the first digest), with {@link RefusalCode#PACK_NOT_FOUND} when no configured
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file
+     *     cannot be read (refused by the first digest, which covers every configured pack),
+     *     with {@link RefusalCode#PACK_NOT_FOUND} when no configured
      *     pack has this identifier, with {@link RefusalCode#TACTIC_NOT_FOUND} when the pack has no such tactic, or with
      *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the tactic was read (a change beats a
      *     not-found)

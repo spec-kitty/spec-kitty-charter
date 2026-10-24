@@ -9,7 +9,7 @@ public final class ServiceInfoQuery {
     private final ConsistentRead read;
 
     /**
-     * A query for the worktree {@code worktree} over the files {@code sources} names.
+     * A query for the worktree {@code worktree} whose answers {@code read} verifies.
      *
      * @param worktree the opaque id of the worktree the service serves
      * @param read the verifier that digests the inputs afresh for every answer
