@@ -99,6 +99,13 @@ class DoctrineRoundTripTest {
 
         assertThat(back).isEqualTo(dso);
         assertThat(back.tooling().orElseThrow().keySet()).containsExactly("zeta", "alpha");
+        // DSO record equality uses Map.equals for the nested mapping, which is order-insensitive, so the
+        // isEqualTo above would not catch a reader/writer that reordered structural_lint_config keys. Pin the
+        // authored key sequence explicitly, as tooling already does.
+        assertThat(((ConfigValue.Mapping) back.structuralLintConfig().orElseThrow())
+                        .entries()
+                        .keySet())
+                .containsExactly("limit", "ratio", "strict", "quotedNumber", "nothing", "emptyMap", "list");
     }
 
     @Test
