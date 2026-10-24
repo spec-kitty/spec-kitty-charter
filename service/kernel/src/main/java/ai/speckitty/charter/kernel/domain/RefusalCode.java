@@ -32,7 +32,7 @@ public enum RefusalCode {
     GOVERNANCE_POLICY_VIOLATION("governance_policy_violation"),
     /**
      * The pack or configuration files changed while the read was answered, so the answer and the fingerprint it
-     * would report might disagree; the read may be retried. Raised by the service info.
+     * would report might disagree; the read may be retried. Raised by the service info and the tactic reads.
      */
     STALE_INPUT("stale_input"),
     /** The asked pack is not one the service has, or its files cannot be read as a pack; the caller asked wrongly. */
