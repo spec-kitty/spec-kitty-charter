@@ -20,19 +20,20 @@ audience:
 
 # Milestones
 
-The issue tracker groups the open work into three milestones. This page says what closes
+The issue tracker groups the open work into four milestones. This page says what closes
 each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
 > **Status:** in effect (updated 2026-10-24). The assignment is provisional and changes as the plan
-> does. Fifteen open issues have no milestone yet; they are listed under
+> does. Ten open issues have no milestone yet; they are listed under
 > [Not yet assigned](#not-yet-assigned).
 
 ## The milestones
 
 | Milestone | Done when |
 |---|---|
+| **4.0 GA (contract adopted)** | What core's 4.0 GA needs from this repository (core epic spec-kitty#6518). Contract 0.1.0 and the activation minor (#125) are released. Core's generated client and routing proxy run with every operation still on core's Python ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)). The service answers the first offering reads against open-packs on the canonical `Pack` model, with the artifact kinds and edge relations modelled here ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)). |
 | **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. |
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
@@ -59,6 +60,25 @@ Core makes adopting the charter activation contract a 4.0 GA deliverable (spec-k
 
 ## Distribution
 
+### 4.0 GA (contract adopted)
+
+Created on 2026-10-24 by the operator. Two tracks run in parallel: unblock core by publishing the
+contract, and model the artifact kinds before more of them are exposed.
+
+| Issue | Title | Why it is here |
+|---|---|---|
+| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
+| #45 | Contract release publishing | Core vendors a released, checksummed bundle; the first is 0.1.0 |
+| #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
+| #13 | Core ingests the contract: generated client and routing proxy | The contract is core's seam from 0.1.0 (ADR-0021) |
+| #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
+| #173 | Tactic reads do not send `Charter-Source-Fingerprint` | Core's seam relies on the header for freshness |
+| #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
+| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Settle the model before more kinds |
+| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | A generic artifact read seam before more kinds |
+| #167 | Own the doctrine-artifact edge-relation table here | The relations each field creates are this repository's to define |
+| #168 | Toolguide and procedure as first-class pack artifacts | After #169 and #171 |
+
 ### 4.x cutover
 
 The cutover path, the work that keeps the contract releasable, and the conformance net.
@@ -69,13 +89,8 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 | Issue | Title | Why it is here |
 |---|---|---|
 | #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
-| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
-| #45 | Contract release publishing | Core vendors a released, checksummed bundle; the first is 0.1.0 |
-| #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
-| #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), [ADR-0020](/adr/0020-offering-and-activations/)) |
 | #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
 | #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
-| #13 | Core ingests the contract: generated client and routing proxy | Roadmap step 6; the contract is core's seam from 0.1.0 (ADR-0021) |
 | #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; each switch is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
@@ -135,11 +150,6 @@ revised.
 
 | Issue | Title | Note |
 |---|---|---|
-| #167 | Own the doctrine-artifact edge-relation table here | Follow-up of PR #170; re-scoped under ADR-0015 |
-| #168 | Toolguide and procedure as first-class pack artifacts | Follow-up of PR #170; after #169 and #171 |
-| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | Follow-up of PR #170 |
-| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Follow-up of PR #170 |
-| #131 | `charter.schema.json` lacks `activated_glossary_packs` | Schema gap found against core |
 | #132 | Remaining YAML scalar differences from core | Conformance detail |
 | #133 | `x-extensible-enum` for open code enums | Contract shape; decide before 1.0.0 |
 | #130 | Narrow the refusal-code enum per HTTP response | Contract shape; decide before 1.0.0 |
