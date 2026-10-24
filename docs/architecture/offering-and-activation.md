@@ -36,9 +36,11 @@ resources, one for each concept in the glossary:
 An activation is a document the service stores. Its key, `activationId`, is opaque: the service
 knows nothing of projects.
 
-> **Status:** design only, proposed by ADR-0020. Today only the action-context read exists, at
-> `/mission-types/{missionType}/actions/{action}/context`; it moves under `/offering` in a 0.x
-> minor ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). [What the labels mean](/#status).
+> **Status:** design only, decided (provisional) by ADR-0020. The action-context read is not
+> served on `main` — PR #139 removed it; today the contract serves `GET /info` and the tactic
+> reads. The read returns as `GET /offering/mission-types/{missionType}/actions/{action}/context`
+> under [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126)
+> ([ADR-0020](/adr/0020-offering-and-activations/) D1). [What the labels mean](/#status).
 
 ## The resource tree
 
