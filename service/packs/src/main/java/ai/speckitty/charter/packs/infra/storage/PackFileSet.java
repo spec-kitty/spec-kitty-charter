@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
@@ -44,35 +45,40 @@ final class PackFileSet {
     /** The DRG fragment's pack-relative path. */
     static final String FRAGMENT = "drg/fragment.yaml";
 
-    /** The kinds of pack file the service loads, each spelled as in a file name and in {@code file-kinds.yaml}. */
+    /**
+     * The kinds of pack file the service loads, each spelled as in a file name and in {@code file-kinds.yaml}. This is
+     * the persistence-side registry of loaded kinds, the typed declaration of what the store reads: a kind that is not
+     * declared here cannot be read, because it does not compile. Issue #169 extends it. Each constant carries the
+     * kernel's {@link ArtifactKind}, whose token is the spelling.
+     */
     enum LoadedKind {
         /** {@code *.tactic.yaml}. */
-        TACTIC("tactic"),
+        TACTIC(ArtifactKind.TACTIC),
         /** {@code *.directive.yaml}. */
-        DIRECTIVE("directive"),
+        DIRECTIVE(ArtifactKind.DIRECTIVE),
         /** {@code *.styleguide.yaml}. */
-        STYLEGUIDE("styleguide"),
+        STYLEGUIDE(ArtifactKind.STYLEGUIDE),
         /** {@code *.paradigm.yaml}. */
-        PARADIGM("paradigm");
+        PARADIGM(ArtifactKind.PARADIGM);
 
-        private final String token;
+        private final ArtifactKind artifactKind;
 
-        LoadedKind(String token) {
-            this.token = token;
+        LoadedKind(ArtifactKind artifactKind) {
+            this.artifactKind = artifactKind;
         }
 
         /**
          * The kind's spelling in a file name ({@code <id>.<token>.yaml}) and as the schema kind.
          *
-         * @return the token
+         * @return the kernel kind's token
          */
         String token() {
-            return token;
+            return artifactKind.token();
         }
 
-        private static Optional<LoadedKind> ofToken(String token) {
+        private static Optional<LoadedKind> of(ArtifactKind artifactKind) {
             for (LoadedKind kind : values()) {
-                if (kind.token.equals(token)) {
+                if (kind.artifactKind == artifactKind) {
                     return Optional.of(kind);
                 }
             }
@@ -173,7 +179,8 @@ final class PackFileSet {
         Map<LoadedKind, List<String>> byKind = new EnumMap<>(LoadedKind.class);
         for (String file : yamlFiles(directory, packName)) {
             if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
-                LoadedKind.ofToken(mapped.kind())
+                ArtifactKind.fromToken(mapped.kind())
+                        .flatMap(LoadedKind::of)
                         .ifPresent(kind -> byKind.computeIfAbsent(kind, k -> new ArrayList<>())
                                 .add(file));
             }
