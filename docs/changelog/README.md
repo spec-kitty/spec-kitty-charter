@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-24 — Every read answers with the source fingerprint it verified](/changelog/2026-10-24-verified-source-fingerprint/)
 - [2026-10-24 — ADR-0019 to ADR-0022 accepted, and the plans follow main](/changelog/2026-10-24-docs-status-pass/)
 - [2026-10-22 — Directive, styleguide and paradigm are now first-class pack artifacts](/changelog/2026-10-22-pack-doctrine-artefacts/)
 - [2026-10-22 — A single CI gate check now guards every pull request](/changelog/2026-10-22-ci-gate-required-check/)
