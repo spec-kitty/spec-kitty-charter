@@ -34,3 +34,5 @@ audience:
 - [Milestones](/plans/milestones/) and the [Roadmap](/plans/roadmap/) describe the contract-first,
   per-operation cutover (ADR-0021, ADR-0022), list what is delivered, and name the open issues
   not yet placed in a milestone.
+- A new milestone, **4.0 GA (contract adopted)**, holds what core's 4.0 GA needs from this
+  repository, ahead of the 4.x cutover.
