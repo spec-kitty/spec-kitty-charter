@@ -149,6 +149,17 @@ class PackFileSetTest {
     }
 
     @Test
+    void aDirectoryThatCannotBeListedIsRefusedUnderTheConfiguredNameWhenOneIsGiven(@TempDir Path host) {
+        Path missing = host.resolve("directory-name");
+
+        assertThatThrownBy(() -> PackFileSet.digested(missing, "configured-name"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).isEqualTo("pack configured-name cannot be listed");
+                });
+    }
+
+    @Test
     void everyLoadedKindHasItsOwnTokenAndAFileNameCarriesIt() {
         for (LoadedKind kind : LoadedKind.values()) {
             assertThat(kind.token()).isEqualTo(kind.name().toLowerCase(java.util.Locale.ROOT));

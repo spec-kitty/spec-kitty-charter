@@ -87,7 +87,8 @@ final class PackFileSet {
      *     be listed
      */
     static List<String> files(Path packDir, LoadedKind kind) {
-        return loaded(normalized(packDir)).getOrDefault(kind, List.of());
+        Path directory = normalized(packDir);
+        return loaded(directory, nameOf(directory)).getOrDefault(kind, List.of());
     }
 
     /**
@@ -110,18 +111,33 @@ final class PackFileSet {
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file
      */
     static List<String> digested(Path packDir, Set<LoadedKind> kinds) {
+        return digested(packDir, kinds, nameOf(normalized(packDir)));
+    }
+
+    /**
+     * Everything the fingerprint digests for a configured pack, a refusal to list it naming {@code packName}.
+     *
+     * @param packDir the pack directory
+     * @param packName the configured pack's name, which may differ from the directory's name
+     * @return the pack-relative paths, in digest order
+     */
+    static List<String> digested(Path packDir, String packName) {
+        return digested(packDir, EnumSet.allOf(LoadedKind.class), packName);
+    }
+
+    private static List<String> digested(Path packDir, Set<LoadedKind> kinds, String packName) {
         Path directory = normalized(packDir);
         List<String> out = new ArrayList<>();
         if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
             out.add(PACK_YAML);
         }
-        Map<LoadedKind, List<String>> loaded = loaded(directory);
+        Map<LoadedKind, List<String>> loaded = loaded(directory, packName);
         for (LoadedKind kind : LoadedKind.values()) {
             if (kinds.contains(kind)) {
                 out.addAll(loaded.getOrDefault(kind, List.of()));
             }
         }
-        for (Path shard : rootShards(directory, nameOf(directory))) {
+        for (Path shard : rootShards(directory, packName)) {
             out.add(directory.relativize(shard).toString());
         }
         if (Files.isRegularFile(directory.resolve(FRAGMENT))) {
@@ -146,11 +162,11 @@ final class PackFileSet {
     }
 
     /** One walk of the pack, every loaded kind's files grouped. */
-    private static Map<LoadedKind, List<String>> loaded(Path directory) {
+    private static Map<LoadedKind, List<String>> loaded(Path directory, String packName) {
         // The classification globs are relative to the directory that holds the pack directories.
         String prefix = nameOf(directory) + "/";
         Map<LoadedKind, List<String>> byKind = new EnumMap<>(LoadedKind.class);
-        for (String file : yamlFiles(directory)) {
+        for (String file : yamlFiles(directory, packName)) {
             if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
                 LoadedKind.ofToken(mapped.kind())
                         .ifPresent(kind -> byKind.computeIfAbsent(kind, k -> new ArrayList<>())
@@ -168,12 +184,12 @@ final class PackFileSet {
      * <p>Validate mode walks the pack too ({@code FileSystemPackInspector.yamlFiles}); it orders by path segment like
      * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in.
      */
-    private static List<String> yamlFiles(Path directory) {
+    private static List<String> yamlFiles(Path directory, String packName) {
         List<String> found = new ArrayList<>();
         try {
             Files.walkFileTree(directory, new YamlCollector(directory, found));
         } catch (IOException | UncheckedIOException e) {
-            throw FileSystemPackInspector.unlistable(nameOf(directory), e);
+            throw FileSystemPackInspector.unlistable(packName, e);
         }
         Collections.sort(found);
         return found;

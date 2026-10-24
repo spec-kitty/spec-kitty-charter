@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -31,12 +32,12 @@ public final class FileSystemPackSources implements PackSources {
 
     @Override
     public String fingerprint() {
-        return digest(locations.get(), PackFileSet::digested);
+        return digestNamed(locations.get(), PackFileSet::digested);
     }
 
     /**
-     * The fingerprint of the packs, each pack's files named by {@code filesOf}. {@link #fingerprint()} calls this with
-     * {@link PackFileSet#digested(Path)}; a test calls it with a list that leaves something out to prove the exactness
+     * The fingerprint of the packs, each pack's files named by {@code filesOf}. {@link #fingerprint()} does the same with
+     * {@link PackFileSet#digested(Path, String)}; a test calls it with a list that leaves something out to prove the exactness
      * check notices.
      *
      * @param locations the configured packs
@@ -44,6 +45,14 @@ public final class FileSystemPackSources implements PackSources {
      * @return {@code sha256:} and 64 lower-case hex digits
      */
     static String digest(List<PackLocation> locations, Function<Path, List<String>> filesOf) {
+        return digestNamed(locations, (root, packName) -> filesOf.apply(root));
+    }
+
+    /**
+     * The fingerprint of the packs, each pack's files named by {@code filesOf} given the pack's directory and its
+     * configured name (which a listing refusal names).
+     */
+    private static String digestNamed(List<PackLocation> locations, BiFunction<Path, String, List<String>> filesOf) {
         Fingerprint fingerprint = Fingerprint.sha256();
         for (PackLocation location : locations) {
             Path root = location.root().toAbsolutePath().normalize();
@@ -51,7 +60,7 @@ public final class FileSystemPackSources implements PackSources {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " is not a directory");
             }
-            for (String relative : filesOf.apply(root)) {
+            for (String relative : filesOf.apply(root, location.name())) {
                 // The relative path is in '/' form, so the digest is the same on every OS.
                 fingerprint
                         .add(location.name() + "/" + relative)
