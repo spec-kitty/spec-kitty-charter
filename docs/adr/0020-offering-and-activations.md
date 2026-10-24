@@ -41,6 +41,10 @@ Operator rulings of 2026-10-19 and 2026-10-20 are marked **(ruled)** below. Deci
 **(default)** follow the design squad's recommendation and stand as decided until revisited; each
 names the alternative it rejected.
 
+**Implementation note, 2026-10-24.** PR #139 removed the action-context read, so D1's "move under
+`/offering`" is now its return there, on the canonical `Pack` model
+([#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126)).
+
 This record supersedes or amends, point by point:
 
 - [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/), Risks: "reserve
