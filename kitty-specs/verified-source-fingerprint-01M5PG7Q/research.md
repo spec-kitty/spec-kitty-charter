@@ -111,3 +111,33 @@ finalize; no blocker. All step phrases the prompts rely on exist verbatim in the
 | P8 | "valid" planted tactic ids | accepted | WP02 T006 |
 | P9 | `service-contract.md` refresh mentions at ~119, ~149 | accepted | WP01 T003 |
 | P10 | WP02/WP03 size | kept as is (cohesive; splitting breaks green commits) | tasks.md |
+
+## R9. Pre-PR squad (2026-10-24) and dispositions
+
+Cast: reviewer-renata (correctness), architect-alphonso (boundary and overlap), reviewer-renata
+(contract compatibility and docs truthfulness); all opus, profile-loaded, read-only. Verdicts:
+changes requested (correctness), proceed with changes (boundary, contract). No contract shape or
+version-rule violation; no consumer in core breaks.
+
+| # | Finding | Disposition | Evidence |
+|---|---|---|---|
+| C1 | HIGH: the deep walk throws when an entry vanishes mid-walk (atomic save), so every read answers a non-retryable `pack_unreadable` | accepted | `fix(packs): tolerate entries that vanish while a pack is walked`, red run 65 refusals before, 0 after |
+| C2 | A symlinked pack root loads as an empty pack (predates the branch) | deferred_with_rationale: older behavior, separate fix | #174 |
+| C3 | Shard order differs on Windows | accepted | `fix(packs): order graph shards by name on every OS` |
+| C4 | An `Error` from the load skips the stale comparison | accepted: documented; load failure kept as suppressed | `fix(packs): keep the load failure when the second digest fails` |
+| B1, B2 | Inspector and `PackFileSet` call each other; duplicated `PACK_YAML`/`FRAGMENT` | accepted | `refactor(packs): make PackFileSet the only owner of the pack file layout` |
+| B3, B4 | `LoadedKind` duplicates kernel `ArtifactKind`; serializer kind strings | changed: `LoadedKind` kept as the typed loaded set (#169 grows it) but carries its `ArtifactKind` | `refactor(packs): derive LoadedKind from the kernel's ArtifactKind` |
+| B5, B6 | Walks not cross-referenced; "what a load needs" | accepted | same refactor commit |
+| B7 | Kind list repeated in prose | accepted: docs say "today"; contract prose keeps the list (adding an input changes values, not shape) | `docs(fingerprint): state exactly which unreadable files refuse a read` |
+| B8 | The packs slice cannot wire `TacticReadService` alone | deferred_with_rationale: two `PackSources` beans until #127 | #127 |
+| B9 | Fully qualified `Verified<Tactic>` | accepted | `docs(packs): javadoc follow-ups` |
+| B10 | #126 is the generic artifact routes | accepted | spec C-005, Follow-ups |
+| K1, K2 | CHANGELOG `pack_not_found` bullet stale; "unreadable file" over-claims; `/info` consequence missing | accepted | `docs(fingerprint): state exactly which unreadable files refuse a read` |
+| K3, K4, K5 | `PackListing1`, "nine codes", drift-step wording | accepted | same docs commit |
+| K6 | `OfferingUnreadable` examples name unraised codes | deferred_with_rationale: contract example change | #176 |
+| K7 | Control file excluded by extension only | accepted | `test(scenarios): control the tactic-file scenario with an unclassified YAML file` |
+| K8 | Sibling-directory refusal pinned as `@contract` | accepted as deliberate (fail closed, ADR-0011, ADR-0018 D11) | tactics.feature |
+| K9 | Fingerprint prose names file-system globs | deferred_with_rationale: hosted-first reshape | #127 |
+| K10 | `pack_unreadable` on `getPackTactic` unpinned | deferred_with_rationale | #176 |
+| WP-review LOWs | listing refusal names the directory; wall-clock timeout; stale javadoc; event-order assertions | accepted | `fix(packs): name the configured pack ...`, `test(packs): budget the exactness test on CPU time`, `fix(packs): keep the load failure ...`, `docs(packs): javadoc follow-ups` |
+| Validate-mode walk | `FileSystemPackInspector.yamlFiles` still uses `Files.walk` | deferred_with_rationale: validate mode is not wired to a route | #115 |
