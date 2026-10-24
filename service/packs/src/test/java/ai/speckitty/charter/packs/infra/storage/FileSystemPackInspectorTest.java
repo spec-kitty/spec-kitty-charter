@@ -442,6 +442,13 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
+    void theGraphShardsAreSortedByTheFileNameAsAStringNotByPathCaseRules() {
+        assertThat(PackFileSet.graphShards(
+                        Stream.of(Path.of("qa/a.graph.yaml"), Path.of("qa/B.graph.yaml")), "qa", p -> true))
+                .containsExactly(Path.of("qa/B.graph.yaml"), Path.of("qa/a.graph.yaml"));
+    }
+
+    @Test
     void aListingThatFailsWhileItIsReadIsRefusedAsAnUnreadablePack() {
         IOException cause = new IOException("gone");
         Stream<Path> failing = Stream.of(Path.of("qa/a.graph.yaml")).peek(p -> {
