@@ -13,6 +13,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -158,7 +159,8 @@ final class PackFileSet {
     }
 
     /**
-     * The graph shards in a pack's root directory: its {@code *.graph.yaml} regular files, sorted by name.
+     * The graph shards in a pack's root directory: its {@code *.graph.yaml} regular files, sorted by the file name as a
+     * {@link String}, which is the same order on every OS.
      *
      * @param directory the pack directory
      * @param packName the pack, named in a refusal
@@ -250,7 +252,8 @@ final class PackFileSet {
     }
 
     /**
-     * The graph shards of a pack directory listing: its {@code *.graph.yaml} regular files, sorted by name.
+     * The graph shards of a pack directory listing: its {@code *.graph.yaml} regular files, sorted by the file name as a
+     * {@link String}.
      *
      * @param files the directory listing; reading it may fail with an {@link UncheckedIOException}
      * @param packName the pack the listing belongs to, named in a refusal
@@ -261,7 +264,7 @@ final class PackFileSet {
     static List<Path> graphShards(Stream<Path> files, String packName, Predicate<Path> regularFile) {
         try {
             return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && regularFile.test(p))
-                    .sorted()
+                    .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()))
                     .toList();
         } catch (UncheckedIOException e) {
             // The JDK always sets the cause; the fallback only satisfies the nullness checker.
