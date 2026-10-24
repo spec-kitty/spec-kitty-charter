@@ -15,6 +15,31 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Verified source fingerprint on every read (mission verified-source-fingerprint)
+
+Description text only: no schema, operation, parameter, response or header declaration changes.
+
+- Fixed: `listPackTactics` and `getPackTactic` send `Charter-Source-Fingerprint` on 200, the digest the
+  read verified; they refuse with `stale_input` when their inputs change while they are read (#173). The
+  source fingerprint covers the tactic, directive, styleguide and paradigm files the service loads
+  (#120).
+- Changed: a configured pack whose directory is missing, or a pack with an unreadable file, refuses
+  every read with 500 `pack_unreadable` (a tactic read answered 404 `pack_not_found` before). A load
+  refusal whose inputs changed meanwhile is `stale_input`. The fingerprint's value changes for packs
+  that hold loaded-kind files. The descriptions of `Charter-Source-Fingerprint`,
+  `ServiceInfo.sourceFingerprint`, `CharterRefusalCode`, `TacticNotFound` and both tactic operations
+  state this; the dead `x-source` path of `ServiceInfo.worktree` now names `ServiceInfoQuery` in the
+  `packs` module.
+- Scenarios: `service.feature` gains "The source fingerprint follows a tactic file". `tactics.feature`
+  is new ("The tactic reads answer with the source fingerprint they verified") and holds "A tactic
+  list answers with the source fingerprint it verified", "One tactic answers with the source
+  fingerprint it verified", "A tactic list whose tactic file changes while it is answered is refused
+  with stale_input", "One tactic whose file changes while it is answered is refused with
+  stale_input", "A read of an absent tactic whose inputs change is stale, not not-found", "A tactic
+  read that watches for a change and sees none answers with the digest it verified", "A tactic read
+  of a pack whose directory is missing is refused with pack_unreadable" and "A missing sibling pack
+  directory refuses a tactic read of a healthy pack".
+
 ### Tactic retrieval; pack listing and action context removed (mission application-edge-read-path)
 
 The inbound contract changes (C-004) while it is still `0.1.0-SNAPSHOT`.

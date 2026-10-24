@@ -1,6 +1,8 @@
 description: >-
-  The pack is absent or unreadable, or the pack has no such tactic, refused with 404. The code is
-  pack_not_found or tactic_not_found. A client error: the request named something that is not there.
+  The identifier matches no configured pack (by name or by declared pack_id), or the pack has no such tactic, refused with 404. The code is
+  pack_not_found or tactic_not_found. A client error: the request named something that is not there. A
+  configured pack whose directory is missing, or a pack with an unreadable file or a directory
+  that cannot be listed, is not this answer: it is pack_unreadable (500) on every read.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
