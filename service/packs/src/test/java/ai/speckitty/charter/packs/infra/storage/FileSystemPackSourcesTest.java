@@ -12,7 +12,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -137,6 +140,49 @@ class FileSystemPackSourcesTest {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
             assertThat(r.getMessage()).isEqualTo("qa/e.tactic.yaml cannot be read");
         });
+    }
+
+    /** An atomic save creates and renames a temp file in the pack while it is walked; the walk must not refuse. */
+    @Test
+    void aTempFileThatVanishesWhileThePackIsWalkedDoesNotRefuseTheFingerprintOrTheFileSet(@TempDir Path dir)
+            throws Exception {
+        Path root = Files.createDirectories(dir.resolve("qa"));
+        Path tactic = root.resolve("a.tactic.yaml");
+        Files.writeString(tactic, "id: a\n");
+        AtomicBoolean stop = new AtomicBoolean();
+        AtomicReference<Throwable> writerFailure = new AtomicReference<>();
+        Thread writer = new Thread(() -> {
+            try {
+                while (!stop.get()) {
+                    Path temp = Files.createTempFile(root, ".pack-write-", ".tmp");
+                    Files.writeString(temp, "id: a\n");
+                    Files.move(temp, tactic, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException | RuntimeException e) {
+                writerFailure.set(e);
+            }
+        });
+        int refused = 0;
+        String first = null;
+        long deadline = System.nanoTime() + 20_000_000_000L;
+        writer.start();
+        try {
+            for (int i = 0; i < 2000 && System.nanoTime() < deadline; i++) {
+                try {
+                    sources(root).fingerprint();
+                    PackFileSet.files(root, PackFileSet.LoadedKind.TACTIC);
+                } catch (CharterRefusal refusal) {
+                    refused++;
+                    first = first == null ? refusal.getMessage() : first;
+                }
+            }
+        } finally {
+            stop.set(true);
+            writer.join();
+        }
+
+        assertThat(writerFailure.get()).isNull();
+        assertThat(refused).as("refusals; first: %s", first).isZero();
     }
 
     private static FileSystemPackSources sources(Path root) {

@@ -2,9 +2,14 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -12,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The single declaration of which files of a pack the service loads and which it digests. The store reads the files
@@ -21,9 +27,9 @@ import java.util.stream.Stream;
  * {@link LoadedKind}, which the digest then covers.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}.
- * The walk is the store's: {@link Files#walk} (hidden directories are entered, a directory link is not followed),
- * regular files only ({@link Files#isRegularFile} follows a file link), names ending {@code .yaml}, in {@link String}
- * order. Every entry point normalizes the directory first, so a configured root such as {@code packs/foo/.}
+ * The walk is the store's: {@link Files#walkFileTree} (hidden directories are entered, a directory link is not
+ * followed, an entry that vanishes mid-walk is not listed), regular files only ({@link Files#isRegularFile} follows a
+ * file link), names ending {@code .yaml}, in {@link String} order. Every entry point normalizes the directory first, so a configured root such as {@code packs/foo/.}
  * classifies like the store's own normalized directory.
  */
 final class PackFileSet {
@@ -154,18 +160,63 @@ final class PackFileSet {
         return byKind;
     }
 
-    /** The pack-relative, {@code /}-separated paths of every {@code *.yaml} regular file, in {@link String} order. */
+    /**
+     * The pack-relative, {@code /}-separated paths of every {@code *.yaml} regular file, in {@link String} order. An
+     * entry that vanishes while the tree is walked (the temp file of an atomic save, an editor's scratch file) is not
+     * listed; any other failure to list refuses.
+     *
+     * <p>Validate mode walks the pack too ({@code FileSystemPackInspector.yamlFiles}); it orders by path segment like
+     * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in.
+     */
     private static List<String> yamlFiles(Path directory) {
-        try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(p -> p.getFileName().toString().endsWith(".yaml") && Files.isRegularFile(p))
-                    .map(p -> directory
-                            .relativize(p)
-                            .toString()
-                            .replace(p.getFileSystem().getSeparator(), "/"))
-                    .sorted()
-                    .toList();
+        List<String> found = new ArrayList<>();
+        try {
+            Files.walkFileTree(directory, new YamlCollector(directory, found));
         } catch (IOException | UncheckedIOException e) {
             throw FileSystemPackInspector.unlistable(nameOf(directory), e);
+        }
+        Collections.sort(found);
+        return found;
+    }
+
+    /** Collects the {@code *.yaml} regular files; an entry that is gone by the time it is visited is skipped. */
+    private static final class YamlCollector extends SimpleFileVisitor<Path> {
+        private final Path root;
+        private final List<String> found;
+
+        YamlCollector(Path root, List<String> found) {
+            this.root = root;
+            this.found = found;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            // isRegularFile follows a file link and is false for an entry that has just vanished.
+            if (file.getFileName().toString().endsWith(".yaml") && Files.isRegularFile(file)) {
+                found.add(root.relativize(file)
+                        .toString()
+                        .replace(file.getFileSystem().getSeparator(), "/"));
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException failure) throws IOException {
+            if (failure instanceof NoSuchFileException && !file.equals(root)) {
+                return FileVisitResult.CONTINUE;
+            }
+            throw failure;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, @Nullable IOException failure) throws IOException {
+            if (failure instanceof NoSuchFileException && !dir.equals(root)) {
+                return FileVisitResult.CONTINUE;
+            }
+            if (failure != null) {
+                throw failure;
+            }
+            return FileVisitResult.CONTINUE;
         }
     }
 
