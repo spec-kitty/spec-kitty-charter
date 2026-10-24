@@ -5,7 +5,7 @@ public interface PackInspector {
 
     /** How much of a pack to read. */
     enum Scope {
-        /** {@code pack.yaml}, the root shards and {@code drg/fragment.yaml}: what a load needs. */
+        /** {@code pack.yaml}, the root shards and {@code drg/fragment.yaml}: what core's runtime load reads. */
         LOAD_PATH,
         /** Every file of the pack: what a validation needs. */
         FULL

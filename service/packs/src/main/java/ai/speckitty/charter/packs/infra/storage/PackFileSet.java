@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -14,8 +16,10 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -37,7 +41,8 @@ final class PackFileSet {
     /** The pack descriptor's file name. */
     static final String PACK_YAML = "pack.yaml";
 
-    private static final String FRAGMENT = "drg/fragment.yaml";
+    /** The DRG fragment's pack-relative path. */
+    static final String FRAGMENT = "drg/fragment.yaml";
 
     /** The kinds of pack file the service loads, each spelled as in a file name and in {@code file-kinds.yaml}. */
     enum LoadedKind {
@@ -155,9 +160,9 @@ final class PackFileSet {
      */
     static List<Path> rootShards(Path directory, String packName) {
         try (Stream<Path> files = Files.list(directory)) {
-            return FileSystemPackInspector.graphShards(files, packName, Files::isRegularFile);
+            return graphShards(files, packName, Files::isRegularFile);
         } catch (IOException e) {
-            throw FileSystemPackInspector.unlistable(packName, e);
+            throw unlistable(packName, e);
         }
     }
 
@@ -182,14 +187,15 @@ final class PackFileSet {
      * listed; any other failure to list refuses.
      *
      * <p>Validate mode walks the pack too ({@code FileSystemPackInspector.yamlFiles}); it orders by path segment like
-     * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in.
+     * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in; the two
+     * differ on purpose.
      */
     private static List<String> yamlFiles(Path directory, String packName) {
         List<String> found = new ArrayList<>();
         try {
             Files.walkFileTree(directory, new YamlCollector(directory, found));
         } catch (IOException | UncheckedIOException e) {
-            throw FileSystemPackInspector.unlistable(packName, e);
+            throw unlistable(packName, e);
         }
         Collections.sort(found);
         return found;
@@ -234,6 +240,30 @@ final class PackFileSet {
             }
             return FileVisitResult.CONTINUE;
         }
+    }
+
+    /**
+     * The graph shards of a pack directory listing: its {@code *.graph.yaml} regular files, sorted by name.
+     *
+     * @param files the directory listing; reading it may fail with an {@link UncheckedIOException}
+     * @param packName the pack the listing belongs to, named in a refusal
+     * @param regularFile whether a listed path is a regular file
+     * @return the shards, sorted
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when reading the listing fails, as when opening it fails
+     */
+    static List<Path> graphShards(Stream<Path> files, String packName, Predicate<Path> regularFile) {
+        try {
+            return files.filter(p -> p.getFileName().toString().endsWith(".graph.yaml") && regularFile.test(p))
+                    .sorted()
+                    .toList();
+        } catch (UncheckedIOException e) {
+            // The JDK always sets the cause; the fallback only satisfies the nullness checker.
+            throw unlistable(packName, Objects.<Exception>requireNonNullElse(e.getCause(), e));
+        }
+    }
+
+    static CharterRefusal unlistable(String packName, Exception cause) {
+        return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + packName + " cannot be listed", cause);
     }
 
     private static Path normalized(Path packDir) {
