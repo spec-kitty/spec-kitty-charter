@@ -132,8 +132,8 @@ digests. Dropping one kind from the fingerprint's input (a planted omission) mak
 | FR-008 | One file-set authority | As a maintainer, I want the kinds the service loads and the graph inputs declared once, the pack load able to read only a declared kind (enforced by type for kind reads, and for the whole set by the FR-009 exactness test), and both the pack load and the fingerprint to take their files from that one declaration with one walk and one order, so that a kind cannot be loaded without being digested. | High | Open | [build] | no — the planted-omission test fails when the fingerprint's input drops a kind |
 | FR-009 | Digested set is exact | As a maintainer, I want a test over seeded generated pack trees asserting that the files the load reads are exactly the loaded files the generator planted, and that the files the fingerprint digests are exactly `pack.yaml`, those loaded files and the declared graph inputs, with every expected set taken from the generator rather than from the code under test, so that drift is caught. | High | Open | [build] | no |
 | FR-010 | One verified-read rule | As a maintainer, I want `/info` and the tactic reads to share one before-and-after verification, so that the refusal rule is written once and every later artifact read (#126) uses it. | Medium | Open | [build] | no — `/info`'s existing stale_input scenario and its negative control keep running against the shared rule |
-| FR-012 | Fingerprint follows a tactic file | As core's seam, I want a contract scenario showing that editing a tactic file changes `/info`'s `sourceFingerprint` and editing an unloaded file does not, so that the coverage of #120 is pinned at the contract level and not only in unit tests. | High | Open | [build] | no — the unloaded-file edit on the same fixture is the control |
 | FR-011 | Records follow the behavior | As a reader of the docs, I want the freshness page, the service contract page, the contract CHANGELOG, the fingerprint's contract prose and ADR-0018 to state the built behavior, so that the docs do not promise what the service does not do. | Medium | Open | [build] | no |
+| FR-012 | Fingerprint follows a tactic file | As core's seam, I want a contract scenario showing that editing a tactic file changes `/info`'s `sourceFingerprint` and editing an unloaded file does not, so that the coverage of #120 is pinned at the contract level and not only in unit tests. | High | Open | [build] | no — the unloaded-file edit on the same fixture is the control |
 
 ### Non-Functional Requirements
 
@@ -151,18 +151,19 @@ digests. Dropping one kind from the fingerprint's input (a planted omission) mak
 | C-002 | Project config inputs stay | The `config.yaml` and `charter.yaml` inputs stay in the composite fingerprint; dropping them is #127 (ADR-0020 D12). | Business | High | Open |
 | C-003 | No new test dependency | No property-testing library is added (jqwik is excluded, C-008 of an earlier mission); the generator is plain JUnit with a seeded `java.util.Random`. | Technical | High | Open |
 | C-004 | Rings hold | The onion rings of ADR-0006 hold: the file-set authority stays in `infra.storage`, the verification rule in `application`, the header in `infra.api`. | Technical | High | Open |
-| C-005 | Scope boundary | No new HTTP read is added for directives, styleguides or paradigms (#126); they are covered by the digest only. Removing the header declaration from refusal responses and making it required on 200s are contract changes, out of scope. | Business | High | Open |
+| C-005 | Scope boundary | No new HTTP read is added for directives, styleguides or paradigms (the generic artifact routes are #126); they are covered by the digest only. Removing the header declaration from refusal responses and making it required on 200s are contract changes, out of scope. | Business | High | Open |
 | C-006 | Test first | Each behavior lands with its failing scenario or test run red before the fix. | Technical | High | Open |
 
 ## Key Entities
 
-- **Source fingerprint**: the SHA-256 digest of, per configured pack in order, `pack.yaml`, every loaded file and the declared graph inputs (root `*.graph.yaml` shards, `drg/fragment.yaml`), each as its path under the pack's configured name and its bytes; and, when configured, `config.yaml` and `charter.yaml` with presence. One definition, used verbatim in the contract prose. `/info` reports it as `sourceFingerprint`; a 200 sends it as `Charter-Source-Fingerprint`.
+- **Source fingerprint**: per configured pack in order, `pack.yaml`, every file of a loaded kind (today tactic, directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project configuration directory, with presence. The same definition appears in the contract descriptions and the docs.
 - **Loaded file set**: the files of a pack the service loads, `pack.yaml` plus every file of a loaded kind.
 - **Verified read**: a read that digests its inputs, loads, digests again, and answers only when both agree.
 
 ## Domain Language
 
 - Canonical: **source fingerprint** (not "governance fingerprint" or "hash"); **loaded file set** (not "pack files" without qualification); **stale input** / `stale_input`.
+- **Verified read** is implemented as `ConsistentRead` in the application ring; its result type is `ConsistentRead.Verified`.
 
 ## Success Criteria *(mandatory)*
 
@@ -188,6 +189,6 @@ digests. Dropping one kind from the fingerprint's input (a planted omission) mak
 - Remove `Charter-Source-Fingerprint` from refusal response declarations and adjust the `charter-headers-on-every-response` lint rule (contract change).
 - Make the header required on 200 answers (contract change).
 - The full kind registry (#169) beyond the loaded-kinds declaration.
-- Directive, styleguide and paradigm HTTP reads (#126) go through the shared verified read.
+- The generic artifact routes (#126) go through the shared verified read.
 - Dropping the project config inputs (#127).
 - Dropping the declared graph inputs until a served read loads them, or moving them into the loaded kinds when the graph read lands (#73).
