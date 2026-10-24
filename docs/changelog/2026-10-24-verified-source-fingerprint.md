@@ -1,6 +1,6 @@
 ---
 title: Every read answers with the source fingerprint it verified
-description: The source fingerprint now covers every pack file the service loads, from one file list shared with the load, and the tactic reads verify it before and after loading and send it on their 200.
+description: The source fingerprint covers every pack file the service loads, from one file list shared with the load; the tactic reads verify it and send it on their 200.
 doc_status: active
 updated: 2026-10-24T00:00:00Z
 type: Changelog
