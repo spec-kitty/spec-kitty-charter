@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -124,8 +123,11 @@ class AggregateRetrofitTest {
     }
 
     @Test
-    @DisplayName("a Tactic is a CharterArtifact with kind-correct label, description, urn and edges")
-    void tacticIsACharterArtifact() {
+    @DisplayName("a tactic mints one SUGGESTS edge per typed reference, collapsing a blank when to absent")
+    void tacticMintsASuggestsEdgePerTypedReferenceCollapsingBlankWhen() {
+        // The CharterArtifact spine (kind/localId/label/description/urn) is proved per kind by
+        // CharterArtifactFamilyTest; this case keeps only what it does not cover — two typed refs, the second
+        // with a blank `when` that must collapse to Optional.empty rather than an empty-string edge metadata.
         Tactic tactic = Tactic.builder()
                 .id(new TacticIdentifier("t-1"))
                 .packId(ID)
@@ -139,11 +141,6 @@ class AggregateRetrofitTest {
 
         CharterArtifact artifact = tactic;
 
-        assertThat(artifact.kind()).isEqualTo(ArtifactKind.TACTIC);
-        assertThat(artifact.localId()).isEqualTo("t-1");
-        assertThat(artifact.label()).isEqualTo("Tactic name");
-        assertThat(artifact.description()).contains("Why");
-        assertThat(artifact.urn()).isEqualTo(new Urn(NodeKind.TACTIC, "t-1"));
         assertThat(artifact.edges())
                 .containsExactly(
                         new DrgEdge(
