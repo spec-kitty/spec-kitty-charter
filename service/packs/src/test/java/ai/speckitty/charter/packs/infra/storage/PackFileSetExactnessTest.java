@@ -14,6 +14,8 @@ import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Shape;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Target;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Verdict;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,35 +59,80 @@ class PackFileSetExactnessTest {
     @TempDir
     static Path home;
 
+    /** NFR-001: 200 trees in under 10 s of CPU time, measured apart from the wall clock, which a starved runner skews. */
+    private static final long CPU_BUDGET_NANOS = 10_000_000_000L;
+
+    /** Only a hang cap: the budget is CPU time. */
+    private static final int HANG_CAP_SECONDS = 60;
+
     private static final Map<Integer, GeneratedPackTree> TREES_BY_INDEX = new HashMap<>();
+    private static long generationCpuNanos = -1;
+
+    /** Writes the trees once, so that no check is charged for them; {@link #generatingTheTreesIsWithinBudget()}. */
+    @BeforeAll
+    static void generateTheTrees() throws IOException {
+        if (!symlinksWork(home)) {
+            return;
+        }
+        long start = cpuNanos();
+        for (int i = 0; i < TREES; i++) {
+            tree(i);
+        }
+        generationCpuNanos = cpuNanos() - start;
+    }
 
     @Test
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
+    void generatingTheTreesIsWithinBudget() {
+        assumeTrue(generationCpuNanos >= 0, "no trees were generated, or CPU time cannot be measured");
+        assertThat(generationCpuNanos)
+                .as("CPU time to generate %d trees", TREES)
+                .isLessThan(CPU_BUDGET_NANOS);
+    }
+
+    @Test
+    @Timeout(HANG_CAP_SECONDS)
     void theFingerprintChangesIfAndOnlyIfAFileIsPackYamlLoadedOrAGraphInput() throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
         Set<Shape> seen = EnumSet.noneOf(Shape.class);
+        long start = cpuNanos();
         for (int i = 0; i < TREES; i++) {
             GeneratedPackTree tree = tree(i);
             assertDigestIsExact(tree, PackFileSetExactnessTest::fingerprintOf);
             seen.addAll(tree.shapes());
         }
+        assertWithinCpuBudget(start, "digest checks over " + TREES + " trees");
         assertThat(seen)
                 .as("every row of the name-shape table was planted at least once")
                 .containsExactlyInAnyOrder(Shape.values());
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
     void theStoreLoadsExactlyThePlantedFilesOfEveryKind() throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
+        long start = cpuNanos();
         for (int i = 0; i < TREES; i++) {
             assertLoadIsExact(tree(i));
+        }
+        assertWithinCpuBudget(start, "load checks over " + TREES + " trees");
+    }
+
+    /** This thread's CPU time, or -1 when the JVM cannot measure it. */
+    private static long cpuNanos() {
+        ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+        return threads.isCurrentThreadCpuTimeSupported() ? threads.getCurrentThreadCpuTime() : -1;
+    }
+
+    private static void assertWithinCpuBudget(long startNanos, String what) {
+        if (startNanos >= 0) {
+            assertThat(cpuNanos() - startNanos).as("CPU time of the %s", what).isLessThan(CPU_BUDGET_NANOS);
         }
     }
 
     /** The control for the mutants: the production fingerprint passes the whole oracle on the exhaustive tree. */
     @Test
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
     void theProductionFingerprintPassesTheWholeOracleOnTheExhaustiveTree() throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
         assertExact(tree(0), PackFileSetExactnessTest::fingerprintOf);
@@ -98,7 +146,7 @@ class PackFileSetExactnessTest {
 
     @ParameterizedTest
     @EnumSource(PackFileSet.LoadedKind.class)
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
     void aDigestThatOmitsOneLoadedKindFailsTheOracleNamingAPlantedFileOfThatKind(PackFileSet.LoadedKind omitted)
             throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
@@ -112,7 +160,7 @@ class PackFileSetExactnessTest {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
     void aDigestThatDropsTheGraphInputsFailsTheOracleNamingAGraphInput() throws IOException {
         GeneratedPackTree tree = tree(0);
         Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(
@@ -125,7 +173,7 @@ class PackFileSetExactnessTest {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(HANG_CAP_SECONDS)
     void aDigestThatAddsANestedShardFailsTheOracleNamingIt() throws IOException {
         GeneratedPackTree tree = tree(0);
         Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(locations, dir -> {
