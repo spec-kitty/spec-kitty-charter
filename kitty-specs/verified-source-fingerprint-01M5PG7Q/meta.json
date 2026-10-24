@@ -1,0 +1,37 @@
+{
+  "accept_commit": "ad6b3b1d32b59239991d1314c8eb3fc20b819784",
+  "acceptance_history": [
+    {
+      "accept_commit": "ad6b3b1d32b59239991d1314c8eb3fc20b819784",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-24T09:38:05.054122+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "ec4225abeb5b973a5d10e58be16d0df98ae8879e"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-24T09:38:05.054122+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "ec4225abeb5b973a5d10e58be16d0df98ae8879e",
+  "baseline_merge_commit": "f28e413345674c617690a73145c61cb935148be8",
+  "contracts": "none",
+  "contracts_rationale": "No interface is added or reshaped: the charter contract already declares Charter-Source-Fingerprint on both tactic 200s and stale_input under the declared 500. The mission changes behavior, contract prose and scenarios only, recorded in contracts/charter/CHANGELOG.md.",
+  "created_at": "2026-10-24T08:25:33.728668+00:00",
+  "flattened": true,
+  "friendly_name": "Verified source fingerprint on every read",
+  "merged_at": "2026-10-24T09:38:57.009798+00:00",
+  "merged_commit": "f835f9e64ee0fa55f58857b737e3ce01c5060f11",
+  "mid8": "01M5PG7Q",
+  "mission_id": "01M5PG7QXA69H5WSN7WEPR2W2A",
+  "mission_number": 5,
+  "mission_slug": "verified-source-fingerprint-01M5PG7Q",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The core CLI relies on the service's source fingerprint to know whether an answer is fresh. Today the tactic reads send no fingerprint at all, and the fingerprint the service computes leaves out the tactic, directive, styleguide and paradigm files it loads. This mission makes the fingerprint cover exactly the loaded files from one shared list, restores the before-and-after check on every read, and sends the verified fingerprint on every successful read (issues #120 and #173).",
+  "purpose_tldr": "Every read answers with a freshness fingerprint that covers exactly the pack files it loaded, and refuses when they changed underneath it.",
+  "slug": "verified-source-fingerprint-01M5PG7Q",
+  "status_phase": "1",
+  "target_branch": "fix/verified-source-fingerprint",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-24T08:51:30.761712+00:00"
+}
