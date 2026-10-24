@@ -52,6 +52,7 @@ stands.
 | [0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) | ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation | Proposed | 2026-10-20 |
 | [0022](/adr/0022-contract-versions-start-at-0-x/) | ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable | Proposed | 2026-10-20 |
 | [0023](/adr/0023-ci-gate-required-check/) | ADR-0023: An always-on CI gate is the single required status check | Accepted | 2026-10-22 |
+| [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted | 2026-10-24 |
 
 ## Core decisions this repository builds on
 
