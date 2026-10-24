@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.packs.domain.ConfigValue;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.infra.storage.PackFileSet.LoadedKind;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,11 +19,6 @@ import org.jspecify.annotations.Nullable;
  * an absent key, and list order and duplicates are kept both ways.
  */
 public final class YamlSerializationStrategy implements SerializationStrategy {
-
-    private static final String TACTIC_KIND = "tactic";
-    private static final String DIRECTIVE_KIND = "directive";
-    private static final String STYLEGUIDE_KIND = "styleguide";
-    private static final String PARADIGM_KIND = "paradigm";
 
     /** Constructs the YAML strategy; the storage configuration publishes it as the {@link SerializationStrategy} bean. */
     public YamlSerializationStrategy() {}
@@ -58,7 +54,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
             return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
         }
         Object document = parsed.document();
-        List<SchemaViolation> violations = PackSchemas.bundled().validate(TACTIC_KIND, file, document);
+        List<SchemaViolation> violations = PackSchemas.bundled().validate(LoadedKind.TACTIC.token(), file, document);
         if (!violations.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, violations);
         }
@@ -114,7 +110,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
 
     @Override
     public FileRead<DirectiveDso> readDirective(String text, String file) {
-        return readValidated(DIRECTIVE_KIND, text, file, root -> {
+        return readValidated(LoadedKind.DIRECTIVE.token(), text, file, root -> {
             List<DirectiveDso.Reference> references = new ArrayList<>();
             for (Object entry : list(root, "references")) {
                 if (entry instanceof Map<?, ?> r) {
@@ -177,7 +173,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
 
     @Override
     public FileRead<StyleguideDso> readStyleguide(String text, String file) {
-        return readValidated(STYLEGUIDE_KIND, text, file, root -> {
+        return readValidated(LoadedKind.STYLEGUIDE.token(), text, file, root -> {
             List<StyleguideDso.Pattern> patterns = new ArrayList<>();
             for (Object entry : list(root, "patterns")) {
                 if (entry instanceof Map<?, ?> p) {
@@ -244,7 +240,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
 
     @Override
     public FileRead<ParadigmDso> readParadigm(String text, String file) {
-        return readValidated(PARADIGM_KIND, text, file, root -> {
+        return readValidated(LoadedKind.PARADIGM.token(), text, file, root -> {
             List<ParadigmDso.Reference> references = new ArrayList<>();
             for (Object entry : list(root, "references")) {
                 if (entry instanceof Map<?, ?> r) {
