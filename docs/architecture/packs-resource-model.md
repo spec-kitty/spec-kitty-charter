@@ -26,8 +26,11 @@ How a client finds a pack and its contents: start at the API root, follow links.
 design behind [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/); the conventions it
 follows are in [Development conventions](/development/).
 
-> **Status:** design only, proposed by ADR-0019. Today the contract has `GET /packs`,
-> `POST /packs/refresh`, `GET /info` and the action-context read, and no response carries links.
+> **Status:** design only, decided (provisional) by ADR-0019. Today the contract serves
+> `GET /info` and the tactic reads (`/packs/{packId}/tactics[/{tacticId}]`); PR #139 removed
+> `GET /packs`, `POST /packs/refresh` and the action-context read, and no response carries links.
+> Aligning the routes with this design is
+> [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126).
 > [What the labels mean](/#status).
 
 ## The resource tree
@@ -37,8 +40,8 @@ follows are in [Development conventions](/development/).
 ├── info                                  service info (built)
 ├── offering                              the offer side, merged: see Offering and activation (ADR-0020)
 ├── activations                           the active charters (ADR-0020)
-└── packs                                 the packs this service knows (GET built; POST proposed)
-    ├── refresh                           controller: re-read the packs (built)
+└── packs                                 the packs this service knows (collection proposed; tactic reads under {packId} built)
+    ├── refresh                           controller: re-read the packs (removed by #139)
     └── {packId}                          one pack (proposed)
         ├── artifacts                     ?kind=, paged
         │   └── {kind}/{artifactId}       one artifact with its body
