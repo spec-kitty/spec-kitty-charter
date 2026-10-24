@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-24T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -71,10 +71,14 @@ rules below are how this one is scoped to its worktree.
 
 ## Freshness
 
-- The fingerprint covers every pack file the service loads, plus `config.yaml` and `charter.yaml`
-  under the configured project directory (`charter.project-config-dir`; the launcher sets it to
-  the worktree's `.kittify`). An absent file and an empty one fingerprint differently. A
-  configured directory that does not exist fails startup.
+- The fingerprint covers, per configured pack in order, `pack.yaml`, every loaded file (tactic,
+  directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
+  `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured
+  name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project
+  configuration directory, with presence.
+  The project configuration directory is `charter.project-config-dir`; the launcher sets it to the worktree's `.kittify`. An absent file
+  and an empty one fingerprint differently. A configured directory that does not exist fails
+  startup. The graph inputs are digested although no served read loads them yet (#73).
 - At start, and after any write made outside it, the service fingerprints its source files
   and builds the active graph atomically. It never serves a graph built before a write it
   knows of.
@@ -83,14 +87,16 @@ rules below are how this one is scoped to its worktree.
 - **Push after write.** Core's writers notify the service after each write through the
   `kernel.atomic.observe_writes` hook, so the CLI sees its own write at once.
 - Pack locations are read from `.kittify/config.yaml`, not fixed when the service starts.
-- Every read digests its inputs before and after it answers. If they differ, including when a
-  load fails and the inputs changed meanwhile, the service refuses with `stale_input`. A change
-  after the second digest, or one reverted between the two, goes unseen. There is no Python
-  fallback.
-- `POST /packs/refresh` re-reads every pack and the project configuration, discards any built
-  read model and answers the refreshed pack listing with the fingerprint it verified. It takes
-  no body, changes nothing on disk and is idempotent. Mutation operations will rebuild the graph
-  atomically.
+- Every read verifies its inputs twice. It digests them before it loads and again after, and it
+  answers 200 with the digest it verified, once, as `Charter-Source-Fingerprint`. If the two
+  digests differ, the service refuses with `stale_input`, including when the load itself refused
+  and the inputs changed meanwhile. A change after the second digest, or one reverted between the
+  two, goes unseen. There is no Python fallback.
+- The first digest covers every configured pack, so a configured pack whose directory is missing,
+  or a pack with an unreadable file or a directory that cannot be listed, refuses every read with 500
+  `pack_unreadable`, a read of a healthy pack included.
+- Refresh is not served in this version. Reads verify their inputs on every call, and mutation
+  operations will rebuild the graph atomically.
 - Ordinary reads make no network calls.
 
 ## Failure: the seam fails closed

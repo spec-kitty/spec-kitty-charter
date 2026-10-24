@@ -33,17 +33,21 @@ properties:
       started with, or, without one, an id derived from where the configured packs are. Never a
       host path.
     x-source:
-      path: service/charter-read-app/src/main/java/ai/speckitty/charter/read/ServiceInfoQuery.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ServiceInfoQuery.java
       symbol: ServiceInfoQuery.worktree
   sourceFingerprint:
     allOf:
       - $ref: Sha256Digest.yaml
     description: >-
-      A digest of the inputs the answers depend on: every pack file the service loads, each with
-      its path under its pack's configured name, in load order; and config.yaml and charter.yaml
-      under the project configuration directory the service was started with, each with a
-      presence marker, so an absent file and an empty one differ. It changes whenever an input
-      does and names no host path. Adding an input in a later version changes values, not shape.
+      A digest of the inputs the answers depend on: per configured pack in order, `pack.yaml`, every
+      loaded file (tactic, directive, styleguide and paradigm files, at any depth) and the declared
+      graph inputs (root `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the
+      pack's configured name and its bytes; and, when configured, `config.yaml` and `charter.yaml`
+      under the project configuration directory, with presence. The order is: packs in configured
+      order; within a pack, `pack.yaml`, then the loaded files by kind and then path, then the root
+      shards by name, then `drg/fragment.yaml`. An absent file and an empty one differ. The graph
+      inputs are digested although no served read loads them yet. It changes whenever an input does
+      and names no host path. Adding an input in a later version changes values, not shape.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProjectConfigSources.java
       symbol: ProjectConfigSources.fingerprint

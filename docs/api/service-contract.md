@@ -20,7 +20,7 @@ audience:
 
 The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
 
-> **Partly built.** Three reads are in the contract and served by the Java service: the service info and a pack's tactics. The other operations on this page are designed only. See the [API overview](/api/).
+> **Partly built.** Three reads are in the contract and served by the Java service (`getServiceInfo`, `listPackTactics` and `getPackTactic`); the other operations on this page are designed only. See the [API overview](/api/).
 
 ## The contract files
 
@@ -43,13 +43,14 @@ The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schema
 
 | Operation | Answers | Path |
 |---|---|---|
-| `listPackTactics` | The readable tactics of one pack, in storage order; an absent or unreadable pack is a 404 `pack_not_found` | `GET /packs/{packId}/tactics` |
-| `getPackTactic` | One tactic of one pack by identity; 404 `pack_not_found` or `tactic_not_found` | `GET /packs/{packId}/tactics/{tacticId}` |
+| `listPackTactics` | The tactics of one configured pack, with the source fingerprint the read verified | `GET /packs/{packId}/tactics` |
+| `getPackTactic` | One tactic of one configured pack, with the source fingerprint the read verified | `GET /packs/{packId}/tactics/{tacticId}` |
 | `getServiceInfo` | The contract version, the service's build version (`serviceVersion`), the worktree it serves and a fingerprint of the sources it answers from | `GET /info` |
 
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
 carries `Charter-Contract-Version` and `Charter-Worktree`. Only a 200 answer carries
-`Charter-Source-Fingerprint`, once, with the digest that read verified; no refusal carries it.
+`Charter-Source-Fingerprint`, once, with the digest that read verified; no refusal carries it. Every
+built read (`getServiceInfo`, `listPackTactics` and `getPackTactic`) sets it on its 200.
 
 PR #139 (2026-10-21) rebuilt the service on one canonical `Pack` aggregate. It removed
 `listPacks` (`GET /packs`), `refreshPacks` (`POST /packs/refresh`) and `getActionContext`
@@ -94,11 +95,17 @@ swagger-parser bug with closed schemas). The wire shape is unaffected; the dedup
   receives the token, a derived worktree id is guessable, and a `${x}` placeholder resolved from
   argv is not refused yet (#121). A browser request (an `Origin` or `Sec-Fetch-*` header, or a
   `Host` whose name is not loopback) is a 403.
-- **Fingerprint.** It covers every loaded pack file plus `config.yaml` and `charter.yaml` under
-  the configured project directory. No test yet pins that it digests exactly the files the load
-  reads (#120).
-- **Stale reads.** Every read digests its inputs before and after it answers and refuses with
-  `stale_input` on a difference, a failed load included.
+- **Fingerprint.** It covers, per configured pack in order, `pack.yaml`, every loaded file (tactic,
+  directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
+  `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured
+  name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project
+  configuration directory, with presence.
+  The graph inputs are digested although no served read loads them yet. A generated-tree test pins that it digests exactly the declared files the load reads
+  (#120).
+- **Stale reads.** Every built read digests its inputs before and after it loads, answers 200 with
+  the digest it verified, and refuses with `stale_input` on a difference, a failed load included.
+  A configured pack whose directory is missing, or a pack with an unreadable file or a directory
+  that cannot be listed, is a 500 `pack_unreadable` on every read.
 
 Some of the 1.0 contract is reserved for the cutover work before that work exists, because a
 response field added after 1.0 is a breaking change: the `impacts` relation, the reserved
@@ -125,10 +132,11 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands |
 | The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, structured-prompt blocks, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various |
 
-The action-context walk (#95) and the reserved 1.0 surface (`depth`, `ServiceInfo`, the source
-fingerprint inputs, the per-worktree token and refresh) are decided and built
-([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113),
-[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)).
+The action-context walk (#95) and its `depth` parameter are decided
+([ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)) but not served: PR #139
+removed the operation. The reserved 1.0 surface that is built is `ServiceInfo`, the source
+fingerprint inputs and the per-worktree token
+([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113)).
 
 ## Decided, not built: packs resources (ADR-0019)
 
@@ -156,7 +164,8 @@ the conventions in [Development conventions](/development/).
 
 **Before 1.0.0** (in 0.x minors, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): the
 `Links` component, `GET /`, and a required `_links` on every existing success schema
-(`PackListing`, which the refresh also answers, `PackSummary`, `ActionContext`, `ServiceInfo`).
+(`ServiceInfo` and `Tactic`; the removed `PackListing`, `PackSummary` and `ActionContext` get it
+when they return).
 These change closed response schemas, so they are breaking after 1.0.0. With open relation keys
 (ADR-0019 D3), the per-pack operations and their relations can follow additively.
 
@@ -204,7 +213,7 @@ writes come after the read stages, one at a time: charter document save and comp
   and the load findings that do not stop a read in [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml).
   `CharterRefusalCode` carries a machine-readable `x-refusal` map (status, retryable, raised)
   for all nine codes.
-- `stale_input` is raised by every read: inputs changed while the answer was computed, a failed
+- `stale_input` is raised by every built read (`getServiceInfo`, `listPackTactics` and `getPackTactic`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` is reserved: it is declared and pinned by a scenario and a unit
   test, and raised by nothing until the pack mutability policy lands (epic #55).

@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-24T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -35,6 +35,12 @@ D2 (DIV-110 kept), D5 (R9 gates cutover stage 3), D6 (tensions go to the creed s
 
 **Amendment 2026-10-20** (R17 of the pack-schema mission): D11's note on which scenario pins
 `pack_unreadable` is amended. The point is annotated where it stands.
+
+**Amendment 2026-10-24** (#120, #173): D8 and D11 are annotated with how they are now built. One
+file-set authority in the storage ring feeds both the load and the fingerprint, and one
+verified-read rule in the application ring serves `/info` and both tactic reads. The Risks bullet
+on #120 is replaced. The decision text of D8 and D11 is unchanged. The points are annotated where
+they stand.
 
 This record supersedes, point by point:
 
@@ -196,6 +202,14 @@ presence byte, so an absent file and an empty one differ.
   from `config.yaml`; R9 reads activation from `charter.yaml`). An edit during a read refuses
   that read with `stale_input` although its answer could not have changed. The seam retries.
 
+*(Amended 2026-10-24, #120: the fingerprint's pack inputs are now `pack.yaml`, every file of a
+loaded kind (tactic, directive, styleguide and paradigm files, at any depth) and the declared graph
+inputs (root `*.graph.yaml` shards, then `drg/fragment.yaml`). They are taken from one file-set
+authority in the storage ring that the load also reads from, so a kind cannot be loaded without
+being digested. The graph inputs stay digested although no served read loads them yet (until the
+graph read, #73), with the same accepted consequence as the two config files above: an edit during
+a read refuses it with `stale_input` although its answer could not have changed.)*
+
 ### D9. The per-worktree token and the browser refusal
 
 - `components.securitySchemes.charterWorktreeToken` is an HTTP bearer scheme, declared as root
@@ -244,6 +258,13 @@ fingerprint check alone would answer. The path is not `/refresh` and the answer 
   carries it.**
 - **Residual window.** A change after the second digest, or one reverted between the two (ABA),
   goes unseen.
+
+  *(Amended 2026-10-24, #120, #173: `/info` and both tactic reads now share one verified-read rule
+  in the application ring, the role `ConsistentLoad` had before PR #139. A refusal of the load
+  (`pack_not_found`, `tactic_not_found`) whose inputs changed meanwhile is `stale_input`. The first
+  digest is global, so a missing pack directory or an unreadable file in any configured pack refuses
+  every read with `pack_unreadable`. The residual window above now covers tactic files too.)*
+
 - `pack_unreadable` is pinned by a scenario with a graph shard that is not valid YAML.
   *(Amended 2026-10-20, R17: a graph shard that is not valid YAML is now `drg_schema_error`, so that
   scenario no longer pins `pack_unreadable`. The pin is the `errors.feature` scenario in which
@@ -301,9 +322,11 @@ depths 0, 1 and 2".
 - **A placeholder split.** `CHARTER_WORKTREE_TOKEN='${x}'` with the value on argv starts the
   service. It needs a deliberate launcher misconfiguration (launcher review #70; the hardening
   that refuses it is issue #121).
-- **Nothing yet pins that the fingerprint digests exactly the files the load reads** (D8, D11).
-  The property test "loaded set = digested set" belongs on runner B's pack repository class and
-  is issue #120.
+- **A storage read outside the declared kinds.** *(Replaces, 2026-10-24, the bullet that said
+  nothing pinned the digest to the files the load reads, issue #120.)* A generated-tree exactness
+  test with a planted omission pins that the fingerprint digests exactly the declared files the
+  load reads (D8, D11). The remaining risk is a storage read of a file outside the declared kinds:
+  that test catches it, not the type system.
 - **Tensions are not reproducible** until the creed set lands (D6).
 - **R9 is a recommended cutover gate** (D5); the operator ruled it a gate, but nothing enforces
   it before #103.
