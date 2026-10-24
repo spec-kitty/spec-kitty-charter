@@ -71,13 +71,13 @@ rules below are how this one is scoped to its worktree.
 
 ## Freshness
 
-- The fingerprint covers, per configured pack in order, `pack.yaml`, every loaded file (tactic,
-  directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
+- The fingerprint covers, per configured pack in order, `pack.yaml`, every file of a loaded kind
+  (today tactic, directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
   `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured
   name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project
   configuration directory, with presence.
-  The project configuration directory is `charter.project-config-dir`; the launcher sets it to the worktree's `.kittify`. An absent file
-  and an empty one fingerprint differently. A configured directory that does not exist fails
+  The project configuration directory is `charter.project-config-dir`; the launcher sets it to
+  the worktree's `.kittify`. An absent file and an empty one fingerprint differently. A configured directory that does not exist fails
   startup. The graph inputs are digested although no served read loads them yet (#73).
 - At start, and after any write made outside it, the service fingerprints its source files
   and builds the active graph atomically. It never serves a graph built before a write it
@@ -93,8 +93,9 @@ rules below are how this one is scoped to its worktree.
   and the inputs changed meanwhile. A change after the second digest, or one reverted between the
   two, goes unseen. There is no Python fallback.
 - The first digest covers every configured pack, so a configured pack whose directory is missing,
-  or a pack with an unreadable file or a directory that cannot be listed, refuses every read with 500
-  `pack_unreadable`, a read of a healthy pack included.
+  or a pack holding a file the fingerprint covers that cannot be read or a directory that cannot be
+  listed, refuses every read with 500 `pack_unreadable`, a read of a healthy pack included. A file
+  that vanishes while a pack is walked, as in an atomic save, is not an error.
 - Refresh is not served in this version. Reads verify their inputs on every call, and mutation
   operations will rebuild the graph atomically.
 - Ordinary reads make no network calls.

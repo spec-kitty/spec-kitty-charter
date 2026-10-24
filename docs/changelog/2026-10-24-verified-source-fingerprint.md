@@ -40,9 +40,11 @@ files the service loads. Both gaps are closed ([#120](https://github.com/spec-ki
 ## Who is affected
 
 - **Core's seam.** The tactic reads now send the fingerprint and can answer `stale_input`, which
-  may be retried. A configured pack whose directory is missing, or a pack with an unreadable
-  file, refuses every read with 500 `pack_unreadable`; a tactic read of a missing pack directory
-  answered 404 `pack_not_found` before. The fingerprint's value changes for packs that hold
+  may be retried. A configured pack whose directory is missing, a pack holding a file the
+  fingerprint covers that cannot be read, or a pack directory that cannot be listed, refuses every
+  read with 500 `pack_unreadable`, `/info` included; a tactic read of a missing pack directory
+  answered 404 `pack_not_found` before. A file that vanishes while a pack is walked, as in an
+  atomic save, is not an error. The fingerprint's value changes for packs that hold
   tactic, directive, styleguide or paradigm files. No contract shape changed.
 - **Contributors.** A new artifact read goes through the shared verified read, and a new pack
   file kind is declared in the one file list.

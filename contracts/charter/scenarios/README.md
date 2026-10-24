@@ -60,8 +60,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Then the response header "<name>" is the remembered "<field>"` — the header equals a field remembered earlier
   with `When I remember the field "<field>" of the response body`, for example the `/info` fingerprint a later
   read must report for unchanged inputs.
-- `Given a pack file changes while the next read is answered` — the next read that digests the inputs (a read that
-  loads the offering, a refresh, or `/info`) sees a pack file rewritten (a node added to the first graph shard) after
+- `Given a pack file changes while the next read is answered` — the next read that digests the inputs (any built read:
+  `/info` or a tactic read) sees a pack file rewritten (a node added to the first graph shard) after
   its first digest and before its second.
   `Given a pack file is rewritten to invalid YAML while the next read is answered` — the same, with the shard
   rewritten to text that is not YAML and left so. `Given no pack file changes while the next read is answered` —
