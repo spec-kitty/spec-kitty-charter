@@ -185,6 +185,25 @@ class FileSystemPackSourcesTest {
         assertThat(refused).as("refusals; first: %s", first).isZero();
     }
 
+    @Test
+    void aRefusalToListAPackNamesTheConfiguredNameNotTheDirectoryName(@TempDir Path dir) throws IOException {
+        assumeFalse("root".equals(System.getProperty("user.name")), "permissions do not bite for root");
+        Path root = Files.createDirectories(dir.resolve("directory-name"));
+        Path nested = Files.createDirectories(root.resolve("deep/er"));
+        assumeTrue(nested.toFile().setReadable(false), "the file system cannot revoke read access");
+        FileSystemPackSources sources =
+                new FileSystemPackSources(() -> List.of(new PackLocation("configured-name", PackLevel.ORG, root)));
+
+        try {
+            assertThatThrownBy(sources::fingerprint).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                assertThat(r.getMessage()).isEqualTo("pack configured-name cannot be listed");
+            });
+        } finally {
+            assertThat(nested.toFile().setReadable(true)).isTrue();
+        }
+    }
+
     private static FileSystemPackSources sources(Path root) {
         return new FileSystemPackSources(() -> List.of(new PackLocation("qa", PackLevel.ORG, root)));
     }
