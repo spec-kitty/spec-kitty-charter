@@ -89,7 +89,7 @@ Feature: What the service says about itself
       """
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
-    Given the org pack "qa" with the file "notes.yml":
+    Given the org pack "qa" with the file "notes.yaml":
       """
       a: 1
       """
