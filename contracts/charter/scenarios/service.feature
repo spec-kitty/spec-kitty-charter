@@ -76,6 +76,36 @@ Feature: What the service says about itself
     When I GET "/info"
     Then the field "sourceFingerprint" of the response body differs from the remembered one
 
+  Scenario: The source fingerprint follows a tactic file
+    A tactic file is loaded by the tactic reads, so editing it changes the fingerprint; editing a
+    file the service does not load does not.
+    Given the org pack "qa" with the file "rehearse.tactic.yaml":
+      """
+      id: rehearse
+      schema_version: '1.0'
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    When I GET "/info"
+    And I remember the field "sourceFingerprint" of the response body
+    Given the org pack "qa" with the file "notes.yml":
+      """
+      a: 1
+      """
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body is the remembered one
+    Given the org pack "qa" with the file "rehearse.tactic.yaml":
+      """
+      id: rehearse
+      schema_version: '1.0'
+      name: Rehearse again
+      steps:
+        - title: Only step
+      """
+    When I GET "/info"
+    Then the field "sourceFingerprint" of the response body differs from the remembered one
+
   Scenario: The source fingerprint follows the project configuration
     The source fingerprint covers config.yaml and charter.yaml under the project configuration
     directory, as bytes: an edit changes it, and restoring the bytes restores it. The files are
