@@ -15,6 +15,31 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Regular artefact read and registration (mission regular-artefact-read-registration)
+
+- Added: per-kind reads and registrations for directive, styleguide, paradigm and toolguide:
+  `listPack<Kind>s`, `getPack<Kind>`, `registerPack<Kind>` (POST, create; a duplicate id is 409
+  `registration_conflict`) and `putPack<Kind>` (PUT, create or replace). Registration is functional
+  (ADR-0026): there is no `DELETE` or `PATCH`. A registration answers 201 (create) or 200 (replace)
+  with the resource and an `ETag` (the pack revision); its `Location` is the created resource's full
+  request URI. An item read sends the `ETag` of the snapshot its body was read from. `If-Match` is
+  optional on an artifact write and compared strongly: a weak tag never matches, `*` matches, and a
+  list matches when any member does; a stale one is 412.
+- Added: `putPackRelationship` (`PUT /packs/{packId}/relationships`) registers one relationship,
+  idempotent on the unordered `{from, to}` pair (ADR-0027); it requires `If-Match` (428 without it)
+  and answers 201 when it creates the pair, 200 when it replaces it.
+- Added: refusal codes `directive_not_found`, `styleguide_not_found`, `paradigm_not_found` and
+  `toolguide_not_found` (404, a pack without that artifact), `validation_failed` (422) and
+  `registration_conflict` (409), with their responses. A list endpoint's 404 is the new
+  `PackNotFound` response: an unknown pack is its only cause.
+- Changed: `governance_policy_violation` is answered with 409, not 500. ADR-0018 D10 is amended: a
+  registration answers 200 or 201, and the problem-only lint rule exempts both successes.
+  `Charter-Source-Fingerprint` names every read that sends it and the `*.toolguide.yaml` files it
+  digests; a registration does not send it.
+- Scenarios: `directives.feature`, `paradigms.feature`, `styleguides.feature` and `toolguides.feature`
+  are new ("<Kind>s are read and registered functionally"). `errors.feature` lists the new raised
+  codes and expects `governance_policy_violation` with 409.
+
 ### Verified source fingerprint on every read (mission verified-source-fingerprint)
 
 Description text only: no schema, operation, parameter, response or header declaration changes.
