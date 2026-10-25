@@ -1,7 +1,9 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PreconditionException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.Ordered;
@@ -13,8 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies. It runs before
- * {@link ProblemHandler}, whose catch-all would otherwise answer a refusal as an unexpected failure.
+ * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies, and a registration's unmet
+ * {@code If-Match} precondition to a plain {@code Problem}. It runs before {@link ProblemHandler}, whose catch-all would
+ * otherwise answer either as an unexpected failure.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -54,6 +57,26 @@ public class RefusalHandler {
     }
 
     /**
+     * Answers an unmet registration precondition: a stale {@code If-Match} is {@code 412 Precondition Failed}, a missing
+     * one on a write that requires it {@code 428 Precondition Required}. Both are plain {@code Problem} bodies, not
+     * refusal codes (ADR-0020).
+     *
+     * @param failure the precondition failure
+     * @return the {@code application/problem+json} response
+     */
+    @ExceptionHandler(PreconditionException.class)
+    public ResponseEntity<Problem> precondition(PreconditionException failure) {
+        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
+                ? HttpStatus.PRECONDITION_REQUIRED
+                : HttpStatus.PRECONDITION_FAILED;
+        Problem problem = new Problem(status.getReasonPhrase(), status.value());
+        problem.setDetail(failure.getMessage());
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    /**
      * The {@code internal_error} refusal of an unexpected failure. Its detail is the same sentence every time: it
      * names nothing of the failure, which is logged instead.
      *
@@ -79,8 +102,8 @@ public class RefusalHandler {
     /**
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
      * policy refusal is 409; every other code, {@code stale_input} and {@code internal_error} included, is 500. The
-     * {@code 412}/{@code 428} preconditions are not refusal codes: the controllers return those as plain problem
-     * bodies, not through this handler.
+     * {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers those as plain
+     * problem bodies.
      *
      * @param code the refusal code
      * @return its HTTP status

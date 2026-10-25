@@ -1,8 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.StyleguidesApi;
-import ai.speckitty.charter.api.model.Problem;
-import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.Styleguide;
 import ai.speckitty.charter.api.model.Styleguide1;
 import ai.speckitty.charter.api.model.StyleguideAntiPattern;
@@ -12,10 +10,8 @@ import ai.speckitty.charter.api.model.StyleguideRegistration1;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackWriteStore;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.ConfigValue;
@@ -28,9 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.core.JacksonException;
@@ -41,9 +35,8 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code GET}/{@code PUT} on one styleguide (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). A
  * faithful copy of {@link ai.speckitty.charter.packs.infra.api.DirectiveController}, substituting the styleguide
  * types. The read is a thin projection of {@link StyleguideReadService}; the writes delegate to
- * {@link StyleguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; a stale
- * {@code If-Match} precondition is answered here as a plain {@code 412} {@link Problem} (not a refusal code), per
- * ADR-0020.
+ * {@link StyleguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
+ * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). A styleguide mints no
  * relationships, so the response relationships array is always empty and the registration body carries none. The
@@ -142,19 +135,6 @@ public class StyleguideController implements StyleguidesApi {
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(styleguide));
-    }
-
-    /** A stale {@code If-Match} (412) is a plain {@code Problem}. */
-    @ExceptionHandler(PreconditionException.class)
-    ResponseEntity<Problem> precondition(PreconditionException failure) {
-        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
-                ? HttpStatus.PRECONDITION_REQUIRED
-                : HttpStatus.PRECONDITION_FAILED;
-        Problem problem = new Problem(status.getReasonPhrase(), status.value());
-        problem.setDetail(failure.getMessage());
-        return ResponseEntity.status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -272,7 +252,7 @@ public class StyleguideController implements StyleguidesApi {
                 styleguide.appliesToLanguages(),
                 styleguide.references(),
                 styleguide.relationships().stream()
-                        .map(StyleguideController::toDto)
+                        .map(RelationshipWire::toWire)
                         .toList());
     }
 
@@ -298,15 +278,5 @@ public class StyleguideController implements StyleguidesApi {
 
     private static String toConfigDto(ConfigValue config) {
         return JSON.writeValueAsString(config.toParsed());
-    }
-
-    private static RelationshipRegistration toDto(Relationship relationship) {
-        RelationshipRegistration dto = new RelationshipRegistration(
-                relationship.from().toString(),
-                relationship.to().toString(),
-                relationship.type().token());
-        dto.setRationale(relationship.rationale().orElse(null));
-        dto.setWhen(relationship.when().orElse(null));
-        return dto;
     }
 }

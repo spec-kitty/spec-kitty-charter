@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ToolguidesApi;
-import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.api.model.Toolguide;
 import ai.speckitty.charter.api.model.Toolguide1;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
@@ -10,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackWriteStore;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -18,9 +16,7 @@ import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,9 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
  * The inbound REST adapter for a pack's toolguides: {@code GET}/{@code POST} on the collection and
  * {@code GET}/{@code PUT} on one toolguide (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It
  * copies {@link DirectiveController}: the read is a thin projection of {@link ToolguideReadService}; the writes delegate
- * to {@link ToolguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; a stale
- * {@code If-Match} precondition is answered here as a plain {@code 412} {@link Problem} (not a refusal code), per
- * ADR-0020.
+ * to {@link ToolguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
+ * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>A toolguide mints no relationships, so neither the request body nor the response carries a relationships array.
  * Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-toolguide response is a
@@ -119,19 +114,6 @@ public class ToolguideController implements ToolguidesApi {
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(toolguide));
-    }
-
-    /** A stale {@code If-Match} (412) or a missing one (428) is a plain {@code Problem}. */
-    @ExceptionHandler(PreconditionException.class)
-    ResponseEntity<Problem> precondition(PreconditionException failure) {
-        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
-                ? HttpStatus.PRECONDITION_REQUIRED
-                : HttpStatus.PRECONDITION_FAILED;
-        Problem problem = new Problem(status.getReasonPhrase(), status.value());
-        problem.setDetail(failure.getMessage());
-        return ResponseEntity.status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
