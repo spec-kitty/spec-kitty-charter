@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The inbound REST adapter for a pack's directives: {@code GET}/{@code POST} on the collection and
@@ -88,7 +89,10 @@ public class DirectiveController implements DirectivesApi {
         List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, false, null);
-        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/directives/" + id))
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
+                        .path("/{id}")
+                        .buildAndExpand(id)
+                        .toUri())
                 .eTag(result.revision().token())
                 .body(toSingleDto(directive));
     }

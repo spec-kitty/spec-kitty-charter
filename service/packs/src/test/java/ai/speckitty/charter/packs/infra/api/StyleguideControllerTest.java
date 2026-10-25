@@ -86,7 +86,7 @@ class StyleguideControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("docs-style")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/packs/pack-a/styleguides/docs-style"))
+                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/styleguides/docs-style"))
                 .andExpect(header().exists("ETag"))
                 .andExpect(jsonPath("$.id").value("docs-style"));
     }

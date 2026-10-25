@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The inbound REST adapter for a pack's paradigms: {@code GET}/{@code POST} on the collection and
@@ -82,7 +83,10 @@ public class ParadigmController implements ParadigmsApi {
         List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, false, null);
-        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/paradigms/" + id))
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
+                        .path("/{id}")
+                        .buildAndExpand(id)
+                        .toUri())
                 .eTag(result.revision().token())
                 .body(toSingleDto(paradigm));
     }

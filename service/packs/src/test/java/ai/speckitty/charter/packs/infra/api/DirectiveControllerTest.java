@@ -107,7 +107,7 @@ class DirectiveControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("GUARD")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/packs/pack-a/directives/GUARD"))
+                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/directives/GUARD"))
                 .andExpect(header().exists("ETag"))
                 .andExpect(jsonPath("$.id").value("GUARD"));
     }
