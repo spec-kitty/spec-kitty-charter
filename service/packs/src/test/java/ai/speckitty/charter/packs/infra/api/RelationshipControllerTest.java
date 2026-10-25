@@ -42,12 +42,12 @@ class RelationshipControllerTest {
     private static final String BODY = "{\"from\":\"directive:DIR_A\",\"to\":\"procedure:p\",\"type\":\"requires\"}";
 
     @Test
-    void registersARelationshipWithAFreshPreconditionAndAnswersAnEtag() throws Exception {
+    void registersANewRelationshipWithAFreshPreconditionAndAnswers201WithAnEtag() throws Exception {
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
                         .header("If-Match", store.currentRevision(PACK).token())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(header().exists("ETag"))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
         assertThat(store.edges).hasSize(1);
@@ -59,7 +59,7 @@ class RelationshipControllerTest {
                         .header("If-Match", store.currentRevision(PACK).token())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
                         .header("If-Match", store.currentRevision(PACK).token())
                         .contentType(MediaType.APPLICATION_JSON)
