@@ -239,7 +239,7 @@ from 1.0, and core's seam maps an `in_tension_with` edge to a negative `impacts`
 In YAML and shards this link is an *edge* (`DrgEdge`); in the domain it is a *relationship*.
 
 In the Java domain a relationship is a first-class value object — `from`, `to`, a
-behaviour-carrying `RelationType` (directionality and activation propagation derive from the type),
+behavior-carrying `RelationType` (directionality and activation propagation derive from the type),
 and an optional `rationale` — identified by the unordered `{from, to}` pair, so **at most one
 relationship exists between two components** (a simple graph, not a multigraph). Here a
 **component** is the `CharterArtifact` node at the `from` or `to` of a relationship — a graph node,
@@ -247,7 +247,7 @@ narrower than the glossary's broader "charter component". A charter
 component exposes `relationships()`: the relationships for which it is the effective origin (its
 `from` matches, or a bidirectional relationship names it as `to`). A repository returns a component
 with its relationships already populated; the graph is walked **on demand**, resolving each
-neighbour through its own kind's repository rather than loading the whole Doctrine Reference Graph
+neighbor through its own kind's repository rather than loading the whole Doctrine Reference Graph
 (DRG) into memory. `DrgEdge`
 is the storage-side serialization object for a relationship, not the domain concept. The identity is
 a bounded, conditional unidirectional collapse with a revisit trigger when a symmetric relation is
