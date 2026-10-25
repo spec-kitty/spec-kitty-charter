@@ -12,6 +12,7 @@ related:
   - adr/0012-pack-mutability-policy
   - adr/0013-persistent-deactivation
   - adr/0009-contract-1-0-reservations-and-additive-contract-sets
+  - adr/0025-relationships-first-class-and-lazy-repository-walk
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -232,6 +233,19 @@ the authored files are drawn in the [pack write model](/architecture/descriptor-
 Core still writes `in_tension_with` until its migration lands. The contract has only `impacts`
 from 1.0, and core's seam maps an `in_tension_with` edge to a negative `impacts` edge until then
 (provisional, [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)).
+
+### Relationships in the domain
+
+In the Java domain a relationship is a first-class value object — `from`, `to`, a
+behaviour-carrying `RelationType` (directionality and activation propagation derive from the type),
+and an optional `rationale` — identified by the unordered `{from, to}` pair, so **at most one
+relationship exists between two components** (a simple graph, not a multigraph). A charter
+component exposes `relationships()`: the relationships for which it is the effective origin (its
+`from` matches, or a bidirectional relationship names it as `to`). A repository returns a component
+with its relationships already populated; the graph is walked **on demand**, resolving each
+neighbour through its own kind's repository rather than loading the whole DRG into memory. `DrgEdge`
+is the storage-side serialization object for a relationship, not the domain concept. See
+[ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/).
 
 ## Activation
 
