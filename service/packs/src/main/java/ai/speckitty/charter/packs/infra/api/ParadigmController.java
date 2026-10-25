@@ -6,26 +6,19 @@ import ai.speckitty.charter.api.model.Paradigm1;
 import ai.speckitty.charter.api.model.ParadigmReference;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
 import ai.speckitty.charter.api.model.ParadigmRegistration1;
-import ai.speckitty.charter.api.model.Problem;
-import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,8 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code GET}/{@code PUT} on one paradigm (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It is a
  * faithful copy of {@link DirectiveController}, kept independent per-kind. The read is a thin projection of
  * {@link ParadigmReadService}; the writes delegate to {@link ParadigmRegistrationService}. A refusal the services
- * throw is answered by {@link RefusalHandler}; a stale {@code If-Match} precondition is answered here as a plain
- * {@code 412} {@link Problem} (not a refusal code), per ADR-0020.
+ * throw is answered by {@link RefusalHandler}; so is a stale {@code If-Match}
+ * precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-paradigm response
  * is a {@code Paradigm1}, the generator's name for the second use of the one {@code Paradigm} schema.
@@ -92,7 +85,7 @@ public class ParadigmController implements ParadigmsApi {
                 body.getSummary(),
                 body.getDirectiveRefs(),
                 body.getReferences());
-        List<Relationship> relationships = relationships(body.getRelationships());
+        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, false, null);
         return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/paradigms/" + id))
@@ -112,25 +105,12 @@ public class ParadigmController implements ParadigmsApi {
                 body.getSummary(),
                 body.getDirectiveRefs(),
                 body.getReferences());
-        List<Relationship> relationships = relationships(body.getRelationships());
+        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(paradigm));
-    }
-
-    /** A stale {@code If-Match} (412) or a missing one on a sub-resource (428) is a plain {@code Problem}. */
-    @ExceptionHandler(PreconditionException.class)
-    ResponseEntity<Problem> precondition(PreconditionException failure) {
-        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
-                ? HttpStatus.PRECONDITION_REQUIRED
-                : HttpStatus.PRECONDITION_FAILED;
-        Problem problem = new Problem(status.getReasonPhrase(), status.value());
-        problem.setDetail(failure.getMessage());
-        return ResponseEntity.status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -167,29 +147,6 @@ public class ParadigmController implements ParadigmsApi {
         }
     }
 
-    private static List<Relationship> relationships(List<RelationshipRegistration> wire) {
-        try {
-            return wire.stream().map(ParadigmController::toRelationship).toList();
-        } catch (IllegalArgumentException invalid) {
-            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
-        }
-    }
-
-    private static Relationship toRelationship(RelationshipRegistration wire) {
-        Urn from = Urn.parse(wire.getFrom())
-                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getFrom()));
-        Urn to = Urn.parse(wire.getTo())
-                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getTo()));
-        RelationType type = RelationType.fromToken(wire.getType())
-                .orElseThrow(() -> new IllegalArgumentException("unknown relation type: " + wire.getType()));
-        return new Relationship(
-                from,
-                to,
-                type,
-                java.util.Optional.ofNullable(wire.getWhen()),
-                java.util.Optional.ofNullable(wire.getRationale()));
-    }
-
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
 
     private static Paradigm1 toSingleDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
@@ -212,20 +169,10 @@ public class ParadigmController implements ParadigmsApi {
                 paradigm.summary(),
                 paradigm.directiveRefs(),
                 paradigm.references().stream().map(ParadigmController::toDto).toList(),
-                paradigm.relationships().stream().map(ParadigmController::toDto).toList());
+                paradigm.relationships().stream().map(RelationshipWire::toWire).toList());
     }
 
     private static ParadigmReference toDto(ai.speckitty.charter.packs.domain.ParadigmReference reference) {
         return new ParadigmReference(reference.type(), reference.id());
-    }
-
-    private static RelationshipRegistration toDto(Relationship relationship) {
-        RelationshipRegistration dto = new RelationshipRegistration(
-                relationship.from().toString(),
-                relationship.to().toString(),
-                relationship.type().token());
-        dto.setRationale(relationship.rationale().orElse(null));
-        dto.setWhen(relationship.when().orElse(null));
-        return dto;
     }
 }

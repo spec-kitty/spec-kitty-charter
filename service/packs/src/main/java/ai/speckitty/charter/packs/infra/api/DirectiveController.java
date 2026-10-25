@@ -6,18 +6,13 @@ import ai.speckitty.charter.api.model.Directive1;
 import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.api.model.DirectiveRegistration1;
-import ai.speckitty.charter.api.model.Problem;
-import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.PackWriteStore;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -25,9 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,9 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
  * The inbound REST adapter for a pack's directives: {@code GET}/{@code POST} on the collection and
  * {@code GET}/{@code PUT} on one directive (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). The
  * read is a thin projection of {@link DirectiveReadService}; the writes delegate to
- * {@link DirectiveRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; a stale
- * {@code If-Match} precondition is answered here as a plain {@code 412} {@link Problem} (not a refusal code), per
- * ADR-0020.
+ * {@link DirectiveRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
+ * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-directive response
  * is a {@code Directive1}, the generator's name for the second use of the one {@code Directive} schema.
@@ -99,7 +91,7 @@ public class DirectiveController implements DirectivesApi {
                 body.getValidationCriteria(),
                 body.getExplicitAllowances(),
                 body.getReferences());
-        List<Relationship> relationships = relationships(body.getRelationships());
+        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, false, null);
         return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/directives/" + id))
@@ -124,25 +116,12 @@ public class DirectiveController implements DirectivesApi {
                 body.getValidationCriteria(),
                 body.getExplicitAllowances(),
                 body.getReferences());
-        List<Relationship> relationships = relationships(body.getRelationships());
+        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(directive));
-    }
-
-    /** A stale {@code If-Match} (412) or a missing one on a sub-resource (428) is a plain {@code Problem}. */
-    @ExceptionHandler(PreconditionException.class)
-    ResponseEntity<Problem> precondition(PreconditionException failure) {
-        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
-                ? HttpStatus.PRECONDITION_REQUIRED
-                : HttpStatus.PRECONDITION_FAILED;
-        Problem problem = new Problem(status.getReasonPhrase(), status.value());
-        problem.setDetail(failure.getMessage());
-        return ResponseEntity.status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -194,25 +173,6 @@ public class DirectiveController implements DirectivesApi {
         }
     }
 
-    private static List<Relationship> relationships(List<RelationshipRegistration> wire) {
-        try {
-            return wire.stream().map(DirectiveController::toRelationship).toList();
-        } catch (IllegalArgumentException invalid) {
-            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
-        }
-    }
-
-    private static Relationship toRelationship(RelationshipRegistration wire) {
-        Urn from = Urn.parse(wire.getFrom())
-                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getFrom()));
-        Urn to = Urn.parse(wire.getTo())
-                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getTo()));
-        RelationType type = RelationType.fromToken(wire.getType())
-                .orElseThrow(() -> new IllegalArgumentException("unknown relation type: " + wire.getType()));
-        return new Relationship(
-                from, to, type, Optional.ofNullable(wire.getWhen()), Optional.ofNullable(wire.getRationale()));
-    }
-
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
 
     private static Directive1 toSingleDto(ai.speckitty.charter.packs.domain.Directive directive) {
@@ -245,9 +205,7 @@ public class DirectiveController implements DirectivesApi {
                 directive.validationCriteria(),
                 directive.explicitAllowances(),
                 directive.references().stream().map(DirectiveController::toDto).toList(),
-                directive.relationships().stream()
-                        .map(DirectiveController::toDto)
-                        .toList());
+                directive.relationships().stream().map(RelationshipWire::toWire).toList());
     }
 
     private static DirectiveReference toDto(ai.speckitty.charter.packs.domain.DirectiveReference reference) {
@@ -256,15 +214,5 @@ public class DirectiveController implements DirectivesApi {
                 reference.id(),
                 reference.when().orElse(null),
                 reference.reason().orElse(null));
-    }
-
-    private static RelationshipRegistration toDto(Relationship relationship) {
-        RelationshipRegistration dto = new RelationshipRegistration(
-                relationship.from().toString(),
-                relationship.to().toString(),
-                relationship.type().token());
-        dto.setRationale(relationship.rationale().orElse(null));
-        dto.setWhen(relationship.when().orElse(null));
-        return dto;
     }
 }
