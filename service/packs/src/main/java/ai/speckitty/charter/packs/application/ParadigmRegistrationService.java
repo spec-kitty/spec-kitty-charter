@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -37,8 +36,8 @@ import org.springframework.stereotype.Service;
  *
  * Both doors upsert the <em>same</em> pack relationship shard, keyed by the unordered {@code {from, to}} pair,
  * last-write-wins, so they converge: re-registering a pair (in either orientation, via either door) replaces it. The
- * standalone endpoint's upsert is authored once on {@link DirectiveRegistrationService}; this service reuses the same
- * pure merge so the shard stays single-sourced.
+ * standalone endpoint lives on {@link RelationshipRegistrationService}; both reuse the one package-private
+ * {@code RelationshipMerge} so the shard stays single-sourced.
  */
 @Service
 public final class ParadigmRegistrationService {
@@ -106,13 +105,14 @@ public final class ParadigmRegistrationService {
                     "Pack " + pack.value() + " already has a paradigm "
                             + paradigm.id().value() + ".");
         }
-        ownBodyRelationships(paradigm.urn(), bodyRelationships);
+        RelationshipMerge.ownBodyRelationships("paradigm", paradigm.urn(), bodyRelationships);
         policy.authorize(
                 current,
                 exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                 paradigm.urn());
         Pack mutated = revalidated(current, paradigm);
-        List<Relationship> merged = mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
+        List<Relationship> merged =
+                RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
         PackRevision revision = writeStore.commit(pack, mutated, merged);
         return new Registered(revision, !exists, paradigm.urn());
     }
@@ -127,19 +127,6 @@ public final class ParadigmRegistrationService {
                 throw refused;
             }
             throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
-        }
-    }
-
-    /** Enforces the dual-write ownership rule: a body relationship must be authored from the paradigm itself. */
-    private static void ownBodyRelationships(Urn owner, List<Relationship> bodyRelationships) {
-        for (Relationship relationship : bodyRelationships) {
-            if (!relationship.from().equals(owner)) {
-                throw new CharterRefusal(
-                        RefusalCode.VALIDATION_FAILED,
-                        "A paradigm body may assert only relationships authored from "
-                                + owner + ", but one is authored from " + relationship.from()
-                                + "; register a cross-authored edge through PUT /relationships.");
-            }
         }
     }
 
@@ -174,31 +161,5 @@ public final class ParadigmRegistrationService {
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
-    }
-
-    private static List<Relationship> mergeAll(List<Relationship> existing, List<Relationship> incoming) {
-        List<Relationship> merged = new ArrayList<>(existing);
-        for (Relationship relationship : incoming) {
-            merged = new ArrayList<>(upsert(merged, relationship));
-        }
-        return List.copyOf(merged);
-    }
-
-    /**
-     * Upserts {@code incoming} into {@code existing} on the unordered {@code {from, to}} pair, last-write-wins. It is
-     * an explicit put, not a {@code Set.add}: {@link Relationship#equals(Object)} is pair-identity, so any
-     * relationship already on the pair (in either orientation) is dropped and {@code incoming} appended. This mirrors
-     * the storage shard's own upsert and the directive slice's, kept here in pure application terms so the
-     * convergence is unit-testable.
-     */
-    private static List<Relationship> upsert(List<Relationship> existing, Relationship incoming) {
-        List<Relationship> merged = new ArrayList<>(existing.size() + 1);
-        for (Relationship relationship : existing) {
-            if (!relationship.equals(incoming)) {
-                merged.add(relationship);
-            }
-        }
-        merged.add(incoming);
-        return List.copyOf(merged);
     }
 }

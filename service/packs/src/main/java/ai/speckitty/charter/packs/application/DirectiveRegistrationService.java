@@ -5,25 +5,20 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Registers a directive and a relationship into a pack (FR-007/009/010/012), the write half of the US1 reference
- * slice and the pattern every later kind copies. Every write is <strong>functional</strong> (ADR-0026): there is no
+ * Registers a directive into a pack (FR-007/010/012), the write half of the US1 reference slice and the pattern
+ * every later kind copies. Every write is <strong>functional</strong> (ADR-0026): there is no
  * CRUD, no {@code DELETE}/{@code PATCH}; a registration goes <em>load &rarr; mutate &rarr; revalidate the whole
  * {@link Pack} &rarr; commit atomically</em>, so the aggregate invariants (belongs-to-pack, no-duplicate-id) gate the
  * write, and a refusal changes zero stored files (NFR-002, the {@link PackWriteStore}'s stage-and-swap enforces it).
@@ -31,18 +26,17 @@ import org.springframework.stereotype.Service;
  * <h2>Dual-write ownership (analysis finding I1 / plan IC-05)</h2>
  *
  * A relationship can arrive two ways: inside an artifact-registration body ({@link #registerDirective}) or through the
- * standalone relationship endpoint ({@link #registerRelationship}). The chosen ownership rule is:
+ * standalone relationship endpoint ({@link RelationshipRegistrationService#registerRelationship}). The chosen ownership rule is:
  *
  * <blockquote><strong>An artifact body may assert only relationships whose {@code from} is that artifact.</strong> A
  * body relationship with any other {@code from} is refused {@link RefusalCode#VALIDATION_FAILED} (422). A
  * cross-authored edge — one whose {@code from} is a different component — must be registered through
- * {@link #registerRelationship} ({@code PUT /packs/{id}/relationships}).</blockquote>
+ * {@link RelationshipRegistrationService#registerRelationship} ({@code PUT /packs/{id}/relationships}).</blockquote>
  *
  * Both doors upsert the <em>same</em> pack relationship shard, keyed by the unordered {@code {from, to}} pair,
  * last-write-wins, so they converge: re-registering a pair (in either orientation, via either door) replaces it. The
  * body door owns a component's own originating edges; the relationship door authors standalone or cross-authored
- * edges. {@code from} must resolve within the pack ({@link RefusalCode#REGISTRATION_CONFLICT}, 409, when it does not);
- * {@code to} may be external (graph endpoints need not be local).
+ * edges. The shared pure upsert lives once in the package-private {@code RelationshipMerge}.
  */
 @Service
 public final class DirectiveRegistrationService {
@@ -102,7 +96,7 @@ public final class DirectiveRegistrationService {
         Objects.requireNonNull(directive, "directive");
         Objects.requireNonNull(bodyRelationships, "bodyRelationships");
         Pack current = load(pack);
-        precondition(pack, ifMatch, false);
+        precondition(pack, ifMatch);
         boolean exists = current.directives().stream().anyMatch(d -> d.id().equals(directive.id()));
         if (!replace && exists) {
             throw new CharterRefusal(
@@ -110,48 +104,16 @@ public final class DirectiveRegistrationService {
                     "Pack " + pack.value() + " already has a directive "
                             + directive.id().value() + ".");
         }
-        ownBodyRelationships(directive.urn(), bodyRelationships);
+        RelationshipMerge.ownBodyRelationships("directive", directive.urn(), bodyRelationships);
         policy.authorize(
                 current,
                 exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                 directive.urn());
         Pack mutated = revalidated(current, directive);
-        List<Relationship> merged = mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
+        List<Relationship> merged =
+                RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
         PackRevision revision = writeStore.commit(pack, mutated, merged);
         return new Registered(revision, !exists, directive.urn());
-    }
-
-    /**
-     * Registers a standalone relationship edge, idempotent on the unordered {@code {from, to}} pair (FR-009). The
-     * aggregate itself is unchanged; only the relationship shard is upserted and the whole pack is re-committed
-     * atomically so the revision advances.
-     *
-     * @param pack the pack to register into
-     * @param relationship the relationship to register; its {@code from} must resolve within the pack
-     * @param ifMatch the {@code If-Match} precondition; a sub-resource write <strong>requires</strong> one
-     * @return the registration outcome; {@link Registered#created()} is {@code true} when the pair was not registered
-     *     before (in either orientation)
-     * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown, or
-     *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack
-     * @throws PreconditionException {@link PreconditionException.Kind#MISSING} (428) when no precondition was supplied,
-     *     {@link PreconditionException.Kind#STALE} (412) when {@code ifMatch} is stale
-     */
-    public Registered registerRelationship(PackIdentifier pack, Relationship relationship, @Nullable String ifMatch) {
-        Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(relationship, "relationship");
-        Pack current = load(pack);
-        precondition(pack, ifMatch, true);
-        if (!urnsOf(current).contains(relationship.from())) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value() + ".");
-        }
-        policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
-        List<Relationship> existing = writeStore.registeredRelationships(pack);
-        boolean created = existing.stream().noneMatch(relationship::equals);
-        List<Relationship> merged = upsert(existing, relationship);
-        PackRevision revision = writeStore.commit(pack, current, merged);
-        return new Registered(revision, created, relationship.from());
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------
@@ -167,26 +129,8 @@ public final class DirectiveRegistrationService {
         }
     }
 
-    /** Enforces the dual-write ownership rule: a body relationship must be authored from the directive itself. */
-    private static void ownBodyRelationships(Urn owner, List<Relationship> bodyRelationships) {
-        for (Relationship relationship : bodyRelationships) {
-            if (!relationship.from().equals(owner)) {
-                throw new CharterRefusal(
-                        RefusalCode.VALIDATION_FAILED,
-                        "A directive body may assert only relationships authored from "
-                                + owner + ", but one is authored from " + relationship.from()
-                                + "; register a cross-authored edge through PUT /relationships.");
-            }
-        }
-    }
-
-    private void precondition(PackIdentifier pack, @Nullable String ifMatch, boolean required) {
+    private void precondition(PackIdentifier pack, @Nullable String ifMatch) {
         if (ifMatch == null) {
-            if (required) {
-                throw new PreconditionException(
-                        PreconditionException.Kind.MISSING,
-                        "A relationship registration requires an If-Match precondition.");
-            }
             return;
         }
         if (!PackRevision.matches(ifMatch, writeStore.currentRevision(pack))) {
@@ -216,42 +160,5 @@ public final class DirectiveRegistrationService {
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
-    }
-
-    private static Set<Urn> urnsOf(Pack pack) {
-        return Stream.of(
-                        pack.tactics().stream(),
-                        pack.directives().stream(),
-                        pack.styleguides().stream(),
-                        pack.toolguides().stream(),
-                        pack.paradigms().stream())
-                .flatMap(stream -> stream)
-                .map(CharterArtifact::urn)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    private static List<Relationship> mergeAll(List<Relationship> existing, List<Relationship> incoming) {
-        List<Relationship> merged = new ArrayList<>(existing);
-        for (Relationship relationship : incoming) {
-            merged = new ArrayList<>(upsert(merged, relationship));
-        }
-        return List.copyOf(merged);
-    }
-
-    /**
-     * Upserts {@code incoming} into {@code existing} on the unordered {@code {from, to}} pair, last-write-wins. It is
-     * an explicit put, not a {@code Set.add}: {@link Relationship#equals(Object)} is pair-identity, so any
-     * relationship already on the pair (in either orientation) is dropped and {@code incoming} appended. This mirrors
-     * the storage shard's own upsert, kept here in pure application terms so the convergence is unit-testable.
-     */
-    private static List<Relationship> upsert(List<Relationship> existing, Relationship incoming) {
-        List<Relationship> merged = new ArrayList<>(existing.size() + 1);
-        for (Relationship relationship : existing) {
-            if (!relationship.equals(incoming)) {
-                merged.add(relationship);
-            }
-        }
-        merged.add(incoming);
-        return List.copyOf(merged);
     }
 }
