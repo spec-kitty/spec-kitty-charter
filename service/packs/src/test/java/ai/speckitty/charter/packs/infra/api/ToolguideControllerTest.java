@@ -77,7 +77,7 @@ class ToolguideControllerTest {
         mvc.perform(get("/api/v1/packs/pack-a/toolguides/missing"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("pack_not_found"));
+                .andExpect(jsonPath("$.code").value("toolguide_not_found"));
     }
 
     @Test

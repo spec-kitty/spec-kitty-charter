@@ -93,7 +93,8 @@ public class RefusalHandler {
                     TACTIC_NOT_FOUND,
                     DIRECTIVE_NOT_FOUND,
                     STYLEGUIDE_NOT_FOUND,
-                    PARADIGM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    PARADIGM_NOT_FOUND,
+                    TOOLGUIDE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_CONTENT;
             case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION -> HttpStatus.CONFLICT;
             case PACK_LEVEL_MISMATCH,
@@ -121,6 +122,7 @@ public class RefusalHandler {
             case DIRECTIVE_NOT_FOUND -> "Directive not found";
             case STYLEGUIDE_NOT_FOUND -> "Styleguide not found";
             case PARADIGM_NOT_FOUND -> "Paradigm not found";
+            case TOOLGUIDE_NOT_FOUND -> "Toolguide not found";
             case VALIDATION_FAILED -> "Validation failed";
             case REGISTRATION_CONFLICT -> "Registration conflict";
         };

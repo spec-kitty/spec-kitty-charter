@@ -3,9 +3,9 @@ get:
   summary: Get one toolguide of a Charter Pack by identity.
   description: >-
     One toolguide of one pack (FR-015); a toolguide mints no relationships. An identifier that matches no
-    configured pack is a 404 pack_not_found; a pack without that toolguide is likewise a 404 pack_not_found
-    (the kind adds no dedicated not-found code). A pack whose files cannot be read is a 500 pack_unreadable.
-    The answer is verified against the source fingerprint and carries it.
+    configured pack is a 404 pack_not_found; a pack without that toolguide is a 404 toolguide_not_found.
+    A pack whose files cannot be read is a 500 pack_unreadable. The answer is verified against the source
+    fingerprint and carries it.
   tags:
     - Toolguides
   parameters:

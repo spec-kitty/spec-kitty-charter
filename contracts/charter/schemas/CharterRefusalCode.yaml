@@ -3,7 +3,7 @@ description: >-
   Why the charter refused a read. Codes are part of the contract; consumers branch on them,
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
-  tactic_not_found, directive_not_found, styleguide_not_found and paradigm_not_found are 404; validation_failed is 422; registration_conflict and
+  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and toolguide_not_found are 404; validation_failed is 422; registration_conflict and
   governance_policy_violation are 409; every other code is 500. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. A missing or invalid pack.yaml never
   refuses a tactic read: the identifier lookup skips that pack. A configured pack whose directory is
@@ -63,6 +63,7 @@ enum:
   - directive_not_found
   - styleguide_not_found
   - paradigm_not_found
+  - toolguide_not_found
   - validation_failed
   - registration_conflict
 x-refusal:
@@ -119,6 +120,10 @@ x-refusal:
     retryable: false
     raised: true
   paradigm_not_found:
+    status: 404
+    retryable: false
+    raised: true
+  toolguide_not_found:
     status: 404
     retryable: false
     raised: true
