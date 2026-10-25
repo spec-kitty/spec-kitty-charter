@@ -249,6 +249,11 @@ def test_svg_normalisation_ignores_geometry_and_fonts_but_not_content() -> None:
     assert base == cd._normalise_svg(svg("Label", "99.5", "DejaVu Sans", "<line x1=\"3\"/>"))
     assert base != cd._normalise_svg(svg("Other", "10", "Helvetica"))
     assert base != cd._normalise_svg(svg("Label", "10", "Helvetica").replace('"A"', '"B"'))
+    # An embedded sprite is rasterised per machine: its bytes are geometry, its presence and link are not.
+    sprite = svg("Label", "10", "Helvetica", '<image href="data:image/png;base64,AAAA"/><a href="/x/"/>')
+    assert cd._normalise_svg(sprite) == cd._normalise_svg(sprite.replace("AAAA", "BBBB"))
+    assert cd._normalise_svg(sprite) != base
+    assert cd._normalise_svg(sprite) != cd._normalise_svg(sprite.replace('"/x/"', '"/y/"'))
 
 
 def test_links_accept_generated_route_prefix_from_doc_rules_only(root: Path) -> None:

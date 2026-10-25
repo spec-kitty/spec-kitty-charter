@@ -611,13 +611,24 @@ _SVG_SEMANTIC_ATTRS = (
 )
 
 
+def _semantic_value(value: str) -> str:
+    """An inline `data:` URI compares by its media type only.
+
+    PlantUML embeds sprites (the C4 person and legend icons, say) as PNGs that the renderer's Java
+    rasterises, so their bytes differ per machine like any other geometry. The link target itself
+    (a page, an anchor) is still compared in full.
+    """
+    return value.split(";", 1)[0].split(",", 1)[0] if value.startswith("data:") else value
+
+
 def _normalise_svg(svg: str) -> str:
     """Reduce an SVG to its semantic content: text, entity identity and link targets.
 
     Geometry, styles, fonts, text widths, path data and element counts depend on the fonts and
     Java of the machine that renders, so none of them is compared. What is compared: the sorted
     texts, plus the sorted (id, class, entity, relation, source line, link) attributes PlantUML
-    stamps on its elements. A changed label, class, member, relation or link still differs.
+    stamps on its elements; an inline image compares by its media type. A changed label, class,
+    member, relation or link still differs.
     """
     root = ElementTree.fromstring(svg)
     texts: list[str] = []
@@ -626,7 +637,7 @@ def _normalise_svg(svg: str) -> str:
         tag = el.tag.rsplit("}", 1)[-1]
         if tag == "text":
             texts.append(" ".join("".join(el.itertext()).split()))
-        found = [f"{a.rsplit('}', 1)[-1]}={el.attrib[a]}" for a in _SVG_SEMANTIC_ATTRS if a in el.attrib]
+        found = [f"{a.rsplit('}', 1)[-1]}={_semantic_value(el.attrib[a])}" for a in _SVG_SEMANTIC_ATTRS if a in el.attrib]
         if found:
             marks.append(f"{tag} " + " ".join(found))
     return "\n".join([*sorted(t for t in texts if t), "--", *sorted(marks)])
