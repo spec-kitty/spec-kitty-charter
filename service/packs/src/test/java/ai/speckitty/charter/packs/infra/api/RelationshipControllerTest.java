@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -136,7 +137,12 @@ class RelationshipControllerTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier id, Pack mutated, List<Relationship> relationships) {
+        public <T> T exclusively(PackIdentifier id, Supplier<T> work) {
+            return work.get();
+        }
+
+        @Override
+        public PackRevision commit(PackIdentifier id, String ifMatch, Pack mutated, List<Relationship> relationships) {
             edges.clear();
             edges.addAll(relationships);
             commits++;

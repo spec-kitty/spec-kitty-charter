@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -244,7 +245,12 @@ class DirectiveControllerTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier id, Pack mutated, List<Relationship> relationships) {
+        public <T> T exclusively(PackIdentifier id, Supplier<T> work) {
+            return work.get();
+        }
+
+        @Override
+        public PackRevision commit(PackIdentifier id, String ifMatch, Pack mutated, List<Relationship> relationships) {
             this.pack = mutated;
             commits++;
             return currentRevision(id);

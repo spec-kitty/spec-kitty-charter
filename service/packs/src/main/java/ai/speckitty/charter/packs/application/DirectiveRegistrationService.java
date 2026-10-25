@@ -95,26 +95,30 @@ public final class DirectiveRegistrationService {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(directive, "directive");
         Objects.requireNonNull(bodyRelationships, "bodyRelationships");
-        Pack current = load(pack);
-        precondition(pack, ifMatch);
-        boolean exists = current.directives().stream().anyMatch(d -> d.id().equals(directive.id()));
-        if (!replace && exists) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Pack " + pack.value() + " already has a directive "
-                            + directive.id().value() + ".");
-        }
-        RelationshipMerge.ownBodyRelationships("directive", directive.urn(), bodyRelationships);
-        policy.authorize(
-                current,
-                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                directive.urn());
-        Pack mutated = revalidated(current, directive);
-        List<Relationship> merged = bodyRelationships.isEmpty()
-                ? null // the body asserts no edge: leave the relationship shard untouched
-                : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
-        PackRevision revision = writeStore.commit(pack, mutated, merged);
-        return new Registered(revision, !exists, directive.urn());
+        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // state: a concurrent writer cannot slip between them (a lost update).
+        return writeStore.exclusively(pack, () -> {
+            Pack current = load(pack);
+            precondition(pack, ifMatch);
+            boolean exists = current.directives().stream().anyMatch(d -> d.id().equals(directive.id()));
+            if (!replace && exists) {
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT,
+                        "Pack " + pack.value() + " already has a directive "
+                                + directive.id().value() + ".");
+            }
+            RelationshipMerge.ownBodyRelationships("directive", directive.urn(), bodyRelationships);
+            policy.authorize(
+                    current,
+                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
+                    directive.urn());
+            Pack mutated = revalidated(current, directive);
+            List<Relationship> merged = bodyRelationships.isEmpty()
+                    ? null // the body asserts no edge: leave the relationship shard untouched
+                    : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
+            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, merged);
+            return new Registered(revision, !exists, directive.urn());
+        });
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------

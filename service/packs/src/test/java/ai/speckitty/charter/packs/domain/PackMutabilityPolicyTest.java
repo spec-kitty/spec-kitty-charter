@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -245,7 +246,13 @@ class PackMutabilityPolicyTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier pack, Pack mutated, List<Relationship> relationships) {
+        public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
+            return work.get();
+        }
+
+        @Override
+        public PackRevision commit(
+                PackIdentifier pack, String ifMatch, Pack mutated, List<Relationship> relationships) {
             packs.put(pack, mutated);
             if (relationships != null) { // null: the registration left the shard untouched
                 edges.put(pack, new ArrayList<>(relationships));

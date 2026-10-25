@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.util.List;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -45,16 +46,35 @@ public interface PackWriteStore extends PackRevisions {
     List<Relationship> registeredRelationships(PackIdentifier pack);
 
     /**
-     * Atomically commits a revalidated aggregate together with the full set of registered relationships, and returns
-     * the new revision.
+     * Runs one registration's whole read-check-commit sequence while holding the pack's write lock, so its
+     * precondition, the state it builds on and its commit cannot be interleaved with another write to the same pack.
+     * The lock is reentrant; {@link #commit} takes it too.
      *
      * @param pack the pack's identity
+     * @param work the load &rarr; precondition &rarr; mutate &rarr; commit sequence
+     * @param <T> the outcome type
+     * @return what {@code work} returns
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
+     *     resolved
+     */
+    <T> T exclusively(PackIdentifier pack, Supplier<T> work);
+
+    /**
+     * Atomically commits a revalidated aggregate together with the full set of registered relationships, and returns
+     * the new revision. The {@code If-Match} is compared with the live revision under the pack's write lock, so a
+     * precondition checked earlier cannot go stale before the swap.
+     *
+     * @param pack the pack's identity
+     * @param ifMatch the {@code If-Match} the registration presented, or null when it presented none
      * @param mutated the revalidated aggregate to persist (its invariants are already guarded by its builder)
      * @param relationships the complete registered-relationship set to persist (replaces the shard wholesale), or
      *     null when the registration does not change relationships, which leaves the shard untouched
      * @return the revision of the committed state
+     * @throws PreconditionException {@link PreconditionException.Kind#STALE} when {@code ifMatch} no longer matches
+     *     the live revision; nothing is written
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the commit fails;
      *     in every failure case the live pack directory is unchanged (NFR-002)
      */
-    PackRevision commit(PackIdentifier pack, Pack mutated, @Nullable List<Relationship> relationships);
+    PackRevision commit(
+            PackIdentifier pack, @Nullable String ifMatch, Pack mutated, @Nullable List<Relationship> relationships);
 }

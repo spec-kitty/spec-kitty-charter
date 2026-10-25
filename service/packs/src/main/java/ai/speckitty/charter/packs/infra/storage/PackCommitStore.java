@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.io.IOException;
@@ -112,13 +113,19 @@ public final class PackCommitStore {
      * Commits a mutated pack as one atomic directory swap and returns its new revision.
      *
      * @param pack the pack to commit
+     * @param ifMatch the {@code If-Match} the registration presented, compared with the live revision before anything
+     *     is staged, or null when it presented none; the caller holds the pack's write lock across the comparison and
+     *     the swap
      * @param mutated the revalidated aggregate to persist (its invariants have already been guarded by its builder)
      * @param relationshipShardText the registered-relationship shard text to persist, or null to leave it as staged
      * @return the revision of the committed state
+     * @throws PreconditionException {@link PreconditionException.Kind#STALE} when {@code ifMatch} does not match the
+     *     live revision; nothing is staged or written
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack is not configured, is not a directory, or the
      *     commit fails; in every failure case the live pack directory is unchanged
      */
-    public PackRevision commit(PackIdentifier pack, Pack mutated, @Nullable String relationshipShardText) {
+    public PackRevision commit(
+            PackIdentifier pack, @Nullable String ifMatch, Pack mutated, @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(mutated, "mutated");
         Resolved resolved = resolve(pack);
@@ -129,6 +136,10 @@ public final class PackCommitStore {
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
+            if (ifMatch != null && !PackRevision.matches(ifMatch, revisionOf(liveDir))) {
+                throw new PreconditionException(
+                        PreconditionException.Kind.STALE, "The If-Match precondition is stale; read the pack again.");
+            }
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
             PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
@@ -141,7 +152,7 @@ public final class PackCommitStore {
             rename.swap(staging, liveDir);
             staging = null; // swapped into place; there is nothing left to clean up
             return revision;
-        } catch (CharterRefusal refusal) {
+        } catch (CharterRefusal | PreconditionException refusal) {
             deleteTree(staging);
             throw refusal;
         } catch (IOException | RuntimeException failure) {

@@ -78,22 +78,26 @@ public final class ToolguideRegistrationService {
             PackIdentifier pack, Toolguide toolguide, boolean replace, @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(toolguide, "toolguide");
-        Pack current = load(pack);
-        precondition(pack, ifMatch);
-        boolean exists = current.toolguides().stream().anyMatch(t -> t.id().equals(toolguide.id()));
-        if (!replace && exists) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Pack " + pack.value() + " already has a toolguide "
-                            + toolguide.id().value() + ".");
-        }
-        policy.authorize(
-                current,
-                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                toolguide.urn());
-        Pack mutated = revalidated(current, toolguide);
-        PackRevision revision = writeStore.commit(pack, mutated, null); // relationships unchanged
-        return new Registered(revision, !exists, toolguide.urn());
+        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // state: a concurrent writer cannot slip between them (a lost update).
+        return writeStore.exclusively(pack, () -> {
+            Pack current = load(pack);
+            precondition(pack, ifMatch);
+            boolean exists = current.toolguides().stream().anyMatch(t -> t.id().equals(toolguide.id()));
+            if (!replace && exists) {
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT,
+                        "Pack " + pack.value() + " already has a toolguide "
+                                + toolguide.id().value() + ".");
+            }
+            policy.authorize(
+                    current,
+                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
+                    toolguide.urn());
+            Pack mutated = revalidated(current, toolguide);
+            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, null); // relationships unchanged
+            return new Registered(revision, !exists, toolguide.urn());
+        });
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------
