@@ -115,7 +115,7 @@ public class ToolguideController implements ToolguidesApi {
                 body.getLastUpdated(),
                 body.getReferences());
         ToolguideRegistrationService.Registered result =
-                registrations.registerToolguide(pack, toolguide, true, unquote(ifMatch));
+                registrations.registerToolguide(pack, toolguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(toolguide));
@@ -132,18 +132,6 @@ public class ToolguideController implements ToolguidesApi {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
-    }
-
-    /** Strips the optional {@code W/} weak marker and the surrounding quotes of an HTTP entity-tag If-Match value. */
-    static @Nullable String unquote(@Nullable String eTag) {
-        if (eTag == null) {
-            return null;
-        }
-        String value = eTag.startsWith("W/") ? eTag.substring(2) : eTag;
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
-        }
-        return value;
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------

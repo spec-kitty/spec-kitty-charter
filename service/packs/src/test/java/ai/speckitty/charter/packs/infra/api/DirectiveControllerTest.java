@@ -27,6 +27,8 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -116,6 +118,29 @@ class DirectiveControllerTest {
                         .content(body("ALPHA")))
                 .andExpect(status().isPreconditionFailed())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    /**
+     * If-Match is a strong comparison (RFC 9110 13.1.1): a weak tag never matches, {@code *} matches the existing
+     * pack, and a list matches when any strong member names the current revision. {@code CURRENT} stands for the
+     * current revision token.
+     */
+    @ParameterizedTest(name = "If-Match {0} -> {1}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "'\"CURRENT\"'                  | 200",
+                "'W/\"CURRENT\"'                | 412",
+                "'*'                             | 200",
+                "'\"sha256:stale\", \"CURRENT\"' | 200"
+            })
+    void ifMatchIsAStrongComparison(String ifMatch, int expected) throws Exception {
+        String current = store.currentRevision(PACK).token();
+        mvc.perform(put("/api/v1/packs/pack-a/directives/ALPHA")
+                        .header("If-Match", ifMatch.replace("CURRENT", current))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("ALPHA")))
+                .andExpect(status().is(expected));
     }
 
     @Test
