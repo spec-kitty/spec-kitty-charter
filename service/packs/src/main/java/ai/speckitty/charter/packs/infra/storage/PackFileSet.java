@@ -59,6 +59,8 @@ final class PackFileSet {
         DIRECTIVE(ArtifactKind.DIRECTIVE),
         /** {@code *.styleguide.yaml}. */
         STYLEGUIDE(ArtifactKind.STYLEGUIDE),
+        /** {@code *.toolguide.yaml}. */
+        TOOLGUIDE(ArtifactKind.TOOLGUIDE),
         /** {@code *.paradigm.yaml}. */
         PARADIGM(ArtifactKind.PARADIGM);
 

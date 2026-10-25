@@ -1,0 +1,30 @@
+title: StyleguideAntiPattern
+description: An anti-pattern carried on a styleguide; unlike a pattern, all four parts are required.
+type: object
+additionalProperties: false
+required: [name, description, badExample, goodExample]
+properties:
+  name:
+    type: string
+    description: The anti-pattern's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java
+      symbol: StyleguideAntiPattern.name
+  description:
+    type: string
+    description: What the anti-pattern is.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java
+      symbol: StyleguideAntiPattern.description
+  badExample:
+    type: string
+    description: The offending example.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java
+      symbol: StyleguideAntiPattern.badExample
+  goodExample:
+    type: string
+    description: The corrected example.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideAntiPattern.java
+      symbol: StyleguideAntiPattern.goodExample

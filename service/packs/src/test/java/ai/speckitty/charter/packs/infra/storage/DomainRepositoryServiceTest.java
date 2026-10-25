@@ -225,6 +225,16 @@ class DomainRepositoryServiceTest {
             }
 
             @Override
+            public String writeToolguide(ToolguideDso toolguide) {
+                return yaml.writeToolguide(toolguide);
+            }
+
+            @Override
+            public FileRead<ToolguideDso> readToolguide(String text, String file) {
+                return yaml.readToolguide(text, file);
+            }
+
+            @Override
             public String writeParadigm(ParadigmDso paradigm) {
                 return yaml.writeParadigm(paradigm);
             }

@@ -3,11 +3,12 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
@@ -123,11 +124,11 @@ class AggregateRetrofitTest {
     }
 
     @Test
-    @DisplayName("a tactic mints one SUGGESTS edge per typed reference, collapsing a blank when to absent")
-    void tacticMintsASuggestsEdgePerTypedReferenceCollapsingBlankWhen() {
+    @DisplayName("a tactic mints one suggests relationship per typed reference, collapsing a blank when to absent")
+    void tacticMintsASuggestsRelationshipPerTypedReferenceCollapsingBlankWhen() {
         // The CharterArtifact spine (kind/localId/label/description/urn) is proved per kind by
         // CharterArtifactFamilyTest; this case keeps only what it does not cover — two typed refs, the second
-        // with a blank `when` that must collapse to Optional.empty rather than an empty-string edge metadata.
+        // with a blank `when` that must collapse to Optional.empty rather than empty-string relationship metadata.
         Tactic tactic = Tactic.builder()
                 .id(new TacticIdentifier("t-1"))
                 .packId(ID)
@@ -141,27 +142,18 @@ class AggregateRetrofitTest {
 
         CharterArtifact artifact = tactic;
 
-        assertThat(artifact.edges())
+        assertThat(artifact.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
                 .containsExactly(
-                        new DrgEdge(
-                                artifact.urn(),
-                                new Urn(NodeKind.DIRECTIVE, "D-1"),
-                                Relation.SUGGESTS,
-                                Optional.empty(),
-                                Optional.of("when it rains"),
-                                Optional.empty()),
-                        new DrgEdge(
-                                artifact.urn(),
-                                new Urn(NodeKind.PARADIGM, "p-1"),
-                                Relation.SUGGESTS,
-                                Optional.empty(),
-                                Optional.empty(),
-                                Optional.empty()));
+                        tuple(artifact.urn(), new Urn(NodeKind.DIRECTIVE, "D-1"), RelationType.SUGGESTS),
+                        tuple(artifact.urn(), new Urn(NodeKind.PARADIGM, "p-1"), RelationType.SUGGESTS));
+        assertThat(artifact.relationships().get(0).when()).contains("when it rains");
+        assertThat(artifact.relationships().get(1).when()).isEmpty();
     }
 
     @Test
-    @DisplayName("a tactic without purpose or references has no description and no edges")
-    void bareTacticHasNoDescriptionOrEdges() {
+    @DisplayName("a tactic without purpose or references has no description and no relationships")
+    void bareTacticHasNoDescriptionOrRelationships() {
         Tactic tactic = Tactic.builder()
                 .id(new TacticIdentifier("t-2"))
                 .packId(ID)
@@ -171,6 +163,6 @@ class AggregateRetrofitTest {
                 .build();
 
         assertThat(tactic.description()).isEmpty();
-        assertThat(tactic.edges()).isEmpty();
+        assertThat(tactic.relationships()).isEmpty();
     }
 }

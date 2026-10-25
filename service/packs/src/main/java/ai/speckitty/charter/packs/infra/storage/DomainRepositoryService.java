@@ -31,6 +31,9 @@ import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticReference;
 import ai.speckitty.charter.packs.domain.TacticRepository;
 import ai.speckitty.charter.packs.domain.TacticStep;
+import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -59,6 +62,7 @@ public final class DomainRepositoryService
         implements TacticRepository,
                 DirectiveRepository,
                 StyleguideRepository,
+                ToolguideRepository,
                 ParadigmRepository,
                 PackDescriptorRepository,
                 PackRepository {
@@ -134,6 +138,20 @@ public final class DomainRepositoryService
     }
 
     @Override
+    public void save(Toolguide toolguide) {
+        Resolved pack = resolve(toolguide.packId());
+        pack.store.writeToolguide(pack.key, toDso(toolguide));
+    }
+
+    @Override
+    public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
+        Resolved resolved = resolve(pack);
+        return resolved.store
+                .readToolguide(resolved.key, toolguide.value())
+                .flatMap(dso -> orEmpty(() -> buildToolguide(pack, dso)));
+    }
+
+    @Override
     public void save(Paradigm paradigm) {
         Resolved pack = resolve(paradigm.packId());
         pack.store.writeParadigm(pack.key, toDso(paradigm));
@@ -176,6 +194,24 @@ public final class DomainRepositoryService
                 .toList();
     }
 
+    /**
+     * Writes a whole aggregate — descriptor and every child of every kind — into {@code store} under {@code key},
+     * through the shared DSO mappers. The {@link PackCommitStore} calls it to stage a mutated pack before the atomic
+     * directory swap; the mapping stays in one place so the commit path and the per-child saves cannot drift.
+     *
+     * @param store the store to write through (for a commit, one rooted at the staging directory's parent)
+     * @param key the directory-name key the store addresses the aggregate by
+     * @param pack the aggregate to write
+     */
+    static void writeAggregate(FilesystemPackStore store, PackIdentifier key, Pack pack) {
+        store.writeDescriptor(key, toDso(pack.descriptor()));
+        pack.tactics().forEach(tactic -> store.writeTactic(key, toDso(tactic)));
+        pack.directives().forEach(directive -> store.writeDirective(key, toDso(directive)));
+        pack.styleguides().forEach(styleguide -> store.writeStyleguide(key, toDso(styleguide)));
+        pack.toolguides().forEach(toolguide -> store.writeToolguide(key, toDso(toolguide)));
+        pack.paradigms().forEach(paradigm -> store.writeParadigm(key, toDso(paradigm)));
+    }
+
     private Pack assemble(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
         FilesystemPackStore.PackRead read = resolved.store.read(resolved.key);
@@ -184,6 +220,7 @@ public final class DomainRepositoryService
         collect(read.tactics(), TacticDso::id, dso -> builder.tactic(buildTactic(pack, dso)), builder);
         collect(read.directives(), DirectiveDso::id, dso -> builder.directive(buildDirective(pack, dso)), builder);
         collect(read.styleguides(), StyleguideDso::id, dso -> builder.styleguide(buildStyleguide(pack, dso)), builder);
+        collect(read.toolguides(), ToolguideDso::id, dso -> builder.toolguide(buildToolguide(pack, dso)), builder);
         collect(read.paradigms(), ParadigmDso::id, dso -> builder.paradigm(buildParadigm(pack, dso)), builder);
         return builder.build();
     }
@@ -363,6 +400,36 @@ public final class DomainRepositoryService
                 styleguide.structuralLintConfig(),
                 styleguide.appliesToLanguages(),
                 styleguide.references());
+    }
+
+    private static Toolguide buildToolguide(PackIdentifier pack, ToolguideDso dso) {
+        Toolguide.Builder builder = Toolguide.builder()
+                .id(new ToolguideIdentifier(dso.id()))
+                .packId(pack)
+                .schemaVersion(dso.schemaVersion())
+                .tool(dso.tool())
+                .title(dso.title())
+                .guidePath(dso.guidePath())
+                .summary(dso.summary())
+                .lastUpdated(dso.lastUpdated().orElse(null));
+        dso.commands().forEach(builder::command);
+        dso.appliesToLanguages().forEach(builder::appliesToLanguage);
+        dso.references().forEach(builder::reference);
+        return builder.build();
+    }
+
+    private static ToolguideDso toDso(Toolguide toolguide) {
+        return new ToolguideDso(
+                toolguide.id().value(),
+                toolguide.schemaVersion(),
+                toolguide.tool(),
+                toolguide.title(),
+                toolguide.guidePath(),
+                toolguide.summary(),
+                toolguide.commands(),
+                toolguide.appliesToLanguages(),
+                toolguide.lastUpdated(),
+                toolguide.references());
     }
 
     private static Paradigm buildParadigm(PackIdentifier pack, ParadigmDso dso) {

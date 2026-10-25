@@ -1,0 +1,152 @@
+get:
+  operationId: getPackToolguide
+  summary: Get one toolguide of a Charter Pack by identity.
+  description: >-
+    One toolguide of one pack (FR-015); a toolguide mints no relationships. An identifier that matches no
+    configured pack is a 404 pack_not_found; a pack without that toolguide is likewise a 404 pack_not_found
+    (the kind adds no dedicated not-found code). A pack whose files cannot be read is a 500 pack_unreadable.
+    The answer is verified against the source fingerprint and carries it.
+  tags:
+    - Toolguides
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - name: toolguideId
+      in: path
+      required: true
+      description: The identity of the toolguide within its pack.
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    '200':
+      description: The toolguide.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision, for optimistic concurrency on a later write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Toolguide.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ToolguideNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+put:
+  operationId: putPackToolguide
+  summary: Register (create or replace) a toolguide of a Charter Pack by identity.
+  description: >-
+    Idempotent create-or-replace of a toolguide by id (functional registration, ADR-0026): the whole pack
+    aggregate is revalidated and committed atomically. Answers 201 when it created the toolguide, 200 when it
+    replaced one, each with an ETag revision. If-Match carries optimistic concurrency: a stale precondition is
+    a 412 (a plain Problem, not a refusal code). A malformed body is a 422 validation_failed, and the pack is
+    left unchanged.
+  tags:
+    - Toolguides
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - name: toolguideId
+      in: path
+      required: true
+      description: The identity of the toolguide within its pack.
+      schema:
+        type: string
+        minLength: 1
+    - name: If-Match
+      in: header
+      required: false
+      description: Optimistic concurrency on the pack revision; a stale value is refused 412.
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ToolguideRegistration.yaml
+  responses:
+    '200':
+      description: The toolguide was replaced.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Toolguide.yaml
+    '201':
+      description: The toolguide was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Toolguide.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ToolguideNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '412':
+      $ref: ../../_shared/responses/Problem.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

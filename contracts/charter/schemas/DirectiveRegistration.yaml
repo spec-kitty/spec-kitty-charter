@@ -1,0 +1,98 @@
+title: DirectiveRegistration
+description: >-
+  The registration body of a directive: its fields plus the relationships it originates. On POST to the
+  collection the id is optional (the server answers with Location); on PUT the id is taken from the path.
+  A relationship in this body may be authored only from the directive itself (dual-write ownership rule,
+  ADR-0026 / plan IC-05); a cross-authored edge is registered through PUT /packs/{packId}/relationships.
+type: object
+additionalProperties: false
+required:
+  - schemaVersion
+  - title
+  - intent
+  - enforcement
+properties:
+  id:
+    type: string
+    description: The directive's identity; optional on POST (server-assigned via Location), path-supplied on PUT.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveIdentifier.java
+      symbol: DirectiveIdentifier.value
+  schemaVersion:
+    type: string
+    description: The schema version the directive declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.schemaVersion
+  title:
+    type: string
+    description: The directive's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.title
+  intent:
+    type: string
+    description: What the directive binds.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.intent
+  enforcement:
+    type: string
+    description: How strictly the directive binds, as a token (required, lenient-adherence, advisory).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Enforcement.java
+      symbol: Enforcement.token
+  scope:
+    type: ['string', 'null']
+    description: The directive's scope; null when it declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.scope
+  procedures:
+    type: array
+    description: The ids of the procedures the directive requires, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.procedures
+  integrityRules:
+    type: array
+    description: The directive's integrity rules, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.integrityRules
+  validationCriteria:
+    type: array
+    description: The directive's validation criteria, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.validationCriteria
+  explicitAllowances:
+    type: array
+    description: The directive's explicit allowances, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.explicitAllowances
+  references:
+    type: array
+    description: The artifacts the directive points at, in authored order.
+    items:
+      $ref: DirectiveReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.references
+  relationships:
+    type: array
+    description: The relationships the body co-authors; each must be authored from this directive.
+    items:
+      $ref: RelationshipRegistration.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.relationships

@@ -1,8 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.DrgNode;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,7 +11,12 @@ import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 
-/** Writes a {@link DoctrineGraph} as a graph shard in the canonical key order of the built-in shards. */
+/**
+ * Writes a {@link DoctrineGraph} as a graph shard in the canonical key order of the built-in shards. Each
+ * {@link Relationship} is mapped to its {@link DrgEdge} DSO via {@link RelationshipMapper} and emitted in the
+ * shard's established key order ({@code source, target, relation, impacts?, when?, reason?}); nodes are
+ * emitted unchanged.
+ */
 public final class GraphShardWriter {
 
     private GraphShardWriter() {}
@@ -36,11 +41,12 @@ public final class GraphShardWriter {
         }
         root.put("nodes", nodes);
         List<Object> edges = new ArrayList<>();
-        for (DrgEdge edge : graph.edges()) {
+        for (Relationship relationship : graph.relationships()) {
+            DrgEdge edge = RelationshipMapper.toDso(relationship);
             Map<String, Object> out = new LinkedHashMap<>();
-            out.put("source", edge.source().toString());
-            out.put("target", edge.target().toString());
-            out.put("relation", edge.relation().token());
+            out.put("source", edge.source());
+            out.put("target", edge.target());
+            out.put("relation", edge.relation());
             edge.impacts().ifPresent(strength -> out.put("impacts", strength));
             edge.when().ifPresent(when -> out.put("when", when));
             edge.reason().ifPresent(reason -> out.put("reason", reason));

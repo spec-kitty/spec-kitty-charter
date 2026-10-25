@@ -38,7 +38,24 @@ public enum RefusalCode {
     /** The asked pack is not one the service has, or its files cannot be read as a pack; the caller asked wrongly. */
     PACK_NOT_FOUND("pack_not_found"),
     /** The asked pack has no tactic with the asked identity. */
-    TACTIC_NOT_FOUND("tactic_not_found");
+    TACTIC_NOT_FOUND("tactic_not_found"),
+    /** The asked pack has no directive with the asked identity. Added for the directive read path (WP05). */
+    DIRECTIVE_NOT_FOUND("directive_not_found"),
+    /** The asked pack has no styleguide with the asked identity. Added for the styleguide read path (WP07). */
+    STYLEGUIDE_NOT_FOUND("styleguide_not_found"),
+    /** The asked pack has no paradigm with the asked identity. Added for the paradigm read path (WP08). */
+    PARADIGM_NOT_FOUND("paradigm_not_found"),
+    /**
+     * A registration request is well-formed but its content breaks a pack invariant or a schema (ADR-0026): the
+     * mutated aggregate does not revalidate. Answered as 422. Added for the registration write path (WP05+).
+     */
+    VALIDATION_FAILED("validation_failed"),
+    /**
+     * A registration request conflicts with the pack's current state: a net-new id already exists, or a relationship
+     * names a {@code from} the pack does not hold (ADR-0026). Answered as 409. Added for the registration write path
+     * (WP05+).
+     */
+    REGISTRATION_CONFLICT("registration_conflict");
 
     private final String token;
 
@@ -58,13 +75,17 @@ public enum RefusalCode {
     /**
      * Whether the refusal is about what was asked rather than about the offering.
      *
-     * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND}
-     *     and {@link #TACTIC_NOT_FOUND}
+     * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND},
+     *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND} and
+     *     {@link #PARADIGM_NOT_FOUND}
      */
     public boolean notFound() {
         return this == MISSION_TYPE_NOT_FOUND
                 || this == ACTION_NOT_FOUND
                 || this == PACK_NOT_FOUND
-                || this == TACTIC_NOT_FOUND;
+                || this == TACTIC_NOT_FOUND
+                || this == DIRECTIVE_NOT_FOUND
+                || this == STYLEGUIDE_NOT_FOUND
+                || this == PARADIGM_NOT_FOUND;
     }
 }

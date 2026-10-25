@@ -1,0 +1,243 @@
+package ai.speckitty.charter.packs.infra.api;
+
+import ai.speckitty.charter.api.ParadigmsApi;
+import ai.speckitty.charter.api.model.Paradigm;
+import ai.speckitty.charter.api.model.Paradigm1;
+import ai.speckitty.charter.api.model.ParadigmReference;
+import ai.speckitty.charter.api.model.ParadigmRegistration;
+import ai.speckitty.charter.api.model.ParadigmRegistration1;
+import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.api.model.RelationshipRegistration;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.ParadigmReadService;
+import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
+import ai.speckitty.charter.packs.application.PreconditionException;
+import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * The inbound REST adapter for a pack's paradigms: {@code GET}/{@code POST} on the collection and
+ * {@code GET}/{@code PUT} on one paradigm (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It is a
+ * faithful copy of {@link DirectiveController}, kept independent per-kind. The read is a thin projection of
+ * {@link ParadigmReadService}; the writes delegate to {@link ParadigmRegistrationService}. A refusal the services
+ * throw is answered by {@link RefusalHandler}; a stale {@code If-Match} precondition is answered here as a plain
+ * {@code 412} {@link Problem} (not a refusal code), per ADR-0020.
+ *
+ * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-paradigm response
+ * is a {@code Paradigm1}, the generator's name for the second use of the one {@code Paradigm} schema.
+ */
+@RestController
+@RequestMapping("${charter.api.base-path:/api/v1}")
+public class ParadigmController implements ParadigmsApi {
+
+    private final ParadigmReadService reads;
+    private final ParadigmRegistrationService registrations;
+    private final PackWriteStore writeStore;
+
+    /**
+     * A controller over the paradigm read and registration use cases.
+     *
+     * @param reads the read use case
+     * @param registrations the registration use case
+     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
+     */
+    public ParadigmController(
+            ParadigmReadService reads, ParadigmRegistrationService registrations, PackWriteStore writeStore) {
+        this.reads = reads;
+        this.registrations = registrations;
+        this.writeStore = writeStore;
+    }
+
+    @Override
+    public ResponseEntity<List<Paradigm>> listPackParadigms(String packId) {
+        var verified = reads.paradigmsOf(new PackIdentifier(packId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .body(verified.value().stream().map(ParadigmController::toDto).toList());
+    }
+
+    @Override
+    public ResponseEntity<Paradigm1> getPackParadigm(String packId, String paradigmId) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        var verified = reads.paradigm(pack, new ParadigmIdentifier(paradigmId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .eTag(writeStore.currentRevision(pack).token())
+                .body(toSingleDto(verified.value()));
+    }
+
+    @Override
+    public ResponseEntity<Paradigm1> registerPackParadigm(String packId, ParadigmRegistration body) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        String id = requireId(body.getId());
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
+                pack,
+                id,
+                body.getSchemaVersion(),
+                body.getName(),
+                body.getSummary(),
+                body.getDirectiveRefs(),
+                body.getReferences());
+        List<Relationship> relationships = relationships(body.getRelationships());
+        ParadigmRegistrationService.Registered result =
+                registrations.registerParadigm(pack, paradigm, relationships, false, null);
+        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/paradigms/" + id))
+                .eTag(result.revision().token())
+                .body(toSingleDto(paradigm));
+    }
+
+    @Override
+    public ResponseEntity<Paradigm1> putPackParadigm(
+            String packId, String paradigmId, ParadigmRegistration1 body, @Nullable String ifMatch) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
+                pack,
+                paradigmId,
+                body.getSchemaVersion(),
+                body.getName(),
+                body.getSummary(),
+                body.getDirectiveRefs(),
+                body.getReferences());
+        List<Relationship> relationships = relationships(body.getRelationships());
+        ParadigmRegistrationService.Registered result =
+                registrations.registerParadigm(pack, paradigm, relationships, true, unquote(ifMatch));
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .eTag(result.revision().token())
+                .body(toSingleDto(paradigm));
+    }
+
+    /** A stale {@code If-Match} (412) or a missing one on a sub-resource (428) is a plain {@code Problem}. */
+    @ExceptionHandler(PreconditionException.class)
+    ResponseEntity<Problem> precondition(PreconditionException failure) {
+        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
+                ? HttpStatus.PRECONDITION_REQUIRED
+                : HttpStatus.PRECONDITION_FAILED;
+        Problem problem = new Problem(status.getReasonPhrase(), status.value());
+        problem.setDetail(failure.getMessage());
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    /** Strips the optional {@code W/} weak marker and the surrounding quotes of an HTTP entity-tag If-Match value. */
+    static @Nullable String unquote(@Nullable String eTag) {
+        if (eTag == null) {
+            return null;
+        }
+        String value = eTag.startsWith("W/") ? eTag.substring(2) : eTag;
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    // ---- DTO -> domain -------------------------------------------------------------------------------------------
+
+    private static String requireId(@Nullable String id) {
+        if (id == null || id.isBlank()) {
+            throw new CharterRefusal(
+                    RefusalCode.VALIDATION_FAILED, "A paradigm registration must carry an id on POST.");
+        }
+        return id;
+    }
+
+    private static ai.speckitty.charter.packs.domain.Paradigm assemble(
+            PackIdentifier pack,
+            String id,
+            String schemaVersion,
+            String name,
+            String summary,
+            List<String> directiveRefs,
+            List<ParadigmReference> references) {
+        try {
+            var builder = ai.speckitty.charter.packs.domain.Paradigm.builder()
+                    .id(new ParadigmIdentifier(id))
+                    .packId(pack)
+                    .schemaVersion(schemaVersion)
+                    .name(name)
+                    .summary(summary);
+            directiveRefs.forEach(builder::directiveRef);
+            references.forEach(ref -> builder.reference(
+                    new ai.speckitty.charter.packs.domain.ParadigmReference(ref.getType(), ref.getId())));
+            return builder.build();
+        } catch (ConstraintBreachException | IllegalArgumentException invalid) {
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
+        }
+    }
+
+    private static List<Relationship> relationships(List<RelationshipRegistration> wire) {
+        try {
+            return wire.stream().map(ParadigmController::toRelationship).toList();
+        } catch (IllegalArgumentException invalid) {
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
+        }
+    }
+
+    private static Relationship toRelationship(RelationshipRegistration wire) {
+        Urn from = Urn.parse(wire.getFrom())
+                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getFrom()));
+        Urn to = Urn.parse(wire.getTo())
+                .orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + wire.getTo()));
+        RelationType type = RelationType.fromToken(wire.getType())
+                .orElseThrow(() -> new IllegalArgumentException("unknown relation type: " + wire.getType()));
+        return new Relationship(
+                from,
+                to,
+                type,
+                java.util.Optional.ofNullable(wire.getWhen()),
+                java.util.Optional.ofNullable(wire.getRationale()));
+    }
+
+    // ---- domain -> DTO -------------------------------------------------------------------------------------------
+
+    private static Paradigm1 toSingleDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
+        Paradigm listed = toDto(paradigm);
+        return new Paradigm1(
+                listed.getId(),
+                listed.getSchemaVersion(),
+                listed.getName(),
+                listed.getSummary(),
+                listed.getDirectiveRefs(),
+                listed.getReferences(),
+                listed.getRelationships());
+    }
+
+    private static Paradigm toDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
+        return new Paradigm(
+                paradigm.id().value(),
+                paradigm.schemaVersion(),
+                paradigm.name(),
+                paradigm.summary(),
+                paradigm.directiveRefs(),
+                paradigm.references().stream().map(ParadigmController::toDto).toList(),
+                paradigm.relationships().stream().map(ParadigmController::toDto).toList());
+    }
+
+    private static ParadigmReference toDto(ai.speckitty.charter.packs.domain.ParadigmReference reference) {
+        return new ParadigmReference(reference.type(), reference.id());
+    }
+
+    private static RelationshipRegistration toDto(Relationship relationship) {
+        RelationshipRegistration dto = new RelationshipRegistration(
+                relationship.from().toString(),
+                relationship.to().toString(),
+                relationship.type().token());
+        dto.setRationale(relationship.rationale().orElse(null));
+        dto.setWhen(relationship.when().orElse(null));
+        return dto;
+    }
+}

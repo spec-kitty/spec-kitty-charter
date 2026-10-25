@@ -1,0 +1,84 @@
+@contract @styleguides
+Feature: Styleguides are read and registered functionally
+  A client reads a pack's styleguides and registers a styleguide through functional registration
+  (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
+  unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012). A
+  styleguide mints no relationships (its references are bare citations), so the relationships array is
+  always empty (FR-013). There is no DELETE or PATCH.
+
+  Background:
+    Given the org pack "qa" with the file "pack.yaml":
+      """
+      pack_id: qa
+      pack_version: 1.0.0
+      parent_pack: null
+      name: qa
+      pack_level: org
+      requires_core: '>=1.0'
+      active_charter: org-charter.yaml
+      pack_drg: drg/fragment.yaml
+      """
+
+  Scenario: A registered styleguide is read back value-equal with no relationships (FR-013, SC-001)
+    When I PUT "/packs/qa/styleguides/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 201
+    When I GET "/packs/qa/styleguides/java-style"
+    Then the response status is 200
+    And the field "id" of the response body is "java-style"
+    And the field "title" of the response body is "Java style"
+    And the field "scope" of the response body is "code"
+    And the response body has 0 relationships
+
+  Scenario: A duplicate id is a conflict on POST while a distinct id is created (FR-008)
+    When I POST "/packs/qa/styleguides" as JSON with the body:
+      """
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 201
+    When I POST "/packs/qa/styleguides" as JSON with the body:
+      """
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style again", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 409
+    And the problem code is "registration_conflict"
+    When I POST "/packs/qa/styleguides" as JSON with the body:
+      """
+      {"id": "docs-style", "schemaVersion": "1.0", "title": "Docs style", "scope": "docs", "principles": ["Write for the reader"]}
+      """
+    Then the response status is 201
+
+  Scenario: A malformed body is refused and a well-formed registration succeeds (FR-010, SC-003)
+    When I PUT "/packs/qa/styleguides/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "nonsense", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I PUT "/packs/qa/styleguides/java-style" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 201
+
+  Scenario: A stale If-Match is refused with 412 and a fresh one succeeds (FR-012)
+    When I POST "/packs/qa/styleguides" as JSON with the body:
+      """
+      {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 201
+    When I PUT "/packs/qa/styleguides/java-style" with If-Match "sha256:0000000000000000000000000000000000000000000000000000000000000000" and the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 412
+    When I GET "/packs/qa/styleguides/java-style"
+    Then the response status is 200
+    When I remember the ETag
+    When I PUT "/packs/qa/styleguides/java-style" with the remembered ETag and the body:
+      """
+      {"schemaVersion": "1.0", "title": "Java style replaced", "scope": "code", "principles": ["Prefer immutability"]}
+      """
+    Then the response status is 200

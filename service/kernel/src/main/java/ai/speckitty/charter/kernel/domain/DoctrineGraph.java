@@ -2,6 +2,7 @@ package ai.speckitty.charter.kernel.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,45 +10,35 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An ordered DRG: nodes keyed by URN in first-declared order, edges in declared order.
- * Merging appends; a node declared twice keeps its first declaration (layer semantics beyond
- * this union arrive with the conformance corpus, roadmap step 5).
+ * An ordered DRG: nodes keyed by URN in first-declared order, {@link Relationship}s in declared order.
+ * Merging appends; a node declared twice keeps its first declaration (layer semantics beyond this union
+ * arrive with the conformance corpus, roadmap step 5).
+ *
+ * <p>The graph holds first-class {@link Relationship}s (ADR-0025 Decision 5): {@code DrgEdge} is now a
+ * storage DSO in {@code packs.infra.storage} and never reaches the kernel. Relationship identity is the
+ * unordered {@code {from, to}} pair (ADR-0027 Decision 1), so this list is pair-sensitive in order but not a
+ * multigraph index; a transitive walk is the {@code packs.application} walker's job, not an edge index here.
  */
 public final class DoctrineGraph {
 
     private final Map<Urn, DrgNode> nodes;
-    private final List<DrgEdge> edges;
-    private final Map<EdgeKey, List<DrgEdge>> outgoing;
-
-    /** The (source, relation) an edge starts from, the key of the outgoing index. */
-    private record EdgeKey(Urn source, Relation relation) {}
+    private final List<Relationship> relationships;
 
     /**
-     * A graph of {@code nodes} and {@code edges}; a node whose URN was already declared is dropped.
+     * A graph of {@code nodes} and {@code relationships}; a node whose URN was already declared is dropped.
      *
      * @param nodes the nodes, in declaration order
-     * @param edges the edges, in declaration order; endpoints need not be nodes of this graph
+     * @param relationships the relationships, in declaration order; endpoints need not be nodes of this graph
      */
-    public DoctrineGraph(Collection<DrgNode> nodes, Collection<DrgEdge> edges) {
+    public DoctrineGraph(Collection<DrgNode> nodes, Collection<Relationship> relationships) {
         Map<Urn, DrgNode> byUrn = new LinkedHashMap<>();
         nodes.forEach(n -> byUrn.putIfAbsent(n.urn(), n));
-        this.nodes = java.util.Collections.unmodifiableMap(byUrn);
-        this.edges = List.copyOf(edges);
-        this.outgoing = index(this.edges);
-    }
-
-    private static Map<EdgeKey, List<DrgEdge>> index(List<DrgEdge> edges) {
-        Map<EdgeKey, List<DrgEdge>> byKey = new LinkedHashMap<>();
-        for (DrgEdge edge : edges) {
-            byKey.computeIfAbsent(new EdgeKey(edge.source(), edge.relation()), k -> new ArrayList<>())
-                    .add(edge);
-        }
-        byKey.replaceAll((k, v) -> List.copyOf(v));
-        return java.util.Collections.unmodifiableMap(byKey);
+        this.nodes = Collections.unmodifiableMap(byUrn);
+        this.relationships = List.copyOf(relationships);
     }
 
     /**
-     * The graph with no nodes and no edges, the identity of {@link #merge(DoctrineGraph)}.
+     * The graph with no nodes and no relationships, the identity of {@link #merge(DoctrineGraph)}.
      *
      * @return an empty graph
      */
@@ -65,12 +56,12 @@ public final class DoctrineGraph {
     }
 
     /**
-     * The edges, in declared order.
+     * The relationships, in declared order.
      *
-     * @return an unmodifiable list of the edges
+     * @return an unmodifiable list of the relationships
      */
-    public List<DrgEdge> edges() {
-        return edges;
+    public List<Relationship> relationships() {
+        return relationships;
     }
 
     /**
@@ -94,20 +85,8 @@ public final class DoctrineGraph {
     }
 
     /**
-     * The edges that start at {@code source} with {@code relation}, from an index built once with the graph, so a
-     * transitive walk pays no scan per visited node.
-     *
-     * @param source the node the edges start from
-     * @param relation the relation of the edges
-     * @return the matching edges, in declared order; empty when there are none
-     */
-    public List<DrgEdge> outgoing(Urn source, Relation relation) {
-        return outgoing.getOrDefault(new EdgeKey(source, relation), List.of());
-    }
-
-    /**
-     * This graph followed by {@code other}: its nodes and edges are appended, and a node of {@code other} whose URN
-     * this graph already declares is dropped.
+     * This graph followed by {@code other}: its nodes and relationships are appended, and a node of
+     * {@code other} whose URN this graph already declares is dropped.
      *
      * @param other the graph of the next layer
      * @return the merged graph; neither input changes
@@ -115,20 +94,20 @@ public final class DoctrineGraph {
     public DoctrineGraph merge(DoctrineGraph other) {
         List<DrgNode> mergedNodes = new ArrayList<>(nodes.values());
         mergedNodes.addAll(other.nodes());
-        List<DrgEdge> mergedEdges = new ArrayList<>(edges);
-        mergedEdges.addAll(other.edges());
-        return new DoctrineGraph(mergedNodes, mergedEdges);
+        List<Relationship> mergedRelationships = new ArrayList<>(relationships);
+        mergedRelationships.addAll(other.relationships());
+        return new DoctrineGraph(mergedNodes, mergedRelationships);
     }
 
     @Override
     public boolean equals(@Nullable Object o) {
         return o instanceof DoctrineGraph g
                 && List.copyOf(nodes.values()).equals(List.copyOf(g.nodes.values()))
-                && edges.equals(g.edges);
+                && relationships.equals(g.relationships);
     }
 
     @Override
     public int hashCode() {
-        return 31 * List.copyOf(nodes.values()).hashCode() + edges.hashCode();
+        return 31 * List.copyOf(nodes.values()).hashCode() + relationships.hashCode();
     }
 }

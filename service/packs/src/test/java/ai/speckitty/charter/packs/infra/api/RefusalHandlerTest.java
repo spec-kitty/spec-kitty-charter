@@ -1,0 +1,85 @@
+package ai.speckitty.charter.packs.infra.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
+import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+/**
+ * The {@link RefusalHandler} code&rarr;status map: each refusal code is answered with its own HTTP status and a
+ * non-blank title, and the body carries the code's wire token. The new validation (422) and conflict/policy (409)
+ * tokens resolve through the generated {@code CharterRefusal.CodeEnum}.
+ */
+@DisplayName("RefusalHandler status map")
+class RefusalHandlerTest {
+
+    private final RefusalHandler handler = new RefusalHandler();
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+        "MISSION_TYPE_NOT_FOUND, 404",
+        "ACTION_NOT_FOUND, 404",
+        "PACK_NOT_FOUND, 404",
+        "TACTIC_NOT_FOUND, 404",
+        "VALIDATION_FAILED, 422",
+        "REGISTRATION_CONFLICT, 409",
+        "GOVERNANCE_POLICY_VIOLATION, 409",
+        "PACK_UNREADABLE, 500",
+        "DRG_SCHEMA_ERROR, 500",
+        "UNRESOLVED_EDGE_ENDPOINT, 500",
+        "PACK_LEVEL_MISMATCH, 500",
+        "STALE_INPUT, 500",
+        "INTERNAL_ERROR, 500",
+    })
+    @DisplayName("each code is answered with its status, its token and a non-blank title")
+    void eachCodeMapsToItsStatus(RefusalCode code, int expectedStatus) {
+        ResponseEntity<CharterRefusal> response =
+                handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "detail"));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(expectedStatus);
+        CharterRefusal body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getStatus()).isEqualTo(expectedStatus);
+        assertThat(body.getCode().getValue()).isEqualTo(code.token());
+        assertThat(body.getTitle()).isNotBlank();
+        assertThat(body.getDetail()).isEqualTo("detail");
+    }
+
+    @Test
+    @DisplayName("every refusal code has a status mapping (no code falls through)")
+    void everyCodeHasAMapping() {
+        for (RefusalCode code : RefusalCode.values()) {
+            assertThatCode(() -> handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "d")))
+                    .as(code.name())
+                    .doesNotThrowAnyException();
+        }
+    }
+
+    @Test
+    @DisplayName("the new validation and conflict tokens resolve through the generated CodeEnum")
+    void theNewTokensResolveThroughTheContractEnum() {
+        assertThat(CharterRefusal.CodeEnum.fromValue("validation_failed").getValue())
+                .isEqualTo("validation_failed");
+        assertThat(CharterRefusal.CodeEnum.fromValue("registration_conflict").getValue())
+                .isEqualTo("registration_conflict");
+    }
+
+    @Test
+    @DisplayName("a validation failure is 422 Unprocessable Content; a conflict is 409")
+    void theNewCodesCarryTheirStatus() {
+        ResponseEntity<CharterRefusal> validation = handler.refused(
+                new ai.speckitty.charter.kernel.domain.CharterRefusal(RefusalCode.VALIDATION_FAILED, "bad"));
+        ResponseEntity<CharterRefusal> conflict = handler.refused(
+                new ai.speckitty.charter.kernel.domain.CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, "dup"));
+
+        assertThat(validation.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(conflict.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+}

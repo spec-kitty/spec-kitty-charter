@@ -11,19 +11,18 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
 /**
- * Enforces that two refusal codes are raised by nothing: {@code governance_policy_violation}, reserved for the
- * mutability policy, and {@code unresolved_edge_endpoint}, no longer raised since an edge endpoint that is not a URN
- * is a schema error (#114, R6). The contract scenario "governance_policy_violation is reserved" pins the first
- * declaration, and {@code x-refusal} says {@code raised: false} for both; this test pins the other half, that
- * nothing in the main code names either constant except the enum that declares it and the title mapping of
- * {@code RefusalHandler}.
+ * Enforces that {@code unresolved_edge_endpoint} is raised by nothing: it is no longer raised since an edge endpoint
+ * that is not a URN is a schema error (#114, R6). {@code x-refusal} says {@code raised: false} for it; this test pins
+ * the other half, that nothing in the main code names the constant except the enum that declares it and the title
+ * mapping of {@code RefusalHandler}.
  *
  * <p>The exclusion is by name pattern, not by simple name: javac compiles the {@code switch} over the enum in
  * {@code RefusalHandler.title()} into a synthetic class {@code RefusalHandler$1} (a {@code $SwitchMap} table) that
  * reads the field, and the enum's own constants initializer is part of the enum class.
  *
- * <p>The mutability-policy epic #55 (ADR-0012, steps #57 to #61) raises {@code governance_policy_violation}, and
- * drops that rule when it does.
+ * <p>The companion {@code governance_policy_violation} pin is gone: the mutability-policy epic #55 (ADR-0012, steps
+ * #57 to #61) landed as the {@code @Primary PackMutabilityPolicy}, which names and raises the code, and this test's
+ * contract was always to drop that rule once a main class raises it.
  */
 class ReservedRefusalCodesTest {
 
@@ -39,11 +38,6 @@ class ReservedRefusalCodesTest {
                 .haveNameNotMatching("ai\\.speckitty\\.charter\\.packs\\.infra\\.api\\.RefusalHandler(\\$.*)?")
                 .should()
                 .accessField(RefusalCode.class, constant);
-    }
-
-    @Test
-    void noMainClassButTheEnumAndTheTitleMappingNamesGovernancePolicyViolation() {
-        nothingRaises("GOVERNANCE_POLICY_VIOLATION").check(MAIN);
     }
 
     @Test

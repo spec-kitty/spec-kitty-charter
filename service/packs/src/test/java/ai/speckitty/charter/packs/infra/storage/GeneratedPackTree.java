@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * <table>
  * <caption>Name shapes and their verdicts</caption>
  * <tr><th>Shape</th><th>Verdict</th></tr>
- * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, paradigm</td><td>loaded</td></tr>
+ * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm</td><td>loaded</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (a files rule wins over the presets exclusion)</td><td>loaded</td></tr>
@@ -39,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
- * <tr><td>toolguide, procedure, agent, asset and step-contract files</td><td>decoy</td></tr>
+ * <tr><td>procedure, agent, asset and step-contract files</td><td>decoy</td></tr>
  * <tr><td>root {@code org-charter.yaml}, {@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
  *     <td>decoy</td></tr>
  * <tr><td>nested {@code sub/y.graph.yaml}, nested {@code sub/drg/fragment.yaml}</td><td>decoy</td></tr>
@@ -67,6 +67,7 @@ final class GeneratedPackTree {
         TACTIC("tactic"),
         DIRECTIVE("directive"),
         STYLEGUIDE("styleguide"),
+        TOOLGUIDE("toolguide"),
         PARADIGM("paradigm");
 
         private final String token;
@@ -98,7 +99,6 @@ final class GeneratedPackTree {
         DECOY_KIND_THEN_CONFIG(Verdict.DECOY),
         DECOY_NOTES(Verdict.DECOY),
         DECOY_SUB_R(Verdict.DECOY),
-        DECOY_TOOLGUIDE(Verdict.DECOY),
         DECOY_PROCEDURE(Verdict.DECOY),
         DECOY_AGENT(Verdict.DECOY),
         DECOY_ASSET(Verdict.DECOY),
@@ -134,7 +134,6 @@ final class GeneratedPackTree {
             Shape.DECOY_UPPER_KIND,
             Shape.DECOY_BAK,
             Shape.DECOY_KIND_THEN_CONFIG,
-            Shape.DECOY_TOOLGUIDE,
             Shape.DECOY_PROCEDURE,
             Shape.DECOY_AGENT,
             Shape.DECOY_ASSET,
@@ -474,7 +473,6 @@ final class GeneratedPackTree {
             case DECOY_KIND_THEN_CONFIG -> directories(2) + stem + ".tactic.config.yaml";
             case DECOY_NOTES -> "notes.yaml";
             case DECOY_SUB_R -> "sub/r.yaml";
-            case DECOY_TOOLGUIDE -> directories(2) + stem + ".toolguide.yaml";
             case DECOY_PROCEDURE -> directories(2) + stem + ".procedure.yaml";
             case DECOY_AGENT -> directories(2) + stem + ".agent.yaml";
             case DECOY_ASSET -> directories(2) + stem + ".asset.yaml";
@@ -523,6 +521,7 @@ final class GeneratedPackTree {
             case TACTIC -> "t-" + n;
             case DIRECTIVE -> "D-" + n;
             case STYLEGUIDE -> "s-" + n;
+            case TOOLGUIDE -> "tg-" + n;
             case PARADIGM -> "p-" + n;
         };
     }
@@ -532,6 +531,8 @@ final class GeneratedPackTree {
             case TACTIC -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsteps:\n  - title: S\n";
             case DIRECTIVE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nintent: I\nenforcement: advisory\n";
             case STYLEGUIDE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nscope: code\nprinciples: [p]\n";
+            case TOOLGUIDE ->
+                "id: " + id + "\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
             case PARADIGM -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsummary: S\n";
         };
     }

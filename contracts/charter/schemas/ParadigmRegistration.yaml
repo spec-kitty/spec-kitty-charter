@@ -1,0 +1,61 @@
+title: ParadigmRegistration
+description: >-
+  The registration body of a paradigm: its fields plus the relationships it originates. On POST to the
+  collection the id is optional (the server answers with Location); on PUT the id is taken from the path.
+  A relationship in this body may be authored only from the paradigm itself (dual-write ownership rule,
+  ADR-0026 / plan IC-05); a cross-authored edge is registered through PUT /packs/{packId}/relationships.
+type: object
+additionalProperties: false
+required:
+  - schemaVersion
+  - name
+  - summary
+properties:
+  id:
+    type: string
+    description: The paradigm's identity; optional on POST (server-assigned via Location), path-supplied on PUT.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmIdentifier.java
+      symbol: ParadigmIdentifier.value
+  schemaVersion:
+    type: string
+    description: The schema version the paradigm declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.schemaVersion
+  name:
+    type: string
+    description: The paradigm's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.name
+  summary:
+    type: string
+    description: The paradigm's summary.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.summary
+  directiveRefs:
+    type: array
+    description: The ids of the directives the paradigm references, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.directiveRefs
+  references:
+    type: array
+    description: The artifacts the paradigm points at, in authored order.
+    items:
+      $ref: ParadigmReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.references
+  relationships:
+    type: array
+    description: The relationships the body co-authors; each must be authored from this paradigm.
+    items:
+      $ref: RelationshipRegistration.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.relationships

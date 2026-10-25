@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The pack aggregate root, identified by its {@link PackIdentifier}. It composes the pack's descriptor, its
- * {@link Tactic}, {@link Directive}, {@link Styleguide} and {@link Paradigm} child entities and the violations found while reading, so a partial-tolerant load can be
+ * {@link Tactic}, {@link Directive}, {@link Styleguide}, {@link Toolguide} and {@link Paradigm} child entities and the violations found while reading, so a partial-tolerant load can be
  * represented. Two packs are equal when they have the same identity, whatever else they hold.
  *
  * <p>It holds no doctrine graph. Build one with {@link #builder()}.
@@ -44,6 +44,14 @@ public final class Pack {
                 return pack.styleguides.stream().allMatch(child -> seen.add(child.id()));
             }))
             .must(Constraints.of(
+                    "Every toolguide of a pack must belong to that pack.",
+                    pack -> pack.toolguides.stream()
+                            .allMatch(child -> child.packId().equals(pack.id))))
+            .must(Constraints.of("A pack must not hold two toolguides with the same identifier.", pack -> {
+                var seen = new HashSet<ToolguideIdentifier>();
+                return pack.toolguides.stream().allMatch(child -> seen.add(child.id()));
+            }))
+            .must(Constraints.of(
                     "Every paradigm of a pack must belong to that pack.",
                     pack -> pack.paradigms.stream()
                             .allMatch(child -> child.packId().equals(pack.id))))
@@ -57,6 +65,7 @@ public final class Pack {
     private final List<Tactic> tactics;
     private final List<Directive> directives;
     private final List<Styleguide> styleguides;
+    private final List<Toolguide> toolguides;
     private final List<Paradigm> paradigms;
     private final List<PackElementViolation> violations;
 
@@ -68,6 +77,7 @@ public final class Pack {
      * @param tactics the readable tactics, in a stable order
      * @param directives the readable directives, in a stable order
      * @param styleguides the readable styleguides, in a stable order
+     * @param toolguides the readable toolguides, in a stable order
      * @param paradigms the readable paradigms, in a stable order
      * @param violations the files that could not be read or validated
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
@@ -78,6 +88,7 @@ public final class Pack {
             List<Tactic> tactics,
             List<Directive> directives,
             List<Styleguide> styleguides,
+            List<Toolguide> toolguides,
             List<Paradigm> paradigms,
             List<PackElementViolation> violations) {
         this.id = Objects.requireNonNull(id, "id");
@@ -85,6 +96,7 @@ public final class Pack {
         this.tactics = List.copyOf(tactics);
         this.directives = List.copyOf(directives);
         this.styleguides = List.copyOf(styleguides);
+        this.toolguides = List.copyOf(toolguides);
         this.paradigms = List.copyOf(paradigms);
         this.violations = List.copyOf(violations);
         RULES.guard(this);
@@ -145,6 +157,15 @@ public final class Pack {
     }
 
     /**
+     * The readable toolguides, in a stable order.
+     *
+     * @return an immutable list; empty when the pack holds none
+     */
+    public List<Toolguide> toolguides() {
+        return toolguides;
+    }
+
+    /**
      * The readable paradigms, in a stable order.
      *
      * @return an immutable list; empty when the pack holds none
@@ -186,6 +207,7 @@ public final class Pack {
         private final List<Tactic> tactics = new ArrayList<>();
         private final List<Directive> directives = new ArrayList<>();
         private final List<Styleguide> styleguides = new ArrayList<>();
+        private final List<Toolguide> toolguides = new ArrayList<>();
         private final List<Paradigm> paradigms = new ArrayList<>();
         private final List<PackElementViolation> violations = new ArrayList<>();
 
@@ -247,6 +269,17 @@ public final class Pack {
         }
 
         /**
+         * Appends a toolguide.
+         *
+         * @param value the toolguide
+         * @return this builder
+         */
+        public Builder toolguide(Toolguide value) {
+            this.toolguides.add(value);
+            return this;
+        }
+
+        /**
          * Appends a paradigm.
          *
          * @param value the paradigm
@@ -282,6 +315,7 @@ public final class Pack {
                     tactics,
                     directives,
                     styleguides,
+                    toolguides,
                     paradigms,
                     violations);
         }

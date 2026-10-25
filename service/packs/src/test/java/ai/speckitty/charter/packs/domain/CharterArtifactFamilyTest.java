@@ -1,11 +1,12 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Optional;
@@ -111,33 +112,28 @@ class CharterArtifactFamilyTest {
 
     @Test
     @DisplayName(
-            "edges follow the contract: the styleguide mints none, the others a SUGGESTS per typed ref and a REQUIRES per bare ref")
-    void edgesFollowTheEdgeContract() {
-        assertThat(STYLEGUIDE.edges()).isEmpty();
+            "relationships follow the contract: the styleguide mints none, the others a suggests per typed ref and a requires per bare ref")
+    void relationshipsFollowTheContract() {
+        assertThat(STYLEGUIDE.relationships()).isEmpty();
 
-        assertThat(DIRECTIVE.edges())
+        assertThat(DIRECTIVE.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
                 .containsExactly(
-                        new DrgEdge(
-                                DIRECTIVE.urn(),
-                                new Urn(NodeKind.TACTIC, "tdd"),
-                                Relation.SUGGESTS,
-                                Optional.empty(),
-                                Optional.of("always"),
-                                Optional.of("why")),
-                        DrgEdge.of(DIRECTIVE.urn(), new Urn(NodeKind.PROCEDURE, "release"), Relation.REQUIRES));
+                        tuple(DIRECTIVE.urn(), new Urn(NodeKind.TACTIC, "tdd"), RelationType.SUGGESTS),
+                        tuple(DIRECTIVE.urn(), new Urn(NodeKind.PROCEDURE, "release"), RelationType.REQUIRES));
+        assertThat(DIRECTIVE.relationships().get(0).when()).contains("always");
+        assertThat(DIRECTIVE.relationships().get(0).rationale()).contains("why");
 
-        assertThat(PARADIGM.edges())
+        assertThat(PARADIGM.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
                 .containsExactly(
-                        DrgEdge.of(PARADIGM.urn(), new Urn(NodeKind.TACTIC, "tdd"), Relation.SUGGESTS),
-                        DrgEdge.of(PARADIGM.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), Relation.REQUIRES));
+                        tuple(PARADIGM.urn(), new Urn(NodeKind.TACTIC, "tdd"), RelationType.SUGGESTS),
+                        tuple(PARADIGM.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), RelationType.REQUIRES));
 
-        assertThat(TACTIC.edges())
-                .containsExactly(new DrgEdge(
-                        TACTIC.urn(),
-                        new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"),
-                        Relation.SUGGESTS,
-                        Optional.empty(),
-                        Optional.of("when ready"),
-                        Optional.empty()));
+        assertThat(TACTIC.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
+                .containsExactly(
+                        tuple(TACTIC.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), RelationType.SUGGESTS));
+        assertThat(TACTIC.relationships().get(0).when()).contains("when ready");
     }
 }

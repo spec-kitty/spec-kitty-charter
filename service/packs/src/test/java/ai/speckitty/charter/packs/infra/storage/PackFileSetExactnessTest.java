@@ -258,6 +258,7 @@ class PackFileSetExactnessTest {
             typed.put(Kind.TACTIC, ids(read.tactics(), TacticDso::id));
             typed.put(Kind.DIRECTIVE, ids(read.directives(), DirectiveDso::id));
             typed.put(Kind.STYLEGUIDE, ids(read.styleguides(), StyleguideDso::id));
+            typed.put(Kind.TOOLGUIDE, ids(read.toolguides(), ToolguideDso::id));
             typed.put(Kind.PARADIGM, ids(read.paradigms(), ParadigmDso::id));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);

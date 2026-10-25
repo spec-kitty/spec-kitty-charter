@@ -1,8 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -167,7 +167,7 @@ public final class Paradigm implements CharterArtifact {
     }
 
     @Override
-    public List<DrgEdge> edges() {
+    public List<Relationship> relationships() {
         List<ArtifactEdges.TypedRef> typed = references.stream()
                 .map(ref -> new ArtifactEdges.TypedRef(ref.type(), ref.id(), Optional.empty(), Optional.empty()))
                 .toList();

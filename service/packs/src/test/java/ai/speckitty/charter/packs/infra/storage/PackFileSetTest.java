@@ -68,6 +68,7 @@ class PackFileSetTest {
                         "x.config.tactic.yaml");
         assertThat(PackFileSet.files(pack, LoadedKind.DIRECTIVE)).containsExactly("deep/er/c.directive.yaml");
         assertThat(PackFileSet.files(pack, LoadedKind.STYLEGUIDE)).containsExactly("d.styleguide.yaml");
+        assertThat(PackFileSet.files(pack, LoadedKind.TOOLGUIDE)).containsExactly("f.toolguide.yaml");
         assertThat(PackFileSet.files(pack, LoadedKind.PARADIGM)).containsExactly("e.paradigm.yaml");
     }
 
@@ -84,6 +85,7 @@ class PackFileSetTest {
                         "x.config.tactic.yaml",
                         "deep/er/c.directive.yaml",
                         "d.styleguide.yaml",
+                        "f.toolguide.yaml",
                         "e.paradigm.yaml",
                         ".a.graph.yaml",
                         "b.graph.yaml",

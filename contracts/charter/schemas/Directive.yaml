@@ -1,0 +1,104 @@
+title: Directive
+description: One directive of a Charter Pack, as the pack declares it, with its relationships populated.
+type: object
+additionalProperties: false
+required:
+  - id
+  - schemaVersion
+  - title
+  - intent
+  - enforcement
+  - scope
+  - procedures
+  - integrityRules
+  - validationCriteria
+  - explicitAllowances
+  - references
+  - relationships
+properties:
+  id:
+    type: string
+    description: The directive's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.id
+  schemaVersion:
+    type: string
+    description: The schema version the directive file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.schemaVersion
+  title:
+    type: string
+    description: The directive's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.title
+  intent:
+    type: string
+    description: What the directive binds.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.intent
+  enforcement:
+    type: string
+    description: How strictly the directive binds, as a token (required, lenient-adherence, advisory).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Enforcement.java
+      symbol: Enforcement.token
+  scope:
+    type: ['string', 'null']
+    description: The directive's scope; null when the file declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.scope
+  procedures:
+    type: array
+    description: The ids of the procedures the directive requires, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.procedures
+  integrityRules:
+    type: array
+    description: The directive's integrity rules, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.integrityRules
+  validationCriteria:
+    type: array
+    description: The directive's validation criteria, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.validationCriteria
+  explicitAllowances:
+    type: array
+    description: The directive's explicit allowances, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.explicitAllowances
+  references:
+    type: array
+    description: The artifacts the directive points at, in authored order with duplicates kept.
+    items:
+      $ref: DirectiveReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.references
+  relationships:
+    type: array
+    description: >-
+      The relationships the directive is the effective origin of (FR-006), derived from its authored
+      reference and procedure fields. Empty when the directive originates none.
+    items:
+      $ref: RelationshipRegistration.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+      symbol: Directive.relationships

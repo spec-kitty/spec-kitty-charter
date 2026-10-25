@@ -1,0 +1,220 @@
+package ai.speckitty.charter.packs.infra.api;
+
+import ai.speckitty.charter.api.ToolguidesApi;
+import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.api.model.Toolguide;
+import ai.speckitty.charter.api.model.Toolguide1;
+import ai.speckitty.charter.api.model.ToolguideRegistration;
+import ai.speckitty.charter.api.model.ToolguideRegistration1;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PreconditionException;
+import ai.speckitty.charter.packs.application.ToolguideReadService;
+import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
+import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * The inbound REST adapter for a pack's toolguides: {@code GET}/{@code POST} on the collection and
+ * {@code GET}/{@code PUT} on one toolguide (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It
+ * copies {@link DirectiveController}: the read is a thin projection of {@link ToolguideReadService}; the writes delegate
+ * to {@link ToolguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; a stale
+ * {@code If-Match} precondition is answered here as a plain {@code 412} {@link Problem} (not a refusal code), per
+ * ADR-0020.
+ *
+ * <p>A toolguide mints no relationships, so neither the request body nor the response carries a relationships array.
+ * Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-toolguide response is a
+ * {@code Toolguide1}, the generator's name for the second use of the one {@code Toolguide} schema.
+ */
+@RestController
+@RequestMapping("${charter.api.base-path:/api/v1}")
+public class ToolguideController implements ToolguidesApi {
+
+    private final ToolguideReadService reads;
+    private final ToolguideRegistrationService registrations;
+    private final PackWriteStore writeStore;
+
+    /**
+     * A controller over the toolguide read and registration use cases.
+     *
+     * @param reads the read use case
+     * @param registrations the registration use case
+     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
+     */
+    public ToolguideController(
+            ToolguideReadService reads, ToolguideRegistrationService registrations, PackWriteStore writeStore) {
+        this.reads = reads;
+        this.registrations = registrations;
+        this.writeStore = writeStore;
+    }
+
+    @Override
+    public ResponseEntity<List<Toolguide>> listPackToolguides(String packId) {
+        var verified = reads.toolguidesOf(new PackIdentifier(packId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .body(verified.value().stream().map(ToolguideController::toDto).toList());
+    }
+
+    @Override
+    public ResponseEntity<Toolguide1> getPackToolguide(String packId, String toolguideId) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        var verified = reads.toolguide(pack, new ToolguideIdentifier(toolguideId));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .eTag(writeStore.currentRevision(pack).token())
+                .body(toSingleDto(verified.value()));
+    }
+
+    @Override
+    public ResponseEntity<Toolguide1> registerPackToolguide(String packId, ToolguideRegistration body) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        String id = requireId(body.getId());
+        ai.speckitty.charter.packs.domain.Toolguide toolguide = assemble(
+                pack,
+                id,
+                body.getSchemaVersion(),
+                body.getTool(),
+                body.getTitle(),
+                body.getGuidePath(),
+                body.getSummary(),
+                body.getCommands(),
+                body.getAppliesToLanguages(),
+                body.getLastUpdated(),
+                body.getReferences());
+        ToolguideRegistrationService.Registered result = registrations.registerToolguide(pack, toolguide, false, null);
+        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/toolguides/" + id))
+                .eTag(result.revision().token())
+                .body(toSingleDto(toolguide));
+    }
+
+    @Override
+    public ResponseEntity<Toolguide1> putPackToolguide(
+            String packId, String toolguideId, ToolguideRegistration1 body, @Nullable String ifMatch) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        ai.speckitty.charter.packs.domain.Toolguide toolguide = assemble(
+                pack,
+                toolguideId,
+                body.getSchemaVersion(),
+                body.getTool(),
+                body.getTitle(),
+                body.getGuidePath(),
+                body.getSummary(),
+                body.getCommands(),
+                body.getAppliesToLanguages(),
+                body.getLastUpdated(),
+                body.getReferences());
+        ToolguideRegistrationService.Registered result =
+                registrations.registerToolguide(pack, toolguide, true, unquote(ifMatch));
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .eTag(result.revision().token())
+                .body(toSingleDto(toolguide));
+    }
+
+    /** A stale {@code If-Match} (412) or a missing one (428) is a plain {@code Problem}. */
+    @ExceptionHandler(PreconditionException.class)
+    ResponseEntity<Problem> precondition(PreconditionException failure) {
+        HttpStatus status = failure.kind() == PreconditionException.Kind.MISSING
+                ? HttpStatus.PRECONDITION_REQUIRED
+                : HttpStatus.PRECONDITION_FAILED;
+        Problem problem = new Problem(status.getReasonPhrase(), status.value());
+        problem.setDetail(failure.getMessage());
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    /** Strips the optional {@code W/} weak marker and the surrounding quotes of an HTTP entity-tag If-Match value. */
+    static @Nullable String unquote(@Nullable String eTag) {
+        if (eTag == null) {
+            return null;
+        }
+        String value = eTag.startsWith("W/") ? eTag.substring(2) : eTag;
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    // ---- DTO -> domain -------------------------------------------------------------------------------------------
+
+    private static String requireId(@Nullable String id) {
+        if (id == null || id.isBlank()) {
+            throw new CharterRefusal(
+                    RefusalCode.VALIDATION_FAILED, "A toolguide registration must carry an id on POST.");
+        }
+        return id;
+    }
+
+    private static ai.speckitty.charter.packs.domain.Toolguide assemble(
+            PackIdentifier pack,
+            String id,
+            String schemaVersion,
+            String tool,
+            String title,
+            String guidePath,
+            String summary,
+            List<String> commands,
+            List<String> appliesToLanguages,
+            @Nullable String lastUpdated,
+            List<String> references) {
+        try {
+            var builder = ai.speckitty.charter.packs.domain.Toolguide.builder()
+                    .id(new ToolguideIdentifier(id))
+                    .packId(pack)
+                    .schemaVersion(schemaVersion)
+                    .tool(tool)
+                    .title(title)
+                    .guidePath(guidePath)
+                    .summary(summary)
+                    .lastUpdated(lastUpdated);
+            commands.forEach(builder::command);
+            appliesToLanguages.forEach(builder::appliesToLanguage);
+            references.forEach(builder::reference);
+            return builder.build();
+        } catch (ConstraintBreachException | IllegalArgumentException invalid) {
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
+        }
+    }
+
+    // ---- domain -> DTO -------------------------------------------------------------------------------------------
+
+    private static Toolguide1 toSingleDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
+        Toolguide listed = toDto(toolguide);
+        return new Toolguide1(
+                listed.getId(),
+                listed.getSchemaVersion(),
+                listed.getTool(),
+                listed.getTitle(),
+                listed.getGuidePath(),
+                listed.getSummary(),
+                listed.getCommands(),
+                listed.getAppliesToLanguages(),
+                listed.getLastUpdated(),
+                listed.getReferences());
+    }
+
+    private static Toolguide toDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
+        return new Toolguide(
+                toolguide.id().value(),
+                toolguide.schemaVersion(),
+                toolguide.tool(),
+                toolguide.title(),
+                toolguide.guidePath(),
+                toolguide.summary(),
+                toolguide.commands(),
+                toolguide.appliesToLanguages(),
+                toolguide.lastUpdated().orElse(null),
+                toolguide.references());
+    }
+}

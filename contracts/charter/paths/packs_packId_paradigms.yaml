@@ -1,0 +1,116 @@
+get:
+  operationId: listPackParadigms
+  summary: List the paradigms of a Charter Pack.
+  description: >-
+    The readable paradigms of one pack, each with its relationships populated (FR-014), in the order
+    the pack's storage lists them. An identifier that matches no configured pack, by name or by declared
+    pack_id, is a 404 pack_not_found; a configured pack whose directory is missing, or a pack holding a
+    file the fingerprint covers that cannot be read, is a 500 pack_unreadable. A pack without paradigms
+    answers an empty list. The answer is verified against the source fingerprint and carries it.
+  tags:
+    - Paradigms
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  responses:
+    '200':
+      description: The pack's paradigms.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../schemas/Paradigm.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ParadigmNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+post:
+  operationId: registerPackParadigm
+  summary: Register a new paradigm in a Charter Pack.
+  description: >-
+    Registers a net-new paradigm (functional registration, ADR-0026): the whole pack aggregate is
+    revalidated and committed atomically. The id is optional in the body; the server answers 201 with a
+    Location to the created paradigm and an ETag revision. A body that names an already-registered id is
+    a 409 registration_conflict; a malformed body, or a relationship not authored from the paradigm, is a
+    422 validation_failed, and the pack is left unchanged.
+  tags:
+    - Paradigms
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ParadigmRegistration.yaml
+  responses:
+    '201':
+      description: The paradigm was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        Location:
+          description: The URI of the created paradigm.
+          schema:
+            type: string
+        ETag:
+          description: The pack revision after the write, for optimistic concurrency.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Paradigm.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ParadigmNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

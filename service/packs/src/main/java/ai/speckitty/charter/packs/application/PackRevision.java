@@ -1,0 +1,108 @@
+package ai.speckitty.charter.packs.application;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The write-side revision of a pack or artifact's committed state (ADR-0026 Decision 5): a stable digest used as the
+ * {@code ETag} a registration answers with and the {@code If-Match} it is matched against.
+ *
+ * <p>It is deliberately <strong>distinct</strong> from the read-path source fingerprint
+ * ({@link ConsistentRead}/{@code PackSources.fingerprint()}, the {@code Charter-Source-Fingerprint}). That fingerprint
+ * is a freshness check over the read <em>inputs</em>; this revision is a concurrency token over the committed
+ * <em>content</em>. To guarantee the two never coincide for the same bytes, the revision digest is
+ * <em>domain-separated</em>: a fixed tag and a length prefix per item precede the committed content, which the read
+ * fingerprint never prepends. Reusing the fingerprint as the ETag would conflate freshness with concurrency, so they
+ * are computed apart.
+ */
+public final class PackRevision {
+
+    /** The domain-separation tag: it never appears in the read-path fingerprint's input, so the digests diverge. */
+    private static final byte[] DOMAIN_TAG = "charter-pack-revision\u0000v1\n".getBytes(StandardCharsets.UTF_8);
+
+    private final String token;
+
+    private PackRevision(String token) {
+        this.token = Objects.requireNonNull(token, "token");
+    }
+
+    /**
+     * Computes the revision of a committed state from its serialized child content.
+     *
+     * <p>The caller passes the committed file texts (the serialized DSOs and the registered-relationship shard) in a
+     * stable order; a change to any of them changes the revision, and an unchanged commit yields an equal revision.
+     *
+     * @param committedContent the serialized contents of the committed state, in a stable order
+     * @return the revision, {@code sha256:} and 64 lower-case hex digits
+     */
+    public static PackRevision compute(List<String> committedContent) {
+        Objects.requireNonNull(committedContent, "committedContent");
+        MessageDigest digest = sha256();
+        digest.update(DOMAIN_TAG);
+        for (String content : committedContent) {
+            byte[] bytes = Objects.requireNonNull(content, "content").getBytes(StandardCharsets.UTF_8);
+            // Length-prefix each item so that re-partitioning the same bytes cannot collide.
+            digest.update(Integer.toString(bytes.length).getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) '\n');
+            digest.update(bytes);
+        }
+        return new PackRevision("sha256:" + hex(digest.digest()));
+    }
+
+    /**
+     * The revision token, for the {@code ETag} header.
+     *
+     * @return {@code sha256:} and 64 lower-case hex digits
+     */
+    public String token() {
+        return token;
+    }
+
+    /**
+     * Whether an {@code If-Match} token names the current revision.
+     *
+     * @param ifMatch the token the request carried, or null when it carried none
+     * @param current the revision of the committed state
+     * @return {@code true} when {@code ifMatch} equals the current revision token
+     */
+    public static boolean matches(@Nullable String ifMatch, PackRevision current) {
+        Objects.requireNonNull(current, "current");
+        return current.token.equals(ifMatch);
+    }
+
+    @Override
+    public boolean equals(@Nullable Object other) {
+        return this == other || (other instanceof PackRevision that && token.equals(that.token));
+    }
+
+    @Override
+    public int hashCode() {
+        return token.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return token;
+    }
+
+    private static MessageDigest sha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is a required algorithm of every JRE; its absence is a broken platform, not a runtime case.
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder out = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            out.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
+        }
+        return out.toString();
+    }
+}
