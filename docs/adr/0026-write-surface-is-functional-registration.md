@@ -1,5 +1,5 @@
 ---
-title: "ADR-0026: The write surface is functional registration of packs, artefacts and relationships, not CRUD over storage"
+title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
 updated: 2026-10-25T00:00:00Z
@@ -23,7 +23,7 @@ audience:
     guidance_text: Read this before adding a write endpoint — the three registration operations, how they gate on the Pack aggregate, and what the contract must not expose.
 ---
 
-# ADR-0026: The write surface is functional registration of packs, artefacts and relationships, not CRUD over storage
+# ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage
 
 ## Status
 

@@ -1,6 +1,6 @@
 ---
 title: "ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories"
-description: Why relationships are first-class domain value objects over a behaviour-carrying RelationType, identified by the component pair, and walked on demand through per-kind repositories.
+description: Why relationships are first-class domain value objects over a behavior-carrying RelationType, identified by the component pair, and walked on demand through per-kind repositories.
 doc_status: active
 updated: 2026-10-25T00:00:00Z
 type: ADR
@@ -14,7 +14,7 @@ related:
   - context/domain
 audience:
   - profile: core-maintainer
-    guidance_text: Read this for how the Java domain models the Doctrine Reference Graph — relationships as value objects, the behaviour-carrying relation type, and on-demand traversal.
+    guidance_text: Read this for how the Java domain models the Doctrine Reference Graph — relationships as value objects, the behavior-carrying relation type, and on-demand traversal.
   - profile: charter-service-contributor
     guidance_text: Read this before touching the graph — what a relationship is, what relationships() returns, where the walker lives, and why DrgEdge is to become a storage DSO.
 ---
@@ -45,7 +45,7 @@ Modelling the two remaining regular artifact kinds (toolguide, procedure) forced
 how a component expresses its relationships, and how a consumer walks them. Two shapes were on the
 table: keep the kernel's edge-list-and-index multigraph, or promote relationships to a first-class
 domain concept the components own. The second also raised a memory concern: a naïve walker would
-materialise the whole DRG in application memory, which scales with pack size and defeats the
+materialize the whole DRG in application memory, which scales with pack size and defeats the
 per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
 
 ## Decision
@@ -59,15 +59,15 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    `from`/`to` order is still stored so directed types know their orientation; uniqueness is on the
    unordered pair. The identity and its round-trip handling are governed by
    [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) (bounded upstream
-   normalisation; a revisit trigger when a symmetric relation is minted).
+   normalization; a revisit trigger when a symmetric relation is minted).
 
-2. **`RelationType` is a behaviour-carrying enum** (`kernel.domain`): the closed catalogue of the
+2. **`RelationType` is a behavior-carrying enum** (`kernel.domain`): the closed catalogue of the
    DRG relations, each constant holding its `Directionality` (so **directionality is derived from
    the type**, never stored on the relationship) and a `Propagation` functional interface the
    traversal consults to decide activation flow. This is a strategy-factory on the enum: the
    cascade walker asks `type.propagation()` instead of switching on the relation. New relation
-   semantics are a new constant with its own behaviour, not a change to every consumer.
-   `RelationType` supersedes the kernel `Relation` enum (a rename plus added behaviour); the
+   semantics are a new constant with its own behavior, not a change to every consumer.
+   `RelationType` supersedes the kernel `Relation` enum (a rename plus added behavior); the
    glossary's "DRG Relation" denotes a `RelationType` constant.
 
 3. **A charter component owns its relationships.** `CharterArtifact` gains
@@ -77,11 +77,11 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    directed relationship with this component as `to` is **not** returned — a walk does not climb
    back up a `requires`.
 
-4. **Traversal is lazy and repository-backed; the whole graph is never materialised.** A per-kind
+4. **Traversal is lazy and repository-backed; the whole graph is never materialized.** A per-kind
    repository `load` returns the domain object **with its `relationships()` already populated** (the
    storage adapter assembles them from the graph shard). Following a relationship resolves its `to`
    URN on demand: a **`ComponentResolver` port** dispatches on `urn.kind()` to that kind's
-   repository/read service and fetches only that neighbour. A **`GraphWalker`** visitor
+   repository/read service and fetches only that neighbor. A **`GraphWalker`** visitor
    (`onNode`, `onRelationship`, each returning a `Descent` of `CONTINUE` / `SKIP` / `STOP`) is driven
    from the **application layer**, where the ports exist, with a visited-URN cycle guard. The kernel
    stays pure (ADR-0006): it defines `Relationship`, `RelationType` and the `GraphWalker` type; it
@@ -92,7 +92,7 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    [ADR-0024](/adr/0024-doctrine-artifact-family-contract/)), carrying `impacts`, `when` and
    `reason`. A mapper converts `Relationship` ↔ `DrgEdge` at the YAML boundary; the serialized shard
    round-trips per [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) —
-   achieved through upstream source normalisation, never a charter read-time rewrite, not asserted as
+   achieved through upstream source normalization, never a charter read-time rewrite, not asserted as
    automatic. `DoctrineGraph` holds domain `Relationship`s for serialization and validation;
    its `(source, relation)` in-memory index no longer serves runtime traversal, which is the walker's
    job.
@@ -111,8 +111,8 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
 
 ### Negative / costs
 
-- A walk pays one repository call per resolved neighbour (bounded by the cycle guard). Acceptable;
-  the alternative materialises the whole DRG.
+- A walk pays one repository call per resolved neighbor (bounded by the cycle guard). Acceptable;
+  the alternative materializes the whole DRG.
 - Unordered-pair identity forbids opposite-direction directed edges between the same pair. This is
   intended for the regular artifacts; genuine bidirectional **runtime handoffs** (`delegates_to`)
   are mission/profile territory and are deferred, not solved here.
@@ -131,10 +131,10 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
 - **Keep the kernel multigraph and its `outgoing` index.** Rejected: no production consumer needs
   multiplicity, `impacts` is unminted, and a simple graph keyed by the component pair matches the
   domain the operator wants to express.
-- **Materialise the full `DoctrineGraph` in application memory and walk it there.** Rejected: it
+- **Materialize the full `DoctrineGraph` in application memory and walk it there.** Rejected: it
   scales with pack size and crosses the per-kind repository boundaries; the on-demand resolver keeps
   the walk inside the slices.
-- **Keep `type` a plain enum with no behaviour.** Rejected: it forces the cascade engine and every
+- **Keep `type` a plain enum with no behavior.** Rejected: it forces the cascade engine and every
   other consumer to switch on the relation, the condition this ADR exists to remove.
 - **Carry `impacts` on `Relationship` now.** Deferred: the tension model is unbuilt and nothing
   mints `impacts`; adding the field before there is a writer or reader would be speculative.

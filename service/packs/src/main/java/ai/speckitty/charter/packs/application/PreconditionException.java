@@ -19,6 +19,7 @@ public final class PreconditionException extends RuntimeException {
         MISSING
     }
 
+    /** Which precondition was not met. */
     private final Kind kind;
 
     /**

@@ -185,3 +185,8 @@ jspecify
 # service architecture orientation + slice-coverage gate (#141)
 ungated
 parameterizing
+# regular-artefact read + registration mission (ADR-0025/0026/0027)
+dedup
+multigraph
+unbuilt
+unminted

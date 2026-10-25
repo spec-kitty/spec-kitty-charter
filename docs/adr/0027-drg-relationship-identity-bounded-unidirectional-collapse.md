@@ -1,6 +1,6 @@
 ---
 title: "ADR-0027: DRG relationship identity is a bounded, conditional unidirectional collapse"
-description: Why a relationship is one unidirectional edge per component pair as an upstream normalisation with a revisit trigger, not a claim that relationships are intrinsically one-way.
+description: Why a relationship is one unidirectional edge per component pair as an upstream normalization with a revisit trigger, not a claim that relationships are intrinsically one-way.
 doc_status: active
 updated: 2026-10-25T00:00:00Z
 type: ADR
@@ -45,21 +45,21 @@ derivable. A post-specify review
 - `impacts` (tension) and `delegates_to` (runtime handoff) are genuinely symmetric.
 
 So "a relationship is intrinsically unidirectional" is false. What *is* sound for today's data is the
-operator's intent stated as a bounded normalisation: keep one unidirectional relationship per pair,
-and compute the reverse discovery behaviour elsewhere rather than store it.
+operator's intent stated as a bounded normalization: keep one unidirectional relationship per pair,
+and compute the reverse discovery behavior elsewhere rather than store it.
 
 ## Decision
 
 1. **Identity stays the unordered `{from, to}` pair**: at most one, unidirectional, `Relationship`
-   per component pair, stored with its direction. This is a deliberate **normalisation**, not a claim
+   per component pair, stored with its direction. This is a deliberate **normalization**, not a claim
    that a reverse edge holds no information.
-2. **The collapse is realised by upstream normalisation in open-packs** (the canonical source carries
+2. **The collapse is realized by upstream normalization in open-packs** (the canonical source carries
    a single edge per pair), so the charter's stored form round-trips losslessly and PROJECT_002 is
    honoured. The charter **does not silently drop** a second edge on read; a source that still carries
-   a redundant reverse edge is a source-normalisation task owned by the CLI / open-packs side
+   a redundant reverse edge is a source-normalization task owned by the CLI / open-packs side
    (tracked as [spec-kitty/spec-kitty#6667](https://github.com/spec-kitty/spec-kitty/issues/6667),
    milestone 11 "4.0.0 release scope"), not a charter read-time rewrite.
-3. **The reverse discovery behaviour** — "you activated B, would you like to activate A?" — is **not**
+3. **The reverse discovery behavior** — "you activated B, would you like to activate A?" — is **not**
    a stored relationship. It is computed by a discovery/activation domain service (application ring,
    within the charter's post-cutover remit per [ADR-0020](/adr/0020-offering-and-activations/) D5/D6)
    through reverse-reachability over `requires`. It is out of this mission's scope; the CLI-side
@@ -67,30 +67,30 @@ and compute the reverse discovery behaviour elsewhere rather than store it.
 4. **Revisit trigger (binding).** This identity is revisited the moment a genuinely symmetric relation
    is minted — `impacts` (a tension pair) or bidirectional `delegates_to`. Until then the
    unidirectional collapse holds; neither is minted today (ADR-0025 defers both).
-5. `RelationType` remains a closed, behaviour-carrying catalogue with directionality derived from the
+5. `RelationType` remains a closed, behavior-carrying catalogue with directionality derived from the
    type (unchanged from ADR-0025 Decision 2).
 
 ## Consequences
 
 ### Positive
 
-- One well-defined relationship per pair, with a lossless round-trip once sources are normalised, and
+- One well-defined relationship per pair, with a lossless round-trip once sources are normalized, and
   a walker that stays lazy, outbound and bounded (ADR-0025 Decision 4).
 - The rationale is honest and bounded, with an explicit revisit trigger instead of a false universal.
 
 ### Negative / costs
 
-- Loses the selective soft-reverse discovery edge (no reader today); its behaviour must be rebuilt in
+- Loses the selective soft-reverse discovery edge (no reader today); its behavior must be rebuilt in
   the discovery/activation service.
-- Depends on the CLI / open-packs side to normalise sources and to build the discovery service
-  (milestone #11); the charter cannot honour PROJECT_002 for an un-normalised source on its own.
+- Depends on the CLI / open-packs side to normalize sources and to build the discovery service
+  (milestone #11); the charter cannot honour PROJECT_002 for an un-normalized source on its own.
 - A symmetric relation (`impacts`/`delegates_to`) forces the revisit of Decision 1.
 
 ### Neutral
 
 - The provenance divergence — `fragment.yaml` hand-authors `requires` while the procedure body's
   typed reference would mint `SUGGESTS` — must be reconciled against core's extractor
-  ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)) before the normalisation
+  ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)) before the normalization
   lands.
 
 ## Alternatives considered
@@ -102,4 +102,4 @@ and compute the reverse discovery behaviour elsewhere rather than store it.
   the PROJECT_002 round-trip non-negotiable for a source that carries both edges.
 - **Store both `DrgEdge`s and expose the collapsed `Relationship` as a read-time view.** A viable
   fallback that needs no upstream change, not chosen because it keeps two representations in the
-  charter; upstream normalisation is cleaner and keeps the domain single-edge.
+  charter; upstream normalization is cleaner and keeps the domain single-edge.

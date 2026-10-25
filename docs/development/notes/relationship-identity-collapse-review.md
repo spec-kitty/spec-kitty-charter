@@ -13,7 +13,7 @@ audience:
   - profile: charter-service-contributor
     guidance_text: Read this before the identity ADR that follows — what the collapse can and cannot claim, and the conditions it must carry.
   - profile: core-maintainer
-    guidance_text: Read this for how the charter intends to treat multigraph DRG pairs and where the discovery/activation behaviour would live.
+    guidance_text: Read this for how the charter intends to treat multigraph DRG pairs and where the discovery/activation behavior would live.
 ---
 
 # Note: relationship identity and the multigraph-collapse question
@@ -35,7 +35,7 @@ a genuine **multigraph pair** that this identity collapses:
 non-negotiable. The operator's hypothesis in response: a relationship is intrinsically
 **unidirectional**; the reverse `suggests` is *derivable* from the `requires` edge and exists
 mainly for activation support, so the pair can collapse to one unidirectional relationship and the
-"you activated B, want A?" behaviour can move to a discovery/activation domain service.
+"you activated B, want A?" behavior can move to a discovery/activation domain service.
 
 ## What the data shows (analyst)
 
@@ -67,8 +67,8 @@ activation" — is disproven:
    dropped edge *is* selective information — directly refuting "carried no independent information".
 3. **PROJECT_002 round-trip.** The fragment literally holds both edges; a store-and-collapse-on-read
    charter cannot re-emit it byte-for-byte. Collapse is round-trip-safe **only** if it is (a) an
-   **upstream open-packs source normalisation** (remove the reverse edge at the canonical source), or
-   (b) storage keeps **both `DrgEdge`s** and serialises from them, with the collapsed `Relationship`
+   **upstream open-packs source normalization** (remove the reverse edge at the canonical source), or
+   (b) storage keeps **both `DrgEdge`s** and serializes from them, with the collapsed `Relationship`
    as a lossy **view** only. A silent drop-on-read is excluded. ADR-0025 has an internal tension here
    (it says both "shard shape is unchanged" *and* "DoctrineGraph holds Relationships for
    serialization") that the identity ADR must settle.
@@ -104,20 +104,21 @@ The collapse is **viable for today's data as a bounded, conditional decision** �
 justification is *not* "relationships are intrinsically unidirectional" (disproven). Recommend the
 future ADR record it as:
 
-> For the current data, collapse the one `requires`+reverse-`suggests` pair by **normalising
+> For the current data, collapse the one `requires`+reverse-`suggests` pair by **normalizing
 > open-packs upstream** (so one edge is genuinely stored and round-trips), accepting the loss of a
 > selective soft-reverse discovery edge that has **no reader yet**; keep registration bodies carrying
 > an explicit `type`; and **revisit the simple-graph identity the moment `impacts` (tension) or
 > bidirectional `delegates_to` is minted**.
 
-Alternative if upstream normalisation is unacceptable: keep both `DrgEdge`s at the storage layer and
-treat the collapsed `Relationship` as a read-time view, with any discovery-direction behaviour as an
+Alternative if upstream normalization is unacceptable: keep both `DrgEdge`s at the storage layer and
+treat the collapsed `Relationship` as a read-time view, with any discovery-direction behavior as an
 application-layer reverse-reachability computation.
 
 ### Preconditions for the collapse to stay safe
+
 - **P1 (eroding):** no consumer reads the A→B discovery direction (true today; ADR-0020 D6 will change it).
 - **P2 (false in general):** the reverse `suggests` is recoverable from `requires` — only if you accept losing the author's selectivity.
-- **P3 (required):** collapse is upstream source normalisation *or* storage-preserving view — never drop-on-read (PROJECT_002).
+- **P3 (required):** collapse is upstream source normalization *or* storage-preserving view — never drop-on-read (PROJECT_002).
 - **P4 (time-limited):** no genuinely symmetric relation needs an opposite-direction pair — true only while `impacts`/`delegates_to` are unbuilt.
 - **P5 (design cost):** reverse-requires is either never needed or backed by an inbound index reconciled with the lazy walker.
 - **P6:** the hard-forward/soft-reverse asymmetry is acceptable to lose, or a new asymmetric `RelationType` is introduced.
@@ -127,12 +128,13 @@ application-layer reverse-reachability computation.
 - **Write atomicity → aggregate commit.** NFR-002's "zero partial writes" needs an aggregate-level
   commit (stage pack dir + atomic swap, or a write journal); per-file temp+rename is not enough.
 - **Queued doc remediation** (to fold into the identity ADR / a text pass, not yet applied):
-  normalise `artefact → artifact`; reconcile `component` vs `CharterArtifact`; state `RelationType`
+  normalize `artifact → artifact`; reconcile `component` vs `CharterArtifact`; state `RelationType`
   supersedes the kernel `Relation` enum; add `428` and record that `412/428` are `Problem`-only, not
   `RefusalCode`s, and that `RefusalHandler` needs a real code→status map; reframe mutability (ADR-0012)
   and ETag as net-new work, not "reuse"; reword "nothing mints `impacts`" (PackPolicy/shards do); add
   `when` to `Relationship` to avoid a round-trip loss; add ADR References sections.
 
 ## Open items to confirm
+
 - Provenance: is `fragment.yaml` the sole canonical edge source, or do body `references:` also mint? (ties to #167).
 - Whether core auto-generates a reverse `suggests` for every `requires` — if so the charter must match, not collapse.
