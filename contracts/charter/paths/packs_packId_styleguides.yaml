@@ -33,7 +33,7 @@ get:
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/StyleguideNotFound.yaml
+      $ref: ../responses/PackNotFound.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
     default:

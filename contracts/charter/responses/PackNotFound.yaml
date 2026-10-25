@@ -1,0 +1,26 @@
+description: >-
+  The identifier matches no configured pack (by name or by declared pack_id), refused with 404
+  pack_not_found. A list endpoint has no item to miss, so an unknown pack is the only reason it
+  answers 404: a pack without items of the kind answers 200 with an empty list. A client error: the
+  request named a pack that is not there. A configured pack whose directory is missing, or a pack
+  holding a file the fingerprint covers that cannot be read or a directory that cannot be listed, is
+  not this answer: it is pack_unreadable (500) on every read.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-not-found:
+        summary: No configured pack matches the identifier.
+        value:
+          title: Pack not found
+          status: 404
+          code: pack_not_found
+          detail: Pack qa was not found.
