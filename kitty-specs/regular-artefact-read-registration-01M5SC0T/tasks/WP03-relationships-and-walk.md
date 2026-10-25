@@ -9,7 +9,7 @@ requirement_refs:
 - NFR-001
 planning_base_branch: feat/regular-artefacts
 merge_target_branch: feat/regular-artefacts
-branch_strategy: Planning artifacts were generated on feat/regular-artefacts; completed changes must merge back into feat/regular-artefacts. Worktree per lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on feat/regular-artefacts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/regular-artefacts unless the human explicitly redirects the landing branch.
 subtasks:
 - T013
 - T014
@@ -18,7 +18,6 @@ subtasks:
 - T017
 - T018
 phase: Phase 2 - Domain graph
-agent: claude
 history:
 - at: '2026-10-25T00:00:00Z'
   actor: system
@@ -50,6 +49,7 @@ owned_files:
 role: implementer
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP03 — relationships() migration + ComponentResolver + GraphWalk

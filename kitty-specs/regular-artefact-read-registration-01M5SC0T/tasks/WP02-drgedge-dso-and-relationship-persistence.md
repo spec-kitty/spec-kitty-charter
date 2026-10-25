@@ -9,7 +9,7 @@ requirement_refs:
 - NFR-003
 planning_base_branch: feat/regular-artefacts
 merge_target_branch: feat/regular-artefacts
-branch_strategy: Planning artifacts were generated on feat/regular-artefacts; completed changes must merge back into feat/regular-artefacts. Worktree per lane from lanes.json.
+branch_strategy: Planning artifacts for this mission were generated on feat/regular-artefacts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/regular-artefacts unless the human explicitly redirects the landing branch.
 subtasks:
 - T006
 - T007
@@ -19,7 +19,6 @@ subtasks:
 - T011
 - T012
 phase: Phase 3 - Storage graph seam
-agent: claude
 history:
 - at: '2026-10-25T00:00:00Z'
   actor: system
@@ -30,6 +29,7 @@ create_intent:
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DrgEdge.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RelationshipMapper.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RelationshipShard.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DrgEdgeTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/RelationshipMapperTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/RelationshipShardRoundTripTest.java
 execution_mode: code_change
@@ -52,6 +52,7 @@ owned_files:
 role: implementer
 tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 — DrgEdge-as-DSO + relationship persistence
