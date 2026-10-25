@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -101,7 +102,10 @@ public class StyleguideController implements StyleguidesApi {
                 body.getReferences());
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, false, null);
-        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/styleguides/" + id))
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
+                        .path("/{id}")
+                        .buildAndExpand(id)
+                        .toUri())
                 .eTag(result.revision().token())
                 .body(toSingleDto(styleguide));
     }

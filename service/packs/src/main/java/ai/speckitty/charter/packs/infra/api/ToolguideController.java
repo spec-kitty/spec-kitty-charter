@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The inbound REST adapter for a pack's toolguides: {@code GET}/{@code POST} on the collection and
@@ -82,7 +83,10 @@ public class ToolguideController implements ToolguidesApi {
                 body.getLastUpdated(),
                 body.getReferences());
         ToolguideRegistrationService.Registered result = registrations.registerToolguide(pack, toolguide, false, null);
-        return ResponseEntity.created(java.net.URI.create("/packs/" + packId + "/toolguides/" + id))
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
+                        .path("/{id}")
+                        .buildAndExpand(id)
+                        .toUri())
                 .eTag(result.revision().token())
                 .body(toSingleDto(toolguide));
     }

@@ -85,7 +85,7 @@ class ToolguideControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/packs/pack-a/toolguides/make"))
+                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/toolguides/make"))
                 .andExpect(header().exists("ETag"))
                 .andExpect(jsonPath("$.id").value("make"));
     }
