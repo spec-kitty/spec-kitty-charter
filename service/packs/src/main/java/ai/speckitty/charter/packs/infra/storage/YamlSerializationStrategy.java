@@ -257,6 +257,41 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         });
     }
 
+    @Override
+    public String writeToolguide(ToolguideDso toolguide) {
+        return new YamlDumpEmitter()
+                .scalar("id", toolguide.id())
+                .scalar("schema_version", toolguide.schemaVersion())
+                .scalar("tool", toolguide.tool())
+                .scalar("title", toolguide.title())
+                .scalar("guide_path", toolguide.guidePath())
+                .scalar("summary", toolguide.summary())
+                .strings("commands", toolguide.commands())
+                .strings("applies_to_languages", toolguide.appliesToLanguages())
+                .scalar("last_updated", toolguide.lastUpdated())
+                .strings("references", toolguide.references())
+                .dump();
+    }
+
+    @Override
+    public FileRead<ToolguideDso> readToolguide(String text, String file) {
+        return readValidated(
+                LoadedKind.TOOLGUIDE.token(),
+                text,
+                file,
+                root -> new ToolguideDso(
+                        required(root, "id"),
+                        required(root, "schema_version"),
+                        required(root, "tool"),
+                        required(root, "title"),
+                        required(root, "guide_path"),
+                        required(root, "summary"),
+                        strings(root, "commands"),
+                        strings(root, "applies_to_languages"),
+                        optional(root, "last_updated"),
+                        strings(root, "references")));
+    }
+
     /** Parses, validates against the bundled schema of {@code kind}, then maps the root; never throws on content. */
     private static <T> FileRead<T> readValidated(String kind, String text, String file, Function<Map<?, ?>, T> mapper) {
         ParsedYaml parsed = ParsedYaml.parse(text, file);

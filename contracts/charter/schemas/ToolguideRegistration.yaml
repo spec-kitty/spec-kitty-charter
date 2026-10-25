@@ -1,0 +1,80 @@
+title: ToolguideRegistration
+description: >-
+  The registration body of a toolguide: its fields only. A toolguide mints no relationships (its references are bare
+  citation strings, not typed edges), so this body carries no relationships array. On POST to the collection the id is
+  optional (the server answers with Location); on PUT the id is taken from the path.
+type: object
+additionalProperties: false
+required:
+  - schemaVersion
+  - tool
+  - title
+  - guidePath
+  - summary
+properties:
+  id:
+    type: string
+    description: The toolguide's identity; optional on POST (server-assigned via Location), path-supplied on PUT.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ToolguideIdentifier.java
+      symbol: ToolguideIdentifier.value
+  schemaVersion:
+    type: string
+    description: The schema version the toolguide declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.schemaVersion
+  tool:
+    type: string
+    description: The tool the guide is about.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.tool
+  title:
+    type: string
+    description: The toolguide's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.title
+  guidePath:
+    type: string
+    description: The relative *.md path of the guide body.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.guidePath
+  summary:
+    type: string
+    description: The toolguide's summary.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.summary
+  commands:
+    type: array
+    description: The commands the toolguide lists, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.commands
+  appliesToLanguages:
+    type: array
+    description: The languages the toolguide applies to, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.appliesToLanguages
+  lastUpdated:
+    type: ['string', 'null']
+    description: The last-updated text; null when none is declared.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.lastUpdated
+  references:
+    type: array
+    description: The bare citation strings the toolguide points at, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+      symbol: Toolguide.references

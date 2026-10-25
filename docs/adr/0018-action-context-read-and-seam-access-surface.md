@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-25T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -10,6 +10,7 @@ related:
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0016-conformance-corpus-harness-over-core-cli
+  - adr/0026-write-surface-is-functional-registration
   - api/service-contract
   - conformance/divergence-register
   - architecture/resolution-model
@@ -41,6 +42,16 @@ file-set authority in the storage ring feeds both the load and the fingerprint, 
 verified-read rule in the application ring serves `/info` and both tactic reads. The Risks bullet
 on #120 is replaced. The decision text of D8 and D11 is unchanged. The points are annotated where
 they stand.
+
+**Amendment 2026-10-25** (regular-artefact read + registration mission, WP10): D10's "200 is the
+only success" is reconciled with [ADR-0026](/adr/0026-write-surface-is-functional-registration/),
+the ratified functional-registration write surface. A read still answers 200; a registration now
+answers **201** when it creates a component and **200** when it replaces one, each returning the
+written resource and an `ETag` revision for optimistic concurrency. Every 4xx/5xx answer, and the
+shared default, stays `application/problem+json` — the problem convention is unchanged for failures.
+The contract lint rule `error-responses-are-problems` is amended to exempt the 200/201 successes
+accordingly; the "every response declares the three Charter headers" rule (D11, ADR-0011) is
+unchanged and now holds on the write responses too. D10 is annotated below.
 
 This record supersedes, point by point:
 
@@ -246,6 +257,14 @@ ADR-0011 decision 2 is reworded: no operation changes governance or anything on 
 only tells the service to rebuild its read model, and every read after it answers what the
 fingerprint check alone would answer. The path is not `/refresh` and the answer is not
 `ServiceInfo`.
+
+*(Amended 2026-10-25, WP10: "200 is the only success" held while the contract was read-only. The
+ratified write surface ([ADR-0026](/adr/0026-write-surface-is-functional-registration/)) registers a
+component by POST (201 Created + Location) or by PUT (201 when created, 200 when replaced), each
+returning the written resource and an `ETag`. These 2xx successes return the resource, not a Problem;
+every 4xx/5xx answer stays `application/problem+json`. The contract's `error-responses-are-problems`
+lint rule is narrowed to the non-2xx answers to match. "A registration still changes the pack on disk"
+is the one carve-out from the sentence above, which spoke only of the read-only version's operations.)*
 
 ### D11. `stale_input` is raised, and the fingerprint header rule
 

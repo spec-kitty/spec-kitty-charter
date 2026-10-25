@@ -1,8 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Optional;
@@ -57,11 +57,15 @@ public interface CharterArtifact {
     Optional<String> description();
 
     /**
-     * The DRG edges this artefact contributes, derived per the edge contract (see {@link ArtifactEdges}).
+     * The relationships this artefact is the <em>effective origin</em> of (ADR-0025 Decision 3): every relationship
+     * whose {@code from} is this artefact, plus every {@link ai.speckitty.charter.kernel.domain.Directionality#BIDIRECTIONAL}
+     * relationship whose {@code to} is this artefact. A purely directed relationship with this artefact as {@code to}
+     * is <strong>not</strong> returned, so a walk never climbs back up a {@code requires}. The relations are the interim
+     * mapping (see {@link ArtifactEdges}): typed references mint {@code suggests}, bare references mint {@code requires}.
      *
-     * @return the edges; empty when the kind mints none, as for a styleguide
+     * @return the relationships; empty when the kind mints none, as for a styleguide
      */
-    List<DrgEdge> edges();
+    List<Relationship> relationships();
 
     /**
      * The artefact's DRG node identity.

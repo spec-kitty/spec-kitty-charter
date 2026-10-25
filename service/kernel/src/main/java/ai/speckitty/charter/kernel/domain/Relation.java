@@ -30,8 +30,9 @@ public enum Relation {
     /** Supersession; kept for older hand-authored fragments. */
     REPLACES,
     /**
-     * Directed and signed: the edge's {@link DrgEdge#impacts() strength} runs from -1 (sabotages) to +1
-     * (reinforces), and a negative strength is a tension claim. Replaces {@code in_tension_with}.
+     * Directed and signed: the edge's {@code impacts} strength runs from -1 (sabotages) to +1 (reinforces),
+     * and a negative strength is a tension claim. Replaces {@code in_tension_with}. The signed strength is
+     * carried on the storage DSO ({@code packs.infra.storage.DrgEdge}), not on a kernel type.
      */
     IMPACTS,
     /** From a reconciling artifact to one side of a tension pair: a pair joined by a negative {@link #IMPACTS}. */

@@ -158,7 +158,9 @@ class ConnectorErrorsTest {
 
         assertThat(response.status()).isEqualTo(405);
         assertThat(response.only("Content-Type")).isEqualTo("application/problem+json");
-        assertThat(response.only("Allow")).isEqualTo("GET,HEAD,OPTIONS");
+        // The service now supports the registration writes too (POST/PUT), so its supported-method surface — the
+        // set SupportedMethods reports for an unsupported method like TRACE — is the read methods plus POST and PUT.
+        assertThat(response.only("Allow")).isEqualTo("GET,HEAD,OPTIONS,POST,PUT");
         assertThat(JSON.readTree(response.body()).propertyNames()).containsExactlyInAnyOrder("title", "status");
         assertThat(response.body()).doesNotContain("must-not-come-back");
     }

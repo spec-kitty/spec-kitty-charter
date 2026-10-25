@@ -1,0 +1,20 @@
+title: ParadigmReference
+description: >-
+  A typed cross-artifact reference carried on a paradigm. Unlike a directive's reference it carries no
+  when or reason: the paradigm schema defines only type and id.
+type: object
+additionalProperties: false
+required: [type, id]
+properties:
+  type:
+    type: string
+    description: The artifact-kind token of the referenced artifact.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmReference.java
+      symbol: ParadigmReference.type
+  id:
+    type: string
+    description: The referenced artifact's identity.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ParadigmReference.java
+      symbol: ParadigmReference.id

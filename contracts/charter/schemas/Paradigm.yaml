@@ -1,0 +1,63 @@
+title: Paradigm
+description: One paradigm of a Charter Pack, as the pack declares it, with its relationships populated.
+type: object
+additionalProperties: false
+required:
+  - id
+  - schemaVersion
+  - name
+  - summary
+  - directiveRefs
+  - references
+  - relationships
+properties:
+  id:
+    type: string
+    description: The paradigm's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.id
+  schemaVersion:
+    type: string
+    description: The schema version the paradigm file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.schemaVersion
+  name:
+    type: string
+    description: The paradigm's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.name
+  summary:
+    type: string
+    description: The paradigm's summary.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.summary
+  directiveRefs:
+    type: array
+    description: The ids of the directives the paradigm references, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.directiveRefs
+  references:
+    type: array
+    description: The artifacts the paradigm points at, in authored order with duplicates kept.
+    items:
+      $ref: ParadigmReference.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.references
+  relationships:
+    type: array
+    description: >-
+      The relationships the paradigm is the effective origin of (FR-014), derived from its directive refs
+      (minted as requires) and its typed references (minted as suggests). Empty when it originates none.
+    items:
+      $ref: RelationshipRegistration.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+      symbol: Paradigm.relationships

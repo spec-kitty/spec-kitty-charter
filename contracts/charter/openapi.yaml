@@ -17,6 +17,16 @@ tags:
     description: The tactics of a Charter Pack.
   - name: Service
     description: What the service says about itself.
+  - name: Directives
+    description: The directives of a Charter Pack.
+  - name: Styleguides
+    description: The styleguides of a Charter Pack.
+  - name: Paradigms
+    description: The paradigms of a Charter Pack.
+  - name: Toolguides
+    description: The toolguides of a Charter Pack.
+  - name: Relationships
+    description: The relationships registered between a Charter Pack's components.
 paths:
   /info:
     $ref: paths/info.yaml
@@ -24,6 +34,24 @@ paths:
     $ref: paths/packs_packId_tactics.yaml
   /packs/{packId}/tactics/{tacticId}:
     $ref: paths/packs_packId_tactics_tacticId.yaml
+  /packs/{packId}/directives:
+    $ref: paths/packs_packId_directives.yaml
+  /packs/{packId}/directives/{directiveId}:
+    $ref: paths/packs_packId_directives_directiveId.yaml
+  /packs/{packId}/styleguides:
+    $ref: paths/packs_packId_styleguides.yaml
+  /packs/{packId}/styleguides/{styleguideId}:
+    $ref: paths/packs_packId_styleguides_styleguideId.yaml
+  /packs/{packId}/paradigms:
+    $ref: paths/packs_packId_paradigms.yaml
+  /packs/{packId}/paradigms/{paradigmId}:
+    $ref: paths/packs_packId_paradigms_paradigmId.yaml
+  /packs/{packId}/toolguides:
+    $ref: paths/packs_packId_toolguides.yaml
+  /packs/{packId}/toolguides/{toolguideId}:
+    $ref: paths/packs_packId_toolguides_toolguideId.yaml
+  /packs/{packId}/relationships:
+    $ref: paths/packs_packId_relationships.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

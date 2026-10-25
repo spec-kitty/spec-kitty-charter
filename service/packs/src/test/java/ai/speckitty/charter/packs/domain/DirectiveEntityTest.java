@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -66,15 +66,15 @@ class DirectiveEntityTest {
     }
 
     @Test
-    @DisplayName("edges: a REQUIRES edge per procedure and a SUGGESTS edge per typed reference")
-    void edgesFromProceduresAndReferences() {
+    @DisplayName("relationships: a suggests per typed reference, then a requires per procedure")
+    void relationshipsFromProceduresAndReferences() {
         Directive directive = valid("DIRECTIVE_006")
                 .procedure("deploy")
                 .reference(new DirectiveReference("tactic", "tdd", Optional.empty(), Optional.of("how")))
                 .build();
 
-        assertThat(directive.edges())
-                .extracting(DrgEdge::relation)
-                .containsExactly(Relation.SUGGESTS, Relation.REQUIRES);
+        assertThat(directive.relationships())
+                .extracting(Relationship::type)
+                .containsExactly(RelationType.SUGGESTS, RelationType.REQUIRES);
     }
 }

@@ -44,6 +44,11 @@ class NullOmissionTest {
 
     private static final String MODEL_PACKAGE_PATH = "ai/speckitty/charter/api/model/";
     private static final Pattern RENAMED = Pattern.compile("(.+)_\\d+");
+    // Registration bodies (X Registration / X Registration1) are request shapes the service only ever deserializes;
+    // it never writes one to the wire (a write answers the kind's read DTO). Null omission is a response-serialization
+    // invariant, so it does not govern a request-only model: a registration body legitimately carries optional fields
+    // (an id is optional on POST, path-supplied on PUT) that this closure would otherwise forbid.
+    private static final Pattern REQUEST_ONLY = Pattern.compile(".*Registration\\d*\\.class");
 
     @Autowired
     private ObjectMapper json;
@@ -101,7 +106,9 @@ class NullOmissionTest {
         for (Resource resource : new PathMatchingResourcePatternResolver()
                 .getResources("classpath*:" + MODEL_PACKAGE_PATH + "*.class")) {
             String name = resource.getFilename();
-            if (name != null && !name.contains("$")) {
+            if (name != null
+                    && !name.contains("$")
+                    && !REQUEST_ONLY.matcher(name).matches()) {
                 try {
                     models.add(Class.forName(MODEL_PACKAGE_PATH.replace('/', '.') + name.replace(".class", "")));
                 } catch (ClassNotFoundException e) {

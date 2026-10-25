@@ -78,13 +78,18 @@ public class CharterSteps {
     }
 
     /**
-     * Every 200 of the scenario carries exactly one {@code Charter-Source-Fingerprint}, the digest its read verified:
-     * for {@code /info} the {@code sourceFingerprint} of its own body, for another read the one {@code /info} gave
-     * right after it (the inputs had not changed). Every other answer carries none.
+     * Every 200 of a <em>read</em> (a GET) carries exactly one {@code Charter-Source-Fingerprint}, the digest that read
+     * verified: for {@code /info} the {@code sourceFingerprint} of its own body, for another read the one {@code /info}
+     * gave right after it (the inputs had not changed); every other read answer carries none. A write (a POST or PUT) is
+     * exempt: it reports the pack's post-write revision as an {@code ETag}, not a read's source fingerprint (ADR-0026),
+     * so the fingerprint header is simply not part of a write's answer and is neither required nor forbidden on it.
      */
     @After
     public void fingerprintHeaderIsTheVerifiedDigest() throws Exception {
         for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+            if (!exchange.method().equalsIgnoreCase("GET")) {
+                continue;
+            }
             MockHttpServletResponse response = exchange.result().getResponse();
             List<String> values = response.getHeaders(FINGERPRINT);
             String what = exchange.method().toUpperCase(Locale.ROOT) + " " + exchange.path();

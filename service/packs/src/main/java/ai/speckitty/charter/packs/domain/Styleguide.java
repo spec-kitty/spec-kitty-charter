@@ -1,7 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * A styleguide of a {@link Pack}: conventions for the shape of a work product, identified by its
  * {@link StyleguideIdentifier}. Two styleguides are equal when they have the same identity. Its {@code references} are
- * bare citation strings carried in the body: a styleguide mints no DRG edges and has no description. Build one with
+ * bare citation strings carried in the body: a styleguide mints no relationships and has no description. Build one with
  * {@link #builder()}.
  */
 public final class Styleguide implements CharterArtifact {
@@ -153,9 +153,9 @@ public final class Styleguide implements CharterArtifact {
         return Optional.empty();
     }
 
-    /** A styleguide mints no edges: its references are citations in the body. */
+    /** A styleguide mints no relationships: its references are bare citations in the body. */
     @Override
-    public List<DrgEdge> edges() {
+    public List<Relationship> relationships() {
         return List.of();
     }
 

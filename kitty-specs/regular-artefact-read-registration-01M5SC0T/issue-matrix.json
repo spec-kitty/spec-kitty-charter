@@ -1,0 +1,53 @@
+{
+  "rows": {
+    "#150": {
+      "evidence_ref": "spec.md C-004: procedure kind out of scope, deferred pending GitHub #150 (OPEN); not touched by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#167": {
+      "evidence_ref": "plan.md: interim typed->SUGGESTS/bare->REQUIRES mapping unconfirmed, tracked at charter #167 / upstream #6667; not in WP01 scope",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#169": {
+      "evidence_ref": "research.md D5 + plan.md: no shared kind registry; ADR-0024 registry stays deferred to #169",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#6667": {
+      "evidence_ref": "research.md/plan.md: upstream spec-kitty/spec-kitty#6667 (milestone 11) tracks core-side reconciliation of the relation mapping; out of this repo/mission scope",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

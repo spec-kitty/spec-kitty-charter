@@ -62,6 +62,7 @@ final class FilesystemPackStore {
             List<TacticDso> tactics,
             List<DirectiveDso> directives,
             List<StyleguideDso> styleguides,
+            List<ToolguideDso> toolguides,
             List<ParadigmDso> paradigms,
             List<PackElementViolation> violations) {
         /**
@@ -71,6 +72,7 @@ final class FilesystemPackStore {
          * @param tactics the readable tactics, in path order
          * @param directives the readable directives, in path order
          * @param styleguides the readable styleguides, in path order
+         * @param toolguides the readable toolguides, in path order
          * @param paradigms the readable paradigms, in path order
          * @param violations the files that could not be read, in path order
          */
@@ -79,6 +81,7 @@ final class FilesystemPackStore {
             tactics = List.copyOf(tactics);
             directives = List.copyOf(directives);
             styleguides = List.copyOf(styleguides);
+            toolguides = List.copyOf(toolguides);
             paradigms = List.copyOf(paradigms);
             violations = List.copyOf(violations);
         }
@@ -91,7 +94,7 @@ final class FilesystemPackStore {
          * @param violations the files that could not be read, in path order
          */
         PackRead(PackDescriptorDso descriptor, List<TacticDso> tactics, List<PackElementViolation> violations) {
-            this(descriptor, tactics, List.of(), List.of(), List.of(), violations);
+            this(descriptor, tactics, List.of(), List.of(), List.of(), List.of(), violations);
         }
     }
 
@@ -152,13 +155,15 @@ final class FilesystemPackStore {
         List<TacticDso> tactics = new ArrayList<>();
         List<DirectiveDso> directives = new ArrayList<>();
         List<StyleguideDso> styleguides = new ArrayList<>();
+        List<ToolguideDso> toolguides = new ArrayList<>();
         List<ParadigmDso> paradigms = new ArrayList<>();
         List<PackElementViolation> violations = new ArrayList<>();
         readTactics(directory, tactics, violations);
         readKind(directory, LoadedKind.DIRECTIVE, strategy::readDirective, directives, violations);
         readKind(directory, LoadedKind.STYLEGUIDE, strategy::readStyleguide, styleguides, violations);
+        readKind(directory, LoadedKind.TOOLGUIDE, strategy::readToolguide, toolguides, violations);
         readKind(directory, LoadedKind.PARADIGM, strategy::readParadigm, paradigms, violations);
-        return new PackRead(descriptor, tactics, directives, styleguides, paradigms, violations);
+        return new PackRead(descriptor, tactics, directives, styleguides, toolguides, paradigms, violations);
     }
 
     /**
@@ -286,6 +291,19 @@ final class FilesystemPackStore {
     }
 
     /**
+     * Upserts a toolguide: a known id replaces its file, an unknown id is created as {@code <id>.toolguide.yaml}.
+     *
+     * @param id the pack
+     * @param toolguide what to write
+     */
+    void writeToolguide(PackIdentifier id, ToolguideDso toolguide) {
+        Path directory = existingDirectory(id);
+        Path target = locate(directory, LoadedKind.TOOLGUIDE, toolguide.id())
+                .orElseGet(() -> newFile(directory, LoadedKind.TOOLGUIDE, toolguide.id()));
+        writeAtomically(directory, target, strategy.writeToolguide(toolguide));
+    }
+
+    /**
      * Upserts a paradigm: a known id replaces its file, an unknown id is created as {@code <id>.paradigm.yaml}.
      *
      * @param id the pack
@@ -318,6 +336,17 @@ final class FilesystemPackStore {
      */
     Optional<StyleguideDso> readStyleguide(PackIdentifier id, String styleguideId) {
         return readOne(id, LoadedKind.STYLEGUIDE, styleguideId, strategy::readStyleguide);
+    }
+
+    /**
+     * Reads one toolguide.
+     *
+     * @param id the pack
+     * @param toolguideId the toolguide's id
+     * @return the toolguide, or empty when the pack has no readable toolguide with that id
+     */
+    Optional<ToolguideDso> readToolguide(PackIdentifier id, String toolguideId) {
+        return readOne(id, LoadedKind.TOOLGUIDE, toolguideId, strategy::readToolguide);
     }
 
     /**

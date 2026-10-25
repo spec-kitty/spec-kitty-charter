@@ -1,0 +1,30 @@
+title: StyleguidePattern
+description: A positive code pattern carried on a styleguide; the examples are optional.
+type: object
+additionalProperties: false
+required: [name, description, badExample, goodExample]
+properties:
+  name:
+    type: string
+    description: The pattern's name.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguidePattern.java
+      symbol: StyleguidePattern.name
+  description:
+    type: string
+    description: What the pattern is.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguidePattern.java
+      symbol: StyleguidePattern.description
+  badExample:
+    type: ['string', 'null']
+    description: A counter-example; null when the styleguide states none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguidePattern.java
+      symbol: StyleguidePattern.badExample
+  goodExample:
+    type: ['string', 'null']
+    description: An example; null when the styleguide states none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguidePattern.java
+      symbol: StyleguidePattern.goodExample

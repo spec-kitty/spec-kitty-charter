@@ -2,10 +2,9 @@ package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -102,15 +101,19 @@ class PackPolicyGraphTest {
                 "tactic:a", "directive:b", "requires", Optional.empty(), Optional.of("w"), Optional.of("r"));
         GraphBuild build = build(List.of(raw));
         assertThat(build.findings()).isEmpty();
-        assertThat(build.graph().edges())
-                .containsExactly(
-                        new DrgEdge(A, B, Relation.REQUIRES, Optional.empty(), Optional.of("w"), Optional.of("r")));
+        assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
+            assertThat(relationship.from()).isEqualTo(A);
+            assertThat(relationship.to()).isEqualTo(B);
+            assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES);
+            assertThat(relationship.when()).contains("w");
+            assertThat(relationship.rationale()).contains("r");
+        });
     }
 
     @Test
     void aNonUrnEndpointIsAFindingAndNotAnException() {
         GraphBuild build = build(List.of(edge("tactic:a", "QA_404", "requires", null)));
-        assertThat(build.graph().edges()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
         assertThat(build.findings())
                 .containsExactly(new PackFinding(
                         PackFindingCode.DRG_SCHEMA_ERROR,
@@ -122,46 +125,60 @@ class PackPolicyGraphTest {
     }
 
     @Test
+    void aSelfLoopEdgeIsAFindingAndNotAnException() {
+        GraphBuild build = build(List.of(edge("tactic:a", "tactic:a", "requires", null)));
+        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(details(build))
+                .containsExactly("qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+    }
+
+    @Test
     void anUnknownRelationIsAFinding() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "befriends", null)));
-        assertThat(build.graph().edges()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: unknown relation 'befriends'");
     }
 
     @Test
-    void aLegacyInTensionWithEdgeBecomesImpactsWithStrengthMinusOne() {
+    void aLegacyInTensionWithEdgeBecomesTheImpactsRelation() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "in_tension_with", null)));
         assertThat(build.findings()).isEmpty();
-        assertThat(build.graph().edges()).containsExactly(DrgEdge.impacts(A, B, -1.0));
+        assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
+            assertThat(relationship.from()).isEqualTo(A);
+            assertThat(relationship.to()).isEqualTo(B);
+            assertThat(relationship.type()).isEqualTo(RelationType.IMPACTS);
+        });
     }
 
     @Test
     void aLegacyInTensionWithEdgeThatAlsoWritesImpactsIsAFinding() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "in_tension_with", -0.5)));
-        assertThat(build.graph().edges()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: an in_tension_with edge has no 'impacts'");
     }
 
     @Test
     void anImpactsEdgeNeedsItsStrength() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "impacts", null)));
-        assertThat(build.graph().edges()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: an impacts edge is missing 'impacts'");
     }
 
     @Test
     void anotherRelationMustNotCarryImpacts() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "scope", 0.5)));
-        assertThat(build.graph().edges()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: a scope edge has no 'impacts'");
     }
 
     @Test
-    void aStrengthInsideTheRangeBinds() {
+    void aStrengthInsideTheRangeBindsButIsNotCarriedOnTheRelationship() {
         GraphBuild build = build(List.of(
                 edge("tactic:a", "directive:b", "impacts", 1.0), edge("tactic:a", "directive:b", "impacts", -1.0)));
         assertThat(build.findings()).isEmpty();
-        assertThat(build.graph().edges()).hasSize(2);
+        assertThat(build.graph().relationships())
+                .hasSize(2)
+                .allSatisfy(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.IMPACTS));
     }
 
     @Test
@@ -174,7 +191,7 @@ class PackPolicyGraphTest {
                 new Case(Double.POSITIVE_INFINITY, "Infinity"),
                 new Case(Double.NEGATIVE_INFINITY, "-Infinity"))) {
             GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "impacts", c.value())));
-            assertThat(build.graph().edges()).as(c.text()).isEmpty();
+            assertThat(build.graph().relationships()).as(c.text()).isEmpty();
             assertThat(details(build))
                     .as(c.text())
                     .containsExactly("qa/tactic.graph.yaml: 'impacts' " + c.text() + " is outside [-1, 1]");
@@ -187,9 +204,9 @@ class PackPolicyGraphTest {
                 edge("tactic:a", "directive:b", "requires", null),
                 edge("tactic:a", "QA_404", "requires", null),
                 edge("tactic:a", "directive:b", "suggests", null)));
-        assertThat(build.graph().edges())
-                .extracting(DrgEdge::relation)
-                .containsExactly(Relation.REQUIRES, Relation.SUGGESTS);
+        assertThat(build.graph().relationships())
+                .extracting(r -> r.type())
+                .containsExactly(RelationType.REQUIRES, RelationType.SUGGESTS);
         assertThat(build.findings()).extracting(PackFinding::place).containsExactly(List.of("edges", "1"));
     }
 

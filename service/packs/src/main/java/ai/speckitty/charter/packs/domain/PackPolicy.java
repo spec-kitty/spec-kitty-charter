@@ -1,13 +1,13 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Pep440;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
@@ -427,10 +427,12 @@ public final class PackPolicy {
      * {@code in_tension_with} mapping (read as {@code impacts} with strength -1, as core ADR 2026-07-26-3 means it)
      * and the {@code impacts} rules, NaN and the infinities included.
      *
-     * <p>A node or edge with a finding is left out of the graph, so {@link DrgEdge}'s constructor check stays a
-     * programming-error guard and never fires. An edge reports its first fault only, checked in the order the
-     * adapter's reader used: relation, then {@code impacts}, then the endpoints. The schema normally refuses these
-     * first; the domain check keeps the same text for a document that reaches here anyway.
+     * <p>A node or edge with a finding is left out of the graph, so {@link Relationship}'s constructor check
+     * stays a programming-error guard and never fires. An edge reports its first fault only, checked in the
+     * order the adapter's reader used: relation, then {@code impacts}, then the endpoints, then a self-loop.
+     * The schema normally refuses these first; the domain check keeps the same text for a document that
+     * reaches here anyway. The {@code impacts} strength is validated here but is not carried on the bound
+     * {@link Relationship} (ADR-0025: the signed strength lives on the storage DSO, not on the domain type).
      *
      * @param packName the pack's configured name, which prefixes the origin in a text
      * @param raw the document as written
@@ -439,7 +441,7 @@ public final class PackPolicy {
     public static GraphBuild graph(String packName, RawGraph raw) {
         String origin = packName + "/" + raw.file();
         List<DrgNode> nodes = new ArrayList<>();
-        List<DrgEdge> edges = new ArrayList<>();
+        List<Relationship> relationships = new ArrayList<>();
         List<PackFinding> findings = new ArrayList<>();
         for (int i = 0; i < raw.nodes().size(); i++) {
             RawNode node = raw.nodes().get(i);
@@ -456,13 +458,13 @@ public final class PackPolicy {
         for (int i = 0; i < raw.edges().size(); i++) {
             RawEdge edge = raw.edges().get(i);
             Object outcome = edge(edge, origin);
-            if (outcome instanceof DrgEdge bound) {
-                edges.add(bound);
+            if (outcome instanceof Relationship bound) {
+                relationships.add(bound);
             } else {
                 findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
             }
         }
-        return new GraphBuild(new DoctrineGraph(nodes, edges), findings);
+        return new GraphBuild(new DoctrineGraph(nodes, relationships), findings);
     }
 
     private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
@@ -495,10 +497,16 @@ public final class PackPolicy {
         return "a node of kind '" + kind + "' has an empty id";
     }
 
-    /** Binds one edge; the result is the {@link DrgEdge}, or the finding text for the first fault. */
+    /**
+     * Binds one edge; the result is the {@link Relationship}, or the finding text for the first fault. The
+     * {@code impacts} strength is validated here but not carried on the {@link Relationship} (ADR-0025: the
+     * signed strength is a storage-DSO concern); the legacy {@code in_tension_with} still reads as the
+     * {@code impacts} relation with the same validation and the same finding texts.
+     */
     private static Object edge(RawEdge raw, String origin) {
         boolean legacy = LEGACY_TENSION.equals(raw.relation());
-        Optional<Relation> relation = legacy ? Optional.of(Relation.IMPACTS) : Relation.fromToken(raw.relation());
+        Optional<RelationType> relation =
+                legacy ? Optional.of(RelationType.IMPACTS) : RelationType.fromToken(raw.relation());
         if (relation.isEmpty()) {
             return origin + ": unknown relation '" + raw.relation() + "'";
         }
@@ -521,12 +529,15 @@ public final class PackPolicy {
         if (target.isEmpty()) {
             return origin + ": edge endpoint '" + raw.target() + "' is not a URN";
         }
-        return new DrgEdge(source.get(), target.get(), relation.get(), impacts, raw.when(), raw.reason());
+        if (source.get().equals(target.get())) {
+            return origin + ": a relationship cannot join '" + source.get() + "' to itself";
+        }
+        return new Relationship(source.get(), target.get(), relation.get(), raw.when(), raw.reason());
     }
 
     /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */
-    private static Optional<String> strengthProblem(Relation relation, Optional<Double> impacts) {
-        if (relation != Relation.IMPACTS) {
+    private static Optional<String> strengthProblem(RelationType relation, Optional<Double> impacts) {
+        if (relation != RelationType.IMPACTS) {
             return impacts.isPresent()
                     ? Optional.of("a " + relation.token() + " edge has no 'impacts'")
                     : Optional.empty();
@@ -535,9 +546,17 @@ public final class PackPolicy {
             return Optional.of("an impacts edge is missing 'impacts'");
         }
         double strength = impacts.get();
-        return DrgEdge.isStrength(strength)
-                ? Optional.empty()
-                : Optional.of("'impacts' " + strength + " is outside [-1, 1]");
+        return isStrength(strength) ? Optional.empty() : Optional.of("'impacts' " + strength + " is outside [-1, 1]");
+    }
+
+    /**
+     * Whether {@code value} is a valid {@code impacts} strength: in [-1, 1], NaN and the infinities excluded.
+     *
+     * @param value the strength
+     * @return {@code true} when it lies in [-1, 1]
+     */
+    private static boolean isStrength(double value) {
+        return value >= -1.0 && value <= 1.0;
     }
 
     // ---- schema and parse findings -------------------------------------------------------------

@@ -78,6 +78,23 @@ public interface SerializationStrategy {
     FileRead<StyleguideDso> readStyleguide(String text, String file);
 
     /**
+     * Serializes a toolguide from scratch.
+     *
+     * @param toolguide the toolguide to write
+     * @return the file text
+     */
+    String writeToolguide(ToolguideDso toolguide);
+
+    /**
+     * Reads a toolguide file.
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the toolguide, or why the text is unreadable
+     */
+    FileRead<ToolguideDso> readToolguide(String text, String file);
+
+    /**
      * Serializes a paradigm from scratch.
      *
      * @param paradigm the paradigm to write

@@ -1,0 +1,84 @@
+put:
+  operationId: putPackRelationship
+  summary: Register a relationship edge in a Charter Pack.
+  description: >-
+    Registers a relationship edge, idempotent on the unordered {from, to} pair (FR-009, last-write-wins):
+    re-registering a pair, in either orientation, replaces it. The from endpoint must resolve within the
+    pack (else 409 registration_conflict); to may be external. The whole pack is committed atomically and
+    answers an ETag revision. A relationship write is a sub-resource write: it requires an If-Match
+    precondition (none supplied is 428), and a stale precondition is 412. Both 412 and 428 are plain
+    Problem bodies, not refusal codes.
+  tags:
+    - Relationships
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - name: If-Match
+      in: header
+      required: false
+      description: Optimistic concurrency on the pack revision; required for this sub-resource write (428 when absent).
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/RelationshipRegistration.yaml
+  responses:
+    '200':
+      description: The relationship was registered or replaced.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/RelationshipRegistration.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../../_shared/responses/Problem.yaml
+    '409':
+      description: The relationship conflicts with the pack's state (from does not resolve, or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '412':
+      $ref: ../../_shared/responses/Problem.yaml
+    '422':
+      description: The relationship is well-formed but breaks a schema or invariant.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '428':
+      $ref: ../../_shared/responses/Problem.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

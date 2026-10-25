@@ -2,11 +2,12 @@ package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.Optional;
@@ -45,8 +46,8 @@ class ParadigmEntityTest {
     }
 
     @Test
-    @DisplayName("edges: REQUIRES a directive per directive_ref, SUGGESTS per typed reference")
-    void edgesFollowTheContract() {
+    @DisplayName("relationships: suggests per typed reference, then requires a directive per directive_ref")
+    void relationshipsFollowTheContract() {
         Paradigm paradigm = valid("ddd")
                 .directiveRef("DIRECTIVE_003")
                 .reference(new ParadigmReference("tactic", "tdd-red-green"))
@@ -56,16 +57,11 @@ class ParadigmEntityTest {
         assertThat(paradigm.kind()).isEqualTo(ArtifactKind.PARADIGM);
         assertThat(paradigm.label()).isEqualTo("Name of ddd");
         assertThat(paradigm.description()).isEqualTo(Optional.of("Summary of ddd"));
-        assertThat(paradigm.edges())
+        assertThat(paradigm.relationships())
+                .extracting(Relationship::from, Relationship::to, Relationship::type)
                 .containsExactly(
-                        new DrgEdge(
-                                self,
-                                new Urn(NodeKind.TACTIC, "tdd-red-green"),
-                                Relation.SUGGESTS,
-                                Optional.empty(),
-                                Optional.empty(),
-                                Optional.empty()),
-                        DrgEdge.of(self, new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_003"), Relation.REQUIRES));
+                        tuple(self, new Urn(NodeKind.TACTIC, "tdd-red-green"), RelationType.SUGGESTS),
+                        tuple(self, new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_003"), RelationType.REQUIRES));
     }
 
     @Test

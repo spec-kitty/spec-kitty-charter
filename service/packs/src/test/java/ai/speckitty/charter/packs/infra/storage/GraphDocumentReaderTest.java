@@ -3,10 +3,10 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
-import ai.speckitty.charter.kernel.domain.DrgEdge;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
@@ -144,15 +144,26 @@ class GraphDocumentReaderTest {
                                 - {urn: tactic:t, kind: tactic, label: 'A: label'}
                                 edges:
                                 - {source: tactic:t, target: directive:d, relation: requires, reason: because}
-                                - {source: tactic:t, target: tactic:t, relation: impacts, impacts: 0.75}
+                                - {source: tactic:t, target: tactic:u, relation: suggests, when: always}
                                 """, Shape.SHARD, SHARD)).graph();
 
         RawGraph reread = read(GraphShardWriter.write(graph), Shape.SHARD, "w.graph.yaml");
+        DoctrineGraph rebuilt = PackPolicy.graph("qa", reread).graph();
 
-        assertThat(PackPolicy.graph("qa", reread).graph()).isEqualTo(graph);
-        assertThat(graph.outgoing(new Urn(NodeKind.TACTIC, "t"), Relation.IMPACTS))
-                .singleElement()
-                .satisfies(e -> assertThat(e.impacts()).contains(0.75));
+        assertThat(rebuilt).isEqualTo(graph);
+        // The round-trip keeps relation, condition and rationale, present-vs-absent distinct (NFR-003).
+        assertThat(rebuilt.relationships())
+                .satisfiesExactly(
+                        requires -> {
+                            assertThat(requires.type()).isEqualTo(RelationType.REQUIRES);
+                            assertThat(requires.when()).isEmpty();
+                            assertThat(requires.rationale()).contains("because");
+                        },
+                        suggests -> {
+                            assertThat(suggests.type()).isEqualTo(RelationType.SUGGESTS);
+                            assertThat(suggests.when()).contains("always");
+                            assertThat(suggests.rationale()).isEmpty();
+                        });
     }
 
     @ParameterizedTest
@@ -162,15 +173,21 @@ class GraphDocumentReaderTest {
         Urn directive = new Urn(NodeKind.DIRECTIVE, "d");
         DoctrineGraph graph = new DoctrineGraph(
                 List.of(new DrgNode(tactic, Optional.of(text)), new DrgNode(directive, Optional.empty())),
-                List.of(new DrgEdge(
-                        tactic, directive, Relation.REQUIRES, Optional.empty(), Optional.of(text), Optional.of(text))));
+                List.of(new Relationship(
+                        tactic, directive, RelationType.REQUIRES, Optional.of(text), Optional.of(text))));
 
         String written = GraphShardWriter.write(graph);
         assertThat(written).contains("label: '" + text + "'", "when: '" + text + "'", "reason: '" + text + "'");
 
         RawGraph reread = read(written, Shape.SHARD, "w.graph.yaml");
         assertThat(reread.nodes().get(0).label()).contains(text);
-        assertThat(PackPolicy.graph("qa", reread).graph()).isEqualTo(graph);
+        DoctrineGraph rebuilt = PackPolicy.graph("qa", reread).graph();
+        assertThat(rebuilt).isEqualTo(graph);
+        // The null-reading string survives on the condition and the rationale, not only the label.
+        assertThat(rebuilt.relationships()).singleElement().satisfies(relationship -> {
+            assertThat(relationship.when()).contains(text);
+            assertThat(relationship.rationale()).contains(text);
+        });
     }
 
     @Test

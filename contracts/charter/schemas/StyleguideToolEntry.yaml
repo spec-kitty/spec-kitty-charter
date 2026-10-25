@@ -1,0 +1,23 @@
+title: StyleguideToolEntry
+description: >-
+  One entry of a styleguide's tooling map, as a closed {tool, configuration} pair. The domain holds the
+  tooling as an insertion-ordered map of tool name to configuration string; a closed response object cannot
+  carry an open-keyed map (the closed-response-objects check rejects a schema-valued additionalProperties),
+  so the map is projected onto an ordered array of these entries. The array order mirrors the map's
+  insertion order.
+type: object
+additionalProperties: false
+required: [tool, configuration]
+properties:
+  tool:
+    type: string
+    description: The tool name (the map key).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.tooling
+  configuration:
+    type: string
+    description: The tool's configuration (the map value).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.tooling

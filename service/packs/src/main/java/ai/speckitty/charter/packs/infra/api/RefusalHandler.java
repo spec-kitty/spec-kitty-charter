@@ -44,10 +44,10 @@ public class RefusalHandler {
         if (refusal.code() == RefusalCode.STALE_INPUT) {
             // Routine and retryable (an input changed under the read): one line, no stack trace.
             LOGGER.info("Refusal " + refusal.code().token() + ": " + refusal.getMessage());
-        } else if (!refusal.code().notFound()) {
+        } else if (statusOf(refusal.code()).is5xxServerError()) {
             LOGGER.error("Server refusal " + refusal.code().token(), refusal);
         } else if (refusal.getCause() != null) {
-            // A not-found that hides an underlying failure: the 404 body names nothing of it, so keep the trail.
+            // A client refusal that hides an underlying failure: the body names nothing of it, so keep the trail.
             LOGGER.warn("Refusal " + refusal.code().token() + " hides a cause", refusal);
         }
         return respond(refusal);
@@ -65,7 +65,7 @@ public class RefusalHandler {
     }
 
     private static ResponseEntity<CharterRefusal> respond(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
-        HttpStatus status = refusal.code().notFound() ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR;
+        HttpStatus status = statusOf(refusal.code());
         CharterRefusal body = new CharterRefusal(
                 title(refusal.code()),
                 status.value(),
@@ -74,6 +74,35 @@ public class RefusalHandler {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(body);
+    }
+
+    /**
+     * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
+     * policy refusal is 409; every other code, {@code stale_input} and {@code internal_error} included, is 500. The
+     * {@code 412}/{@code 428} preconditions are not refusal codes: the controllers return those as plain problem
+     * bodies, not through this handler.
+     *
+     * @param code the refusal code
+     * @return its HTTP status
+     */
+    private static HttpStatus statusOf(RefusalCode code) {
+        return switch (code) {
+            case MISSION_TYPE_NOT_FOUND,
+                    ACTION_NOT_FOUND,
+                    PACK_NOT_FOUND,
+                    TACTIC_NOT_FOUND,
+                    DIRECTIVE_NOT_FOUND,
+                    STYLEGUIDE_NOT_FOUND,
+                    PARADIGM_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION -> HttpStatus.CONFLICT;
+            case PACK_LEVEL_MISMATCH,
+                    PACK_UNREADABLE,
+                    DRG_SCHEMA_ERROR,
+                    UNRESOLVED_EDGE_ENDPOINT,
+                    INTERNAL_ERROR,
+                    STALE_INPUT -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
     }
 
     private static String title(RefusalCode code) {
@@ -89,6 +118,11 @@ public class RefusalHandler {
             case STALE_INPUT -> "Stale input";
             case PACK_NOT_FOUND -> "Pack not found";
             case TACTIC_NOT_FOUND -> "Tactic not found";
+            case DIRECTIVE_NOT_FOUND -> "Directive not found";
+            case STYLEGUIDE_NOT_FOUND -> "Styleguide not found";
+            case PARADIGM_NOT_FOUND -> "Paradigm not found";
+            case VALIDATION_FAILED -> "Validation failed";
+            case REGISTRATION_CONFLICT -> "Registration conflict";
         };
     }
 }

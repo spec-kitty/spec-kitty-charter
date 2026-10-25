@@ -1,0 +1,116 @@
+get:
+  operationId: listPackDirectives
+  summary: List the directives of a Charter Pack.
+  description: >-
+    The readable directives of one pack, each with its relationships populated (FR-006), in the order
+    the pack's storage lists them. An identifier that matches no configured pack, by name or by declared
+    pack_id, is a 404 pack_not_found; a configured pack whose directory is missing, or a pack holding a
+    file the fingerprint covers that cannot be read, is a 500 pack_unreadable. A pack without directives
+    answers an empty list. The answer is verified against the source fingerprint and carries it.
+  tags:
+    - Directives
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  responses:
+    '200':
+      description: The pack's directives.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../schemas/Directive.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/DirectiveNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+post:
+  operationId: registerPackDirective
+  summary: Register a new directive in a Charter Pack.
+  description: >-
+    Registers a net-new directive (functional registration, ADR-0026): the whole pack aggregate is
+    revalidated and committed atomically. The id is optional in the body; the server answers 201 with a
+    Location to the created directive and an ETag revision. A body that names an already-registered id is
+    a 409 registration_conflict; a malformed body, or a relationship not authored from the directive, is a
+    422 validation_failed, and the pack is left unchanged.
+  tags:
+    - Directives
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/DirectiveRegistration.yaml
+  responses:
+    '201':
+      description: The directive was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        Location:
+          description: The URI of the created directive.
+          schema:
+            type: string
+        ETag:
+          description: The pack revision after the write, for optimistic concurrency.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Directive.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/DirectiveNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

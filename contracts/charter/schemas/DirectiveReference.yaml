@@ -1,0 +1,30 @@
+title: DirectiveReference
+description: A typed cross-artifact reference carried on a directive.
+type: object
+additionalProperties: false
+required: [type, id, when, reason]
+properties:
+  type:
+    type: string
+    description: The artifact-kind token of the referenced artifact.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveReference.java
+      symbol: DirectiveReference.type
+  id:
+    type: string
+    description: The referenced artifact's identity.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveReference.java
+      symbol: DirectiveReference.id
+  when:
+    type: ['string', 'null']
+    description: When the reference applies; null when the directive declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveReference.java
+      symbol: DirectiveReference.when
+  reason:
+    type: ['string', 'null']
+    description: The rationale for the reference; null when the directive declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/DirectiveReference.java
+      symbol: DirectiveReference.reason

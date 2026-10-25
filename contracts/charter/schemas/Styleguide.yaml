@@ -1,0 +1,123 @@
+title: Styleguide
+description: >-
+  One styleguide of a Charter Pack, as the pack declares it. A styleguide mints no relationships (its
+  references are bare citation strings), so relationships is always an empty array (FR-013). Every field is
+  a closed shape: the tooling map is projected onto an ordered array of closed entries, and the arbitrary
+  structural-lint-config tree is carried as its canonical JSON text, because a closed response object admits
+  neither an open-keyed map nor a recursive tree.
+type: object
+additionalProperties: false
+required:
+  - id
+  - schemaVersion
+  - title
+  - scope
+  - principles
+  - patterns
+  - antiPatterns
+  - tooling
+  - qualityTest
+  - structuralLintConfig
+  - appliesToLanguages
+  - references
+  - relationships
+properties:
+  id:
+    type: string
+    description: The styleguide's identity within its pack.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.id
+  schemaVersion:
+    type: string
+    description: The schema version the styleguide file declares.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.schemaVersion
+  title:
+    type: string
+    description: The styleguide's title.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.title
+  scope:
+    type: string
+    description: The scope category token (code, docs, architecture, testing, operations, glossary).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StyleguideScope.java
+      symbol: StyleguideScope.token
+  principles:
+    type: array
+    description: The styleguide's principles, in authored order; never empty.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.principles
+  patterns:
+    type: array
+    description: The positive patterns, in authored order; empty when the field is absent.
+    items:
+      $ref: StyleguidePattern.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.patterns
+  antiPatterns:
+    type: array
+    description: The anti-patterns, in authored order; empty when the field is absent.
+    items:
+      $ref: StyleguideAntiPattern.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.antiPatterns
+  tooling:
+    type: array
+    description: >-
+      The tooling map projected onto ordered {tool, configuration} entries; empty when the field is absent.
+    items:
+      $ref: StyleguideToolEntry.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.tooling
+  qualityTest:
+    type: ['string', 'null']
+    description: The quality test; null when the styleguide declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.qualityTest
+  structuralLintConfig:
+    type: ['string', 'null']
+    description: >-
+      The structural-lint-config tree as its canonical JSON text; null when the styleguide declares none. An
+      arbitrary-depth config tree has no closed structured response shape (the closed-response-objects check
+      rejects recursion and open objects), so it is carried as a JSON string and the tree is reconstructed by
+      parsing it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.structuralLintConfig
+  appliesToLanguages:
+    type: array
+    description: The languages the styleguide applies to, in authored order.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.appliesToLanguages
+  references:
+    type: array
+    description: The bare citation strings carried in the body, in authored order with duplicates kept.
+    items:
+      type: string
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.references
+  relationships:
+    type: array
+    description: >-
+      The relationships the styleguide is the effective origin of. Always empty: a styleguide mints no
+      relationships (FR-013). Shared shape, reused by reference across the regular-artifact slices.
+    items:
+      $ref: RelationshipRegistration.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+      symbol: Styleguide.relationships

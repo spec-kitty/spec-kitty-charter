@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -24,6 +25,18 @@ class PackAggregateTest {
                 .schemaVersion("1.0")
                 .name("n")
                 .step(new TacticStep("s", Optional.empty(), List.of(), List.of()))
+                .build();
+    }
+
+    private static Toolguide toolguide(String id, PackIdentifier owner) {
+        return Toolguide.builder()
+                .id(new ToolguideIdentifier(id))
+                .packId(owner)
+                .schemaVersion("1.0")
+                .tool("t")
+                .title("T")
+                .guidePath("g.md")
+                .summary("s")
                 .build();
     }
 
@@ -102,5 +115,58 @@ class PackAggregateTest {
         assertThatThrownBy(builder::build)
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("must not hold two tactics with the same identifier");
+    }
+
+    @Test
+    @DisplayName("a pack holding toolguides validates and exposes them as an immutable list (FR-015)")
+    void toolguidesAreHeldAndImmutable() {
+        Pack pack = Pack.builder()
+                .id(ID)
+                .descriptor(DESCRIPTOR)
+                .toolguide(toolguide("tg-1", ID))
+                .toolguide(toolguide("tg-2", ID))
+                .build();
+
+        assertThat(pack.toolguides()).extracting(tg -> tg.id().value()).containsExactly("tg-1", "tg-2");
+        assertThatThrownBy(() -> pack.toolguides().add(toolguide("tg-3", ID)))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @DisplayName("a toolguide owned by another pack is rejected; one of this pack is accepted (FR-008)")
+    void foreignToolguideIsRejectedWithAValidControl() {
+        assertThatCode(() -> Pack.builder()
+                        .id(ID)
+                        .descriptor(DESCRIPTOR)
+                        .toolguide(toolguide("tg-1", ID))
+                        .build())
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> Pack.builder()
+                        .id(ID)
+                        .descriptor(DESCRIPTOR)
+                        .toolguide(toolguide("tg-1", new PackIdentifier("other")))
+                        .build())
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("Every toolguide of a pack must belong to that pack.");
+    }
+
+    @Test
+    @DisplayName("two toolguides with the same identifier are rejected; distinct ids are accepted (FR-008)")
+    void duplicateToolguideIdIsRejectedWithAValidControl() {
+        assertThatCode(() -> Pack.builder()
+                        .id(ID)
+                        .descriptor(DESCRIPTOR)
+                        .toolguide(toolguide("tg-1", ID))
+                        .toolguide(toolguide("tg-2", ID))
+                        .build())
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> Pack.builder()
+                        .id(ID)
+                        .descriptor(DESCRIPTOR)
+                        .toolguide(toolguide("tg-1", ID))
+                        .toolguide(toolguide("tg-1", ID))
+                        .build())
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("must not hold two toolguides with the same identifier");
     }
 }
