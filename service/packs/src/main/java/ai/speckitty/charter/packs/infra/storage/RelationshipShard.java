@@ -45,7 +45,23 @@ public final class RelationshipShard {
     /** The pack-relative path registered relationships persist to: a root shard the fingerprint already covers. */
     public static final String SHARD_PATH = "registered.graph.yaml";
 
+    /** The {@code generated_by} the registration store stamps on the shard it writes; a source shard does not carry it. */
+    static final String WRITTEN_BY = "charter-registration";
+
     private RelationshipShard() {}
+
+    /**
+     * Whether {@code text} is a shard this store wrote. {@value #SHARD_PATH} is reserved for the registration
+     * store, which rewrites it whole on every commit, so a pack's own source shard under that name would be
+     * merged into the registered relationships and then overwritten. The store's stamp tells the two apart.
+     *
+     * @param text the text of a pack's {@value #SHARD_PATH}
+     * @return whether the registration store wrote it
+     */
+    static boolean isWrittenByRegistration(String text) {
+        return ParsedYaml.parse(text, SHARD_PATH).document() instanceof Map<?, ?> root
+                && WRITTEN_BY.equals(root.get("generated_by"));
+    }
 
     /**
      * What a shard read yielded: the relationships that bound, and one finding for anything that did not
@@ -124,6 +140,6 @@ public final class RelationshipShard {
             nodes.putIfAbsent(relationship.from(), new DrgNode(relationship.from(), Optional.empty()));
             nodes.putIfAbsent(relationship.to(), new DrgNode(relationship.to(), Optional.empty()));
         }
-        return GraphShardWriter.write(new DoctrineGraph(nodes.values(), relationships));
+        return GraphShardWriter.write(new DoctrineGraph(nodes.values(), relationships), WRITTEN_BY);
     }
 }
