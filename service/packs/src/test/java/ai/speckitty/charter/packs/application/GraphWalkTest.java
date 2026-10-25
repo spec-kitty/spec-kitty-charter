@@ -70,6 +70,25 @@ class GraphWalkTest {
     }
 
     @Test
+    @DisplayName("a bidirectional edge authored from the far side is crossed to that far side")
+    void bidirectionalEdgeAuthoredFromTheFarSideIsCrossedBackwards() {
+        Urn a = urn("a");
+        Urn b = urn("b");
+        // B authored "B impacts A"; impacts is bidirectional, so A is an effective origin of it and the walk from A
+        // must reach B, not turn back to A.
+        Relationship impacts = Relationship.of(b, a, RelationType.IMPACTS);
+        Node nodeA = new Node(a, List.of(impacts));
+        Node nodeB = new Node(b, List.of(impacts));
+        CountingResolver resolver = resolverOf(nodeA, nodeB);
+        Recorder recorder = new Recorder();
+
+        new GraphWalk(resolver).walk(nodeA, recorder);
+
+        assertThat(recorder.visited).containsExactly(a, b);
+        assertThat(resolver.requested).containsExactly(b);
+    }
+
+    @Test
     @DisplayName("a relationship to an unwired kind resolves empty and the walk continues to its other neighbours")
     void unwiredNeighbourIsSkippedAndTheWalkContinues() {
         Urn a = urn("a");
