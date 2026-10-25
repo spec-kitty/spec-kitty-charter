@@ -19,6 +19,38 @@ package "kernel  «CORE shared kernel»" #EDF6FC {
     class DoctrineGraph <<ValueObject>> #EAF4FB
     class CharterRefusal <<ValueObject>> #EAF4FB
     enum ArtifactKind <<ValueObject>> #EAF4FB
+    class Urn <<ValueObject>> #EAF4FB
+
+    ' --- first-class relationship / graph-walk model (ADR-0025) ---
+    package "kernel.domain.graph  «relationship model»" #ECF6FC {
+      class Relationship <<ValueObject>> #EAF4FB {
+        +from() Urn
+        +to() Urn
+        +type() RelationType
+        +rationale() Optional<String>
+      }
+      enum RelationType <<Strategy>> #EAF4FB {
+        +directionality() Directionality
+        +propagation() Propagation
+      }
+      interface Propagation <<FunctionalInterface>> #EAF4FB {
+        +flows(ActivationContext, Relationship) boolean
+      }
+      enum Directionality <<ValueObject>> #EAF4FB {
+        DIRECTED
+        BIDIRECTIONAL
+      }
+      interface GraphWalker <<Visitor>> #EAF4FB {
+        +onNode(DrgNode) Descent
+        +onRelationship(Relationship) Descent
+      }
+      enum Descent <<ValueObject>> #EAF4FB {
+        CONTINUE
+        SKIP
+        STOP
+      }
+      class DrgNode <<ValueObject>> #EAF4FB
+    }
   }
   package "kernel.validation" #E4F1FA {
     class ModularRuleset <<DomainService>> #D8EBF7 {
@@ -51,7 +83,7 @@ package "packs.domain  «CORE»" #F2F9FD {
     +schemaVersion() String
     +label() String
     +description() Optional<String>
-    +edges() List<DrgEdge>
+    +relationships() List<Relationship>
     +urn() Urn
   }
 
@@ -70,6 +102,24 @@ package "packs.domain  «CORE»" #F2F9FD {
   class Paradigm <<Entity>> #EAF4FB {
     +id() ParadigmIdentifier
   }
+  class Toolguide <<Entity>> #EAF4FB {
+    +id() ToolguideIdentifier
+    +packId() PackIdentifier
+    +schemaVersion() String
+    +tool() String
+    +title() String
+    +guidePath() String
+    +summary() String
+    +commands() List<String>
+    +appliesToLanguages() List<String>
+    +lastUpdated() Optional<String>
+    +references() List<String>
+    --
+    +kind() = TOOLGUIDE
+    +label() = title
+    +description() = summary
+    +relationships() = List.of()
+  }
 
   ' --- identity value objects (one per entity kind) ---
   class PackIdentifier <<ValueObject>> #EAF4FB
@@ -77,6 +127,7 @@ package "packs.domain  «CORE»" #F2F9FD {
   class DirectiveIdentifier <<ValueObject>> #EAF4FB
   class StyleguideIdentifier <<ValueObject>> #EAF4FB
   class ParadigmIdentifier <<ValueObject>> #EAF4FB
+  class ToolguideIdentifier <<ValueObject>> #EAF4FB
 
   ' --- distinctive value objects per artefact ---
   class TacticStep <<ValueObject>> #EAF4FB
@@ -112,6 +163,13 @@ package "packs.domain  «CORE»" #F2F9FD {
     +save(Paradigm) void
     +load(PackIdentifier, ParadigmIdentifier) Optional<Paradigm>
   }
+  interface ToolguideRepository <<Repository>> #EAF4FB {
+    +save(Toolguide) void
+    +load(PackIdentifier, ToolguideIdentifier) Optional<Toolguide>
+  }
+  interface ComponentResolver <<Port>> <<Repository>> #EAF4FB {
+    +resolve(Urn) Optional<CharterArtifact>
+  }
   interface PackRepository <<Repository>> #EAF4FB {
     +load(PackIdentifier) Pack
   }
@@ -125,6 +183,9 @@ package "packs.application  «EDGE»" #FDF4EE {
   class TacticReadService <<ApplicationService>> #FBEEE6 {
     +tacticsOf(PackIdentifier) Verified<List<Tactic>>
     +tactic(PackIdentifier, TacticIdentifier) Verified<Tactic>
+  }
+  class GraphWalk <<ApplicationService>> #FBEEE6 {
+    +walk(Urn start, GraphWalker) void
   }
   class ApplicationConfiguration <<Configuration>> #FBEEE6
 }
@@ -140,12 +201,20 @@ package "packs.infra.storage  «EDGE»" #FDF4EE {
     +writeDirective(DirectiveDso) / readDirective(..)
     +writeStyleguide(StyleguideDso) / readStyleguide(..)
     +writeParadigm(ParadigmDso) / readParadigm(..)
+    +writeToolguide(ToolguideDso) / readToolguide(..)
+    +mapEdge(Relationship) DrgEdge / readEdge(DrgEdge) Relationship
   }
   class YamlSerializationStrategy <<Strategy>> #FBEEE6
   class TacticDso <<DSO>> #FBEEE6
   class DirectiveDso <<DSO>> #FBEEE6
   class StyleguideDso <<DSO>> #FBEEE6
   class ParadigmDso <<DSO>> #FBEEE6
+  class ToolguideDso <<DSO>> #FBEEE6
+  class DrgEdge <<DSO>> #FBEEE6 {
+    +impacts
+    +when
+    +reason
+  }
 }
 
 package "packs.infra.api  «EDGE»" #FDF4EE {
@@ -166,6 +235,7 @@ Pack "1" *-- "0..*" Tactic : tactics
 Pack "1" *-- "0..*" Directive : directives
 Pack "1" *-- "0..*" Styleguide : styleguides
 Pack "1" *-- "0..*" Paradigm : paradigms
+Pack "1" *-- "0..*" Toolguide : toolguides
 Pack "1" *-- "0..*" PackElementViolation : violations
 Pack --> PackIdentifier : identity
 
@@ -174,14 +244,18 @@ Tactic ..|> CharterArtifact
 Directive ..|> CharterArtifact
 Styleguide ..|> CharterArtifact
 Paradigm ..|> CharterArtifact
+Toolguide ..|> CharterArtifact
 CharterArtifact ..> PackIdentifier : packId()
 CharterArtifact ..> ArtifactKind : kind()
+CharterArtifact ..> Urn : urn()
+CharterArtifact ..> Relationship : relationships()
 
 ' --- entity identity VOs ---
 Tactic --> TacticIdentifier : identity
 Directive --> DirectiveIdentifier : identity
 Styleguide --> StyleguideIdentifier : identity
 Paradigm --> ParadigmIdentifier : identity
+Toolguide --> ToolguideIdentifier : identity
 
 ' --- distinctive value objects owned by each artefact ---
 Tactic "1" *-- "1..*" TacticStep : steps
@@ -202,13 +276,55 @@ ConfigValue <|.. ConfigMapping
 ConfigSeq *-- "0..*" ConfigValue : items
 ConfigMapping *-- "0..*" ConfigValue : entries
 
+' --- first-class relationship model (ADR-0025) ---
+Relationship --> RelationType : type
+Relationship --> Urn : from / to
+RelationType --> Directionality : directionality()
+RelationType --> Propagation : propagation()
+GraphWalker ..> Relationship : visits
+GraphWalker ..> DrgNode : visits
+GraphWalker ..> Descent : returns
+DoctrineGraph o-- "0..*" Relationship : holds (serialize + validate)
+
+note top of Relationship
+  identity = unordered {from,to} → at most one
+  relationship per component pair (simple graph)
+end note
+
+note top of RelationType
+  closed catalogue of DRG relations; directionality
+  + activation propagation derived from the type
+end note
+
+note top of CharterArtifact
+  relationships() = those where this component is the
+  effective origin (from == self, or BIDIRECTIONAL
+  with to == self)
+end note
+
+note bottom of DoctrineGraph
+  Now holds domain <b>Relationship</b>s for serialization +
+  validation; its (source, relation) in-memory index
+  no longer serves runtime traversal — the GraphWalker does.
+end note
+
 ' --- ports return domain types only ---
 TacticRepository ..> Tactic
 DirectiveRepository ..> Directive
 StyleguideRepository ..> Styleguide
 ParadigmRepository ..> Paradigm
+ToolguideRepository ..> Toolguide
+ComponentResolver ..> CharterArtifact : resolve(Urn)
+ComponentResolver ..> Urn
 PackRepository ..> Pack : assembles aggregate
 PackDescriptorRepository ..> PackDescriptor
+
+note right of ComponentResolver
+  Per-kind repository <b>load</b> returns the component with
+  its relationships() already populated; ComponentResolver
+  dispatches on urn.kind() to that kind's repository/read
+  service and fetches only the one neighbour.
+end note
 
 ' --- invariants enforced through the shared kernel ---
 Pack ..> ModularRuleset : guards invariants (every child belongs to this pack; no duplicate child ids)
@@ -216,27 +332,47 @@ Tactic ..> ModularRuleset
 Directive ..> ModularRuleset
 Styleguide ..> ModularRuleset
 Paradigm ..> ModularRuleset
-ModularRuleset ..> Constraint : evaluates
+Toolguide ..> ModularRuleset : belongs-to-pack ; no-dup-id
 
 ' --- application edge depends on domain ports (DIP) ---
 TacticReadService ..> PackRepository
 TacticReadService ..> TacticRepository
+GraphWalk ..> GraphWalker : drives
+GraphWalk ..> ComponentResolver : resolves neighbours
 
-' --- storage edge: one adapter realizes ALL four ports; strategy maps every DSO kind ---
+note bottom of GraphWalk
+  Walks on demand — resolves each neighbour via its kind's
+  repository (ComponentResolver); never materialises the whole
+  DRG. Visited-URN cycle guard; kernel stays pure (ADR-0006).
+end note
+
+' --- storage edge: one adapter realizes ALL artefact ports; strategy maps every DSO kind ---
 DomainRepositoryService ..|> TacticRepository
 DomainRepositoryService ..|> DirectiveRepository
 DomainRepositoryService ..|> StyleguideRepository
 DomainRepositoryService ..|> ParadigmRepository
+DomainRepositoryService ..|> ToolguideRepository
 YamlSerializationStrategy ..|> SerializationStrategy
 DomainRepositoryService --> SerializationStrategy : delegates (ctor-injected)
 DomainRepositoryService ..> TacticDso
 DomainRepositoryService ..> DirectiveDso
 DomainRepositoryService ..> StyleguideDso
 DomainRepositoryService ..> ParadigmDso
+DomainRepositoryService ..> ToolguideDso
 SerializationStrategy ..> TacticDso
 SerializationStrategy ..> DirectiveDso
 SerializationStrategy ..> StyleguideDso
 SerializationStrategy ..> ParadigmDso
+SerializationStrategy ..> ToolguideDso
+SerializationStrategy ..> DrgEdge : maps Relationship ↔ DrgEdge
+SerializationStrategy ..> Relationship : at the YAML boundary
+
+note bottom of DrgEdge
+  Storage-only serialization object for a relationship
+  (record equality = round-trip fidelity). The strategy maps
+  <b>Relationship</b> ↔ <b>DrgEdge</b> at the YAML boundary; keeps
+  impacts / when / reason. The domain never sees DrgEdge.
+end note
 
 ' --- web edge -> application edge (Tactic only) ---
 TacticController ..> TacticReadService
@@ -253,13 +389,17 @@ note bottom of ParadigmDso
   — NOT on each entity's identity-based equals.
 end note
 
-note "<b>WIRING ASYMMETRY — only Tactic is wired end-to-end.</b>\nTactic: domain entity + TacticRepository + DSO + TacticReadService (application) + TacticController (api).\nDirective / Styleguide / Paradigm: domain entity + identifier VO + repository port + DSO ONLY.\nThey have NO application read service and NO REST controller yet — all three dangle at the storage edge.\nClosing that gap is the next wiring step." as AsymNote #FFF3CD
+note "<b>WIRING ASYMMETRY — only Tactic is wired end-to-end.</b>\nTactic: domain entity + TacticRepository + DSO + TacticReadService (application) + TacticController (api).\nDirective / Styleguide / Paradigm / Toolguide: domain entity + identifier VO + repository port + DSO ONLY.\nThey have NO application read service and NO REST controller yet — all four dangle at the storage edge.\nClosing that gap is the next wiring step." as AsymNote #FFF3CD
 
 Directive .. AsymNote
 Styleguide .. AsymNote
 Paradigm .. AsymNote
+Toolguide .. AsymNote
 AsymNote .. TacticReadService
 AsymNote .. TacticController
+
+note "Procedure kind deferred pending #150." as ProcNote #FFF3CD
+Toolguide .. ProcNote
 
 note bottom of DomainRepositoryService
   Future: a @Repository DB sibling adapter
@@ -273,8 +413,9 @@ legend right
   Grey = composition root
   Yellow note = not-yet-built wiring (the artefact asymmetry)
   Stereotypes: «AggregateRoot» «Entity» «ValueObject»
-  «Repository»(port) «ApplicationService» «Adapter»
+  «Repository»(port) «Port» «ApplicationService» «Adapter»
   «Strategy» «DSO» «DomainService» «Configuration»
+  «FunctionalInterface» «Visitor» (graph-walk model)
 endlegend
 
 @enduml
