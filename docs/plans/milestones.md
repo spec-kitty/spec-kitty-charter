@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-25T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -26,7 +26,7 @@ each milestone and which issue goes where. The checkable steps are in the
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
 > **Status:** in effect (updated 2026-10-24). The assignment is provisional and changes as the plan
-> does. Ten open issues have no milestone yet; they are listed under
+> does. Nine open issues have no milestone yet; they are listed under
 > [Not yet assigned](#not-yet-assigned).
 
 ## The milestones
@@ -65,6 +65,9 @@ Core makes adopting the charter activation contract a 4.0 GA deliverable (spec-k
 Created on 2026-10-24 by the operator. Two tracks run in parallel: unblock core by publishing the
 contract, and model the artifact kinds before more of them are exposed.
 
+Delivered so far: issues #120 and #173, by PR #177 (every read answers with the source fingerprint
+it verified).
+
 | Issue | Title | Why it is here |
 |---|---|---|
 | #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
@@ -72,12 +75,14 @@ contract, and model the artifact kinds before more of them are exposed.
 | #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
 | #13 | Core ingests the contract: generated client and routing proxy | The contract is core's seam from 0.1.0 (ADR-0021) |
 | #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
-| #173 | Tactic reads do not send `Charter-Source-Fingerprint` | Core's seam relies on the header for freshness |
 | #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
 | #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Settle the model before more kinds |
 | #169 | Doctrine-kinds adapter tidy-ups (kind registry) | A generic artifact read seam before more kinds |
 | #167 | Own the doctrine-artifact edge-relation table here | The relations each field creates are this repository's to define |
 | #168 | Toolguide and procedure as first-class pack artifacts | After #169 and #171 |
+| #175 | Contract: no fingerprint declaration on refusals; the fingerprint required on artifact 200s | A contract shape change, so it belongs before 1.0.0 |
+| #176 | `OfferingUnreadable`'s examples name codes the service never raises | The contract must describe what the built reads answer |
+| #174 | A pack root configured through a symlink loads as an empty pack | A symlinked open-packs checkout would silently serve nothing |
 
 ### 4.x cutover
 
@@ -153,7 +158,6 @@ revised.
 | #132 | Remaining YAML scalar differences from core | Conformance detail |
 | #133 | `x-extensible-enum` for open code enums | Contract shape; decide before 1.0.0 |
 | #130 | Narrow the refusal-code enum per HTTP response | Contract shape; decide before 1.0.0 |
-| #120 | The source fingerprint digests exactly the files the pack load reads | Freshness |
 | #121 | Worktree token: refuse a placeholder resolved from the command line | Local deployment profile |
 | #140 | ArchUnit slice-coverage meta-rule | Partly delivered by PR #141 |
 | #166 | CI gate: single-source the path taxonomy | CI hygiene |
