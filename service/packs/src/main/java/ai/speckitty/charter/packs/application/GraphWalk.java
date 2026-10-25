@@ -41,7 +41,8 @@ public final class GraphWalk {
      * {@link Descent#STOP} halts the whole walk, {@link Descent#SKIP} leaves the component's relationships uncrossed
      * (so no neighbour of it is resolved), {@link Descent#CONTINUE} descends. For each relationship it then calls
      * {@link GraphWalker#onRelationship} and again obeys the {@link Descent}: {@code STOP} halts, {@code SKIP} leaves
-     * that one relationship uncrossed, {@code CONTINUE} resolves the relationship's {@code to} and, when the resolver
+     * that one relationship uncrossed, {@code CONTINUE} resolves the relationship's other endpoint (its {@code to}, or its {@code from} for a
+     * bidirectional edge that names this component as {@code to}) and, when the resolver
      * yields a not-yet-visited component, recurses into it. A relationship whose neighbour is already visited (the
      * cycle guard) or resolves empty (an unwired kind, research D6) is passed over and the walk continues.
      *
@@ -76,7 +77,9 @@ public final class GraphWalk {
             if (relationshipDescent == Descent.SKIP) {
                 continue;
             }
-            Urn neighbour = relationship.to();
+            // An effective-origin edge is either authored from this component or a bidirectional edge that names it
+            // as `to`; the neighbour is always the other endpoint.
+            Urn neighbour = relationship.from().equals(component.urn()) ? relationship.to() : relationship.from();
             if (visited.contains(neighbour)) {
                 continue;
             }
