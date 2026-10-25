@@ -9,6 +9,9 @@ requirement_refs:
 planning_base_branch: feat/regular-artefacts
 merge_target_branch: feat/regular-artefacts
 branch_strategy: Planning artifacts for this mission were generated on feat/regular-artefacts. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/regular-artefacts unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-regular-artefact-read-registration-01M5SC0T
+base_commit: 8e10d7051d0ca5dac50c36bac1bfd82ee5c16433
+created_at: '2026-10-25T16:38:47.529436+00:00'
 subtasks:
 - T049
 - T050
