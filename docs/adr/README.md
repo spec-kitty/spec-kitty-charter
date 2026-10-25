@@ -54,6 +54,7 @@ stands.
 | [0023](/adr/0023-ci-gate-required-check/) | ADR-0023: An always-on CI gate is the single required status check | Accepted | 2026-10-22 |
 | [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted | 2026-10-24 |
 | [0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) | ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories | Proposed | 2026-10-25 |
+| [0026](/adr/0026-write-surface-is-functional-registration/) | ADR-0026: The write surface is functional registration of packs, artefacts and relationships, not CRUD over storage | Proposed | 2026-10-25 |
 
 ## Core decisions this repository builds on
 
