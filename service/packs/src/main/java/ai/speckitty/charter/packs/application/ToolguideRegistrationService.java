@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>Unlike a directive, a toolguide originates no relationships ({@link Toolguide#relationships()} is empty), so the
  * registration body carries none: there is no body-relationship door and no dual-write ownership rule to enforce here.
- * The commit still re-persists the pack's standalone relationship shard unchanged, so a toolguide write never erases a
+ * The commit leaves the pack's standalone relationship shard untouched, so a toolguide write never erases a
  * cross-authored edge another door registered.
  */
 @Service
@@ -92,7 +92,7 @@ public final class ToolguideRegistrationService {
                 exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                 toolguide.urn());
         Pack mutated = revalidated(current, toolguide);
-        PackRevision revision = writeStore.commit(pack, mutated, writeStore.registeredRelationships(pack));
+        PackRevision revision = writeStore.commit(pack, mutated, null); // relationships unchanged
         return new Registered(revision, !exists, toolguide.urn());
     }
 

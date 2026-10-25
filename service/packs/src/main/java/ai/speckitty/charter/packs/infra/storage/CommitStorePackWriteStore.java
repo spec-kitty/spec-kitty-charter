@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -69,19 +71,33 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     @Override
     public List<Relationship> registeredRelationships(PackIdentifier pack) {
         Path shard = resolve(pack).resolve(RelationshipShard.SHARD_PATH);
+        if (!Files.isRegularFile(shard)) {
+            return List.of(); // a pack nothing has been registered into yet
+        }
         String text;
         try {
-            text = Files.isRegularFile(shard) ? Files.readString(shard, StandardCharsets.UTF_8) : "";
+            text = Files.readString(shard, StandardCharsets.UTF_8);
         } catch (IOException failure) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot read the relationship shard of pack " + pack.value(), failure);
         }
-        return RelationshipShard.read(pack.value(), text).relationships();
+        RelationshipShard.ShardRead read = RelationshipShard.read(pack.value(), text);
+        if (!read.findings().isEmpty()) {
+            // A shard is a pack file the fingerprint covers; one that does not bind whole is an unreadable pack, not
+            // a fault of the request. Building a write on the bound subset would silently drop the rest.
+            PackFinding first = read.findings().getFirst();
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    "the relationship shard of pack " + pack.value() + " does not bind (" + first.file() + ": "
+                            + first.detail() + "); refusing to rewrite it");
+        }
+        return read.relationships();
     }
 
     @Override
-    public PackRevision commit(PackIdentifier pack, Pack mutated, List<Relationship> relationships) {
-        return commitStore.commit(pack, mutated, RelationshipShard.write(List.copyOf(relationships)));
+    public PackRevision commit(PackIdentifier pack, Pack mutated, @Nullable List<Relationship> relationships) {
+        return commitStore.commit(
+                pack, mutated, relationships == null ? null : RelationshipShard.write(List.copyOf(relationships)));
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */

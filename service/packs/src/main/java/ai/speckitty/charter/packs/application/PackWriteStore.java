@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The write-path seam a registration service drives (ADR-0026 Decision 3, NFR-002). It is an application-ring
@@ -38,7 +39,8 @@ public interface PackWriteStore extends PackRevisions {
      * @param pack the pack's identity
      * @return the registered relationships; empty when the pack has none
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
-     *     resolved or read
+     *     resolved or read, or when its shard holds anything that does not bind (a malformed document or an invalid
+     *     edge): a write built on the bound subset would silently drop the rest
      */
     List<Relationship> registeredRelationships(PackIdentifier pack);
 
@@ -48,10 +50,11 @@ public interface PackWriteStore extends PackRevisions {
      *
      * @param pack the pack's identity
      * @param mutated the revalidated aggregate to persist (its invariants are already guarded by its builder)
-     * @param relationships the complete registered-relationship set to persist (replaces the shard wholesale)
+     * @param relationships the complete registered-relationship set to persist (replaces the shard wholesale), or
+     *     null when the registration does not change relationships, which leaves the shard untouched
      * @return the revision of the committed state
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the commit fails;
      *     in every failure case the live pack directory is unchanged (NFR-002)
      */
-    PackRevision commit(PackIdentifier pack, Pack mutated, List<Relationship> relationships);
+    PackRevision commit(PackIdentifier pack, Pack mutated, @Nullable List<Relationship> relationships);
 }

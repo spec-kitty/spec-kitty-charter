@@ -4,8 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
+import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
@@ -132,6 +139,46 @@ class PackCommitStoreTest {
                 .extracting(tg -> tg.id().value())
                 .contains("ripgrep", "fd");
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
+
+    @Test
+    @DisplayName("a registration over a partly invalid relationship shard is refused and leaves the shard"
+            + " byte-unchanged, while one into a pack without a shard lands")
+    void aRegistrationOverAnInvalidShardIsRefusedAndKeepsTheShard(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        String partlyInvalid = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                generated_by: charter-registration
+                nodes: []
+                edges:
+                - {source: 'tactic:alpha-tactic', target: 'directive:kept', relation: requires}
+                - {source: QA_404, target: 'directive:kept', relation: requires}
+                """;
+        Path shard = packDir.resolve(RelationshipShard.SHARD_PATH);
+        Files.writeString(shard, partlyInvalid, StandardCharsets.UTF_8);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
+                locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
+        RelationshipRegistrationService registrations =
+                new RelationshipRegistrationService(service, writeStore, new PermissiveWritePolicyGate());
+        Relationship edge = Relationship.of(
+                new Urn(NodeKind.TACTIC, "alpha-tactic"), new Urn(NodeKind.DIRECTIVE, "other"), RelationType.SUGGESTS);
+
+        assertThatThrownBy(() -> registrations.registerRelationship(
+                        PACK, edge, writeStore.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+
+        assertThat(Files.readString(shard, StandardCharsets.UTF_8)).isEqualTo(partlyInvalid);
+
+        // Positive control on the same fixture: a pack nothing was registered into yet has no shard, which is no
+        // fault; the same registration then lands.
+        Files.delete(shard);
+        registrations.registerRelationship(
+                PACK, edge, writeStore.currentRevision(PACK).token());
+        assertThat(writeStore.registeredRelationships(PACK)).containsExactly(edge);
     }
 
     /** Whether the packs-root holds no staging ({@code .pack-commit-}) or aside ({@code .pack-old-}) residue. */

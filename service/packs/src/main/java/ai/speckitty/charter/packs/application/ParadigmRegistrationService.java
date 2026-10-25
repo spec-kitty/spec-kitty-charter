@@ -111,8 +111,9 @@ public final class ParadigmRegistrationService {
                 exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                 paradigm.urn());
         Pack mutated = revalidated(current, paradigm);
-        List<Relationship> merged =
-                RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
+        List<Relationship> merged = bodyRelationships.isEmpty()
+                ? null // the body asserts no edge: leave the relationship shard untouched
+                : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
         PackRevision revision = writeStore.commit(pack, mutated, merged);
         return new Registered(revision, !exists, paradigm.urn());
     }

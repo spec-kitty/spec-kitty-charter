@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>Unlike a directive, a styleguide mints no relationships: its references are bare citation strings (ADR-0024), so
  * there is no body-carried relationships door here. The standalone relationship endpoint is unchanged and owned by the
- * directive slice (WP05); the pack's relationship shard is committed through unchanged. A cross-authored edge is
+ * directive slice (WP05); the commit leaves the pack's relationship shard untouched. A cross-authored edge is
  * registered through {@code PUT /packs/{id}/relationships}, not through this service.
  */
 @Service
@@ -92,7 +92,7 @@ public final class StyleguideRegistrationService {
                 exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                 styleguide.urn());
         Pack mutated = revalidated(current, styleguide);
-        PackRevision revision = writeStore.commit(pack, mutated, writeStore.registeredRelationships(pack));
+        PackRevision revision = writeStore.commit(pack, mutated, null); // relationships unchanged
         return new Registered(revision, !exists, styleguide.urn());
     }
 

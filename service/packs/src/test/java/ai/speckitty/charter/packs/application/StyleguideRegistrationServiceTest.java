@@ -188,7 +188,9 @@ class StyleguideRegistrationServiceTest {
         @Override
         public PackRevision commit(PackIdentifier pack, Pack mutated, List<Relationship> relationships) {
             packs.put(pack, mutated);
-            edges.put(pack, new ArrayList<>(relationships));
+            if (relationships != null) { // null: the registration left the shard untouched
+                edges.put(pack, new ArrayList<>(relationships));
+            }
             commits++;
             return currentRevision(pack);
         }
