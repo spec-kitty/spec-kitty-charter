@@ -10,15 +10,14 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * The read &rarr; upsert-on-pair &rarr; serialise cycle for registered relationships, operating on shard YAML
- * <em>text</em>; file placement and the atomic directory swap are the WP04 commit store's job.
+ * The read and serialise halves of the registered-relationship cycle, operating on shard YAML <em>text</em>; the
+ * upsert on the {@code {from, to}} pair is the application's ({@code RelationshipMerge}); file placement and the atomic directory swap are the WP04 commit store's job.
  *
  * <h2>Where registered relationships persist (analysis finding U1)</h2>
  *
@@ -102,28 +101,6 @@ public final class RelationshipShard {
             }
             case FileRead.Absent<RawGraph> absent -> new ShardRead(List.of(), List.of());
         };
-    }
-
-    /**
-     * Upserts {@code incoming} into {@code existing} on the unordered {@code {from, to}} pair, last-write-wins.
-     * This is an explicit put, not a {@code Set.add}: any relationship already on the pair — in either
-     * orientation — is removed and {@code incoming} is appended, so re-registering a pair replaces it with the
-     * latest type, condition and rationale (spec US1 scenario 3), and registering the reverse orientation
-     * replaces rather than adds (a pair holds at most one relationship).
-     *
-     * @param existing the relationships registered so far, in registration order
-     * @param incoming the relationship to register
-     * @return the merged relationships; neither input changes
-     */
-    public static List<Relationship> upsert(List<Relationship> existing, Relationship incoming) {
-        List<Relationship> merged = new ArrayList<>(existing.size() + 1);
-        for (Relationship relationship : existing) {
-            if (!relationship.equals(incoming)) {
-                merged.add(relationship);
-            }
-        }
-        merged.add(incoming);
-        return List.copyOf(merged);
     }
 
     /**
