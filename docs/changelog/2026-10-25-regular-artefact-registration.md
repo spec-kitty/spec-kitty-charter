@@ -28,7 +28,8 @@ the new toolguide kind are readable, and each can be registered through
 Registration is functional, not CRUD ([ADR-0026](/adr/0026-write-surface-is-functional-registration/)):
 there is no `DELETE` or `PATCH`. Each write loads the pack, revalidates the whole
 aggregate and commits atomically, and its `ETag` is the pack revision. A refused write
-changes no stored file. A missing artifact in an existing pack answers its own
+changes no stored file, and a successful one writes only the registered file, so authored
+comments in the rest of the pack survive. Writes to one pack run one at a time. A missing artifact in an existing pack answers its own
 `<kind>_not_found` code.
 
 Relationships are domain values with one relationship per unordered pair of endpoints
