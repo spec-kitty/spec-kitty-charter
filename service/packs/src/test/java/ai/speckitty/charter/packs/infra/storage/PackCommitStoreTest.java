@@ -62,7 +62,8 @@ class PackCommitStoreTest {
     }
 
     @Test
-    @DisplayName("a successful commit replaces the pack content, keeps non-child files, and returns a new revision")
+    @DisplayName(
+            "a successful commit replaces the pack content, keeps non-child files, and returns the current revision")
     void aSuccessfulCommitReplacesContentAndReturnsARevision(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);
         Files.createDirectories(packDir.resolve("guides"));
@@ -70,11 +71,14 @@ class PackCommitStoreTest {
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
 
         Pack mutated = mutatedWithToolguide(service.load(PACK), "ripgrep");
         PackRevision revision = store.commit(PACK, mutated, SHARD);
 
-        assertThat(revision.token()).matches("sha256:[0-9a-f]{64}");
+        assertThat(revision)
+                .as("the ETag a commit answers is the revision the store then reports")
+                .isEqualTo(writeStore.currentRevision(PACK));
         assertThat(service.load(PACK).toolguides())
                 .extracting(tg -> tg.id().value())
                 .contains("ripgrep");
