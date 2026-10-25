@@ -2,10 +2,9 @@
   "event_count": 70,
   "last_event_id": "01M5T56Q2J8CSW5TF03TPKF81T",
   "materialized_at": "2026-10-25T18:29:42.610209+00:00",
-  "mission_number": "6",
+  "mission_number": "",
   "mission_slug": "regular-artefact-read-registration-01M5SC0T",
-  "mission_type": "software-dev",
-  "schema_version": 2,
+  "mission_type": "",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -21,343 +20,172 @@
     "WP01": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56HBJ3BF7YPRT7E445KFY",
       "last_transition_at": "2026-10-25T18:29:36.754355+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "- 2026-10-25T14:16:13Z – claude – shell_pid=3002837 – Test-first: red 9e7d681 (specs before production, do not compile); green b554d19 (production turns specs green). Targeted :kernel:test 18 tests pass; spotlessCheck/checkstyle/ArchUnit HexagonalArchitectureTest all green.",
-        "Ready for review: kernel graph core (Relationship unordered-pair identity, RelationType directionality()/token() mirroring Relation, Directionality, GraphWalker/Descent), pure Java. Gates: :kernel:test 18 green, spotlessCheck+checkstyleMain+checkstyleTest green, ArchUnit HexagonalArchitectureTest green.",
-        "Review passed: unordered-pair identity verified (A->B equals B->A, equal hashCodes, HashSet dedup + distinct-pair-survives positive control); directionality derived from RelationType, never stored on Relationship; RelationType catalogue pinned token-for-token to Relation via both-direction tests (15 constants), impacts=BIDIRECTIONAL rest DIRECTED; no propagation()/Propagation (deferred); self-loop + null + null-Optional rejected; when/rationale round-trip present-or-empty; GraphWalker/Descent(CONTINUE/SKIP/STOP) pure; kernel imports only java.util.*; Relation.java unchanged; owned_files exactly match diff; red-then-green commits recorded; :kernel:test (forced rerun) + checkstyle + spotless green."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP01-kernel-graph-core/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP01-kernel-graph-core/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3017699,
-      "shell_pid_created_at": "1792937825.31",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done"
-      }
+      "shell_pid": 3002837,
+      "shell_pid_created_at": "1792937460.66"
     },
     "WP02": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56JKRQM7QX50ZXP1AA35Y",
       "last_transition_at": "2026-10-25T18:29:38.040098+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review. Shard path: registered.graph.yaml at pack root (canonical *.graph.yaml shape, fingerprint-covered by PackFileSet root-shard glob, never rewrites built-in shards/fragment.yaml; WP04 commit store does file placement/atomic swap). Gates all exit 0: kernel:test *DoctrineGraphTest; packs:test *RelationshipMapperTest/*RelationshipShardRoundTripTest/*GraphDocumentReaderTest/*PackPolicy*Test/*DrgEdgeTest(storage); spotlessCheck+checkstyle(kernel+packs); ArchUnit *HexagonalArchitectureTest. Red->green recorded for upsert last-write-wins. NOTE for reviewer: Relationship (WP01) rejects self-loops, so PackPolicy now emits a DRG finding for a self-loop edge (no throw, ADR-0027 no silent drop); orphaned conformance fixture planted/c12-edge-impacts-valid (a valid self-loop) has NO Java consumer so nothing breaks, but confirm C12 corpus stance if it is ever rewired. impacts strength is DSO-only per ADR-0025; not carried on Relationship.",
-        "Review passed (commit 752f188). DrgEdge demoted to package-private DSO in packs.infra.storage; kernel DoctrineGraph + packs.domain PackPolicy hold only Relationship (no DrgEdge import; refs are javadoc only); HexagonalArchitectureTest green. RelationshipMapper round-trip non-vacuous (asserts type/when/rationale individually + present-vs-absent); impacts strength stays DSO-only, PackPolicy still validates. Upsert is true LWW on unordered {from,to} (remove-then-append, not Set.add) backed by Relationship pair-equality; same-pair and reverse-orientation replace tests are genuine RED. No silent drop: non-URN/unknown-relation/self-loop surface as PackFinding (read) or IllegalArgumentException (mapper). SHARD-PATH (U1): SOUND - registered.graph.yaml at pack root is covered by PackFileSet.graphShards root *.graph.yaml glob (fingerprint sees it); a drg/-nested shard would fall outside; read() is text-only, no source rewrite; built-in shards/fragment.yaml untouched. SELF-LOOP (RECONCILE_CHANGE_SCOPE_TENSIONS): ACCEPTABLE documented tension - PackPolicy now emits a finding for a self-loop (tested by aSelfLoopEdgeIsAFindingAndNotAnException); the orphaned planted/c12-edge-impacts-valid fixture expecting a clean self-loop bind is consumed by NO live *.java test (confirmed: nothing reads planted/ or expected.json) so no regression; FLAG for follow-up to fix that fixture's expected.json when the conformance corpus is wired. Tests green: kernel DoctrineGraphTest 4/0, DrgEdgeTest; packs RelationshipMapperTest 6/0, RelationshipShardRoundTripTest 5/0, PackPolicyGraphTest 17/0, GraphDocumentReaderTest 43/0 (read-path non-regression); spotless + ArchUnit green. Coordination: lane-b owns these files; WP04 commit store consumes RelationshipShard.write/SHARD_PATH and does file placement/atomic swap."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP02-drgedge-dso-and-relationship-persistence/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP02-drgedge-dso-and-relationship-persistence/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3084825,
-      "shell_pid_created_at": "1792940762.33",
-      "subtasks": {
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done",
-        "T010": "done",
-        "T011": "done",
-        "T012": "done"
-      }
+      "shell_pid": 3068206,
+      "shell_pid_created_at": "1792939263.62"
     },
     "WP03": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56HZJWRTJH3J9QMJS4P1B",
       "last_transition_at": "2026-10-25T18:29:37.394401+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: CharterArtifact.edges() superseded by relationships() (ADR-0025 D3 effective-origin); ArtifactEdges rewritten to Relationships (typed->suggests, bare->requires, when/rationale round-trip) + effective-origin selector; ComponentResolver port (empty on unwired kinds, D6); lazy cycle-guarded GraphWalk driver (<=1 resolve per distinct reachable component, NFR-001). FR-003 bidirectional-to vs directed-to paired control proven. Gates all exit 0: spotlessCheck+checkstyle, targeted :packs:test (ArtifactRelationships/Entity/CharterArtifactFamily/GraphWalk/AggregateRetrofit), :deployable HexagonalArchitectureTest purity. One out-of-map edit: AggregateRetrofitTest (WP04-owned) migrated to relationships() so the packs test source set still compiles. WP02/WP04 files (DrgEdge/DoctrineGraph/PackPolicy/GraphShardWriter/Pack) untouched.",
-        "Review passed: relationships() migration + effective-origin filter + ComponentResolver port + lazy GraphWalk. Effective-origin paired control non-vacuous (bidirectional-to-self included, directed-to-self excluded, verified against kernel RelationType: SUGGESTS/REQUIRES DIRECTED, IMPACTS BIDIRECTIONAL). GraphWalk cycle-guarded, visited-check precedes resolve so <=1 resolve per distinct reachable component; NFR-001 bounded-reads control asserts unreachable never resolved and requested.size < map.size; D6 unwired-empty continuation, STOP/SKIP node+relationship all tested non-vacuously. ComponentResolver returns empty, never throws. Purity holds: ComponentResolver (domain) depends only on kernel+domain, GraphWalk (application) on domain port+kernel; HexagonalArchitectureTest green on rerun. Protected WP02/WP04 files (DrgEdge/DoctrineGraph/PackPolicy/GraphShardWriter/Pack) untouched (git log empty). One declared out-of-map edit AggregateRetrofitTest (WP04-owned): exactly two .edges()->relationships() assertion migrations with when-collapse coverage preserved, no WP04 logic pulled forward. Targeted :packs:test + spotlessCheck green on --rerun-tasks. GraphWalk/relationships() production wiring is staged to WP10 (documented), not accidental dead code."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP03-relationships-and-walk/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP03-relationships-and-walk/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3064576,
-      "shell_pid_created_at": "1792939004.41",
-      "subtasks": {
-        "T013": "done",
-        "T014": "done",
-        "T015": "done",
-        "T016": "done",
-        "T017": "done",
-        "T018": "done"
-      }
+      "shell_pid": 3034700,
+      "shell_pid_created_at": "1792938149.33"
     },
     "WP04": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56K80ZFM6EKT24NXXZV1W",
       "last_transition_at": "2026-10-25T18:29:38.688154+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: Pack aggregate gains toolguides child (belongs-to + no-dup invariants, FR-008/FR-015); full enumerated Toolguide storage seam (entity/identifier/repo/DSO/serialization/readKind/assembly) round-trips; PackCommitStore stage+atomic-dir-swap (NFR-002 pre-swap failure = zero change, proven with success control); RefusalCode validation_failed(422)/registration_conflict(409) + governance_policy_violation->409, RefusalHandler exhaustive code->status map, contract enum + x-refusal + errors.feature updated; PackRevision ETag digest domain-separated from read fingerprint. Gates all exit 0: packs compileJava/compileTestJava, targeted :packs:test (7 WP suites), affected packs tests (PackFileSet/Exactness/DomainRepositoryService/WireTokenParity/RoundTrip/Vocabulary), deployable HexagonalArchitectureTest + ReservedRefusalCodesTest + cucumber errors.feature, spotlessCheck + checkstyle (packs/kernel/deployable). Out-of-map edits (consequence of required LoadedKind.TOOLGUIDE + 409 remap): GeneratedPackTree, PackFileSetTest, PackFileSetExactnessTest, DomainRepositoryServiceTest, errors.feature.",
-        "Review passed: Toolguide seam complete end-to-end (entity+identifier+DSO matching contracts/packs/schemas/toolguide.schema.json exactly; kind=TOOLGUIDE, relationships()=List.of(); DSO round-trip non-vacuous present/empty/absent); Pack holds toolguides with belongs-to-pack + no-dup-id invariants gating every builder rebuild (FR-008, paired valid/foreign/duplicate controls). PackCommitStore whole-pack stage+atomic-swap: injected pre-swap failure proves byte-for-byte-unchanged live dir + no staging/aside residue, paired with accepted-commit control (NFR-002). PackRevision SHA-256 domain-separated via DOMAIN_TAG the read-path Fingerprint never emits -> can never coincide with PackSources fingerprint (ADR-0026 D5). RefusalHandler blanket replaced by exhaustive code->status switch (422 validation_failed, 409 registration_conflict+governance_policy_violation, 500 otherwise); 412/428 kept out of RefusalCode; new tokens resolve via generated CharterRefusal.CodeEnum. WritePolicyGate domain port + PERMISSIVE non-@Primary default only (no ADR-0012 mutability levels here, correctly deferred to WP06). Onion/ArchUnit green. Pack.java single-owned. Out-of-map edits all minimal & justified: GeneratedPackTree/PackFileSetTest/PackFileSetExactnessTest flip *.toolguide.yaml decoy->loaded kind (mandated by LoadedKind.TOOLGUIDE); DomainRepositoryServiceTest anon strategy gains only the 2 new methods. CONTRACT-EDIT DISPOSITION: errors.feature + CharterRefusalCode.yaml governance_policy_violation 500->409 is ACCEPTABLE in WP04 — it is exactly the minimal refusal-code status remap T024 requires (enum value + x-refusal status map + one reserved-scenario status line), touches no root openapi paths (WP10's ownership), and the generated CodeEnum accepts validation_failed/registration_conflict. Gates verified: targeted :packs:test (forced rerun), :deployable HexagonalArchitectureTest + ReservedRefusalCodesTest + CharterContractSuite cucumber errors.feature, spotless, checkstyle, NullAway (compileJava) all green."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP04-pack-aggregate-toolguide-registration-foundations/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP04-pack-aggregate-toolguide-registration-foundations/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3113390,
-      "shell_pid_created_at": "1792942866.6",
-      "subtasks": {
-        "T019": "done",
-        "T020": "done",
-        "T021": "done",
-        "T022": "done",
-        "T023": "done",
-        "T024": "done",
-        "T025": "done",
-        "T026": "done",
-        "T027": "done"
-      }
+      "shell_pid": 3088946,
+      "shell_pid_created_at": "1792941067.73"
     },
     "WP05": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56KW68Y5HDJAEAW09Q34T",
       "last_transition_at": "2026-10-25T18:29:39.334904+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: directive read + functional registration slice (the reference slice). Dual-write ownership rule chosen: an artifact body may assert only relationships whose from == that artifact; cross-authored edges use PUT /relationships; both doors upsert the same shard keyed by the unordered {from,to} pair (last-write-wins). Application layer (DirectiveReadService, DirectiveRegistrationService, PackWriteStore port + CommitStorePackWriteStore adapter) compiles and all targeted :packs tests pass (exit 0); ArchUnit purity green; spotless/checkstyle green. Controllers + controller MockMvc tests + directive @contract scenarios were verified green under a temporary local root wiring (now reverted — WP10 owns contracts/charter/openapi.yaml). Out-of-map additive edits (rationale in handoff): kernel RefusalCode + RefusalHandler + CharterRefusalCode.yaml gained directive_not_found; x-refusal raised flags flipped true for validation_failed/registration_conflict (now raised). WP10 consolidation items: wire the 3 root paths; update shared CharterSteps fingerprint-on-200 invariant to exempt writes; reconcile errors.feature raised-codes table.",
-        "Review passed (reviewer-renata). Read value-equal w/ relationships populated (FR-006, SC-001); registration load->mutate->revalidate(whole Pack via Pack.builder)->atomic commit, refuse-before-commit proven by commit-count guards (FR-007/010, NFR-002); dual-write ownership enforced (ownBodyRelationships: body may assert only from==directive, else 422; cross-authored via PUT /relationships; LWW upsert converges) with 422+well-formed control; relationship PUT idempotent on unordered pair, from resolves in pack/to may be external (FR-009); 412/428 are plain Problem via PreconditionException, not RefusalCodes (FR-012); no DELETE/PATCH, no DSO on wire -- domain->generated DTO mapping (C-001/C-002); walk on-demand bounded (fetched<pack total, SC-002) continues past procedure kind (D6). Standalone gates green: DirectiveReadServiceTest 8, DirectiveRegistrationServiceTest 10, DirectiveWalkSliceTest 1, DirectiveControllerTest 8, RelationshipControllerTest 5; packs spotless/checkstyle green; HexagonalArchitectureTest 38/0. JUDGMENT CALLS: (1) Cross-WP additive edits to kernel RefusalCode.java, infra/api/RefusalHandler.java, schemas/CharterRefusalCode.yaml -- strictly ADDITIVE: DIRECTIVE_NOT_FOUND mirrors tactic_not_found->404; validation_failed/registration_conflict raised:false->true activates WP04 placeholders; 422/409 code->status map unchanged, no RefusalHandler regression. COORDINATION NOTE for WP06-10: these three shared files were touched additively. (2) PackWriteStore port (application) + CommitStorePackWriteStore adapter (infra.storage) -- sound onion seam, NOT scope creep: application ring cannot depend on infra PackCommitStore directly; adapter composes WP04 PackCommitStore + WP02 RelationshipShard WITHOUT editing them; ArchUnit green. (3) By-design sequencing accepted: verified web layer by temporarily wiring the 3 path refs+tags into root openapi.yaml, generating contract, running all 5 test classes (32 green), then reverted root (tree clean, NOT committed). Remaining 4 @contract failures are exactly the WP10-named shared items -- 3x Charter-Source-Fingerprint @After invariant in non-WP05 CharterSteps.java firing on PUT-returns-200+ETag (WP10 scopes to GET-only), 1x errors.feature raised-code reconciliation; the directive write scenarios' own Then steps pass. Root openapi.yaml NOT edited in the WP05 commit."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP05-directive-slice/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP05-directive-slice/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3150704,
-      "shell_pid_created_at": "1792945900.96",
-      "subtasks": {
-        "T028": "done",
-        "T029": "done",
-        "T030": "done",
-        "T031": "done",
-        "T032": "done",
-        "T033": "done",
-        "T034": "done"
-      }
+      "shell_pid": 3119181,
+      "shell_pid_created_at": "1792943206.31"
     },
     "WP06": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56MGA6XM3E4N86CZ2S0Q4",
       "last_transition_at": "2026-10-25T18:29:39.978689+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: ADR-0012 mutability write gate (FR-011). Level->operation mapping (ADR-0012 Decision 1): open=REGISTER+REPLACE+RELATIONSHIP; extendable=REGISTER+RELATIONSHIP (refuses REPLACE/override); locked=refuses all three. Over-level write refused governance_policy_violation (409) with same-fixture within-level control; unlisted target defaults to open (tighten never loosen). Pure model (MutabilityLevel, MutabilityPolicySource) in packs.domain; @Primary gate edge PackMutabilityPolicy in packs.application (ArchUnit DOMAIN_IS_PURE forbids Spring annotations in domain -> one out-of-map file vs owned domain path). PackDescriptor NOT touched (no kernel change; PROJECT_002 round-trip untouched). No registration service/controller/commit-store edited. Gates: :packs:test --tests *PackMutabilityPolicyTest green; spotlessCheck 0; checkstyleMain/Test 0; HexagonalArchitectureTest 38/0 failures. Compile+targeted tests require WP10's openapi path wiring (DirectivesApi/RelationshipsApi), verified via temporary-wire-then-revert (openapi.yaml NOT committed). WP10-owned CharterContractSuite scenarios remain red (deferred to WP10).",
-        "Review passed (reviewer-renata). ADR-0012 mapping verified EXACT vs Decision-1 table: open=REGISTER/REPLACE/RELATIONSHIP all; extendable=REGISTER+RELATIONSHIP, refuses REPLACE(override); locked refuses all. REGISTER-vs-locked interpretation is prompt-sanctioned+documented on MutabilityLevel javadoc. Over-level refusal=GOVERNANCE_POLICY_VIOLATION->409 via UNCHANGED WP04 RefusalHandler; same-fixture within-level control on every refusal; real-service integration through WP05 DirectiveRegistrationService (locked refused, commit count unchanged / open allowed, +1) proves non-vacuous. PackMutabilityPolicy is @Primary WritePolicyGate superseding PermissiveWritePolicyGate; ZERO registration-service/controller/commit-store edit (commit=4 new files only). Gates: PackMutabilityPolicyTest 11/0; :packs spotless+checkstyle green; HexagonalArchitectureTest 38/0. CALL 1 (out-of-map placement) ACCEPTED: @Component/@Primary is forbidden in packs.domain by PACKS_DOMAIN_IS_PURE + NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN, so the gate edge correctly lives in packs.application (APPLICATION_IS_EDGE permits Spring), matching WP04's PermissiveWritePolicyGate; pure model (MutabilityLevel, MutabilityPolicySource) stays in domain; minimal (69-line gate), no scope creep, new file collides with NO other lane's owned files; non-blocking ACTIVE_WP_SCOPE_VIOLATION is the correct trade. CALL 2 (FR-011 depth) ACCEPTED as enforced-gate-with-additive-seam: enforcement logic+mapping+refusal are implemented and TESTED including a locked source injected end-to-end; production no-arg bean wires MutabilityPolicySource.empty()=all-OPEN, which is EXACTLY ADR-0012 Decision 2/5 migration reality (no policy file ships yet; tighten-never-loosen) not a vacuity bug -- refusing by default would violate ADR-0012 and the prompt's loosening Risk. Reading real declared levels requires the deferred PackDescriptor policy field / pack-root policy-file reader, explicitly OUT OF SCOPE here (prompt: do not implement replaceable-builtins migration); blocking would force scope creep. FOLLOW-UP (logged): wire a runtime MutabilityPolicySource (PackDescriptor policy field reader or pack.yaml-referenced pack-root policy file, round-tripping losslessly per PROJECT_002) so declared non-open levels are enforced in production -- natural WP10/post-mission ticket. NOTE: refusal message names operation+target+level (meets prompt T037); ADR-0012 Decision-9 fuller finding (owning+violating pack) can ride the same follow-up. The inherited :packs compile break (controllers reference not-yet-assembled contract) is pre-existing at f21de1c before WP06 and is WP10 contract-and-wiring-consolidation; verified WP06 green by WP05's accepted method (temporarily wiring the 3 paths into root openapi.yaml, run, revert -- tree clean, nothing committed). 4 inherited @contract failures (3 directives.feature + 1 errors.feature) match WP05's documented WP10-deferred set; WP06 touched no feature files. REBASE NOTE: WP10 depends on WP06 -- no change requested, no rebase needed."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP06-mutability-policy-gate/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP06-mutability-policy-gate/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3167501,
-      "shell_pid_created_at": "1792947040.64",
-      "subtasks": {
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done"
-      }
+      "shell_pid": 3155909,
+      "shell_pid_created_at": "1792946301.56"
     },
     "WP07": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56N4VFG3JGSYBZBPKPPBB",
       "last_transition_at": "2026-10-25T18:29:40.635507+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: styleguide read+registration slice (copied the approved WP05 directive template). Gates in-lane (temporary-wire-then-revert of root openapi.yaml; NOT committed): :packs compileJava+compileTestJava exit 0; targeted :packs:test StyleguideReadServiceTest(8)/StyleguideRegistrationServiceTest(7)/StyleguideControllerTest(8) = 23/23 pass exit 0; :packs+:kernel spotlessCheck + checkstyleMain/Test exit 0 (no spotbugs/pmd in this Gradle project); HexagonalArchitectureTest 38/38 pass exit 0. @contract styleguides.feature fails in-lane IDENTICALLY to the approved directives.feature (shared Charter-Source-Fingerprint @After invariant = WP10). Out-of-owned-map additive edits mirroring WP05's approved pattern (needed for a faithful copy; no WP owns these): RefusalCode.STYLEGUIDE_NOT_FOUND + notFound(), RefusalHandler status/title arms, CharterRefusalCode.yaml enum+x-refusal. Design notes for reviewer/WP10: (1) closed-response gate forced tooling map -> closed StyleguideToolEntry array, and arbitrary structuralLintConfig tree -> nullable JSON string (no closed structured/recursive form exists); (2) errors.feature raised-codes list is already stale from WP05 (expects 5, contract now raises 9) and needs styleguide_not_found added during WP10 consolidation.",
-        "Review passed: faithful WP05 copy. Read service (styleguidesOf/styleguide, ConsistentRead, PACK_NOT_FOUND/STYLEGUIDE_NOT_FOUND/STALE_INPUT) + explicit empty-relationships assertion (styleguide mints none, FR-013). Registration = load->precondition(If-Match)->dup-check(409)->gate.authorize->revalidate whole Pack(422 on breach)->atomic writeStore.commit; no body-carried relationships (T041); relationship door correctly omitted. Controller GET list/one + POST/PUT, no DELETE/PATCH, DTOs only (no StyleguideDso on wire), ETag/Location, 412 plain Problem. Tests non-vacuous: same-fixture positive controls on every refusal + commit-counter zero-change-on-refusal + value-equal round-trip. Contract fragments closed (additionalProperties:false, no open maps); root openapi.yaml NOT edited. DISPOSITION 1 (styleguide_not_found shared edit): VERIFIED strictly append-only across RefusalCode.java (+enum const, +notFound() arm), RefusalHandler.java (+NOT_FOUND switch arm, +title arm; code->status map otherwise unchanged) and CharterRefusalCode.yaml (+enum, +x-refusal 404); mirrors WP05 directive_not_found exactly, alters no existing code/mapping; WP10 union is the known consolidation task (shared-file coordination noted). DISPOSITION 2 (structured fields): tooling->closed StyleguideToolEntry[] projection and structuralLintConfig->nullable canonical-JSON-string passthrough are correct & lossless-enough; parseConfig is fail-loud (422 on malformed JSON, not silent); consistent with ADR-0024 ConfigValue; domain API (ConfigValue.of/toParsed, builder methods) confirmed present so mapping compiles once WP10 wires DTOs. COVERAGE NOTE (non-blocking): tooling round-trips at domain/service level but neither field is exercised through the controller DTO mapping end-to-end; a controller round-trip test for tooling + structuralLintConfig is a recommended WP10/follow-up, not a defect. CARVE-OUT: in-lane :packs:compileJava fails only on generated DTO imports (StyleguidesApi/RelationshipRegistration) identical to approved WP05 DirectiveController; controller MockMvc + styleguides.feature @contract fingerprint go green via WP10 root wiring (temp-wire-then-revert) - confirmed known shared carve-out, not a WP07 defect. Anti-pattern checklist: dead-code PASS (deferred wiring=WP10), synthetic-fixture PASS, silent-empty-return PASS, FR-013 coverage PASS, frozen-surface PASS (root/domain untouched), locked-decision PASS (no DELETE/PATCH/DSO), shared-file-ownership PASS (append-only, noted), fragility PASS."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP07-styleguide-slice/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP07-styleguide-slice/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3188147,
-      "shell_pid_created_at": "1792948028.05",
-      "subtasks": {
-        "T039": "done",
-        "T040": "done",
-        "T041": "done",
-        "T042": "done",
-        "T043": "done"
-      }
+      "shell_pid": 3155909,
+      "shell_pid_created_at": "1792946301.56"
     },
     "WP08": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56NSTMH4FPPJ51HZDCJ7S",
       "last_transition_at": "2026-10-25T18:29:41.306222+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: paradigm read+registration slice (faithful WP05 copy, per-kind independent). GREEN hash e0e96a8. Gates (exit 0): :packs:compileJava; :packs:test targeted (ParadigmReadServiceTest, ParadigmRegistrationServiceTest, ParadigmWalkSliceTest, ParadigmControllerTest) + WireTokenParityTest/RefusalHandlerTest/VocabularyEqualityTest; :packs+:kernel spotlessCheck+checkstyle; ArchUnit HexagonalArchitectureTest 0 failures. Web layer verified via temporary-wire-then-revert (root openapi.yaml NOT committed). FLAG: out-of-map append-only edits to RefusalCode.java/RefusalHandler.java/CharterRefusalCode.yaml to add PARADIGM_NOT_FOUND (dispatch said avoid these; a faithful WP05 copy + RefusalHandler's exhaustive switch + WireTokenParityTest make the lockstep mandatory for a contract-described 404 per NFR-004) — reviewer/orchestrator to ratify or redirect to a consolidation WP. @contract paradigms.feature + shared write-fingerprint invariant are WP10 (same pending state as directives.feature).",
-        "Review passed: ParadigmReadService/RegistrationService/Controller are faithful copies of the APPROVED WP05 directive slice. Read carries relationships populated (Paradigm mints directiveRefs->REQUIRES + typed->SUGGESTS via ArtifactEdges; read test asserts to=directive:ALPHA, isNotEmpty). Registration: gate before commit, whole-Pack revalidation (422 on breach), single atomic writeStore.commit, dual-write ownership rule enforced (body edge must be from the paradigm, else 422), ETag/If-Match (stale 412). Standalone PUT /relationships NOT duplicated (stays on RelationshipController). Controller: generated DTOs only, no DSO, no DELETE/PATCH, implements ParadigmsApi. ParadigmWalkSliceTest proves SC-002 bounded read (fetches 1 of 3 directives, containsExactly BETA) + D6 continuation past unwired procedure kind (resolverCalls=2). Non-vacuous same-fixture controls on every refusal (409/422/412/404). SHARED-EDIT: PARADIGM_NOT_FOUND added to RefusalCode.java (enum+notFound() predicate+javadoc), RefusalHandler.java (NOT_FOUND switch arm+title arm), CharterRefusalCode.yaml (enum entry+x-refusal 404/raised+prose) — STRICTLY APPEND-ONLY, mirrors WP05 DIRECTIVE_NOT_FOUND exactly, alters no existing code or the code->status map, exhaustive switch intact. GATE EVIDENCE: temp-wire-then-revert verified (root openapi reverted clean); :packs targeted all green (ParadigmRead 8, ParadigmRegistration 6, ParadigmWalk 1, ParadigmController MockMvc 8, WireTokenParity 2, RefusalHandler 16, VocabularyEquality 6 = 47/0/0); :deployable HexagonalArchitecture 38 + ReservedRefusalCodes 3 green; spotless+checkstyle green. DEFERRED-ITEMS: the 5 :deployable @contract failures are EXACTLY the known WP10 items - 4x 'must carry exactly one Charter-Source-Fingerprint' on writes (3 directive[WP05]+1 paradigm, proving it is a pre-existing shared concern not a WP08 regression) + 1 errors.feature raised-codes union (which confirms paradigm_not_found is correctly wired). Cross-lane union + reconciliation assigned to WP10. Anti-pattern checklist: all PASS/N-A. Notify WP10 (depends on WP08)."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP08-paradigm-slice/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP08-paradigm-slice/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3183383,
-      "shell_pid_created_at": "1792947803.22",
-      "subtasks": {
-        "T044": "done",
-        "T045": "done",
-        "T046": "done",
-        "T047": "done",
-        "T048": "done"
-      }
+      "shell_pid": 3155909,
+      "shell_pid_created_at": "1792946301.56"
     },
     "WP09": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56PE84DPQFRFE8ADJ3JQX",
       "last_transition_at": "2026-10-25T18:29:41.960154+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Ready for review: Toolguide read+registration slice (FR-015, US3), copied from the approved WP05 directive slice and kept independent. ToolguideReadService (toolguidesOf/toolguide, ConsistentRead-verified; relationships() empty asserted), ToolguideRegistrationService (load->mutate->revalidate whole Pack via Pack.Builder->atomic PackWriteStore.commit; gate before mutate; PackRevision ETag; no body relationships; preserves the relationship shard), ToolguideController (implements ToolguidesApi; GET list/one + POST/PUT; ETag/Location; 412 plain Problem; no DELETE/PATCH; no DSO on wire). Contract fragments authored (paths x2, Toolguide + ToolguideRegistration schemas, ToolguideNotFound, toolguides.feature); root openapi.yaml NOT edited. No WP04-owned file edited. Gates (all exit 0 via temporary-wire-then-revert of root openapi): :packs:compileTestJava; targeted :packs:test 25/25 green (ToolguideReadServiceTest 9, ToolguideRegistrationServiceTest 7, ToolguideControllerTest 9); :packs:spotlessCheck + checkstyleMain + checkstyleTest; :deployable HexagonalArchitectureTest 38/38. SC-003 duplicate-id refusal (409) goes through Pack aggregate revalidation with a same-fixture distinct-id 201 control; SC-001 value-equal round-trip incl present/absent lastUpdated. NOTE for WP10: toolguide uses no dedicated not-found RefusalCode (WP04 added only validation/conflict tokens; shared RefusalCode/RefusalHandler untouched) so an absent toolguide reuses pack_not_found (documented in ToolguideNotFound.yaml); and the @contract feature suite's 'write must carry Charter-Source-Fingerprint' assertion fails identically for the approved directives.feature under partial wiring (shared fingerprint-invariant scoping is WP10's).",
-        "Review passed (reviewer-renata). Scope: commit 15943a6 touches ONLY its 12 owned per-kind slice files (services, controller, 5 contract fragments, 3 tests); no WP04-owned (Toolguide entity/DSO/repo/Pack/storage), no shared RefusalCode/RefusalHandler/RelationshipRegistration, no root openapi.yaml. Write discipline matches WP05: load->precondition->duplicate-guard(409)->WritePolicyGate.authorize->revalidate whole Pack (builder re-runs FR-008 no-dup-id)->atomic PackWriteStore.commit; reads ConsistentRead-wrapped; relationships() empty asserted; only contract DTOs on wire (never ToolguideDso); GET+POST/PUT, ETag/Location, 412/428 plain Problem, no DELETE/PATCH. Non-vacuous same-fixture controls present: duplicate-id 409 + distinct 201 + 'refused POST committed nothing' (commit counter unchanged, size stays 1); value-equal round-trip incl present+absent lastUpdated; stale If-Match 412 + fresh 200; malformed 422 + well-formed success. Gate evidence independently reproduced: temp-wired the three unwired slice kinds into root openapi, regenerated, ran targeted :packs:test -> 25/25 green (ToolguideReadServiceTest 9, RegistrationServiceTest 7, ControllerTest 9; 0 failures/0 errors), then reverted the wire (tree clean). Disposition 1 (no toolguide_not_found): ACCEPTABLE, not a gap. Shared kernel RefusalCode enum defines DIRECTIVE_NOT_FOUND/TACTIC_NOT_FOUND but no TOOLGUIDE_NOT_FOUND; minting one requires editing WP04/kernel-owned shared enum, forbidden to WP09. pack_not_found(404) reuse is the correct forced consequence, documented in ToolguideReadService javadoc + ToolguideNotFound.yaml + path fragment, and tested (absent toolguide->404 pack_not_found). WP T050 requires only list+by-id value-equal + relationships-empty; the by-id not-found is tested beyond requirement. Dedicated toolguide_not_found is a legitimate WP10/post-mission consolidation item. Disposition 2 (Charter-Source-Fingerprint @contract failure): same deferred-to-WP10 shared CharterSteps carve-out as WP05 (writes return ETag, not read fingerprint); the @contract cucumber suite is WP10-owned and not part of the 25 targeted JUnit tests. Not a WP09 defect. Anti-pattern checklist: dead-code N/A (slice controller live once WP10 wires, same as approved WP05); synthetic-fixture PASS (real services/MockMvc); silent-empty-return PASS; FR-015/SC-001/SC-003/FR-012 coverage PASS; frozen-surface PASS; locked-decision PASS (no DELETE/PATCH, no DSO on wire, aggregate revalidation); shared-file ownership PASS; production-fragility PASS (throws are mapped refusals)."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP09-toolguide-slice/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP09-toolguide-slice/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3179641,
-      "shell_pid_created_at": "1792947626.23",
-      "subtasks": {
-        "T049": "done",
-        "T050": "done",
-        "T051": "done",
-        "T052": "done",
-        "T053": "done"
-      }
+      "shell_pid": 3155909,
+      "shell_pid_created_at": "1792946301.56"
     },
     "WP10": {
       "actor": "merge",
       "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M5T56Q2J8CSW5TF03TPKF81T",
       "last_transition_at": "2026-10-25T18:29:42.610209+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "- 2026-10-25T17:50:28Z – claude – shell_pid=3195850 – WP10 implementation committed to lane-j (e17afa5). DONE+GREEN: root openapi.yaml wired (all per-kind paths+tags, 'Spec is valid', DTOs/*Api regenerate, packs compiles); CompositeComponentResolver (@Service, forPack(pack) pack-bound ComponentResolver, switch on urn.kind(), D6 empty for unwired/absent, never throws) + unit test; RegularArtefactWiringTest (@SpringBootTest: 4 new-kind reads carry fingerprint, PUT registration round-trips, resolver bean dispatches); errors.feature raised-set reconciled to contract x-refusal (10 codes); CharterSteps fingerprint invariant scoped to GET reads (writes carry ETag not fingerprint, ADR-0026); ConnectorErrors Allow updated for new POST/PUT surface; ReservedRefusalCodes governance pin dropped (WP06 PackMutabilityPolicy now raises it, per the test's own docstring); NullOmission scoped to response DTOs (registration bodies are request-only). GATES: :charter-api:generateContract OK; kernel 813, packs 963, deployable 250 tests = 2026, 0 failures; spotlessCheck+checkstyle (main+test) all exit 0. BLOCKED: :contracts:check (vacuum lint) fails 203 = error-responses-are-problems 24 + charter-headers-on-every-response 31 + resource-property-cited 148. ROOT CAUSE (architectural, out of WP10/java-jenny scope): the registration write surface (201 Created returning a resource + ETag, ADR-0026, mandated by plan/quickstart) conflicts with the charter's unchanged read-era ruleset (ADR-0018 D10 '200 is the only success; every other response is a Problem'). The 201-returns-resource rule cannot be satisfied without an architect decision to amend ADR-0018/ruleset OR changing writes to 200 (which would break approved slice @contract scenarios asserting 201). Additionally the slice-owned path fragments omit the 3 Charter headers on write responses (ADR-0011) and the slice-owned registration request schemas lack x-source on all but 'id' (resource-property-cited) — slice-fragment defects the prompt says to route back, not WP10-editable. No mission WP was assigned to reconcile the ruleset with the write surface. NEEDS: architect decision on ADR-0018 vs ADR-0026 write-response convention (+ whether to update contracts/lint/ruleset.yaml) and slice owners (WP05/07/08/09) to add write-response Charter headers + registration-schema x-source.",
-        "Ready for review: contract lint + full suite green. ADR-0018 D10 amended 2026-10-25 per operator ratification (write successes return 201/200 + resource + ETag, ADR-0026; all 4xx/5xx stay problem+json); error-responses-are-problems rule narrowed accordingly; Charter headers (ADR-0011) added to all write responses; x-source added to registration schemas. Gates: :charter-api:generateContract 'Spec is valid'; :contracts:check green (12/12 lint rules, 14 fixtures, 629 closed response schemas); kernel 813 + packs 963 + deployable 250 = 2026 tests, 0 failures; spotless+checkstyle (main+test) exit 0; check_docs.py all exit 0. Commits e17afa5 + fbb9e65 on lane-j.",
-        "Review passed: WP10 contract+wiring consolidation. Independently reproduced FULL-GREEN integration gate (--rerun-tasks): :contracts:check exit0 (629 closed response schemas, 12/12 lint rules pass, lintFixtures each rule fails only its 14 planted fixtures incl error-responses-are-problems negative => fail-closed, compat fixtures 5 breaking/2 compatible); :kernel:test 813/0; :packs:test 963/0 (+:charter-api:compileJava & :packs:compileJava succeed); :deployable:test 250/0 (ContractConformance 16, ProductionWiring 5, WiringRoundTrip 2, RegularArtefactWiring 3, all kind feature suites directives/styleguides/paradigms/toolguides green + governance scenario); spotlessCheck/checkstyle exit0; check_docs.py all exit0 (8/8). Root openapi.yaml wiring additive (5 tags+9 path refs, existing ops untouched). CompositeComponentResolver @Service dispatches switch-on-kind (D5 no registry), D6 empty-on-unwired/absent/out-of-scope, rethrows non-notfound refusals by design; forPack(PackIdentifier) is a sound ADR-0025-D4 reconciliation of WP03 port with pack-scoped reads, not overreach. GREEN-WASHING DISPOSITIONS all legitimate: (1) ConnectorErrors Allow GET,HEAD,OPTIONS,POST,PUT = SupportedMethods derives dynamically from real registered POST/PUT handlers, assertion still exact; (2) ReservedRefusalCodes dropped governance_policy_violation pin because @Primary PackMutabilityPolicy genuinely raises it (javadoc sanctioned), unresolved_edge_endpoint pin+positive control retained; (3) NullOmission excludes *Registration request DTOs - null-omission is a response-serialization invariant, registration bodies are request-only, all response DTOs still checked; (4) errors.feature raised-codes match contract's real raised set (toolguide reuses pack_not_found, accepted omission); (5) CharterSteps fingerprint @After scoped to GET - writes return ETag per ADR-0026, exempt not green-washed; (6) $ref->reference prose edits cosmetic, 0 real $ref keys. ADR-0018 D10 amendment dated 2026-10-25, cross-refs ADR-0026, annotates (not rewrites) D10, preserves problem+json for all 4xx/5xx + D11 headers; ruleset narrowed 200->200&&201 only. fbb9e65 slice-fragment edits (operator-ratified): Charter headers ref shared fragments, x-source cites real source symbols - provenance not suppression. C-001 no DELETE/PATCH; C-002 no DSO schema on wire. NOTE (non-blocking, inherited from approved WP03): CompositeComponentResolver+GraphWalk have no production (non-test) construction yet; resolver is a live component-scanned @Service bean (verified present+dispatching in SpringBootTest), walk-endpoint consumer is out of SC-004 scope."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-charter/.worktrees/regular-artefact-read-registration-01M5SC0T-coord/kitty-specs/regular-artefact-read-registration-01M5SC0T/tasks/WP10-contract-and-wiring-consolidation/review-cycle-1.md",
         "reference": "review-cycle://regular-artefact-read-registration-01M5SC0T/WP10-contract-and-wiring-consolidation/review-cycle-1.md",
         "reviewer": "claude",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 3222849,
-      "shell_pid_created_at": "1792951664.58",
-      "subtasks": {
-        "T054": "done",
-        "T055": "done",
-        "T056": "done",
-        "T057": "done",
-        "T058": "done",
-        "T059": "done"
-      }
+      "shell_pid": 3195850,
+      "shell_pid_created_at": "1792948649.19"
     }
   }
 }
