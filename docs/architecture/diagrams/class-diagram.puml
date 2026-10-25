@@ -18,66 +18,134 @@ package "kernel  «CORE shared kernel»" #EDF6FC {
     class PackPaths <<ValueObject>> #EAF4FB
     class DoctrineGraph <<ValueObject>> #EAF4FB
     class CharterRefusal <<ValueObject>> #EAF4FB
+    enum ArtifactKind <<ValueObject>> #EAF4FB
   }
   package "kernel.validation" #E4F1FA {
     class ModularRuleset <<DomainService>> #D8EBF7 {
-      +guard(Constraint...) void
-      +check(Constraint...) Evaluation
+      +guard(T) void
+      +check(T) Evaluation
+      +must(Constraint) ModularRuleset
     }
     class Constraint <<ValueObject>> #D8EBF7
   }
 }
 
 package "packs.domain  «CORE»" #F2F9FD {
+
+  ' --- aggregate root ---
   class Pack <<AggregateRoot>> #EAF4FB {
-    +identity() PackIdentifier
+    +id() PackIdentifier
+    +descriptor() PackDescriptor
+    +tactics() List<Tactic>
+    +directives() List<Directive>
+    +styleguides() List<Styleguide>
+    +paradigms() List<Paradigm>
+    +violations() List<PackElementViolation>
   }
+
+  ' --- thin common spine of every artefact ---
+  interface CharterArtifact <<Entity>> #EAF4FB {
+    +kind() ArtifactKind
+    +packId() PackIdentifier
+    +localId() String
+    +schemaVersion() String
+    +label() String
+    +description() Optional<String>
+    +edges() List<DrgEdge>
+    +urn() Urn
+  }
+
+  ' --- the four child entities ---
   class Tactic <<Entity>> #EAF4FB {
-    +identity() TacticIdentifier
-    +pack() PackIdentifier
-    +equals(Object) boolean
+    +id() TacticIdentifier
   }
-  class TacticStep <<ValueObject>> #EAF4FB
-  class TacticReference <<ValueObject>> #EAF4FB
+  class Directive <<Entity>> #EAF4FB {
+    +id() DirectiveIdentifier
+    +enforcement() Enforcement
+  }
+  class Styleguide <<Entity>> #EAF4FB {
+    +id() StyleguideIdentifier
+    +scope() StyleguideScope
+  }
+  class Paradigm <<Entity>> #EAF4FB {
+    +id() ParadigmIdentifier
+  }
+
+  ' --- identity value objects (one per entity kind) ---
   class PackIdentifier <<ValueObject>> #EAF4FB
   class TacticIdentifier <<ValueObject>> #EAF4FB
+  class DirectiveIdentifier <<ValueObject>> #EAF4FB
+  class StyleguideIdentifier <<ValueObject>> #EAF4FB
+  class ParadigmIdentifier <<ValueObject>> #EAF4FB
+
+  ' --- distinctive value objects per artefact ---
+  class TacticStep <<ValueObject>> #EAF4FB
+  class TacticReference <<ValueObject>> #EAF4FB
+  class DirectiveReference <<ValueObject>> #EAF4FB
+  class ParadigmReference <<ValueObject>> #EAF4FB
+  class StyleguidePattern <<ValueObject>> #EAF4FB
+  class StyleguideAntiPattern <<ValueObject>> #EAF4FB
+  enum Enforcement <<ValueObject>> #EAF4FB
+  enum StyleguideScope <<ValueObject>> #EAF4FB
+  class PackElementViolation <<ValueObject>> #EAF4FB
+
+  ' --- styleguide's nested structural-lint config tree (sealed) ---
+  interface ConfigValue <<ValueObject>> #EAF4FB
+  class "ConfigValue.Scalar" as ConfigScalar <<ValueObject>> #EAF4FB
+  class "ConfigValue.Seq" as ConfigSeq <<ValueObject>> #EAF4FB
+  class "ConfigValue.Mapping" as ConfigMapping <<ValueObject>> #EAF4FB
+
+  ' --- domain ports: one per artefact kind + aggregate assembly ---
   interface TacticRepository <<Repository>> #EAF4FB {
     +save(Tactic) void
     +load(PackIdentifier, TacticIdentifier) Optional<Tactic>
   }
-  interface PackDescriptorRepository <<Repository>> #EAF4FB {
-    +get(PackIdentifier) Optional<PackDescriptor>
-    +save(PackDescriptor) void
+  interface DirectiveRepository <<Repository>> #EAF4FB {
+    +save(Directive) void
+    +load(PackIdentifier, DirectiveIdentifier) Optional<Directive>
+  }
+  interface StyleguideRepository <<Repository>> #EAF4FB {
+    +save(Styleguide) void
+    +load(PackIdentifier, StyleguideIdentifier) Optional<Styleguide>
+  }
+  interface ParadigmRepository <<Repository>> #EAF4FB {
+    +save(Paradigm) void
+    +load(PackIdentifier, ParadigmIdentifier) Optional<Paradigm>
   }
   interface PackRepository <<Repository>> #EAF4FB {
-    +load(PackIdentifier) Optional<Pack>
+    +load(PackIdentifier) Pack
   }
-  interface PackInspectionQuery <<Repository>> #EAF4FB {
-    +partialReads(PackIdentifier) List<Violation>
+  interface PackDescriptorRepository <<Repository>> #EAF4FB {
+    +get(PackIdentifier) PackDescriptor
+    +save(PackIdentifier, PackDescriptor) void
   }
 }
 
 package "packs.application  «EDGE»" #FDF4EE {
   class TacticReadService <<ApplicationService>> #FBEEE6 {
-    +tactics(PackIdentifier) List<Tactic>
-    +tactic(PackIdentifier, TacticIdentifier) Optional<Tactic>
+    +tacticsOf(PackIdentifier) Verified<List<Tactic>>
+    +tactic(PackIdentifier, TacticIdentifier) Verified<Tactic>
   }
   class ApplicationConfiguration <<Configuration>> #FBEEE6
 }
 
 package "packs.infra.storage  «EDGE»" #FDF4EE {
   class DomainRepositoryService <<Adapter>> #FBEEE6 {
-    +save(Tactic) void
-    +load(PackIdentifier, TacticIdentifier) Optional<Tactic>
+    .. realizes all four artefact ports ..
+    +save(Tactic/Directive/Styleguide/Paradigm) void
+    +load(PackIdentifier, <id>) Optional<entity>
   }
   interface SerializationStrategy <<Strategy>> #FBEEE6 {
-    +serialize(TacticDso) String
-    +deserialize(String) TacticDso
+    +writeTactic(TacticDso) / readTactic(..)
+    +writeDirective(DirectiveDso) / readDirective(..)
+    +writeStyleguide(StyleguideDso) / readStyleguide(..)
+    +writeParadigm(ParadigmDso) / readParadigm(..)
   }
   class YamlSerializationStrategy <<Strategy>> #FBEEE6
-  class TacticDso <<DSO>> #FBEEE6 {
-    +equals(Object) boolean
-  }
+  class TacticDso <<DSO>> #FBEEE6
+  class DirectiveDso <<DSO>> #FBEEE6
+  class StyleguideDso <<DSO>> #FBEEE6
+  class ParadigmDso <<DSO>> #FBEEE6
 }
 
 package "packs.infra.api  «EDGE»" #FDF4EE {
@@ -92,35 +160,85 @@ package "deployable  «Composition Root»" #F3F4F6 {
   }
 }
 
-' --- domain: aggregate containment & identity ---
+' --- domain: aggregate containment & multiplicities ---
 Pack "1" *-- "1" PackDescriptor : descriptor
 Pack "1" *-- "0..*" Tactic : tactics
+Pack "1" *-- "0..*" Directive : directives
+Pack "1" *-- "0..*" Styleguide : styleguides
+Pack "1" *-- "0..*" Paradigm : paradigms
+Pack "1" *-- "0..*" PackElementViolation : violations
 Pack --> PackIdentifier : identity
+
+' --- every child entity is a CharterArtifact bound to its owning pack ---
+Tactic ..|> CharterArtifact
+Directive ..|> CharterArtifact
+Styleguide ..|> CharterArtifact
+Paradigm ..|> CharterArtifact
+CharterArtifact ..> PackIdentifier : packId()
+CharterArtifact ..> ArtifactKind : kind()
+
+' --- entity identity VOs ---
 Tactic --> TacticIdentifier : identity
-Tactic --> PackIdentifier : owning pack
-Tactic "1" *-- "0..*" TacticStep : steps
+Directive --> DirectiveIdentifier : identity
+Styleguide --> StyleguideIdentifier : identity
+Paradigm --> ParadigmIdentifier : identity
+
+' --- distinctive value objects owned by each artefact ---
+Tactic "1" *-- "1..*" TacticStep : steps
 Tactic "1" *-- "0..*" TacticReference : references
+TacticStep "1" o-- "0..*" TacticReference : step refs
+Directive "1" *-- "0..*" DirectiveReference : references
+Directive --> Enforcement : enforcement
+Paradigm "1" *-- "0..*" ParadigmReference : references
+Styleguide "1" *-- "0..*" StyleguidePattern : patterns
+Styleguide "1" *-- "0..*" StyleguideAntiPattern : antiPatterns
+Styleguide --> StyleguideScope : scope
+Styleguide "1" *-- "0..1" ConfigValue : structuralLintConfig
+
+' --- ConfigValue sealed tree ---
+ConfigValue <|.. ConfigScalar
+ConfigValue <|.. ConfigSeq
+ConfigValue <|.. ConfigMapping
+ConfigSeq *-- "0..*" ConfigValue : items
+ConfigMapping *-- "0..*" ConfigValue : entries
 
 ' --- ports return domain types only ---
-PackRepository ..> Pack : assembles
 TacticRepository ..> Tactic
+DirectiveRepository ..> Directive
+StyleguideRepository ..> Styleguide
+ParadigmRepository ..> Paradigm
+PackRepository ..> Pack : assembles aggregate
 PackDescriptorRepository ..> PackDescriptor
-Pack ..> ModularRuleset : enforces invariants (packs.domain -> kernel)
+
+' --- invariants enforced through the shared kernel ---
+Pack ..> ModularRuleset : guards invariants (every child belongs to this pack; no duplicate child ids)
+Tactic ..> ModularRuleset
+Directive ..> ModularRuleset
+Styleguide ..> ModularRuleset
+Paradigm ..> ModularRuleset
 ModularRuleset ..> Constraint : evaluates
 
 ' --- application edge depends on domain ports (DIP) ---
 TacticReadService ..> PackRepository
 TacticReadService ..> TacticRepository
 
-' --- storage edge: realization + strategy delegation + mapping ---
-DomainRepositoryService ..|> TacticRepository : realizes port
+' --- storage edge: one adapter realizes ALL four ports; strategy maps every DSO kind ---
+DomainRepositoryService ..|> TacticRepository
+DomainRepositoryService ..|> DirectiveRepository
+DomainRepositoryService ..|> StyleguideRepository
+DomainRepositoryService ..|> ParadigmRepository
 YamlSerializationStrategy ..|> SerializationStrategy
 DomainRepositoryService --> SerializationStrategy : delegates (ctor-injected)
-DomainRepositoryService ..> TacticDso : maps DSO <-> entity
-DomainRepositoryService ..> Tactic : inward dep
-YamlSerializationStrategy ..> TacticDso : entity <-> DSO <-> YAML
+DomainRepositoryService ..> TacticDso
+DomainRepositoryService ..> DirectiveDso
+DomainRepositoryService ..> StyleguideDso
+DomainRepositoryService ..> ParadigmDso
+SerializationStrategy ..> TacticDso
+SerializationStrategy ..> DirectiveDso
+SerializationStrategy ..> StyleguideDso
+SerializationStrategy ..> ParadigmDso
 
-' --- web edge -> application edge ---
+' --- web edge -> application edge (Tactic only) ---
 TacticController ..> TacticReadService
 
 ' --- composition root wires the edges ---
@@ -129,12 +247,20 @@ DeployableConfiguration ..> DomainRepositoryService : imports StorageConfigurati
 DeployableConfiguration ..> YamlSerializationStrategy : wires strategy
 DeployableConfiguration ..> TacticController : imports ApiConfiguration
 
-note bottom of TacticDso
-  Round-trip fidelity is asserted at the
-  storage edge on the value-equal DSO:
-  fetch(write(fetch(x))) == fetch(x)
-  — NOT on the entity's identity-based equals.
+note bottom of ParadigmDso
+  <b>Round-trip fidelity</b> is asserted at the storage edge on the
+  value-equal DSO records (one per kind): fetch(write(fetch(x))) == fetch(x)
+  — NOT on each entity's identity-based equals.
 end note
+
+note "<b>WIRING ASYMMETRY — only Tactic is wired end-to-end.</b>\nTactic: domain entity + TacticRepository + DSO + TacticReadService (application) + TacticController (api).\nDirective / Styleguide / Paradigm: domain entity + identifier VO + repository port + DSO ONLY.\nThey have NO application read service and NO REST controller yet — all three dangle at the storage edge.\nClosing that gap is the next wiring step." as AsymNote #FFF3CD
+
+Directive .. AsymNote
+Styleguide .. AsymNote
+Paradigm .. AsymNote
+AsymNote .. TacticReadService
+AsymNote .. TacticController
+
 note bottom of DomainRepositoryService
   Future: a @Repository DB sibling adapter
   is a second impl of the same domain ports.
@@ -145,9 +271,10 @@ legend right
   Blue = pure core (kernel.domain, kernel.validation, packs.domain)
   Amber = edge rings (application, storage, api)
   Grey = composition root
+  Yellow note = not-yet-built wiring (the artefact asymmetry)
   Stereotypes: «AggregateRoot» «Entity» «ValueObject»
   «Repository»(port) «ApplicationService» «Adapter»
-  «Strategy» «DSO» «DomainService»
+  «Strategy» «DSO» «DomainService» «Configuration»
 endlegend
 
 @enduml
