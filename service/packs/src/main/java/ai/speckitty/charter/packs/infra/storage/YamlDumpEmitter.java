@@ -17,7 +17,8 @@ import org.snakeyaml.engine.v2.common.FlowStyle;
  *
  * <p>Two decisions live here so both writers share them: an absent optional (empty {@link Optional}, empty list) omits
  * its key, so no {@code key: null} is ever written; and lists keep the order and duplicates they are given. The dump
- * uses the same {@link Yaml#schema()} as loading, so a string that would read back as a number or null is quoted.
+ * uses {@link Yaml#dumpSchema()}, so a string that this service's reader or a YAML 1.1 reader (core's) would read back
+ * as a number, boolean, null or date is quoted.
  */
 final class YamlDumpEmitter {
 
@@ -93,7 +94,7 @@ final class YamlDumpEmitter {
         DumpSettings settings = DumpSettings.builder()
                 .setDefaultFlowStyle(FlowStyle.BLOCK)
                 .setWidth(4096)
-                .setSchema(Yaml.schema())
+                .setSchema(Yaml.dumpSchema())
                 .build();
         return new Dump(settings).dumpToString(root);
     }
