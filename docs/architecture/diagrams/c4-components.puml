@@ -1,4 +1,8 @@
 @startuml c4-components
+' Use PlantUML's bundled Smetana layout (no external graphviz) so the committed
+' SVG renders deterministically across environments — the pinned PlantUML jar is
+' identical in CI and locally, whereas the system graphviz version is not.
+!pragma layout smetana
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.11.0/C4_Component.puml
 
 title Component diagram — Charter Offering Service (read + registration surface; pure core, edge rings; arrows point inward)
