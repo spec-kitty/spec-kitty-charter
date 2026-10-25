@@ -3,7 +3,7 @@
 **Mission Branch**: `feat/regular-artefacts`
 **Created**: 2026-10-25
 **Status**: Draft
-**Input**: Wire the regular charter artefacts for read + registration through the API, skeleton-first. Grounded in ADR-0025 (relationships as first-class domain value objects, lazy repository-backed walk) and ADR-0026 (the write surface is functional registration, not CRUD).
+**Input**: Wire the regular charter artifacts for read + registration through the API, skeleton-first. Grounded in ADR-0025 (relationships as first-class domain value objects, lazy repository-backed walk) and ADR-0026 (the write surface is functional registration, not CRUD).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -13,15 +13,15 @@ The actors are **pack authors** and **authoring tooling** that talk to the chart
 
 A pack author registers a directive together with the relationships it declares to other components, reads the directive back exactly as submitted, and walks its relationships to discover the components it points to — each related component fetched on demand rather than by loading the whole graph.
 
-**Why this priority**: This is the skeleton. It delivers the shared relationship/graph core and takes one top-level artefact (the directive — a natural Doctrine Reference Graph entry point) fully through read, registration, and traversal. Every later story copies this slice, so nothing else can be trusted until it works.
+**Why this priority**: This is the skeleton. It delivers the shared relationship/graph core and takes one top-level artifact (the directive — a natural Doctrine Reference Graph entry point) fully through read, registration, and traversal. Every later story copies this slice, so nothing else can be trusted until it works.
 
-**Independent Test**: Register a directive carrying relationships, read it back and confirm value equality, then walk from the directive and confirm the related components are returned by on-demand resolution. Fully testable without any other artefact kind being wired.
+**Independent Test**: Register a directive carrying relationships, read it back and confirm value equality, then walk from the directive and confirm the related components are returned by on-demand resolution. Fully testable without any other artifact kind being wired.
 
 **Acceptance Scenarios**:
 
 1. **Given** a pack, **When** a client registers a directive whose body carries its fields and one or more relationships, **Then** the directive is stored and a later read returns it value-equal to what was submitted, relationships included.
 2. **Given** a stored directive with relationships, **When** a client walks the graph from it, **Then** each related component is fetched on demand through its own kind's read path and the walk never loads components the start cannot reach.
-3. **Given** two components A and B, **When** a client registers a relationship between them and then registers another relationship for the same pair, **Then** only one relationship exists between A and B (the second replaces the first; identity is the unordered pair).
+3. **Given** two components A and B, **When** a client registers a relationship between them and then registers another relationship for the same pair, **Then** only one relationship exists between A and B (the second replaces the first; identity is the unordered pair) — last-write-wins is an explicit upsert keyed by the pair (a `Map` put, or remove-then-put), not a `Set.add`, which would keep the first.
 4. **Given** a registration whose body is malformed or whose relationship names an unknown component kind, **When** it is submitted, **Then** it is refused with a Problem response and the pack is left unchanged; a well-formed registration on the same pack succeeds.
 
 ---
@@ -30,7 +30,7 @@ A pack author registers a directive together with the relationships it declares 
 
 A pack author reads and registers styleguides and paradigms through the same registration surface proven for directives.
 
-**Why this priority**: Styleguide and paradigm already persist but have no read or write surface; this closes their gap by replicating the US1 pattern. It is valuable on its own (two more artefact kinds become usable) and depends only on the US1 skeleton.
+**Why this priority**: Styleguide and paradigm already persist but have no read or write surface; this closes their gap by replicating the US1 pattern. It is valuable on its own (two more artifact kinds become usable) and depends only on the US1 skeleton.
 
 **Independent Test**: Register a styleguide and a paradigm (each with relationships where applicable), read each back value-equal, and walk a paradigm's relationships to its directives.
 
@@ -57,11 +57,12 @@ A pack author reads and registers toolguides — a kind that does not exist in t
 ### Edge Cases
 
 - A relationship whose `from` endpoint does not resolve within the pack is refused; a relationship whose `to` is external to the pack is accepted (graph endpoints need not be local).
-- Registering an artefact whose id already exists in the pack replaces it (PUT, idempotent) or is refused as a duplicate (POST to the collection), consistently.
+- Registering an artifact whose id already exists in the pack replaces it (PUT, idempotent) or is refused as a duplicate (POST to the collection), consistently.
 - A write against a pack whose mutability level forbids it (e.g. locked, or a level the caller may not extend) is refused with a governance refusal.
 - A concurrent write with a stale precondition is refused (precondition failed); a sub-resource write with no precondition supplied is refused (precondition required); a fresh precondition succeeds.
 - A directed relationship cannot exist in both directions between the same pair (unordered-pair identity); re-registering the reverse replaces rather than adds.
-- A removal request (DELETE/PATCH) is not offered by the surface; taking an artefact out of force is deactivation, which is out of scope.
+- A removal request (DELETE/PATCH) is not offered by the surface; taking an artifact out of force is deactivation, which is out of scope.
+- A graph walk whose relationship points to a target of an out-of-scope or unwired kind (e.g. `procedure`, `asset`, `agent_profile`) does not fail: the `ComponentResolver` returns empty for that kind and the walk continues past it. The US1 independent test exercises in-scope targets only.
 
 ## Requirements *(mandatory)*
 
@@ -73,7 +74,7 @@ A pack author reads and registers toolguides — a kind that does not exist in t
 | FR-002 | RelationType carries directionality and propagation behaviour | As a maintainer, I want each relation kind to declare how it propagates so that traversal need not special-case relations. | High | Open | [build] | no |
 | FR-003 | A component exposes its relationships by effective origin | As a consumer, I want a component to report the relationships it originates (its `from`, plus bidirectional edges naming it as `to`) so that a walk starts from any component correctly. | High | Open | [build] | no — paired control: a bidirectional edge with the component as `to` is returned; a purely directed edge with it as `to` is not |
 | FR-004 | Relationships are walked lazily through per-kind read paths | As a consumer, I want to walk from a component and resolve each neighbour on demand so that the whole graph is never loaded into memory. | High | Open | [build] | no |
-| FR-005 | An artefact and its relationships round-trip through storage without loss | As a pack author, I want what I register read back exactly so that persistence never silently drops or reorders content. | High | Open | [build] | no |
+| FR-005 | An artifact and its relationships (including a relationship's optional `when` condition) round-trip through storage without loss | As a pack author, I want what I register — including authored relationship conditions — read back exactly so that persistence never silently drops or reorders content. | High | Open | [build] | no |
 | FR-006 | A client can read a pack's directives (all and by id) with relationships populated | As a pack author, I want to fetch directives so that tooling can display and reason over them. | High | Open | [build] | no |
 | FR-007 | A client can register a directive (fields + relationships) | As a pack author, I want to register a directive through the API so that content can enter without re-uploading the whole pack. | High | Open | [build] | no |
 | FR-008 | Registration revalidates the whole pack aggregate | As a maintainer, I want every write to re-check belongs-to-pack and no-duplicate-id across the aggregate so that a single-child write cannot break pack invariants. | High | Open | [ratchet] | no — paired control: a valid registration succeeds; a duplicate-id registration on the same fixture is refused |
@@ -89,9 +90,9 @@ A pack author reads and registers toolguides — a kind that does not exist in t
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Bounded traversal memory | A walk from a component issues at most one read per distinct reachable component (cycle-guarded) and never loads artefacts the start component cannot reach; memory does not scale with the pack's total artefact count. | Performance | High | Open |
-| NFR-002 | Atomic registration | A refused or failed registration changes zero stored files; a successful one persists the fully revalidated aggregate. No partial writes are observable. | Reliability | High | Open |
-| NFR-003 | Round-trip fidelity across kinds | For every in-scope kind, a registered artefact (and its relationships) read back is value-equal to what was submitted, across ordering and present-vs-absent optional fields. | Correctness | High | Open |
+| NFR-001 | Bounded traversal memory | A walk from a component issues at most one read per distinct reachable component (cycle-guarded) and never loads artifacts the start component cannot reach; memory does not scale with the pack's total artifact count. | Performance | High | Open |
+| NFR-002 | Atomic registration | A registration commits the whole Pack atomically (stage + atomic directory swap, or a write journal with rollback); a refused or failed registration changes zero stored files — no per-file partial writes are observable. | Reliability | High | Open |
+| NFR-003 | Round-trip fidelity across kinds | For every in-scope kind, a registered artifact (and its relationships) read back is value-equal to what was submitted, across ordering and present-vs-absent optional fields. | Correctness | High | Open |
 | NFR-004 | Contract-described surface | Every read and registration operation, and every refusal, is described by the published contract and returned as the contract's declared types and Problem format. | Interoperability | High | Open |
 
 ### Constraints
@@ -107,10 +108,11 @@ A pack author reads and registers toolguides — a kind that does not exist in t
 
 ### Key Entities *(include if the mission involves data)*
 
-- **Relationship**: a directed-or-bidirectional link between two components, identified by the unordered pair of its endpoints, carrying its type and an optional rationale. At most one exists per pair.
+- **Relationship**: a directed-or-bidirectional link between two components, identified by the unordered pair of its endpoints, carrying its type, an optional rationale, and an optional `when` condition (so authored conditions round-trip). At most one exists per pair. The identity model follows ADR-0027 (a bounded, conditional unidirectional collapse, revisited when a symmetric relation is minted).
+- **Regular artifact**: a doctrine kind that shares the `CharterArtifact` family interface (ADR-0024) — directive, styleguide, paradigm, toolguide and tactic. Tactic is already wired for read, so it is excluded from the four in-scope kinds counted in SC-001/SC-004 (directive, styleguide, paradigm, toolguide).
 - **RelationType**: the closed catalogue of relation meanings; each one knows its directionality and how activation propagates across it.
-- **Component (CharterArtifact)**: a regular charter artefact (directive, styleguide, paradigm, toolguide, tactic) that reports the relationships it originates.
-- **Pack**: the aggregate that owns its artefacts and the invariants "every artefact belongs to this pack" and "no two artefacts share an id"; every write is validated against the whole aggregate.
+- **Component (CharterArtifact)**: a regular charter artifact (directive, styleguide, paradigm, toolguide, tactic) that reports the relationships it originates.
+- **Pack**: the aggregate that owns its artifacts and the invariants "every artifact belongs to this pack" and "no two artifacts share an id"; every write is validated against the whole aggregate.
 - **Graph walk**: an on-demand traversal that visits components and their relationships, resolving each neighbour through its own kind's read path, with a cycle guard.
 
 ## Success Criteria *(mandatory)*
