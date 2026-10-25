@@ -99,7 +99,7 @@ public final class ParadigmRegistrationService {
         // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
         // state: a concurrent writer cannot slip between them (a lost update).
         return writeStore.exclusively(pack, () -> {
-            Pack current = load(pack);
+            Pack current = packs.load(pack);
             precondition(pack, ifMatch);
             boolean exists = current.paradigms().stream().anyMatch(p -> p.id().equals(paradigm.id()));
             if (!replace && exists) {
@@ -123,17 +123,6 @@ public final class ParadigmRegistrationService {
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------
-
-    private Pack load(PackIdentifier pack) {
-        try {
-            return packs.load(pack);
-        } catch (CharterRefusal refused) {
-            if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refused;
-            }
-            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
-        }
-    }
 
     private void precondition(PackIdentifier pack, @Nullable String ifMatch) {
         if (ifMatch == null) {

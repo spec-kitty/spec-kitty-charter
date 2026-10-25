@@ -185,6 +185,9 @@ class DirectiveRegistrationServiceTest {
 
         @Override
         public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
+            if (!packs.containsKey(pack)) {
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+            }
             return work.get();
         }
 

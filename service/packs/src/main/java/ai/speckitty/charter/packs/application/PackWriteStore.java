@@ -28,8 +28,8 @@ public interface PackWriteStore extends PackRevisions {
      *
      * @param pack the pack's identity
      * @return the current revision
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
-     *     resolved or read
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has
+     *     this identifier, or with {@code PACK_UNREADABLE} when the pack cannot be read
      */
     @Override
     PackRevision currentRevision(PackIdentifier pack);
@@ -39,9 +39,10 @@ public interface PackWriteStore extends PackRevisions {
      *
      * @param pack the pack's identity
      * @return the registered relationships; empty when the pack has none
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
-     *     resolved or read, or when its shard holds anything that does not bind (a malformed document or an invalid
-     *     edge): a write built on the bound subset would silently drop the rest
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has
+     *     this identifier, or with {@code PACK_UNREADABLE} when the pack cannot be read, or when its shard holds
+     *     anything that does not bind (a malformed document or an invalid edge): a write built on the bound subset
+     *     would silently drop the rest
      */
     List<Relationship> registeredRelationships(PackIdentifier pack);
 
@@ -54,8 +55,9 @@ public interface PackWriteStore extends PackRevisions {
      * @param work the load &rarr; precondition &rarr; mutate &rarr; commit sequence
      * @param <T> the outcome type
      * @return what {@code work} returns
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
-     *     resolved
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when the identifier names no
+     *     configured pack (neither by configured name nor by declared {@code pack_id}); a configured pack that cannot be
+     *     read is not "not found", and its {@code PACK_UNREADABLE} surfaces from {@code work}
      */
     <T> T exclusively(PackIdentifier pack, Supplier<T> work);
 
