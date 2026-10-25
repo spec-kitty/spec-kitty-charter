@@ -13,5 +13,7 @@
   "purpose_tldr": "Let clients read and register the charter's regular artefacts and their relationships through the API.",
   "slug": "regular-artefact-read-registration-01M5SC0T",
   "target_branch": "feat/regular-artefacts",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-25T14:11:03.180325+00:00"
 }
