@@ -110,7 +110,7 @@ class ToolguideReadServiceTest {
         assertThat(service.toolguide(PACK_A, GIT).value()).isEqualTo(git);
         assertThatThrownBy(() -> service.toolguide(PACK_A, new ToolguideIdentifier("other")))
                 .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.TOOLGUIDE_NOT_FOUND));
     }
 
     @Test

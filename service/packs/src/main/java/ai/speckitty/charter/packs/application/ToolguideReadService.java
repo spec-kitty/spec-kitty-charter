@@ -23,10 +23,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its toolguides (the sanctioned list
  * path; it adds no method to the persistence service), while the single read is a point read through
- * {@link ToolguideRepository}. A pack the load cannot resolve is refused {@link RefusalCode#PACK_NOT_FOUND}; a pack that
- * has no such toolguide is likewise refused {@link RefusalCode#PACK_NOT_FOUND} (the toolguide kind adds no dedicated
- * refusal code — WP04 added only the validation/conflict write-path tokens — so the pack-scoped 404 is reused for the
- * absent sub-resource, and {@code ToolguideNotFound} documents it).
+ * {@link ToolguideRepository}. A pack the load cannot resolve is refused {@link RefusalCode#PACK_NOT_FOUND}; an absent
+ * toolguide is refused {@link RefusalCode#TOOLGUIDE_NOT_FOUND}, exactly as the paradigm reads refuse their absences.
  */
 @Service
 public final class ToolguideReadService {
@@ -76,9 +74,9 @@ public final class ToolguideReadService {
      * @param pack the pack's identity
      * @param toolguide the toolguide's identity
      * @return the toolguide and the verified fingerprint
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier or the
-     *     pack has no such toolguide, with {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read,
-     *     or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
+     *     with {@link RefusalCode#TOOLGUIDE_NOT_FOUND} when the pack has no such toolguide, with
+     *     {@link RefusalCode#PACK_UNREADABLE} when a pack or pack file cannot be read, or with {@link RefusalCode#STALE_INPUT} when the inputs changed while the toolguide was read (a change beats a
      *     not-found)
      */
     public ConsistentRead.Verified<Toolguide> toolguide(PackIdentifier pack, ToolguideIdentifier toolguide) {
@@ -89,9 +87,12 @@ public final class ToolguideReadService {
                 return toolguides
                         .load(pack, toolguide)
                         .orElseThrow(() -> new CharterRefusal(
-                                RefusalCode.PACK_NOT_FOUND,
+                                RefusalCode.TOOLGUIDE_NOT_FOUND,
                                 "Pack " + pack.value() + " has no toolguide " + toolguide.value() + "."));
             } catch (CharterRefusal refused) {
+                if (refused.code() == RefusalCode.TOOLGUIDE_NOT_FOUND) {
+                    throw refused;
+                }
                 throw packRefusal(pack, refused);
             }
         });
@@ -100,7 +101,7 @@ public final class ToolguideReadService {
     /**
      * A pack the storage cannot resolve or read is, to the caller, a pack that is not there. The original
      * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even though
-     * the 404 body names nothing of it. A {@code PACK_NOT_FOUND} (an absent pack or an absent toolguide) passes through.
+     * the 404 body names nothing of it. Any other refusal passes through.
      */
     private static CharterRefusal packRefusal(PackIdentifier pack, CharterRefusal refused) {
         if (refused.code() != RefusalCode.PACK_UNREADABLE) {
