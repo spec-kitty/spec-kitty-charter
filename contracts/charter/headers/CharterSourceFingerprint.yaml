@@ -1,12 +1,18 @@
 description: >-
   The digest of the inputs the answers depend on, as ServiceInfo.sourceFingerprint: per configured
-  pack in order, `pack.yaml`, every loaded file (tactic, directive, styleguide and paradigm files, at
-  any depth) and the declared graph inputs (root `*.graph.yaml` shards, then `drg/fragment.yaml`),
-  each as its path under the pack's configured name and its bytes; and, when configured, `config.yaml`
-  and `charter.yaml` under the project configuration directory, with presence. On every 200 answer of
-  an artifact read (getServiceInfo, listPackTactics and getPackTactic), the digest that read verified:
-  it digested the inputs before and after loading them and they agreed. Never on a refusal or a
-  failure; a read whose inputs changed while it was answered is refused with stale_input instead. Set
+  pack in order, `pack.yaml`, every loaded file (tactic, directive, styleguide, toolguide and paradigm
+  files, `*.tactic.yaml`, `*.directive.yaml`, `*.styleguide.yaml`, `*.toolguide.yaml` and
+  `*.paradigm.yaml`, at any depth) and the declared graph inputs (root `*.graph.yaml` shards, the
+  registered-relationship shard among them, then `drg/fragment.yaml`), each as its path under the
+  pack's configured name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under
+  the project configuration directory, with presence. On every 200 answer of an artifact read
+  (getServiceInfo; listPackTactics and getPackTactic; listPackDirectives and getPackDirective;
+  listPackStyleguides and getPackStyleguide; listPackParadigms and getPackParadigm;
+  listPackToolguides and getPackToolguide), the digest that read verified: it digested the inputs
+  before and after loading them and they agreed. Never on a refusal or a failure; a read whose inputs
+  changed while it was answered is refused with stale_input instead. A registration (POST, PUT) never
+  sends it either: its 200 and 201 responses declare the header only because every response declares
+  the three Charter headers, and the concurrency token of a write is its ETag, not this digest. Set
   once. The freshness work (#73) compares it; this version only reports it (ADR-0011).
 required: false
 schema:
