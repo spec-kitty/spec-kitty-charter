@@ -78,22 +78,26 @@ public final class StyleguideRegistrationService {
             PackIdentifier pack, Styleguide styleguide, boolean replace, @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(styleguide, "styleguide");
-        Pack current = load(pack);
-        precondition(pack, ifMatch);
-        boolean exists = current.styleguides().stream().anyMatch(s -> s.id().equals(styleguide.id()));
-        if (!replace && exists) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Pack " + pack.value() + " already has a styleguide "
-                            + styleguide.id().value() + ".");
-        }
-        policy.authorize(
-                current,
-                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                styleguide.urn());
-        Pack mutated = revalidated(current, styleguide);
-        PackRevision revision = writeStore.commit(pack, mutated, null); // relationships unchanged
-        return new Registered(revision, !exists, styleguide.urn());
+        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // state: a concurrent writer cannot slip between them (a lost update).
+        return writeStore.exclusively(pack, () -> {
+            Pack current = load(pack);
+            precondition(pack, ifMatch);
+            boolean exists = current.styleguides().stream().anyMatch(s -> s.id().equals(styleguide.id()));
+            if (!replace && exists) {
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT,
+                        "Pack " + pack.value() + " already has a styleguide "
+                                + styleguide.id().value() + ".");
+            }
+            policy.authorize(
+                    current,
+                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
+                    styleguide.urn());
+            Pack mutated = revalidated(current, styleguide);
+            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, null); // relationships unchanged
+            return new Registered(revision, !exists, styleguide.urn());
+        });
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------

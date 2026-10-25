@@ -96,26 +96,30 @@ public final class ParadigmRegistrationService {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(paradigm, "paradigm");
         Objects.requireNonNull(bodyRelationships, "bodyRelationships");
-        Pack current = load(pack);
-        precondition(pack, ifMatch);
-        boolean exists = current.paradigms().stream().anyMatch(p -> p.id().equals(paradigm.id()));
-        if (!replace && exists) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Pack " + pack.value() + " already has a paradigm "
-                            + paradigm.id().value() + ".");
-        }
-        RelationshipMerge.ownBodyRelationships("paradigm", paradigm.urn(), bodyRelationships);
-        policy.authorize(
-                current,
-                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                paradigm.urn());
-        Pack mutated = revalidated(current, paradigm);
-        List<Relationship> merged = bodyRelationships.isEmpty()
-                ? null // the body asserts no edge: leave the relationship shard untouched
-                : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
-        PackRevision revision = writeStore.commit(pack, mutated, merged);
-        return new Registered(revision, !exists, paradigm.urn());
+        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // state: a concurrent writer cannot slip between them (a lost update).
+        return writeStore.exclusively(pack, () -> {
+            Pack current = load(pack);
+            precondition(pack, ifMatch);
+            boolean exists = current.paradigms().stream().anyMatch(p -> p.id().equals(paradigm.id()));
+            if (!replace && exists) {
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT,
+                        "Pack " + pack.value() + " already has a paradigm "
+                                + paradigm.id().value() + ".");
+            }
+            RelationshipMerge.ownBodyRelationships("paradigm", paradigm.urn(), bodyRelationships);
+            policy.authorize(
+                    current,
+                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
+                    paradigm.urn());
+            Pack mutated = revalidated(current, paradigm);
+            List<Relationship> merged = bodyRelationships.isEmpty()
+                    ? null // the body asserts no edge: leave the relationship shard untouched
+                    : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
+            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, merged);
+            return new Registered(revision, !exists, paradigm.urn());
+        });
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------

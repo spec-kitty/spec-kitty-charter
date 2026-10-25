@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
+import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -81,7 +82,7 @@ class PackCommitStoreTest {
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
 
         Pack mutated = mutatedWithToolguide(service.load(PACK), "ripgrep");
-        PackRevision revision = store.commit(PACK, mutated, SHARD);
+        PackRevision revision = store.commit(PACK, null, mutated, SHARD);
 
         assertThat(revision)
                 .as("the ETag a commit answers is the revision the store then reports")
@@ -114,13 +115,37 @@ class PackCommitStoreTest {
         Map<String, String> before = snapshot(packDir);
         Pack mutated = mutatedWithToolguide(service.load(PACK), "ripgrep");
 
-        assertThatThrownBy(() -> store.commit(PACK, mutated, SHARD)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> store.commit(PACK, null, mutated, SHARD)).isInstanceOf(CharterRefusal.class);
 
         assertThat(snapshot(packDir))
                 .as("the live pack is byte-for-byte unchanged")
                 .isEqualTo(before);
         assertThat(service.load(PACK).toolguides()).isEmpty();
         assertThat(noCommitResidue(host)).as("no staging or aside residue").isTrue();
+    }
+
+    @Test
+    @DisplayName("a commit whose If-Match went stale before the swap is refused (412) and changes zero files")
+    void aCommitWithAStaleIfMatchIsRefusedAndChangesNothing(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
+        PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
+        String etag = writeStore.currentRevision(PACK).token();
+        writeStore.commit(PACK, etag, mutatedWithToolguide(service.load(PACK), "fd"), null); // another writer lands
+        Map<String, String> before = snapshot(packDir);
+
+        assertThatThrownBy(() ->
+                        writeStore.commit(PACK, etag, mutatedWithToolguide(service.load(PACK), "ripgrep"), List.of()))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
+
+        assertThat(snapshot(packDir))
+                .as("the live pack is byte-for-byte unchanged")
+                .isEqualTo(before);
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
     }
 
     @Test
@@ -131,8 +156,8 @@ class PackCommitStoreTest {
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
 
-        PackRevision first = store.commit(PACK, mutatedWithToolguide(service.load(PACK), "ripgrep"), null);
-        PackRevision second = store.commit(PACK, mutatedWithToolguide(service.load(PACK), "fd"), null);
+        PackRevision first = store.commit(PACK, null, mutatedWithToolguide(service.load(PACK), "ripgrep"), null);
+        PackRevision second = store.commit(PACK, null, mutatedWithToolguide(service.load(PACK), "fd"), null);
 
         assertThat(second).isNotEqualTo(first);
         assertThat(service.load(PACK).toolguides())

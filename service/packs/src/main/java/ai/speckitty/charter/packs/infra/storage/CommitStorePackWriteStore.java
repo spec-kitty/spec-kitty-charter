@@ -16,6 +16,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,7 +33,8 @@ import org.springframework.stereotype.Service;
  * <p>It resolves a pack identifier to its live directory exactly as {@link DomainRepositoryService} and
  * {@link PackCommitStore} do (a configured name wins, otherwise the location whose {@code pack.yaml} declares the
  * {@code pack_id}), and reads the revision and the shard text from that directory. It never mutates the pack itself;
- * {@link #commit} delegates the stage-and-swap to {@link PackCommitStore}.
+ * {@link #commit} delegates the stage-and-swap to {@link PackCommitStore}, under the same per-pack in-JVM write lock
+ * {@link #exclusively} holds across a registration's load, precondition and commit.
  */
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore {
@@ -37,6 +42,13 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
     private final PackCommitStore commitStore;
+
+    /**
+     * One write lock per live pack directory (in this JVM), keyed by the resolved directory so a pack addressed by
+     * its configured name and by its declared id shares one lock. The set of configured packs is small and fixed, so
+     * the map stays bounded. Cross-process writers are not serialised by it.
+     */
+    private final ConcurrentMap<Path, ReentrantLock> locks = new ConcurrentHashMap<>();
 
     /**
      * An adapter over the configured locations and WP04's commit store.
@@ -95,9 +107,21 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     }
 
     @Override
-    public PackRevision commit(PackIdentifier pack, Pack mutated, @Nullable List<Relationship> relationships) {
-        return commitStore.commit(
-                pack, mutated, relationships == null ? null : RelationshipShard.write(List.copyOf(relationships)));
+    public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
+        ReentrantLock lock = locks.computeIfAbsent(resolve(pack), directory -> new ReentrantLock());
+        lock.lock();
+        try {
+            return work.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public PackRevision commit(
+            PackIdentifier pack, @Nullable String ifMatch, Pack mutated, @Nullable List<Relationship> relationships) {
+        @Nullable String shard = relationships == null ? null : RelationshipShard.write(List.copyOf(relationships));
+        return exclusively(pack, () -> commitStore.commit(pack, ifMatch, mutated, shard));
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */

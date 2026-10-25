@@ -79,19 +79,24 @@ public final class RelationshipRegistrationService {
     public Registered registerRelationship(PackIdentifier pack, Relationship relationship, @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(relationship, "relationship");
-        Pack current = load(pack);
-        precondition(pack, ifMatch);
-        if (!urnsOf(current).contains(relationship.from())) {
-            throw new CharterRefusal(
-                    RefusalCode.REGISTRATION_CONFLICT,
-                    "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value() + ".");
-        }
-        policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
-        List<Relationship> existing = writeStore.registeredRelationships(pack);
-        boolean created = existing.stream().noneMatch(relationship::equals);
-        List<Relationship> merged = RelationshipMerge.upsert(existing, relationship);
-        PackRevision revision = writeStore.commit(pack, current, merged);
-        return new Registered(revision, created, relationship.from());
+        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // state: a concurrent writer cannot slip between them (a lost update).
+        return writeStore.exclusively(pack, () -> {
+            Pack current = load(pack);
+            precondition(pack, ifMatch);
+            if (!urnsOf(current).contains(relationship.from())) {
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT,
+                        "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value()
+                                + ".");
+            }
+            policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
+            List<Relationship> existing = writeStore.registeredRelationships(pack);
+            boolean created = existing.stream().noneMatch(relationship::equals);
+            List<Relationship> merged = RelationshipMerge.upsert(existing, relationship);
+            PackRevision revision = writeStore.commit(pack, ifMatch, current, merged);
+            return new Registered(revision, created, relationship.from());
+        });
     }
 
     private Pack load(PackIdentifier pack) {
