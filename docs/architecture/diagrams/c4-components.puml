@@ -1,51 +1,65 @@
 @startuml c4-components
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.11.0/C4_Component.puml
 
-title Component diagram — Charter Offering Service (pure core, edge rings; arrows point inward)
+title Component diagram — Charter Offering Service (read + registration surface; pure core, edge rings; arrows point inward)
 
 AddElementTag("core",        $bgColor="#1f6f54", $fontColor="#ffffff", $legendText="CORE / DOMAIN (plain Java + jspecify)")
+AddElementTag("graph",       $bgColor="#17805f", $fontColor="#ffffff", $legendText="CORE kernel.domain.graph (first-class relationship / walk model)")
 AddElementTag("validation",  $bgColor="#2e8b6f", $fontColor="#ffffff", $legendText="CORE kernel.validation (java + jspecify only)")
 AddElementTag("app",         $bgColor="#3b5ba5", $fontColor="#ffffff", $legendText="APPLICATION EDGE (use cases, @Service)")
 AddElementTag("edge",        $bgColor="#b5651d", $fontColor="#ffffff", $legendText="EDGE / ADAPTER (driving + driven)")
 AddElementTag("root",        $bgColor="#6a4c93", $fontColor="#ffffff", $legendText="COMPOSITION ROOT (Spring wiring)")
 AddElementTag("contract",    $bgColor="#8a8d91", $fontColor="#ffffff", $legendText="Generated contract DTOs")
 
-Person(client, "API client", "Consumes the charter offering REST contract")
+Person(client, "API client", "Consumes the charter offering REST contract (read + registration writes)")
 
 System_Boundary(svc, "charter offering service") {
 
   Container_Boundary(kernel, "kernel  (shared kernel module · CORE)") {
-    Component(kdomain, "kernel.domain", "plain Java", "Shared Pack/DRG vocabulary: PackDescriptor, PackPaths, DoctrineGraph/DRG, PackLevel, Urn/Fingerprint/Pep440, RefusalCode/CharterRefusal, ArtifactKind.", $tags="core")
+    Component(kdomain, "kernel.domain", "plain Java", "Shared Pack/DRG vocabulary: PackDescriptor, PackPaths, PackLevel, Urn/Fingerprint/Pep440, RefusalCode/CharterRefusal, ArtifactKind.", $tags="core")
+
+    Boundary(kgraph, "kernel.domain.graph  (relationship model · ADR-0025)") {
+      Component(relationship, "«ValueObject» Relationship", "plain Java", "from: Urn, to: Urn, type: RelationType, rationale. Identity = unordered {from,to} → at most one per component pair (simple graph).", $tags="graph")
+      Component(reltype, "«enum» RelationType", "behaviour-carrying enum", "Closed catalogue of DRG relations; each constant carries its Directionality + a Propagation «FunctionalInterface» the walk consults. Directionality derived from the type, never stored.", $tags="graph")
+      Component(walker, "«Visitor» GraphWalker + Descent", "plain Java", "onNode / onRelationship each return a Descent (CONTINUE / SKIP / STOP). Kernel defines the walker type; it does not fetch.", $tags="graph")
+      Component(dgraph, "«ValueObject» DoctrineGraph", "plain Java", "Now holds domain Relationships for serialization + validation; its (source, relation) index no longer serves runtime traversal. DrgEdge is NOT here — it is a storage DSO now.", $tags="graph")
+    }
+
     Component(kval, "kernel.validation", "plain Java", "Nested in the kernel, not a separate module. Constraint; ModularRuleset guard() fail-fast / check() collect-all; Evaluation / Reason / Rationale / Constrained.", $tags="validation")
   }
 
   Container_Boundary(packs, "packs  (vertical slice module)") {
 
     Container_Boundary(pdomain, "packs.domain  (CORE)") {
-      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + Tactics. The single aggregate root.", $tags="core")
-      Component(tactic, "«Entity» Tactic", "plain Java", "Child entity, identity TacticIdentifier within pack; identity-equals.", $tags="core")
-      Component(vos, "«ValueObject»s", "plain Java", "TacticStep, TacticReference, PackPaths, PackIdentifier, TacticIdentifier.", $tags="core")
-      Component(ports, "«Port» repositories", "framework-free interfaces", "TacticRepository, PackDescriptorRepository, PackRepository + PackInspectionQuery (partial-read).", $tags="core")
+      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + ALL regular artefacts (Tactic, Directive, Styleguide, Paradigm, Toolguide; Procedure deferred pending #150). The single aggregate root; load → mutate → revalidate gates every write.", $tags="core")
+      Component(artefacts, "«Entity» CharterArtifact family", "plain Java", "Tactic / Directive / Styleguide / Paradigm / Toolguide child entities; identity-equals within the pack. Each exposes relationships(): List<Relationship>.", $tags="core")
+      Component(vos, "«ValueObject»s", "plain Java", "Per-kind identity VOs + distinctive VOs (TacticStep, references, patterns, Enforcement, ConfigValue tree, PackPaths…). Grouped, not enumerated.", $tags="core")
+      Component(resolver, "«Port» ComponentResolver", "framework-free interface", "resolve(Urn) → Optional<CharterArtifact>; dispatches on urn.kind() to that kind's repository/read service, fetching only the one neighbour.", $tags="core")
+      Component(ports, "«Port» per-kind repositories", "framework-free interfaces", "One repository per artefact kind + PackRepository (assembles aggregate) + PackDescriptorRepository. Each carries read + write: load(PackId, id) → Optional<entity> and save(entity).", $tags="core")
     }
 
     Container_Boundary(papp, "packs.application  (EDGE · application adapter)") {
-      Component(usecases, "@Service tactic read service", "Spring", "Read path: a pack's tactics (all, by id). Orchestrates packs.domain ports; may use the framework; depends inward on packs.domain + kernel, never on other-slice infra.", $tags="app")
+      Component(readsvc, "@Service per-kind artefact read services", "Spring", "Read path: a pack's artefacts of a kind (all, by id). Orchestrates packs.domain ports; depends inward on packs.domain + kernel, never on other-slice infra.", $tags="app")
+      Component(regsvc, "@Service registration application service", "Spring (ADR-0026)", "Write path: load → mutate → revalidate the whole Pack aggregate (per-entity ModularRuleset + aggregate invariants: belongs-to-pack, no-duplicate-id), then persists via the save() ports. No single-child bypass.", $tags="app")
+      Component(graphwalk, "@Service GraphWalk", "Spring", "Drives a GraphWalker via ComponentResolver, resolving neighbours on demand with a visited-URN cycle guard. Never materialises the whole DRG.", $tags="app")
       Component(appcfg, "ApplicationConfiguration", "@Configuration", "config sub-package; scans packs.application.", $tags="app")
     }
 
     Container_Boundary(pstore, "packs.infra.storage  (EDGE · outbound/driven adapter)") {
-      Component(reposvc, "@Service DomainRepositoryService", "Spring", "Implements the domain port(s); ctor-injects a SerializationStrategy + FilesystemPackStore; maps DSO <-> entity.", $tags="edge")
-      Component(strategy, "«Strategy» SerializationStrategy", "interface + YamlSerializationStrategy", "entity <-> DSO <-> YAML text. ONE concrete impl today; future @Repository DB sibling of the same port.", $tags="edge")
-      Component(dso, "«DSO» TacticDso / PackDescriptorDso + FilesystemPackStore", "records + store", "Persistence shape. Storage mechanics: atomic temp -> ATOMIC_MOVE, PackIdentifier -> path, pack-root containment.", $tags="edge")
+      Component(reposvc, "@Service DomainRepositoryService", "Spring", "Realises ALL per-kind ports + ComponentResolver; ctor-injects a SerializationStrategy + FilesystemPackStore; maps DSO <-> entity. load() returns the entity with relationships() already populated.", $tags="edge")
+      Component(strategy, "«Strategy» SerializationStrategy", "interface + YamlSerializationStrategy", "entity <-> DSO <-> YAML text, per kind. ONE concrete impl today; future @Repository DB sibling of the same ports.", $tags="edge")
+      Component(dso, "«DSO» per-kind DSOs + FilesystemPackStore", "records + store", "TacticDso / DirectiveDso / StyleguideDso / ParadigmDso / ToolguideDso + PackDescriptorDso. Persistence shape. Atomic temp -> ATOMIC_MOVE, PackIdentifier -> path, pack-root containment.", $tags="edge")
+      Component(drgedge, "«DSO» DrgEdge", "record", "Flat relation-token record (impacts / when / reason); record equality = round-trip fidelity.", $tags="edge")
     }
 
     Container_Boundary(papi, "packs.infra.api  (EDGE · inbound/driving adapter)") {
-      Component(rest, "REST controllers", "Spring MVC", "Driving adapter; maps contract DTOs <-> use-case calls. Owns internal_error refusal.", $tags="edge")
+      Component(restread, "REST read controllers", "Spring MVC", "GET /packs/{id}/{kind}[/{id}] — per-kind artefact read. Maps contract DTOs <-> read-service calls.", $tags="edge")
+      Component(restwrite, "REST registration controllers", "Spring MVC (ADR-0026)", "POST /packs/{id}/{kind} + PUT /packs/{id}/{kind}/{id} (artefact registration, body = fields + relationships); PUT /packs/{id}/relationships (relationship-edge registration, idempotent on the {from,to} pair). Maps contract DTOs only; owns refusal → Problem (422/409/412) + ETag/If-Match concurrency.", $tags="edge")
     }
   }
 
   Container_Boundary(apibnd, "charter-api") {
-    Component(apidto, "Generated contract DTOs", "OpenAPI-generated", "Transport types; referenced only by packs.infra.api.", $tags="contract")
+    Component(apidto, "Generated contract DTOs", "OpenAPI-generated", "Transport types for both read and registration bodies; referenced only by packs.infra.api.", $tags="contract")
   }
 
   Container_Boundary(rootb, "deployable  (COMPOSITION ROOT, renamed from bootstrap)") {
@@ -53,20 +67,50 @@ System_Boundary(svc, "charter offering service") {
   }
 }
 
-Rel(client, rest, "HTTP")
+' --- client -> driving adapters ---
+Rel(client, restread, "HTTP GET (read)")
+Rel(client, restwrite, "HTTP POST/PUT (registration)")
 
-Rel(rest, usecases, "calls (tactic read path)")
-Rel(rest, apidto, "maps")
-Rel_Down(usecases, pack, "uses")
-Rel_Down(usecases, kval, "uses (validation)")
-Rel_Down(pack, kval, "uses (packs.domain -> kernel)")
-Rel_Down(pack, kdomain, "uses (packs.domain -> kernel)")
-Rel(reposvc, ports, "implements (depends inward on packs.domain)")
+' --- api edge -> application edge ---
+Rel(restread, readsvc, "calls (artefact read path)")
+Rel(restwrite, regsvc, "calls (registration)")
+Rel(restread, apidto, "maps")
+Rel(restwrite, apidto, "maps")
+
+' --- application edge -> domain (inward) ---
+Rel_Down(readsvc, pack, "reads via ports")
+Rel_Down(regsvc, pack, "load → mutate → revalidate aggregate")
+Rel_Down(regsvc, ports, "persists via save()")
+Rel_Down(regsvc, kval, "uses (per-entity + aggregate invariants)")
+Rel_Down(graphwalk, walker, "drives")
+Rel_Down(graphwalk, resolver, "resolves neighbours on demand")
+
+' --- domain inward deps (packs.domain -> kernel) ---
+Rel_Down(pack, kval, "uses (validation)")
+Rel_Down(pack, kdomain, "uses (vocabulary)")
+Rel_Down(artefacts, relationship, "relationships() : List<Relationship>")
+Rel_Down(dgraph, relationship, "holds (serialize + validate)")
+
+' --- storage edge realises the ports (depends inward on packs.domain) ---
+Rel(reposvc, ports, "implements (per-kind read + write)")
+Rel(reposvc, resolver, "implements (dispatch on urn.kind())")
+Rel(reposvc, strategy, "delegates (ctor-injected)")
 Rel(reposvc, kval, "uses (kernel)")
+Rel(strategy, dso, "maps entity <-> DSO <-> YAML")
+Rel(strategy, drgedge, "maps Relationship <-> DrgEdge at the YAML boundary")
 
-Rel_U(boot, rest, "wires")
-Rel_U(boot, usecases, "wires (imports ApplicationConfiguration)")
+' --- composition root wiring ---
+Rel_U(boot, restread, "wires (imports ApiConfiguration)")
+Rel_U(boot, restwrite, "wires (imports ApiConfiguration)")
+Rel_U(boot, readsvc, "wires (imports ApplicationConfiguration)")
+Rel_U(boot, regsvc, "wires (imports ApplicationConfiguration)")
+Rel_U(boot, graphwalk, "wires (imports ApplicationConfiguration)")
 Rel_U(boot, reposvc, "wires (imports StorageConfiguration, scan)")
+
+note right of drgedge
+  Maps Relationship ↔ DrgEdge at the YAML boundary;
+  the domain never sees DrgEdge.
+end note
 
 SHOW_LEGEND()
 @enduml
