@@ -49,8 +49,8 @@ final class RelationshipMerge {
     /**
      * Upserts {@code incoming} into {@code existing} on the unordered {@code {from, to}} pair, last-write-wins. It is
      * an explicit put, not a {@code Set.add}: {@link Relationship#equals(Object)} is pair-identity, so any
-     * relationship already on the pair (in either orientation) is dropped and {@code incoming} appended. This mirrors
-     * the storage shard's own upsert, kept here in pure application terms so the convergence is unit-testable.
+     * relationship already on the pair (in either orientation) is dropped and {@code incoming} appended. It is the only
+     * upsert of registered relationships; the storage shard only reads and serialises the result.
      *
      * <p>Every registration door reaches the shard through here, so this is where the writable-relation rule lives:
      * an {@code impacts} edge is refused, because its signed strength is required on read and the registration wire

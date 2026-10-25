@@ -52,37 +52,6 @@ class RelationshipShardRoundTripTest {
     }
 
     @Test
-    void upsertingTheSamePairTwiceKeepsExactlyOneWithTheSecondRegistration() {
-        Relationship first = new Relationship(A, B, RelationType.REQUIRES, Optional.of("first"), Optional.empty());
-        Relationship second =
-                new Relationship(A, B, RelationType.SUGGESTS, Optional.of("second"), Optional.of("because"));
-
-        List<Relationship> merged = RelationshipShard.upsert(RelationshipShard.upsert(List.of(), first), second);
-
-        assertThat(merged).hasSize(1);
-        ShardRead read = RelationshipShard.read("qa", RelationshipShard.write(merged));
-        assertThat(read.relationships()).singleElement().satisfies(relationship -> {
-            assertThat(relationship.type()).isEqualTo(RelationType.SUGGESTS);
-            assertThat(relationship.when()).contains("second");
-            assertThat(relationship.rationale()).contains("because");
-        });
-    }
-
-    @Test
-    void upsertingTheReverseOrientationReplacesRatherThanAdds() {
-        Relationship forward = new Relationship(A, B, RelationType.REQUIRES, Optional.empty(), Optional.empty());
-        Relationship reverse = new Relationship(B, A, RelationType.SUGGESTS, Optional.of("rev"), Optional.empty());
-
-        List<Relationship> merged = RelationshipShard.upsert(RelationshipShard.upsert(List.of(), forward), reverse);
-
-        assertThat(merged).hasSize(1);
-        assertThat(merged.get(0).from()).isEqualTo(B);
-        assertThat(merged.get(0).to()).isEqualTo(A);
-        assertThat(merged.get(0).type()).isEqualTo(RelationType.SUGGESTS);
-        assertThat(merged.get(0).when()).contains("rev");
-    }
-
-    @Test
     void aMalformedShardSurfacesAsFindingsNotAThrow() {
         ShardRead read = RelationshipShard.read("qa", "nodes: [\n");
         assertThat(read.relationships()).isEmpty();
