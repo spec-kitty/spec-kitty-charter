@@ -56,6 +56,17 @@ class RelationshipRegistrationServiceTest {
                 .as("re-registering the same pair keeps one edge")
                 .hasSize(1);
 
+        // Same orientation, new payload: last write wins (US1 scenario 3).
+        service.registerRelationship(
+                PACK,
+                new Relationship(a, b, RelationType.SUGGESTS, Optional.of("second"), Optional.of("because")),
+                store.currentRevision(PACK).token());
+        assertThat(store.relationships(PACK)).singleElement().satisfies(r -> {
+            assertThat(r.type()).isEqualTo(RelationType.SUGGESTS);
+            assertThat(r.when()).contains("second");
+            assertThat(r.rationale()).contains("because");
+        });
+
         // The reverse orientation replaces rather than adds (unordered-pair identity).
         RelationshipRegistrationService.Registered reverse = service.registerRelationship(
                 PACK,
