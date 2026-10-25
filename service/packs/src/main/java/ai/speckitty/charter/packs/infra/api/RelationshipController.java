@@ -49,8 +49,8 @@ public class RelationshipController implements RelationshipsApi {
     public ResponseEntity<RelationshipRegistration> putPackRelationship(
             String packId, RelationshipRegistration1 body, @Nullable String ifMatch) {
         Relationship relationship = toRelationship(body);
-        RelationshipRegistrationService.Registered result = registrations.registerRelationship(
-                new PackIdentifier(packId), relationship, DirectiveController.unquote(ifMatch));
+        RelationshipRegistrationService.Registered result =
+                registrations.registerRelationship(new PackIdentifier(packId), relationship, ifMatch);
         return ResponseEntity.ok().eTag(result.revision().token()).body(toDto(relationship));
     }
 

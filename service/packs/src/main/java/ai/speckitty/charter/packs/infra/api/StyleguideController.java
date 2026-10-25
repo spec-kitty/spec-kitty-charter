@@ -138,7 +138,7 @@ public class StyleguideController implements StyleguidesApi {
                 body.getAppliesToLanguages(),
                 body.getReferences());
         StyleguideRegistrationService.Registered result =
-                registrations.registerStyleguide(pack, styleguide, true, unquote(ifMatch));
+                registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
                 .body(toSingleDto(styleguide));
@@ -155,18 +155,6 @@ public class StyleguideController implements StyleguidesApi {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
-    }
-
-    /** Strips the optional {@code W/} weak marker and the surrounding quotes of an HTTP entity-tag If-Match value. */
-    static @Nullable String unquote(@Nullable String eTag) {
-        if (eTag == null) {
-            return null;
-        }
-        String value = eTag.startsWith("W/") ? eTag.substring(2) : eTag;
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
-        }
-        return value;
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------

@@ -63,15 +63,57 @@ public final class PackRevision {
     }
 
     /**
-     * Whether an {@code If-Match} token names the current revision.
+     * Whether an {@code If-Match} field value names the current revision, by the strong comparison RFC 9110 &sect;13.1.1
+     * requires: {@code *} matches (the caller has already found the pack); otherwise the value is a comma-separated
+     * list of entity-tags and it matches when any <em>strong</em> member's opaque tag equals the current token. A weak
+     * member ({@code W/"..."}) never matches. A member written without its quotes is compared as its bare text, a
+     * tolerance kept for clients that echo the token unquoted; it is never weak.
      *
-     * @param ifMatch the token the request carried, or null when it carried none
+     * <p>This is the one place an {@code If-Match} value is interpreted: the inbound edge passes the header through
+     * verbatim.
+     *
+     * @param ifMatch the {@code If-Match} field value the request carried, or null when it carried none
      * @param current the revision of the committed state
-     * @return {@code true} when {@code ifMatch} equals the current revision token
+     * @return {@code true} when {@code ifMatch} is {@code *} or lists the current revision as a strong entity-tag
      */
     public static boolean matches(@Nullable String ifMatch, PackRevision current) {
         Objects.requireNonNull(current, "current");
-        return current.token.equals(ifMatch);
+        if (ifMatch == null) {
+            return false;
+        }
+        if (ifMatch.strip().equals("*")) {
+            return true;
+        }
+        int at = 0;
+        int length = ifMatch.length();
+        while (at < length) {
+            char c = ifMatch.charAt(at);
+            if (c == ',' || c == ' ' || c == '\t') {
+                at++;
+                continue;
+            }
+            boolean weak = ifMatch.startsWith("W/", at);
+            int start = weak ? at + 2 : at;
+            int end;
+            String opaque;
+            if (start < length && ifMatch.charAt(start) == '"') {
+                end = ifMatch.indexOf('"', start + 1);
+                if (end < 0) {
+                    return false; // an unterminated entity-tag is malformed and matches nothing
+                }
+                opaque = ifMatch.substring(start + 1, end);
+                end++;
+            } else {
+                end = ifMatch.indexOf(',', start);
+                end = end < 0 ? length : end;
+                opaque = ifMatch.substring(start, end).strip();
+            }
+            if (!weak && current.token.equals(opaque)) {
+                return true;
+            }
+            at = end;
+        }
+        return false;
     }
 
     @Override
