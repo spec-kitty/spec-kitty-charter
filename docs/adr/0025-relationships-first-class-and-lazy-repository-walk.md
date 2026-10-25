@@ -23,7 +23,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-25. Decider: Stijn Dejongh (operator). Pending ratification; flip to Accepted once confirmed.
+**Accepted** — 2026-10-25. Decider: Stijn Dejongh (operator).
 
 Revises the doctrine-reference-graph view of [ADR-0024](/adr/0024-doctrine-artifact-family-contract/): the family spine's `edges()` becomes `relationships()`, and `DrgEdge` leaves the domain interface for the storage edge.
 
