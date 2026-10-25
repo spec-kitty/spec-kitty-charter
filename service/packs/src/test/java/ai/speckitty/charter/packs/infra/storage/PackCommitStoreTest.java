@@ -149,6 +149,27 @@ class PackCommitStoreTest {
     }
 
     @Test
+    @DisplayName("a swap a crash interrupted between its two renames is restored from the aside copy on the next write")
+    void anInterruptedSwapIsRestoredBeforeTheNextWrite(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
+                locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
+        Map<String, String> committed = snapshot(packDir);
+        PackRevision revision = writeStore.currentRevision(PACK);
+        // The state a crash after "move live aside" and before "move staging into place" leaves behind.
+        Files.move(packDir, host.resolve("pack-a.pack-old-crashed"));
+
+        PackRevision seen = writeStore.exclusively(PACK, () -> writeStore.currentRevision(PACK));
+
+        assertThat(seen).isEqualTo(revision);
+        assertThat(snapshot(packDir)).isEqualTo(committed);
+        assertThat(noCommitResidue(host))
+                .as("the aside copy was moved back, not copied")
+                .isTrue();
+    }
+
+    @Test
     @DisplayName("a second commit is atomic too: both toolguides land and the revision changes")
     void aSecondCommitIsAtomicToo(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);

@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -18,6 +19,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,8 +38,12 @@ import org.springframework.stereotype.Service;
  *
  * <p><strong>Filesystem assumption.</strong> The live directory, the staging directory and the aside directory are
  * all created under the same parent, hence on one filesystem, where a directory rename is atomic (POSIX
- * {@code rename(2)} within a mount). Where the platform cannot rename atomically the swap falls back to a plain move,
- * which still never leaves partial state: each move is all-or-nothing and the aside copy guards a restore.
+ * {@code rename(2)} within a mount). Where the platform cannot rename atomically the swap falls back to a plain move.
+ *
+ * <p><strong>Crash window.</strong> The swap is two renames, so a process that dies between them leaves no live
+ * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy). That state is repaired on the next
+ * write: {@link #restoreInterruptedSwap(Path)} moves a sole aside copy back into place before the pack is resolved,
+ * which restores the last committed state; the interrupted commit was never acknowledged.
  *
  * <p>This store never performs the per-child {@code save()} upsert of {@link DomainRepositoryService}; registration
  * goes load &rarr; mutate &rarr; revalidate the whole {@link Pack} &rarr; commit here.
@@ -158,6 +164,41 @@ public final class PackCommitStore {
         } catch (IOException | RuntimeException failure) {
             deleteTree(staging);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot commit pack " + pack.value(), failure);
+        }
+    }
+
+    /**
+     * Repairs a swap a crash interrupted between its two renames: when {@code live} is missing and exactly one
+     * {@code <name>.pack-old-*} directory sits beside it, that aside copy (the last committed state) is moved back into
+     * place. With zero or several candidates nothing is guessed. The caller must hold the pack's write lock, since a
+     * commit in flight is in that same state for an instant.
+     *
+     * @param live the pack's live directory
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the restore fails
+     */
+    static void restoreInterruptedSwap(Path live) {
+        Path parent = live.getParent();
+        if (parent == null || Files.exists(live, LinkOption.NOFOLLOW_LINKS) || !Files.isDirectory(parent)) {
+            return;
+        }
+        String prefix = live.getFileName() + ".pack-old-";
+        List<Path> asides;
+        try (Stream<Path> siblings = Files.list(parent)) {
+            asides = siblings.filter(
+                            sibling -> String.valueOf(sibling.getFileName()).startsWith(prefix))
+                    .filter(sibling -> Files.isDirectory(sibling, LinkOption.NOFOLLOW_LINKS))
+                    .toList();
+        } catch (IOException failure) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot inspect the parent of " + live, failure);
+        }
+        if (asides.size() != 1) {
+            return;
+        }
+        try {
+            moveDirectory(asides.getFirst(), live);
+        } catch (IOException failure) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "cannot restore " + live + " after an interrupted commit", failure);
         }
     }
 

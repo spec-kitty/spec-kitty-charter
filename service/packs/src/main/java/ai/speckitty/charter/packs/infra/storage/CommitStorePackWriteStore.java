@@ -108,9 +108,11 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
 
     @Override
     public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
-        ReentrantLock lock = locks.computeIfAbsent(resolve(pack), directory -> new ReentrantLock());
+        Path directory = resolve(pack);
+        ReentrantLock lock = locks.computeIfAbsent(directory, key -> new ReentrantLock());
         lock.lock();
         try {
+            PackCommitStore.restoreInterruptedSwap(directory);
             return work.get();
         } finally {
             lock.unlock();
