@@ -14,10 +14,10 @@ import java.util.Optional;
  * (FR-005, NFR-003): {@code toDomain(toDso(r)).equals(r)} for every {@code r}, and a present {@code when} or
  * {@code rationale} survives distinct from an absent one.
  *
- * <p>{@code impacts} is a DSO-only, write-side concern (ADR-0025: the signed strength lives on the DSO, and a
- * {@code Relationship} carries no strength today). The registered-relationship write path mints no strength,
- * so {@link #toDso(Relationship)} emits an empty {@code impacts}; the read side's {@code PackPolicy} still
- * enforces the {@code impacts} strength rules on the way in.
+ * <p>{@code impacts} is a DSO-only concern (ADR-0025: the signed strength lives on the DSO, and a
+ * {@code Relationship} carries no strength today), so {@link #toDso(Relationship)} emits an empty {@code impacts}.
+ * The read side's {@code PackPolicy} requires a strength on an {@code impacts} edge, which is why the registration
+ * write path refuses an {@code impacts} relationship before it reaches this mapper ({@code RelationshipMerge}).
  */
 final class RelationshipMapper {
 

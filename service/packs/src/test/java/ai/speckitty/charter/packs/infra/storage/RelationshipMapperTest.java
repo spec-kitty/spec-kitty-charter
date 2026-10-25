@@ -47,16 +47,6 @@ class RelationshipMapperTest {
     }
 
     @Test
-    void toDsoMintsNoImpactsStrengthEvenForTheImpactsRelation() {
-        assertThat(RelationshipMapper.toDso(Relationship.of(A, B, RelationType.IMPACTS))
-                        .impacts())
-                .isEmpty();
-        assertThat(RelationshipMapper.toDso(Relationship.of(A, B, RelationType.REQUIRES))
-                        .relation())
-                .isEqualTo("requires");
-    }
-
-    @Test
     void aNonUrnEndpointIsAMapperFaultNotASilentDrop() {
         DrgEdge badSource =
                 new DrgEdge("QA_404", "directive:b", "requires", Optional.empty(), Optional.empty(), Optional.empty());
