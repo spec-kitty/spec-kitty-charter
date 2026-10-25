@@ -27,7 +27,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-25. Decider: Stijn Dejongh (operator). Pending ratification; flip to Accepted once confirmed.
+**Accepted** — 2026-10-25. Decider: Stijn Dejongh (operator).
 
 Extends [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) (pack registration) to artifact and relationship granularity, and records a deliberate departure from "content enters only as whole packs."
 

@@ -21,7 +21,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-25. Decider: Stijn Dejongh (operator). Pending ratification.
+**Accepted** — 2026-10-25. Decider: Stijn Dejongh (operator).
 
 Revises [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) Decision 1: it keeps
 the unordered-pair identity but replaces ADR-0025's premise ("no consumer needs multiplicity; the
