@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.snakeyaml.engine.v2.api.Dump;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
@@ -28,9 +29,23 @@ public final class GraphShardWriter {
      * @return the shard's YAML text, with {@code generated_at} fixed to {@code STATIC} so the output is stable
      */
     public static String write(DoctrineGraph graph) {
+        return write(graph, null);
+    }
+
+    /**
+     * Writes {@code graph} as a graph shard that names its writer in {@code generated_by}.
+     *
+     * @param graph the graph to write
+     * @param generatedBy the value of the shard's {@code generated_by}, or null to leave the key out
+     * @return the shard's YAML text, with {@code generated_at} fixed to {@code STATIC} so the output is stable
+     */
+    public static String write(DoctrineGraph graph, @Nullable String generatedBy) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("schema_version", "1.0");
         root.put("generated_at", "STATIC");
+        if (generatedBy != null) {
+            root.put("generated_by", generatedBy);
+        }
         List<Object> nodes = new ArrayList<>();
         for (DrgNode node : graph.nodes()) {
             Map<String, Object> out = new LinkedHashMap<>();

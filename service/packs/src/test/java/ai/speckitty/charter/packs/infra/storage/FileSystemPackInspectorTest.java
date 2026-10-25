@@ -79,6 +79,25 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
+    void aSourceShardNamedLikeTheRegistrationShardIsRefusedButTheStoresOwnIsRead(@TempDir Path dir) throws IOException {
+        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "registered.graph.yaml",
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes:\n- {urn: 'directive:A', kind: directive}\nedges: []\n");
+
+        FileRead.Unreadable<?> source = unreadable(
+                INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+
+        assertThat(source.file()).isEqualTo("registered.graph.yaml");
+        assertThat(source.parse().firstLine()).contains("reserved for registered relationships");
+
+        write(dir, "registered.graph.yaml", RelationshipShard.write(java.util.List.of()));
+
+        read(INSPECTOR.inspect(root(dir), Scope.LOAD_PATH).shards().get(0));
+    }
+
+    @Test
     void aFileThatIsNotThereIsAbsent(@TempDir Path dir) {
         PackContents contents = INSPECTOR.inspect(root(dir), Scope.LOAD_PATH);
 

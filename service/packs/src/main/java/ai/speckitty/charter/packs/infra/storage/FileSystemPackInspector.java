@@ -58,6 +58,9 @@ import java.util.stream.Stream;
  */
 public final class FileSystemPackInspector implements PackInspector {
 
+    private static final String RESERVED_SHARD = RelationshipShard.SHARD_PATH
+            + " is reserved for registered relationships and cannot be a source graph shard; rename the shard";
+
     private static final String NOT_UTF8 = "the file is not valid UTF-8";
 
     /** The fixed length of a chain of symlinks that is followed; as long as the kernel's, which refuses past 40. */
@@ -114,8 +117,7 @@ public final class FileSystemPackInspector implements PackInspector {
         List<FileRead<RawGraph>> shards = new ArrayList<>();
         for (Path shard : shards(directory, name)) {
             String file = directory.relativize(shard).toString();
-            shards.add(read(
-                    shard, file, name, text -> GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file)));
+            shards.add(read(shard, file, name, text -> shard(text, file)));
         }
         FileRead<RawGraph> fragment = new FileRead.Absent<>(PackFileSet.FRAGMENT);
         Path fragmentYaml = directory.resolve("drg").resolve("fragment.yaml");
@@ -380,6 +382,14 @@ public final class FileSystemPackInspector implements PackInspector {
             return new FileRead.Unreadable<>(file, new ParseFailure(file, NOT_UTF8), List.of());
         }
         return reader.apply(text);
+    }
+
+    /** A root shard; the name the registration store writes to is reserved, so a source shard under it is refused. */
+    private static FileRead<RawGraph> shard(String text, String file) {
+        if (file.equals(RelationshipShard.SHARD_PATH) && !RelationshipShard.isWrittenByRegistration(text)) {
+            return new FileRead.Unreadable<>(file, new ParseFailure(file, RESERVED_SHARD), List.of());
+        }
+        return GraphDocumentReader.read(text, GraphDocumentReader.Shape.SHARD, file);
     }
 
     private static List<Path> shards(Path directory, String name) {
