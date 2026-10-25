@@ -108,88 +108,8 @@ class DirectiveRegistrationServiceTest {
         assertThat(store.commits).isEqualTo(before + 1);
     }
 
-    // ---- FR-009: relationship upsert idempotent on the unordered pair, reverse replaces -------------------------
-
-    @Test
-    void aRelationshipIsIdempotentOnThePairAndTheReverseReplaces() {
-        seedDirective("DIR_A");
-        seedDirective("DIR_B");
-        Urn a = new Urn(NodeKind.DIRECTIVE, "DIR_A");
-        Urn b = new Urn(NodeKind.DIRECTIVE, "DIR_B");
-        String etag = store.currentRevision(PACK).token();
-
-        service.registerRelationship(PACK, Relationship.of(a, b, RelationType.REQUIRES), etag);
-        service.registerRelationship(
-                PACK,
-                Relationship.of(a, b, RelationType.REQUIRES),
-                store.currentRevision(PACK).token());
-        assertThat(store.relationships(PACK))
-                .as("re-registering the same pair keeps one edge")
-                .hasSize(1);
-
-        // The reverse orientation replaces rather than adds (unordered-pair identity).
-        DirectiveRegistrationService.Registered reverse = service.registerRelationship(
-                PACK,
-                Relationship.of(b, a, RelationType.SUGGESTS),
-                store.currentRevision(PACK).token());
-        assertThat(reverse.created()).isFalse();
-        assertThat(store.relationships(PACK)).hasSize(1);
-        assertThat(store.relationships(PACK).getFirst().type()).isEqualTo(RelationType.SUGGESTS);
-    }
-
-    @Test
-    void aRelationshipWhoseFromDoesNotResolveIsAConflictWhileAResolvableOneSucceeds() {
-        seedDirective("DIR_A");
-        Urn resolvable = new Urn(NodeKind.DIRECTIVE, "DIR_A");
-        Urn unresolvable = new Urn(NodeKind.DIRECTIVE, "GHOST");
-        Urn external = new Urn(NodeKind.PROCEDURE, "external-proc");
-        int before = store.commits;
-
-        assertThatThrownBy(() -> service.registerRelationship(
-                        PACK,
-                        Relationship.of(unresolvable, external, RelationType.REQUIRES),
-                        store.currentRevision(PACK).token()))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
-        assertThat(store.commits).isEqualTo(before);
-
-        // from resolves, to is external (allowed): accepted.
-        assertThatCode(() -> service.registerRelationship(
-                        PACK,
-                        Relationship.of(resolvable, external, RelationType.REQUIRES),
-                        store.currentRevision(PACK).token()))
-                .doesNotThrowAnyException();
-        assertThat(store.commits).isEqualTo(before + 1);
-    }
-
-    // ---- FR-012: optimistic concurrency, stale refused, fresh accepted, missing refused on sub-resource ---------
-
-    @Test
-    void aStaleIfMatchIsRefusedWhileAFreshOneSucceeds() {
-        seedDirective("DIR_A");
-        Relationship edge = Relationship.of(
-                new Urn(NodeKind.DIRECTIVE, "DIR_A"), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
-
-        assertThatThrownBy(() -> service.registerRelationship(PACK, edge, "sha256:" + "0".repeat(64)))
-                .isInstanceOfSatisfying(
-                        PreconditionException.class,
-                        e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
-
-        assertThatCode(() -> service.registerRelationship(
-                        PACK, edge, store.currentRevision(PACK).token()))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void aRelationshipWriteWithoutAPreconditionIsRefusedPreconditionRequired() {
-        seedDirective("DIR_A");
-        Relationship edge = Relationship.of(
-                new Urn(NodeKind.DIRECTIVE, "DIR_A"), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
-        assertThatThrownBy(() -> service.registerRelationship(PACK, edge, null))
-                .isInstanceOfSatisfying(
-                        PreconditionException.class,
-                        e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.MISSING));
-    }
+    // ---- FR-012: optimistic concurrency on an artifact write (the relationship door:
+    // RelationshipRegistrationServiceTest)
 
     @Test
     void aDirectiveWriteWithAStaleIfMatchIsRefused() {
@@ -227,14 +147,6 @@ class DirectiveRegistrationServiceTest {
             builder.procedure(procedure);
         }
         return builder.build();
-    }
-
-    private void seedDirective(String id) {
-        Pack current = store.packs.get(PACK);
-        Pack.Builder builder = Pack.builder().id(PACK).descriptor(descriptor());
-        current.directives().forEach(builder::directive);
-        builder.directive(directive(id, id, null));
-        store.packs.put(PACK, builder.build());
     }
 
     private Directive directiveIn(PackIdentifier pack, String id) {
