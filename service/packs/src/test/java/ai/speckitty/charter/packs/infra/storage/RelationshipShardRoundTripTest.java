@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard.ShardRead;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,20 @@ class RelationshipShardRoundTripTest {
         assertThat(read.relationships().get(1).type()).isEqualTo(RelationType.SUGGESTS);
         assertThat(read.relationships().get(1).when()).isEmpty();
         assertThat(read.relationships().get(1).rationale()).isEmpty();
+    }
+
+    @Test
+    void everyRegistrableRelationIsWrittenInAFormTheReaderAccepts() {
+        // impacts is refused on the registration path (RelationshipMerge); every other relation must read back clean,
+        // or the next registration over the shard is refused as unreadable.
+        List<Relationship> relationships = EnumSet.complementOf(EnumSet.of(RelationType.IMPACTS)).stream()
+                .map(type -> Relationship.of(A, new Urn(NodeKind.DIRECTIVE, "to-" + type.token()), type))
+                .toList();
+
+        ShardRead read = RelationshipShard.read("qa", RelationshipShard.write(relationships));
+
+        assertThat(read.findings()).isEmpty();
+        assertThat(read.relationships()).containsExactlyElementsOf(relationships);
     }
 
     @Test

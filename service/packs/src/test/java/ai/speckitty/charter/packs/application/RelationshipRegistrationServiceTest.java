@@ -90,6 +90,25 @@ class RelationshipRegistrationServiceTest {
         assertThat(store.commits).isEqualTo(before + 1);
     }
 
+    @Test
+    void anImpactsRelationshipIsRefusedBecauseItsStrengthIsNotOnTheWire() {
+        seedDirective("DIR_A");
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "DIR_A"),
+                                new Urn(NodeKind.DIRECTIVE, "DIR_B"),
+                                RelationType.IMPACTS),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(r.getMessage()).contains("impacts");
+                });
+        assertThat(store.commits).isEqualTo(before);
+    }
+
     // ---- FR-012: optimistic concurrency, stale refused, fresh accepted, missing refused on sub-resource ---------
 
     @Test
