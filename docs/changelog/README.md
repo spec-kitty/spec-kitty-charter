@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-charter repository and its documentation.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-25T00:00:00Z
 type: Changelog
 kind: Hub
 audience:
@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-25 — Directive, styleguide, paradigm and toolguide can be read and registered](/changelog/2026-10-25-regular-artefact-registration/)
 - [2026-10-24 — Every read answers with the source fingerprint it verified](/changelog/2026-10-24-verified-source-fingerprint/)
 - [2026-10-24 — ADR-0019 to ADR-0022 accepted, and the plans follow main](/changelog/2026-10-24-docs-status-pass/)
 - [2026-10-22 — Directive, styleguide and paradigm are now first-class pack artifacts](/changelog/2026-10-22-pack-doctrine-artefacts/)
