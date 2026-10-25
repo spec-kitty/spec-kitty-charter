@@ -14,9 +14,8 @@
   "accepted_by": "stijn",
   "accepted_from_commit": "1eaf5a758dd2eb5f7f78c2aeee6f5cf8b1d15d27",
   "baseline_merge_commit": "05762648e25974bbb359e6e206f04056f37e25e8",
-  "coordination_branch": "kitty/mission-regular-artefact-read-registration-01M5SC0T",
   "created_at": "2026-10-25T11:09:34.613019+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Regular artefact read & registration",
   "merged_at": "2026-10-25T18:29:45.936430+00:00",
   "merged_commit": "beafb427f642affb2443bc55c9ec3a6568b40716",
@@ -31,7 +30,6 @@
   "slug": "regular-artefact-read-registration-01M5SC0T",
   "status_phase": "1",
   "target_branch": "feat/regular-artefacts",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-10-25T14:11:03.180325+00:00"
 }
