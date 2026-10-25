@@ -51,8 +51,9 @@ class PackRevisionTest {
         PackRevision revision = PackRevision.compute(content);
 
         // The read path digests its files with the kernel Fingerprint (FileSystemPackSources). Digest the very same
-        // items with it: both are length-prefixed sha256, so only PackRevision's own domain-separation tag keeps the
-        // two tokens apart, which is what keeps freshness and concurrency from being confused.
+        // items with it: both are length-prefixed sha256, and the tokens must stay apart (ADR-0026 D5) so freshness
+        // and concurrency are never confused. The domain-separation tag and the differing length encodings both
+        // keep them apart today.
         Fingerprint read = Fingerprint.sha256();
         content.forEach(read::add);
 
