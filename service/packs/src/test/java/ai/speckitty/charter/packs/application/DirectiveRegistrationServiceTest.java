@@ -192,12 +192,9 @@ class DirectiveRegistrationServiceTest {
         }
 
         @Override
-        public PackRevision commit(
-                PackIdentifier pack, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            packs.put(pack, mutated);
-            if (relationships != null) { // null: the registration left the shard untouched
-                edges.put(pack, new ArrayList<>(relationships));
-            }
+        public PackRevision commit(PackIdentifier pack, String ifMatch, PackWriteStore.Change change) {
+            packs.put(pack, change.revalidated());
+            change.relationships().ifPresent(persisted -> edges.put(pack, new ArrayList<>(persisted)));
             commits++;
             return currentRevision(pack);
         }

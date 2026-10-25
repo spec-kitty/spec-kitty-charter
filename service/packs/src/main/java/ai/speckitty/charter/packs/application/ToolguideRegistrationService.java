@@ -95,7 +95,8 @@ public final class ToolguideRegistrationService {
                     exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                     toolguide.urn());
             Pack mutated = revalidated(current, toolguide);
-            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, null); // relationships unchanged
+            PackRevision revision =
+                    writeStore.commit(pack, ifMatch, PackWriteStore.Change.artifact(mutated, toolguide));
             return new Registered(revision, !exists, toolguide.urn());
         });
     }

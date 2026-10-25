@@ -199,12 +199,9 @@ class ToolguideRegistrationServiceTest {
         }
 
         @Override
-        public PackRevision commit(
-                PackIdentifier pack, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            packs.put(pack, mutated);
-            if (relationships != null) { // null: the registration left the shard untouched
-                edges.put(pack, List.copyOf(relationships));
-            }
+        public PackRevision commit(PackIdentifier pack, String ifMatch, PackWriteStore.Change change) {
+            packs.put(pack, change.revalidated());
+            change.relationships().ifPresent(persisted -> edges.put(pack, List.copyOf(persisted)));
             commits++;
             return currentRevision(pack);
         }

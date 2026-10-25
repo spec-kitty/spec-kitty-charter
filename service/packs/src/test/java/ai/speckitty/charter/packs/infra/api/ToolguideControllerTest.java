@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
@@ -216,8 +217,8 @@ class ToolguideControllerTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier id, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            this.pack = mutated;
+        public PackRevision commit(PackIdentifier id, String ifMatch, Change change) {
+            this.pack = change.revalidated();
             commits++;
             return currentRevision(id);
         }

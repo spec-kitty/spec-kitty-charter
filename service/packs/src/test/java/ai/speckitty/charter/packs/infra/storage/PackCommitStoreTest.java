@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
@@ -30,6 +31,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -75,19 +77,24 @@ class PackCommitStoreTest {
     }
 
     @Test
-    @DisplayName(
-            "a successful commit replaces the pack content, keeps non-child files, and returns the current revision")
+    @DisplayName("a successful commit adds only the new artefact and the shard, leaves every other file byte-identical,"
+            + " and returns the revision the store then reports")
     void aSuccessfulCommitReplacesContentAndReturnsARevision(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);
+        Path packYaml = packDir.resolve(PackFileSet.PACK_YAML);
+        Files.writeString(
+                packYaml,
+                "# Authored by hand; never machine-rewritten.\n" + Files.readString(packYaml, StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8);
         Files.createDirectories(packDir.resolve("guides"));
         Files.writeString(packDir.resolve("guides/keep.md"), "KEEP", StandardCharsets.UTF_8);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
+        Map<String, String> before = snapshot(packDir);
 
-        Pack mutated = mutatedWithToolguide(service.load(PACK), "ripgrep");
-        PackRevision revision = store.commit(PACK, null, mutated, SHARD);
+        PackRevision revision = store.commit(PACK, null, toolguide("ripgrep"), SHARD);
 
         assertThat(revision)
                 .as("the ETag a commit answers is the revision the store then reports")
@@ -95,11 +102,15 @@ class PackCommitStoreTest {
         assertThat(service.load(PACK).toolguides())
                 .extracting(tg -> tg.id().value())
                 .contains("ripgrep");
-        assertThat(packDir.resolve("guides/keep.md")).exists();
-        assertThat(Files.readString(packDir.resolve("guides/keep.md"))).isEqualTo("KEEP");
-        assertThat(packDir.resolve(RelationshipShard.SHARD_PATH)).exists();
-        assertThat(Files.readString(packDir.resolve(RelationshipShard.SHARD_PATH)))
-                .isEqualTo(SHARD);
+        Map<String, String> after = snapshot(packDir);
+        assertThat(after.keySet())
+                .containsExactlyInAnyOrderElementsOf(Stream.concat(
+                                before.keySet().stream(),
+                                Stream.of("ripgrep.toolguide.yaml", RelationshipShard.SHARD_PATH))
+                        .toList());
+        before.forEach((file, content) ->
+                assertThat(after.get(file)).as("%s is byte-unchanged", file).isEqualTo(content));
+        assertThat(after.get(RelationshipShard.SHARD_PATH)).isEqualTo(SHARD);
         assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
     }
 
@@ -118,9 +129,9 @@ class PackCommitStoreTest {
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy, failingSwap);
 
         Map<String, String> before = snapshot(packDir);
-        Pack mutated = mutatedWithToolguide(service.load(PACK), "ripgrep");
 
-        assertThatThrownBy(() -> store.commit(PACK, null, mutated, SHARD)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> store.commit(PACK, null, toolguide("ripgrep"), SHARD))
+                .isInstanceOf(CharterRefusal.class);
 
         assertThat(snapshot(packDir))
                 .as("the live pack is byte-for-byte unchanged")
@@ -138,11 +149,18 @@ class PackCommitStoreTest {
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
         String etag = writeStore.currentRevision(PACK).token();
-        writeStore.commit(PACK, etag, mutatedWithToolguide(service.load(PACK), "fd"), null); // another writer lands
+        writeStore.commit(
+                PACK,
+                etag,
+                Change.artifact(
+                        mutatedWithToolguide(service.load(PACK), "fd"), toolguide("fd"))); // another writer lands
         Map<String, String> before = snapshot(packDir);
 
-        assertThatThrownBy(() ->
-                        writeStore.commit(PACK, etag, mutatedWithToolguide(service.load(PACK), "ripgrep"), List.of()))
+        assertThatThrownBy(() -> writeStore.commit(
+                        PACK,
+                        etag,
+                        Change.artifact(
+                                mutatedWithToolguide(service.load(PACK), "ripgrep"), toolguide("ripgrep"), List.of())))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -182,8 +200,8 @@ class PackCommitStoreTest {
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
 
-        PackRevision first = store.commit(PACK, null, mutatedWithToolguide(service.load(PACK), "ripgrep"), null);
-        PackRevision second = store.commit(PACK, null, mutatedWithToolguide(service.load(PACK), "fd"), null);
+        PackRevision first = store.commit(PACK, null, toolguide("ripgrep"), null);
+        PackRevision second = store.commit(PACK, null, toolguide("fd"), null);
 
         assertThat(second).isNotEqualTo(first);
         assertThat(service.load(PACK).toolguides())

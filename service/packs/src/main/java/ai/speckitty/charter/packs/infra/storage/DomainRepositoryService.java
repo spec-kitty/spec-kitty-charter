@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveReference;
@@ -195,21 +196,25 @@ public final class DomainRepositoryService
     }
 
     /**
-     * Writes a whole aggregate — descriptor and every child of every kind — into {@code store} under {@code key},
-     * through the shared DSO mappers. The {@link PackCommitStore} calls it to stage a mutated pack before the atomic
-     * directory swap; the mapping stays in one place so the commit path and the per-child saves cannot drift.
+     * Writes one artefact into {@code store} under {@code key}, through the shared DSO mappers: a known id replaces
+     * its file, an unknown id creates {@code <id>.<kind>.yaml}. The {@link PackCommitStore} calls it to stage the one
+     * artefact a registration added or replaced before the atomic directory swap, leaving the descriptor and every
+     * sibling byte-identical; the mapping stays in one place so the commit path and the per-child saves cannot drift.
      *
      * @param store the store to write through (for a commit, one rooted at the staging directory's parent)
-     * @param key the directory-name key the store addresses the aggregate by
-     * @param pack the aggregate to write
+     * @param key the directory-name key the store addresses the pack by
+     * @param artifact the artefact to write
+     * @throws IllegalArgumentException when {@code artifact} is of a kind this store does not persist
      */
-    static void writeAggregate(FilesystemPackStore store, PackIdentifier key, Pack pack) {
-        store.writeDescriptor(key, toDso(pack.descriptor()));
-        pack.tactics().forEach(tactic -> store.writeTactic(key, toDso(tactic)));
-        pack.directives().forEach(directive -> store.writeDirective(key, toDso(directive)));
-        pack.styleguides().forEach(styleguide -> store.writeStyleguide(key, toDso(styleguide)));
-        pack.toolguides().forEach(toolguide -> store.writeToolguide(key, toDso(toolguide)));
-        pack.paradigms().forEach(paradigm -> store.writeParadigm(key, toDso(paradigm)));
+    static void writeArtifact(FilesystemPackStore store, PackIdentifier key, CharterArtifact artifact) {
+        switch (artifact) {
+            case Tactic tactic -> store.writeTactic(key, toDso(tactic));
+            case Directive directive -> store.writeDirective(key, toDso(directive));
+            case Styleguide styleguide -> store.writeStyleguide(key, toDso(styleguide));
+            case Toolguide toolguide -> store.writeToolguide(key, toDso(toolguide));
+            case Paradigm paradigm -> store.writeParadigm(key, toDso(paradigm));
+            default -> throw new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact");
+        }
     }
 
     private Pack assemble(PackIdentifier pack) {

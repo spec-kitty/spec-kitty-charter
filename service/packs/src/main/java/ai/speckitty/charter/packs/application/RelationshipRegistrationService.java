@@ -94,7 +94,8 @@ public final class RelationshipRegistrationService {
             List<Relationship> existing = writeStore.registeredRelationships(pack);
             boolean created = existing.stream().noneMatch(relationship::equals);
             List<Relationship> merged = RelationshipMerge.upsert(existing, relationship);
-            PackRevision revision = writeStore.commit(pack, ifMatch, current, merged);
+            PackRevision revision =
+                    writeStore.commit(pack, ifMatch, PackWriteStore.Change.relationships(current, merged));
             return new Registered(revision, created, relationship.from());
         });
     }

@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -254,12 +255,9 @@ class PackMutabilityPolicyTest {
         }
 
         @Override
-        public PackRevision commit(
-                PackIdentifier pack, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            packs.put(pack, mutated);
-            if (relationships != null) { // null: the registration left the shard untouched
-                edges.put(pack, new ArrayList<>(relationships));
-            }
+        public PackRevision commit(PackIdentifier pack, String ifMatch, Change change) {
+            packs.put(pack, change.revalidated());
+            change.relationships().ifPresent(persisted -> edges.put(pack, new ArrayList<>(persisted)));
             commits++;
             return currentRevision(pack);
         }

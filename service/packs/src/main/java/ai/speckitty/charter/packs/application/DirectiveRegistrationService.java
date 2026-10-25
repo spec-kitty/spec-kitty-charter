@@ -113,10 +113,13 @@ public final class DirectiveRegistrationService {
                     exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                     directive.urn());
             Pack mutated = revalidated(current, directive);
-            List<Relationship> merged = bodyRelationships.isEmpty()
-                    ? null // the body asserts no edge: leave the relationship shard untouched
-                    : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
-            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, merged);
+            PackWriteStore.Change change = bodyRelationships.isEmpty()
+                    ? PackWriteStore.Change.artifact(mutated, directive) // no edge asserted: shard untouched
+                    : PackWriteStore.Change.artifact(
+                            mutated,
+                            directive,
+                            RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships));
+            PackRevision revision = writeStore.commit(pack, ifMatch, change);
             return new Registered(revision, !exists, directive.urn());
         });
     }

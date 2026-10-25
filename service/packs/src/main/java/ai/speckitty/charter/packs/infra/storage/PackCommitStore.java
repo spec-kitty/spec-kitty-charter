@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PreconditionException;
-import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -25,12 +25,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * The aggregate-commit store (ADR-0026 Decision 3, NFR-002): it commits a whole mutated {@link Pack} atomically, so a
+ * The aggregate-commit store (ADR-0026 Decision 3, NFR-002): it commits a registration against a pack atomically, so a
  * refused or failed registration changes <strong>zero</strong> stored files.
  *
- * <p>A commit stages a complete copy of the live pack directory into a sibling temporary directory, writes the
- * descriptor, every child of every kind and the registered-relationship shard into the staging copy through the
- * {@link SerializationStrategy}, then <em>atomically swaps</em> the staging directory into place. The swap is the
+ * <p>A commit stages a complete copy of the live pack directory into a sibling temporary directory, writes only the
+ * one artefact the registration added or replaced and (when it changed) the registered-relationship shard into the
+ * staging copy through the {@link SerializationStrategy}, so the copied descriptor and siblings stay byte-identical,
+ * then <em>atomically swaps</em> the staging directory into place. The swap is the
  * {@link DirectoryRename} seam: its default moves the live directory aside with an atomic rename, moves the staging
  * directory into place, and deletes the aside copy; a failure at the second step restores the live directory and
  * rethrows. On any failure <em>before</em> the swap, the live directory is byte-for-byte unchanged and the staging
@@ -46,7 +47,7 @@ import org.springframework.stereotype.Service;
  * which restores the last committed state; the interrupted commit was never acknowledged.
  *
  * <p>This store never performs the per-child {@code save()} upsert of {@link DomainRepositoryService}; registration
- * goes load &rarr; mutate &rarr; revalidate the whole {@link Pack} &rarr; commit here.
+ * goes load &rarr; mutate &rarr; revalidate the whole aggregate in memory &rarr; commit the delta here.
  */
 @Service
 public final class PackCommitStore {
@@ -122,7 +123,8 @@ public final class PackCommitStore {
      * @param ifMatch the {@code If-Match} the registration presented, compared with the live revision before anything
      *     is staged, or null when it presented none; the caller holds the pack's write lock across the comparison and
      *     the swap
-     * @param mutated the revalidated aggregate to persist (its invariants have already been guarded by its builder)
+     * @param artifact the added or replaced artefact of an already revalidated aggregate, or null when only the shard
+     *     changes; nothing else of the pack is rewritten
      * @param relationshipShardText the registered-relationship shard text to persist, or null to leave it as staged
      * @return the revision of the committed state
      * @throws PreconditionException {@link PreconditionException.Kind#STALE} when {@code ifMatch} does not match the
@@ -131,9 +133,11 @@ public final class PackCommitStore {
      *     commit fails; in every failure case the live pack directory is unchanged
      */
     public PackRevision commit(
-            PackIdentifier pack, @Nullable String ifMatch, Pack mutated, @Nullable String relationshipShardText) {
+            PackIdentifier pack,
+            @Nullable String ifMatch,
+            @Nullable CharterArtifact artifact,
+            @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
-        Objects.requireNonNull(mutated, "mutated");
         Resolved resolved = resolve(pack);
         Path liveDir = resolved.directory;
         if (!Files.isDirectory(liveDir)) {
@@ -148,8 +152,10 @@ public final class PackCommitStore {
             }
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
-            PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
-            DomainRepositoryService.writeAggregate(new FilesystemPackStore(parent, strategy), stagingKey, mutated);
+            if (artifact != null) {
+                PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
+                DomainRepositoryService.writeArtifact(new FilesystemPackStore(parent, strategy), stagingKey, artifact);
+            }
             if (relationshipShardText != null) {
                 Files.writeString(
                         staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);

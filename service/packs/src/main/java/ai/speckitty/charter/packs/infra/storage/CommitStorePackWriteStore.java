@@ -5,7 +5,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
-import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.io.IOException;
@@ -120,10 +120,10 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     }
 
     @Override
-    public PackRevision commit(
-            PackIdentifier pack, @Nullable String ifMatch, Pack mutated, @Nullable List<Relationship> relationships) {
-        @Nullable String shard = relationships == null ? null : RelationshipShard.write(List.copyOf(relationships));
-        return exclusively(pack, () -> commitStore.commit(pack, ifMatch, mutated, shard));
+    public PackRevision commit(PackIdentifier pack, @Nullable String ifMatch, Change change) {
+        @Nullable String shard = change.relationships().map(RelationshipShard::write).orElse(null);
+        @Nullable CharterArtifact artifact = change.artifact().orElse(null);
+        return exclusively(pack, () -> commitStore.commit(pack, ifMatch, artifact, shard));
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */

@@ -114,10 +114,13 @@ public final class ParadigmRegistrationService {
                     exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                     paradigm.urn());
             Pack mutated = revalidated(current, paradigm);
-            List<Relationship> merged = bodyRelationships.isEmpty()
-                    ? null // the body asserts no edge: leave the relationship shard untouched
-                    : RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships);
-            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, merged);
+            PackWriteStore.Change change = bodyRelationships.isEmpty()
+                    ? PackWriteStore.Change.artifact(mutated, paradigm) // no edge asserted: shard untouched
+                    : PackWriteStore.Change.artifact(
+                            mutated,
+                            paradigm,
+                            RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships));
+            PackRevision revision = writeStore.commit(pack, ifMatch, change);
             return new Registered(revision, !exists, paradigm.urn());
         });
     }

@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.domain.Directive;
@@ -142,9 +143,11 @@ class RelationshipControllerTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier id, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            edges.clear();
-            edges.addAll(relationships);
+        public PackRevision commit(PackIdentifier id, String ifMatch, Change change) {
+            change.relationships().ifPresent(persisted -> {
+                edges.clear();
+                edges.addAll(persisted);
+            });
             commits++;
             return currentRevision(id);
         }
