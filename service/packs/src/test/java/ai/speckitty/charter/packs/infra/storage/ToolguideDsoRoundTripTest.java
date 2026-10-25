@@ -27,7 +27,8 @@ class ToolguideDsoRoundTripTest {
     }
 
     @Test
-    @DisplayName("a fully populated toolguide survives the round trip, order and duplicates kept")
+    @DisplayName("a fully populated toolguide survives the round trip, order and duplicates kept, and a date-like"
+            + " last_updated is written quoted so a YAML 1.1 reader keeps it a string")
     void aFullToolguideSurvivesTheRoundTrip() {
         ToolguideDso dso = new ToolguideDso(
                 "ripgrep",
@@ -38,10 +39,15 @@ class ToolguideDsoRoundTripTest {
                 "How to search with ripgrep.",
                 List.of("rg a", "rg b", "rg a"),
                 List.of("java", "python"),
-                Optional.of("2026-10-25"),
+                Optional.of("2026-07-29"),
                 List.of("docs/a.md", "docs/a.md"));
 
-        assertThat(read(yaml.readToolguide(yaml.writeToolguide(dso), FILE))).isEqualTo(dso);
+        String written = yaml.writeToolguide(dso);
+
+        assertThat(read(yaml.readToolguide(written, FILE))).isEqualTo(dso);
+        // Core loads packs with a YAML 1.1 resolver, which reads a plain 2026-07-29 as a date, not the str it declares.
+        assertThat(written).containsPattern("(?m)^last_updated: (['\"])2026-07-29\\1$");
+        assertThat(written).as("a plain string stays plain").containsPattern("(?m)^tool: ripgrep$");
     }
 
     @Test
