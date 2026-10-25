@@ -7,13 +7,15 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The inbound REST adapter for registering a relationship edge: {@code PUT /packs/{packId}/relationships}, idempotent
- * on the unordered {@code {from, to}} pair (FR-009). It delegates to the slice's
+ * on the unordered {@code {from, to}} pair (FR-009): {@code 201} when the pair is new, {@code 200} when it replaces a
+ * registered one (ADR-0018 D10 as amended). It delegates to the slice's
  * kind-neutral {@link RelationshipRegistrationService}; the relationship endpoint is authored once here and reused by
  * every regular-artifact slice. A relationship write is a sub-resource write and
  * <strong>requires</strong> an {@code If-Match}: a missing precondition is a plain {@code 428} problem and a
@@ -41,6 +43,8 @@ public class RelationshipController implements RelationshipsApi {
         Relationship relationship = RelationshipWire.fromWire(body);
         RelationshipRegistrationService.Registered result =
                 registrations.registerRelationship(new PackIdentifier(packId), relationship, ifMatch);
-        return ResponseEntity.ok().eTag(result.revision().token()).body(RelationshipWire.toWire(relationship));
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .eTag(result.revision().token())
+                .body(RelationshipWire.toWire(relationship));
     }
 }

@@ -81,7 +81,7 @@ Feature: Directives are read and registered functionally
       """
       {"from": "directive:GUARD", "to": "directive:OTHER", "type": "suggests"}
       """
-    Then the response status is 200
+    Then the response status is 201
 
   Scenario: A relationship is idempotent on the unordered pair (FR-009)
     When I POST "/packs/qa/directives" as JSON with the body:
@@ -96,7 +96,7 @@ Feature: Directives are read and registered functionally
       """
       {"from": "directive:GUARD", "to": "procedure:p", "type": "requires"}
       """
-    Then the response status is 200
+    Then the response status is 201
     When I remember the ETag
     When I PUT "/packs/qa/relationships" with the remembered ETag and the body:
       """
