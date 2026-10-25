@@ -1,0 +1,81 @@
+# Design-level OpenAPI additions for this mission (additive to contracts/charter/openapi.yaml, ADR-0009).
+# Illustrative shapes, not the generated contract. `{kind}` is instantiated per kind:
+# directives | styleguides | paradigms | toolguides  (NOT procedures — out of scope, #150).
+# Request/response bodies are generated contract DTOs only; storage DSOs are never exposed (C-002).
+openapi: 3.1.0
+info:
+  title: Charter offering — regular-artifact read & registration (additions)
+  version: 0.x
+paths:
+  /packs/{packId}/{kind}:
+    get:
+      summary: List a pack's artifacts of a kind, each with its relationships.
+      responses:
+        "200": { description: Artifacts of the kind (with relationships), as contract DTOs. }
+        "404": { $ref: "#/components/responses/Problem" }
+    post:
+      summary: Register a new artifact (id optional; server returns Location).
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ArtifactRegistration" } } }
+      responses:
+        "201": { description: Created., headers: { Location: { schema: { type: string } }, ETag: { schema: { type: string } } } }
+        "409": { $ref: "#/components/responses/Problem" }   # duplicate id / policy
+        "422": { $ref: "#/components/responses/Problem" }   # validation
+  /packs/{packId}/{kind}/{artifactId}:
+    get:
+      responses:
+        "200": { description: One artifact with its relationships. }
+        "404": { $ref: "#/components/responses/Problem" }
+    put:
+      summary: Register (create-or-replace) an artifact by id; idempotent.
+      parameters:
+        - { name: If-Match, in: header, required: false, schema: { type: string }, description: "Optimistic concurrency on the pack/artifact revision." }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ArtifactRegistration" } } }
+      responses:
+        "200": { description: Replaced., headers: { ETag: { schema: { type: string } } } }
+        "201": { description: Created., headers: { ETag: { schema: { type: string } } } }
+        "409": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }   # stale If-Match (Problem-only, not a RefusalCode)
+        "422": { $ref: "#/components/responses/Problem" }
+  /packs/{packId}/relationships:
+    put:
+      summary: Register a relationship edge; idempotent on the unordered {from,to} pair (last-write-wins).
+      parameters:
+        - { name: If-Match, in: header, required: false, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RelationshipRegistration" } } }
+      responses:
+        "200": { description: Registered/replaced. }
+        "409": { $ref: "#/components/responses/Problem" }   # unresolvable from / policy
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }   # precondition required (Problem-only)
+# NOTE: no DELETE/PATCH — removal from force is deactivation, out of scope (ADR-0026 / ADR-0013).
+components:
+  schemas:
+    ArtifactRegistration:
+      type: object
+      description: The artifact's fields (per-kind) plus the relationships it originates.
+      properties:
+        id: { type: string, description: Optional on POST; path-supplied on PUT. }
+        relationships:
+          type: array
+          items: { $ref: "#/components/schemas/RelationshipRegistration" }
+      # ...per-kind fields from contracts/packs/schemas/<kind>.schema.json
+    RelationshipRegistration:
+      type: object
+      required: [from, to, type]
+      properties:
+        from: { type: string, description: "URN <kind>:<id>; must resolve within the pack." }
+        to: { type: string, description: "URN <kind>:<id>; may be external to the pack." }
+        type: { type: string, description: "A RelationType token (closed catalogue; directionality derived)." }
+        rationale: { type: string }
+        when: { type: string, description: "Authored condition; round-trips." }
+  responses:
+    Problem:
+      description: RFC 9457 problem. Validation 422 and conflict/policy 409 carry a charter RefusalCode; 412/428 are Problem-only.
+      content: { application/problem+json: { schema: { type: object } } }

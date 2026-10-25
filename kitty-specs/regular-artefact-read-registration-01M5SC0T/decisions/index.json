@@ -23,6 +23,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-25T12:58:24.999895Z",
+      "decision_id": "01M5SJ83B7HHS8F7GP7W8C49EM",
+      "final_answer": "Copy the Tactic slice per kind; defer the registry to #169. Operator's rationale: keep each kind detached and clearly modelled so they evolve independently; a shared abstraction risks over-coupling their behaviour and cascade issues; accept the near-duplication to avoid premature generalization.",
+      "input_key": "kind_registry_strategy",
+      "mission_id": "01M5SC0T029K5250YT70CNCNK8",
+      "mission_slug": "regular-artefact-read-registration-01M5SC0T",
+      "opened_by": "cli",
+      "options": [
+        "Build the kind registry now (this mission is ADR-0024 trigger)",
+        "Copy the Tactic slice per kind, defer the registry to #169",
+        "Hybrid: registry for the read/registration dispatch only"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Build the per-kind registry now (#169) or copy the Tactic slice per kind for this mission?",
+      "rationale": null,
+      "resolved_at": "2026-10-25T13:04:11.785045Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.kind-registry",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M5SC0T029K5250YT70CNCNK8",
