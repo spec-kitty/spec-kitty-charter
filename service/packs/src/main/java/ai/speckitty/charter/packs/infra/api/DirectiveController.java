@@ -12,7 +12,6 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
-import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -40,20 +39,16 @@ public class DirectiveController implements DirectivesApi {
 
     private final DirectiveReadService reads;
     private final DirectiveRegistrationService registrations;
-    private final PackWriteStore writeStore;
 
     /**
      * A controller over the directive read and registration use cases.
      *
      * @param reads the read use case
      * @param registrations the registration use case
-     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
      */
-    public DirectiveController(
-            DirectiveReadService reads, DirectiveRegistrationService registrations, PackWriteStore writeStore) {
+    public DirectiveController(DirectiveReadService reads, DirectiveRegistrationService registrations) {
         this.reads = reads;
         this.registrations = registrations;
-        this.writeStore = writeStore;
     }
 
     @Override
@@ -66,12 +61,11 @@ public class DirectiveController implements DirectivesApi {
 
     @Override
     public ResponseEntity<Directive1> getPackDirective(String packId, String directiveId) {
-        PackIdentifier pack = new PackIdentifier(packId);
-        var verified = reads.directive(pack, new DirectiveIdentifier(directiveId));
+        var verified = reads.directiveWithRevision(new PackIdentifier(packId), new DirectiveIdentifier(directiveId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(writeStore.currentRevision(pack).token())
-                .body(toSingleDto(verified.value()));
+                .eTag(verified.value().revision().token())
+                .body(toSingleDto(verified.value().value()));
     }
 
     @Override

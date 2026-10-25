@@ -45,7 +45,11 @@ class DirectiveReadServiceTest {
     });
 
     private DirectiveReadService serviceDigesting(PackSources sources) {
-        return new DirectiveReadService(new InMemoryPacks(), new InMemoryDirectives(), new ConsistentRead(sources));
+        return new DirectiveReadService(
+                new InMemoryPacks(),
+                new InMemoryDirectives(),
+                new ConsistentRead(sources),
+                ignored -> PackRevision.compute(List.of()));
     }
 
     private DirectiveReadService serviceWhoseInputsChange() {

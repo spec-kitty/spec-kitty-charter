@@ -31,9 +31,12 @@ import org.springframework.stereotype.Service;
 @Service
 public final class DirectiveReadService {
 
+    private static final String STALE_ONE = "The inputs changed while the directive was read; read it again.";
+
     private final PackRepository packs;
     private final DirectiveRepository directives;
     private final ConsistentRead read;
+    private final PackRevisions revisions;
 
     /**
      * A service over the injected ports.
@@ -41,12 +44,15 @@ public final class DirectiveReadService {
      * @param packs the port that loads a pack aggregate (its directives are projected for the list)
      * @param directives the port that fetches one directive
      * @param read the verifier that digests the inputs before and after each read
+     * @param revisions the pack revision, read inside the verified read for an item's {@code ETag}
      */
     @Autowired
-    public DirectiveReadService(PackRepository packs, DirectiveRepository directives, ConsistentRead read) {
+    public DirectiveReadService(
+            PackRepository packs, DirectiveRepository directives, ConsistentRead read, PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.directives = Objects.requireNonNull(directives, "directives");
         this.read = Objects.requireNonNull(read, "read");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -85,20 +91,46 @@ public final class DirectiveReadService {
     public ConsistentRead.Verified<Directive> directive(PackIdentifier pack, DirectiveIdentifier directive) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(directive, "directive");
-        return read.read("The inputs changed while the directive was read; read it again.", () -> {
-            try {
-                return directives
-                        .load(pack, directive)
-                        .orElseThrow(() -> new CharterRefusal(
-                                RefusalCode.DIRECTIVE_NOT_FOUND,
-                                "Pack " + pack.value() + " has no directive " + directive.value() + "."));
-            } catch (CharterRefusal refused) {
-                if (refused.code() == RefusalCode.DIRECTIVE_NOT_FOUND) {
-                    throw refused;
-                }
-                throw packRefusal(pack, refused);
+        return read.read(STALE_ONE, () -> loadOne(pack, directive));
+    }
+
+    /**
+     * One directive of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
+     * taken inside the one verified read, so they name the same state.
+     *
+     * @param pack the pack's identity
+     * @param directive the directive's identity
+     * @return the directive and its revision, and the verified fingerprint
+     * @throws CharterRefusal as {@link #directive(PackIdentifier, DirectiveIdentifier)} does
+     */
+    public ConsistentRead.Verified<Revised<Directive>> directiveWithRevision(
+            PackIdentifier pack, DirectiveIdentifier directive) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(directive, "directive");
+        return read.read(STALE_ONE, () -> new Revised<>(loadOne(pack, directive), revisionOf(pack)));
+    }
+
+    private Directive loadOne(PackIdentifier pack, DirectiveIdentifier directive) {
+        try {
+            return directives
+                    .load(pack, directive)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.DIRECTIVE_NOT_FOUND,
+                            "Pack " + pack.value() + " has no directive " + directive.value() + "."));
+        } catch (CharterRefusal refused) {
+            if (refused.code() == RefusalCode.DIRECTIVE_NOT_FOUND) {
+                throw refused;
             }
-        });
+            throw packRefusal(pack, refused);
+        }
+    }
+
+    private PackRevision revisionOf(PackIdentifier pack) {
+        try {
+            return revisions.currentRevision(pack);
+        } catch (CharterRefusal refused) {
+            throw packRefusal(pack, refused);
+        }
     }
 
     /**

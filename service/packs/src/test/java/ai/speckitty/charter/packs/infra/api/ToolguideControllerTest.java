@@ -40,9 +40,8 @@ class ToolguideControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ToolguideController(
-                    new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST)),
-                    new ToolguideRegistrationService(store, store, new PermissiveWritePolicyGate()),
-                    store))
+                    new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
+                    new ToolguideRegistrationService(store, store, new PermissiveWritePolicyGate())))
             .setControllerAdvice(new RefusalHandler())
             .build();
 

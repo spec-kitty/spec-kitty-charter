@@ -47,7 +47,11 @@ class ParadigmReadServiceTest {
     });
 
     private ParadigmReadService serviceDigesting(PackSources sources) {
-        return new ParadigmReadService(new InMemoryPacks(), new InMemoryParadigms(), new ConsistentRead(sources));
+        return new ParadigmReadService(
+                new InMemoryPacks(),
+                new InMemoryParadigms(),
+                new ConsistentRead(sources),
+                ignored -> PackRevision.compute(List.of()));
     }
 
     private ParadigmReadService serviceWhoseInputsChange() {

@@ -31,9 +31,12 @@ import org.springframework.stereotype.Service;
 @Service
 public final class ParadigmReadService {
 
+    private static final String STALE_ONE = "The inputs changed while the paradigm was read; read it again.";
+
     private final PackRepository packs;
     private final ParadigmRepository paradigms;
     private final ConsistentRead read;
+    private final PackRevisions revisions;
 
     /**
      * A service over the injected ports.
@@ -41,12 +44,15 @@ public final class ParadigmReadService {
      * @param packs the port that loads a pack aggregate (its paradigms are projected for the list)
      * @param paradigms the port that fetches one paradigm
      * @param read the verifier that digests the inputs before and after each read
+     * @param revisions the pack revision, read inside the verified read for an item's {@code ETag}
      */
     @Autowired
-    public ParadigmReadService(PackRepository packs, ParadigmRepository paradigms, ConsistentRead read) {
+    public ParadigmReadService(
+            PackRepository packs, ParadigmRepository paradigms, ConsistentRead read, PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.read = Objects.requireNonNull(read, "read");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -85,20 +91,46 @@ public final class ParadigmReadService {
     public ConsistentRead.Verified<Paradigm> paradigm(PackIdentifier pack, ParadigmIdentifier paradigm) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(paradigm, "paradigm");
-        return read.read("The inputs changed while the paradigm was read; read it again.", () -> {
-            try {
-                return paradigms
-                        .load(pack, paradigm)
-                        .orElseThrow(() -> new CharterRefusal(
-                                RefusalCode.PARADIGM_NOT_FOUND,
-                                "Pack " + pack.value() + " has no paradigm " + paradigm.value() + "."));
-            } catch (CharterRefusal refused) {
-                if (refused.code() == RefusalCode.PARADIGM_NOT_FOUND) {
-                    throw refused;
-                }
-                throw packRefusal(pack, refused);
+        return read.read(STALE_ONE, () -> loadOne(pack, paradigm));
+    }
+
+    /**
+     * One paradigm of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
+     * taken inside the one verified read, so they name the same state.
+     *
+     * @param pack the pack's identity
+     * @param paradigm the paradigm's identity
+     * @return the paradigm and its revision, and the verified fingerprint
+     * @throws CharterRefusal as {@link #paradigm(PackIdentifier, ParadigmIdentifier)} does
+     */
+    public ConsistentRead.Verified<Revised<Paradigm>> paradigmWithRevision(
+            PackIdentifier pack, ParadigmIdentifier paradigm) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(paradigm, "paradigm");
+        return read.read(STALE_ONE, () -> new Revised<>(loadOne(pack, paradigm), revisionOf(pack)));
+    }
+
+    private Paradigm loadOne(PackIdentifier pack, ParadigmIdentifier paradigm) {
+        try {
+            return paradigms
+                    .load(pack, paradigm)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.PARADIGM_NOT_FOUND,
+                            "Pack " + pack.value() + " has no paradigm " + paradigm.value() + "."));
+        } catch (CharterRefusal refused) {
+            if (refused.code() == RefusalCode.PARADIGM_NOT_FOUND) {
+                throw refused;
             }
-        });
+            throw packRefusal(pack, refused);
+        }
+    }
+
+    private PackRevision revisionOf(PackIdentifier pack) {
+        try {
+            return revisions.currentRevision(pack);
+        } catch (CharterRefusal refused) {
+            throw packRefusal(pack, refused);
+        }
     }
 
     /**

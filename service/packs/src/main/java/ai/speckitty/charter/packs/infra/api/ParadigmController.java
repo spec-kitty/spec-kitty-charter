@@ -10,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -39,20 +38,16 @@ public class ParadigmController implements ParadigmsApi {
 
     private final ParadigmReadService reads;
     private final ParadigmRegistrationService registrations;
-    private final PackWriteStore writeStore;
 
     /**
      * A controller over the paradigm read and registration use cases.
      *
      * @param reads the read use case
      * @param registrations the registration use case
-     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
      */
-    public ParadigmController(
-            ParadigmReadService reads, ParadigmRegistrationService registrations, PackWriteStore writeStore) {
+    public ParadigmController(ParadigmReadService reads, ParadigmRegistrationService registrations) {
         this.reads = reads;
         this.registrations = registrations;
-        this.writeStore = writeStore;
     }
 
     @Override
@@ -65,12 +60,11 @@ public class ParadigmController implements ParadigmsApi {
 
     @Override
     public ResponseEntity<Paradigm1> getPackParadigm(String packId, String paradigmId) {
-        PackIdentifier pack = new PackIdentifier(packId);
-        var verified = reads.paradigm(pack, new ParadigmIdentifier(paradigmId));
+        var verified = reads.paradigmWithRevision(new PackIdentifier(packId), new ParadigmIdentifier(paradigmId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(writeStore.currentRevision(pack).token())
-                .body(toSingleDto(verified.value()));
+                .eTag(verified.value().revision().token())
+                .body(toSingleDto(verified.value().value()));
     }
 
     @Override

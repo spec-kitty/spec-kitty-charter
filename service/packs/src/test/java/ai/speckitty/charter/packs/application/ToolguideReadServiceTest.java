@@ -43,7 +43,11 @@ class ToolguideReadServiceTest {
     });
 
     private ToolguideReadService serviceDigesting(PackSources sources) {
-        return new ToolguideReadService(new InMemoryPacks(), new InMemoryToolguides(), new ConsistentRead(sources));
+        return new ToolguideReadService(
+                new InMemoryPacks(),
+                new InMemoryToolguides(),
+                new ConsistentRead(sources),
+                ignored -> PackRevision.compute(List.of()));
     }
 
     private ToolguideReadService serviceWhoseInputsChange() {

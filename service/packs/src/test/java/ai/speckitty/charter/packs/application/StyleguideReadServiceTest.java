@@ -48,7 +48,11 @@ class StyleguideReadServiceTest {
     });
 
     private StyleguideReadService serviceDigesting(PackSources sources) {
-        return new StyleguideReadService(new InMemoryPacks(), new InMemoryStyleguides(), new ConsistentRead(sources));
+        return new StyleguideReadService(
+                new InMemoryPacks(),
+                new InMemoryStyleguides(),
+                new ConsistentRead(sources),
+                ignored -> PackRevision.compute(List.of()));
     }
 
     private StyleguideReadService serviceWhoseInputsChange() {

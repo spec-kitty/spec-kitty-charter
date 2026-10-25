@@ -18,7 +18,7 @@ import java.util.List;
  * never performs the per-child {@code save()} upsert of the repository ports; registration goes load &rarr; mutate
  * &rarr; revalidate the whole {@link Pack} &rarr; commit here.
  */
-public interface PackWriteStore {
+public interface PackWriteStore extends PackRevisions {
 
     /**
      * The revision of the pack's committed state as it stands now, for the {@code ETag} a read answers with and the
@@ -29,6 +29,7 @@ public interface PackWriteStore {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
      *     resolved or read
      */
+    @Override
     PackRevision currentRevision(PackIdentifier pack);
 
     /**

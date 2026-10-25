@@ -41,9 +41,8 @@ class StyleguideControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new StyleguideController(
-                    new StyleguideReadService(store, store, new ConsistentRead(() -> DIGEST)),
-                    new StyleguideRegistrationService(store, store, new PermissiveWritePolicyGate()),
-                    store))
+                    new StyleguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
+                    new StyleguideRegistrationService(store, store, new PermissiveWritePolicyGate())))
             .setControllerAdvice(new RefusalHandler())
             .build();
 

@@ -40,6 +40,11 @@ import org.junit.jupiter.api.Test;
  */
 class CompositeComponentResolverTest {
 
+    /** A walk resolves items without their revision, which reads every pack file; it must never ask for one. */
+    private static final PackRevisions NO_REVISION = pack -> {
+        throw new AssertionError("a walk never reads the pack revision");
+    };
+
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
     private final Directive directive = Directive.builder()
@@ -84,10 +89,10 @@ class CompositeComponentResolverTest {
             .build();
 
     private final ComponentResolver resolver = new CompositeComponentResolver(
-                    new DirectiveReadService(new UnusedPacks(), new FixedDirectives(), fixedDigest()),
-                    new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest()),
-                    new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest()),
-                    new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest()),
+                    new DirectiveReadService(new UnusedPacks(), new FixedDirectives(), fixedDigest(), NO_REVISION),
+                    new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
+                    new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
+                    new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
                     new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()))
             .forPack(PACK);
 

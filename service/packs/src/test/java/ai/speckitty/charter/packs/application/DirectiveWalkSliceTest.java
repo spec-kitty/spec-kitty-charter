@@ -36,6 +36,11 @@ import org.junit.jupiter.api.Test;
  */
 class DirectiveWalkSliceTest {
 
+    /** A walk resolves items without their revision, which reads every pack file; it must never ask for one. */
+    private static final PackRevisions NO_REVISION = pack -> {
+        throw new AssertionError("a walk never reads the pack revision");
+    };
+
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
     // ALPHA -> directive:BETA (reachable) and -> procedure:some-procedure (unwired kind, D6).
@@ -57,7 +62,7 @@ class DirectiveWalkSliceTest {
             Map.of(alpha.id(), alpha, beta.id(), beta, gamma.id(), gamma, delta.id(), delta);
 
     private final DirectiveReadService reads = new DirectiveReadService(
-            new FixedPacks(), new FixedDirectives(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)));
+            new FixedPacks(), new FixedDirectives(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)), NO_REVISION);
 
     @Test
     void walksOnlyTheReachableSubgraphAndContinuesPastAnUnwiredKind() {

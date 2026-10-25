@@ -40,9 +40,8 @@ class ParadigmControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ParadigmController(
-                    new ParadigmReadService(store, store, new ConsistentRead(() -> DIGEST)),
-                    new ParadigmRegistrationService(store, store, new PermissiveWritePolicyGate()),
-                    store))
+                    new ParadigmReadService(store, store, new ConsistentRead(() -> DIGEST), store),
+                    new ParadigmRegistrationService(store, store, new PermissiveWritePolicyGate())))
             .setControllerAdvice(new RefusalHandler())
             .build();
 

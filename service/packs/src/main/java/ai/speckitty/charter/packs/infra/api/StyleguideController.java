@@ -11,7 +11,6 @@ import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.ConfigValue;
@@ -53,20 +52,16 @@ public class StyleguideController implements StyleguidesApi {
 
     private final StyleguideReadService reads;
     private final StyleguideRegistrationService registrations;
-    private final PackWriteStore writeStore;
 
     /**
      * A controller over the styleguide read and registration use cases.
      *
      * @param reads the read use case
      * @param registrations the registration use case
-     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
      */
-    public StyleguideController(
-            StyleguideReadService reads, StyleguideRegistrationService registrations, PackWriteStore writeStore) {
+    public StyleguideController(StyleguideReadService reads, StyleguideRegistrationService registrations) {
         this.reads = reads;
         this.registrations = registrations;
-        this.writeStore = writeStore;
     }
 
     @Override
@@ -79,12 +74,11 @@ public class StyleguideController implements StyleguidesApi {
 
     @Override
     public ResponseEntity<Styleguide1> getPackStyleguide(String packId, String styleguideId) {
-        PackIdentifier pack = new PackIdentifier(packId);
-        var verified = reads.styleguide(pack, new StyleguideIdentifier(styleguideId));
+        var verified = reads.styleguideWithRevision(new PackIdentifier(packId), new StyleguideIdentifier(styleguideId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(writeStore.currentRevision(pack).token())
-                .body(toSingleDto(verified.value()));
+                .eTag(verified.value().revision().token())
+                .body(toSingleDto(verified.value().value()));
     }
 
     @Override
