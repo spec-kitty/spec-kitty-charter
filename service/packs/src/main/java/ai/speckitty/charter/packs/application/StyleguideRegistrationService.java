@@ -95,7 +95,8 @@ public final class StyleguideRegistrationService {
                     exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                     styleguide.urn());
             Pack mutated = revalidated(current, styleguide);
-            PackRevision revision = writeStore.commit(pack, ifMatch, mutated, null); // relationships unchanged
+            PackRevision revision =
+                    writeStore.commit(pack, ifMatch, PackWriteStore.Change.artifact(mutated, styleguide));
             return new Registered(revision, !exists, styleguide.urn());
         });
     }

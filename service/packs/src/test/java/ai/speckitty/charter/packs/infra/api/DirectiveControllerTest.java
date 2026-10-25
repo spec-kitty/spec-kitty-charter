@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
@@ -250,8 +251,8 @@ class DirectiveControllerTest {
         }
 
         @Override
-        public PackRevision commit(PackIdentifier id, String ifMatch, Pack mutated, List<Relationship> relationships) {
-            this.pack = mutated;
+        public PackRevision commit(PackIdentifier id, String ifMatch, Change change) {
+            this.pack = change.revalidated();
             commits++;
             return currentRevision(id);
         }
