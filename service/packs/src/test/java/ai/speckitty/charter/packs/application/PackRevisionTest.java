@@ -2,9 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import ai.speckitty.charter.kernel.domain.Fingerprint;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,18 +45,19 @@ class PackRevisionTest {
     }
 
     @Test
-    @DisplayName("the revision differs from the read-path fingerprint scheme for the same bytes (ADR-0026 D5)")
+    @DisplayName("the revision differs from the real kernel Fingerprint of the same content (ADR-0026 D5)")
     void theRevisionIsDistinctFromTheReadFingerprint() {
         List<String> content = List.of("descriptor", "child-a");
         PackRevision revision = PackRevision.compute(content);
 
-        // The read-path fingerprint (ConsistentRead / PackSources) is sha256 over the raw bytes with no
-        // domain-separation tag. Compute that undifferentiated digest over the same bytes and show the two tokens
-        // never coincide: PackRevision carries its own tag, so freshness and concurrency stay apart.
-        String undifferentiated =
-                "sha256:" + hex(sha256(String.join("", content).getBytes(StandardCharsets.UTF_8)));
+        // The read path digests its files with the kernel Fingerprint (FileSystemPackSources). Digest the very same
+        // items with it: both are length-prefixed sha256, so only PackRevision's own domain-separation tag keeps the
+        // two tokens apart, which is what keeps freshness and concurrency from being confused.
+        Fingerprint read = Fingerprint.sha256();
+        content.forEach(read::add);
 
-        assertThat(revision.token()).isNotEqualTo(undifferentiated);
+        assertThat(read.value()).matches("sha256:[0-9a-f]{64}");
+        assertThat(revision.token()).isNotEqualTo(read.value());
     }
 
     @Test
@@ -70,25 +69,5 @@ class PackRevisionTest {
         assertThat(PackRevision.matches(current.token(), current)).isTrue();
         assertThat(PackRevision.matches(other.token(), current)).isFalse();
         assertThat(PackRevision.matches(null, current)).isFalse();
-    }
-
-    private static MessageDigest sha256() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static byte[] sha256(byte[] bytes) {
-        return sha256().digest(bytes);
-    }
-
-    private static String hex(byte[] bytes) {
-        StringBuilder out = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            out.append(Character.forDigit((b >> 4) & 0xF, 16)).append(Character.forDigit(b & 0xF, 16));
-        }
-        return out.toString();
     }
 }
