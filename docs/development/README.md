@@ -35,6 +35,9 @@ operations themselves are in the [service contract](/api/service-contract/).
 - [HTTP status codes](/development/http-status-codes/) — which status this API answers with, what
   each one means, its body and whether a client may retry.
 
+- [Development notes](/development/notes/) — pre-decision investigation notes that feed future
+  ADRs, including the [relationship identity / multigraph-collapse question](/development/notes/relationship-identity-collapse-review/).
+
 > **Status:** the REST conventions and status codes describe the contract as it is, and mark
 > what is proposed. The `Links` component and the root resource are proposed by
 > [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/); the offering, the activation
