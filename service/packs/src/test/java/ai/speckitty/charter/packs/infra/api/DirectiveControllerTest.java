@@ -26,6 +26,7 @@ import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -42,9 +43,8 @@ class DirectiveControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new DirectiveController(
-                    new DirectiveReadService(store, store, new ConsistentRead(() -> DIGEST)),
-                    new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate()),
-                    store))
+                    new DirectiveReadService(store, store, new ConsistentRead(() -> DIGEST), store),
+                    new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate())))
             .setControllerAdvice(new RefusalHandler())
             .build();
 
@@ -71,6 +71,26 @@ class DirectiveControllerTest {
                 .andExpect(header().exists("ETag"))
                 .andExpect(jsonPath("$.id").value("ALPHA"))
                 .andExpect(jsonPath("$.intent").value("Intent of ALPHA"));
+    }
+
+    @Test
+    void theItemEtagIsTheRevisionTheBodyWasReadAt() throws Exception {
+        String readAt = store.currentRevision(PACK).token();
+        AtomicInteger digests = new AtomicInteger();
+        // A commit lands just after the read's closing digest, which still saw the files the body came from.
+        ConsistentRead racing = new ConsistentRead(() -> {
+            if (digests.incrementAndGet() == 2) {
+                store.commits++;
+            }
+            return DIGEST;
+        });
+        MockMvcBuilders.standaloneSetup(new DirectiveController(
+                        new DirectiveReadService(store, store, racing, store),
+                        new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate())))
+                .build()
+                .perform(get("/api/v1/packs/pack-a/directives/ALPHA"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("ETag", "\"" + readAt + "\""));
     }
 
     @Test

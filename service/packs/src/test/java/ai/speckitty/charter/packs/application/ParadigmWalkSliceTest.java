@@ -41,6 +41,11 @@ import org.junit.jupiter.api.Test;
  */
 class ParadigmWalkSliceTest {
 
+    /** A walk resolves items without their revision, which reads every pack file; it must never ask for one. */
+    private static final PackRevisions NO_REVISION = pack -> {
+        throw new AssertionError("a walk never reads the pack revision");
+    };
+
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
     // clean-architecture -> directive:BETA (a requires edge, reachable) and -> procedure:some-procedure (a suggests
@@ -64,9 +69,9 @@ class ParadigmWalkSliceTest {
     private final Map<ParadigmIdentifier, Paradigm> paradigms = Map.of(start.id(), start);
 
     private final DirectiveReadService directiveReads = new DirectiveReadService(
-            new FixedPacks(), new FixedDirectives(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)));
+            new FixedPacks(), new FixedDirectives(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)), NO_REVISION);
     private final ParadigmReadService paradigmReads = new ParadigmReadService(
-            new FixedPacks(), new FixedParadigms(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)));
+            new FixedPacks(), new FixedParadigms(), new ConsistentRead(() -> "sha256:" + "a".repeat(64)), NO_REVISION);
 
     @Test
     void walksFromAParadigmResolvingItsReferencedDirectivesOnDemandAndContinuesPastAnUnwiredKind() {

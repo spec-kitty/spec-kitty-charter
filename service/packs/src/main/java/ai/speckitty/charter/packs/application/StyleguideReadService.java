@@ -29,9 +29,12 @@ import org.springframework.stereotype.Service;
 @Service
 public final class StyleguideReadService {
 
+    private static final String STALE_ONE = "The inputs changed while the styleguide was read; read it again.";
+
     private final PackRepository packs;
     private final StyleguideRepository styleguides;
     private final ConsistentRead read;
+    private final PackRevisions revisions;
 
     /**
      * A service over the injected ports.
@@ -39,12 +42,15 @@ public final class StyleguideReadService {
      * @param packs the port that loads a pack aggregate (its styleguides are projected for the list)
      * @param styleguides the port that fetches one styleguide
      * @param read the verifier that digests the inputs before and after each read
+     * @param revisions the pack revision, read inside the verified read for an item's {@code ETag}
      */
     @Autowired
-    public StyleguideReadService(PackRepository packs, StyleguideRepository styleguides, ConsistentRead read) {
+    public StyleguideReadService(
+            PackRepository packs, StyleguideRepository styleguides, ConsistentRead read, PackRevisions revisions) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.read = Objects.requireNonNull(read, "read");
+        this.revisions = Objects.requireNonNull(revisions, "revisions");
     }
 
     /**
@@ -82,20 +88,46 @@ public final class StyleguideReadService {
     public ConsistentRead.Verified<Styleguide> styleguide(PackIdentifier pack, StyleguideIdentifier styleguide) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(styleguide, "styleguide");
-        return read.read("The inputs changed while the styleguide was read; read it again.", () -> {
-            try {
-                return styleguides
-                        .load(pack, styleguide)
-                        .orElseThrow(() -> new CharterRefusal(
-                                RefusalCode.STYLEGUIDE_NOT_FOUND,
-                                "Pack " + pack.value() + " has no styleguide " + styleguide.value() + "."));
-            } catch (CharterRefusal refused) {
-                if (refused.code() == RefusalCode.STYLEGUIDE_NOT_FOUND) {
-                    throw refused;
-                }
-                throw packRefusal(pack, refused);
+        return read.read(STALE_ONE, () -> loadOne(pack, styleguide));
+    }
+
+    /**
+     * One styleguide of a pack with the pack revision it was read at, for an item read's body and {@code ETag}: both are
+     * taken inside the one verified read, so they name the same state.
+     *
+     * @param pack the pack's identity
+     * @param styleguide the styleguide's identity
+     * @return the styleguide and its revision, and the verified fingerprint
+     * @throws CharterRefusal as {@link #styleguide(PackIdentifier, StyleguideIdentifier)} does
+     */
+    public ConsistentRead.Verified<Revised<Styleguide>> styleguideWithRevision(
+            PackIdentifier pack, StyleguideIdentifier styleguide) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(styleguide, "styleguide");
+        return read.read(STALE_ONE, () -> new Revised<>(loadOne(pack, styleguide), revisionOf(pack)));
+    }
+
+    private Styleguide loadOne(PackIdentifier pack, StyleguideIdentifier styleguide) {
+        try {
+            return styleguides
+                    .load(pack, styleguide)
+                    .orElseThrow(() -> new CharterRefusal(
+                            RefusalCode.STYLEGUIDE_NOT_FOUND,
+                            "Pack " + pack.value() + " has no styleguide " + styleguide.value() + "."));
+        } catch (CharterRefusal refused) {
+            if (refused.code() == RefusalCode.STYLEGUIDE_NOT_FOUND) {
+                throw refused;
             }
-        });
+            throw packRefusal(pack, refused);
+        }
+    }
+
+    private PackRevision revisionOf(PackIdentifier pack) {
+        try {
+            return revisions.currentRevision(pack);
+        } catch (CharterRefusal refused) {
+            throw packRefusal(pack, refused);
+        }
     }
 
     /**

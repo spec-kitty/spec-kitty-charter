@@ -8,7 +8,6 @@ import ai.speckitty.charter.api.model.ToolguideRegistration1;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -37,20 +36,16 @@ public class ToolguideController implements ToolguidesApi {
 
     private final ToolguideReadService reads;
     private final ToolguideRegistrationService registrations;
-    private final PackWriteStore writeStore;
 
     /**
      * A controller over the toolguide read and registration use cases.
      *
      * @param reads the read use case
      * @param registrations the registration use case
-     * @param writeStore the write-path seam, consulted for the read {@code ETag} revision
      */
-    public ToolguideController(
-            ToolguideReadService reads, ToolguideRegistrationService registrations, PackWriteStore writeStore) {
+    public ToolguideController(ToolguideReadService reads, ToolguideRegistrationService registrations) {
         this.reads = reads;
         this.registrations = registrations;
-        this.writeStore = writeStore;
     }
 
     @Override
@@ -63,12 +58,11 @@ public class ToolguideController implements ToolguidesApi {
 
     @Override
     public ResponseEntity<Toolguide1> getPackToolguide(String packId, String toolguideId) {
-        PackIdentifier pack = new PackIdentifier(packId);
-        var verified = reads.toolguide(pack, new ToolguideIdentifier(toolguideId));
+        var verified = reads.toolguideWithRevision(new PackIdentifier(packId), new ToolguideIdentifier(toolguideId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(writeStore.currentRevision(pack).token())
-                .body(toSingleDto(verified.value()));
+                .eTag(verified.value().revision().token())
+                .body(toSingleDto(verified.value().value()));
     }
 
     @Override
