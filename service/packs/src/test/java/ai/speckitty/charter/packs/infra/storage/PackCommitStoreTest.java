@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
+import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
@@ -57,16 +58,20 @@ class PackCommitStoreTest {
         baseline.toolguides().forEach(builder::toolguide);
         baseline.paradigms().forEach(builder::paradigm);
         baseline.violations().forEach(builder::violation);
-        builder.toolguide(Toolguide.builder()
+        builder.toolguide(toolguide(toolguideId));
+        return builder.build();
+    }
+
+    private static Toolguide toolguide(String toolguideId) {
+        return Toolguide.builder()
                 .id(new ToolguideIdentifier(toolguideId))
-                .packId(baseline.id())
+                .packId(PACK)
                 .schemaVersion("1.0")
                 .tool("ripgrep")
                 .title("Use ripgrep")
                 .guidePath("guides/" + toolguideId + ".md")
                 .summary("How to search.")
-                .build());
-        return builder.build();
+                .build();
     }
 
     @Test
@@ -225,6 +230,26 @@ class PackCommitStoreTest {
         registrations.registerRelationship(
                 PACK, edge, writeStore.currentRevision(PACK).token());
         assertThat(writeStore.registeredRelationships(PACK)).containsExactly(edge);
+    }
+
+    @Test
+    @DisplayName("a write to a configured but broken pack is pack_unreadable, while an unconfigured pack is not found")
+    void aBrokenConfiguredPackIsUnreadableNotNotFoundOnAWrite(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Files.writeString(packDir.resolve(PackFileSet.PACK_YAML), "pack_id: [\n", StandardCharsets.UTF_8);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
+                locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
+        ToolguideRegistrationService registrations = new ToolguideRegistrationService(
+                new DomainRepositoryService(locations(packDir), strategy), writeStore, new PermissiveWritePolicyGate());
+
+        assertThatThrownBy(() -> registrations.registerToolguide(PACK, toolguide("ripgrep"), true, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        assertThatThrownBy(() ->
+                        registrations.registerToolguide(new PackIdentifier("ghost"), toolguide("ripgrep"), true, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
 
     /** Whether the packs-root holds no staging ({@code .pack-commit-}) or aside ({@code .pack-old-}) residue. */
