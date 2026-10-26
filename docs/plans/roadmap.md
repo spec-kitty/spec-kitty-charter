@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -51,7 +51,7 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-10-24.
+As of 2026-10-26.
 
 - **Step 1, done, then reshaped.** `contracts/charter/` is at `0.1.0-SNAPSHOT`, unreleased, and is
   published as 0.x until it is stable (ADR-0022, built by PR #129). PR #139 rebuilt the service on
@@ -68,8 +68,8 @@ As of 2026-10-24.
   aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 added
   directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)). Merge, activation and cascade are not built.
 - **Next.** Two tracks:
-  - **unblock core:** fix #119, release 0.1.0 (#45), then publish the activation set as 0.2.0
-    (#125);
+  - **unblock core:** #119 is fixed and the publishing workflow (#45) is built; next, cut 0.1.0
+    (the release itself, an operator call), then publish the activation set as 0.2.0 (#125);
   - **model before breadth:** a domain-model docs pass, a kind registry with a generic artifact read
     (#169, #171), then the offering reads under `/offering` (#126).
 
@@ -110,7 +110,9 @@ the shadow comparison stay in core.
 
 ## Before the first contract release
 
-The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). It waits on
-the fix for the duplicate classes code generation emits (#119), so that core's generated client is
-clean, and on the publishing workflow (#45). Shapes may still change in a 0.x minor; they freeze at 1.0.0
+The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Both things it
+waited on are built: the fix for the duplicate classes code generation emitted (#119), so that
+core's generated client is clean, and the publishing workflow (#45). What remains is cutting the
+release, following
+[the release procedure](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#releasing-a-contract-version). Shapes may still change in a 0.x minor; they freeze at 1.0.0
 (#128).
