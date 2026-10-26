@@ -14,7 +14,7 @@ sections:
     label: Glossary
     order: 15
     type: Glossary
-    purpose: The charter vocabulary, imported from the core glossary. Generated; do not edit.
+    purpose: The charter vocabulary, authored in site/.contextive/definitions.yaml (ADR-0029). Generated; do not edit the pages.
 
   - id: architecture
     label: Architecture

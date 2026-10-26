@@ -62,7 +62,7 @@ rules:
     ci: Docs checks / Orphan pages
     severity: error
   - id: internal-links
-    rule: Internal links are root-absolute routes that resolve; anchors exist; no absolute GitHub links to this repository's own docs. The imported glossary is link-checked too, but keeps core's relative link style.
+    rule: Internal links are root-absolute routes that resolve; anchors exist; no absolute GitHub links to this repository's own docs. The generated glossary is link-checked too, but keeps the generator's relative link style.
     check: check_docs.py links
     ci: Docs checks / Links and anchors
     severity: error
@@ -98,8 +98,8 @@ rules:
     check: check_docs.py plantuml
     ci: PlantUML diagrams are current
     severity: error
-  - id: glossary-imported
-    rule: docs/glossary/**/README.md are owned by doc-kitty's glossary generator — committed exactly as generated, carrying its `generated:` stamp and reduced frontmatter; not hand-edited. The source commit lives in site/.contextive/definitions.yaml's header, not on the pages.
+  - id: glossary-generated
+    rule: docs/glossary/**/README.md are owned by doc-kitty's glossary generator — committed exactly as generated, carrying its `generated:` stamp and reduced frontmatter; not hand-edited. Terms are authored in site/.contextive/definitions.yaml (ADR-0029), never on the pages.
     check: check_docs.py frontmatter (a page under docs/glossary/ that carries the `generated:` stamp is exempt from the authored-only keys updated/type/audience, the description-length band and the terminology check; every other required key still applies, and an unstamped page there is treated as authored)
     ci: Docs checks / Frontmatter
     severity: error
@@ -108,10 +108,10 @@ rules:
     check: "npm run check:okf (dockitty-export-okf: re-exports the built content graph and validates the bundle)"
     ci: Docs site / build
     severity: error
-  - id: glossary-matches-core
-    rule: The imported glossary is current with the core glossary.
+  - id: glossary-follows-conceptual-model
+    rule: The glossary (site/.contextive/definitions.yaml, owned here per ADR-0029) has an entry for every term the conceptual model introduces or renames; superseded terms are kept with status deprecated and point to their replacement.
     check: none
-    reason: Needs a checkout of the core repository; re-import with site/tools/import_core_glossary.py when core changes a term.
+    reason: Review judgment; the conceptual model is prose, so no script can list its terms.
   - id: docs-follow-code
     rule: A page changes in the same change as the behaviour it describes.
     check: none
