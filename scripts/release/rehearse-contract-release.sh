@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Rehearses a contract release without publishing anything, so the release path is exercised before release day.
+#
+# Usage: scripts/release/rehearse-contract-release.sh
+#
+# In a throwaway clone of HEAD with no remote, it:
+#   1. tags the unreleased commit and expects the publishing gate (:contracts:checkReleaseTag) to refuse it (a
+#      -SNAPSHOT is never published) and contract-release-assets.sh to leave no assets;
+#   2. commits a synthetic release (info.version and the top CHANGELOG heading without -SNAPSHOT), tags it
+#      locally and expects the three assets, with a checksum that matches the bundle.
+# The clone has no remote, so its tags can never be pushed. service.yml runs it after verifyAll.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+clone="$work/clone"
+
+git clone --quiet --no-local "$root" "$clone"
+cd "$clone"
+git checkout --quiet --detach "$(git -C "$root" rev-parse HEAD)"
+git remote remove origin
+
+openapi=contracts/charter/openapi.yaml
+changelog=contracts/charter/CHANGELOG.md
+snapshot="$(sed -n 's/^  version: *\(.*\)$/\1/p' "$openapi" | head -n 1)"
+if [[ "$snapshot" != *-SNAPSHOT ]]; then
+  echo "error: info.version is $snapshot, not a -SNAPSHOT: rehearse on a commit before the release" >&2
+  exit 1
+fi
+version="${snapshot%-SNAPSHOT}"
+tag="contract-charter-v$version"
+
+echo "== 1. The unreleased $snapshot is refused"
+git tag "$tag"
+if scripts/release/contract-release-assets.sh "$tag" "$work/refused" 2>&1 | tee "$work/refused.log"; then
+  echo "error: the assets of $snapshot were assembled under $tag" >&2
+  exit 1
+fi
+# The publishing gate refuses it, before anything is built; the contract checks would refuse it too, later.
+if ! grep -q "The release tag $tag is refused" "$work/refused.log"; then
+  echo "error: :contracts:checkReleaseTag did not refuse $tag" >&2
+  exit 1
+fi
+if [[ -e "$work/refused" ]] && [[ -n "$(ls -A "$work/refused")" ]]; then
+  echo "error: a refused release left assets in $work/refused" >&2
+  exit 1
+fi
+git tag -d "$tag" > /dev/null
+
+echo "== 2. A synthetic release $version is assembled"
+sed -i "0,/^  version: $snapshot\$/s//  version: $version/" "$openapi"
+sed -i "0,/^## $snapshot\$/s//## $version/" "$changelog"
+git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --message "rehearsal: release $version"
+git tag "$tag"
+scripts/release/contract-release-assets.sh "$tag" "$work/assets"
+for asset in charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.tar.gz; do
+  if [[ ! -s "$work/assets/$asset" ]]; then
+    echo "error: the release has no $asset" >&2
+    exit 1
+  fi
+done
+(cd "$work/assets" && sha256sum --check --strict charter-openapi.yaml.sha256)
+tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -q '^scenarios/README.md$'
+echo "Rehearsed $tag: refused while unreleased, assembled once released. Nothing was published."

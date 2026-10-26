@@ -89,7 +89,22 @@ This is the one release procedure.
 3. Open the next version: a new top heading `## 1.2.0-SNAPSHOT` and `info.version: 1.2.0-SNAPSHOT`,
    together in one change.
 
-Publishing the released bundle from a tag-triggered workflow is a follow-up.
+Pushing the tag in step 2 publishes the release: `.github/workflows/contract-release.yml` rebuilds
+the bundle at the tag and attaches `charter-openapi.yaml`, `charter-openapi.yaml.sha256` and
+`charter-scenarios.tar.gz` (the contract scenarios) to a GitHub Release of the tag. It refuses,
+and publishes nothing, unless the tag, `info.version` and the top heading name one released
+version (`./gradlew :contracts:checkReleaseTag -PreleaseTag=<tag>`), the contract checks pass and
+the tagged commit is on `main`; it also refuses a tag that moved while the assets were built.
+The workflow runs from the tagged commit, so these checks catch mistakes, not someone who can push
+tags: a tag ruleset on `contract-charter-v*` decides who can publish.
+
+Nothing publishes without a tag. `service.yml` rehearses the whole path on every change
+(`scripts/release/rehearse-contract-release.sh`): in a throwaway clone with no remote it expects
+the unreleased commit to be refused and a synthetic release to yield the three assets. To
+rehearse a real release, run `scripts/release/contract-release-assets.sh <tag> <out-dir>`, or the
+workflow by hand (workflow_dispatch) with the tag, on the release pull request's branch after
+step 1: both assemble the assets and create no Release. On `main` before step 1 they refuse,
+because the contract there is a `-SNAPSHOT`.
 
 ## The conventions
 

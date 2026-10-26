@@ -635,6 +635,43 @@ abstract class CheckClosedResponseObjects @Inject constructor(private val exec: 
     }
 }
 
+/**
+ * The publishing gate of a release tag (`ReleaseGate.releaseRefusal`): the tag `-PreleaseTag` names, `info.version`
+ * and the top CHANGELOG heading must name one released version. `contract-release.yml` runs it before it assembles
+ * anything; it is not part of `check`, because a commit on main is not a release.
+ */
+@DisableCachingByDefault(because = "A gate with no outputs: it runs each time it is asked.")
+abstract class CheckReleaseTag @Inject constructor(private val exec: ExecOperations) : DefaultTask() {
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val openapi: RegularFileProperty
+    @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val changelog: RegularFileProperty
+    @get:Classpath abstract val gateClasspath: ConfigurableFileCollection
+    @get:Nested abstract val launcher: Property<JavaLauncher>
+    @get:Input @get:Optional abstract val tag: Property<String>
+
+    @TaskAction
+    fun check() {
+        val releaseTag = tag.orNull
+            ?: throw GradleException("Name the release tag: -PreleaseTag=contract-charter-v<version>")
+        val output = ByteArrayOutputStream()
+        val errors = ByteArrayOutputStream()
+        val result = exec.javaexec {
+            executable = launcher.get().executablePath.asFile.absolutePath
+            classpath = gateClasspath
+            mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
+            args("--release", openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, releaseTag)
+            standardOutput = output
+            errorOutput = errors
+            isIgnoreExitValue = true
+        }
+        val text = output.toString(Charsets.UTF_8).trim()
+        if (result.exitValue != 0) {
+            throw GradleException("The release tag $releaseTag is refused (exit ${result.exitValue}):\n$text" +
+                errors.toString(Charsets.UTF_8).let { if (it.isBlank()) "" else "\n$it" })
+        }
+        logger.lifecycle(text)
+    }
+}
+
 val charterContract = layout.projectDirectory.dir("charter")
 val rulesetFile = layout.projectDirectory.file("lint/ruleset.yaml")
 // Raises oasdiff's response-*-property-added to ERR: an addition to a closed response is breaking
@@ -715,6 +752,16 @@ val checkClosedResponseObjects = tasks.register<CheckClosedResponseObjects>("che
     checkerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
     launcher = javaToolchains.launcherFor(java.toolchain)
     report = layout.buildDirectory.file("reports/closure/charter-openapi.txt")
+}
+
+tasks.register<CheckReleaseTag>("checkReleaseTag") {
+    group = "contract"
+    description = "Checks that -PreleaseTag, info.version and the top CHANGELOG heading name one released version."
+    openapi = charterContract.file("openapi.yaml")
+    changelog = charterContract.file("CHANGELOG.md")
+    gateClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    launcher = javaToolchains.launcherFor(java.toolchain)
+    tag = providers.gradleProperty("releaseTag")
 }
 
 tasks.named("check") {
