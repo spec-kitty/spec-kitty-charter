@@ -28,8 +28,11 @@ class SingleModelPerSchemaNormalizerTest {
     private fun OpenAPI.normalized(): OpenAPI = apply { SingleModelPerSchemaNormalizer(this, emptyMap()).normalize() }
 
     @Test
-    fun theParsersBooleanSchemaFalseIsReadAsFalse() {
-        // The parser's second reading of a closed schema file: a schema object that stands for `false`.
+    fun aClosedSchemaCollapsesToFalseWhetherReadAsBooleanOrSchemaObject() {
+        // A naturally-parsed closed schema already reads as boolean `false`; normalization must not open it.
+        assertThat(parsed().normalized().additional("Closed")).isEqualTo(false)
+        // The parser's *second* reading of the same file yields a schema object standing for `false`
+        // (the #119 bug shape); the normalizer must collapse that back to boolean `false` as well.
         val api = parsed()
         api.components.schemas.getValue("Closed").additionalProperties = JsonSchema().booleanSchemaValue(false)
         assertThat(api.normalized().additional("Closed")).isEqualTo(false)
@@ -42,10 +45,5 @@ class SingleModelPerSchemaNormalizerTest {
         assertThat(api.additional("Empty")).isInstanceOf(Schema::class.java)
         assertThat((api.additional("Empty") as Schema<*>).booleanSchemaValue as Any?).isNull()
         assertThat((api.additional("Map") as Schema<*>).types).containsExactly("string")
-    }
-
-    @Test
-    fun aClosedSchemaStaysClosed() {
-        assertThat(parsed().normalized().additional("Closed")).isEqualTo(false)
     }
 }
