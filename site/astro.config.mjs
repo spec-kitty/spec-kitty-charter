@@ -15,9 +15,12 @@ export default defineConfig({
   // The DDD patterns reference moved out of the generator-owned glossary tree to
   // docs/development/ (issue #200): its hub is now authored, so the generated
   // glossary hub no longer needs a hand-added line it would drop on rebuild.
-  // Keep the old URL alive. Route keys/targets are base-free; doc-kitty applies BASE.
+  // Keep the old URL alive. The source route is base-free (dist has no base/ dir),
+  // but the target must carry BASE so the emitted stub redirects to a live in-base
+  // URL in the browser (doc-kitty #61: a base-less redirect target resolves outside
+  // the site base and fails check:built-links).
   redirects: {
-    '/glossary/ddd-patterns': '/development/ddd-patterns',
+    '/glossary/ddd-patterns': `${BASE}/development/ddd-patterns`,
   },
   integrations: defineDocKittyIntegrations({
     title: 'spec-kitty-charter',
