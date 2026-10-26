@@ -2,7 +2,7 @@
 title: System context
 description: The systems around the charter service — the core CLI and runtime, the Charter Packs, the event contracts and the integration package — and which contract each edge uses.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -51,7 +51,7 @@ flowchart LR
 | From | To | Contract | Notes |
 |---|---|---|---|
 | Charter service | Charter Packs on disk | The pack schemas, the JSON Schemas in [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas) (`pack.yaml`, `org-charter.yaml`, DRG shards and fragments, artifact YAML) | Read-only during the read stages. Writes stay in Python until each write operation migrates. |
-| Core CLI and runtime | Charter service | **The charter OpenAPI contract** | CLI callers go through the Python seam `charter.offering.api`, which calls the service over loopback REST. They never bypass the seam. |
+| Core CLI and runtime | Charter service | **The charter OpenAPI contract** | CLI callers go through the Python seam `charter.offering.api`, which calls the service over loopback REST (local option) or a configured endpoint (hosted option, [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)). They never bypass the seam. |
 | Agent harnesses | Charter service | The same contract, over MCP | Planned. Must not ship before its authorization decision (core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md)). |
 | Runtime | Event ledger | **spec-kitty-events** | The runtime calls the core's one canonical event writer, which appends contract events, each with its `schema_version`. The charter service appends none. |
 | Integration package | Event ledger | **spec-kitty-events** | Subscribers. They know the contracts, not the producers. |
