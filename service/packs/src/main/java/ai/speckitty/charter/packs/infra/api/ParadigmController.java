@@ -2,10 +2,8 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ParadigmsApi;
 import ai.speckitty.charter.api.model.Paradigm;
-import ai.speckitty.charter.api.model.Paradigm1;
 import ai.speckitty.charter.api.model.ParadigmReference;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
-import ai.speckitty.charter.api.model.ParadigmRegistration1;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -30,8 +28,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * throw is answered by {@link RefusalHandler}; so is a stale {@code If-Match}
  * precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
- * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-paradigm response
- * is a {@code Paradigm1}, the generator's name for the second use of the one {@code Paradigm} schema.
+ * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002).
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -60,16 +57,16 @@ public class ParadigmController implements ParadigmsApi {
     }
 
     @Override
-    public ResponseEntity<Paradigm1> getPackParadigm(String packId, String paradigmId) {
+    public ResponseEntity<Paradigm> getPackParadigm(String packId, String paradigmId) {
         var verified = reads.paradigmWithRevision(new PackIdentifier(packId), new ParadigmIdentifier(paradigmId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toSingleDto(verified.value().value()));
+                .body(toDto(verified.value().value()));
     }
 
     @Override
-    public ResponseEntity<Paradigm1> registerPackParadigm(String packId, ParadigmRegistration body) {
+    public ResponseEntity<Paradigm> registerPackParadigm(String packId, ParadigmRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
@@ -88,12 +85,12 @@ public class ParadigmController implements ParadigmsApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toSingleDto(paradigm));
+                .body(toDto(paradigm));
     }
 
     @Override
-    public ResponseEntity<Paradigm1> putPackParadigm(
-            String packId, String paradigmId, ParadigmRegistration1 body, @Nullable String ifMatch) {
+    public ResponseEntity<Paradigm> putPackParadigm(
+            String packId, String paradigmId, ParadigmRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
                 pack,
@@ -108,7 +105,7 @@ public class ParadigmController implements ParadigmsApi {
                 registrations.registerParadigm(pack, paradigm, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toSingleDto(paradigm));
+                .body(toDto(paradigm));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -146,18 +143,6 @@ public class ParadigmController implements ParadigmsApi {
     }
 
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Paradigm1 toSingleDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
-        Paradigm listed = toDto(paradigm);
-        return new Paradigm1(
-                listed.getId(),
-                listed.getSchemaVersion(),
-                listed.getName(),
-                listed.getSummary(),
-                listed.getDirectiveRefs(),
-                listed.getReferences(),
-                listed.getRelationships());
-    }
 
     private static Paradigm toDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
         return new Paradigm(

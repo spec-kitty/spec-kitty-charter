@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-25T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -352,6 +352,9 @@ depths 0, 1 and 2".
 - **Contract tooling.** The generator duplicates `Problem1` and `PackListing1` (a
   swagger-parser `additionalProperties: false` bug). It is a known follow-up for the contract
   tooling, not a contract problem (issue #119).
+  Clarification 2026-10-26 (the decision is unchanged): #119 is fixed in the build
+  (`charter.contract-api`), and the copies are gone. `PackListing` itself left the contract with
+  the refresh endpoint.
 
 ## Alternatives considered
 

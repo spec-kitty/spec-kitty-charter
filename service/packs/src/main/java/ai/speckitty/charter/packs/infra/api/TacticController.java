@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.TacticsApi;
 import ai.speckitty.charter.api.model.Tactic;
-import ai.speckitty.charter.api.model.Tactic1;
 import ai.speckitty.charter.api.model.TacticReference;
 import ai.speckitty.charter.api.model.TacticStep;
 import ai.speckitty.charter.packs.application.TacticReadService;
@@ -42,29 +41,11 @@ public class TacticController implements TacticsApi {
     }
 
     @Override
-    public ResponseEntity<Tactic1> getPackTactic(String packId, String tacticId) {
+    public ResponseEntity<Tactic> getPackTactic(String packId, String tacticId) {
         var verified = tactics.tactic(new PackIdentifier(packId), new TacticIdentifier(tacticId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(toSingleDto(verified.value()));
-    }
-
-    /**
-     * The one-tactic body is a {@code Tactic1}: the generator names the second use of the one {@code Tactic} schema
-     * that way, as it does {@code Problem1} (see {@link ProblemJson}). The two classes hold the same members.
-     */
-    private static Tactic1 toSingleDto(ai.speckitty.charter.packs.domain.Tactic tactic) {
-        Tactic listed = toDto(tactic);
-        return new Tactic1(
-                listed.getId(),
-                listed.getSchemaVersion(),
-                listed.getName(),
-                listed.getPurpose(),
-                listed.getNotes(),
-                listed.getSteps(),
-                listed.getFailureModes(),
-                listed.getAppliesToLanguages(),
-                listed.getReferences());
+                .body(toDto(verified.value()));
     }
 
     private static Tactic toDto(ai.speckitty.charter.packs.domain.Tactic tactic) {

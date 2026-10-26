@@ -2,11 +2,9 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.StyleguidesApi;
 import ai.speckitty.charter.api.model.Styleguide;
-import ai.speckitty.charter.api.model.Styleguide1;
 import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
-import ai.speckitty.charter.api.model.StyleguideRegistration1;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -40,8 +38,7 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). A styleguide mints no
  * relationships, so the response relationships array is always empty and the registration body carries none. The
- * one-styleguide response is a {@code Styleguide1}, the generator's name for the second use of the one
- * {@code Styleguide} schema. The tooling map is carried as ordered {@code {tool, configuration}} entries, and the
+ * tooling map is carried as ordered {@code {tool, configuration}} entries, and the
  * arbitrary structural-lint-config tree as its JSON text, because a closed response object admits neither an
  * open-keyed map nor a recursive tree.
  */
@@ -74,16 +71,16 @@ public class StyleguideController implements StyleguidesApi {
     }
 
     @Override
-    public ResponseEntity<Styleguide1> getPackStyleguide(String packId, String styleguideId) {
+    public ResponseEntity<Styleguide> getPackStyleguide(String packId, String styleguideId) {
         var verified = reads.styleguideWithRevision(new PackIdentifier(packId), new StyleguideIdentifier(styleguideId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toSingleDto(verified.value().value()));
+                .body(toDto(verified.value().value()));
     }
 
     @Override
-    public ResponseEntity<Styleguide1> registerPackStyleguide(String packId, StyleguideRegistration body) {
+    public ResponseEntity<Styleguide> registerPackStyleguide(String packId, StyleguideRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Styleguide styleguide = assemble(
@@ -107,12 +104,12 @@ public class StyleguideController implements StyleguidesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toSingleDto(styleguide));
+                .body(toDto(styleguide));
     }
 
     @Override
-    public ResponseEntity<Styleguide1> putPackStyleguide(
-            String packId, String styleguideId, StyleguideRegistration1 body, @Nullable String ifMatch) {
+    public ResponseEntity<Styleguide> putPackStyleguide(
+            String packId, String styleguideId, StyleguideRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Styleguide styleguide = assemble(
                 pack,
@@ -132,7 +129,7 @@ public class StyleguideController implements StyleguidesApi {
                 registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toSingleDto(styleguide));
+                .body(toDto(styleguide));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -211,24 +208,6 @@ public class StyleguideController implements StyleguidesApi {
     }
 
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Styleguide1 toSingleDto(ai.speckitty.charter.packs.domain.Styleguide styleguide) {
-        Styleguide listed = toDto(styleguide);
-        return new Styleguide1(
-                listed.getId(),
-                listed.getSchemaVersion(),
-                listed.getTitle(),
-                listed.getScope(),
-                listed.getPrinciples(),
-                listed.getPatterns(),
-                listed.getAntiPatterns(),
-                listed.getTooling(),
-                listed.getQualityTest(),
-                listed.getStructuralLintConfig(),
-                listed.getAppliesToLanguages(),
-                listed.getReferences(),
-                listed.getRelationships());
-    }
 
     private static Styleguide toDto(ai.speckitty.charter.packs.domain.Styleguide styleguide) {
         return new Styleguide(

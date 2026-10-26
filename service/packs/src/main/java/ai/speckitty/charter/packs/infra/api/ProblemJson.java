@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
-import ai.speckitty.charter.api.model.Problem1;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,9 +32,7 @@ public class ProblemJson {
     public JacksonModule problemJsonModule() {
         return new SimpleModule("charter-problem-json")
                 .setMixInAnnotation(CharterRefusal.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(Problem.class, OmitAbsentMembers.class)
-                // The generator's second class for the same shared Problem schema (a name collision it renames).
-                .setMixInAnnotation(Problem1.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(Problem.class, OmitAbsentMembers.class);
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */

@@ -15,6 +15,15 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Contract tooling (issue #119)
+
+- No shape changes. Code generated from the contract now has one class per schema: the
+  generator's parser read some `additionalProperties: false` as a schema object standing for
+  `false`, which the generator took for an open map, and it emitted that reading as a copy
+  (`Problem1`, `Tactic1`, `Directive1`, `DirectiveRegistration1` and seven more). The service's
+  build reads such a boolean schema back as its boolean (issue #119), so a client that generates
+  from the split contract with the same generator should do the same.
+
 ### Regular artefact read and registration (mission regular-artefact-read-registration)
 
 - Added: per-kind reads and registrations for directive, styleguide, paradigm and toolguide:
@@ -441,7 +450,7 @@ closed responses; no tag exists, so no baseline is broken. The divergences from 
   (`compatibilityFixtures` now has 5 breaking and 2 compatible).
 - Known contract tooling issue: the generator duplicates `Problem` as `Problem1` and `PackListing`
   as `PackListing1` (a swagger-parser `additionalProperties: false` bug). The wire shape is
-  unaffected; the generator-side dedupe is issue #119.
+  unaffected; the generator-side dedupe is issue #119. Fixed: see Contract tooling above.
 - `scenarios/README.md` lists every new step.
 
 ### Removed

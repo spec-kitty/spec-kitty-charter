@@ -2,7 +2,6 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -13,7 +12,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
@@ -43,12 +41,11 @@ import tools.jackson.databind.ObjectMapper;
 class NullOmissionTest {
 
     private static final String MODEL_PACKAGE_PATH = "ai/speckitty/charter/api/model/";
-    private static final Pattern RENAMED = Pattern.compile("(.+)_\\d+");
-    // Registration bodies (X Registration / X Registration1) are request shapes the service only ever deserializes;
+    // Registration bodies (X Registration) are request shapes the service only ever deserializes;
     // it never writes one to the wire (a write answers the kind's read DTO). Null omission is a response-serialization
     // invariant, so it does not govern a request-only model: a registration body legitimately carries optional fields
     // (an id is optional on POST, path-supplied on PUT) that this closure would otherwise forbid.
-    private static final Pattern REQUEST_ONLY = Pattern.compile(".*Registration\\d*\\.class");
+    private static final Pattern REQUEST_ONLY = Pattern.compile(".*Registration\\.class");
 
     @Autowired
     private ObjectMapper json;
@@ -119,15 +116,8 @@ class NullOmissionTest {
         return models;
     }
 
-    /** The schema file of a model: its name, or the name the generator renamed it from after a collision. */
+    /** The schema file of a model: each schema is generated as one model of its name (GeneratedModelNamesTest). */
     private static String schemaOf(Class<?> model) {
-        JsonTypeName renamed = model.getAnnotation(JsonTypeName.class);
-        if (renamed != null) {
-            Matcher matcher = RENAMED.matcher(renamed.value());
-            if (matcher.matches()) {
-                return find(matcher.group(1));
-            }
-        }
         return find(model.getSimpleName());
     }
 

@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.RelationshipsApi;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
-import ai.speckitty.charter.api.model.RelationshipRegistration1;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.domain.PackIdentifier;
@@ -39,7 +38,7 @@ public class RelationshipController implements RelationshipsApi {
 
     @Override
     public ResponseEntity<RelationshipRegistration> putPackRelationship(
-            String packId, RelationshipRegistration1 body, @Nullable String ifMatch) {
+            String packId, RelationshipRegistration body, @Nullable String ifMatch) {
         Relationship relationship = RelationshipWire.fromWire(body);
         RelationshipRegistrationService.Registered result =
                 registrations.registerRelationship(new PackIdentifier(packId), relationship, ifMatch);

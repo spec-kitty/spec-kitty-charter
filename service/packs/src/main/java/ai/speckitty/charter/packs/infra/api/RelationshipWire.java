@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.RelationshipRegistration;
-import ai.speckitty.charter.api.model.RelationshipRegistration1;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -12,8 +11,8 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The one mapping between a relationship's wire shape ({@code RelationshipRegistration}, and the generator's
- * {@code RelationshipRegistration1} for the relationship route's request body) and the kernel {@link Relationship}.
+ * The one mapping between a relationship's wire shape ({@code RelationshipRegistration}) and the kernel
+ * {@link Relationship}.
  * Every controller that reads or answers relationships goes through it, so an unknown URN kind or relation type is
  * refused the same way everywhere: {@link RefusalCode#VALIDATION_FAILED}.
  */
@@ -47,7 +46,7 @@ final class RelationshipWire {
      * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when an endpoint is not a URN of a known kind
      *     or the type is unknown
      */
-    static Relationship fromWire(RelationshipRegistration1 wire) {
+    static Relationship fromWire(RelationshipRegistration wire) {
         try {
             return relationship(wire.getFrom(), wire.getTo(), wire.getType(), wire.getWhen(), wire.getRationale());
         } catch (IllegalArgumentException invalid) {
