@@ -97,6 +97,7 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   the worktree guard.
 - `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
   `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
+- `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
 
 ## Tags
 
@@ -109,6 +110,15 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   operation, and name in its description the unit test that enforces "raised by no operation of this version" and
   the issue that will raise the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #55). The
   charter's refusal score is therefore reported as eight behavioral codes plus one declared.
+- `@WIP`: the scenario needs a surface the contract does not have yet (activation, presets, roles and profiles, pins,
+  removal, mission types, values and creeds, upgrades, hosting, cold start). The suite excludes it
+  (`@ExcludeTags("WIP")` beside `@IncludeTags("contract")`), so its steps need not be bound; when the surface lands,
+  the tag comes off, the steps are bound with the vocabulary above, and the change gets a line in `../CHANGELOG.md`.
+  The released scenario archive includes `@WIP` scenarios: **any implementation that runs these scenarios must
+  exclude `@WIP`**, as this repository's suite does.
+- `@journey-NN`: the feature concretizes user journey NN. The journey features live in `journeys/`, one per journey
+  page (`journeys/journey-NN-<slug>.feature` for `docs/context/user-journeys/NN-<slug>.md`, named on the file's second
+  line). Each holds runnable scenarios for the steps today's contract supports and `@WIP` scenarios for the rest.
 
 ## Rules
 

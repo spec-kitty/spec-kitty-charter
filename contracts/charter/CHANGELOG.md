@@ -29,6 +29,14 @@ was cut under either label. `Added` lists what this version holds that the first
   publishes nothing unless the tag, `info.version` and the top heading name one released
   version (issue #45). No release is cut yet.
 
+### User journey scenarios (mission charter-conceptual-model-and-journeys)
+
+- Scenarios: `journeys/journey-01-getting-started.feature` to `journeys/journey-11-human-reviews.feature` are new, one
+  per user journey (`@journey-NN`). Their runnable scenarios use only the existing step vocabulary; the scenarios that
+  need a surface the contract does not have yet are tagged `@WIP`, a new tag the contract suite excludes. The scenario
+  archive a release publishes includes them, so a consumer that runs the scenarios must exclude `@WIP` too. No
+  operation, schema or existing expectation changes.
+
 ### Regular artefact read and registration (mission regular-artefact-read-registration)
 
 - Added: per-kind reads and registrations for directive, styleguide, paradigm and toolguide:
