@@ -334,7 +334,7 @@ creed design (epic #77).
 - **Pack versions.** The active charter names the packs it builds on, by id and version.
 - **[Upgrades](/glossary/governance/#upgrade-pack-version) are opt-in per project**
   (ADR [0033](/adr/0033-local-active-charter-is-source-of-truth/)):
-  - A new pack version reaches the service on request, verified against the pack's checksum. A
+  - A new pack version reaches the service on request and is verified before it is accepted. A
     failed verification is refused and the old version keeps serving.
   - The service holds several versions of a pack side by side. A project moves when it re-registers
     or updates its active charter; **that update is the acknowledgement**.
