@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -82,10 +82,12 @@ answers. The contract files are the authority; this section only summarizes them
   evidence of intent, not a specification. The differences from core are in the
   [divergence register](/conformance/divergence-register/).
 
-### Known tooling gap
+### Generated models
 
-The generator duplicates `Problem` as `Problem1` and `Tactic` as `Tactic1` (a
-swagger-parser bug with closed schemas). The wire shape is unaffected; the dedupe is issue #119.
+Each schema is generated as one class. The generator's parser reads some `additionalProperties:
+false` as a schema object standing for `false`, which the generator took for an open map, so it
+emitted copies such as `Problem1` and `Tactic1`. The build reads such a boolean schema back as its
+boolean (issue #119), and a test fails if a copy comes back. The wire shape never depended on it.
 
 ### Security and freshness
 

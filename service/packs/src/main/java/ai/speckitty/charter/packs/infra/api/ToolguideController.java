@@ -2,9 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ToolguidesApi;
 import ai.speckitty.charter.api.model.Toolguide;
-import ai.speckitty.charter.api.model.Toolguide1;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
-import ai.speckitty.charter.api.model.ToolguideRegistration1;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
@@ -28,8 +26,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>A toolguide mints no relationships, so neither the request body nor the response carries a relationships array.
- * Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-toolguide response is a
- * {@code Toolguide1}, the generator's name for the second use of the one {@code Toolguide} schema.
+ * Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002).
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -58,16 +55,16 @@ public class ToolguideController implements ToolguidesApi {
     }
 
     @Override
-    public ResponseEntity<Toolguide1> getPackToolguide(String packId, String toolguideId) {
+    public ResponseEntity<Toolguide> getPackToolguide(String packId, String toolguideId) {
         var verified = reads.toolguideWithRevision(new PackIdentifier(packId), new ToolguideIdentifier(toolguideId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toSingleDto(verified.value().value()));
+                .body(toDto(verified.value().value()));
     }
 
     @Override
-    public ResponseEntity<Toolguide1> registerPackToolguide(String packId, ToolguideRegistration body) {
+    public ResponseEntity<Toolguide> registerPackToolguide(String packId, ToolguideRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Toolguide toolguide = assemble(
@@ -88,12 +85,12 @@ public class ToolguideController implements ToolguidesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toSingleDto(toolguide));
+                .body(toDto(toolguide));
     }
 
     @Override
-    public ResponseEntity<Toolguide1> putPackToolguide(
-            String packId, String toolguideId, ToolguideRegistration1 body, @Nullable String ifMatch) {
+    public ResponseEntity<Toolguide> putPackToolguide(
+            String packId, String toolguideId, ToolguideRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Toolguide toolguide = assemble(
                 pack,
@@ -111,7 +108,7 @@ public class ToolguideController implements ToolguidesApi {
                 registrations.registerToolguide(pack, toolguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toSingleDto(toolguide));
+                .body(toDto(toolguide));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -156,21 +153,6 @@ public class ToolguideController implements ToolguidesApi {
     }
 
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Toolguide1 toSingleDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
-        Toolguide listed = toDto(toolguide);
-        return new Toolguide1(
-                listed.getId(),
-                listed.getSchemaVersion(),
-                listed.getTool(),
-                listed.getTitle(),
-                listed.getGuidePath(),
-                listed.getSummary(),
-                listed.getCommands(),
-                listed.getAppliesToLanguages(),
-                listed.getLastUpdated(),
-                listed.getReferences());
-    }
 
     private static Toolguide toDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
         return new Toolguide(

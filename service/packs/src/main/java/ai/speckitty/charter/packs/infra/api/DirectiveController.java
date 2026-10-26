@@ -2,10 +2,8 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.DirectivesApi;
 import ai.speckitty.charter.api.model.Directive;
-import ai.speckitty.charter.api.model.Directive1;
 import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.DirectiveRegistration;
-import ai.speckitty.charter.api.model.DirectiveRegistration1;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -31,8 +29,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * {@link DirectiveRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
- * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). The one-directive response
- * is a {@code Directive1}, the generator's name for the second use of the one {@code Directive} schema.
+ * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002).
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -61,16 +58,16 @@ public class DirectiveController implements DirectivesApi {
     }
 
     @Override
-    public ResponseEntity<Directive1> getPackDirective(String packId, String directiveId) {
+    public ResponseEntity<Directive> getPackDirective(String packId, String directiveId) {
         var verified = reads.directiveWithRevision(new PackIdentifier(packId), new DirectiveIdentifier(directiveId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toSingleDto(verified.value().value()));
+                .body(toDto(verified.value().value()));
     }
 
     @Override
-    public ResponseEntity<Directive1> registerPackDirective(String packId, DirectiveRegistration body) {
+    public ResponseEntity<Directive> registerPackDirective(String packId, DirectiveRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Directive directive = assemble(
@@ -94,12 +91,12 @@ public class DirectiveController implements DirectivesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toSingleDto(directive));
+                .body(toDto(directive));
     }
 
     @Override
-    public ResponseEntity<Directive1> putPackDirective(
-            String packId, String directiveId, DirectiveRegistration1 body, @Nullable String ifMatch) {
+    public ResponseEntity<Directive> putPackDirective(
+            String packId, String directiveId, DirectiveRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Directive directive = assemble(
                 pack,
@@ -119,7 +116,7 @@ public class DirectiveController implements DirectivesApi {
                 registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toSingleDto(directive));
+                .body(toDto(directive));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -172,23 +169,6 @@ public class DirectiveController implements DirectivesApi {
     }
 
     // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Directive1 toSingleDto(ai.speckitty.charter.packs.domain.Directive directive) {
-        Directive listed = toDto(directive);
-        return new Directive1(
-                listed.getId(),
-                listed.getSchemaVersion(),
-                listed.getTitle(),
-                listed.getIntent(),
-                listed.getEnforcement(),
-                listed.getScope(),
-                listed.getProcedures(),
-                listed.getIntegrityRules(),
-                listed.getValidationCriteria(),
-                listed.getExplicitAllowances(),
-                listed.getReferences(),
-                listed.getRelationships());
-    }
 
     private static Directive toDto(ai.speckitty.charter.packs.domain.Directive directive) {
         return new Directive(

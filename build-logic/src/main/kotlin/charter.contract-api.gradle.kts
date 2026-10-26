@@ -36,6 +36,8 @@ val generateContract = tasks.register<GenerateTask>("generateContract") {
     modelPackage = "ai.speckitty.charter.api.model"
     cleanupOutput = true
     globalProperties = mapOf("apis" to "", "models" to "")
+    // The parser makes a second copy of a schema file referenced from two places; this folds it back (#119).
+    openapiNormalizer = mapOf("NORMALIZER_CLASS" to SingleModelPerSchemaNormalizer::class.java.name)
     configOptions = mapOf(
         "interfaceOnly" to "true",
         "useSpringBoot4" to "true",

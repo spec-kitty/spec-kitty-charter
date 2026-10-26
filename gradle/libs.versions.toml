@@ -59,3 +59,5 @@ gradle-plugin-openapi-generator = { module = "org.openapitools:openapi-generator
 gradle-plugin-spotless = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 gradle-plugin-errorprone = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "errorprone-plugin" }
 gradle-plugin-pitest = { module = "info.solidsoft.gradle.pitest:gradle-pitest-plugin", version.ref = "pitest-plugin" }
+# The generator itself, compiled against by the contract normalizer in build-logic; the plugin brings it at run time.
+openapi-generator-lib = { module = "org.openapitools:openapi-generator", version.ref = "openapi-generator" }
