@@ -53,6 +53,19 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aPublishedReleaseMustBeTheVersionItsTagNamesAndTheChangelogTops() throws IOException {
+        Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 0.1.0-SNAPSHOT\n");
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-SNAPSHOT\n");
+        List<String> args = List.of("--release", openapi.toString(), log.toString(), "contract-charter-v0.1.0");
+        assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
+        output.reset();
+        Files.writeString(openapi, "info:\n  version: 0.1.0\n");
+        Files.writeString(log, "## 0.1.0\n");
+        assertThat(CheckReleaseGate.run(args, out)).isZero();
+        assertThat(printed()).startsWith("RELEASE 0.1.0\n");
+    }
+
+    @Test
     void aMajorBumpNamesThePreviousMajorsRelease() throws IOException {
         Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 2.0.0-SNAPSHOT\n");
         Path log = Files.writeString(

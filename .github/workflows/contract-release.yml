@@ -1,0 +1,152 @@
+name: contract-release
+
+# Publishes a contract release (ADR-0002 D3, ADR-0022 D1; issue #45). Pushing a tag
+# contract-charter-v<version> at the release's merge commit on main rebuilds the release assets at
+# that tag with scripts/release/contract-release-assets.sh and attaches them to a GitHub Release of
+# the tag: charter-openapi.yaml (the single-file bundle core vendors), charter-openapi.yaml.sha256
+# and charter-scenarios.tar.gz (contracts/charter/scenarios/, the conformance corpus). Nothing is
+# published unless the tag, info.version and the top CHANGELOG heading name one released version,
+# the contract checks pass and the tagged commit is on main, and the publish job refuses a tag that
+# moved while the assets were built. The workflow file runs from the tagged commit, so these checks
+# guard against mistakes, not against someone who can push tags: a tag ruleset on contract-charter-v*
+# limits who can publish.
+#
+# A manual run (workflow_dispatch) is a rehearsal: it assembles the assets of the chosen ref under
+# the tag it is given and uploads them as the workflow artifact `contract-release`. It never creates
+# a Release, and the publish job does not run. It passes only on a ref whose contract is that release
+# (the release pull request's branch, or the tag); on an unreleased ref it shows the refusal.
+# service.yml rehearses the whole path on a synthetic release on every change (release-rehearsal).
+on:
+  push:
+    tags: ["contract-charter-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release tag to rehearse (contract-charter-v<version>). Nothing is published."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# A release is never cancelled halfway: a second run for the same tag waits.
+concurrency:
+  group: contract-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      commit: ${{ steps.tag.outputs.commit }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # The breaking-change check (:contracts:checkContractCompatibility) reads the
+          # contract-charter-v* tags and refuses a shallow clone; the main check reads origin/main.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Name the tag
+        id: tag
+        env:
+          EVENT: ${{ github.event_name }}
+          PUSHED: ${{ github.ref_name }}
+          REHEARSED: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = push ]; then tag="$PUSHED"; else tag="$REHEARSED"; fi
+          if ! printf '%s' "$tag" | grep -Eq '^contract-charter-v[0-9A-Za-z.+-]+$'; then
+            echo "::error::The tag is not a contract release tag (contract-charter-v<version>)"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # The release procedure tags the release's merge commit on main (contracts/lint/README.md).
+      - name: Check the tagged commit is on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_SHA is not on main: tag the release's merge commit on main"
+            exit 1
+          fi
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Assemble the release assets
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: scripts/release/contract-release-assets.sh "$TAG" dist
+
+      - name: Upload the release assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: contract-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The only job that can write: it runs no build, only checks and attaches what assemble built.
+  publish:
+    needs: assemble
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the release assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: contract-release
+          path: dist
+
+      # A sanity check that the bundle and its checksum arrived together; the assets come from this run.
+      - name: Check the bundle against its checksum
+        working-directory: dist
+        run: sha256sum --check --strict charter-openapi.yaml.sha256
+
+      # The assets are those of the commit assemble built. A tag moved or re-pushed since then names
+      # another commit, and nothing is published.
+      - name: Check the tag still names the built commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.assemble.outputs.tag }}
+          BUILT: ${{ needs.assemble.outputs.commit }}
+        run: |
+          set -euo pipefail
+          read -r type sha < <(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          if [ "$type" = tag ]; then sha="$(gh api "repos/$REPO/git/tags/$sha" --jq .object.sha)"; fi
+          if [ "$sha" != "$BUILT" ]; then
+            echo "::error::$TAG now names $sha, but the assets were built from $BUILT"
+            exit 1
+          fi
+
+      # --verify-tag refuses a tag that does not exist on the remote; an existing Release of the tag
+      # fails the step, so a release is never replaced.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.assemble.outputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${TAG#contract-charter-v}"
+          notes="The charter contract ${version}. What changed is in contracts/charter/CHANGELOG.md at this tag:"
+          notes="${notes} https://github.com/${REPO}/blob/${TAG}/contracts/charter/CHANGELOG.md"
+          notes="${notes}"$'\n\n'"Check the bundle with: sha256sum --check charter-openapi.yaml.sha256"
+          gh release create "$TAG" --repo "$REPO" --verify-tag \
+            --title "Charter contract ${version}" --notes "$notes" \
+            dist/charter-openapi.yaml dist/charter-openapi.yaml.sha256 dist/charter-scenarios.tar.gz

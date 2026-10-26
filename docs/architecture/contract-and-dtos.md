@@ -2,7 +2,7 @@
 title: Contract and DTOs
 description: The charter OpenAPI 3.1 contract is the single source of every DTO, generated into the Java service and ingested by the core for its CLI and runtime.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -147,9 +147,9 @@ The layout:
   released version of the same major version. Until the first release there is no baseline,
   and the check says so. How the released version is found, and the release procedure, are in
   [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline).
-- A release is tagged on `main` after its pull request merges. Publishing the bundle and the
-  conformance corpus from a tag is not built yet; it is a follow-up (DM
-  `01M5986KJ7B18K7GQ25E47J989`).
+- A release is tagged on `main` after its pull request merges. The tag publishes the bundle,
+  its checksum and the conformance corpus to a GitHub Release (the workflow
+  `contract-release.yml`, issue #45). No release is cut yet.
 - The core pins one contract release. Raising the pin regenerates its DTOs in the same
   change, and the conformance corpus of that release must pass against the Python
   implementation while it still answers.

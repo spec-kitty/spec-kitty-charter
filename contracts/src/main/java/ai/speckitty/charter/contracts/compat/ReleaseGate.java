@@ -56,6 +56,10 @@ import java.util.stream.IntStream;
  *   <li><b>Baseline is the release.</b> The contract archived at the baseline tag has an {@code info.version} equal
  *       to the version the tag names ({@link #baselineRefusal}), so a tag moved onto a later commit is not
  *       compared against as if it were the release.</li>
+ *   <li><b>Publishing tag.</b> A tag pushed to publish a release must be {@code contract-charter-v<version>} for a
+ *       released version equal to {@code info.version}, and the heading, order and version gates (rules 1 to 3)
+ *       must pass, so the top heading is that version too ({@link #releaseRefusal}). The workflow
+ *       {@code contract-release.yml} publishes nothing when this refuses.</li>
  * </ol>
  */
 public final class ReleaseGate {
@@ -267,6 +271,33 @@ public final class ReleaseGate {
         return refuse("The baseline tag " + tag + " names " + named + ", but the contract archived at that tag says"
                 + " its info.version is " + archivedInfoVersion + ". A baseline is the contract as released: the tag"
                 + " was moved or made on the wrong commit. Tag the release's merge commit on main.");
+    }
+
+    /**
+     * The publishing rule: a tag pushed to publish a release must name a released version, and that version must be
+     * both the contract's {@code info.version} and the top CHANGELOG heading (with the heading, order and version
+     * gates passing). The workflow {@code contract-release.yml} publishes nothing when this refuses.
+     *
+     * @param tag         the pushed tag, {@code contract-charter-v<version>}
+     * @param infoVersion the {@code info.version} of the contract at that tag
+     * @param changelog   the text of {@code contracts/charter/CHANGELOG.md} at that tag
+     * @return the refusal, or empty when the tag, {@code info.version} and the top heading name one released version
+     */
+    public static Optional<Decision.Refused> releaseRefusal(String tag, String infoVersion, String changelog) {
+        if (!tag.startsWith(TAG_PREFIX)) {
+            return refuse("The tag " + tag + " is not a contract release tag: it must be " + TAG_PREFIX + "<version>.");
+        }
+        String named = tag.substring(TAG_PREFIX.length());
+        if (Version.parse(named).filter(Version::released).isEmpty()) {
+            return refuse("The tag " + tag + " names " + named + ", which is not a released version (X.Y.Z):"
+                    + " a -SNAPSHOT is never published.");
+        }
+        if (!named.equals(infoVersion)) {
+            return refuse("The tag " + tag + " names " + named + ", but the contract at that tag says its"
+                    + " info.version is " + infoVersion + ". A release tag names the released version the contract"
+                    + " and the top CHANGELOG heading carry: tag the release's merge commit on main.");
+        }
+        return changelogRefusal(infoVersion, sections(changelog));
     }
 
     /**

@@ -15,7 +15,7 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
-### Contract tooling (issue #119)
+### Contract tooling (issues #119 and #45)
 
 - No shape changes. Code generated from the contract now has one class per schema: the
   generator's parser read some `additionalProperties: false` as a schema object standing for
@@ -23,6 +23,11 @@ was cut under either label. `Added` lists what this version holds that the first
   (`Problem1`, `Tactic1`, `Directive1`, `DirectiveRegistration1` and seven more). The service's
   build reads such a boolean schema back as its boolean (issue #119), so a client that generates
   from the split contract with the same generator should do the same.
+- A pushed `contract-charter-v<version>` tag publishes the release: the workflow
+  `contract-release.yml` attaches `charter-openapi.yaml`, its `.sha256` and
+  `charter-scenarios.tar.gz` (the contract scenarios) to a GitHub Release of the tag, and
+  publishes nothing unless the tag, `info.version` and the top heading name one released
+  version (issue #45). No release is cut yet.
 
 ### Regular artefact read and registration (mission regular-artefact-read-registration)
 

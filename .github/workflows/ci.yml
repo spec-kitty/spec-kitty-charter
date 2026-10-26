@@ -47,7 +47,7 @@ jobs:
           printf 'changed files:\n%s\n' "$changed"
           # Mirror the path filters of service.yml and docs-cleanliness.yml exactly; a change to
           # this gate workflow itself re-runs both groups (fail-safe).
-          service_re='^(contracts/|service/|build-logic/|config/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|\.github/workflows/(service|ci)\.yml$)'
+          service_re='^(contracts/|service/|build-logic/|config/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service|ci|contract-release)\.yml$)'
           docs_re='^(docs/|site/|scripts/docs/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"

@@ -538,6 +538,52 @@ class ReleaseGateTest {
         }
     }
 
+    @Nested
+    class PublishedRelease {
+
+        private static final String RELEASED = "## 0.1.0\n\n### Added\n\n- x\n";
+
+        @Test
+        void aTagThatNamesTheReleasedTopHeadingAndInfoVersionPasses() {
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.1.0", "0.1.0", RELEASED))
+                    .isEmpty();
+        }
+
+        @Test
+        void aTagThatNamesAnotherVersionIsRefused() {
+            Optional<Decision.Refused> refused =
+                    ReleaseGate.releaseRefusal("contract-charter-v0.2.0", "0.1.0", RELEASED);
+            assertThat(refused).isPresent();
+            assertThat(refused.get().message())
+                    .contains("contract-charter-v0.2.0 names 0.2.0")
+                    .contains("info.version is 0.1.0");
+        }
+
+        @Test
+        void aSnapshotIsNeverPublished() {
+            String snapshot = "## 0.1.0-SNAPSHOT\n\n### Added\n\n- x\n";
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.1.0", "0.1.0-SNAPSHOT", snapshot))
+                    .isPresent();
+            Optional<Decision.Refused> refused =
+                    ReleaseGate.releaseRefusal("contract-charter-v0.1.0-SNAPSHOT", "0.1.0-SNAPSHOT", snapshot);
+            assertThat(refused).isPresent();
+            assertThat(refused.get().message()).contains("not a released version");
+        }
+
+        @Test
+        void anInfoVersionTheTopHeadingDoesNotMatchIsRefused() {
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-v0.1.0", "0.1.0", "## 0.2.0\n\n## 0.1.0\n"))
+                    .isPresent();
+        }
+
+        @Test
+        void aTagWithoutThePrefixIsRefused() {
+            assertThat(ReleaseGate.releaseRefusal("0.1.0", "0.1.0", RELEASED)).isPresent();
+            assertThat(ReleaseGate.releaseRefusal("contract-charter-vnext", "0.1.0", RELEASED))
+                    .isPresent();
+        }
+    }
+
     @Test
     void withoutGitOnlyTheChangelogGatesRun() {
         assertThat(ReleaseGate.decideWithoutGit("1.0.0-SNAPSHOT", SNAPSHOT_ONLY))
