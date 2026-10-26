@@ -1,0 +1,76 @@
+# Generated documentation (manifest)
+
+This mission writes into the repository docsite, not under this directory. The documentation
+mission's generate guard looks only here (spec-kitty/spec-kitty#4034), so this manifest lists the
+pages and files the generate step produced or changed, relative to the repository root.
+
+- `contracts/charter/CHANGELOG.md`
+- `contracts/charter/scenarios/README.md`
+- `contracts/charter/scenarios/journeys/journey-01-getting-started.feature`
+- `contracts/charter/scenarios/journeys/journey-02-adopt-a-pack.feature`
+- `contracts/charter/scenarios/journeys/journey-03-plain-language-request.feature`
+- `contracts/charter/scenarios/journeys/journey-04-org-house-rules.feature`
+- `contracts/charter/scenarios/journeys/journey-05-remove-python.feature`
+- `contracts/charter/scenarios/journeys/journey-06-publish-a-pack.feature`
+- `contracts/charter/scenarios/journeys/journey-07-add-a-mission-type.feature`
+- `contracts/charter/scenarios/journeys/journey-08-resolve-a-step.feature`
+- `contracts/charter/scenarios/journeys/journey-09-upgrade-packs.feature`
+- `contracts/charter/scenarios/journeys/journey-10-host-centrally.feature`
+- `contracts/charter/scenarios/journeys/journey-11-human-reviews.feature`
+- `docs/README.md`
+- `docs/_meta/doc-rules.yaml`
+- `docs/_meta/sections.yaml`
+- `docs/_meta/spelling-words.txt`
+- `docs/_meta/terminology.yaml`
+- `docs/adr/0003-docs-follow-doc-kitty.md`
+- `docs/adr/0009-contract-1-0-reservations-and-additive-contract-sets.md`
+- `docs/adr/0011-seam-runtime-fail-closed-daemon-and-freshness.md`
+- `docs/adr/0012-pack-mutability-policy.md`
+- `docs/adr/0013-persistent-deactivation.md`
+- `docs/adr/0014-foundational-values-and-creed-rulings.md`
+- `docs/adr/0020-offering-and-activations.md`
+- `docs/adr/0025-relationships-first-class-and-lazy-repository-walk.md`
+- `docs/adr/0026-write-surface-is-functional-registration.md`
+- `docs/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse.md`
+- `docs/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship.md`
+- `docs/adr/0029-charter-glossary-is-owned-here.md`
+- `docs/adr/0030-removal-is-distinct-from-deactivation.md`
+- `docs/adr/0031-requirement-is-authored-as-a-preset.md`
+- `docs/adr/0032-steps-name-roles-and-profile-selection-order.md`
+- `docs/adr/0033-local-active-charter-is-source-of-truth.md`
+- `docs/adr/0034-local-and-hosted-deployment-options.md`
+- `docs/adr/README.md`
+- `docs/architecture/README.md`
+- `docs/architecture/contract-and-dtos.md`
+- `docs/architecture/descriptors.md`
+- `docs/architecture/logical-model.md`
+- `docs/architecture/offering-and-activation.md`
+- `docs/architecture/overview.md`
+- `docs/architecture/resolution-model.md`
+- `docs/architecture/service-lifecycle.md`
+- `docs/changelog/2026-10-26-charter-glossary-owned-here.md`
+- `docs/changelog/README.md`
+- `docs/context/README.md`
+- `docs/context/conceptual-model.md`
+- `docs/context/domain.md`
+- `docs/context/system-context.md`
+- `docs/context/user-journeys/01-getting-started.md`
+- `docs/context/user-journeys/02-adopt-a-pack.md`
+- `docs/context/user-journeys/03-plain-language-request.md`
+- `docs/context/user-journeys/04-org-house-rules.md`
+- `docs/context/user-journeys/05-remove-python.md`
+- `docs/context/user-journeys/06-publish-a-pack.md`
+- `docs/context/user-journeys/07-add-a-mission-type.md`
+- `docs/context/user-journeys/08-resolve-a-step.md`
+- `docs/context/user-journeys/09-upgrade-packs.md`
+- `docs/context/user-journeys/10-host-centrally.md`
+- `docs/context/user-journeys/11-human-reviews.md`
+- `docs/context/user-journeys/README.md`
+- `docs/glossary/charter/README.md`
+- `docs/glossary/governance/README.md`
+- `docs/guides/docsite.md`
+- `docs/plans/open-questions.md`
+- `scripts/docs/check_docs.py`
+- `scripts/docs/tests/test_check_docs.py`
+- `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/CharterContractSuite.java`
+- `site/.contextive/definitions.yaml`
