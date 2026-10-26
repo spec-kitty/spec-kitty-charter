@@ -8,7 +8,7 @@ kind: Explanation
 related:
   - development/code-style-and-conventions
   - architecture/architectural-patterns-applied
-  - glossary/ddd-patterns
+  - development/ddd-patterns
   - adr/0006-onion-vertical-slices-archunit
 audience:
   - profile: charter-service-contributor
@@ -20,7 +20,7 @@ audience:
 # How to DDD here
 
 A worked guide to the reasoning, not a textbook. The vocabulary is in the
-[DDD patterns glossary](/glossary/ddd-patterns/); the construction rules are in
+[DDD patterns reference](/development/ddd-patterns/); the construction rules are in
 [Code style and conventions](/development/code-style-and-conventions/); the layers and their
 diagrams are in [Architectural patterns applied](/architecture/architectural-patterns-applied/).
 The running example is the `packs` slice: `Pack` holds `Tactic`s, and a tactic holds steps and
@@ -82,8 +82,8 @@ removed. The storage adapter derives whatever structure it needs from the meanin
 
 ## A row is not an entity
 
-"Entity" means two different things, and the glossary headlines the distinction
-([Domain Entity vs Persistence Entity](/glossary/ddd-patterns/#domain-entity-vs-persistence-entity)).
+"Entity" means two different things, and the DDD patterns reference headlines the distinction
+([Domain Entity vs Persistence Entity](/development/ddd-patterns/#domain-entity-vs-persistence-entity)).
 
 - A **domain entity** has identity and a lifecycle in the model.
 - A **persistence entity** is a database-row mapper (a JPA `@Entity`); it is a storage shape.

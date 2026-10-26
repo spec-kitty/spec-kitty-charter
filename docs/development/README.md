@@ -32,6 +32,8 @@ operations themselves are in the [service contract](/api/service-contract/).
   modelled, how invariants fail fast, and how tests are named.
 - [How to DDD here](/development/how-to-ddd/) — classifying entities, value objects and
   aggregates, why identity and persistence fidelity differ, and what not to copy.
+- [DDD patterns](/development/ddd-patterns/) — the vocabulary of the service code: Domain Entity
+  vs Persistence Entity, DTO vs DSO, and the other domain-driven design terms the docs use.
 - [HTTP status codes](/development/http-status-codes/) — which status this API answers with, what
   each one means, its body and whether a client may retry.
 

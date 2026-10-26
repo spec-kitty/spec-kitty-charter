@@ -39,7 +39,7 @@ later slices follow. [ADR-0006](/adr/0006-onion-vertical-slices-archunit/) is no
 - **New documentation.** [Code style and conventions](/development/code-style-and-conventions/),
   [How to DDD here](/development/how-to-ddd/),
   [Architectural patterns applied](/architecture/architectural-patterns-applied/) with its C4
-  and class diagrams, and a [DDD patterns](/glossary/ddd-patterns/) glossary page.
+  and class diagrams, and a [DDD patterns](/development/ddd-patterns/) reference page.
 
 ## Who is affected
 

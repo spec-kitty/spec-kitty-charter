@@ -9,7 +9,7 @@ related:
   - development/how-to-ddd
   - architecture/architectural-patterns-applied
   - adr/0006-onion-vertical-slices-archunit
-  - glossary/ddd-patterns
+  - development/ddd-patterns
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you add a type to the service, so it is built the way the rest of the code is built.

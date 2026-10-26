@@ -12,6 +12,13 @@ const BASE = process.env.DK_BASE ?? '/spec-kitty-charter';
 export default defineConfig({
   site: SITE,
   base: BASE,
+  // The DDD patterns reference moved out of the generator-owned glossary tree to
+  // docs/development/ (issue #200): its hub is now authored, so the generated
+  // glossary hub no longer needs a hand-added line it would drop on rebuild.
+  // Keep the old URL alive. Route keys/targets are base-free; doc-kitty applies BASE.
+  redirects: {
+    '/glossary/ddd-patterns': '/development/ddd-patterns',
+  },
   integrations: defineDocKittyIntegrations({
     title: 'spec-kitty-charter',
     description: 'The Spec Kitty charter: a Java service and its OpenAPI contract, the Brain Kitty governance producer.',

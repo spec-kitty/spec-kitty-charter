@@ -2,10 +2,9 @@
 title: DDD patterns
 description: The domain-driven design and architecture terms used in the charter service code, headlined by the difference between a domain entity and a persistence entity.
 doc_status: active
-updated: 2026-10-21T00:00:00Z
-type: Glossary
-kind: Glossary
-glossary_context: "DDD patterns"
+updated: 2026-10-26T00:00:00Z
+type: Guide
+kind: Reference
 related:
   - development/how-to-ddd
   - development/code-style-and-conventions
