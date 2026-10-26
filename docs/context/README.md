@@ -25,6 +25,10 @@ before the architecture.
 - [Problem](/context/problem/) — why the charter leaves the CLI, and why it becomes Java.
 - [Domain](/context/domain/) — the charter vocabulary: Charter Pack, activation preset,
   active charter, pack level, DRG and the rest.
+- [Conceptual model](/context/conceptual-model/) — what packs, the charter and its levers,
+  mission types, profiles and values mean, before any field or endpoint.
 - [System context](/context/system-context/) — the systems around the charter: the core CLI
   and runtime, the packs, the event contracts and the integration package.
+- [User journeys](/context/user-journeys/) — eleven persona journeys through the charter, with the
+  service operations each needs and how core does it today.
 - [Audiences](/context/audience/) — who reads these docs and what each reader needs.
