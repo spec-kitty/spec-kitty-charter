@@ -2,7 +2,7 @@
 title: "ADR-0027: DRG relationship identity is a bounded, conditional unidirectional collapse"
 description: Why a relationship is one unidirectional edge per component pair as an upstream normalization with a revisit trigger, not a claim that relationships are intrinsically one-way.
 doc_status: active
-updated: 2026-10-25T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -27,6 +27,8 @@ Revises [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/
 the unordered-pair identity but replaces ADR-0025's premise ("no consumer needs multiplicity; the
 reverse edge is derivable") and its "serialized shard shape is unchanged" claim with an honest,
 conditional basis.
+
+Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): a `tension` relationship may exist beside one structural relationship between the same two artifacts (decisions 1 and 4).
 
 ## Context
 
@@ -53,6 +55,7 @@ and compute the reverse discovery behavior elsewhere rather than store it.
 1. **Identity stays the unordered `{from, to}` pair**: at most one, unidirectional, `Relationship`
    per component pair, stored with its direction. This is a deliberate **normalization**, not a claim
    that a reverse edge holds no information.
+   *Superseded in part by ADR-0028: the one-per-pair rule holds for structural relationships; a `tension` relationship may sit beside one of them.*
 2. **The collapse is realized by upstream normalization in open-packs** (the canonical source carries
    a single edge per pair), so the charter's stored form round-trips losslessly and PROJECT_002 is
    honoured. The charter **does not silently drop** a second edge on read; a source that still carries
@@ -67,6 +70,7 @@ and compute the reverse discovery behavior elsewhere rather than store it.
 4. **Revisit trigger (binding).** This identity is revisited the moment a genuinely symmetric relation
    is minted — `impacts` (a tension pair) or bidirectional `delegates_to`. Until then the
    unidirectional collapse holds; neither is minted today (ADR-0025 defers both).
+   *Superseded in part by ADR-0028: the trigger fired for tension, now named `tension`; `impacts` is no longer a relation.*
 5. `RelationType` remains a closed, behavior-carrying catalogue with directionality derived from the
    type (unchanged from ADR-0025 Decision 2).
 

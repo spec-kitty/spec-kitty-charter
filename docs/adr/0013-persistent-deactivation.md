@@ -2,7 +2,7 @@
 title: "ADR-0013: Deactivation persists in one activation ledger, and nothing silently reinstalls it"
 description: A deactivated charter element stays gone; one activation ledger holds allow and deny state, and cascade, upgrade and presets skip what a user excluded.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -32,6 +32,8 @@ Activation state belongs to core: core ADR
 [`4.x/2026-10-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-16-1-extract-charter-offering-first-activation-rework-post-ga.md)
 keeps `charter.activation` in core until its post-GA rework. Most of this record is therefore
 a request to core; the part this repository owns is called out.
+
+Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): the project's local `activation.yaml` is the source of truth, written through to the service, which holds a copy (decision 1).
 
 ## Context
 
@@ -65,6 +67,7 @@ A user can deactivate a charter element, but nothing records the choice durably.
    surface (`config.yaml` and `charter.yaml` activation keys, `answers.selected_*`, the compiled
    `graph.yaml` and catalog) is derived from it or checked against it, and doctor reports any
    surface that disagrees. A migration moves the existing `activated_*` keys into the ledger.
+   *Superseded in part by ADR-0033: the local file is the source of truth and a write-through cache; the service-side copy answers activation and resolution.*
 2. **Exclusions are a deny-list.** The ledger holds `deactivated_<kind>` lists. The effective
    set of a kind is its allow-list, or every element when the allow-list is absent, minus its
    deny-list — **except that a required or locked artifact ([ADR-0012](/adr/0012-pack-mutability-policy/))

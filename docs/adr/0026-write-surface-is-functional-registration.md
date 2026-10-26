@@ -2,7 +2,7 @@
 title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
-updated: 2026-10-25T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -30,6 +30,8 @@ audience:
 **Accepted** — 2026-10-25. Decider: Stijn Dejongh (operator).
 
 Extends [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) (pack registration) to artifact and relationship granularity, and records a deliberate departure from "content enters only as whole packs."
+
+Superseded in part by [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/) (2026-10-26): removal by a derived pack is distinct from deactivation by a project (decision 2).
 
 ## Context
 
@@ -68,6 +70,7 @@ API writes and how it is framed.
 2. **No `DELETE`, `PATCH` or generic CRUD.** Removing an artifact from force is **deactivation**, an
    activation concern ([ADR-0013](/adr/0013-persistent-deactivation/)/[ADR-0020](/adr/0020-offering-and-activations/)),
    not a storage mutation.
+   *Superseded in part by ADR-0030: a derived pack's pack-wide removal is distinct from a project's deactivation, and is not an activation concern.*
 3. **Every write goes through the domain and the whole aggregate.** A registration application
    service validates with the per-entity `ModularRuleset` invariants and the Pack aggregate
    invariants by **load → mutate → revalidate the whole `Pack`**, so "belongs-to-pack" and

@@ -2,7 +2,7 @@
 title: "ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories"
 description: Why relationships are first-class domain value objects over a behavior-carrying RelationType, identified by the component pair, and walked on demand through per-kind repositories.
 doc_status: active
-updated: 2026-10-25T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -28,6 +28,8 @@ audience:
 Revises the doctrine-reference-graph view of [ADR-0024](/adr/0024-doctrine-artifact-family-contract/): the family spine's `edges()` becomes `relationships()`, and `DrgEdge` leaves the domain interface for the storage edge.
 
 Decision 1 (identity) is revised by [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/): the unordered-pair collapse is retained on a bounded, conditional basis.
+
+Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): `impacts` is an artifact's per-value list, not a field of a `Relationship`; tension is the `tension` relationship.
 
 ## Context
 
@@ -118,6 +120,7 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
   are mission/profile territory and are deferred, not solved here.
 - `impacts` signed strength lives on the DSO only. `Relationship` gains an `impacts` field when the
   tension model is actually built; nothing mints `impacts` today.
+  *Superseded in part by ADR-0028: `impacts` belongs on the artifact as a per-value list, and tension is a `tension` relationship, so `Relationship` gains no `impacts` field.*
 
 ### Neutral
 

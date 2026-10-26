@@ -36,6 +36,12 @@ Clarification 2026-10-26 (the decision is unchanged): the pin is now `0.5.0`. It
 required on every page again, which every page already carries; OKF stays at `0.2`, and the
 conventions above are unchanged.
 
+**Clarification 2026-10-26** (operator): the Glossary section's terms are no longer copied
+from the core repository. [ADR-0029](/adr/0029-charter-glossary-is-owned-here/) makes this
+repository the owner of the charter glossary: `site/.contextive/definitions.yaml` is authored
+here and the import script is retired. The generated pages and their exemptions, described
+above, are unchanged.
+
 ## Context
 
 The repository started with a placeholder `docs/` tree (`index.md` pages for architecture,

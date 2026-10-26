@@ -2,7 +2,7 @@
 title: "ADR-0012: The owning pack declares a mutability level per artifact: open, extendable or locked"
 description: A Charter Pack author sets what later packs may do with each artifact it introduces; the levels replace the consumer-side replaceable-builtins allowlist.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -33,6 +33,10 @@ Clarification 2026-10-19 (the decision is unchanged): the org precedence prerequ
 Core's `59d190a7` makes the later-declared org pack win for every URN and every restated edge,
 matching the documented rule, and closes #87. The passages below that call precedence
 inconsistent describe the state when this record was written.
+
+Superseded in part by [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/) (2026-10-26): removal by a derived pack is an operation of its own, allowed on `open` and `extendable` and refused on `locked` (decision 1); the policy file also holds role locks and pins (decision 2).
+
+Superseded in part by [ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/) (2026-10-26): requirement is authored as a preset and the required set is derived from it; `required_*` is no longer the authoring form (decision 7).
 
 ## Context
 
@@ -83,10 +87,13 @@ introduces. Today:
    `locked` is the level the drafts called `enforced`; the name avoids the three existing uses
    of "enforcement". Defining levels as operation sets lets a finer flag be added later without
    migrating declared levels.
+
+   *Superseded in part by ADR-0030: a derived pack may also remove an `open` or `extendable` artifact pack-wide; only `locked` is fully protected.*
 2. **Declared in a pack-root policy file that `pack.yaml` references.** The policy file holds
    a default level per kind and entries per artifact URN. `pack.yaml` names the file, so a
    reader finds every concern file of a pack from the main pack file. An artifact the file does
    not name, in a pack with no policy file, is `open`.
+   *Superseded in part by ADR-0030: the policy file also holds role locks, role pins and other integrity settings of roles.*
 3. **Tighten, never loosen.** A later pack may raise the level of an artifact it did not
    introduce (an org pack may lock a built-in `open` directive for its projects). It may never
    lower it.
@@ -113,6 +120,7 @@ introduces. Today:
    as open as its level says. Deactivating a required artifact is refused, and the error names
    the owning or requiring pack ([#67](https://github.com/spec-kitty/spec-kitty-charter/issues/67)).
    `locked` implies required.
+   *Superseded in part by ADR-0031: the required set is derived from a preset's must-have items, not authored as `required_*` lists.*
 8. **The rule is stated over merge order, not over a fixed tier ladder.** The owner of an
    artifact is the pack that introduced it. Every pack merged after it is a later pack, and the
    level binds every later pack: org over built-in, org over org, project over either, and any

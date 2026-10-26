@@ -2,7 +2,7 @@
 title: "ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinements, and supersede core's open-decisions table"
 description: Records the operator's rulings on value-bearing kinds, the impacts relation, arithmetic, the interview and rationale, and when creed work reaches the API.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -30,6 +30,8 @@ on the triggers under [Revisit when](#revisit-when).
 This record supersedes, for D-1 to D-5, the open-decisions table (§13) of core's design
 [`docs/plans/doctrine/foundational-values-and-creed.md`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/plans/doctrine/foundational-values-and-creed.md).
 D-6 (the asymmetric matrix pair) stays open there.
+
+Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): D-2's relation is named `tension`, and `impacts` is an artifact's per-value list; tension is not `impacts < 0`.
 
 ## Context
 
@@ -71,6 +73,7 @@ each charter. Its five open design decisions block the schema work.
    (core ADR `2026-07-26-3`, Option A). Tension is `impacts < 0` by strict sign; it is never
    derived. #17 re-prices the change, counting the Java service and the contract as well as the
    Python code that the cutover deletes.
+   *Superseded in part by ADR-0028: the relation between two rules is `tension`, and `impacts` is the per-value list on one artifact.*
 3. **D-3, arithmetic.** The creed feeds arithmetic. Until something produces deltas for shipped
    artifacts, the arithmetic is research-grade: I8 and the ranking (I10) run on the corpus and
    fixtures only, and production reads the creed as prose with its rationales. I8's pass and
