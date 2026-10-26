@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-26 — The docsite moves to doc-kitty 0.5.0](/changelog/2026-10-26-doc-kitty-0-5-0/)
 - [2026-10-26 — Generated models stop duplicating, and a tag can publish a contract release](/changelog/2026-10-26-contract-dedupe-and-release-workflow/)
 - [2026-10-25 — Directive, styleguide, paradigm and toolguide can be read and registered](/changelog/2026-10-25-regular-artefact-registration/)
 - [2026-10-24 — Every read answers with the source fingerprint it verified](/changelog/2026-10-24-verified-source-fingerprint/)

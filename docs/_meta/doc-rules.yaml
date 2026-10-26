@@ -104,7 +104,7 @@ rules:
     ci: Docs checks / Frontmatter
     severity: error
   - id: okf-export-conformance
-    rule: Every build writes an Open Knowledge Format (OKF) bundle under site/dist/okf and it must pass OKF conformance. OKF is doc-kitty's structured export of the docs for agent consumption; section hubs carry its `okf_version` marker (`0.2` under doc-kitty 0.4.0).
+    rule: Every build writes an Open Knowledge Format (OKF) bundle under site/dist/okf and it must pass OKF conformance. OKF is doc-kitty's structured export of the docs for agent consumption; section hubs carry its `okf_version` marker (`0.2` under doc-kitty 0.4.0 and 0.5.0).
     check: "npm run check:okf (dockitty-export-okf: re-exports the built content graph and validates the bundle)"
     ci: Docs site / build
     severity: error

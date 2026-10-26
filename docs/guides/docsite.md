@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -16,7 +16,7 @@ audience:
 # Building the docsite
 
 The `docs/` tree is rendered by [doc-kitty](https://github.com/spec-kitty/doc-kitty)'s
-published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.4.0`, which builds on Astro 7 and
+published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.5.0`, which builds on Astro 7 and
 Starlight 0.42). The Astro project that does it lives in `site/`; it owns no content and
 reads `../docs` directly.
 
@@ -137,7 +137,9 @@ in `docs/architecture/diagrams/`.
 
 ## What CI runs
 
-Two workflows, both on pull requests and pushes to `main` that touch the docs. The docsite
+Two workflows run on pull requests and pushes to `main` that touch the docs. The docs checks
+reach a pull request through the CI gate (`.github/workflows/ci.yml`, which calls
+`docs-cleanliness.yml`); the docsite workflow runs on the pull request itself. The docsite
 workflow also runs when the service build changes, because the site carries its Javadoc.
 
 `.github/workflows/docs-cleanliness.yml` holds the gates. Each is its own job or step, so a
