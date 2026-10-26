@@ -1,7 +1,7 @@
 # Terminology rules for docs/**/*.md (check: `check_docs.py terms`). Not a page: the docsite
-# excludes docs/_meta. The imported glossary pages (docs/glossary/) are not scanned: core
-# owns their wording. Aliases found in site/.contextive/definitions.yaml are added as `avoid`
-# rules automatically (none today).
+# excludes docs/_meta. The generated glossary pages (docs/glossary/) are not scanned: their
+# wording is authored in site/.contextive/definitions.yaml (ADR-0029). Aliases found in that
+# file are added as `avoid` rules automatically.
 #
 # forbidden: never allowed outside `allow`.
 # avoid:     a non-canonical synonym of a glossary term.
@@ -45,3 +45,6 @@ allow:
   - path: docs/conformance/divergence-register.md
     term: mission-steps-fragment-kind
     reason: records core's canonical mission_steps as the refused name in the divergence entry
+  - path: docs/conformance/divergence-register.md
+    term: in_tension_with
+    reason: DIV-018 records the schema's Relation enum as it stands, which still carries core's legacy in_tension_with value

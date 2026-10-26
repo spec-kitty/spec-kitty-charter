@@ -7,6 +7,7 @@ type: Guide
 kind: How-To
 related:
   - adr/0003-docs-follow-doc-kitty
+  - adr/0029-charter-glossary-is-owned-here
   - guides/contributing
 audience:
   - profile: charter-service-contributor
@@ -64,14 +65,18 @@ full GitHub URLs.
 
 ## Glossary
 
-The [Glossary](/glossary/) section is generated. Its terms are copied from the core
-repository's glossary (`docs/context/charter.md`, `governance.md` and `product-lines.md` in
-`spec-kitty/spec-kitty`), which stays the authority for them.
+The [Glossary](/glossary/) section is generated from a file this repository authors:
+`site/.contextive/definitions.yaml`. This repository owns the charter glossary
+([ADR-0029](/adr/0029-charter-glossary-is-owned-here/)); it is no longer imported from the core
+repository, and core's copy is cleaned up separately.
 
-- `site/.contextive/definitions.yaml` holds the imported terms. Its header records the core
-  commit the terms came from and the import date.
+- `site/.contextive/definitions.yaml` holds the terms, grouped in contexts (Charter,
+  Governance, Product lines). Each term has a `name`, a short `definition`, optional
+  `aliases` and a `meta` map; `meta.status` is `canonical` for a decided term, `proposed`
+  where the [conceptual model](/context/conceptual-model/) leaves something open, and
+  `deprecated` for a superseded term, whose definition names its replacement.
 - Every build writes `docs/glossary/**/README.md` from that file and links each term where it
-  is first used in a section of a page. Do not edit either by hand.
+  is first used in a section of a page. Do not edit the pages by hand.
 - Since doc-kitty 0.4.0 the glossary generator **owns** those pages: it writes an exact
   frontmatter key set (`okf_version`, `title`, `description`, `kind`, `glossary_context`,
   `doc_status` and a `generated:` stamp) and refuses to overwrite a page that carries any
@@ -79,13 +84,17 @@ repository's glossary (`docs/context/charter.md`, `governance.md` and `product-l
   longer post-processes their frontmatter — and the Python docs checks exempt a generated
   glossary page from the authored-only rules (`updated`, `type`, `audience` and the
   description-length range), via `GENERATED_EXEMPT_KEYS` in `scripts/docs/check_docs.py`.
+- An alias becomes an `avoid` rule of the terminology check, so only a name that never
+  appears as ordinary prose (an identifier such as `in_tension_with`) is listed as an alias.
+  Where an older page must keep the old name, add an `allow` entry with a reason in
+  `docs/_meta/terminology.yaml`.
 
-To change a term, change it in the core glossary. Then, with a checkout of the core
-repository, import again from this repository's root and rebuild:
+To add or change a term, edit `site/.contextive/definitions.yaml` in the same change as the
+page or decision that introduces it, then rebuild and check:
 
 ```sh
-python3 site/tools/import_core_glossary.py /path/to/spec-kitty
-cd site && npm run build
+(cd site && npm run build)
+python3 scripts/docs/check_docs.py terms
 ```
 
 Commit `site/.contextive/definitions.yaml` and `docs/glossary/` together. To stop a term

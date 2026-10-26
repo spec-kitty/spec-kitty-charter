@@ -7,8 +7,8 @@ glossary_context: "Governance"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-19T15:57:59Z"
-  content_hash: "sha256:791727aafa83"
+  at: "2026-10-26T21:16:31Z"
+  content_hash: "sha256:88df842d16f5"
 ---
 
 # Governance
@@ -39,6 +39,16 @@ The single activation filter applied by `charter.activation.resolver.ActiveChart
 
 Immutable record of a significant technical/domain decision, with context and consequences.
 
+{#alt-role}
+
+## Alt-role
+
+A further role a profile can fill besides its primary role; for example a Python implementer that can also review.
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#charter-compiler}
 
 ## Charter Compiler
@@ -57,6 +67,36 @@ A guided question-and-answer process that walks the HiC through their project's 
 
 Rule that limits clarification interruption by prioritizing highest-impact conflicts first and capping prompt count per burst.
 
+{#creed-project}
+
+## Creed (project)
+
+The project's own voice: prose telling agents the intent, plus value weights with rationales for heuristics. Stored through the register API with the project's active charter. Distinct from a profile's ethos.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#ethos}
+
+## Ethos
+
+A profile's self-story: prose about what the profile is about and what it values, not a list of weights. Distinct from the project creed. A profile's opening statement is derived from its purpose, specialization, context and ethos, not stored.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#fallback-profile}
+
+## Fallback profile
+
+The profile the service returns, marked as a fallback, when no profile fits the role a step asks for. A pack declares it; built-in ships a role-neutral, locked one, and a derived pack may declare a more specific one but cannot remove built-in's. The service hard-codes only the rule. With no fallback available it refuses with a clear not-found message.
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#glossary-strictness-policy}
 
 ## Glossary Strictness Policy
@@ -67,7 +107,47 @@ Governance rule for how semantic conflicts are treated (`warn` vs `block`) under
 
 ## Governance Resolution
 
-The result of checking the HiC's active charter against the charter offering — confirming that the referenced paradigms, directives, and tools actually exist and are compatible with each other.
+The service resolves the project's active charter against an activation context and returns the artifacts that apply to that step (directives, profile, prompts and the rest).
+
+{#hosted-deployment}
+
+## Hosted deployment
+
+The charter service run centrally; the CLI is configured with its endpoint and a standard login token and fails closed with a clear error when the host is unreachable. Self-hosting for one team is open-core; managed, multi-tenant hosting with cross-project reporting is commercial (part of the Brain Kitty line).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#local-deployment}
+
+## Local deployment
+
+The charter service spawned by the CLI on the developer's machine; the CLI connects to it and keeps working offline. Part of open-core.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#opening-statement}
+
+## Opening statement
+
+How a profile introduces itself to an agent at the start of work. Derived from the profile's purpose, specialization, applicable context and ethos, and computed for clients, not stored.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#operator-role}
+
+## Operator (role)
+
+The role performed by a human, the Human in Charge; a role like any other. A profile can be marked as performed by a human. In a procedure it marks where to ask the human for input or action; a step (for mission steps: sensible, not yet needed) or a role pin can route work, such as every review, to a human.
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#pack-level}
 
@@ -80,3 +160,83 @@ The tier a Charter Pack occupies, declared by the `pack_level` field in the pack
 ## Precedence Rule
 
 Ordering used when policy settings conflict.
+
+{#primary-role}
+
+## Primary role
+
+The one role a profile is chiefly for. In profile selection a profile whose primary role matches the step's role beats one that fills it as an alt-role.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#profile}
+
+## Profile
+
+An agent profile: a named specialist who fills one primary role and optionally alt-roles, declares the context it fits, carries an ethos, and may specialize another profile. Steps never name a profile; the service selects one for the role a step asks for.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#profile-selection}
+
+## Profile selection
+
+How the service picks the profile for a step: role fit first (primary role beats alt-role), then specialization (the `specializes_from` lineage plus `routing-priority`) among profiles whose declared context fits, then the declared fallback profile, else a not-found refusal. A role pin overrides the choice for its role.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#profile-tie}
+
+## Profile tie
+
+Two or more equally fitting profiles after profile selection. There is no hidden tie-break; whether the service returns all candidates for the client to choose, or picks one at random with a warning, is still open (ADR-0032).
+
+**Meta:**
+
+- **status:** `proposed`
+
+{#role}
+
+## Role
+
+What a mission step asks for and a profile fills, such as implementer, reviewer or planner. Roles are the only link between mission types and profiles. They are extensible by packs and become known when their pack is registered; a derived pack can remove or lock a role like an artifact. A profile has one primary role and optional alt-roles.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#role-pin}
+
+## Role pin
+
+A derived pack's setting that fixes the profile filling a role: every step asking for that role gets the pinned profile, whatever the mission type. Profiles that specialize the pinned one also fit. Role pins, role locks and other integrity settings live in a policy file at the pack root.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#upgrade-pack-version}
+
+## Upgrade (pack version)
+
+Moving a project to a newer version of an offering pack. Opt-in per project: the service holds versions side by side, and the project moves when it re-registers or updates its active charter, which is the acknowledgement. A new version reaches the service through its API, verified against the pack checksum. An upgrade never writes the active charter; newly required or locked items apply on the next read, vanished items are reported as skipped, deactivations persist. An outdated project gets a notice with every activation response.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#write-through-active-charter}
+
+## Write-through active charter
+
+The project's local `activation.yaml` is the source of truth for its active charter and acts as a write-through cache: a change to it results in a call to the service, whose copy answers activation and resolution requests. On a cold start the two are compared; when they disagree, local wins visibly (the CLI shows the difference and warns before re-registering). The hosted side never changes a project's charter on its own.
+
+**Meta:**
+
+- **status:** `canonical`

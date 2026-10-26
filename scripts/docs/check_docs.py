@@ -443,7 +443,7 @@ def glossary_aliases(tree: Tree) -> list[dict[str, str]]:
                         "term": alias,
                         "pattern": rf"\b{re.escape(alias)}\b",
                         "prefer": term["name"],
-                        "reason": "alias in the imported glossary",
+                        "reason": "alias of a canonical glossary term",
                     }
                 )
     return out
@@ -459,7 +459,7 @@ def check_terms(tree: Tree, _today: dt.date) -> list[Finding]:
     out: list[Finding] = []
     for page in tree.pages():
         if tree.is_generated(page):
-            continue  # copied verbatim from the core glossary; core owns its wording
+            continue  # generated from site/.contextive/definitions.yaml; the wording is checked there
         for lineno, line in body_lines(page):
             text = prose(line)
             for kind, rule in rules:
@@ -566,8 +566,8 @@ def _check_target(tree: Tree, page: Page, lineno: int, target: str, anchors: Cal
     else:
         resolved = (page.path.parent / path).resolve()
         if tree.is_generated(page) and (resolved.suffix == ".md" or resolved.is_dir()):
-            # The glossary is copied from core with its own relative links: they must resolve,
-            # but their style is core's, not ours.
+            # The generated glossary pages carry the generator's relative links: they must
+            # resolve, but their style is the generator's, not ours.
             return [] if resolved.exists() else bad(f"`{target}` does not exist")
         if resolved.suffix == ".md" or resolved.is_dir():
             return bad(f"`{target}` is a relative page link; use a root-absolute route such as /architecture/overview/")

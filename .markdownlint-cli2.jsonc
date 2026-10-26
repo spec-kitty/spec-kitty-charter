@@ -4,7 +4,7 @@
 {
   "globs": ["docs/**/*.md"],
   "ignores": [
-    // Generated from the core glossary on every build; core owns the wording.
+    // Generated from site/.contextive/definitions.yaml on every build; edit that file instead.
     "docs/glossary/**",
     // Templates and registries, not pages.
     "docs/_meta/**"

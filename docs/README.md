@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: spec-kitty-charter documentation
 description: Documentation home for the Java charter service and its OpenAPI contract, the Brain Kitty governance producer of Spec Kitty.
 doc_status: active
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 kind: Hub
 audience:
   - profile: charter-service-contributor
@@ -32,8 +32,8 @@ and the sections are registered in [`_meta/sections.yaml`](https://github.com/sp
 - [Context](/context/) — why the charter is being extracted and rewritten, the
   vocabulary it uses, and the systems around it. **Start with
   [the product](/context/product/).**
-- [Glossary](/glossary/) — the charter, governance and product-line terms, imported from
-  the core glossary.
+- [Glossary](/glossary/) — the charter, governance and product-line terms. This repository owns
+  them ([ADR-0029](/adr/0029-charter-glossary-is-owned-here/)).
 - [Architecture](/architecture/) — the target design: containers, the hexagonal service,
   the contract and its generated DTOs, the strangler stages and the service lifecycle. The
   [logical model](/architecture/logical-model/) and the [descriptors](/architecture/descriptors/)

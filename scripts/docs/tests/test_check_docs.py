@@ -225,7 +225,7 @@ def test_links_broken_anchor_relative_md_and_self_github_link(root: Path) -> Non
         page("Glossary", "[ok](./index.md) [gone](./missing/)\n", generated=STAMP), encoding="utf-8"
     )
     glossary = [f.message for f in run("links", root) if f.path == "docs/glossary/index.md"]
-    assert glossary == ["`./missing/` does not exist"]  # generated pages are link-checked, in core's relative style
+    assert glossary == ["`./missing/` does not exist"]  # generated pages are link-checked, in the generator's relative style
 
 
 def test_links_allow_github_url_of_a_non_page_file(root: Path) -> None:
