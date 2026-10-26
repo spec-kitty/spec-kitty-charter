@@ -2,7 +2,7 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -64,6 +64,8 @@ This record supersedes or amends, point by point:
   contract behavior) and decision 10's "200 is the only success status" (D9, D12).
 - [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 1's `/charter` resource,
   which this record splits into `/offering` and `/activations`.
+
+Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): local `activation.yaml` wins visibly on a cold-start divergence (D5).
 
 ## Context
 
@@ -221,6 +223,8 @@ document is the one in force. Core's files then hold what its seam last mapped f
 document. When they differ, the service wins and core fetches again; core sends its content only
 to register it (mode 1, D6) or after the operator chooses to overwrite. Until then, core's files
 are the authority, behind the in-process backend.
+
+*Superseded in part by ADR-0033: the local file is the source of truth; on a cold-start divergence local wins, visibly.*
 
 ### D6. Two ways to build a document
 

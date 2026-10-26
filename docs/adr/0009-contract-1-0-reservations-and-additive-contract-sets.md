@@ -2,7 +2,7 @@
 title: "ADR-0009: Contract 1.0 reserves what the cutover needs; later capabilities arrive as additive contract sets"
 description: Contract 1.0 models the signed impacts relation and reserves refusal codes, load depth and version headers; activation, creed and policy come later as new endpoints.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -32,6 +32,8 @@ supersedes it rather than editing it.
 
 Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/): see
 [Amendment](#amendment-2026-10-19).
+
+Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): the relation between two artifacts is named `tension`, and `impacts` is an artifact's per-value list (decision 1).
 
 ## Context
 
@@ -68,6 +70,7 @@ Several needs are already known:
    `reconciles_tension` stays, and targets pairs whose `impacts` is negative. The contract
    leads: core aligns to it at the cutover. Until core's migration (B2) lands, core's seam
    maps every `in_tension_with` edge to `impacts` with a negative sign.
+   *Superseded in part by ADR-0028: the relation is named `tension`, not `impacts`, and `reconciles_tension` targets pairs joined by `tension`.*
 2. **Two refusal codes are reserved:** `governance_policy_violation` and `stale_input`.
    Neither is raised until its behavior lands, but clients must handle both from 1.0.
 3. **The seam runtime surface is reserved:**

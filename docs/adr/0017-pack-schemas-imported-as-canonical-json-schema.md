@@ -33,6 +33,8 @@ See [Amendment 2026-10-19](#amendment-2026-10-19-operator-rulings): the operator
 day refine decision 2 and the points it touches. See [Amendment 2026-10-20](#amendment-2026-10-20-r20-the-dependency-is-flipped):
 the schemas are edited here and core pulls them; the import tooling is retired.
 
+Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): the relation between two rules is `tension`; `impacts` is a per-value list on one artifact.
+
 ## Amendment 2026-10-19 (operator rulings)
 
 The operator ruled on 2026-10-19. The rulings refine or override
@@ -61,6 +63,8 @@ and every change the import made to the schemas (C1-C16) is tabled in
 - **Shard `generated_by` is optional** (R8). The service is laxer than core here. DIV-009.
 - **The `impacts` relation and edge strength are modeled** (ADR-0009 D1, import changes C7 and C12). Core
   has neither yet; the contract leads and core aligns at the cutover. DIV-018.
+  *(Superseded in part by ADR-0028, 2026-10-26: the relation between two rules is `tension`;
+  `impacts` is a per-value list on one artifact.)*
 - **Edge `provenance` is not authored** (plan call P10). It is a merge-time marker that core
   stamps. DIV-019.
 
