@@ -61,5 +61,6 @@ for asset in charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.
   fi
 done
 (cd "$work/assets" && sha256sum --check --strict charter-openapi.yaml.sha256)
-tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -q '^scenarios/README.md$'
+# grep reads the whole listing: grep -q would exit at the first match and tar would die on SIGPIPE under pipefail.
+tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -x 'scenarios/README.md' >/dev/null
 echo "Rehearsed $tag: refused while unreleased, assembled once released. Nothing was published."
