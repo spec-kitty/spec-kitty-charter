@@ -66,12 +66,16 @@ As of 2026-10-26.
 - **Step 4, under way.** Packs are validated against the canonical schemas
   ([ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/), PR #137). The `Pack`
   aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 added
-  directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)). Merge, activation and cascade are not built.
+  directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)), and PR #180 added toolguide and registration for all four. Merge, activation and cascade are not built.
 - **Next.** Two tracks:
   - **unblock core:** #119 is fixed and the publishing workflow (#45) is built; next, cut 0.1.0
     (the release itself, an operator call), then publish the activation set as 0.2.0 (#125);
-  - **model before breadth:** a domain-model docs pass, a kind registry with a generic artifact read
-    (#169, #171), then the offering reads under `/offering` (#126).
+  - **model before breadth:** the whole-pack round trip
+    ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every pack file
+    into the domain and write it back. #171 comes first; the kind registry (#169) is extracted
+    after two or three more kinds are built
+    ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26). Then the
+    offering reads under `/offering` (#126).
 
   Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),
   needs the reads #126 brings back.
