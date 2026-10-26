@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-25T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -25,8 +25,8 @@ each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** in effect (updated 2026-10-24). The assignment is provisional and changes as the plan
-> does. Nine open issues have no milestone yet; they are listed under
+> **Status:** in effect (updated 2026-10-26). The assignment is provisional and changes as the plan
+> does. Fourteen open issues have no milestone yet; they are listed under
 > [Not yet assigned](#not-yet-assigned).
 
 ## The milestones
@@ -66,7 +66,8 @@ Created on 2026-10-24 by the operator. Two tracks run in parallel: unblock core 
 contract, and model the artifact kinds before more of them are exposed.
 
 Delivered so far: issues #120 and #173, by PR #177 (every read answers with the source fingerprint
-it verified).
+it verified). PR #180 delivered the toolguide half of #168: directive, styleguide, paradigm and
+toolguide can be read and registered.
 
 | Issue | Title | Why it is here |
 |---|---|---|
@@ -79,7 +80,7 @@ it verified).
 | #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Settle the model before more kinds |
 | #169 | Doctrine-kinds adapter tidy-ups (kind registry) | A generic artifact read seam before more kinds |
 | #167 | Own the doctrine-artifact edge-relation table here | The relations each field creates are this repository's to define |
-| #168 | Toolguide and procedure as first-class pack artifacts | After #169 and #171 |
+| #168 | Toolguide and procedure as first-class pack artifacts | Toolguide delivered by PR #180; procedure waits on #150 |
 | #175 | Contract: no fingerprint declaration on refusals; the fingerprint required on artifact 200s | A contract shape change, so it belongs before 1.0.0 |
 | #176 | `OfferingUnreadable`'s examples name codes the service never raises | The contract must describe what the built reads answer |
 | #174 | A pack root configured through a symlink loads as an empty pack | A symlinked open-packs checkout would silently serve nothing |
@@ -164,6 +165,11 @@ revised.
 | #134 | `check_docs.py` slugify drops underscores | Docs tooling |
 | #135 | Redraw the older descriptor diagrams on the pack schemas | Docs |
 | #136 | Ask core to carry the pack terms in its glossary | Cross-repository |
+| #181 | Wire a runtime `MutabilityPolicySource` so the write gate is not `open` for everything | Follow-up of PR #180; overlaps #160 |
+| #182 | Read registered relationships back over HTTP | Follow-up of PR #180; a contract surface |
+| #183 | Guard pack registration writes against writers in other processes | Follow-up of PR #180; a deployment decision |
+| #184 | Single-source the pack id to directory resolution | Follow-up of PR #180; refactor |
+| #185 | Pack commit swap: readers in the window, staging leftovers, repair by `pack_id` | Follow-up of PR #180; hardening |
 
 ## Decided on 2026-10-19
 
