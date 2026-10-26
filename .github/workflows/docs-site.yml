@@ -83,7 +83,8 @@ jobs:
         # same dependencies as the pull request check did.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci
+        # PROBE (throwaway branch, never merged): regenerate the lockfile for the new pin, then install it.
+        run: npm install --package-lock-only --ignore-scripts && npm ci
       - name: Download the Javadoc built by service.yml
         # Published as is under /javadoc/ (site/public/javadoc is ignored by git), and walked by
         # check:built-links below like every other built page.
@@ -101,6 +102,10 @@ jobs:
           # Render Mermaid in the browser; the build needs no Chromium.
           DK_DIAGRAM_BUILD_RENDER: client
         run: npm run build
+      - name: PROBE print what the upgrade changes in tracked files
+        run: |
+          git -C .. status --short
+          git -C .. diff -- site/package-lock.json docs/glossary
       - name: Check links in the built site
         run: npm run check:built-links
       - name: Check OKF export conformance
