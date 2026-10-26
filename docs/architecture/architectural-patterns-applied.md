@@ -10,7 +10,7 @@ related:
   - architecture/hexagonal-service
   - development/how-to-ddd
   - development/code-style-and-conventions
-  - glossary/ddd-patterns
+  - development/ddd-patterns
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this to find where a concern lives and which pattern role it plays before you add or move code.
