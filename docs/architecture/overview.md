@@ -2,7 +2,7 @@
 title: Charter service overview
 description: Containers and main flows of the charter service — the Python seam in core, the Java service, its adapters and the pack inputs.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -20,7 +20,7 @@ audience:
 
 # Overview
 
-The containers of the charter service and the main flows between them: the Python seam in core, the Java service, its adapters and the pack inputs. Read this first, then the page for the part you are building. The state of `charter.offering.api` in core today is described in [Problem](/context/problem/).
+The containers of the charter service and the main flows between them: the Python seam in core, the Java service, its adapters and the pack inputs. The diagram shows the local deployment option; a hosted option is in [ADR-0034](/adr/0034-local-and-hosted-deployment-options/). Read this first, then the page for the part you are building. The state of `charter.offering.api` in core today is described in [Problem](/context/problem/).
 
 > **Status:** design only, in the slice shape of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/). A first skeleton exists in the older horizontal module shape: a REST entry point and a file-based read adapter over the domain, serving three read operations ([Hexagonal service](/architecture/hexagonal-service/)); the rest of the diagram is not built. [What the labels mean](/#status).
 

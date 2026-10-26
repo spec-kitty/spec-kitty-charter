@@ -1,8 +1,8 @@
 ---
 title: Service lifecycle
-description: How the charter service runs — a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
+description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -19,9 +19,13 @@ audience:
 
 # Service lifecycle
 
-How the service runs: one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints, and failing closed when it cannot answer.
+How the service runs: in the local deployment option, one instance per worktree, bound to loopback, guarded by a capability credential, kept fresh by source fingerprints, and failing closed when it cannot answer.
 
 > **Status:** design only, from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) ("Service boundary") and the sibling model in core ADR [`2026-10-01-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md) (the Mission Status Read API). The launcher, failure, handshake and freshness rules below are provisional decisions of 2026-10-19 ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)). [What the labels mean](/#status).
+
+This page describes the **local** deployment option. [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)
+adds a **hosted** option: the CLI calls a configured endpoint with a standard login token and fails
+closed when it is unreachable; its configuration and login flow are not yet decided.
 
 ## One service per worktree
 
