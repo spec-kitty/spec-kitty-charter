@@ -132,7 +132,10 @@ The layout:
 - **1.0 reserves what the cutover needs.** Because a later addition to an existing response
   is breaking, 1.0 carries:
   - the `impacts` relation, modeled as a signed, authored edge; `in_tension_with` is dropped
-    and `reconciles_tension` targets `impacts < 0` pairs;
+    and `reconciles_tension` targets `impacts < 0` pairs (superseded in part by
+    [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/): the relation
+    becomes `tension` and `impacts` an artifact's per-value list; the contract shape is not yet
+    decided);
   - the refusal codes `governance_policy_violation` (still raised by nothing) and `stale_input`
     (now raised);
   - an integer `depth` request parameter on the context read that counts `suggests` hops (0 to
@@ -141,8 +144,8 @@ The layout:
     and `Charter-Source-Fingerprint` response headers (the last on 200 answers only);
   - a governance fingerprint on context responses.
 
-  Core aligns to these at the cutover. Until then, core's seam maps its `in_tension_with`
-  edges to negative `impacts` edges.
+  Core aligns to these at the cutover. Until then (current state; superseded by ADR-0028), core's
+  seam maps its `in_tension_with` edges to negative `impacts` edges.
 - A breaking-change check (`checkContractCompatibility`) compares the bundle with the last
   released version of the same major version. Until the first release there is no baseline,
   and the check says so. How the released version is found, and the release procedure, are in

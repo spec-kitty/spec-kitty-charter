@@ -2,7 +2,7 @@
 title: Offering and activation
 description: "The proposed /offering resource tree, the activation document the service stores, the two ways core builds one, the effective reads and how they map onto the service."
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -170,7 +170,7 @@ sequenceDiagram
 | Item | Held by | Notes |
 |---|---|---|
 | The interview, `answers.yaml`, the charter text and compile | Core | Unchanged |
-| The activation document | Core's files until activation routes to the service, then the service | Core keeps its own file layout and maps it to `ActivationConfig` in one seam module; after the switch the service wins on divergence |
+| The activation document | Core's files until activation routes to the service, then the service | Core keeps its own file layout and maps it to `ActivationConfig` in one seam module. The local file is the source of truth and is written through to the service; on a cold-start divergence local wins, visibly ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/), superseding the earlier "service wins") |
 | First-load state (`context-state.json`) | Core | Sent as `depth` (ADR-0011 D3) |
 | Project-tier content | The service, as a registered pack of level `project` | ADR-0020 D11 |
 | `required_*`, `locked`, available artifacts | Derived from the packs | Never stored in the document |

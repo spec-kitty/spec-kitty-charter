@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -109,6 +109,10 @@ One shard per node kind that has built-in nodes, at the built-in pack root (`dir
 | `nodes[]` | `urn` (`<kind>:<id>`), `kind` (a `NodeKind`), `label` |
 | `edges[]` | `source`, `target` (both URNs), `relation`, optional `when`, `reason`; `impacts` (a number from -1 to 1) on, and only on, an `impacts` edge |
 
+The `impacts` edge field is current state; [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)
+replaces the relation with `tension` and moves `impacts` onto the artifact as a per-value list.
+The schema change is not yet decided.
+
 Unknown keys refuse the document, with the refusal `drg_schema_error`. So does an endpoint
 that is not a URN: there are no bare ids (DIV-007).
 
@@ -164,6 +168,10 @@ What an org pack enforces on every project that registers it.
 | `org_name` | the organization |
 | `skill_namespace` | prefix for rendered skills; lowercase ASCII, starts with a letter, at most 32 characters; `spk-`, `spec-kitty-` and `spec-kitty.` are reserved |
 | `required_<plural>` | per org-requirable kind, for example `required_directives` and `required_skills`; semantics in [Artifact kinds](/architecture/logical-model/#artifact-kinds) |
+
+Current state. [ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/) makes requirement
+authored as a preset, with the required set derived from its must-have items; whether
+`required_<plural>` keeps being read is an open question there.
 
 ### `presets/<name>.yaml` — activation preset
 
@@ -254,6 +262,10 @@ kebab-case.
   `self-review-protocol`, `model`, `effort`.
 - **DRG:** `agent_profile:<id>`. Lineage is a `specializes_from` edge in the graph, never a
   profile field; `delegates_to` edges declare runtime handoff.
+- **Selection:** the first entry of `roles` is the primary role, the rest alt-roles, and
+  `routing-priority` is the specificity level
+  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)). How a primary role and a
+  fallback profile are marked in this file is not yet decided.
 
 ### Mission step contract — `*.step-contract.yaml`
 

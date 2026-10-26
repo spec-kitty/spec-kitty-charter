@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -23,7 +23,7 @@ audience:
 
 What the charter domain computes from its inputs: layer merge, activation, cascade, action-scoped context and profile resolution, and the fail-loud rules it keeps.
 
-> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core. [What the labels mean](/#status).
+> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core; since 2026-10-26 the relation is `tension` and `impacts` is a per-value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)), removal is distinct from deactivation ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)) and requirement is authored as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)). [What the labels mean](/#status).
 
 ## Inputs
 
@@ -75,7 +75,9 @@ flowchart LR
    the kind is org-requirable, and union into the charter's `selected_<kind>` list where it is
    selection-overlayable.
 4. **Answer.** Action-scoped context, profile resolution with `specializes_from` lineage and
-   `enhances` / `overrides` applied, graph queries and listings.
+   `enhances` / `overrides` applied, graph queries and listings. Profile selection for a role
+   follows the order of [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/):
+   role fit, specialization, declared fallback, then a not-found refusal.
 
 ### The action-context walk
 

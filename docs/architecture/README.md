@@ -1,9 +1,9 @@
 ---
 okf_version: "0.2"
 title: Architecture
-description: The target design of the Java charter service — containers, hexagonal modules, the OpenAPI contract and generated DTOs, the strangler stages and the per-worktree lifecycle.
+description: The Java charter service design — containers, hexagonal modules, the OpenAPI contract, strangler stages, and the local (per-worktree) and hosted deployment options.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: Architecture
 kind: Hub
 audience:
@@ -38,8 +38,9 @@ The design is grounded in three core ADRs and this repository's own records:
 
 ## The charter model
 
-- [Logical model](/architecture/logical-model/) — the charter components and how they relate:
-  charter, Charter Packs and pack levels, artifact kinds, the DRG, activation and profiles.
+- [Logical model](/architecture/logical-model/) — how each concept of the
+  [conceptual model](/context/conceptual-model/) is represented: Charter Packs and levels,
+  artifact kinds, the DRG, activation, mission types, profiles and deployment.
 - [Descriptors](/architecture/descriptors/) — every descriptor file: purpose, fields, naming,
   location and DRG links.
 - [Descriptor schemas](/architecture/descriptor-schemas/) — entity diagrams of the descriptor
@@ -64,7 +65,8 @@ The design is grounded in three core ADRs and this repository's own records:
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
 - [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,
-  credentials, freshness and failure behavior.
+  credentials, freshness and failure behavior of the local option (the hosted option is
+  [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)).
 - [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,
   and where it meets the publish, ledger, subscribe model.
 
