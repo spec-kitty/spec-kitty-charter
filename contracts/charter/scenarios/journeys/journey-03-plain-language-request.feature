@@ -21,14 +21,14 @@ Feature: Journey 03 — a non-engineer makes a plain-language request
     And the field "id" of the response body is "rehearse"
 
   @WIP
-  Scenario: A plain-language request is matched to a recipe
-    Given an active charter with the recipe "small-change"
+  Scenario: A plain-language request is matched to a mission type
+    Given an active charter with the mission type "small-change"
     When a request "please fix the typo on the landing page" is routed
-    Then the recipe "small-change" is chosen
+    Then the mission type "small-change" is chosen
     And the person is not asked to name a directive or tactic
 
   @WIP
   Scenario: A profile is chosen for the request's role
-    Given an active charter whose recipe "small-change" asks for the role "implementer"
+    Given an active charter whose mission type "small-change" asks for the role "implementer"
     When the request is routed
     Then a profile that performs the role "implementer" is chosen

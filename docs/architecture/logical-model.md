@@ -111,7 +111,9 @@ pack contributes **artifacts**, which appear as **nodes** of the Doctrine Refere
 **active charter** (plus any org requirements) decides which artifacts are in force. The
 result is the **active graph** that every read answers from. The diagram shows the target
 placement of `impacts` on the artifact ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/));
-core today carries a signed `impacts` strength on an edge (see [Relations](#relations)).
+core today carries a signed `impacts` strength on an edge (see [Relations](#relations)). The
+org policy's `required_<kind>` lists are likewise the current-state authoring form; the target
+authors a requirement as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)).
 
 ## Charter and active charter
 
