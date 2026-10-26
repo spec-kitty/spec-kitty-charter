@@ -2,7 +2,7 @@
 title: "ADR-0003: Documentation follows the doc-kitty convention"
 description: The docs tree uses doc-kitty's structure — README-as-index sections registered in _meta/sections.yaml, frontmatter on every page, numbered ADRs and a dated changelog.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 audience:
@@ -31,6 +31,10 @@ structured export of the docs for agent consumption — and CI conformance-check
 (`npm run check:okf`); section hubs carry an `okf_version` marker (`0.2` under this toolkit
 version). OKF is defined and versioned by doc-kitty, not this repository. See
 [Building the docsite](/guides/docsite/) and `docs/_meta/doc-rules.yaml`.
+
+Clarification 2026-10-26 (the decision is unchanged): the pin is now `0.5.0`. It makes `kind`
+required on every page again, which every page already carries; OKF stays at `0.2`, and the
+conventions above are unchanged.
 
 ## Context
 
