@@ -2,7 +2,7 @@
 title: "ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports"
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-26T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -19,7 +19,46 @@ audience:
 
 ## Status
 
-**Accepted** — 2026-10-24. Decider: Stijn Dejongh (operator).
+**Accepted** — 2026-10-24. Decider: Stijn Dejongh (operator). Amended 2026-10-26.
+
+### Amendment 2026-10-26: when the registry is built
+
+Decision 4 stands, and this amendment says what ends the deferral. The next goal is the whole-pack
+round trip ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every
+Charter Pack file into the domain and write it back. That adds eight kinds (procedure,
+agent_profile, mission_step_contract, glossary_pack, skill, anti_pattern, asset, template) and the
+pack-level files.
+
+An architecture review on 2026-10-26 (architect-alphonso) measured the per-kind cost. Each of the
+five modelled kinds is a slice of 7 to 9 files and 800 to 1,230 lines. Most of that is real
+domain content, which no registry removes. The duplication is in the plumbing: the read and
+registration services come to 1,416 lines across 9 files, two of the read services are about 70%
+identical, and `DomainRepositoryService` implements every repository port. The kinds are already
+drifting apart: tactic has its own read path, and `when()` is a `String` on one kind but
+`Optional` on another.
+
+The registry is still not built first, for two reasons:
+
+- **It would take the wrong shape.** The eight new kinds are not like the five modelled ones.
+  Assets and templates are not activatable, assets have no schema version, skills are in force
+  only when required, anti-patterns are nodes inside another kind's graph rather than files, and
+  pack-level files are not artifacts at all.
+- **It has no home yet.** ADR-0006 forbids a slice from depending on another slice's domain, so
+  where a registry lives is the same open question as
+  [#171](https://github.com/spec-kitty/spec-kitty-charter/issues/171).
+
+The order is:
+
+1. Settle #171 before any new kind: decide where `CharterArtifact` lives, and keep only what every
+   kind has (`schemaVersion` optional). Every new kind implements this interface, so it is the one
+   real prerequisite.
+2. Hand-build two or three new kinds, at least one of them not YAML doctrine (asset or template).
+3. Then extract the shared read, write and registration code (#169) from those real examples,
+   with the whole-pack round-trip gate
+   ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187)) as the safety net.
+
+The cheap #169 tidy-ups can land at any time: tactic onto the shared read path, and one owner for
+`toDso`.
 
 ## Context
 

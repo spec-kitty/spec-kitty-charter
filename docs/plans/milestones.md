@@ -77,8 +77,9 @@ toolguide can be read and registered.
 | #13 | Core ingests the contract: generated client and routing proxy | The contract is core's seam from 0.1.0 (ADR-0021) |
 | #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
 | #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
-| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | Settle the model before more kinds |
-| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | A generic artifact read seam before more kinds |
+| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | The one prerequisite of #186: every new kind implements this interface |
+| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | Extracted after two or three more kinds are built, not before them ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26) |
+| #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
 | #167 | Own the doctrine-artifact edge-relation table here | The relations each field creates are this repository's to define |
 | #168 | Toolguide and procedure as first-class pack artifacts | Toolguide delivered by PR #180; procedure waits on #150 |
 | #175 | Contract: no fingerprint declaration on refusals; the fingerprint required on artifact 200s | A contract shape change, so it belongs before 1.0.0 |
