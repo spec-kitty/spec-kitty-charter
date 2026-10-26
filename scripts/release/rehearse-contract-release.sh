@@ -23,7 +23,8 @@ git remote remove origin
 
 openapi=contracts/charter/openapi.yaml
 changelog=contracts/charter/CHANGELOG.md
-snapshot="$(sed -n 's/^  version: *\(.*\)$/\1/p' "$openapi" | head -n 1)"
+# sed quits after the first match: piping into `head -n 1` would close the pipe early and kill sed on SIGPIPE under pipefail.
+snapshot="$(sed -n '/^  version:/{s/^  version: *\(.*\)$/\1/p;q}' "$openapi")"
 if [[ "$snapshot" != *-SNAPSHOT ]]; then
   echo "error: info.version is $snapshot, not a -SNAPSHOT: rehearse on a commit before the release" >&2
   exit 1
