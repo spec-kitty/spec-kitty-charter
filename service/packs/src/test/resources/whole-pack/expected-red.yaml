@@ -4,9 +4,6 @@
 #
 # kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
 kinds:
-  - kind: mission-step-contract
-    reason: Mission step contracts have no domain model, reader or writer yet.
-    issue: "#191"
   - kind: other:glossary_packs
     reason: Glossary packs have no schema, domain model, reader or writer yet.
     issue: "#192"

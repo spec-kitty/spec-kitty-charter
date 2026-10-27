@@ -13,8 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,6 +172,24 @@ class DomainRoundTripTest {
     }
 
     @Test
+    void aStepContractIsModelledThroughItsBindingAndWrittenUnderItsFileToken() throws IOException {
+        put("missions/built_in_step_contracts/review.step-contract.yaml", "mission-step-contract", """
+                schema_version: "1.0"
+                id: review
+                action: review
+                mission: software-dev
+                steps:
+                  - id: bootstrap
+                    description: Load charter context for this action
+                """);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("missions/built_in_step_contracts/review.step-contract.yaml"))
+                .isEqualTo(new Written("review.step-contract.yaml"));
+    }
+
+    @Test
     void theWrittenShardKeepsItsWriterAndItsEdge() throws IOException {
         String shard = written(roundTrip(new YamlSerializationStrategy()).get("tactic.graph.yaml"));
 
@@ -236,17 +256,21 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void theAdapterModelsExactlyTheEightGateKinds() {
+    void theAdapterModelsEveryBoundKindAndTheTwoPackDocuments() {
+        Set<String> expected = new HashSet<>(Set.of("pack-descriptor", "graph-shard"));
+        KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
-                .containsExactlyInAnyOrder(
+                .containsAll(Set.of(
                         "directive",
                         "tactic",
                         "styleguide",
                         "toolguide",
                         "paradigm",
+                        "agent-profile",
+                        "mission-step-contract",
                         "pack-descriptor",
-                        "graph-shard",
-                        "agent-profile");
+                        "graph-shard"))
+                .isEqualTo(expected);
     }
 
     private static Map<String, String> digests(Path root) throws IOException {

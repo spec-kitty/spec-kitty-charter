@@ -67,6 +67,28 @@ class KindBindingsTest {
     }
 
     @Test
+    @DisplayName("file-kinds.yaml classifies each binding's file name to the schema the binding names (ADR-0037)")
+    void eachFileNameIsClassifiedToItsBindingsSchema() {
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            String file = "probe-pack/" + binding.fileName("x");
+            assertThat(PackFileKind.bundled().classify(file))
+                    .as(file)
+                    .isInstanceOfSatisfying(
+                            PackFileKind.Mapped.class,
+                            mapped -> assertThat(mapped.kind()).isEqualTo(binding.schemaName()));
+        }
+    }
+
+    @Test
+    @DisplayName("a schema name finds the binding that names it, and only that one")
+    void aSchemaFindsItsBinding() {
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            assertThat(KindBindings.bySchema(binding.schemaName())).containsSame(binding);
+        }
+        assertThat(KindBindings.bySchema("no-such-schema")).isEmpty();
+    }
+
+    @Test
     @DisplayName("each binding's entity type is the kind's entity")
     void entityTypesMatchTheKinds() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {

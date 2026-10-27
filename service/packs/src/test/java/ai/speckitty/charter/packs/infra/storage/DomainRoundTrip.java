@@ -31,15 +31,15 @@ import org.jspecify.annotations.Nullable;
 /**
  * Today's {@link WholePackRoundTrip}: read → domain → write → read back, through the public storage service only.
  *
- * <p>A {@link DomainRepositoryService} over the source directory loads the {@link Pack} aggregate (descriptor and the
- * modelled artefact kinds, with every read violation); a second one over the target directory saves the
+ * <p>A {@link DomainRepositoryService} over the source directory loads the {@link Pack} aggregate (descriptor and every
+ * kind bound in {@link KindBindings}, with every read violation); a second one over the target directory saves the
  * descriptor and each artefact; loading the target is the read-back. Graph shards go through
  * {@link GraphDocumentReader} → {@link PackPolicy#graph} → {@link GraphShardWriter}, keeping the source's
  * {@code generated_by}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
- * <p>A new artefact is written as {@code <id>.<file token>.yaml} at the pack root, wherever its source lived, so source
- * and written files are paired by kind and id (under the kind binding's id key: {@code profile-id} for an agent
- * profile). An artefact gate kind is the name of its kind's schema.
+ * <p>A new artefact is written as {@code <id>.<fileToken>.yaml} at the pack root, wherever its source lived, so source
+ * and written files are paired by kind and {@code id}. The modelled artefact kinds are the registry's: a kind joins the
+ * gate by binding itself, with no edit here.
  */
 final class DomainRoundTrip implements WholePackRoundTrip {
 
@@ -48,8 +48,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** The read-back key that stands for every written file when the written pack does not load at all. */
     private static final String READ_BACK_FAILED = "";
 
+    /** The gate kinds of the bound artefact kinds: each binding's schema name, as the census names its files. */
     static final Set<String> ARTEFACT_KINDS =
-            Set.of("directive", "tactic", "styleguide", "toolguide", "paradigm", "agent-profile");
+            KindBindings.all().stream().map(KindBinding::schemaName).collect(Collectors.toUnmodifiableSet());
+
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(), Stream.of(DESCRIPTOR, GRAPH_SHARD))
             .collect(Collectors.toUnmodifiableSet());
@@ -122,12 +124,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 return null;
             }
             to.save(id, pack.descriptor());
-            pack.tactics().forEach(to::save);
-            pack.directives().forEach(to::save);
-            pack.styleguides().forEach(to::save);
-            pack.toolguides().forEach(to::save);
-            pack.paradigms().forEach(to::save);
-            pack.artifacts(ArtifactKind.AGENT_PROFILE, AgentProfile.class).forEach(to::save);
+            pack.artifacts().forEach(to::saveArtifact);
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
@@ -219,19 +216,28 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         return ids;
     }
 
-    /** The written artefact files, keyed {@code <kind>/<id>}. */
+    /**
+     * The written artefact files, keyed {@code <gate kind>/<id>}: a file {@code <stem>.<fileToken>.yaml} belongs to the
+     * binding whose file token is exactly its last name segment, and is keyed by that binding's schema name, the gate
+     * kind the census gives its source.
+     */
     private static Map<String, String> writtenByKindAndId(Path target) {
         Map<String, String> written = new HashMap<>();
         try (Stream<Path> files = Files.list(target)) {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
                 String fileName = String.valueOf(file.getFileName());
-                for (String kind : ARTEFACT_KINDS) {
-                    KindBinding<?, ?> binding = bindingOf(kind);
-                    @Nullable String elementId = fileName.endsWith("." + binding.fileToken() + ".yaml")
-                            ? idOf(read(file), binding.idKey())
-                            : null;
+                if (!fileName.endsWith(".yaml")) {
+                    continue;
+                }
+                String stem = fileName.substring(0, fileName.length() - ".yaml".length());
+                if (stem.indexOf('.') < 0) {
+                    continue; // no <id>.<fileToken> stem, so no artefact file
+                }
+                String token = stem.substring(stem.lastIndexOf('.') + 1);
+                for (KindBinding<?, ?> binding : KindBindings.all()) {
+                    @Nullable String elementId = binding.fileToken().equals(token) ? idOf(read(file), binding.idKey()) : null;
                     if (elementId != null) {
-                        written.put(kind + "/" + elementId, fileName);
+                        written.put(binding.schemaName() + "/" + elementId, fileName);
                     }
                 }
             }
