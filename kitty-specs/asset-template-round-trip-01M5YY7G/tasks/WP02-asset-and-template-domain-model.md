@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 5716da33739d2f3892597a2fb96bc3d5ad4469d8
+created_at: '2026-10-27T17:22:40.298387+00:00'
 subtasks:
 - T006
 - T007
@@ -24,8 +27,18 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-role: implementer
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/domain/
+create_intent:
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetIdentifier.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetFile.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/TemplateIdentifier.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PayloadTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/AssetEntityTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/TemplateEntityTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAssetFilesTest.java
 execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java
@@ -40,17 +53,7 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/TemplateEntityTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAssetFilesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/CharterArtifactFamilyTest.java
-create_intent:
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetIdentifier.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetFile.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/TemplateIdentifier.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PayloadTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/AssetEntityTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/TemplateEntityTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAssetFilesTest.java
+role: implementer
 tags: []
 task_type: implement
 ---
