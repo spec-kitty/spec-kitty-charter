@@ -85,9 +85,7 @@ class GlossaryPackAndSkillCorpusTest {
             if (!reread.equals(Optional.of(source))) {
                 problems.add(file + ": the written pair reads back differently");
             }
-            Path body = file.resolveSibling(source.bodyPath().orElseThrow());
-            if (!Files.readString(pack.resolve(source.bodyPath().orElseThrow()), StandardCharsets.UTF_8)
-                    .equals(Files.readString(body, StandardCharsets.UTF_8))) {
+            if (!bodyWrittenByteForByte(file, source, pack)) {
                 problems.add(file + ": the body is not written byte for byte");
             }
         }
@@ -164,12 +162,22 @@ class GlossaryPackAndSkillCorpusTest {
                 .as("one difference per term that carries see_also")
                 .hasSize(seeAlso);
 
-        SkillDso skill = skill(files(".skill.yaml").getFirst());
+        Path file = files(".skill.yaml").getFirst();
+        SkillDso skill = skill(file);
         String body = skill.body().orElseThrow();
-        SkillDso shortened = skill.withBody(Optional.of(body.substring(0, body.length() - 1)));
-        Path pack = writeSkill(shortened);
-        assertThat(Files.readString(pack.resolve(skill.bodyPath().orElseThrow()), StandardCharsets.UTF_8))
-                .isNotEqualTo(body);
+        Path shortened = writeSkill(skill.withBody(Optional.of(body.substring(0, body.length() - 1))));
+        assertThat(bodyWrittenByteForByte(file, skill, shortened))
+                .as("the comparison the corpus test uses sees a body one character short")
+                .isFalse();
+        assertThat(bodyWrittenByteForByte(file, skill, writeSkill(skill)))
+                .as("and passes the unchanged one")
+                .isTrue();
+    }
+
+    /** Whether the body written in {@code pack} has exactly the bytes of the source skill's body file. */
+    private static boolean bodyWrittenByteForByte(Path file, SkillDso source, Path pack) throws IOException {
+        String bodyPath = source.bodyPath().orElseThrow();
+        return Files.mismatch(file.resolveSibling(bodyPath), pack.resolve(bodyPath)) == -1;
     }
 
     private String glossary(Path file, UnaryOperator<GlossaryPackDso> writer) throws IOException {

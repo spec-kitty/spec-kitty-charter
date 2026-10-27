@@ -20,6 +20,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -257,7 +258,9 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Reads one element: only the file that declares the id is parsed as the kind.
+     * Reads one element: only the file that declares the id is parsed as the kind. Its companions pass the companion
+     * rule, but whether another artifact also names one is not checked: that needs the whole pack, and {@link #read}
+     * refuses it.
      *
      * @param id the pack
      * @param kind the kind's binding
@@ -401,7 +404,7 @@ final class FilesystemPackStore {
      * did not already own. A replaced element then removes the companions its old file named and the new one does
      * not, so a changed path leaves no orphan. The companions and
      * the element are atomic together only through the commit path, which writes into a staging copy of the pack and
-     * swaps the whole directory ({@link PackCommitStore}); that is the only writer of kinds with companions.
+     * swaps the whole directory ({@link PackCommitStore}); that is the only production writer of kinds with companions.
      *
      * @param id the pack
      * @param kind the kind's binding
@@ -409,7 +412,8 @@ final class FilesystemPackStore {
      * @param <D> the kind's persistence shape
      * @throws CharterRefusal when the file resolves outside the pack, a new element's file name is taken by something
      *     that is not an element of the kind with that id, or a companion has no content, breaks the companion path
-     *     rule, is named twice or would replace an existing file the element does not own
+     *     rule, is named twice, is named by another artifact, differs only in case from the companion it replaces, or
+     *     would replace an existing file the element does not own
      */
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
@@ -419,7 +423,8 @@ final class FilesystemPackStore {
         String file = relative(directory, target);
         List<Companions.Inside> owned =
                 existing.isPresent() ? companionsOf(directory, file, kind) : List.<Companions.Inside>of();
-        Map<Companions.Inside, String> planned = planCompanions(directory, file, kind, dso, owned);
+        Set<String> others = kind.hasCompanions() ? claimsOfOthers(directory, file, kind) : Set.of();
+        Map<Companions.Inside, String> planned = planCompanions(directory, file, kind, dso, owned, others);
         for (Map.Entry<Companions.Inside, String> companion : planned.entrySet()) {
             Path at = companion.getKey().file();
             try {
@@ -446,10 +451,15 @@ final class FilesystemPackStore {
      * @return each companion's place and text, in the order the element names them
      */
     private static <D> Map<Companions.Inside, String> planCompanions(
-            Path directory, String file, KindBinding<D, ?> kind, D dso, List<Companions.Inside> owned) {
+            Path directory,
+            String file,
+            KindBinding<D, ?> kind,
+            D dso,
+            List<Companions.Inside> owned,
+            Set<String> others) {
         String what = kind.kind().token() + " '" + kind.idOf(dso) + "'";
-        Set<String> ownedClaims = new HashSet<>();
-        owned.forEach(companion -> ownedClaims.add(companion.claim()));
+        Map<String, String> ownedPaths = new HashMap<>();
+        owned.forEach(companion -> ownedPaths.put(companion.claim(), companion.packRelative()));
         Map<Companions.Inside, String> planned = new LinkedHashMap<>();
         Set<String> claims = new HashSet<>();
         for (KindBinding.Companion companion : kind.companions(dso)) {
@@ -465,7 +475,17 @@ final class FilesystemPackStore {
             if (!claims.add(at.claim())) {
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named twice");
             }
-            if (Files.exists(at.file(), LinkOption.NOFOLLOW_LINKS) && !ownedClaims.contains(at.claim())) {
+            // One file has one owner, case ignored, as the read decides it.
+            if (others.contains(at.claim())) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named by another artifact");
+            }
+            @Nullable String replaced = ownedPaths.get(at.claim());
+            if (replaced != null && !replaced.equals(at.packRelative())) {
+                // A case-only rename would orphan the old file, or replace the new one on a case-insensitive file
+                // system.
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " differs only in case from " + replaced);
+            }
+            if (Files.exists(at.file(), LinkOption.NOFOLLOW_LINKS) && replaced == null) {
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is taken");
             }
             if (!realPathContained(directory, at.file())) {
@@ -474,6 +494,28 @@ final class FilesystemPackStore {
             planned.put(at, Companions.text(content));
         }
         return planned;
+    }
+
+    /**
+     * The claims of the companions every other artifact of the pack names (every file but {@code file} of the written
+     * kind and of every registered kind with companions), so an upsert refuses a companion another artifact owns, as
+     * the read does.
+     */
+    private Set<String> claimsOfOthers(Path directory, String file, KindBinding<?, ?> written) {
+        Set<String> out = new HashSet<>();
+        List<KindBinding<?, ?>> bindings = new ArrayList<>(List.of(written));
+        KindBindings.all().stream().filter(b -> b.kind() != written.kind()).forEach(bindings::add);
+        for (KindBinding<?, ?> binding : bindings) {
+            if (!binding.hasCompanions()) {
+                continue;
+            }
+            for (String other : PackFileSet.files(directory, binding.kind())) {
+                if (!other.equals(file)) {
+                    companionsOf(directory, other, binding).forEach(companion -> out.add(companion.claim()));
+                }
+            }
+        }
+        return out;
     }
 
     /**

@@ -27,9 +27,10 @@ audience:
 
 **Proposed** — 2026-10-27. Decider: Stijn Dejongh (operator), who confirmed on
 [#192](https://github.com/spec-kitty/spec-kitty-charter/issues/192) that a skill's body is in scope
-and kept as a pair with its skill. Widens [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)
-decision 4 (Proposed), which left non-YAML content to the kind missions. It takes 0039 by the
-operator's ruling of 2026-10-27; #227 takes the next free number.
+and kept as a pair with its skill. Amends [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)
+decision 4 (Accepted), which left non-YAML content to the kind missions, and supersedes in part
+[ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)'s per-kind table: its rows for
+`*.skill.yaml`, `*.glossary-pack.yaml` and `*.skill.md`.
 
 ## Context
 
@@ -79,7 +80,7 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    not already own. It then writes the companions, then the artifact's file, then removes the
    companions the element's old file named and the new one does not, so a changed path leaves no
    orphan. The pair is atomic only through the commit path, which writes into a staging copy of the
-   pack and swaps the directory; it is the only writer of kinds with companions. An element whose
+   pack and swaps the directory; it is the only production writer of kinds with companions. An element whose
    old file no longer reads owns no companion, so it is repaired by hand, not over the top of it.
 6. **Whole pack.** `WholePackStore` counts companions as modelled, so none is listed as unmodelled,
    and writes each beside its artifact's layout path; its existing checks refuse a path that leaves
@@ -128,8 +129,10 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
 
 - A skill and its body are read, written and fingerprinted as a pair; editing only a body changes
   the pack's fingerprint and ETag.
-- #193 and the toolguide guides extend the same hooks and the same rule instead of building a
-  second non-YAML path.
+- #193 and the toolguide guides can extend the same hooks instead of building a second non-YAML
+  path. They may need more than reuse: an asset names its payload relative to the pack, not to its
+  own file, so a binding would choose its resolution base, and the `*.yaml` exclusion may have to
+  narrow.
 - A companion can never overwrite another part of the pack, through the upsert or the whole-pack
   write.
 
