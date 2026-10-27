@@ -39,7 +39,8 @@ ruling of 2026-10-27, `DM-01M5ZAMP0R5V5YF5KM09YXY0NS` (reconcile with ADR-0039: 
 asset files and templates, share the low-level pieces), recorded in
 [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed). The decision text below is
 unchanged, and each point this note changes is annotated where it stands. It corrects three
-statements about #193 that did not come true as written:
+statements about #193 that did not come true as written, and extends decision 3's rule to the new
+pack-level files:
 
 - **Decision 2, "#193 adds a `Bytes` case".** It does not. An asset payload may have no sidecar,
   a template is an artifact of its own, and a payload resolves against `assets/`, not its
@@ -53,6 +54,10 @@ statements about #193 that did not come true as written:
   containment check (`Companions.inPack`, the check decision 3's rule makes), one bytes read with
   text as a UTF-8 view over it, one atomic write, and decision 7's order, with asset files and
   templates digested after the graph documents.
+- **Decision 3, one owner.** A companion that resolves to an asset file or a template (a file a
+  `payloads` rule classifies) is refused, `is a pack file of kind <kind>, not a companion`, on the
+  read, the upsert and the fingerprint alike (ADR-0040 decision 5): the file has its one owner
+  already.
 
 ## Context
 
@@ -95,6 +100,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    pack, holding UTF-8 text. One file has one owner: a companion two artifacts name, case ignored,
    is refused for the second. The read, the upsert and the fingerprint apply the same path rule;
    the fingerprint lists a shared companion once rather than refusing it, since the load reports it.
+   *(Amended 2026-10-27, see Status: a companion that is an asset file or a template is refused,
+   `is a pack file of kind <kind>, not a companion`.)*
 4. **Read.** An artifact whose companion breaks the rule is left out, and the store records a
    `companion` violation of its file, `<path>: <reason>` (`is empty`, `is not a valid path`,
    `missing`, `leaves the pack`, `is a YAML file`, `is not a regular file`,

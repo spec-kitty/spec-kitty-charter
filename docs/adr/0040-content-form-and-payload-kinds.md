@@ -139,6 +139,13 @@ Four facts force a decision:
    - one atomic write (`writeAtomically`) for artifact files, companions, asset files and
      templates;
    - one fingerprint order (decision 9) and one revision over bytes.
+
+   Nor can a companion be one. One file has one owner (ADR-0039 decision 3): a companion path that
+   resolves to a file a `payloads` rule classifies (an asset file, a template) is refused by the
+   companion rule, `is a pack file of kind <kind>, not a companion`, on the read, the upsert and the
+   fingerprint alike. The file stays with its rule; the artifact naming it is left out as a
+   `companion` violation, so the whole-pack write refuses the pack (ADR-0037 decision 5). It is a
+   pack inconsistency, fixed in the pack, with no precedence between the two claims.
 6. **A sidecar whose payload is missing is refused, as a violation** (R3). The store holds a
    sidecar only when `assets/<path>` is an asset file it read; otherwise the sidecar's file is a
    violation of kind `asset`, `payload assets/<path> does not exist`, and the sidecar does not join
@@ -167,12 +174,13 @@ Four facts force a decision:
 9. **The fingerprint and the revision cover the bytes.** `PackFileSet.digested` lists `pack.yaml`,
    every file of every bound kind (each followed by its companions, ADR-0039 decision 7, with the
    asset sidecars the last bound kind), the root graph shards and `drg/fragment.yaml`, then the asset
-   files, then the templates; a file already listed as a companion is listed once. A pack with no
-   asset files and no templates keeps its exact digest list and fingerprint. A pack that holds them
-   gets a new `Charter-Source-Fingerprint` and ETag once, as binding any kind does (ADR-0037). The
-   commit path's revision is computed over bytes (`PackRevision.computeOverBytes`); the text form is
-   the same computation over UTF-8, so every revision of a text-only pack keeps its value, and a pack
-   with a binary payload commits and answers `If-Match`.
+   files, then the templates; no companion is an asset file or a template (decision 5), so each is
+   listed once. A pack with no asset files and no templates keeps its exact digest list and
+   fingerprint. A pack that holds them gets a new `Charter-Source-Fingerprint` and ETag once, as
+   binding any kind does (ADR-0037). The commit path's revision is computed over bytes
+   (`PackRevision.computeOverBytes`); the text form is the same computation over UTF-8, so every
+   revision of a text-only pack keeps its value, and a pack with a binary payload commits and
+   answers `If-Match`.
 
 ## Consequences
 

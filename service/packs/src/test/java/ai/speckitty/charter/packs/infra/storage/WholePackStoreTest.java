@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Whole-pack load and write (ADR-0037 decision 5)")
 class WholePackStoreTest {
@@ -559,6 +561,41 @@ class WholePackStoreTest {
                         "asset",
                         "payload assets/debrief/logo.png does not exist"));
         assertThatThrownBy(() -> store.write(loaded, target)).isInstanceOf(CharterRefusal.class);
+        assertThat(target).doesNotExist();
+    }
+
+    /**
+     * One file has one owner (ADR-0039 decision 3): a skill whose body names a file the {@code payloads} rules classify
+     * (a template, an asset file) is a pack inconsistency. The file stays with the rule that classifies it; the skill
+     * is refused as a {@code companion} violation, so the pack is never written as if whole, and the fingerprint lists
+     * the file once.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"templates/body.md", "assets/body.md"})
+    @DisplayName("a companion that is a template or an asset file is refused; the file keeps its one owner")
+    void aCompanionThatIsATemplateOrAnAssetFileIsRefused(String claimed, @TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: ../" + claimed));
+        write(source, claimed, "body\n");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThat(loaded.pack().violations())
+                .containsExactly(new PackElementViolation(
+                        SKILL_FILE,
+                        "companion",
+                        "../" + claimed + ": is a pack file of kind "
+                                + (claimed.startsWith("templates/") ? "template" : "asset-payload")
+                                + ", not a companion"));
+        assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
+        assertThat(Stream.concat(
+                        loaded.pack().templates().stream().map(t -> "templates/" + t.id().value()),
+                        loaded.pack().assetFiles().stream().map(f -> "assets/" + f.path())))
+                .containsExactly(claimed);
+        assertThat(PackFileSet.digested(source)).containsOnlyOnce(claimed).endsWith(claimed);
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("unreadable files");
         assertThat(target).doesNotExist();
     }
 }

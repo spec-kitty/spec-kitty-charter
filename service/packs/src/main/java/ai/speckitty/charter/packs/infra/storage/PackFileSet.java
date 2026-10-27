@@ -214,18 +214,10 @@ final class PackFileSet {
         if (Files.isRegularFile(directory.resolve(FRAGMENT))) {
             out.add(FRAGMENT);
         }
-        // Appended after every YAML input, so a pack without asset files or templates keeps its digest (NFR-002).
-        // A file already listed as a companion is listed once (ADR-0039 decision 7).
-        for (String payload : loaded.assetFiles()) {
-            if (listed.add(payload)) {
-                out.add(payload);
-            }
-        }
-        for (String template : loaded.templates()) {
-            if (listed.add(template)) {
-                out.add(template);
-            }
-        }
+        // Appended after every YAML input, so a pack without asset files or templates keeps its digest (NFR-002). No
+        // companion is one of them (the companion rule refuses it, Companions.resolve), so each is listed once.
+        out.addAll(loaded.assetFiles());
+        out.addAll(loaded.templates());
         return out;
     }
 

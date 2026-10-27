@@ -13,8 +13,9 @@ import java.util.Optional;
  * fingerprint, so the three cannot disagree on which files a companion may name.
  *
  * <p>A companion path is relative to its artifact's file and resolves, normalized, to a file inside the pack
- * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file:
- * writing a companion can never replace another part of the pack.
+ * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file,
+ * and it is never a file a {@code payloads} rule of {@code file-kinds.yaml} classifies (an asset file, a template):
+ * one file has one owner (ADR-0039 decision 3), so writing a companion can never replace another part of the pack.
  *
  * <p>The containment half of the rule ({@link #inPack}) is also the one every other pack-relative path the store writes
  * passes: an asset file at {@code assets/<path>} and a template at {@code templates/<id>} (#193, ADR-0040), and every
@@ -114,6 +115,14 @@ final class Companions {
                         .toLowerCase(Locale.ROOT)
                         .endsWith(YAML)) {
             return new Refused("is a YAML file");
+        }
+        // A pack-level file (#193, ADR-0040) belongs to the rule that classifies it; claiming it too is a pack
+        // inconsistency, refused rather than resolved by precedence.
+        if (resolution instanceof Inside at
+                && PackFileKind.bundled().classify(packDir.getFileName() + "/" + at.packRelative())
+                        instanceof PackFileKind.Mapped mapped
+                && mapped.schema().isEmpty()) {
+            return new Refused("is a pack file of kind " + mapped.kind() + ", not a companion");
         }
         return resolution;
     }
