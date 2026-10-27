@@ -14,7 +14,8 @@ final class YamlFormats {
             StyleguideYaml.INSTANCE,
             ToolguideYaml.INSTANCE,
             ParadigmYaml.INSTANCE,
-            AgentProfileYaml.INSTANCE);
+            AgentProfileYaml.INSTANCE,
+            MissionStepContractYaml.INSTANCE);
 
     private YamlFormats() {}
 

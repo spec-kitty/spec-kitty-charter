@@ -20,7 +20,8 @@ final class KindBindings {
             StyleguideBinding.INSTANCE,
             ToolguideBinding.INSTANCE,
             ParadigmBinding.INSTANCE,
-            AgentProfileBinding.INSTANCE);
+            AgentProfileBinding.INSTANCE,
+            MissionStepContractBinding.INSTANCE);
 
     private KindBindings() {}
 
