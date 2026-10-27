@@ -8,7 +8,8 @@ import java.util.Objects;
 /**
  * Where each artifact of a pack sits, as pack-relative paths (ADR-0036 decision 5). A file's place is how a pack is
  * authored, not what the artifact means, so it is kept here beside the aggregate instead of on the entities. An
- * artifact with no recorded place goes to {@code <plural>/<id>.<kind>.yaml}.
+ * artifact with no recorded place goes where a registration creates one: its kind's
+ * {@link KindBinding#fileName file name} directly in the pack directory.
  */
 public final class PackLayout {
 
@@ -36,14 +37,18 @@ public final class PackLayout {
      * Where an artifact is written.
      *
      * @param artifact the artifact
-     * @return its recorded path, or {@code <plural>/<id>.<kind>.yaml} when none is recorded
+     * @return its recorded path, or its kind's file name in the pack directory when none is recorded
+     * @throws IllegalArgumentException when no place is recorded and the kind is not stored
      */
     public String pathOf(CharterArtifact artifact) {
         Objects.requireNonNull(artifact, "artifact");
         String recorded = paths.get(artifact.urn());
-        return recorded != null
-                ? recorded
-                : artifact.kind().plural() + "/" + artifact.localId() + "." + artifact.kind().token() + ".yaml";
+        if (recorded != null) {
+            return recorded;
+        }
+        return KindBindings.of(artifact.kind())
+                .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"))
+                .fileName(artifact.localId());
     }
 
     /**

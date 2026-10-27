@@ -69,10 +69,6 @@ class PackKindMapTest {
                 .build();
     }
 
-    private static GraphDocument fragment(String file) {
-        return new GraphDocument.Fragment(file, List.of(), List.of());
-    }
-
     @Test
     @DisplayName("artifacts are grouped by kind, and a kind the aggregate never names is held like the others")
     void artifactsAreGroupedByKind() {
@@ -128,7 +124,7 @@ class PackKindMapTest {
     }
 
     @Test
-    @DisplayName("with adds an artifact and keeps every other kind, graph document and violation")
+    @DisplayName("with adds an artifact and keeps every other kind and violation")
     void withAddsAndKeepsEverythingElse() {
         Procedure procedure = new Procedure(ID, "landing");
         var violation = new PackElementViolation("broken.tactic.yaml", "schema", "missing steps");
@@ -137,7 +133,6 @@ class PackKindMapTest {
                 .descriptor(DESCRIPTOR)
                 .artifact(procedure)
                 .paradigm(paradigm("p-1"))
-                .graph(fragment("drg/fragment.yaml"))
                 .violation(violation)
                 .build();
 
@@ -146,7 +141,6 @@ class PackKindMapTest {
         assertThat(mutated.artifacts(ArtifactKind.PROCEDURE)).containsExactly(procedure);
         assertThat(mutated.paradigms()).hasSize(1);
         assertThat(mutated.tactics()).extracting(Tactic::localId).containsExactly("t-1");
-        assertThat(mutated.graphs()).containsExactly(fragment("drg/fragment.yaml"));
         assertThat(mutated.violations()).containsExactly(violation);
         assertThat(current.tactics()).isEmpty();
     }
@@ -182,39 +176,12 @@ class PackKindMapTest {
                 .id(ID)
                 .descriptor(DESCRIPTOR)
                 .artifact(new Procedure(ID, "landing"))
-                .graph(fragment("drg/fragment.yaml"))
+                .violation(new PackElementViolation("broken.tactic.yaml", "schema", "missing steps"))
                 .build();
 
         Pack copy = current.toBuilder().build();
 
         assertThat(copy.artifacts()).isEqualTo(current.artifacts());
-        assertThat(copy.graphs()).isEqualTo(current.graphs());
-    }
-
-    @Test
-    @DisplayName("two graph documents at one path are refused")
-    void graphPathsAreUnique() {
-        assertThatThrownBy(() -> Pack.builder()
-                        .id(ID)
-                        .descriptor(DESCRIPTOR)
-                        .graph(fragment("drg/fragment.yaml"))
-                        .graph(fragment("drg/fragment.yaml"))
-                        .build())
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A pack must not hold two graph documents at the same path.");
-    }
-
-    @Test
-    @DisplayName("edges compare in canonical form: order and duplicates do not count")
-    void edgesCompareCanonically() {
-        var a = new GraphDocument.Edge("tactic:a", "directive:b", "requires", Optional.empty(), Optional.empty(),
-                Optional.empty());
-        var b = new GraphDocument.Edge("tactic:c", "directive:d", "suggests", Optional.empty(), Optional.of("why"),
-                Optional.of(0.5));
-        var left = new GraphDocument.Fragment("drg/fragment.yaml", List.of(), List.of(a, b, a));
-        var right = new GraphDocument.Fragment("drg/fragment.yaml", List.of(), List.of(b, a));
-
-        assertThat(left.canonicalEdges()).isEqualTo(right.canonicalEdges());
-        assertThat(left).isNotEqualTo(right);
+        assertThat(copy.violations()).isEqualTo(current.violations());
     }
 }

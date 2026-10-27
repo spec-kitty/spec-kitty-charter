@@ -29,6 +29,26 @@ interface KindBinding<D, E extends CharterArtifact> {
     Class<E> entityType();
 
     /**
+     * The kind's spelling in a file name, {@code <id>.<fileToken>.yaml}, as {@code file-kinds.yaml} matches it. It is
+     * the kind's token unless the pack format spells it otherwise (an agent profile is {@code *.agent.yaml}).
+     *
+     * @return the file-name token
+     */
+    default String fileToken() {
+        return kind().token();
+    }
+
+    /**
+     * The file name a new artifact of this kind is created under.
+     *
+     * @param elementId the artifact's id
+     * @return {@code <id>.<fileToken>.yaml}
+     */
+    default String fileName(String elementId) {
+        return elementId + "." + fileToken() + ".yaml";
+    }
+
+    /**
      * The persistence shape of the kind.
      *
      * @return the DSO class

@@ -25,16 +25,14 @@ snakeyaml-engine through `ParsedYaml` and `YamlDumpEmitter`; schemas from `contr
 
 ### Domain (`packs.domain`)
 
-- `Pack`: `EnumMap<ArtifactKind, List<CharterArtifact>>`, descriptor, `List<GraphDocument>`,
-  violations. Invariants: belongs-to-pack and unique local id per kind (same messages as today),
-  unique graph document file. API: `artifacts()`, `artifacts(kind)`, `artifacts(kind, type)`, the
-  five typed views, `graphs()`, `with(artifact)`, `toBuilder()`. Builder: `artifact(..)`, typed
-  delegates, `graph(..)`.
-- `GraphDocument`: a sealed value with `Shard` (schema_version, generated_at, generated_by?,
-  nodes with urn/kind/label?/provenance?/tags, edges) and `Fragment` (nodes with
-  id/kind/title?/body_path?, edges); edges carry source/target/relation/when?/reason?/impacts?.
-  Equality of the edge set is canonical (order and duplicates do not count) through
-  `canonicalEdges()`.
+- `Pack`: `EnumMap<ArtifactKind, List<CharterArtifact>>`, descriptor, violations. Invariants:
+  belongs-to-pack and unique local id per kind (same messages as today). API: `artifacts()`,
+  `artifacts(kind)`, `artifacts(kind, type)`, the five typed views, `with(artifact)`, `toBuilder()`.
+  Builder: `artifact(..)` and typed delegates.
+
+_Revised after the pre-PR review:_ the DRG documents (`GraphDocument`, both shapes, every field,
+canonical edge view) live in `packs.infra.storage` beside the aggregate, not in it: the artifacts
+also mint relationships, and which copy is authoritative is an operator question.
 
 ### Storage (`packs.infra.storage`)
 
@@ -50,11 +48,11 @@ snakeyaml-engine through `ParsedYaml` and `YamlDumpEmitter`; schemas from `contr
   `readAll`, `readOne`, `write`.
 - `DomainRepositoryService`: per-kind ports delegate to generic helpers; `assemble` iterates the
   registry; `writeArtifact` resolves the binding.
-- `WholePackStore`: `load(Path) → LoadedPack(Pack, PackLayout)`, `write(LoadedPack, Path target)`;
-  staging directory beside the target, then rename; refuses an existing target and a pack with
-  violations.
-- `PackLayout`: artifact URN → pack-relative path; `pathOf(artifact)` falls back to
-  `<plural>/<id>.<token>.yaml`.
+- `WholePackStore`: `load(Path) → LoadedPack(Pack, PackLayout, graphs, unmodelled)`,
+  `write(LoadedPack, Path target)`; reserves the target, stages beside it, then renames; refuses an
+  existing target, a pack with violations and a descriptor with undeclared keys.
+- `PackLayout`: artifact URN → pack-relative path; `pathOf(artifact)` falls back to the binding's
+  `fileName(id)` in the pack directory, as a registration does.
 
 ## Testing
 

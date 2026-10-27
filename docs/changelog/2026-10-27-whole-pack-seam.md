@@ -26,14 +26,17 @@ one artifact with `Pack.with`, keeping everything else
 [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)).
 
 Adding a kind no longer edits the aggregate, the store, the format or the registration services.
-Storage binds each kind once (`KindBinding`, listed in `KindBindings`, with one YAML format each);
-the store, the source fingerprint and the repository service handle every bound kind the same way.
+Storage binds each kind once (`KindBinding`, listed in `KindBindings`, with one YAML format each and
+the file name a new artifact gets); the store, the source fingerprint and the repository service
+handle every bound kind the same way. Non-YAML kinds and kinds that live inside a graph will widen
+the registry when they are built.
 The five existing kinds behave as before, and the fingerprint of an unchanged pack is unchanged.
 
-`WholePackStore` loads a pack directory into the aggregate — the descriptor, every bound kind and
-both DRG document shapes with every field (shard `tags`, `provenance` and `generated_by`, fragment
-`body_path`) — and records where each artifact's file sat. It writes the aggregate to a new
-directory through a staging directory and a rename, putting each file back at its path; it refuses
-an existing target and a pack with unreadable files. This is the seam the whole-pack round-trip
+`WholePackStore` loads a pack directory into the aggregate (the descriptor and every bound kind)
+and returns beside it where each artifact's file sat, both DRG document shapes with every field
+(shard `tags`, `provenance` and `generated_by`, fragment `body_path`), and the list of files nothing
+models yet. It writes all of that to a new directory through a staging directory and a rename,
+putting each file back at its path; it refuses an existing target, a pack with unreadable files and
+a `pack.yaml` with undeclared keys, rather than drop content without a word. This is the seam the whole-pack round-trip
 gate ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187)) drives, and the kind
 missions (#190 to #195) each register their kind into it.

@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.packs.infra.storage;
 
 import java.util.List;
 import java.util.Objects;
@@ -8,11 +8,14 @@ import java.util.Set;
 /**
  * A DRG document of a pack as authored, every field its schema allows kept: a root graph shard
  * ({@code <name>.graph.yaml}, nodes by URN) or the org fragment ({@code drg/fragment.yaml}, nodes by id and plural
- * kind). The pack aggregate holds these so a whole pack can be written back; resolving them into a doctrine graph is
- * not this value's business.
+ * kind). {@link WholePackStore} carries these beside the aggregate so a whole pack can be written back (ADR-0036).
+ * They stay out of the {@code Pack} aggregate: the artifacts also mint relationships, and which of the two copies of
+ * an edge is authoritative is not settled, so nothing here pretends to keep them in step. Resolving them into a
+ * doctrine graph is not this value's business.
  *
  * <p>Edges compare in canonical form: {@link #canonicalEdges()} ignores their order and duplicates. Nodes keep the
- * order they were written in.
+ * order they were written in. The values hold what the documents mean, not their bytes: an {@code impacts} weight is a
+ * number ({@code 1} and {@code 1.0} are equal), and an absent list reads like an empty one.
  */
 public sealed interface GraphDocument permits GraphDocument.Shard, GraphDocument.Fragment {
 

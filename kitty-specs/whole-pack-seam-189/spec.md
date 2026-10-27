@@ -64,7 +64,7 @@ the written copy and compares the aggregates by meaning.
 
 **Acceptance Scenarios**:
 
-1. **Given** a pack directory, **When** it is loaded, **Then** the aggregate holds the descriptor, every artifact of every bound kind and every DRG document with every schema field.
+1. **Given** a pack directory, **When** it is loaded, **Then** the aggregate holds the descriptor and every artifact of every bound kind, and beside it come the layout, every DRG document with every schema field and the list of unmodelled files.
 2. **Given** a loaded pack and its layout, **When** it is written to a directory that does not exist, **Then** each artifact lands at its source path, the DRG documents at theirs, and reloading gives an equal aggregate.
 3. **Given** a target that exists, **When** a write is attempted, **Then** it is refused and the target is unchanged.
 4. **Given** a pack with read violations, **When** a write is attempted, **Then** it is refused and nothing is created.
@@ -86,8 +86,8 @@ the written copy and compares the aggregates by meaning.
 | FR-002 | `Pack.with(artifact)` adds or replaces one artifact and revalidates; registration uses it. | Draft |
 | FR-003 | Storage binds each kind once (`KindBinding`); the registry is the single list of loaded and fingerprinted kinds. | Draft |
 | FR-004 | `SerializationStrategy` reads and writes any bound kind through one kind-parameterized pair. | Draft |
-| FR-005 | A whole pack loads from a directory into the aggregate plus a layout, including both DRG document shapes with every schema field. | Draft |
-| FR-006 | A whole pack writes to a target that does not exist, through a staging directory and a rename, refusing a pack with violations. | Draft |
+| FR-005 | A whole pack loads from a directory into the aggregate, with the layout, both DRG document shapes with every schema field, and the unmodelled files beside it. | Draft |
+| FR-006 | A whole pack writes to a target that does not exist, through a staging directory and a rename, refusing a pack with violations or undeclared descriptor keys. | Draft |
 | FR-007 | The five existing kinds behave as before: every existing test passes and the HTTP contract is unchanged. | Draft |
 
 ### Non-Functional Requirements

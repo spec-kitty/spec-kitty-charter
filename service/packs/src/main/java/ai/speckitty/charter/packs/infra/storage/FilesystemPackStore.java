@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -334,7 +333,7 @@ final class FilesystemPackStore {
 
     /**
      * Upserts an element: the file of the element of this kind with this id is replaced; an unknown id is created as
-     * {@code <id>.<kind>.yaml} in the pack directory. Both arms are atomic and contained in the pack.
+     * {@link KindBinding#fileName} in the pack directory. Both arms are atomic and contained in the pack.
      *
      * @param id the pack
      * @param kind the kind's binding
@@ -347,7 +346,7 @@ final class FilesystemPackStore {
         Path directory = existingDirectory(id);
         String elementId = kind.idOf(dso);
         Path target = locate(directory, kind.kind(), elementId)
-                .orElseGet(() -> newFile(directory, kind.kind(), elementId));
+                .orElseGet(() -> newFile(directory, kind, elementId));
         writeAtomically(directory, target, strategy.write(kind, dso));
     }
 
@@ -378,9 +377,9 @@ final class FilesystemPackStore {
      * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
      * so a create never overwrites a file or follows a planted link.
      */
-    private static Path newFile(Path directory, ArtifactKind kind, String elementId) {
-        String token = kind.token();
-        Path target = directory.resolve(elementId + "." + token + ".yaml").normalize();
+    private static Path newFile(Path directory, KindBinding<?, ?> kind, String elementId) {
+        String token = kind.kind().token();
+        Path target = directory.resolve(kind.fileName(elementId)).normalize();
         if (!directory.equals(target.getParent())) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, token + " id '" + elementId + "' does not name a file in the pack");

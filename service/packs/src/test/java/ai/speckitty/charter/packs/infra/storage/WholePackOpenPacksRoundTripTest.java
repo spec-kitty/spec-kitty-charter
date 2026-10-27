@@ -53,7 +53,7 @@ class WholePackOpenPacksRoundTripTest {
             }
             out.put(kind.kind().token(), dsos);
         }
-        out.put("graphs", loaded.pack().graphs());
+        out.put("graphs", loaded.graphs());
         out.put("layout", loaded.layout().paths());
         return out;
     }
