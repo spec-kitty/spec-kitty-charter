@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -10,6 +11,7 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -30,13 +32,14 @@ import org.jspecify.annotations.Nullable;
  * Today's {@link WholePackRoundTrip}: read → domain → write → read back, through the public storage service only.
  *
  * <p>A {@link DomainRepositoryService} over the source directory loads the {@link Pack} aggregate (descriptor and the
- * five modelled artefact kinds, with every read violation); a second one over the target directory saves the
+ * modelled artefact kinds, with every read violation); a second one over the target directory saves the
  * descriptor and each artefact; loading the target is the read-back. Graph shards go through
  * {@link GraphDocumentReader} → {@link PackPolicy#graph} → {@link GraphShardWriter}, keeping the source's
  * {@code generated_by}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
- * <p>A new artefact is written as {@code <id>.<kind>.yaml} at the pack root, wherever its source lived, so source and
- * written files are paired by kind and {@code id}.
+ * <p>A new artefact is written as {@code <id>.<file token>.yaml} at the pack root, wherever its source lived, so source
+ * and written files are paired by kind and id (under the kind binding's id key: {@code profile-id} for an agent
+ * profile). An artefact gate kind is the name of its kind's schema.
  */
 final class DomainRoundTrip implements WholePackRoundTrip {
 
@@ -45,7 +48,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** The read-back key that stands for every written file when the written pack does not load at all. */
     private static final String READ_BACK_FAILED = "";
 
-    static final Set<String> ARTEFACT_KINDS = Set.of("directive", "tactic", "styleguide", "toolguide", "paradigm");
+    static final Set<String> ARTEFACT_KINDS =
+            Set.of("directive", "tactic", "styleguide", "toolguide", "paradigm", "agent-profile");
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(), Stream.of(DESCRIPTOR, GRAPH_SHARD))
             .collect(Collectors.toUnmodifiableSet());
@@ -123,6 +127,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             pack.styleguides().forEach(to::save);
             pack.toolguides().forEach(to::save);
             pack.paradigms().forEach(to::save);
+            pack.artifacts(ArtifactKind.AGENT_PROFILE, AgentProfile.class).forEach(to::save);
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
@@ -208,7 +213,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         Map<String, @Nullable String> ids = new HashMap<>();
         kindOf.forEach((path, kind) -> {
             if (ARTEFACT_KINDS.contains(kind)) {
-                ids.put(path, idOf(read(source.resolve(path))));
+                ids.put(path, idOf(read(source.resolve(path)), bindingOf(kind).idKey()));
             }
         });
         return ids;
@@ -221,7 +226,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
                 String fileName = String.valueOf(file.getFileName());
                 for (String kind : ARTEFACT_KINDS) {
-                    @Nullable String elementId = fileName.endsWith("." + kind + ".yaml") ? idOf(read(file)) : null;
+                    KindBinding<?, ?> binding = bindingOf(kind);
+                    @Nullable String elementId = fileName.endsWith("." + binding.fileToken() + ".yaml")
+                            ? idOf(read(file), binding.idKey())
+                            : null;
                     if (elementId != null) {
                         written.put(kind + "/" + elementId, fileName);
                     }
@@ -272,10 +280,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     // ---- files ---------------------------------------------------------------------------------
 
-    private static @Nullable String idOf(String text) {
+    /** The binding of an artefact gate kind: the gate kind is the schema name. */
+    private static KindBinding<?, ?> bindingOf(String kind) {
+        return KindBindings.bySchema(kind)
+                .orElseThrow(() -> new IllegalStateException("no stored kind is validated by the schema " + kind));
+    }
+
+    private static @Nullable String idOf(String text, String idKey) {
         try {
-            return Yaml.load(text) instanceof Map<?, ?> map && map.get("id") != null
-                    ? String.valueOf(map.get("id"))
+            return Yaml.load(text) instanceof Map<?, ?> map && map.get(idKey) != null
+                    ? String.valueOf(map.get(idKey))
                     : null;
         } catch (RuntimeException unparsable) {
             return null;

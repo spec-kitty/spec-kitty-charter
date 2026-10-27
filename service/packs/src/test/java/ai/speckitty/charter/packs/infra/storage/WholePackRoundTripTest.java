@@ -42,8 +42,15 @@ class WholePackRoundTripTest {
     private static final String BUILT_IN = "built-in";
 
     /** The gate kinds the round trip must model today; an adapter that models fewer cannot pass by omission. */
-    private static final Set<String> REQUIRED_KINDS =
-            Set.of("directive", "tactic", "styleguide", "toolguide", "paradigm", "pack-descriptor", "graph-shard");
+    private static final Set<String> REQUIRED_KINDS = Set.of(
+            "directive",
+            "tactic",
+            "styleguide",
+            "toolguide",
+            "paradigm",
+            "pack-descriptor",
+            "graph-shard",
+            "agent-profile");
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
