@@ -138,8 +138,10 @@ Four facts force a decision:
      shape core mints for mission templates) and whose content is a `Payload`. It is mapped by a
      concrete `TemplateBinding`, not a `KindBinding`, which is YAML- and schema-shaped. The binding
      interface for non-YAML kinds is extracted at the second such kind (the rule of three), not
-     here. A duplicate template id, and two templates or asset files whose paths fold to one path
-     with case ignored, are refused. One file has one owner: a template or an asset file whose path
+     here. A duplicate template id is refused. Two templates or asset files whose paths fold to one
+     path with case ignored are refused on the whole-pack write; the per-artifact store save does
+     not yet carry that case-fold guard
+     ([#252](https://github.com/spec-kitty/spec-kitty-charter/issues/252)). One file has one owner: a template or an asset file whose path
      would not classify back as its kind (`templates/x.tactic.yaml` is a tactic's file,
      `templates/plan-field-declaration.yaml` is excluded) is refused on the store's save and on the
      whole-pack write, `is a pack file of kind <kind>, not a template`, as a companion is.
