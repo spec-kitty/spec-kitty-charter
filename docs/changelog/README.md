@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-27 — Doctrine is retired as a term; the glossary and docs say charter](/changelog/2026-10-27-retire-doctrine-term/)
 - [2026-10-27 — Round-trip fidelity is equality of meaning](/changelog/2026-10-27-round-trip-fidelity-adr/)
 - [2026-10-27 — The shared artifact interface lives in the kernel](/changelog/2026-10-27-shared-artifact-interface-in-the-kernel/)
 - [2026-10-26 — The charter glossary is owned by this repository](/changelog/2026-10-26-charter-glossary-owned-here/)
