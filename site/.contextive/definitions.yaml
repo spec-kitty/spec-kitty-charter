@@ -40,7 +40,7 @@ contexts:
       - name: "Charter Bundle"
         definition: "The materialized `.kittify/charter/` tree as a unit: `charter.md`, the synthesis manifest, the CRG cache and provenance. Produced by `spec-kitty charter generate` and `spec-kitty charter synthesize`; validated by `spec-kitty charter bundle validate`."
       - name: "Charter Facade"
-        definition: "A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a charter surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from doctrine.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → offering boundary's public surface."
+        definition: "A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a charter surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from charter.offering.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → offering boundary's public surface."
       - name: "Charter offering"
         definition: "Everything a project could adopt: the buffet. It is made of Charter Packs, mostly a foundation to build on rather than a set of rules, where a derived pack builds on a broader one (org on built-in) and customizes it. The offer side of the charter; the choice side is the Active charter. The service may hold several versions of a pack side by side."
         meta:
