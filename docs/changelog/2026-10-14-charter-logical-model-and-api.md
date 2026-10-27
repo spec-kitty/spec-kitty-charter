@@ -19,7 +19,7 @@ audience:
 ## What changed
 
 - **[Logical model](/architecture/logical-model/)** describes the charter's concepts: packs
-  and levels, artifact kinds, the Doctrine Reference Graph, activation and resolution.
+  and levels, artifact kinds, the Charter Reference Graph, activation and resolution.
 - **[Descriptors](/architecture/descriptors/)** lists every descriptor file a Charter Pack
   ships, with its fields.
 - **[Descriptor schemas](/architecture/descriptor-schemas/)** adds PlantUML diagrams of those

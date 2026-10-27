@@ -27,7 +27,7 @@ the same treatment the tactic already had.
 
 The four kinds are unified by a thin **`CharterArtifact`** family interface
 (`kind`, `packId`, `localId`, `schemaVersion`, `label`, `description`, `edges`,
-`urn`) in the packs domain, so the aggregate, the doctrine-reference-graph view and
+`urn`) in the packs domain, so the aggregate, the charter-reference-graph view and
 reports can treat them uniformly while each kind keeps its own concept-bearing body
 (a directive's enforcement and rules, a styleguide's scope, principles and
 machine-checkable lint config, a paradigm's summary and the directives it is realized by).

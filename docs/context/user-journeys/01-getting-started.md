@@ -72,7 +72,7 @@ sequenceDiagram
 | Operation | Status | Source |
 | --- | --- | --- |
 | Read what the service says about itself | exists | `contracts/charter/paths/info.yaml` |
-| Read the built-in pack's artifacts (directives, tactics and the other doctrine kinds) | exists | `contracts/charter/paths/packs_packId_*.yaml` |
+| Read the built-in pack's artifacts (directives, tactics and the other charter kinds) | exists | `contracts/charter/paths/packs_packId_*.yaml` |
 | Start the service locally from the command line | envisioned | ADR-0034 |
 | List and read a pack's presets | missing | — |
 | Register the project's active charter | envisioned | ADR-0020, ADR-0033 |

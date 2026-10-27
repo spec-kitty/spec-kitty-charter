@@ -40,7 +40,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 
 | Module | Depends on | Holds |
 |---|---|---|
-| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the DRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
+| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
 | `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, ports, services), `application` (read/write use cases), `infra` (`api.rest`, reserved `api.graphql`, `storage`) |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, same four layers as packages |

@@ -7,8 +7,8 @@ glossary_context: "Product lines"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-19T15:57:59Z"
-  content_hash: "sha256:29010ed4a04a"
+  at: "2026-10-27T09:25:39Z"
+  content_hash: "sha256:3702350c67cc"
 ---
 
 # Product lines
@@ -19,7 +19,7 @@ The product lines of Spec Kitty Inc.: Build Kitty, Brain Kitty and Team Kitty.
 
 ## Brain Kitty
 
-The open-core governance and doctrine line: the charter, a producer-side open-core unit that is being extracted into its own repository so open-core consumers can depend on it without the whole CLI.
+The open-core governance line: the charter, a producer-side open-core unit that is being extracted into its own repository so open-core consumers can depend on it without the whole CLI.
 
 {#build-kitty}
 

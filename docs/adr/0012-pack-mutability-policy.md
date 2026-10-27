@@ -46,7 +46,7 @@ introduces. Today:
 - **Override is open in three places.** Same-id shadowing in the artifact repositories is a
   field-level merge with a collision warning (core ADR
   [`3.x/2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md)).
-  Same-URN node substitution in the DRG merge raises only an `org_override` or
+  Same-URN node substitution in the CRG merge raises only an `org_override` or
   project-override warning (`src/charter/offering/drg/merge.py:937-981`, `:1302-1311`). The
   declared `overrides:` and `enhances:` relations cover five kinds (core ADR
   [`3.x/2026-05-24-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-24-2-pack-augmentation-vocabulary.md)).

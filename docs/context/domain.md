@@ -83,12 +83,12 @@ contract").
 | Term | Meaning |
 |---|---|
 | **Artifact kind** | One of the members of core's `ArtifactKind` enum, which is the single authority for each kind's facts. The kinds and their facts are tabulated in the [Logical model](/architecture/logical-model/#artifact-kinds). The Java domain derives from the same facts and does not restate them. |
-| **DRG** | The Doctrine Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, `tension`, and others; `tension` replaces `in_tension_with` and the signed `impacts` edge, [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)). An edge endpoint is a URN `<kind>:<id>`, always; anything else is refused as `drg_schema_error`. |
-| **`specializes_from`** | Profile lineage, declared as a DRG edge between two `agent_profile` nodes, never as a per-profile field. |
+| **CRG** | The Charter Reference Graph: artifacts are nodes, typed relations are edges (`requires`, `suggests`, `refines`, `specializes_from`, `delegates_to`, `enhances`, `overrides`, `tension`, and others; `tension` replaces `in_tension_with` and the signed `impacts` edge, [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)). An edge endpoint is a URN `<kind>:<id>`, always; anything else is refused as `drg_schema_error`. |
+| **`specializes_from`** | Profile lineage, declared as a CRG edge between two `agent_profile` nodes, never as a per-profile field. |
 | **`enhances` / `overrides`** | `enhances` merges fields and keeps the action sequence and step inputs and outputs; `overrides` replaces in full. Silently dropping steps is refused. |
 | **Removal / deactivation** | Removal is pack-wide, by a derived pack; deactivation is one project's choice ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)). |
-| **Cascade** | Activating an artifact follows its DRG `requires` and `suggests` edges to the artifacts it needs. Deactivation skips artifacts another active artifact still references. |
-| **Layer merge** | Built-in, org and project layers merge into one active graph under the semantics of core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (doctrine layer merge semantics). |
+| **Cascade** | Activating an artifact follows its CRG `requires` and `suggests` edges to the artifacts it needs. Deactivation skips artifacts another active artifact still references. |
+| **Layer merge** | Built-in, org and project layers merge into one active graph under the semantics of core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (layer merge semantics). |
 
 ## Pack findings and levels
 
@@ -118,7 +118,7 @@ The authored pack files are drawn in the
 | Term | Meaning |
 |---|---|
 | **Plan / commit activation** | Activation is planned (validated, non-mutating) and then committed. Config is never written when the plan fails. |
-| **Action-scoped context** | The guidance for one action of one mission type, as `spec-kitty charter context --action <name>` returns it today. Action nodes in the DRG are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review. |
+| **Action-scoped context** | The guidance for one action of one mission type, as `spec-kitty charter context --action <name>` returns it today. Action nodes in the CRG are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review. |
 | **Profile resolution** | `(profile_id, action)` in, the resolved profile with its `specializes_from` lineage and `enhances` / `overrides` edges applied plus compact context out (core `docs/architecture/profile-load-reliability.md` §4.2). Fail loud: an unresolved profile is an error, never an unprofiled agent. Selecting a profile for a role follows [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/): role fit, specialization, declared fallback, then not found. |
 | **Resolution** | Computing an answer from the active graph: action-scoped context, a profile, or a graph query. Not the core glossary's *Governance Resolution*, which is the existence and compatibility check of the active charter against the offering. |
 
@@ -131,8 +131,11 @@ The authored pack files are drawn in the
 
 ## Words to avoid
 
-- **"Doctrine pack"** and **"Pack Default Charter"** are retired names (core ADR `2026-10-06-2`).
-  The governance *content* of a directive may still be called doctrine.
+- **"Doctrine"** is retired as a Spec Kitty term in this repository: the governance layer is named
+  *charter* throughout (Charter Domain, Charter Reference Graph (CRG), charter artifact / kind /
+  pack / catalog). **"Doctrine pack"** and **"Pack Default Charter"** are likewise retired names
+  (core ADR `2026-10-06-2`). The word may appear only in its plain-English sense (a body of
+  principles), never as a name for a domain object.
 - **"Primary"** for the Java-authoritative strangler stage: core ADR `2026-10-03-1` avoids it
   because the word already has four senses. Say "Java authoritative".
 - **"Feature"** for a Mission: Spec Kitty's terminology canon prohibits it.

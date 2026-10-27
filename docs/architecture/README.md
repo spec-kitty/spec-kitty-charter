@@ -40,9 +40,9 @@ The design is grounded in three core ADRs and this repository's own records:
 
 - [Logical model](/architecture/logical-model/) — how each concept of the
   [conceptual model](/context/conceptual-model/) is represented: Charter Packs and levels,
-  artifact kinds, the DRG, activation, mission types, profiles and deployment.
+  artifact kinds, the CRG, activation, mission types, profiles and deployment.
 - [Descriptors](/architecture/descriptors/) — every descriptor file: purpose, fields, naming,
-  location and DRG links.
+  location and CRG links.
 - [Descriptor schemas](/architecture/descriptor-schemas/) — entity diagrams of the descriptor
   schemas.
 

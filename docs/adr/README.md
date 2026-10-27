@@ -52,10 +52,10 @@ stands.
 | [0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) | ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation | Accepted (provisional) | 2026-10-24 |
 | [0022](/adr/0022-contract-versions-start-at-0-x/) | ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable | Accepted (provisional) | 2026-10-24 |
 | [0023](/adr/0023-ci-gate-required-check/) | ADR-0023: An always-on CI gate is the single required status check | Accepted | 2026-10-22 |
-| [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted, with Amendment 2026-10-26; superseded in part by ADR-0035 (2026-10-27) | 2026-10-24 |
+| [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Charter kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted, with Amendment 2026-10-26; superseded in part by ADR-0035 (2026-10-27) | 2026-10-24 |
 | [0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) | ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories | Accepted; superseded in part by ADR-0028 (2026-10-26) | 2026-10-25 |
 | [0026](/adr/0026-write-surface-is-functional-registration/) | ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage | Accepted; superseded in part by ADR-0030 (2026-10-26) | 2026-10-25 |
-| [0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) | ADR-0027: DRG relationship identity is a bounded, conditional unidirectional collapse | Accepted; superseded in part by ADR-0028 (2026-10-26) | 2026-10-25 |
+| [0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) | ADR-0027: CRG relationship identity is a bounded, conditional unidirectional collapse | Accepted; superseded in part by ADR-0028 (2026-10-26) | 2026-10-25 |
 | [0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) | ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules | Accepted | 2026-10-26 |
 | [0029](/adr/0029-charter-glossary-is-owned-here/) | ADR-0029: This repository owns the charter glossary | Accepted | 2026-10-26 |
 | [0030](/adr/0030-removal-is-distinct-from-deactivation/) | ADR-0030: Removal by a derived pack is distinct from deactivation by a project | Accepted | 2026-10-26 |

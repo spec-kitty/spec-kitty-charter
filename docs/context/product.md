@@ -46,7 +46,7 @@ Spec Kitty Inc. names three product lines (core `docs/context/product-lines.md`)
 | Line | Side | What it is |
 |---|---|---|
 | **Build Kitty** | open-core producer | The free CLI, its event ledger, and the Mission Status Read API |
-| **Brain Kitty** | open-core producer | Governance and doctrine: **the charter** (this repository), the open Charter Packs, doc-kitty |
+| **Brain Kitty** | open-core producer | Governance: **the charter** (this repository), the open Charter Packs, doc-kitty |
 | **Team Kitty** | consumer ("Multiplayer Mode") | UI surfaces (mission-ui, the pack composer) that read the Mission Status Read API across its public contract. The hosted product behind the name is not actively supported; nothing in this repository builds toward it |
 
 The charter is a **producer**. Consumers reach it only across its published contract,
@@ -81,7 +81,7 @@ Python implementation to this service, stage by stage
 - **Not an event producer.** The charter service does not write to the event ledger. Events come
   from the core CLI's one canonical event writer, which the runtime calls; see
   [Events and the ledger](/architecture/events-and-ledger/).
-- **Not the pack content.** The doctrine itself (the built-in pack and open org packs) is
+- **Not the pack content.** The governance content itself (the built-in pack and open org packs) is
   authored in `spec-kitty-open-packs`. The charter service loads and resolves packs; it does not
   own their text.
 - **Not hosted.** The service is local and scoped to one worktree. A remote deployment is

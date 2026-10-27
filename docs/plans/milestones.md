@@ -78,9 +78,9 @@ toolguide can be read and registered.
 | #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
 | #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
 | #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | The one prerequisite of #186: every new kind implements this interface |
-| #169 | Doctrine-kinds adapter tidy-ups (kind registry) | Extracted after two or three more kinds are built, not before them ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26) |
+| #169 | Charter-kinds adapter tidy-ups (kind registry) | Extracted after two or three more kinds are built, not before them ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26) |
 | #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
-| #167 | Own the doctrine-artifact edge-relation table here | The relations each field creates are this repository's to define |
+| #167 | Own the charter-artifact edge-relation table here | The relations each field creates are this repository's to define |
 | #168 | Toolguide and procedure as first-class pack artifacts | Toolguide delivered by PR #180; procedure waits on #150 |
 | #175 | Contract: no fingerprint declaration on refusals; the fingerprint required on artifact 200s | A contract shape change, so it belongs before 1.0.0 |
 | #176 | `OfferingUnreadable`'s examples name codes the service never raises | The contract must describe what the built reads answer |
@@ -107,7 +107,7 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 | #50 | Build structure follow-ups | Generate `charter-api` from the released bundle, so only one parser resolves `$ref` |
 | #51 | Supply-chain and CI hygiene | The wrapper checksum and signature ruling belong before the first release |
 | #29 | Epic: behavior-first overhaul (P1 to P3) | The scenarios are the conformance net the cutover relies on |
-| #30, #31, #32, #33 | P1: boundary scenarios, Layer-B harness, doctrine in force, docsite rendering | The P1 outcome |
+| #30, #31, #32, #33 | P1: boundary scenarios, Layer-B harness, charter in force, docsite rendering | The P1 outcome |
 | #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
@@ -137,7 +137,7 @@ operation at a time.
 | #16, #17 to #23 | Epic and steps: Creeds and Values | New charter capability. #17 (re-baseline) and #18 (prose layer, which gates nothing) can start any time |
 | #55, #57 to #61 | Epic and steps: Charter Pack governance (mutability policy) | New charter capability |
 | #56, #65 | Epic; projection and resolution honor exclusions | The epic, and the step that lands on the Java offering side once reads go through the API. #62 to #64, #66 and #67 are fixed in core now and sit in 4.x cutover |
-| #77, #78 to #80 | Epic and steps: the `impacts` vocabulary for the DRG | The graph layer of Creeds and Values. #16 carries the charter value layer, now including #82 |
+| #77, #78 to #80 | Epic and steps: the `impacts` vocabulary for the CRG | The graph layer of Creeds and Values. #16 carries the charter value layer, now including #82 |
 | #40 | Recommended-tools list per activated pack | Offering extension |
 | #42 | Pack-declared profile-role resolution | Offering extension; core work comes first |
 | #49 | Derive the hand-kept lists | Quality follow-up; blocks nothing |

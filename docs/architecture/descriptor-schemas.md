@@ -1,6 +1,6 @@
 ---
 title: Descriptor schemas
-description: PlantUML views of the charter descriptor kinds, their fields, enums and DRG edges, with the pack JSON Schemas as the structural authority.
+description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
 updated: 2026-10-20T00:00:00Z
 type: Architecture
@@ -57,8 +57,8 @@ the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`).
 
 ![Charter descriptor kinds](diagrams/descriptor-kinds-overview.svg)
 
-A Charter Pack (`pack.yaml`) ships descriptor files, an optional DRG fragment and an
-optional org charter. DRG nodes refer to descriptors by URN `<kind>:<id>`. An org
+A Charter Pack (`pack.yaml`) ships descriptor files, an optional CRG fragment and an
+optional org charter. CRG nodes refer to descriptors by URN `<kind>:<id>`. An org
 charter's `required_<plural>` lists overlay the project charter's `selected_<plural>`
 lists; which kinds do is in the [Artifact kinds table](/architecture/logical-model/#artifact-kinds). The edge counts come from
 `packs/built-in/*.graph.yaml`.
@@ -67,9 +67,9 @@ Sources: `src/charter/offering/artifact_kinds.py`, `src/charter/offering/drg/mod
 `src/charter/offering/packs/pack_descriptor.py`, `src/charter/activation/org_charter.py`,
 `src/charter/activation/schemas.py`, `packs/built-in/*.graph.yaml`.
 
-## Doctrine kinds
+## Charter kinds
 
-![Doctrine descriptor schemas](diagrams/descriptor-doctrine-kinds.svg)
+![Charter descriptor schemas](diagrams/descriptor-doctrine-kinds.svg)
 
 Sources: `src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml`.
 
@@ -92,9 +92,9 @@ Sources: `src/charter/offering/missions/step_contracts.py`,
 `src/charter/offering/glossary_packs/models.py`. The mission-step contract and the glossary
 pack have no JSON Schema file; their Pydantic models are the schema.
 
-## Pack, DRG and charter configuration
+## Pack, CRG and charter configuration
 
-![Pack, DRG and charter configuration schemas](diagrams/descriptor-governance.svg)
+![Pack, CRG and charter configuration schemas](diagrams/descriptor-governance.svg)
 
 Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
 `src/charter/activation/org_charter.py`, `src/charter/activation/schemas.py`.

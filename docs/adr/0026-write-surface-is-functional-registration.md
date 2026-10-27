@@ -66,7 +66,7 @@ API writes and how it is framed.
       `{from, to}` pair ([ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/));
       body = `from`, `to`, `type`, `rationale` (directionality derives from the type). A relationship
       may also ride along inside an artifact registration body. The `from` endpoint must resolve
-      within the pack; `to` may be external (DRG endpoints need not be local).
+      within the pack; `to` may be external (CRG endpoints need not be local).
 2. **No `DELETE`, `PATCH` or generic CRUD.** Removing an artifact from force is **deactivation**, an
    activation concern ([ADR-0013](/adr/0013-persistent-deactivation/)/[ADR-0020](/adr/0020-offering-and-activations/)),
    not a storage mutation.
@@ -127,7 +127,7 @@ API writes and how it is framed.
 
 - [ADR-0005: The charter offering service registers and distributes packs](/adr/0005-service-registers-and-distributes-packs/)
 - [ADR-0004: The public API returns generated DTOs](/adr/0004-public-api-returns-generated-dtos/)
-- [ADR-0024: Doctrine artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
+- [ADR-0024: Charter artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
 - [ADR-0025: Relationships are first-class domain value objects](/adr/0025-relationships-first-class-and-lazy-repository-walk/)
 - [ADR-0020: The offering and activations are separate resources](/adr/0020-offering-and-activations/)
 - [ADR-0012: Charter Pack mutability policy](/adr/0012-pack-mutability-policy/)

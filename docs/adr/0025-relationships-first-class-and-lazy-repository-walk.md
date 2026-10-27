@@ -14,7 +14,7 @@ related:
   - context/domain
 audience:
   - profile: core-maintainer
-    guidance_text: Read this for how the Java domain models the Doctrine Reference Graph — relationships as value objects, the behavior-carrying relation type, and on-demand traversal.
+    guidance_text: Read this for how the Java domain models the Charter Reference Graph — relationships as value objects, the behavior-carrying relation type, and on-demand traversal.
   - profile: charter-service-contributor
     guidance_text: Read this before touching the graph — what a relationship is, what relationships() returns, where the walker lives, and why DrgEdge is to become a storage DSO.
 ---
@@ -25,7 +25,7 @@ audience:
 
 **Accepted** — 2026-10-25. Decider: Stijn Dejongh (operator).
 
-Revises the doctrine-reference-graph view of [ADR-0024](/adr/0024-doctrine-artifact-family-contract/): the family spine's `edges()` becomes `relationships()`, and `DrgEdge` leaves the domain interface for the storage edge.
+Revises the charter-reference-graph view of [ADR-0024](/adr/0024-doctrine-artifact-family-contract/): the family spine's `edges()` becomes `relationships()`, and `DrgEdge` leaves the domain interface for the storage edge.
 
 Decision 1 (identity) is revised by [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/): the unordered-pair collapse is retained on a bounded, conditional basis.
 
@@ -35,7 +35,7 @@ To be superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality
 
 ## Context
 
-The charter service already names the Doctrine Reference Graph (DRG) in the kernel — `DrgNode`,
+The charter service already names the Charter Reference Graph (CRG) in the kernel — `DrgNode`,
 `DrgEdge`, the `Relation` enum, and a `DoctrineGraph` that indexes edges by `(source, relation)`.
 Today that machinery is a latent **multigraph**: record equality on `DrgEdge` is all-fields, the
 index admits several edges per ordered pair, and `DoctrineGraph.outgoing(source, relation)` is
@@ -49,7 +49,7 @@ Modelling the two remaining regular artifact kinds (toolguide, procedure) forced
 how a component expresses its relationships, and how a consumer walks them. Two shapes were on the
 table: keep the kernel's edge-list-and-index multigraph, or promote relationships to a first-class
 domain concept the components own. The second also raised a memory concern: a naïve walker would
-materialize the whole DRG in application memory, which scales with pack size and defeats the
+materialize the whole CRG in application memory, which scales with pack size and defeats the
 per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
 
 ## Decision
@@ -59,20 +59,20 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    authored edge condition that must round-trip (today `ArtifactEdges` carries `when` on typed
    refs). Its **identity is the unordered
    pair `{from, to}`** — `equals`/`hashCode` compare the pair only — so **at most one relationship
-   may exist between two components**. The domain DRG is a **simple graph**, not a multigraph. The
+   may exist between two components**. The domain CRG is a **simple graph**, not a multigraph. The
    `from`/`to` order is still stored so directed types know their orientation; uniqueness is on the
    unordered pair. The identity and its round-trip handling are governed by
    [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) (bounded upstream
    normalization; a revisit trigger when a symmetric relation is minted).
 
 2. **`RelationType` is a behavior-carrying enum** (`kernel.domain`): the closed catalogue of the
-   DRG relations, each constant holding its `Directionality` (so **directionality is derived from
+   CRG relations, each constant holding its `Directionality` (so **directionality is derived from
    the type**, never stored on the relationship) and a `Propagation` functional interface the
    traversal consults to decide activation flow. This is a strategy-factory on the enum: the
    cascade walker asks `type.propagation()` instead of switching on the relation. New relation
    semantics are a new constant with its own behavior, not a change to every consumer.
    `RelationType` supersedes the kernel `Relation` enum (a rename plus added behavior); the
-   glossary's "DRG Relation" denotes a `RelationType` constant.
+   glossary's "CRG Relation" denotes a `RelationType` constant.
 
 3. **A charter component owns its relationships.** `CharterArtifact` gains
    `relationships(): List<Relationship>`, superseding `edges()`. It returns the relationships for
@@ -116,7 +116,7 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
 ### Negative / costs
 
 - A walk pays one repository call per resolved neighbor (bounded by the cycle guard). Acceptable;
-  the alternative materializes the whole DRG.
+  the alternative materializes the whole CRG.
 - Unordered-pair identity forbids opposite-direction directed edges between the same pair. This is
   intended for the regular artifacts; genuine bidirectional **runtime handoffs** (`delegates_to`)
   are mission/profile territory and are deferred, not solved here.
@@ -147,8 +147,8 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
 ## References
 
 - [ADR-0006: Onion vertical slices with ArchUnit](/adr/0006-onion-vertical-slices-archunit/)
-- [ADR-0024: Doctrine artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
+- [ADR-0024: Charter artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
 - [ADR-0017: Pack schemas imported as canonical JSON Schema](/adr/0017-pack-schemas-imported-as-canonical-json-schema/)
-- [ADR-0027: DRG relationship identity is a bounded, conditional unidirectional collapse](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/)
+- [ADR-0027: CRG relationship identity is a bounded, conditional unidirectional collapse](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/)
 - [Logical model](/architecture/logical-model/)
 - [Relationship identity collapse review](/development/notes/relationship-identity-collapse-review/)

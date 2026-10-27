@@ -39,7 +39,7 @@ Gradle granularity).
 The pack repositories and validation mission (`pack-repositories-validation-01M5EET9`) built this
 decision. The realized module set is:
 
-- **`kernel`** — `kernel.domain` (the shared Pack and DRG vocabulary) and `kernel.validation` (a
+- **`kernel`** — `kernel.domain` (the shared Pack and CRG vocabulary) and `kernel.validation` (a
   pure guard library, `java` and `jspecify` only);
 - **`packs`** — the first slice, with the layer packages `domain`, `application`, `infra.storage`
   (the outbound adapter) and `infra.api` (the inbound adapter);
@@ -96,7 +96,7 @@ domain-service *implementations* live (pure domain vs application ring), and the
    application ring** (DM `01M5759JC2JMQT0HDE9A4HRKNG`). This supersedes the horizontal read/write top-level
    shape in `hexagonal-service`/`overview`. The slices are **pack registration & validation**, **mission
    types**, **profiles**, and **other charter artifacts**, over a cross-cutting **shared kernel** slice that
-   carries the pack-and-DRG primitives every slice reads. Each slice cuts through every onion layer. The
+   carries the pack-and-CRG primitives every slice reads. Each slice cuts through every onion layer. The
    read/write distinction survives as a sub-split *within* each slice's application ring, not as a top-level
    module boundary — the two axes are orthogonal and compose.
 2. **Onion dependency direction: arrows point inward only.** `entry-point infra → application → domain ←
@@ -135,7 +135,7 @@ domain-service *implementations* live (pure domain vs application ring), and the
 - The no-infra-in-domain and inward-dependency rules are a failing build, not a review comment.
 - The storage backend and the inbound surfaces can each change behind their ports/adapters without reaching
   the domain — the property ADR-0005 (storage port) and ADR-0007 (API adapters) both rely on.
-- One `Pack`/`DRG` vocabulary in the shared kernel keeps slices from minting divergent shapes.
+- One `Pack`/`CRG` vocabulary in the shared kernel keeps slices from minting divergent shapes.
 
 ### Negative
 

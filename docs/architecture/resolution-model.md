@@ -47,7 +47,7 @@ charter-pack cutover removes every read-side fallback after a one-time upgrade m
 ```mermaid
 flowchart LR
   load["load packs<br/>check pack_level"] --> merge["merge layers<br/>built-in, org, project"]
-  merge --> graph["active graph<br/>validated DRG"]
+  merge --> graph["active graph<br/>validated CRG"]
   act["active charter<br/>+ org required_kind"] --> graph
   graph --> ctx["action-scoped<br/>context"]
   graph --> prof["profile<br/>resolution"]
@@ -58,7 +58,7 @@ flowchart LR
    is configured (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md), a pack declares its level). A mismatch refuses with
    `pack_level_mismatch`. A missing level does not stop the load: it is the diagnostic
    `pack_level_missing`, and [`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml) in the contract states when it applies.
-2. **Merge.** The three layers merge into one graph under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Edge
+2. **Merge.** The three layers merge into one graph under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Edge
    endpoints are URNs `<kind>:<id>` everywhere, so there is no endpoint resolution step and
    `unresolved_edge_endpoint` is no longer raised (DIV-007); a value that is not a URN never
    gets this far, because the load refuses it as `drg_schema_error`. Edges from an org pack's `drg/fragment.yaml`

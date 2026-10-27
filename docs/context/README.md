@@ -24,7 +24,7 @@ before the architecture.
   centrally governed, harness-independent agent behavior each project composes to its needs.
 - [Problem](/context/problem/) — why the charter leaves the CLI, and why it becomes Java.
 - [Domain](/context/domain/) — the charter vocabulary: Charter Pack, activation preset,
-  active charter, pack level, DRG and the rest.
+  active charter, pack level, CRG and the rest.
 - [Conceptual model](/context/conceptual-model/) — what packs, the charter and its levers,
   mission types, profiles and values mean, before any field or endpoint.
 - [System context](/context/system-context/) — the systems around the charter: the core CLI

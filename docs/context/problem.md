@@ -58,7 +58,7 @@ and MCP is hard when the answer is computed inside one CLI invocation.
 
 ## Governance fails quietly
 
-The charter-resolution program in core found that authored org and project doctrine loads,
+The charter-resolution program in core found that authored org and project governance loads,
 validates and reports healthy, then reaches no agent. Its root cause is that canonical facts
 (kind vocabulary, recursion policy, name versus id) are restated by hand in several places,
 and every divergence passes the checks unnoticed. A rewrite that restates the same facts a third time would

@@ -102,7 +102,7 @@ behind other modules and have no public entry point yet:
 | Pack listing | CLI only today (`spec-kitty charter pack list`) |
 | Artifact lookup | `charter.offering` repositories; only `AssetRepository` is public |
 | Graph query | `charter.offering.drg` (`DRGGraph`, `NodeKind`, `Relation`) |
-| Diagnostics | `AgentProfileRepository.skipped_profiles` (`charter.offering.agent_profiles.repository`) and the DRG merge counts, surfaced by the CLI only (`spec-kitty doctor charter-packs --json`) |
+| Diagnostics | `AgentProfileRepository.skipped_profiles` (`charter.offering.agent_profiles.repository`) and the CRG merge counts, surfaced by the CLI only (`spec-kitty doctor charter-packs --json`) |
 
 The activation plan and commit (`plan_activation`, `commit_plan` in
 `charter.activation.activation_engine`) is the planned write surface; it also has no public
