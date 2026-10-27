@@ -1,0 +1,125 @@
+{
+  "rows": {
+    "#186": {
+      "evidence_ref": "Parent epic, context only; this mission is its #187 child",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#187": {
+      "evidence_ref": "WP01-WP04 deliver the whole-pack round-trip gate",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#188": {
+      "evidence_ref": "Comparator rules are provisional (research R-4, C-005); aligned with the #188 ADR when it lands",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#189": {
+      "evidence_ref": "Harness defines its own WholePackRoundTrip seam (FR-011); #189 replaces the adapter; no edit to Pack.java/FilesystemPackStore",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#190": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #190 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#191": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #191 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#192": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #192 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#193": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #193 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#194": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #194 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#195": {
+      "evidence_ref": "Expected-red baseline kind entry owned by #195 (expected-red.yaml); that mission flips it green",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

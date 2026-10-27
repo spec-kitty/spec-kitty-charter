@@ -1,0 +1,36 @@
+{
+  "accept_commit": "909c037f2e763ada9daaca32d4dbd1c4e6ed2966",
+  "acceptance_history": [
+    {
+      "accept_commit": "909c037f2e763ada9daaca32d4dbd1c4e6ed2966",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T08:09:09.904102+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "3ba4706aece63f4dbfb9930e321aeb3755d49d92"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-27T08:09:09.904102+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "3ba4706aece63f4dbfb9930e321aeb3755d49d92",
+  "baseline_merge_commit": "618e7c6f4ccbf6b26996b4c13537438a07e7d9a6",
+  "contracts": "none",
+  "contracts_rationale": "Test-scope harness only: no API, wire or schema contract is added or changed.",
+  "created_at": "2026-10-27T06:54:26.778154+00:00",
+  "flattened": true,
+  "friendly_name": "Whole-pack round-trip gate",
+  "merged_at": "2026-10-27T08:10:03.107333+00:00",
+  "merged_commit": "94356d44b0d4580c1de601191ed23a7652608d8f",
+  "mid8": "01M5Y272",
+  "mission_id": "01M5Y2728DYJGR84Z0TAMJ945H",
+  "mission_number": 7,
+  "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 needs a visible safety net while each kind of pack content is brought into the domain model. This gate loads the built-in pack at the pinned open-packs commit, writes it back through the service's storage, and compares the result with the source by meaning. It reports per kind and per file, records what is not yet modelled as expected red, and fails when anything changes unexpectedly in either direction, so each later mission turns its own part green.",
+  "purpose_tldr": "A red-first gate that proves every file of the built-in Charter Pack survives read, write and read-back with its meaning intact.",
+  "slug": "whole-pack-round-trip-gate-01M5Y272",
+  "target_branch": "feat/whole-pack-round-trip-gate",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T07:03:33.304454+00:00"
+}

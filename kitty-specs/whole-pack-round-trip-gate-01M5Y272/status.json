@@ -1,0 +1,85 @@
+{
+  "event_count": 48,
+  "last_event_id": "01M5Y6HA0E2YNFG8S5J62GY7WQ",
+  "materialized_at": "2026-10-27T08:09:55.982952+00:00",
+  "mission_number": "",
+  "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 4,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5Y6H01HVW3AX4RPAYZJBZQ5",
+      "last_transition_at": "2026-10-27T08:09:45.777970+00:00",
+      "review_result": {
+        "reference": "review-cycle://whole-pack-round-trip-gate-01M5Y272/WP01-meaning-comparator/review-cycle-2.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 12986,
+      "shell_pid_created_at": "1793086516.12"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5Y6H31FDGZA3W0SHZ30GNY4",
+      "last_transition_at": "2026-10-27T08:09:48.847993+00:00",
+      "review_result": {
+        "reference": "review-cycle://whole-pack-round-trip-gate-01M5Y272/WP02-round-trip-seam-and-domain-adapter/review-cycle-2.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 12986,
+      "shell_pid_created_at": "1793086516.12"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5Y6H6TDZJPA9V2D5AQCF673",
+      "last_transition_at": "2026-10-27T08:09:52.717367+00:00",
+      "review_result": {
+        "reference": "review-cycle://whole-pack-round-trip-gate-01M5Y272/WP03-census-expectation-and-report/review-cycle-2.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 12986,
+      "shell_pid_created_at": "1793086516.12"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5Y6HA0E2YNFG8S5J62GY7WQ",
+      "last_transition_at": "2026-10-27T08:09:55.982952+00:00",
+      "review_result": {
+        "reference": "review-cycle://whole-pack-round-trip-gate-01M5Y272/WP04-corpus-gate-baseline-and-wiring/review-cycle-2.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 24776,
+      "shell_pid_created_at": "1793088222.08"
+    }
+  }
+}
