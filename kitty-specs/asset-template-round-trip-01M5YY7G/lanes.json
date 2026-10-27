@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "mission_slug": "asset-template-round-trip-01M5YY7G",
+  "mission_id": "01M5YY7GCDBMADFQB5A2PSR5GX",
+  "mission_branch": "kitty/mission-asset-template-round-trip-01M5YY7G",
+  "target_branch": "feat/asset-template-round-trip",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/packs/README.md",
+        "contracts/packs/file-kinds.yaml",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ContentForm.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileKind.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileKindTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Asset.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetFile.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AssetIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/TemplateIdentifier.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/AssetEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/CharterArtifactFamilyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAssetFilesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PayloadTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/TemplateEntityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRevision.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CommitStorePackWriteStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackCommitStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRevisionTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java",
+        "service/packs/src/test/resources/whole-pack/expected-red.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AssetBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AssetDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/AssetYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackLayout.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/TemplateBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/AssetStoreTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/KindBindingsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetExactnessTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/TemplateStoreTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackOpenPacksRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/AssetPackRegistrationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/BinaryPayloadRevisionTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackSourcesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackCensus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackReport.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "cspell.json",
+        "docs/adr/0036-round-trip-fidelity-is-equality-of-meaning.md",
+        "docs/adr/0040-content-form-and-payload-kinds.md",
+        "docs/adr/README.md",
+        "docs/architecture/logical-model.md",
+        "docs/changelog/2026-10-27-asset-and-template-round-trip.md",
+        "site/.contextive/definitions.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-f",
+        "lane-g"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-10-27T17:20:35.789852+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "f61bf2300508817cedf420fd3140eadb72ffa0ff"
+}

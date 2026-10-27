@@ -116,13 +116,18 @@ spec-kitty agent action implement WP01 --agent claude --mission asset-template-r
    sidecar `core/assets/x.asset.yaml` matches both `**/*.asset.yaml` and `*/assets/**/*`). Add
    `matchingPayloadRules(path)` so a test can prove no path matches two payload rules.
 4. Expose `payloadRules()` for tests and consumers.
-5. A rule may declare any of the four forms; the table does not refuse `markdown`/`text` (the store refuses to read a
-   kind whose form it does not build — WP03). Document that in the class javadoc.
+5. Unknown keys on any rule (`files`, `exclusions`, `payloads`) are refused at table load. This is **new** strictness
+   (today `parse` checks no keys): verify the bundled table passes and note it in the commit message, since #192 edits
+   the same table.
+6. The table accepts the tokens `yaml` and `bytes` only for now: a rule declaring `markdown` or `text` fails at table
+   load with a message naming the form and "not built yet (#192 builds markdown)" (C-004, post-plan P19). The enum keeps
+   all four names; building a form later is one line here plus its codec.
 
 ### T003 — Edit the table and its README
 
 **Steps** (`contracts/packs/file-kinds.yaml`):
-1. Header: describe `content_form` (default `yaml`; extension and `mime` never choose it) and the `payloads` section
+1. Header: correct the false claim that "the open-packs acceptance test fails on an overlap, and on a file that
+   matches nothing" — the only overlap check is `PackFileKindTest`; say so. Describe `content_form` (default `yaml`; extension and `mime` never choose it) and the `payloads` section
    (schema-less files, consulted after `files` and `exclusions`; payload rules must not overlap each other). Change
    "exclusions: Rules for YAML files that have no schema" to "Rules for files that are not pack content or have no
    schema, each with a reviewable reason". Note that `**/*` is how a rule spans nested files.
@@ -157,17 +162,17 @@ against their schema. After T003, `docs_structural_lint.config.yaml` classifies 
 and `PackSchemas.validate("asset-payload")` would throw.
 
 **Steps**:
-1. In `readAll`, a `Mapped` with an empty `schema()` is not read or validated. Decide how it is recorded so the
-   validate verdict of the real built-in pack is **unchanged** (before T003 the file was `Excluded` with class
-   `**/*.config.yaml`): read how `ClassifiedFile` feeds `PackPolicy`, and pick the recording that keeps every finding
-   identical. If any finding text would change (for example an exclusion class name in a message), stop and raise it
-   in the WP's review notes rather than altering wire output.
+1. In `readAll`, a `Mapped` with an empty `schema()` is not read or validated; it is recorded as a `ClassifiedFile`
+   of kind `asset-payload` (decided: `PackVerdict` carries the file list, which has no consumer outside tests; the
+   **findings** must stay identical). The file list entry for `docs_structural_lint.config.yaml` changes from
+   excluded `**/*.config.yaml` to kind `asset-payload` — that is the one expected difference.
 2. Test (in `FileSystemPackInspectorTest`): a fixture with a sidecar, its payload, a sidecar-less `x.config.yaml`
    under `assets/` and a template; the inspector reports no exception, does not list the payloads as unreadable, and
    the facts it reports for the sidecar are unchanged (paired with the existing asset-fact tests).
 3. Acceptance check 12: run validate mode over the real built-in pack (the existing open-packs corpus helpers show
-   how a test reaches the checkout; use the same tag/task) and assert the verdict equals the verdict before this WP.
-   Pin it by comparing against a recorded expectation in the test, not by recomputing.
+   how a test reaches the checkout; use the same tag/task) and assert its **findings** equal the findings on `main`
+   at 90de8f9 — capture them by running the current code before your change (record how in a comment) and pin them as
+   a literal expectation, not by recomputing. The reviewer re-captures them to check.
 
 ### T005 — Classification tests
 
@@ -182,8 +187,9 @@ and `PackSchemas.validate("asset-payload")` would throw.
 5. Unclassified stays: `qa/missions/qa/templates/test-report-template.md`, `built-in/missions/software-dev/templates/spec-template.md`.
 6. Remove `core/assets/lint.config.yaml` from `EXCLUDED`.
 7. No sample path matches two payload rules; the existing two-rule check (files + exclusions) still passes.
-8. A table text with an unknown key on a payload rule, a missing `kind`, or `content_form: html` fails to load,
-   naming the problem (use the `PackFileKind(String yaml)` constructor).
+8. A table text with an unknown key on any rule, a missing `kind`, `content_form: html`, or `content_form: markdown`
+   fails to load, naming the problem (use the `PackFileKind(String yaml)` constructor); positive control: the same
+   text with `content_form: bytes` loads.
 9. Trailing-`**` guard: a sample proving `*/assets/**/*` matches a depth-3 path and `*/templates/**/*` does not match
    `x/missions/m/templates/a.md`.
 
@@ -191,9 +197,10 @@ and `PackSchemas.validate("asset-payload")` would throw.
 
 - All subtasks' tests pass: `./gradlew :packs:test --tests '*PackFileKind*' --tests '*VocabularyEquality*' --tests '*FileSystemPackInspector*'`.
 - `./gradlew :packs:check` green on Java 25 (or `-Pcharter.javaVersion=21` locally, noted in the review handoff).
-- The open-packs overlap/unclassified acceptance test (if one exists under `:packs:openPacksRoundTrip`) is green:
-  run `./gradlew :packs:openPacksRoundTrip` and report its result. If it fails only because WP03 has not landed
-  (sidecars bound later), say so precisely.
+- `./gradlew :packs:openPacksRoundTrip` green (it is part of `:packs:check`).
+- Known and accepted: the whole-pack gate (`:packs:wholePackRoundTrip`, CI `whole-pack.yml`, not in `check`) is red
+  from here until WP07 (`other:templates` stale, `other:assets` unexpectedly green, new kinds unlisted). The PR to
+  `main` is opened only after WP07.
 - No change to `contracts/charter/openapi.yaml`.
 
 ## Risks / reviewer guidance
