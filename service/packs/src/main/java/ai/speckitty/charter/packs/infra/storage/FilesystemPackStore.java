@@ -237,7 +237,7 @@ final class FilesystemPackStore {
      */
     <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
         return readKind(existingDirectory(id), kind, new ArrayList<>()).stream()
-                .map(Stored::dso)
+                .map(stored -> kind.dsoType().cast(stored.dso()))
                 .toList();
     }
 

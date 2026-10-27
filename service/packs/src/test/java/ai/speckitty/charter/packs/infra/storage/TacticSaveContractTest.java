@@ -53,7 +53,7 @@ class TacticSaveContractTest {
         store.write(PACK, TacticBinding.INSTANCE, tactic("beta-tactic", "Replaced beta"));
 
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
-        assertThat(store.read(PACK).tactics())
+        assertThat(store.read(PACK).dsos(TacticBinding.INSTANCE))
                 .anyMatch(t -> t.id().equals("beta-tactic") && t.name().equals("Replaced beta"))
                 .anyMatch(t -> t.id().equals("alpha-tactic") && t.name().equals("Alpha tactic"));
     }
@@ -97,7 +97,7 @@ class TacticSaveContractTest {
                 .containsExactlyInAnyOrder(
                         Stream.concat(namesBefore.stream(), Stream.of("brand-new-tactic.tactic.yaml"))
                                 .toArray(String[]::new));
-        assertThat(store.read(PACK).tactics())
+        assertThat(store.read(PACK).dsos(TacticBinding.INSTANCE))
                 .anyMatch(t -> t.id().equals("brand-new-tactic") && t.name().equals("Brand new"));
         assertThat(Files.readString(pack.resolve(ALPHA_FILE))).contains("Alpha tactic");
     }

@@ -260,11 +260,11 @@ class PackFileSetExactnessTest {
             FilesystemPackStore.PackRead read = store.read(new PackIdentifier(pack.directoryName()));
 
             Map<Kind, Set<String>> typed = new LinkedHashMap<>();
-            typed.put(Kind.TACTIC, ids(read.tactics(), TacticDso::id));
-            typed.put(Kind.DIRECTIVE, ids(read.directives(), DirectiveDso::id));
-            typed.put(Kind.STYLEGUIDE, ids(read.styleguides(), StyleguideDso::id));
-            typed.put(Kind.TOOLGUIDE, ids(read.toolguides(), ToolguideDso::id));
-            typed.put(Kind.PARADIGM, ids(read.paradigms(), ParadigmDso::id));
+            typed.put(Kind.TACTIC, ids(read.dsos(TacticBinding.INSTANCE), TacticDso::id));
+            typed.put(Kind.DIRECTIVE, ids(read.dsos(DirectiveBinding.INSTANCE), DirectiveDso::id));
+            typed.put(Kind.STYLEGUIDE, ids(read.dsos(StyleguideBinding.INSTANCE), StyleguideDso::id));
+            typed.put(Kind.TOOLGUIDE, ids(read.dsos(ToolguideBinding.INSTANCE), ToolguideDso::id));
+            typed.put(Kind.PARADIGM, ids(read.dsos(ParadigmBinding.INSTANCE), ParadigmDso::id));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);
             for (Kind kind : Kind.values()) {
