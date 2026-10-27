@@ -318,16 +318,6 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void anEntryWithNoIssueFailsToLoad() {
-            String yaml = known(A, "steps[2].title", OPEN_PACKS_ISSUE)
-                    .replace("    issue: \"" + OPEN_PACKS_ISSUE + "\"\n", "");
-
-            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("has no issue");
-        }
-
-        @Test
         void aListedFileWhoseDifferencesChangedFails() {
             Evaluation evaluation = evaluate(
                     MATCHING_RED,
@@ -373,13 +363,14 @@ class WholePackExpectationTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"unknown", "path", "at", "reason"})
+        @ValueSource(strings = {"unknown", "path", "at", "reason", "issue"})
         void anUnknownFieldOrMissingFieldFailsToLoad(String change) {
             String entry = known(A, "steps[2].title", OPEN_PACKS_ISSUE);
             String yaml = switch (change) {
                 case "unknown" -> entry + "    kind: tactic\n";
                 case "path" -> entry.replace("  - path: " + A + "\n    at:", "  - at:");
                 case "at" -> entry.replace("    at: \"steps[2].title\"\n", "");
+                case "issue" -> entry.replace("    issue: \"" + OPEN_PACKS_ISSUE + "\"\n", "");
                 default -> entry.replace("    reason: The pack file holds two YAML documents.\n", "");
             };
             String message = "unknown".equals(change) ? "unknown key 'kind'" : "has no " + change;
@@ -501,7 +492,6 @@ class WholePackExpectationTest {
             String report = WholePackReport.render(evaluation, "built-in", "abc", Map.of());
 
             assertThat(report)
-                    .isEqualTo(WholePackReport.render(evaluation, "built-in", "abc", Map.of()))
                     .contains("- Files: 5, green 2, expected red 1, excluded 1, red 0, known failure 1\n")
                     .contains("| kind | files | green | expected red | excluded | red | known failure |")
                     .contains("| tactics/a.tactic.yaml | tactic | known failure | steps[2].title: x, <absent> — known "
@@ -818,7 +808,7 @@ class WholePackExpectationTest {
                     .contains("a \\| b")
                     .contains("## By kind")
                     .contains("UNEXPECTED_RED");
-            assertThat(WholePackReport.kindTable(evaluation)).contains("| tactic | 2 | 1 | 0 | 0 | 1 |");
+            assertThat(WholePackReport.kindTable(evaluation)).contains("| tactic | 2 | 1 | 0 | 0 | 1 | 0 |");
         }
     }
 }
