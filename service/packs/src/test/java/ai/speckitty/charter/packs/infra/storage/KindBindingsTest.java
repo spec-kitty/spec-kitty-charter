@@ -44,13 +44,26 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("every bound kind has a bundled schema named by its token")
+    @DisplayName("every bound kind has a bundled schema, and its schema name leads back to its binding")
     void everyBoundKindHasASchema() {
-        for (ArtifactKind kind : KindBindings.kinds()) {
-            assertThat(PackSchemas.bundled().validate(kind.token(), "probe.yaml", Map.of()))
-                    .as(kind.token())
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            assertThat(PackSchemas.bundled().validate(binding.schemaName(), "probe.yaml", Map.of()))
+                    .as(binding.kind().token())
                     .isNotEmpty();
+            assertThat(KindBindings.bySchema(binding.schemaName()))
+                    .as(binding.kind().token())
+                    .containsSame(binding);
         }
+    }
+
+    @Test
+    @DisplayName("a kind whose schema, file token and id key are not its token names all three")
+    void theAgentProfileNamesItsSpellings() {
+        assertThat(AgentProfileBinding.INSTANCE.schemaName()).isEqualTo("agent-profile");
+        assertThat(AgentProfileBinding.INSTANCE.fileName("p")).isEqualTo("p.agent.yaml");
+        assertThat(AgentProfileBinding.INSTANCE.idKey()).isEqualTo("profile-id");
+        assertThat(ParadigmBinding.INSTANCE.schemaName()).isEqualTo("paradigm");
+        assertThat(ParadigmBinding.INSTANCE.idKey()).isEqualTo("id");
     }
 
     @Test
@@ -58,7 +71,7 @@ class KindBindingsTest {
     void entityTypesMatchTheKinds() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             assertThat(binding.entityType().getSimpleName().toLowerCase(Locale.ROOT))
-                    .isEqualTo(binding.kind().token());
+                    .isEqualTo(binding.kind().token().replace("_", ""));
         }
     }
 

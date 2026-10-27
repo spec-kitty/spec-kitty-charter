@@ -138,9 +138,8 @@ final class PackFileSet {
         Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
         for (String file : yamlFiles(directory, packName)) {
             if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
-                ArtifactKind.fromToken(mapped.kind())
-                        .filter(KindBindings.kinds()::contains)
-                        .ifPresent(kind -> byKind.computeIfAbsent(kind, k -> new ArrayList<>())
+                KindBindings.bySchema(mapped.kind())
+                        .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
                                 .add(file));
             }
         }

@@ -251,7 +251,7 @@ final class FilesystemPackStore {
      */
     <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
         Path directory = existingDirectory(id);
-        return locate(directory, kind.kind(), elementId).flatMap(file -> {
+        return locate(directory, kind, elementId).flatMap(file -> {
             String name = directory
                     .relativize(file)
                     .toString()
@@ -346,7 +346,7 @@ final class FilesystemPackStore {
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
         String elementId = kind.idOf(dso);
-        Path target = locate(directory, kind.kind(), elementId).orElseGet(() -> newFile(directory, kind, elementId));
+        Path target = locate(directory, kind, elementId).orElseGet(() -> newFile(directory, kind, elementId));
         writeAtomically(directory, target, strategy.write(kind, dso));
     }
 
@@ -360,12 +360,15 @@ final class FilesystemPackStore {
         return directory;
     }
 
-    /** The existing file of the kind whose {@code id} is {@code elementId}; the first in path order if several do. */
-    private static Optional<Path> locate(Path directory, ArtifactKind kind, String elementId) {
-        for (String file : PackFileSet.files(directory, kind)) {
+    /**
+     * The existing file of the kind whose id (under the kind's {@link KindBinding#idKey()}) is {@code elementId}; the
+     * first in path order if several do.
+     */
+    private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
+        for (String file : PackFileSet.files(directory, kind.kind())) {
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
-            if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get("id"))) {
+            if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {
                 return Optional.of(directory.resolve(file));
             }
         }

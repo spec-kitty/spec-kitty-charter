@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,5 +81,30 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(problems).isEmpty();
         assertThat(packs).isNotEmpty();
         assertThat(artifacts).isPositive();
+    }
+
+    /** #190: every agent-profile file of every real pack is in the aggregate, so a walk that missed them cannot pass. */
+    @Test
+    void everyAgentProfileFileOfARealPackLoadsAsAProfile() throws IOException {
+        Map<String, Integer> onDisk = new LinkedHashMap<>();
+        Map<String, Integer> loaded = new LinkedHashMap<>();
+        for (Path pack : packDirectories()) {
+            try (Stream<Path> files = Files.walk(pack)) {
+                onDisk.put(pack.toString(), (int) files.filter(Files::isRegularFile)
+                        .filter(file -> file.getFileName().toString().endsWith(".agent.yaml"))
+                        .count());
+            }
+            loaded.put(
+                    pack.toString(),
+                    store.load(pack)
+                            .pack()
+                            .artifacts(ArtifactKind.AGENT_PROFILE)
+                            .size());
+        }
+
+        assertThat(loaded).isEqualTo(onDisk);
+        assertThat(loaded.values().stream().mapToInt(Integer::intValue).sum())
+                .as("26 built-in, 5 qa and 5 vendored qa profiles")
+                .isEqualTo(36);
     }
 }

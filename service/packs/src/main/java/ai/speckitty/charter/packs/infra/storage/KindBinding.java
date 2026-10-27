@@ -39,6 +39,26 @@ interface KindBinding<D, E extends CharterArtifact> {
     }
 
     /**
+     * The name of the schema that validates the kind's files, as {@code file-kinds.yaml} maps them. It is the kind's
+     * token unless the pack schemas spell it otherwise (an agent profile is {@code agent-profile}).
+     *
+     * @return the schema name
+     */
+    default String schemaName() {
+        return kind().token();
+    }
+
+    /**
+     * The key of the field that holds an artifact's id in its file. It is {@code id} unless the kind's schema names it
+     * otherwise (an agent profile's is {@code profile-id}).
+     *
+     * @return the id key
+     */
+    default String idKey() {
+        return "id";
+    }
+
+    /**
      * The file name a new artifact of this kind is created under.
      *
      * @param elementId the artifact's id
