@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: asset-template-round-trip-01M5YY7G
 mission_id: 01M5YY7GCDBMADFQB5A2PSR5GX
-generated_at: '2026-10-27T18:43:51.945233+00:00'
+generated_at: '2026-10-27T19:14:14.819468+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -18,13 +18,13 @@ input_artifacts:
     sha256: a1f5afa2204de3c2c1f775a5711fad0c0f0007313701eb9087b234f93ae26c0f
   charter:
     path: .kittify/charter/charter.yaml
-    sha256: f09a533e68e7b103f251e94dd9272001a683a26ffbbb539b602a09333ce90aa9
+    sha256: dd742ab182b61a760929320c028e6174ee7c7f4ffcf5a8d749b94a42847fd9ab
 verdict: ready
 issue_counts:
-  medium: 1
-  low: 5
-  high: 0
   critical: 0
+  medium: 1
+  high: 0
+  low: 5
   info: 0
 findings:
 - id: U1
