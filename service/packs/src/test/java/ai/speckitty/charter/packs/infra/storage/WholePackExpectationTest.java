@@ -58,6 +58,12 @@ class WholePackExpectationTest {
                 issue: "#194"
             files: []
             """;
+    private static final String EMPTY_DIRECTIVE = """
+            empty_kinds:
+              - kind: directive
+                reason: The pack has no directive.
+                issue: "#192"
+            """;
     private static final String MATCHING_EXCLUSIONS = """
             exclusions:
               - match: "**/README.md"
@@ -301,6 +307,53 @@ class WholePackExpectationTest {
 
             assertThat(evaluation.problems())
                     .containsExactly("EMPTY_MODELLED_KIND directive: the pack has no file of this modelled kind");
+        }
+
+        @Test
+        void aListedEmptyModelledKindPasses() {
+            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive"), ALL_GREEN);
+
+            assertThat(evaluation.problems()).isEmpty();
+        }
+
+        @Test
+        void aListedEmptyKindDoesNotExcuseAnotherEmptyKind() {
+            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive", "skill"), ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly("EMPTY_MODELLED_KIND skill: the pack has no file of this modelled kind");
+        }
+
+        @Test
+        void aListedEmptyKindThatGainsAFileIsStale() {
+            Evaluation evaluation = WholePackExpectation.load(
+                            MATCHING_RED + EMPTY_DIRECTIVE.replace("directive", "tactic"), MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, MODELLED, ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly("STALE_BASELINE empty kind tactic: the pack has a file of it now; remove it from "
+                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        @Test
+        void aListedEmptyKindThatIsNotModelledIsStale() {
+            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, MODELLED, ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly("STALE_BASELINE empty kind directive: not a modelled kind; remove it from "
+                            + WholePackExpectation.EXPECTED_RED_RESOURCE);
+        }
+
+        @Test
+        void anEmptyKindEntryWithoutAnIssueIsRefused() {
+            assertThatThrownBy(() -> WholePackExpectation.load(
+                            MATCHING_RED + EMPTY_DIRECTIVE.replace("    issue: \"#192\"\n", ""), MATCHING_EXCLUSIONS))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("empty_kinds entry")
+                    .hasMessageContaining("has no issue");
         }
 
         @Test
