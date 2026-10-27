@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-27 — The shared artifact interface lives in the kernel](/changelog/2026-10-27-shared-artifact-interface-in-the-kernel/)
 - [2026-10-26 — The charter glossary is owned by this repository](/changelog/2026-10-26-charter-glossary-owned-here/)
 - [2026-10-26 — The charter's concepts, user journeys and the decisions behind them](/changelog/2026-10-26-conceptual-model-and-journeys/)
 - [2026-10-26 — The docsite moves to doc-kitty 0.5.0](/changelog/2026-10-26-doc-kitty-0-5-0/)
