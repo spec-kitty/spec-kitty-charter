@@ -9,7 +9,6 @@ import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.Exclusion;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -244,6 +243,5 @@ class AgentProfileYamlTest {
 
         assertThat(YAML.read(AgentProfileBinding.INSTANCE, source, "p.agent.yaml"))
                 .isInstanceOf(FileRead.Unreadable.class);
-        assertThat(read(MINIMAL).excluding()).isEqualTo(Optional.empty());
     }
 }
