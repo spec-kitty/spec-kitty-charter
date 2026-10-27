@@ -376,7 +376,7 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The file a new element is created at: {@code <id>.<kind>.yaml} directly in the pack directory. An id that would
+     * The file a new element is created at: {@code <id>.<fileToken>.yaml} directly in the pack directory. An id that would
      * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
      * so a create never overwrites a file or follows a planted link.
      */

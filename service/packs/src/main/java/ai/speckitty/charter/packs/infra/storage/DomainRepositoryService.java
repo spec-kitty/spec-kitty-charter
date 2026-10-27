@@ -150,7 +150,12 @@ public final class DomainRepositoryService
         saveArtifact(profile);
     }
 
-    private void saveArtifact(CharterArtifact artifact) {
+    /**
+     * Saves one artifact of any bound kind, as the typed saves do; the whole-pack gate's adapter uses it.
+     *
+     * @param artifact the artifact to save
+     */
+    void saveArtifact(CharterArtifact artifact) {
         Resolved pack = resolve(artifact.packId());
         writeArtifact(pack.store, pack.key, artifact);
     }
