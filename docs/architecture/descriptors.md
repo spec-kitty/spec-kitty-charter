@@ -91,7 +91,7 @@ declare is tolerated (DIV-005): the pack still loads and the pack listing carrie
 `pack_unknown_key`, naming the key. Retired core fields such as `accompanies_doctrine_pack`
 are unknown keys like any other (DIV-006).
 
-**Planned** ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/), proposed): an
+**Planned** ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/), accepted 2026-10-27, not built yet): an
 undeclared key, a retired field included, is a schema violation, and the pack is refused as
 `pack_unreadable`; `pack_unknown_key` is retired. DIV-005 and DIV-006 close when the code changes.
 

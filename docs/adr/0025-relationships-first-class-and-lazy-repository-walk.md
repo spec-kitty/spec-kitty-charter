@@ -31,7 +31,7 @@ Decision 1 (identity) is revised by [ADR-0027](/adr/0027-drg-relationship-identi
 
 Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): `impacts` is an artifact's per-value list, not a field of a `Relationship`; tension is the `tension` relationship.
 
-To be superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (proposed 2026-10-27, on its acceptance): decision 5's "record equality is the round-trip fidelity assertion" no longer holds. Round-trip fidelity is equality of meaning between the source file and the written file, which `DrgEdge` record equality alone cannot show.
+Superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (accepted 2026-10-27): decision 5's "record equality is the round-trip fidelity assertion" no longer holds. Round-trip fidelity is equality of meaning between the source file and the written file, which `DrgEdge` record equality alone cannot show.
 
 ## Context
 

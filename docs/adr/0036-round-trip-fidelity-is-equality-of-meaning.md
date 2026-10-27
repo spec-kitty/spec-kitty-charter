@@ -1,7 +1,7 @@
 ---
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
-doc_status: draft
+doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
@@ -28,25 +28,20 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-27. Decider: Stijn Dejongh (operator). Records the operator rulings of
+**Accepted** — 2026-10-27. Decider: Stijn Dejongh (operator). Records the operator rulings of
 2026-10-27 on [#188](https://github.com/spec-kitty/spec-kitty-charter/issues/188) (part of epic
-[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)).
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), and the operator's answers to
+its three open questions the same day (see [Open questions](#open-questions)). The readings in
+Decisions 2 to 7 stand.
 
-Three questions are **open** on #188 (see [Open questions](#open-questions)). The record stays
-Proposed until the operator answers them. Decision 1 is the rulings and is stable. The readings in
-Decisions 2 to 7 stand unless the operator overrules them, so
-[#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187) and
-[#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) can build on them now.
-
-On acceptance, this record supersedes in part
+This record supersedes in part
 [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) (Amendment 2026-10-19,
 rulings R5 and R13: unknown `pack.yaml` keys tolerated with a warning) and
 [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) decision 5 (`DrgEdge`
 record equality as the round-trip fidelity assertion). It clarifies
 [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) decision 2 (what
-"round-trips losslessly" compares). The pointers on those records say "on acceptance" until then.
-Acceptance also waits for the charter wording (open question 2): an ADR does not redefine the
-charter.
+"round-trips losslessly" compares). The charter's PROJECT_002 is amended in the same change to read
+"round-trips without loss of meaning (ADR-0036)" (open question 2).
 
 ## Context
 
@@ -118,7 +113,7 @@ writing it unambiguously. None exists at `01edb4e`.
 | Scalars | Compared as resolved values. A string and a number differ (`"1"` and `1`), as do a string and a boolean (`"true"` and `true`). *Reading:* numbers compare by value, so `1` and `1.0` are equal. JSON Schema 2020-12 accepts `1.0` as an integer too, and the reader holds an `impacts` edge's strength as a floating-point number. |
 | Text | A string compares by its resolved value. Literal (`\|`), folded (`>`), quoted and plain styles are equal when they resolve to the same string, and differ when they do not (folding changes the string). |
 | Key order | Never counts. |
-| Presentation | Quoting, flow or block style, indentation, line width, document markers, a byte-order mark, anchors and aliases (compared expanded) and comments carry no meaning. *Reading:* a write therefore does not keep comments. Whether that is a "rewrite" that PROJECT_002 forbids is part of open question 2. |
+| Presentation | Quoting, flow or block style, indentation, line width, document markers, a byte-order mark, anchors and aliases (compared expanded) and comments carry no meaning. A write therefore does not keep comments; under the amended PROJECT_002 that is not a loss (open question 2, answered). |
 | Lists | A list is a **sequence**: order and repetition count. The exceptions are the **sets** named in the [per-kind table](#per-kind-table). A set compares by member identity. Repeating an identical member does not count. Two members with the same identity and a different value are a pack inconsistency (Decision 5), not two members. *Reading:* no list becomes a set without being named here, so no list loses its order by accident. |
 | Open maps | *Reading:* a map whose schema sets `additionalProperties` to anything but `false` is an **open map**: it holds data, not fields. Examples are styleguide `tooling` and `structural_lint_config`, charter `overrides` and org-charter `interview_defaults`. Its keys are not refused. It compares deeply, by value: inside it, `null`, an empty map and an absent key are **not** the same (the writer keeps `{}` and nested nulls as data). Likewise a `null` item in a list is an item: `[x, null]` and `[x]` differ. |
 | Documents | *Reading:* a pack YAML file holds one document. A multi-document file is a pack inconsistency. An empty file and a file that holds only `null` are equal. A schema that requires a mapping refuses both, and a top-level scalar too. |
@@ -219,7 +214,7 @@ edge in the wrong orientation, or a multi-document file. When the round trip fin
    Gradle and CI) and re-vendor `packs/` if the vendored subset is affected
    (`packs/internal/PROVENANCE.md`).
 
-What the gate does until then is open question 1.
+Until then the file sits on the gate's self-expiring known-failure list (open question 1, answered).
 
 ### 6. Kinds without a schema yet
 
@@ -228,15 +223,15 @@ schema. For each kind listed under `exclusions` in `contracts/packs/file-kinds.y
 when the mission that models the kind (#190 to #195) adds its schema. Every new schema is closed
 except for the open maps it declares. *Reading:* the gate covers what the classification maps to a
 schema, as epic #186's "done when" says. The generated hashes of `pack-manifest.yaml` are
-left to #195 (open question 3).
+left to #195 (open question 3, answered: decided there).
 
 ### 7. The charter's round-trip promise
 
 The charter companion says "open-packs YAML always round-trips exactly", and `charter.yaml`
 PROJECT_002 says "without loss or rewrite". *Reading:* under ruling 2 this means "without loss of
 meaning", as Decision 2 defines it: nothing a reader can observe changes. It does not mean the same
-bytes. Whether the charter text is amended is open question 2. This record does not edit the
-charter.
+bytes. The operator amended the charter text to say so, in the same change that accepted this
+record (open question 2): PROJECT_002 now reads "round-trips without loss of meaning (ADR-0036)".
 
 ### Per-kind table
 
@@ -268,7 +263,7 @@ sequence. "Open maps" are found by the rule in Decision 2; the ones named are ex
 | `**/presets/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#195; the per-item must-have mark, and `required_<plural>` migrated then refused in #206) |
 | `**/*.skill.yaml`, `**/*.glossary-pack.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#192) |
 | `**/*.config.yaml` | none (excluded) | YAML, all open: free-form tool configuration | none | never: it has no fields, only data |
-| `*/pack-manifest.yaml` | none (excluded) | YAML; the treatment of `content_hash` is open question 3 | none until a schema names one | when a schema lands (#195) |
+| `*/pack-manifest.yaml` | none (excluded) | YAML; the treatment of `content_hash` is decided in #195 (open question 3) | none until a schema names one | when a schema lands (#195) |
 | `built-in.source.yaml`, `**/templates/plan-field-declaration.yaml` | none (excluded) | YAML | none | when a schema lands |
 | `*.md` (`pack.md`, `*.skill.md`, mission-step `prompt.md` and `guidelines.md`, `PROVENANCE.md`, `README.md`) | none | frontmatter, if any, as YAML; body as text (LF, one final newline) | none | frontmatter: when a schema lands |
 | Any other file (asset payloads, templates, `.csv`, `.feature`, `.py`, images, fonts, `.gitkeep`) | none | bytes | none | not applicable |
@@ -296,21 +291,18 @@ sequence. "Open maps" are found by the rule in Decision 2; the ones named are ex
 
 ### Open questions
 
-These are asked on #188 (2026-10-27). Each is answered by the operator, not by this record.
+Asked on #188 and answered by the operator on 2026-10-27:
 
-1. **Expected failures while an upstream fix is pending.** Should the gate keep a self-expiring
-   known-failure list? It would be keyed by open-packs issue and file, and a listed file that starts
-   passing would fail the gate, as R21 does for vendored packs. Or does the gate stay red until the
-   pin moves? *Recommendation:* the list. It is test bookkeeping, not product logic, so it does not
-   break ruling 3, and it cannot go stale.
-2. **Charter wording.** Should the charter text (`charter.md`, PROJECT_002) be amended to "round-trips
-   without loss of meaning (ADR-0036)", in this change or through a separate charter change? And
-   is dropping comments on write a "rewrite" that PROJECT_002 forbids? If it is, comments become part
-   of the meaning of the files the service writes.
-3. **Kinds without a schema, and `pack-manifest.yaml`.** Is Decision 6 right? And is the manifest's
-   `content_hash` recomputed on write (the hash then means "hash of the file as written"), or are
-   manifest constituents compared by bytes? *Recommendation:* decide it in #195, where the manifest
-   is modelled.
+1. **Expected failures while an upstream fix is pending: a self-expiring known-failure list.** The
+   gate keeps a list keyed by open-packs issue and file, and a listed file that starts passing fails
+   the gate, as R21 does for vendored packs. It is test bookkeeping, not product logic, so ruling 3
+   stands.
+2. **Charter wording: amended in the same change that accepts this record.** PROJECT_002 reads
+   "round-trips without loss of meaning (ADR-0036)". Dropping comments on write is not a loss of
+   meaning, so the writer need not keep them.
+3. **Kinds without a schema, and `pack-manifest.yaml`: Decision 6 stands.** Whether the manifest's
+   `content_hash` is recomputed on write, or its constituents compare by bytes, is decided in #195,
+   where the manifest is modelled.
 
 ## Consequences
 
