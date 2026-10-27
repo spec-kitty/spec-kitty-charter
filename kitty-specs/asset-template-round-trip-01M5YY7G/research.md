@@ -149,3 +149,27 @@ assets/ directory", gate output (the six refusals), `openPacksRef` 01edb4e. Fix:
 | P18 | `withAssetFile` unused; Pack javadoc contradiction (reducer) | accepted | data-model |
 | P19 | Unbuilt content forms must not be silently treated (reducer) | accepted: store refuses, naming the form | contract |
 | P20 | Store + domain missing-payload check (reducer: keep both) | accepted as planned | D3 |
+
+## Post-tasks squad (implementer-ivan, reviewer-renata) — dispositions
+
+| # | Finding | Disposition | Evidence |
+|---|---|---|---|
+| Q1 | Storage WP breaks the oracle, `PackRoundTripTest` and the open-packs test it does not own | changed: WP05 owns them | tasks.md WP05 |
+| Q2 | `compute(List<byte[]>)` overload clashes by erasure | accepted: `computeOverBytes` | WP03 T011 |
+| Q3 | No generic instance save for the gate adapter | accepted: `saveArtifact`/`writeAssetFile` signatures | WP05 T021 |
+| Q4 | "Validate verdict unchanged" cannot hold (file list) | accepted: findings unchanged, file listed as `asset-payload` | WP01 T004 |
+| Q5 | Gate red from WP01 until the gate WP | accepted: stated; PR after WP07 | tasks.md |
+| Q6 | Unknown-key refusal is new strictness; false overlap-test claim in the table header | accepted | WP01 T002, T003 |
+| Q7 | Storage WP too big; revision work independent | accepted: WP03 split out | WP03 |
+| Q8 | Relationship-endpoint test only over a fake store | accepted: real store | WP06 T027 |
+| Q9 | Checks 7 and 11 had two owners | accepted: single owners listed | tasks.md |
+| Q10 | NFR-004 never measured; NFR-003 owner | accepted: recorded measurement (WP05 T024); CI owns `verifyAll` (WP07 DoD) | — |
+| Q11 | Unbuilt content form escape hatch | changed: refused at table load, tested | WP01 T002, contract |
+| Q12 | Title absent/present sidecar round trip untested | accepted | WP05 T017 |
+| Q13 | New entry shape lacks UNEXPECTEDLY_GREEN and pack-mismatch tests | accepted | WP04 T014 |
+| Q14 | FR-011 template edit; production fingerprint path | accepted | WP06 T025 |
+| Q15 | Docs WP could approve before claims are proven | accepted: WP08 depends on WP06, WP07 | tasks.md |
+| Q16 | FR-009 link | changed: #193 interim link, spec amended | spec FR-009 |
+| Q17 | Check 12 capture from `main` | accepted | WP01 T004 |
+| Q18 | FR-013 not proven at gate level | accepted | WP07 T029 |
+| Q19 | Template case collision | accepted | WP05 T022 |

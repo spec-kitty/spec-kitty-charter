@@ -58,13 +58,14 @@ URN `template:<id>` (for example `template:writing/meeting-minutes.md`).
 ## Persistence entry points (no new ports)
 
 No repository port is added: assets and templates have no application service or endpoint (C-001). Sidecars and
-templates are written through the existing generic `DomainRepositoryService.writeArtifact`/`saveArtifact`; asset
-files through one package-private `writeAssetFile`. The gate's `DomainRoundTrip` (same package) calls these.
+templates are written through package-private instance methods on `DomainRepositoryService`:
+`saveArtifact(PackIdentifier, CharterArtifact)` and `writeAssetFile(PackIdentifier, AssetFile)` (the static
+`writeArtifact(store, key, artifact)` used by the commit path also handles a template). The gate's `DomainRoundTrip` (same package) calls these.
 
 ## Storage (packs.infra.storage)
 
 - `ContentForm` enum: `YAML`, `MARKDOWN`, `TEXT`, `BYTES`, parsed from `content_form`. The table accepts every
-  declared form; this mission reads and writes only `YAML` and `BYTES`, and nothing in the table uses the others yet.
+  declared name, but the table admits only `yaml` and `bytes` until a mission builds another form.
 - `AssetDso(id, mime, path, @Nullable title)`; `AssetBinding` (`KindBinding<AssetDso, Asset>`, file token `asset`,
   file name `<id>.asset.yaml`); `AssetYaml` in `YamlFormats`.
 - `TemplateBinding`: a concrete mapping `(pack, path under templates/, Payload) → Template` and `pathOf(Template)`
@@ -72,7 +73,7 @@ files through one package-private `writeAssetFile`. The gate's `DomainRoundTrip`
   #192 extracts an interface when markdown bodies arrive).
 - `PackFileKind.Mapped` gains `Optional<String> schema` and `contentForm`; a `payloads` rule classifies as
   `Mapped(kind, empty, form)`.
-- `PackRevision.compute` takes the files' bytes (values unchanged for UTF-8 text); `PackCommitStore` and
+- `PackRevision.computeOverBytes(List<byte[]>)` (same value as `compute(List<String>)` for UTF-8 text); `PackCommitStore` and
   `CommitStorePackWriteStore` read digested files with `readAllBytes`.
 
 ## State and refusals

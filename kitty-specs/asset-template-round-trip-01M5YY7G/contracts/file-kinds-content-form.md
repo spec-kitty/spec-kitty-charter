@@ -46,5 +46,5 @@ operator ruling R1).
 `exclusions`, `payloads`. `PackSchemas` keeps iterating `files` (schema-bearing) only. Validate mode (`FileSystemPackInspector`) classifies
 every `*.yaml` file: a `Mapped` result with no schema (a payload rule) is skipped there, not validated.
 `matchingRules` and the no-overlap check stay over `files` + `exclusions`; a separate check proves payload rules do not
-overlap each other. A rule naming a `content_form` the store does not build yet (`markdown`, `text`) loads, but the
-store refuses to read its kind, naming the form.
+overlap each other. A rule naming a `content_form` that is not built yet (`markdown`, `text`) fails at table load, naming the
+form; the mission that builds a form (#192: `markdown`) admits it. Unknown keys on any rule fail at table load.
