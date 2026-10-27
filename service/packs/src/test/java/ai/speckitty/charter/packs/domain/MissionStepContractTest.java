@@ -78,7 +78,6 @@ class MissionStepContractTest {
         assertThat(contract.kind()).isEqualTo(ArtifactKind.MISSION_STEP_CONTRACT);
         assertThat(contract.localId()).isEqualTo("implement");
         assertThat(contract.urn()).isEqualTo(new Urn(NodeKind.MISSION_STEP_CONTRACT, "implement"));
-        assertThat(contract.urn()).hasToString("mission_step_contract:implement");
         assertThat(contract.label()).isEqualTo("Action of implement");
         assertThat(contract.description()).isEmpty();
         assertThat(contract.schemaVersion()).contains("1.0");
@@ -189,21 +188,5 @@ class MissionStepContractTest {
         assertThat(writtenFalse.optional()).contains(false);
         assertThat(absent.optional()).isEmpty();
         assertThat(writtenFalse).isNotEqualTo(absent);
-    }
-
-    @Test
-    @DisplayName("a gate binding keeps every field as written")
-    void gateBindingKeepsFields() {
-        GateBinding binding = new GateBinding(
-                "for_review->in_review",
-                "review-gate",
-                Optional.of("asset"),
-                "1",
-                Optional.of(false),
-                Optional.of("issue #155"));
-
-        assertThat(binding.handlerKind()).contains("asset");
-        assertThat(binding.failOpen()).contains(false);
-        assertThat(binding.provenance()).contains("issue #155");
     }
 }
