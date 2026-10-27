@@ -24,6 +24,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-27T17:51:29.518979Z",
+      "decision_id": "01M5Z7T5QET0XX0GDP5GE1ZNSH",
+      "final_answer": null,
+      "input_key": "known_failure_column_position",
+      "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+      "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+      "opened_by": "cli",
+      "options": [
+        "Append last (recommended)",
+        "Insert beside expected red",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Report: append the KNOWN_FAILURE status and its per-kind column last (after red), keeping every existing column and assertion byte-stable for the Wave 1 siblings, rather than inserting it beside expected red?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.report.known-failure-column",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
