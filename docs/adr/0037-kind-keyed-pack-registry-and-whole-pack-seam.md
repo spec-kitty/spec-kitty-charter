@@ -161,15 +161,17 @@ nothing about how a new kind is shaped.
 
 ### Amendment 2026-10-27 (#191): a binding names its schema
 
-Decision 4 asked a kind's `file-kinds.yaml` rule to map to a schema whose name is the kind's token,
-and left the mapping to the kind missions. The mission step contract mission
-([#191](https://github.com/spec-kitty/spec-kitty-charter/issues/191)) settles it the other way: **a
-binding names its schema, as it names its file token.**
+The agent-profile amendment above (#190) relaxed Decision 4 and introduced `KindBinding.schemaName()`
+and `idKey()`. The mission step contract mission
+([#191](https://github.com/spec-kitty/spec-kitty-charter/issues/191)) is the first kind whose schema
+is not its token to run the full read and write path through that hook, and wires it through the
+store, the strategy, the generic save and the gate adapter: **a binding names its schema, as it
+names its file token.**
 
 - `KindBinding.schemaName()` gives the name of the schema that validates the kind's files. It
   defaults to the token, so the five bound kinds are unchanged. `mission_step_contract` names
-  `mission-step-contract` and the file token `step-contract`. The agent-profile mission (#190)
-  needs the same mapping (`agent-profile`, `agent`) and builds the same hook.
+  `mission-step-contract` and the file token `step-contract`. The agent-profile kind (#190) already
+  uses the same mapping (`agent-profile`, `agent`).
 - The store's file walk (`PackFileSet`) finds the kind of a schema-mapped file through the registry
   (`KindBindings.bySchema`), never by reading a schema name as a token. A kind whose schema is not
   its token would otherwise load no file, silently. The strategy validates a file against the schema
@@ -178,7 +180,8 @@ binding names its schema, as it names its file token.**
 - The whole-pack gate's adapter takes its kinds, writes and file tokens from the registry, so a kind
   joins the gate by binding itself.
 
-This relaxes "a schema whose name is the kind's token". Renaming the schemas instead would change
+The relaxation of "a schema whose name is the kind's token" is #190's; this change wires the hook
+through the full read and write path. Renaming the schemas instead would change
 their `$id`, the gate's kind names and the kebab-case naming every schema uses. The hook is a
 one-time change to the store (`PackFileSet`), the strategy (`YamlSerializationStrategy`), the
 repository service (a generic save for the gate adapter) and the gate's test adapter. That is the
