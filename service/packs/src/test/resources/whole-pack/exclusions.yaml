@@ -1,0 +1,14 @@
+# The whole-pack gate's own exclusion list (#187): files of the pinned built-in pack that the gate does not
+# compare, each with the reason. Append-only: add an entry, never edit or remove one, unless the gate reports it
+# as STALE_EXCLUSION. A file of a modelled kind can never be excluded (the gate fails with EXCLUDED_MODELLED).
+exclusions:
+  - match: "**/README.md"
+    reason: >-
+      Orientation notes for pack authors next to the content they describe; not pack content and not loaded by
+      any reader in core.
+  - match: "**/.gitkeep"
+    reason: >-
+      Placeholder that keeps an empty directory in git; carries no content.
+  - match: "**/__init__.py"
+    reason: >-
+      Python package markers for runtime helpers shipped beside the pack (core imports them); not pack content.

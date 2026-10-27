@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service locally, what each verification task checks, and how to change the contract or a dependency.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -61,7 +61,7 @@ How to build the charter service and run every check CI runs.
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
 | `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
-| `:packs:openPacksRoundTrip` | Every open-packs YAML file renders byte for byte, survives a rewrite of every scalar, and every pack loads and round-trips its graph. It fails, never skips, without a checkout |
+| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the vendored packs in `packs/` equal the pin. It fails, never skips, without a checkout |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -75,6 +75,40 @@ until it is.
 Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on the hand-written
 service modules; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
 request runs it.
+
+Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
+
+## The whole-pack round-trip gate
+
+```bash
+./gradlew :packs:wholePackRoundTrip          # needs the pinned spec-kitty-open-packs checkout
+```
+
+The gate ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187), epic
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) reads every file of the pinned built-in pack
+into the domain, writes it to a fresh directory through the storage service, reads it back, and compares each
+written file with its source **by meaning**, as [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
+defines it: quoting, comments, layout and key order do not count, and for a declared field an absent value, `null`
+and an empty list or map are the same (inside an open map such as a styleguide's `tooling` they are data); a missing,
+extra or changed key or value counts. Numbers compare by value. Graph-shard edges compare as a set (order and
+identical repeats do not count) and nodes by URN.
+
+It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.yaml` lists what does not round-trip
+yet: a whole kind that has no reader and writer (`kinds:`), or a single file of a modelled kind with every place it
+differs (`files:`, `at:` lists each difference path, joined by ` ; `), each with a reason and the issue that owns it.
+Because `at:` holds every difference, a new loss in a file that is already expected red still fails the gate. `exclusions.yaml` next to it is the gate's
+own append-only list of files it does not compare. The gate passes only when the result matches both lists exactly:
+
+- an unlisted red file fails it (`UNEXPECTED_RED`), and so does a listed file whose differences changed
+  (`CHANGED_RED`);
+- a listed file or kind that now round-trips fails it too (`UNEXPECTEDLY_GREEN`): remove the entry in the same
+  change that turns it green;
+- stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and a modelled kind with no
+  files fail it, so it cannot pass vacuously.
+
+The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
+in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required
+check until the gate is green.
 
 To fix formatting rather than report it, run `./gradlew spotlessApply`.
 
