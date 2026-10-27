@@ -151,7 +151,9 @@ Four facts force a decision:
    companion needs one. What both share, so there is one path and not two:
    - one containment rule, `Companions.inPack`, for every pack-relative path the store writes
      (asset files, templates, every part of a whole-pack write), with the companion rule built on
-     the same check;
+     the same check; and one real-path check (`FilesystemPackStore.realPathContained`) for every
+     companion, asset file and template the store reads, so a file link whose real location leaves
+     the pack is a violation and is not read;
    - in the store, one bytes read (`FilesystemPackStore.readBytes`), with text as a strict UTF-8
      view over it. The source fingerprint (`FileSystemPackSources`), the commit path's revision
      (`PackCommitStore`, `CommitStorePackWriteStore`) and validate mode (`FileSystemPackInspector`)
