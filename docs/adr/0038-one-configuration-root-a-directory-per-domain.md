@@ -1,5 +1,5 @@
 ---
-title: "ADR-0037: The service keeps its files under one configuration root, a directory per domain"
+title: "ADR-0038: The service keeps its files under one configuration root, a directory per domain"
 description: charter.config-root holds packs/ and activations/; every registered pack lives in packs/ at its declared level, so one layout serves a local machine and a hosted store.
 doc_status: draft
 updated: 2026-10-27T00:00:00Z
@@ -19,7 +19,7 @@ audience:
     guidance_text: Read this for how the service is told where packs live (--configRootLocation), and what replaced charter.packs.
 ---
 
-# ADR-0037: The service keeps its files under one configuration root, a directory per domain
+# ADR-0038: The service keeps its files under one configuration root, a directory per domain
 
 ## Status
 

@@ -92,7 +92,7 @@ rules below are how this one is scoped to its worktree.
   `kernel.atomic.observe_writes` hook, so the CLI sees its own write at once.
 - Packs are discovered, not configured: every directory under `<charter.config-root>/packs/` is a pack, listed
   again on every read, so a pack copied in is served without a restart
-  ([ADR-0037](/adr/0037-one-configuration-root-a-directory-per-domain/)).
+  ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)).
 - Every read verifies its inputs twice. It digests them before it loads and again after, and it
   answers 200 with the digest it verified, once, as `Charter-Source-Fingerprint`. If the two
   digests differ, the service refuses with `stale_input`, including when the load itself refused
@@ -100,7 +100,7 @@ rules below are how this one is scoped to its worktree.
   two, goes unseen. There is no Python fallback.
 - The first digest covers every pack, so a pack holding a file the fingerprint covers that cannot be
   read or a directory that cannot be listed refuses every read with 500 `pack_unreadable`, a read of a
-  healthy pack included. A pack directory that is removed simply stops being listed (ADR-0037). A file
+  healthy pack included. A pack directory that is removed simply stops being listed (ADR-0038). A file
   that vanishes while a pack is walked, as in an atomic save, is not an error.
 - Refresh is not served in this version. Reads verify their inputs on every call, and mutation
   operations will rebuild the graph atomically.

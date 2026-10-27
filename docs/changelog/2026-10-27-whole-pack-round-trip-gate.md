@@ -8,7 +8,7 @@ type: Changelog
 kind: Changelog
 related:
   - guides/service-build
-  - adr/0037-one-configuration-root-a-directory-per-domain
+  - adr/0038-one-configuration-root-a-directory-per-domain
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
 audience:
   - profile: charter-service-contributor
@@ -36,7 +36,7 @@ workflow, and is not a required check until it is green ([Building the service](
 **The service keeps its files under one configuration root.** `charter.config-root` (default
 `~/.spec-kitty/charter`, overridden with `--configRootLocation <path>`) holds a directory per domain: `packs/<pack>/`
 for every registered pack, built-in, org and project, at the level its `pack.yaml` declares, and `activations/`,
-reserved for the activation documents ([ADR-0037](/adr/0037-one-configuration-root-a-directory-per-domain/)). The
+reserved for the activation documents ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)). The
 same layout serves one machine or a hosted store; packs are provisioned by copying them in until registration of new
 packs is served. It replaces `charter.packs[*]`, which now fails the start. Symbolic links are not packs, because a
 write would replace the link.

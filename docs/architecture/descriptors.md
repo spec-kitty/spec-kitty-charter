@@ -38,7 +38,7 @@ nest are drawn in the pack write model below.
 
 The `built-in` root and the other `packs/` paths are paths in core, `spec-kitty/spec-kitty`. The charter service
 keeps every pack it serves, of any level, in its own configuration root, `<charter.config-root>/packs/<pack>/`, at the
-level the pack's `pack.yaml` declares ([ADR-0037](/adr/0037-one-configuration-root-a-directory-per-domain/)); inside
+level the pack's `pack.yaml` declares ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)); inside
 a pack the layout below holds.
 
 | Pack level | Root | Per-kind directory | Graph |
