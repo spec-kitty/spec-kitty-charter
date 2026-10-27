@@ -12,7 +12,9 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
+import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -604,5 +606,35 @@ class WholePackStoreTest {
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("unreadable files");
         assertThat(target).doesNotExist();
+    }
+
+    /**
+     * F7: one file, one owner. A pack holding a template whose path another rule classifies ({@code templates/
+     * x.tactic.yaml}) is refused by the whole-pack write, naming the path, and no target remains; the same pack with a
+     * template whose path only the template rule classifies is written.
+     */
+    @Test
+    @DisplayName("a template whose path another rule classifies refuses the whole-pack write")
+    void aTemplateWhosePathAnotherRuleClassifiesRefusesTheWrite(@TempDir Path host) throws IOException {
+        WholePackStore.LoadedPack loaded = store.load(payloadPack(host.resolve("source")));
+        Payload content = Payload.of("x".getBytes(UTF_8));
+
+        store.write(
+                with(loaded, TemplateBinding.INSTANCE.toEntity(loaded.pack().id(), "x.md", content)),
+                host.resolve("ok"));
+        WholePackStore.LoadedPack claimed =
+                with(loaded, TemplateBinding.INSTANCE.toEntity(loaded.pack().id(), "x.tactic.yaml", content));
+
+        assertThat(host.resolve("ok/templates/x.md")).hasContent("x");
+        assertThatThrownBy(() -> store.write(claimed, host.resolve("out")))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("path templates/x.tactic.yaml is a pack file of kind tactic, not a template");
+        assertThat(host.resolve("out")).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {
+        return new WholePackStore.LoadedPack(
+                loaded.pack().with(template), loaded.layout(), loaded.graphs(), loaded.unmodelled());
     }
 }

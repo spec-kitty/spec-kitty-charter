@@ -136,7 +136,7 @@ class AssetStoreTest {
 
         FilesystemPackStore.PackRead read = store.read(SOURCE);
         for (AssetFile file : read.assetFiles()) {
-            store.writePayload(TARGET, PackFileSet.ASSETS + file.path(), file.payload());
+            store.writePayload(TARGET, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
         }
 
         assertThat(read.violations()).isEmpty();
@@ -303,14 +303,15 @@ class AssetStoreTest {
         FilesystemPackStore store = new FilesystemPackStore(host, strategy);
         Payload payload = Payload.of(BINARY);
 
-        store.writePayload(TARGET, "assets/tools/lint.config.yaml", payload);
+        store.writePayload(TARGET, "assets/tools/lint.config.yaml", payload, PackFileKind.ASSET_PAYLOAD);
 
         assertThat(Files.readAllBytes(target.resolve("assets/tools/lint.config.yaml")))
                 .isEqualTo(BINARY);
-        assertThatThrownBy(() -> store.writePayload(TARGET, "assets/../../outside.bin", payload))
+        assertThatThrownBy(() ->
+                        store.writePayload(TARGET, "assets/../../outside.bin", payload, PackFileKind.ASSET_PAYLOAD))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("payload assets/../../outside.bin leaves the pack");
-        assertThatThrownBy(() -> store.writePayload(TARGET, "assets\\x.bin", payload))
+        assertThatThrownBy(() -> store.writePayload(TARGET, "assets\\x.bin", payload, PackFileKind.ASSET_PAYLOAD))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("payload assets\\x.bin is not a valid path");
         assertThat(host.resolve("outside.bin")).doesNotExist();
@@ -345,8 +346,7 @@ class AssetStoreTest {
         Path outside = host.resolve("outside.bin");
         Files.write(outside, BINARY);
         write(source, "assets/real.bin", BINARY);
-        assumeTrue(
-                link(source.resolve("assets/leak.bin"), outside), "the file system cannot create symbolic links");
+        assumeTrue(link(source.resolve("assets/leak.bin"), outside), "the file system cannot create symbolic links");
         link(source.resolve("assets/inside.bin"), source.resolve("assets/real.bin"));
 
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);

@@ -1,8 +1,10 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -127,7 +129,37 @@ class TemplateStoreTest {
                 .extracting(FilesystemPackStore.TemplateFile::path)
                 .containsExactly("inside.md", "real.md");
         assertThat(read.violations())
-                .containsExactly(new PackElementViolation(
-                        "templates/leak.md", "unreadable", "the file leaves the pack"));
+                .containsExactly(
+                        new PackElementViolation("templates/leak.md", "unreadable", "the file leaves the pack"));
+    }
+
+    /**
+     * F7: one file, one owner. A template whose id another rule would classify (a tactic's file name, the excluded
+     * plan-field declaration) is refused on save, naming the path and the rule, and nothing is written; a template
+     * beside it with an id only the template rule classifies is written.
+     */
+    @Test
+    void aTemplateWhosePathAnotherRuleClassifiesIsRefusedOnSave(@TempDir Path host) throws IOException {
+        Path target = pack(host, "target");
+        FilesystemPackStore store = new FilesystemPackStore(host, strategy);
+        Payload content = Payload.of(TEMPLATE);
+
+        DomainRepositoryService.writeArtifact(
+                store, TARGET, TemplateBinding.INSTANCE.toEntity(TARGET, "x.md", content));
+        assertThatThrownBy(() -> DomainRepositoryService.writeArtifact(
+                        store, TARGET, TemplateBinding.INSTANCE.toEntity(TARGET, "x.tactic.yaml", content)))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("payload templates/x.tactic.yaml is a pack file of kind tactic, not a template");
+        assertThatThrownBy(() -> DomainRepositoryService.writeArtifact(
+                        store,
+                        TARGET,
+                        TemplateBinding.INSTANCE.toEntity(TARGET, "plan-field-declaration.yaml", content)))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("payload templates/plan-field-declaration.yaml is excluded by"
+                        + " **/templates/plan-field-declaration.yaml, not a template");
+
+        assertThat(Files.readAllBytes(target.resolve("templates/x.md"))).isEqualTo(TEMPLATE);
+        assertThat(target.resolve("templates/x.tactic.yaml")).doesNotExist();
+        assertThat(target.resolve("templates/plan-field-declaration.yaml")).doesNotExist();
     }
 }

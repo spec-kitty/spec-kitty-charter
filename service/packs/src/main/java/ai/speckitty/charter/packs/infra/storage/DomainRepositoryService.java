@@ -186,7 +186,8 @@ public final class DomainRepositoryService
      */
     void writeAssetFile(PackIdentifier pack, AssetFile file) {
         Resolved resolved = resolve(pack);
-        resolved.store.writePayload(resolved.key, PackFileSet.ASSETS + file.path(), file.payload());
+        resolved.store.writePayload(
+                resolved.key, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
     }
 
     private <D, E extends CharterArtifact> Optional<E> loadOne(
@@ -229,7 +230,8 @@ public final class DomainRepositoryService
      * file, an unknown id creates {@code <id>.<kind>.yaml}. The {@link PackCommitStore} calls it to stage the one
      * artefact a registration added or replaced before the atomic directory swap, leaving the descriptor and every
      * sibling byte-identical; the mapping stays in the binding so the commit path and the per-child saves cannot drift.
-     * A {@link Template} is written byte for byte at {@code templates/<id>}.
+     * A {@link Template} is written byte for byte at {@code templates/<id>}, refused when another rule classifies that
+     * path (a {@code templates/x.tactic.yaml}): one file, one owner.
      *
      * @param store the store to write through (for a commit, one rooted at the staging directory's parent)
      * @param key the directory-name key the store addresses the pack by
@@ -239,7 +241,10 @@ public final class DomainRepositoryService
     static void writeArtifact(FilesystemPackStore store, PackIdentifier key, CharterArtifact artifact) {
         if (artifact instanceof Template template) {
             store.writePayload(
-                    key, TemplateBinding.INSTANCE.pathOf(template), TemplateBinding.INSTANCE.payloadOf(template));
+                    key,
+                    TemplateBinding.INSTANCE.pathOf(template),
+                    TemplateBinding.INSTANCE.payloadOf(template),
+                    PackFileKind.TEMPLATE);
             return;
         }
         KindBinding<?, ?> kind = KindBindings.of(artifact.kind())

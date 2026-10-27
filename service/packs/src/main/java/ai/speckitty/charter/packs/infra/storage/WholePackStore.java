@@ -221,7 +221,12 @@ public final class WholePackStore {
                 putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
             }
             for (AssetFile file : pack.assetFiles()) {
-                put(staging, PackFileSet.ASSETS + file.path(), file.payload().bytes(), written);
+                putPayload(
+                        staging,
+                        PackFileSet.ASSETS + file.path(),
+                        file.payload().bytes(),
+                        PackFileKind.ASSET_PAYLOAD,
+                        written);
             }
             for (GraphDocument graph : loaded.graphs()) {
                 put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
@@ -283,7 +288,12 @@ public final class WholePackStore {
     private void putArtifact(Path staging, String path, CharterArtifact artifact, Set<String> written)
             throws IOException {
         if (artifact instanceof Template template) {
-            put(staging, path, TemplateBinding.INSTANCE.payloadOf(template).bytes(), written);
+            putPayload(
+                    staging,
+                    path,
+                    TemplateBinding.INSTANCE.payloadOf(template).bytes(),
+                    PackFileKind.TEMPLATE,
+                    written);
             return;
         }
         KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
@@ -316,6 +326,21 @@ public final class WholePackStore {
 
     private static byte[] utf8(String text) {
         return text.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Writes one {@code bytes} file of the staged pack, an asset file or a template, as {@link #put} does. Its path must
+     * classify back as {@code kind} ({@link PackFileSet#notHeldAs}): one file, one owner, as the store's own write
+     * refuses it.
+     */
+    private static void putPayload(Path staging, String relative, byte[] content, String kind, Set<String> written)
+            throws IOException {
+        if (Companions.inPack(staging, relative) instanceof Companions.Inside at) {
+            PackFileSet.notHeldAs(staging, at.packRelative(), kind).ifPresent(reason -> {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "path " + relative + " " + reason);
+            });
+        }
+        put(staging, relative, content, written);
     }
 
     /**

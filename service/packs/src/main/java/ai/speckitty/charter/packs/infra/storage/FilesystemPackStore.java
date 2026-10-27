@@ -689,22 +689,28 @@ final class FilesystemPackStore {
     /**
      * Writes one file of the {@code bytes} content form (an asset file or a template) at its pack-relative path, byte
      * for byte, creating its directories. A file already there is replaced. The path passes the containment rule a
-     * companion's does ({@link Companions#inPack}), and the write is the store's one atomic write.
+     * companion's does ({@link Companions#inPack}) and must classify back as {@code kind} (one file, one owner:
+     * {@link PackFileSet#notHeldAs}), and the write is the store's one atomic write.
      *
      * @param id the pack
      * @param file the pack-relative, {@code /}-separated path, such as {@code assets/a/logo.png}
      * @param payload the bytes to write
-     * @throws CharterRefusal when the path breaks the containment rule, the file resolves outside the pack, or it
-     *     cannot be written
+     * @param kind the {@code bytes} kind the file is written as: {@link PackFileKind#ASSET_PAYLOAD} or
+     *     {@link PackFileKind#TEMPLATE}
+     * @throws CharterRefusal when the path breaks the containment rule, another rule classifies it, the file resolves
+     *     outside the pack, or it cannot be written
      */
-    void writePayload(PackIdentifier id, String file, Payload payload) {
+    void writePayload(PackIdentifier id, String file, Payload payload, String kind) {
         Path directory = existingDirectory(id);
-        Path target = switch (Companions.inPack(directory, file)) {
-            case Companions.Inside inside -> inside.file();
+        Companions.Inside at = switch (Companions.inPack(directory, file)) {
+            case Companions.Inside inside -> inside;
             case Companions.Refused refused ->
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "payload " + file + " " + refused.reason());
         };
-        writeAtomically(directory, target, payload.bytes());
+        PackFileSet.notHeldAs(directory, at.packRelative(), kind).ifPresent(reason -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "payload " + file + " " + reason);
+        });
+        writeAtomically(directory, at.file(), payload.bytes());
     }
 
     // ---- id to path ----------------------------------------------------------------------------------------------

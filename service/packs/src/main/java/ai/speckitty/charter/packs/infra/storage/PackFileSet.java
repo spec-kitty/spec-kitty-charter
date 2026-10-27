@@ -388,6 +388,29 @@ final class PackFileSet {
         }
     }
 
+    /**
+     * Why a {@code bytes} file written at {@code packRelative} would not read back as a file of {@code kind}, or empty
+     * when it would. One file has one owner, as for a companion ({@code Companions.resolve}): a template id or an asset
+     * file path that another rule classifies (a {@code templates/x.tactic.yaml}, an excluded
+     * {@code templates/plan-field-declaration.yaml}, a hidden file) is a pack inconsistency the write refuses.
+     *
+     * @param packDir the pack directory the file is written into
+     * @param packRelative the file, pack-relative, normalized and {@code /}-separated
+     * @param kind the {@code bytes} kind it is written as, one of {@link PackFileKind#BYTES_KINDS}
+     * @return the reason, to follow the path in a refusal; empty when the file classifies back as {@code kind}
+     */
+    static Optional<String> notHeldAs(Path packDir, String packRelative, String kind) {
+        String noun = ASSET_PAYLOAD.equals(kind) ? "an asset file" : "a " + kind;
+        return switch (PackFileKind.bundled().classify(nameOf(normalized(packDir)) + "/" + packRelative)) {
+            case PackFileKind.Mapped mapped
+            when mapped.contentForm() == ContentForm.BYTES && mapped.kind().equals(kind) -> Optional.empty();
+            case PackFileKind.Mapped mapped -> Optional.of("is a pack file of kind " + mapped.kind() + ", not " + noun);
+            case PackFileKind.Excluded excluded ->
+                Optional.of("is excluded by " + excluded.exclusionClass() + ", not " + noun);
+            case PackFileKind.Unclassified unclassified -> Optional.of("is classified by no rule, not " + noun);
+        };
+    }
+
     static CharterRefusal unlistable(String packName, Exception cause) {
         return new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + packName + " cannot be listed", cause);
     }
