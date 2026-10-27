@@ -1,0 +1,55 @@
+{
+  "event_count": 14,
+  "last_event_id": "01M5ZAD9DM37NPTH9A6DT0K0SG",
+  "materialized_at": "2026-10-27T18:36:53.044321+00:00",
+  "mission_number": "",
+  "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 2,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZAD5F4ZDKYY2PANRX1YDSB",
+      "last_transition_at": "2026-10-27T18:36:48.996148+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/whole-pack-known-failures-01M5Z72Y-coord/kitty-specs/whole-pack-known-failures-01M5Z72Y/tasks/WP01-known-failure-list-judgement-and-report/review-cycle-1.md",
+        "reference": "review-cycle://whole-pack-known-failures-01M5Z72Y/WP01-known-failure-list-judgement-and-report/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 2776,
+      "shell_pid_created_at": "1793124772.6"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZAD9DM37NPTH9A6DT0K0SG",
+      "last_transition_at": "2026-10-27T18:36:53.044321+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/whole-pack-known-failures-01M5Z72Y-coord/kitty-specs/whole-pack-known-failures-01M5Z72Y/tasks/WP02-known-failure-workflow-docs-and-changelog/review-cycle-1.md",
+        "reference": "review-cycle://whole-pack-known-failures-01M5Z72Y/WP02-known-failure-workflow-docs-and-changelog/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 8769,
+      "shell_pid_created_at": "1793125853.67"
+    }
+  }
+}

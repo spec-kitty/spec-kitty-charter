@@ -1,0 +1,37 @@
+{
+  "accept_commit": "7acab8094728f0d020dae0953530651d9ae6740d",
+  "acceptance_history": [
+    {
+      "accept_commit": "7acab8094728f0d020dae0953530651d9ae6740d",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T18:36:24.101085+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "abe226d1b9a47c7a1d5eeae5b41e811b43f81371"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-27T18:36:24.101085+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "abe226d1b9a47c7a1d5eeae5b41e811b43f81371",
+  "baseline_merge_commit": "cb03ce1789179b22be51213419cc0fc4b1535c93",
+  "contracts": "none",
+  "contracts_rationale": "Test-scope harness change only: no API, wire or schema contract is added or changed.",
+  "created_at": "2026-10-27T17:38:49.280763+00:00",
+  "flattened": true,
+  "friendly_name": "Whole-pack gate known-failure list",
+  "merged_at": "2026-10-27T18:36:59.764710+00:00",
+  "merged_commit": "eb7dcbdcabdb4c93a7fed7a6e734af2d09a02a76",
+  "mid8": "01M5Z72Y",
+  "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+  "mission_number": 9,
+  "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "ADR-0036 rules that a pack file failing the round trip because of a pack inconsistency is fixed in spec-kitty-open-packs, not worked around here. Until the pinned open-packs commit carries the fix, the gate needs a place to record that failure. This mission adds a known-failure list, kept apart from the expected-red baseline and the exclusions, keyed by the open-packs issue and the file. It expires itself: a listed file that passes fails the gate with a message to remove the entry, so the list cannot go stale after the pin moves (issue #247).",
+  "purpose_tldr": "Let the whole-pack round-trip gate carry pack files that fail because of an open-packs defect awaiting an upstream fix, without going red, and fail as soon as the fix lands.",
+  "slug": "whole-pack-known-failures-01M5Z72Y",
+  "status_phase": "1",
+  "target_branch": "feat/whole-pack-known-failures",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T18:12:56.490775+00:00"
+}

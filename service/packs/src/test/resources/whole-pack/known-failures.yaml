@@ -1,0 +1,15 @@
+# The whole-pack gate's known-failure list (#247, ADR-0036 decision 5 and open question 1): files of a modelled kind
+# that fail the round trip because the pack's own data is inconsistent, while the fix is pending in
+# spec-kitty-open-packs. Not for service defects (those are expected red, in expected-red.yaml) and not for files the
+# gate does not compare (exclusions.yaml).
+#
+# Each entry: path (pack-relative), at (where the file differs, exactly as the report's detail shows it before ": ";
+# for a refused file, the whole detail "refused: ..."), reason (one line) and issue
+# (spec-kitty/spec-kitty-open-packs#<number>). One entry per file.
+#
+# A refusal's text comes from the file's content (its ids, fields and kind), never from the run, so pinning the
+# whole "refused: ..." detail is stable across runs.
+#
+# Self-expiring: a listed file that round-trips fails the gate (UNEXPECTEDLY_GREEN). Remove its entry in the change
+# that moves openPacksRef to the commit with the fix.
+known_failures: []

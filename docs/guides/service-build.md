@@ -97,7 +97,8 @@ It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.ya
 yet: a whole kind that has no reader and writer (`kinds:`), or a single file of a modelled kind with every place it
 differs (`files:`, `at:` lists each difference path, joined by ` ; `), each with a reason and the issue that owns it.
 Because `at:` holds every difference, a new loss in a file that is already expected red still fails the gate. `exclusions.yaml` next to it is the gate's
-own append-only list of files it does not compare. The gate passes only when the result matches both lists exactly:
+own append-only list of files it does not compare. The gate passes only when the result matches its lists exactly (the third,
+`known-failures.yaml`, is below):
 
 - an unlisted red file fails it (`UNEXPECTED_RED`), and so does a listed file whose differences changed
   (`CHANGED_RED`);
@@ -105,6 +106,39 @@ own append-only list of files it does not compare. The gate passes only when the
   change that turns it green;
 - stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and a modelled kind with no
   files fail it, so it cannot pass vacuously.
+
+### Known failures: the pack is wrong, not the service
+
+A file of a modelled kind can fail the round trip because the pack's own data is inconsistent. That is neither a
+service defect (expected red) nor a file the gate does not compare (an exclusion). Such a file goes in
+`service/packs/src/test/resources/whole-pack/known-failures.yaml`, the third list next to `expected-red.yaml` and
+`exclusions.yaml`. It ships empty. One entry per file, with four fields:
+
+- `path`: the file, relative to the pack;
+- `at`: where it differs, exactly as the report's detail shows it before the colon; for a refused file, the whole
+  `refused: …` detail;
+- `reason`: one line;
+- `issue`: the open-packs issue that owns the fix, as `spec-kitty/spec-kitty-open-packs#<number>`.
+
+To list a file:
+
+1. File the issue in spec-kitty-open-packs, as
+   [ADR-0036 decision 5](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) describes.
+2. Add the entry to `known-failures.yaml`.
+3. When the fix merges, move `openPacksRef` to the commit with the fix and remove the entry in the same change. Until
+   you do, the gate fails with `UNEXPECTEDLY_GREEN`: the list expires by itself.
+
+The gate fails on:
+
+- a malformed entry, or an issue that is not in the form above (the list does not load);
+- `CHANGED_RED`, when the differences of a listed file no longer match `at`;
+- `UNEXPECTEDLY_GREEN`, when a listed file round-trips;
+- `STALE_KNOWN_FAILURE`, when the file does not exist in the pack or is excluded;
+- `KNOWN_FAILURE_UNMODELLED`, when no adapter models the file's kind, so the entry could never expire;
+- `AMBIGUOUS_ENTRY`, when the file is also in `expected-red.yaml`.
+
+The report counts known failures on their own: a `known failure` column per kind, and a `known failure` count in the
+totals line, both after `red`.
 
 Where the gate still differs from ADR-0036, on purpose and only towards false reds, never false greens:
 
