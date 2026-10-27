@@ -13,5 +13,7 @@
   "purpose_tldr": "Every mission step contract in the pinned Charter Packs is read into the service's domain and written back with its meaning intact.",
   "slug": "mission-step-contract-round-trip-01M5YHYD",
   "target_branch": "feat/mission-step-contract-round-trip",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "Storage and domain only: no HTTP or wire contract is added or changed; the pack schema already exists and is unchanged."
 }

@@ -56,7 +56,7 @@ reload, and compare the aggregates and the paths.
 **Acceptance Scenarios**:
 
 1. **Given** a pack with `missions/built_in_step_contracts/implement.step-contract.yaml`, **When** the whole pack is loaded and written, **Then** the file is written at the same relative path.
-2. **Given** a new step contract with no recorded path, **When** it is written, **Then** it lands at `mission_step_contracts/<id>.step-contract.yaml`, where a load finds it again.
+2. **Given** a new step contract with no recorded path, **When** it is written, **Then** it lands at `<id>.step-contract.yaml` in the pack directory, where a registration creates a new artifact and a load finds it again.
 3. **Given** a step contract file with a key the schema does not declare, at any depth, **When** the pack loads, **Then** the file is refused as a schema violation naming the key, and the whole-pack write refuses the pack.
 4. **Given** two step contract files declaring the same id in one pack, **When** the pack loads, **Then** it is refused as for any kind.
 
