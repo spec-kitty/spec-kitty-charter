@@ -138,11 +138,24 @@ class MissionStepContractRoundTripTest {
 
         Map<String, Object> omittedGate = gate(throughTheDomain(read(omitted)));
         Map<String, Object> writtenGate = gate(throughTheDomain(read(FULL)));
+        Map<String, Object> nonDefaultGate = gate(throughTheDomain(read(MINIMAL + """
+                gates:
+                  - on_transition: "for_review->in_review"
+                    handler: review-gate
+                    handler_kind: asset
+                    schema_version: "1"
+                    fail_open: false
+                    provenance: "issue #155"
+                """)));
 
         assertThat(omittedGate).containsOnlyKeys("on_transition", "handler", "schema_version");
         assertThat(writtenGate)
                 .containsEntry("handler_kind", "mission_step_contract")
                 .containsEntry("fail_open", true);
+        assertThat(nonDefaultGate)
+                .containsEntry("handler_kind", "asset")
+                .containsEntry("fail_open", false)
+                .containsEntry("provenance", "issue #155");
     }
 
     @ParameterizedTest(name = "an unknown key {0} is refused")
