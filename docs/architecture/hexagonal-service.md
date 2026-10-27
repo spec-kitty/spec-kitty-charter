@@ -43,7 +43,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
 | `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, ports, services), `application` (read/write use cases), `infra` (`api.rest`, reserved `api.graphql`, `storage`) |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
-| `profiles` | `kernel` | The agent-profiles slice, same four layers as packages |
+| `profiles` | `kernel` | The agent-profiles slice, built with its `domain` ring only (`AgentProfile`); `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
 | `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here, ADR-0002); referenced only from each slice's `infra.api` |
 | `deployable` | every slice | The composition root, renamed from `bootstrap`: the `@SpringBootApplication`, an aggregate `DeployableConfiguration` that imports each layer's `@Configuration`, loopback binding and credential checks. The only module that knows every slice; it owns the ArchUnit gate |

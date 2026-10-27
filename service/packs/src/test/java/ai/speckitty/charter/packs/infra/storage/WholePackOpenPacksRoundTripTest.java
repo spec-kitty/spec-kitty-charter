@@ -83,7 +83,11 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(artifacts).isPositive();
     }
 
-    /** #190: every agent-profile file of every real pack is in the aggregate, so a walk that missed them cannot pass. */
+    /**
+     * #190: every agent-profile file of every real pack is in the aggregate, so a walk that missed them cannot pass.
+     * The {@code qa} packs have no {@code pack.yaml} and are no whole pack; their profiles are covered file by file by
+     * {@code PackDoctrineCorpusRoundTripTest}.
+     */
     @Test
     void everyAgentProfileFileOfARealPackLoadsAsAProfile() throws IOException {
         Map<String, Integer> onDisk = new LinkedHashMap<>();
@@ -104,7 +108,7 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(loaded).isEqualTo(onDisk);
         assertThat(loaded.values().stream().mapToInt(Integer::intValue).sum())
-                .as("26 built-in, 5 qa and 5 vendored qa profiles")
-                .isEqualTo(36);
+                .as("the 26 built-in profiles")
+                .isEqualTo(26);
     }
 }

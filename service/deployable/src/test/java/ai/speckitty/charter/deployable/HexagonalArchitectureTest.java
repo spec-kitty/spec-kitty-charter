@@ -339,6 +339,28 @@ class HexagonalArchitectureTest {
         ENTRYPOINT_OVER_APPLICATION.check(classes);
     }
 
+    /**
+     * ENTRYPOINT_STAYS_IN_ITS_SLICE (ADR-0037, amendment of 2026-10-27): the pack store binds the kinds of other slices,
+     * so {@code packs.infra.storage} may name the profiles domain; the inbound adapter may not.
+     */
+    private static final ArchRule ENTRYPOINT_STAYS_IN_ITS_SLICE = noClasses()
+            .that()
+            .resideInAPackage(PACKS_API)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PROFILES_DOMAIN);
+
+    @Test
+    @DisplayName("ENTRYPOINT_STAYS_IN_ITS_SLICE")
+    void entrypointStaysInItsSlice() {
+        ENTRYPOINT_STAYS_IN_ITS_SLICE.check(classes);
+    }
+
+    @Test
+    void theEntrypointSliceRuleFailsOnAnEntrypointThatNamesAnotherSlicesDomain() {
+        assertBites(ENTRYPOINT_STAYS_IN_ITS_SLICE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesProfiles");
+    }
+
     @Test
     void theEntrypointRuleFailsOnAnEntrypointThatReachesStorage() {
         assertBites(ENTRYPOINT_OVER_APPLICATION, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesStorage");
