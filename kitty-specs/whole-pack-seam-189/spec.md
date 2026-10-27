@@ -21,7 +21,7 @@ so a kind the code does not name cannot be dropped.
 **Confirmation basis.** The operator's brief for this mission asks for the kind-keyed
 restructure first, as a narrow slice of #169, recorded in an ADR. The grounding and the open
 questions are on [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189#issuecomment-6435708786);
-the mission proceeds on the defaults stated there. ADR-0036 is **Proposed** and the PR must not
+the mission proceeds on the defaults stated there. ADR-0037 is **Proposed** and the PR must not
 merge until the operator accepts it and the #188 fidelity ADR has landed.
 
 ## Grounding (main 0b2503b)
@@ -114,4 +114,4 @@ the written copy and compares the aggregates by meaning.
 
 - New kinds (#190 to #194) and pack-level files (#195).
 - The fidelity policy (#188) and the gate itself (#187).
-- A contribution seam for kinds in other slices (ADR-0036 decision 6).
+- A contribution seam for kinds in other slices (ADR-0037 decision 6).

@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.Map;
 
 /**
- * The YAML form of one stored kind (ADR-0036): how its persistence shape is written from scratch and read back from a
+ * The YAML form of one stored kind (ADR-0037): how its persistence shape is written from scratch and read back from a
  * document that has already passed the kind's bundled schema. {@link YamlFormats} lists one per {@link KindBinding}.
  *
  * @param <D> the persistence shape (DSO)

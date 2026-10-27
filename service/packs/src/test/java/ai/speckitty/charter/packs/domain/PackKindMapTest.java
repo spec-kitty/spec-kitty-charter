@@ -14,7 +14,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("Pack aggregate keyed by kind (ADR-0036)")
+@DisplayName("Pack aggregate keyed by kind (ADR-0037)")
 class PackKindMapTest {
 
     private static final PackIdentifier ID = new PackIdentifier("01PACK");

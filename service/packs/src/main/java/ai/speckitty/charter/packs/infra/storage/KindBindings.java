@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The registry of stored kinds (ADR-0036): the one list of the kinds the store loads, writes and the source
+ * The registry of stored kinds (ADR-0037): the one list of the kinds the store loads, writes and the source
  * fingerprint digests. A kind joins by adding its {@link KindBinding} here and its format to {@link YamlFormats}; no
  * other storage class names a kind.
  *

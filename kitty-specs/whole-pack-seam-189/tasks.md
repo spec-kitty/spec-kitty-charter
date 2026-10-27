@@ -8,7 +8,7 @@ Hand-authored (no CLI in the session). One lane, in order.
 | WP02 | Storage kind registry: bindings, YAML formats, strategy, store, file set, repository service | FR-003, FR-004, FR-007, NFR-001 | WP01 |
 | WP03 | DRG documents in the aggregate: both shapes, every field, reader and writer | FR-005 | WP01 |
 | WP04 | `WholePackStore` load and write with layout, staging and refusals; round-trip tests | FR-005, FR-006, NFR-002 | WP02, WP03 |
-| WP05 | Docs: ADR-0036 index row, architecture pages, changelog | — | WP04 |
+| WP05 | Docs: ADR-0037 index row, architecture pages, changelog | — | WP04 |
 
 ## WP01
 

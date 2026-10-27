@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
  * Format is the {@link SerializationStrategy}'s business; this class only moves text.
  *
  * <p>The identifier's value names the pack directory under the storage root. Every kind bound in {@link KindBindings}
- * is read and written through one path (ADR-0036). An element is located by scanning the pack's files of its kind, as
+ * is read and written through one path (ADR-0037). An element is located by scanning the pack's files of its kind, as
  * {@link PackFileSet} declares them, for the one whose {@code id} matches. A write is an upsert: a known id replaces
  * its file, an unknown id creates {@code <id>.<kind>.yaml} directly in the pack directory (and never over an existing
  * file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable

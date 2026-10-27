@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Loads a whole pack from a directory into the {@link Pack} aggregate, and writes an aggregate to a new directory
- * (ADR-0036 decision 5). This is the seam the whole-pack round-trip gate drives.
+ * (ADR-0037 decision 5). This is the seam the whole-pack round-trip gate drives.
  *
  * <p>The load reads {@code pack.yaml} and every file of every kind bound in {@link KindBindings} into the aggregate,
  * records where each artifact sat in a {@link PackLayout}, and reads the DRG documents (the root {@code *.graph.yaml}

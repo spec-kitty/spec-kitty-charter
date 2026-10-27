@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * represented. Two packs are equal when they have the same identity, whatever else they
  * hold.
  *
- * <p>Every kind is held the same way (ADR-0036): a kind joins the aggregate by its artifacts implementing
+ * <p>Every kind is held the same way (ADR-0037): a kind joins the aggregate by its artifacts implementing
  * {@link CharterArtifact}, with no field, accessor or builder slot of its own. The typed views
  * ({@link #tactics()}, …) are conveniences over the same map. It holds no doctrine graph and no file paths. Build one with
  * {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.

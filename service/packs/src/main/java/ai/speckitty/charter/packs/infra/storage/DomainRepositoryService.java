@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>The persistence shapes ({@link TacticDso}, {@link PackDescriptorDso}) stay inside this package. Each kind is
  * mapped to and from its domain entity by its {@link KindBinding}, and assembled and committed through the
- * {@link KindBindings} registry (ADR-0036); only domain types leave the service.
+ * {@link KindBindings} registry (ADR-0037); only domain types leave the service.
  */
 @Service
 public final class DomainRepositoryService
