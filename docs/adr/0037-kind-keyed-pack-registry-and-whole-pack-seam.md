@@ -33,6 +33,29 @@ Supersedes in part ADR-0024's amendment of 2026-10-26, step 3: a **narrow slice*
 read and write code (#169) is extracted before the new kinds are hand-built, not after. The rest
 of #169 (the read and registration services, the controllers) still waits for the rule of three.
 
+### Amendment 2026-10-27: a kind that spells itself otherwise, and a kind of another slice
+
+Made by [#190](https://github.com/spec-kitty/spec-kitty-charter/issues/190) (agent profiles), the
+first kind that needs both. It changes decisions 4 and 6 and no other decision.
+
+- **Decision 4, the mapping.** A kind no longer needs a schema named by its token. Its binding
+  names the schema (`KindBinding.schemaName()`) and the field that holds its id
+  (`KindBinding.idKey()`), beside the file token it already named. The defaults are the token and
+  `id`, so the five kinds bound before are unchanged. The file walk, the schema validation and the
+  location of an existing file resolve through the binding. An agent profile is `*.agent.yaml`,
+  validated by `agent-profile`, with its id under `profile-id`. No schema file is renamed:
+  `contracts/packs` is consumed by core. A mission step contract (#191) uses the same seam.
+- **Decision 6, a kind of another slice.** A kind whose domain belongs to another slice is bound
+  in `packs.infra.storage` like any other kind, and the store depends inward on that slice's
+  domain. That slice never depends on `packs`, which ADR-0006 forbids. The `AgentProfile` entity
+  lives in the `profiles` slice (module `:profiles`, package `profiles.domain`), as
+  [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) decision 4 requires. Its
+  DSO, YAML format and binding live in `packs.infra.storage`. This reads decision 6's "contribution
+  seam wired by `deployable`" as "the pack store binds the kind". A contribution seam stays
+  possible if a kind ever needs its own persistence. `packs.domain` cannot name `AgentProfile`, so
+  the `Pack` aggregate has no typed view for it. Callers use `artifacts(AGENT_PROFILE,
+  AgentProfile.class)`.
+
 ## Context
 
 The whole-pack round trip ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186))
