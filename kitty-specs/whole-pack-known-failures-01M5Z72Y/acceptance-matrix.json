@@ -1,0 +1,99 @@
+{
+  "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "known-failures.yaml + WholePackExpectation.load/3 (lane-a 7095a6b); service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#theCheckedInListLoads \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:26.397388+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#aListedFileThatFailsWhereItIsPinnedIsAKnownFailureAndPasses \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:32.061330+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#aListedFileThatNowRoundTripsFailsWithRemoveIt \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:38.825060+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#anEntryWithoutAnOpenPacksIssueFailsToLoad, #anEntryWithNoIssueFailsToLoad \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:44.560366+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#anUnlistedFailureStillFails \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:49.832123+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#aListedFileWhoseDifferencesChangedFails, #aRefusedFileMustMatchTheWholeRefusal \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:35:55.373297+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#anEntryForAFileNotInThePackIsStale, #anEntryForAnExcludedFileIsStale, #anEntryForAnUnmodelledKindCanNeverExpire, #aFileOnBothListsIsAmbiguous, #aRepeatedPathFailsToLoad \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:36:00.821490+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java#theReportCountsKnownFailuresLast; :packs:wholePackRoundTrip totals 'known failure 0' \u2014 48/48 :packs:test, rerun by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:36:09.542078+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/guides/service-build.md known-failures subsection + docs/changelog/2026-10-27-whole-pack-known-failures.md (abe226d); check_docs all ok, markdownlint 0, cspell 0; WP02 review approved",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T18:36:15.328508+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

@@ -1,0 +1,55 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-27T17:39:02.818441Z",
+      "decision_id": "01M5Z73CH2336MGVKF64EJ444G",
+      "final_answer": "Yes to both (recommended)",
+      "input_key": "known_failure_entry_shape",
+      "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+      "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+      "opened_by": "cli",
+      "options": [
+        "Yes to both (recommended)",
+        "Accept full URL too",
+        "Allow several entries per file",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Known-failure entries: (1) must 'issue' be exactly spec-kitty/spec-kitty-open-packs#N (bare #N refused), and (2) one entry per file (a file with two upstream defects names one issue), with 'at' pinned so a moved difference fails?",
+      "rationale": null,
+      "resolved_at": "2026-10-27T17:49:53.257560Z",
+      "resolved_by": null,
+      "slot_key": "specify.entries.issue-reference-and-keying",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-27T17:51:29.518979Z",
+      "decision_id": "01M5Z7T5QET0XX0GDP5GE1ZNSH",
+      "final_answer": "Append last (recommended)",
+      "input_key": "known_failure_column_position",
+      "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+      "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+      "opened_by": "cli",
+      "options": [
+        "Append last (recommended)",
+        "Insert beside expected red",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Report: append the KNOWN_FAILURE status and its per-kind column last (after red), keeping every existing column and assertion byte-stable for the Wave 1 siblings, rather than inserting it beside expected red?",
+      "rationale": null,
+      "resolved_at": "2026-10-27T18:06:44.240516Z",
+      "resolved_by": null,
+      "slot_key": "plan.report.known-failure-column",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+  "version": 1
+}

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "mission_slug": "whole-pack-known-failures-01M5Z72Y",
+  "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
+  "mission_branch": "kitty/mission-whole-pack-known-failures-01M5Z72Y",
+  "target_branch": "feat/whole-pack-known-failures",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackReport.java",
+        "service/packs/src/test/resources/whole-pack/known-failures.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "docs/changelog/2026-10-27-whole-pack-known-failures.md",
+        "docs/changelog/README.md",
+        "docs/guides/service-build.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-10-27T18:11:40.659568+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP02"
+  ],
+  "planning_commit_sha": "b59289ca5367664ed98cc3b0dba4fce4b801b69f"
+}
