@@ -32,7 +32,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
             return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
         }
         Object document = parsed.document();
-        String schema = kind.kind().token();
+        String schema = kind.schemaName();
         List<SchemaViolation> violations = PackSchemas.bundled().validate(schema, file, document);
         if (!violations.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, violations);

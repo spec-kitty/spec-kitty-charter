@@ -285,14 +285,14 @@ class WholePackStoreTest {
     void unmodelledFilesAreListedNotCopied(@TempDir Path host) throws IOException {
         Path source = richPack(host.resolve("source"));
         write(source, "README.md", "# hello\n");
-        write(source, "agent_profiles/a.agent.yaml", "profile-id: a\n");
+        write(source, "sub/r.yaml", "a: 1\n");
         WholePackStore.LoadedPack loaded = store.load(source);
         Path target = host.resolve("out");
 
         store.write(loaded, target);
 
-        assertThat(loaded.unmodelled()).containsExactly("README.md", "agent_profiles/a.agent.yaml");
-        assertThat(filesUnder(target)).doesNotContain("README.md", "agent_profiles/a.agent.yaml");
+        assertThat(loaded.unmodelled()).containsExactly("README.md", "sub/r.yaml");
+        assertThat(filesUnder(target)).doesNotContain("README.md", "sub/r.yaml");
     }
 
     @Test

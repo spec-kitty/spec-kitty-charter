@@ -95,4 +95,37 @@ class PackDoctrineCorpusRoundTripTest {
 
         assertThat(count).as("paradigms in the corpus").isPositive();
     }
+
+    @Test
+    void everyCorpusAgentProfileReadsBackEqualAfterAWrite() throws IOException {
+        int count = roundTripEveryFile(
+                ".agent.yaml",
+                (text, file) -> yaml.read(AgentProfileBinding.INSTANCE, text, file),
+                dso -> yaml.write(AgentProfileBinding.INSTANCE, dso));
+
+        assertThat(count).as("agent profiles in the corpus").isPositive();
+    }
+
+    /** ADR-0036: the written profile is compared with its source, not with a second read, so a dropped field shows. */
+    @Test
+    void everyCorpusAgentProfileMeansWhatItsSourceMeant() throws IOException {
+        List<Path> files = filesOfKind(".agent.yaml");
+        List<String> problems = new ArrayList<>();
+        for (Path path : files) {
+            String text = Files.readString(path, StandardCharsets.UTF_8);
+            if (yaml.read(AgentProfileBinding.INSTANCE, text, path.getFileName().toString())
+                    instanceof FileRead.Read<AgentProfileDso> read) {
+                String written = yaml.write(AgentProfileBinding.INSTANCE, read.value());
+                MeaningComparator.adr0036()
+                        .compareTexts("agent-profile", text, written)
+                        .ifPresent(difference -> problems.add(path + ": " + difference));
+            } else {
+                problems.add("unreadable: " + path);
+            }
+        }
+        assertThat(problems)
+                .as("agent profiles whose written form differs from the source")
+                .isEmpty();
+        assertThat(files).as("agent profiles in the corpus").hasSizeGreaterThan(30);
+    }
 }

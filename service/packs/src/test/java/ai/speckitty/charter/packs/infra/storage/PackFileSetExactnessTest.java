@@ -265,6 +265,7 @@ class PackFileSetExactnessTest {
             typed.put(Kind.STYLEGUIDE, ids(read.dsos(StyleguideBinding.INSTANCE), StyleguideDso::id));
             typed.put(Kind.TOOLGUIDE, ids(read.dsos(ToolguideBinding.INSTANCE), ToolguideDso::id));
             typed.put(Kind.PARADIGM, ids(read.dsos(ParadigmBinding.INSTANCE), ParadigmDso::id));
+            typed.put(Kind.AGENT_PROFILE, ids(read.dsos(AgentProfileBinding.INSTANCE), AgentProfileDso::profileId));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);
             for (Kind kind : Kind.values()) {

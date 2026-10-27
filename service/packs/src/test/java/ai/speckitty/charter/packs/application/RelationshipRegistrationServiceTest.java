@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -17,6 +18,9 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,6 +106,34 @@ class RelationshipRegistrationServiceTest {
         assertThat(store.commits).isEqualTo(before + 1);
     }
 
+    /**
+     * #190: agent profiles are in the aggregate now, so a relationship from a profile of the pack resolves (it was a
+     * conflict while the kind was not loaded), and one from a profile the pack does not hold stays a conflict.
+     */
+    @Test
+    void aRelationshipFromAnAgentProfileOfThePackResolves() {
+        store.packs.put(PACK, store.packs.get(PACK).with(profile("java-jenny")));
+        Urn jenny = new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), "java-jenny");
+        Urn ghost = new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), "ghost");
+        Urn ivan = new Urn(NodeKind.of(ArtifactKind.AGENT_PROFILE), "implementer-ivan");
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(ghost, ivan, RelationType.SPECIALIZES_FROM),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
+        assertThat(store.commits).isEqualTo(before);
+
+        assertThatCode(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(jenny, ivan, RelationType.SPECIALIZES_FROM),
+                        store.currentRevision(PACK).token()))
+                .doesNotThrowAnyException();
+        assertThat(store.commits).isEqualTo(before + 1);
+    }
+
     @Test
     void anImpactsRelationshipIsRefusedBecauseItsStrengthIsNotOnTheWire() {
         seedDirective("DIR_A");
@@ -165,6 +197,17 @@ class RelationshipRegistrationServiceTest {
                 .title(id)
                 .intent("Intent of " + id)
                 .enforcement(Enforcement.REQUIRED)
+                .build();
+    }
+
+    private static AgentProfile profile(String id) {
+        return AgentProfile.builder()
+                .id(new AgentProfileIdentifier(id))
+                .packId(PACK)
+                .name(id)
+                .role("implementer")
+                .purpose("Purpose of " + id)
+                .specialization(new Specialization("Focus", Optional.empty(), Optional.empty(), Optional.empty()))
                 .build();
     }
 

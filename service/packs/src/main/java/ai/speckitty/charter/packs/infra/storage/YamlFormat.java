@@ -12,7 +12,8 @@ import java.util.Map;
 interface YamlFormat<D> {
 
     /**
-     * The kind; its token names the bundled schema the document is validated against.
+     * The kind; its binding's {@link KindBinding#schemaName()} names the bundled schema the document is validated
+     * against.
      *
      * @return the kernel kind
      */
