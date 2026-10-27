@@ -75,7 +75,8 @@ class TacticSaveContractTest {
             tempSeen[0] = Files.exists(temp);
             throw new IOException("injected failure");
         });
-        assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, fresh)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, fresh))
+                .isInstanceOf(CharterRefusal.class);
         assertThat(tempSeen[0]).isTrue();
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
 
@@ -85,7 +86,8 @@ class TacticSaveContractTest {
                 .isInstanceOf(CharterRefusal.class);
         Path outside = host.resolve("outside.yaml");
         Files.createSymbolicLink(pack.resolve("brand-new-tactic.tactic.yaml"), outside);
-        assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, fresh)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, fresh))
+                .isInstanceOf(CharterRefusal.class);
         assertThat(outside).doesNotExist();
         assertThat(host.resolve("escaped.tactic.yaml")).doesNotExist();
         Files.delete(pack.resolve("brand-new-tactic.tactic.yaml"));

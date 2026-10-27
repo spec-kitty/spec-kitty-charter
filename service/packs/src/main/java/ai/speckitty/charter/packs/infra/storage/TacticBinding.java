@@ -64,7 +64,9 @@ enum TacticBinding implements KindBinding<TacticDso, Tactic> {
                                 step.title(),
                                 step.description(),
                                 step.examples(),
-                                step.references().stream().map(TacticBinding::toDso).toList()))
+                                step.references().stream()
+                                        .map(TacticBinding::toDso)
+                                        .toList()))
                         .toList(),
                 tactic.purpose(),
                 tactic.notes(),

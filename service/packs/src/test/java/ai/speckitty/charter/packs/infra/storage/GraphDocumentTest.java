@@ -42,7 +42,8 @@ class GraphDocumentTest {
                                 "directive:d", "directive", Optional.empty(), Optional.empty(), List.of())),
                 List.of(B, A));
 
-        FileRead<GraphDocument> read = GraphDocumentYaml.read(GraphDocumentYaml.write(shard), Shape.SHARD, "x.graph.yaml");
+        FileRead<GraphDocument> read =
+                GraphDocumentYaml.read(GraphDocumentYaml.write(shard), Shape.SHARD, "x.graph.yaml");
 
         assertThat(read).isEqualTo(new FileRead.Read<GraphDocument>("x.graph.yaml", shard));
     }

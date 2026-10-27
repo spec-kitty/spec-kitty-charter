@@ -45,7 +45,8 @@ class DoctrineRoundTripTest {
                         new DirectiveDso.Reference("tactic", "t-1", Optional.empty(), Optional.empty()),
                         new DirectiveDso.Reference("styleguide", "s-1", Optional.of("w"), Optional.empty())));
 
-        assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE)))
+                .isEqualTo(dso);
     }
 
     @Test
@@ -63,7 +64,8 @@ class DoctrineRoundTripTest {
                 List.of(),
                 List.of());
 
-        assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(DirectiveBinding.INSTANCE, yaml.write(DirectiveBinding.INSTANCE, dso), FILE)))
+                .isEqualTo(dso);
     }
 
     @Test
@@ -95,7 +97,8 @@ class DoctrineRoundTripTest {
                 List.of("java"),
                 List.of("ref-1", "ref-1"));
 
-        StyleguideDso back = read(yaml.read(StyleguideBinding.INSTANCE, yaml.write(StyleguideBinding.INSTANCE, dso), FILE));
+        StyleguideDso back =
+                read(yaml.read(StyleguideBinding.INSTANCE, yaml.write(StyleguideBinding.INSTANCE, dso), FILE));
 
         assertThat(back).isEqualTo(dso);
         assertThat(back.tooling().orElseThrow().keySet()).containsExactly("zeta", "alpha");
@@ -130,7 +133,8 @@ class DoctrineRoundTripTest {
                 List.of("DIRECTIVE_001", "DIRECTIVE_002"),
                 List.of(new ParadigmDso.Reference("tactic", "t"), new ParadigmDso.Reference("tactic", "t")));
 
-        assertThat(read(yaml.read(ParadigmBinding.INSTANCE, yaml.write(ParadigmBinding.INSTANCE, dso), FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(ParadigmBinding.INSTANCE, yaml.write(ParadigmBinding.INSTANCE, dso), FILE)))
+                .isEqualTo(dso);
     }
 
     /** FR-016: the schemas are closed-world; the control proves the same fixture reads clean without the stray key. */
@@ -139,13 +143,16 @@ class DoctrineRoundTripTest {
         String clean = "id: D\nschema_version: '1.0'\ntitle: T\nintent: I\nenforcement: advisory\n";
 
         assertThat(yaml.read(DirectiveBinding.INSTANCE, clean, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.read(DirectiveBinding.INSTANCE, clean + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(DirectiveBinding.INSTANCE, clean + "surprise: 1\n", FILE))
+                .isInstanceOf(FileRead.Unreadable.class);
         String sg = "id: s\nschema_version: '1.0'\ntitle: T\nscope: code\nprinciples: [p]\n";
         assertThat(yaml.read(StyleguideBinding.INSTANCE, sg, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.read(StyleguideBinding.INSTANCE, sg + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(StyleguideBinding.INSTANCE, sg + "surprise: 1\n", FILE))
+                .isInstanceOf(FileRead.Unreadable.class);
         String pa = "id: p\nschema_version: '1.0'\nname: N\nsummary: S\n";
         assertThat(yaml.read(ParadigmBinding.INSTANCE, pa, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.read(ParadigmBinding.INSTANCE, pa + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(ParadigmBinding.INSTANCE, pa + "surprise: 1\n", FILE))
+                .isInstanceOf(FileRead.Unreadable.class);
     }
 
     private static StyleguideDso styleguide(Optional<Map<String, String>> tooling, Optional<ConfigValue> lint) {

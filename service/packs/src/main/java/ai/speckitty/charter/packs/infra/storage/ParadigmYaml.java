@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.list;
-import static ai.speckitty.charter.packs.infra.storage.YamlFields.optional;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 

@@ -103,7 +103,8 @@ public final class WholePackStore {
         PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
         FilesystemPackStore.PackRead read = store.read(key);
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
-        Pack.Builder builder = Pack.builder().id(id).descriptor(read.descriptor().toDescriptor());
+        Pack.Builder builder =
+                Pack.builder().id(id).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
         Map<Urn, String> places = new HashMap<>();
         for (KindBinding<?, ?> kind : KindBindings.all()) {
@@ -160,7 +161,8 @@ public final class WholePackStore {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
                     "pack.yaml of " + pack.id().value() + " has undeclared keys "
-                            + pack.descriptor().undeclaredKeys() + " whose values are not kept; writing it would drop them");
+                            + pack.descriptor().undeclaredKeys()
+                            + " whose values are not kept; writing it would drop them");
         }
         Path destination = target.toAbsolutePath().normalize();
         Path parent = destination.getParent();
@@ -174,7 +176,10 @@ public final class WholePackStore {
             reserved = reserve(destination, pack);
             staging = Files.createTempDirectory(parent, ".pack-write-");
             Set<String> written = new HashSet<>();
-            put(staging, PackFileSet.PACK_YAML, strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor())),
+            put(
+                    staging,
+                    PackFileSet.PACK_YAML,
+                    strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor())),
                     written);
             for (CharterArtifact artifact : pack.artifacts()) {
                 put(staging, loaded.layout().pathOf(artifact), text(artifact), written);
@@ -193,7 +198,9 @@ public final class WholePackStore {
             PackCommitStore.deleteTree(staging);
             release(reserved);
             throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "cannot write pack " + pack.id().value(), failure);
+                    RefusalCode.PACK_UNREADABLE,
+                    "cannot write pack " + pack.id().value(),
+                    failure);
         }
     }
 

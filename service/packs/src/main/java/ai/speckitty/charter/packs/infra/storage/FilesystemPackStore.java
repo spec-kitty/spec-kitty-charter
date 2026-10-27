@@ -308,7 +308,8 @@ final class FilesystemPackStore {
         };
     }
 
-    private <D> List<Stored<?>> readKind(Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations) {
+    private <D> List<Stored<?>> readKind(
+            Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations) {
         List<Stored<?>> into = new ArrayList<>();
         for (String file : PackFileSet.files(directory, kind.kind())) {
             switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
@@ -345,8 +346,7 @@ final class FilesystemPackStore {
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
         String elementId = kind.idOf(dso);
-        Path target = locate(directory, kind.kind(), elementId)
-                .orElseGet(() -> newFile(directory, kind, elementId));
+        Path target = locate(directory, kind.kind(), elementId).orElseGet(() -> newFile(directory, kind, elementId));
         writeAtomically(directory, target, strategy.write(kind, dso));
     }
 

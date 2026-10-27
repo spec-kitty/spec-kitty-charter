@@ -203,7 +203,8 @@ public final class DomainRepositoryService
     private Pack assemble(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
         FilesystemPackStore.PackRead read = resolved.store.read(resolved.key);
-        Pack.Builder builder = Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
+        Pack.Builder builder =
+                Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
         for (KindBinding<?, ?> kind : KindBindings.all()) {
             collect(pack, kind, read, builder, new HashMap<>());
@@ -279,7 +280,8 @@ public final class DomainRepositoryService
     // ---- DSO to entity -------------------------------------------------------------------------------------------
 
     /** The entity of a readable element, or empty when it breaks a domain invariant. */
-    private static <D, E extends CharterArtifact> Optional<E> entity(PackIdentifier pack, KindBinding<D, E> kind, D dso) {
+    private static <D, E extends CharterArtifact> Optional<E> entity(
+            PackIdentifier pack, KindBinding<D, E> kind, D dso) {
         try {
             return Optional.of(kind.toEntity(pack, dso));
         } catch (ConstraintBreachException | IllegalArgumentException breach) {

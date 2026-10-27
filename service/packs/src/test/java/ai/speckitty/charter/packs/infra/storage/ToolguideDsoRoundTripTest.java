@@ -56,7 +56,8 @@ class ToolguideDsoRoundTripTest {
         ToolguideDso dso =
                 new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
 
-        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, dso), FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, dso), FILE)))
+                .isEqualTo(dso);
     }
 
     @Test
@@ -67,8 +68,10 @@ class ToolguideDsoRoundTripTest {
         ToolguideDso absent =
                 new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
 
-        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, present), FILE))).isEqualTo(present);
-        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, absent), FILE))).isEqualTo(absent);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, present), FILE)))
+                .isEqualTo(present);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, absent), FILE)))
+                .isEqualTo(absent);
         assertThat(present).isNotEqualTo(absent);
     }
 
@@ -78,7 +81,8 @@ class ToolguideDsoRoundTripTest {
         String clean = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
 
         assertThat(yaml.read(ToolguideBinding.INSTANCE, clean, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.read(ToolguideBinding.INSTANCE, clean + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, clean + "surprise: 1\n", FILE))
+                .isInstanceOf(FileRead.Unreadable.class);
     }
 
     @Test

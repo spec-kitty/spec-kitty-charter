@@ -72,7 +72,8 @@ public final class Pack {
                         list -> list.stream().allMatch(artifact -> artifact.kind() == kind)))
                 .must(Constraints.of(
                         "Every " + kind.token() + " of a pack must belong to that pack.",
-                        list -> list.stream().allMatch(artifact -> artifact.packId().equals(id))))
+                        list -> list.stream()
+                                .allMatch(artifact -> artifact.packId().equals(id))))
                 .must(Constraints.of(
                         "A pack must not hold two " + kind.plural() + " with the same identifier.", list -> {
                             var seen = new HashSet<String>();
@@ -282,7 +283,9 @@ public final class Pack {
          * @return this builder
          */
         public Builder artifact(CharterArtifact value) {
-            this.artifacts.computeIfAbsent(value.kind(), kind -> new ArrayList<>()).add(value);
+            this.artifacts
+                    .computeIfAbsent(value.kind(), kind -> new ArrayList<>())
+                    .add(value);
             return this;
         }
 
