@@ -66,6 +66,9 @@ In the same environment settings, choose **Setup script**, paste this and save:
 ```bash
 #!/bin/bash
 set -euo pipefail
+npm install -g @colbymchenry/codegraph@1.6.2
+codegraph install --yes --target claude --location global || true
+command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Java 25 (Temurin, as in CI). The checksum comes from the same API as the download, so it guards
 # against a broken transfer, not against a compromised source.
@@ -84,12 +87,13 @@ fi
 "$JDK_DIR/bin/java" -version
 ```
 
-The script installs the latest Temurin 25 build where Gradle looks for installed JDKs on Linux
+The script installs the session tooling (CodeGraph for code navigation, and `uv` for the Spec Kitty
+CLI), then the latest Temurin 25 build where Gradle looks for installed JDKs on Linux
 (`/usr/lib/jvm`), so the toolchain resolver finds it without downloading anything. It is safe to run
 again: it does nothing when the JDK is already there.
 
-This script has not yet been run end to end in a cloud environment: it was written while the
-domains above were still refused. If it fails, see [Troubleshooting](#troubleshooting).
+The script was run end to end in a cloud session on 2026-10-27 with the domains above allowed
+(Temurin 25.0.5+8). If it fails, see [Troubleshooting](#troubleshooting).
 
 ### Optional: environment variables
 
