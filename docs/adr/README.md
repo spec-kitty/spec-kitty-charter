@@ -67,6 +67,7 @@ stands.
 | [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted | 2026-10-27 |
 | [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Accepted | 2026-10-27 |
 | [0038](/adr/0038-one-configuration-root-a-directory-per-domain/) | ADR-0038: The service keeps its files under one configuration root, a directory per domain | Accepted | 2026-10-27 |
+| [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Proposed | 2026-10-27 |
 
 ## Core decisions this repository builds on
 

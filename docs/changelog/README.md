@@ -19,6 +19,7 @@ Notable changes, newest first. The reasoning behind decisions lives in the
 - [2026-10-27 — ADR-0037 and ADR-0038 are accepted](/changelog/2026-10-27-adrs-0037-0038-accepted/)
 - [2026-10-27 — Agent profiles round-trip through the domain](/changelog/2026-10-27-agent-profile-round-trip/)
 - [2026-10-27 — Mission step contracts round-trip through the domain](/changelog/2026-10-27-mission-step-contract-kind/)
+- [2026-10-27 — Glossary packs and skills round-trip through the domain](/changelog/2026-10-27-glossary-pack-and-skill-kinds/)
 - [2026-10-27 — Round-trip fidelity accepted, and the charter moves to rc8 synthesis](/changelog/2026-10-27-operator-rulings-and-charter-rc8/)
 - [2026-10-27 — Doctrine is retired as a term; the glossary and docs say charter](/changelog/2026-10-27-retire-doctrine-term/)
 - [2026-10-27 — A whole-pack round-trip gate shows what of the built-in pack survives](/changelog/2026-10-27-whole-pack-round-trip-gate/)
