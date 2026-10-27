@@ -70,7 +70,8 @@ class WholePackOpenPacksRoundTripTest {
                 continue;
             }
             artifacts += loaded.pack().artifacts().size();
-            Path target = host.resolve(String.valueOf(packs.indexOf(pack))).resolve(pack.getFileName().toString());
+            Path target = host.resolve(String.valueOf(packs.indexOf(pack)))
+                    .resolve(pack.getFileName().toString());
             store.write(loaded, target);
             if (!meaning(store.load(target)).equals(meaning(loaded))) {
                 problems.add(pack + " reloads with a different meaning");

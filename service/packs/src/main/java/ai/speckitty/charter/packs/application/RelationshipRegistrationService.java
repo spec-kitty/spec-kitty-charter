@@ -112,8 +112,6 @@ public final class RelationshipRegistrationService {
     }
 
     private static Set<Urn> urnsOf(Pack pack) {
-        return pack.artifacts().stream()
-                .map(CharterArtifact::urn)
-                .collect(Collectors.toUnmodifiableSet());
+        return pack.artifacts().stream().map(CharterArtifact::urn).collect(Collectors.toUnmodifiableSet());
     }
 }

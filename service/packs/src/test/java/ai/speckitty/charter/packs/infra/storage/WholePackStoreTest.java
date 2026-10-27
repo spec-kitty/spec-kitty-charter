@@ -110,7 +110,9 @@ class WholePackStoreTest {
     private static List<String> filesUnder(Path root) throws IOException {
         try (Stream<Path> walk = Files.walk(root)) {
             return walk.filter(Files::isRegularFile)
-                    .map(path -> root.relativize(path).toString().replace(path.getFileSystem().getSeparator(), "/"))
+                    .map(path -> root.relativize(path)
+                            .toString()
+                            .replace(path.getFileSystem().getSeparator(), "/"))
                     .sorted()
                     .toList();
         }
@@ -133,16 +135,15 @@ class WholePackStoreTest {
         assertThat(loaded.pack().id().value()).isEqualTo("01M5DEH8ROUNDTRIPFIXTURE0A");
         assertThat(loaded.pack().tactics()).hasSize(3);
         assertThat(loaded.pack().directives()).hasSize(1);
-        assertThat(loaded.layout().paths())
-                .containsEntry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_043"),
-                        DIRECTIVE_FILE);
+        assertThat(loaded.layout().paths()).containsEntry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_043"), DIRECTIVE_FILE);
         assertThat(loaded.graphs()).extracting(GraphDocument::file).containsExactly(SHARD, PackFileSet.FRAGMENT);
         GraphDocument.Shard shard = (GraphDocument.Shard) loaded.graphs().getFirst();
         assertThat(shard.generatedBy()).contains("drg-migration-v1");
         assertThat(shard.nodes().getFirst().provenance()).contains("hand-written");
         assertThat(shard.nodes().getFirst().tags()).containsExactly("analysis", "analysis");
         assertThat(shard.edges().getFirst().impacts()).contains(0.5);
-        GraphDocument.Fragment fragment = (GraphDocument.Fragment) loaded.graphs().get(1);
+        GraphDocument.Fragment fragment =
+                (GraphDocument.Fragment) loaded.graphs().get(1);
         assertThat(fragment.nodes().getFirst().bodyPath()).contains(DIRECTIVE_FILE);
     }
 
@@ -220,14 +221,17 @@ class WholePackStoreTest {
     @DisplayName("a path that leaves the pack aborts the write and leaves no target and no staging directory")
     void anEscapingPathLeavesNothingBehind(@TempDir Path host) throws IOException {
         WholePackStore.LoadedPack loaded = store.load(richPack(host.resolve("source")));
-        CharterArtifact directive = loaded.pack().artifacts(ArtifactKind.DIRECTIVE).getFirst();
+        CharterArtifact directive =
+                loaded.pack().artifacts(ArtifactKind.DIRECTIVE).getFirst();
         Map<Urn, String> places = new LinkedHashMap<>(loaded.layout().paths());
         places.put(directive.urn(), "../escaped.directive.yaml");
         Path parent = Files.createDirectories(host.resolve("out"));
         Path target = parent.resolve("pack");
 
         assertThatThrownBy(() -> store.write(
-                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()), target))
+                        new WholePackStore.LoadedPack(
+                                loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()),
+                        target))
                 .isInstanceOf(CharterRefusal.class);
         assertThat(target).doesNotExist();
         assertThat(parent.resolve("escaped.directive.yaml")).doesNotExist();
@@ -243,7 +247,9 @@ class WholePackStoreTest {
         Path target = host.resolve("out");
 
         assertThatThrownBy(() -> store.write(
-                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()), target))
+                        new WholePackStore.LoadedPack(
+                                loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()),
+                        target))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("two parts");
         assertThat(target).doesNotExist();
@@ -270,7 +276,9 @@ class WholePackStoreTest {
 
         WholePackStore.LoadedPack loaded = store.load(pack);
 
-        assertThat(loaded.pack().violations()).extracting(PackElementViolation::file).contains("broken.graph.yaml");
+        assertThat(loaded.pack().violations())
+                .extracting(PackElementViolation::file)
+                .contains("broken.graph.yaml");
         assertThat(loaded.graphs()).extracting(GraphDocument::file).doesNotContain("broken.graph.yaml");
         assertThat(loaded.graphs()).hasSize(2);
     }
@@ -306,7 +314,10 @@ class WholePackStoreTest {
     @DisplayName("a descriptor with undeclared keys is refused, since their values are not kept")
     void undeclaredDescriptorKeysAreRefused(@TempDir Path host) throws IOException {
         Path source = richPack(host.resolve("source"));
-        Files.writeString(source.resolve(PackFileSet.PACK_YAML), "surprise: kept-nowhere\n", java.nio.file.StandardOpenOption.APPEND);
+        Files.writeString(
+                source.resolve(PackFileSet.PACK_YAML),
+                "surprise: kept-nowhere\n",
+                java.nio.file.StandardOpenOption.APPEND);
         WholePackStore.LoadedPack loaded = store.load(source);
         Path target = host.resolve("out");
 

@@ -70,7 +70,8 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     @Override
     public FileRead<PackDescriptorDso> readDescriptor(String text) {
         return switch (PackDescriptorReader.read(text)) {
-            case FileRead.Read<PackDescriptor> read -> new FileRead.Read<>(read.file(), PackDescriptorDso.of(read.value()));
+            case FileRead.Read<PackDescriptor> read ->
+                new FileRead.Read<>(read.file(), PackDescriptorDso.of(read.value()));
             case FileRead.Unreadable<PackDescriptor> bad ->
                 new FileRead.Unreadable<>(bad.file(), bad.parse(), bad.violations());
             case FileRead.Absent<PackDescriptor> absent -> new FileRead.Absent<>(absent.file());

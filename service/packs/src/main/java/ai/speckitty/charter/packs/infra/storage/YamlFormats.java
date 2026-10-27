@@ -39,13 +39,15 @@ final class YamlFormats {
         for (YamlFormat<?> format : ALL) {
             if (format.kind() == binding.kind()) {
                 if (format.dsoType() != binding.dsoType()) {
-                    throw new IllegalArgumentException("the YAML format of " + binding.kind().token()
-                            + " reads " + format.dsoType().getSimpleName() + ", not "
-                            + binding.dsoType().getSimpleName());
+                    throw new IllegalArgumentException(
+                            "the YAML format of " + binding.kind().token()
+                                    + " reads " + format.dsoType().getSimpleName() + ", not "
+                                    + binding.dsoType().getSimpleName());
                 }
                 return (YamlFormat<D>) format;
             }
         }
-        throw new IllegalArgumentException("no YAML format for " + binding.kind().token());
+        throw new IllegalArgumentException(
+                "no YAML format for " + binding.kind().token());
     }
 }

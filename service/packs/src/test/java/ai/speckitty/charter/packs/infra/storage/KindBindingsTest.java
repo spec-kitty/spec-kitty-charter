@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -70,7 +70,9 @@ class KindBindingsTest {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             String name = binding.fileName("probe-" + binding.kind().token());
             java.nio.file.Files.writeString(pack.resolve(name), "id: x\n");
-            assertThat(PackFileSet.files(pack, binding.kind())).as(binding.kind().token()).contains(name);
+            assertThat(PackFileSet.files(pack, binding.kind()))
+                    .as(binding.kind().token())
+                    .contains(name);
         }
     }
 }
