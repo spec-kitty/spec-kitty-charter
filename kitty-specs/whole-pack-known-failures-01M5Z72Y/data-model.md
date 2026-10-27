@@ -12,7 +12,7 @@ An entry (when one exists):
 ```yaml
 known-failures:
   - path: directives/example.directive.yaml          # pack-relative, as in the census
-    at: "refused: example.yaml is a multi-document file"  # where it first differs; for a refusal, the whole red detail
+    at: "refused: example.yaml is a multi-document file"  # every difference path as the report shows it; for a refusal, the whole red detail
     reason: The pack file holds two YAML documents.
     issue: spec-kitty/spec-kitty-open-packs#123
 ```
@@ -26,7 +26,7 @@ a path appears once. A missing resource fails `fromClasspath()`.
 | Field | Meaning |
 |-------|---------|
 | `path` | pack-relative path |
-| `at` | expected first-difference location (`atOf(red)`), or the whole red detail when the file is refused |
+| `at` | expected difference paths, joined by ` ; ` (`atOf(red)`), or the whole red detail when the file is refused |
 | `reason` | one line |
 | `issue` | the open-packs issue |
 
@@ -41,7 +41,7 @@ Detail: `<red> — known failure: <reason> (<issue>)`.
 | Situation | Status | Problem |
 |-----------|--------|---------|
 | listed, red, matches `at` | `KNOWN_FAILURE` | none |
-| listed, red, `at` moved | `RED` | `CHANGED_RED <path> (<kind>): expected the first difference at '<at>', now: <red>` |
+| listed, red, differences changed | `RED` | `CHANGED_RED <path> (<kind>): expected the first difference at '<at>', now: <red>` |
 | listed, green | `GREEN` | `UNEXPECTEDLY_GREEN <path>: it round-trips now; remove it from whole-pack/known-failures.yaml` |
 | not listed anywhere, red | `RED` | `UNEXPECTED_RED …` (unchanged) |
 

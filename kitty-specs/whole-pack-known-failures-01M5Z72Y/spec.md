@@ -17,7 +17,7 @@ Rule that always holds: every red file has exactly one owner (an expected-red en
 in which case the gate fails), and the known-failure list never records a service defect.
 
 Decision `01M5Z73CH2336MGVKF64EJ444G` (resolved): an entry's issue is written exactly as
-`spec-kitty/spec-kitty-open-packs#<number>`; there is one entry per file, and it pins where the file first differs.
+`spec-kitty/spec-kitty-open-packs#<number>`; there is one entry per file, and it pins where the file differs (every difference path, as the gate reports it).
 
 ## Domain Language
 
@@ -33,7 +33,7 @@ Decision `01M5Z73CH2336MGVKF64EJ444G` (resolved): an entry's issue is written ex
 ### User Story 1 - Record a pack inconsistency without turning the gate red (Priority: P1)
 
 A contributor has filed an open-packs issue for a file that fails the round trip. They add one entry naming the file,
-where it first differs, a one-line reason and the issue. The gate passes and reports the file as a known failure.
+where it differs (as the gate report shows it), a one-line reason and the issue. The gate passes and reports the file as a known failure.
 
 **Why this priority**: Without it the gate stays red until the pin moves, which blocks every sibling mission.
 
@@ -86,12 +86,12 @@ contributor to remove the entry, naming the known-failure list.
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Separate known-failure list | As a contributor, I want a known-failure list apart from the expected-red baseline and the exclusions, whose entries carry the file path, the location where it first differs, a one-line reason and the open-packs issue, so that pack inconsistencies are never mixed with service losses. | High | Open | [build] | no |
+| FR-001 | Separate known-failure list | As a contributor, I want a known-failure list apart from the expected-red baseline and the exclusions, whose entries carry the file path, where it differs (every difference path, as the gate reports it), a one-line reason and the open-packs issue, so that pack inconsistencies are never mixed with service losses. | High | Open | [build] | no |
 | FR-002 | Listed and failing passes | As a contributor, I want a listed file that fails at its pinned location reported as a known failure that does not fail the gate, so that a pending upstream fix does not block the build. | High | Open | [build] | no — a no-op leaves the file as unexpected red |
 | FR-003 | Listed and passing fails | As a maintainer, I want a listed file that round-trips to fail the gate with an instruction to remove its entry from the known-failure list, so that the list expires itself after the pin moves. | High | Open | [build] | no — paired with FR-002 on the same fixture |
 | FR-004 | Issue reference required | As a maintainer, I want an entry whose issue is missing or not written as `spec-kitty/spec-kitty-open-packs#<number>` to fail the gate, so that only tracked pack inconsistencies are listed. | High | Open | [build] | no — paired with a well-formed entry on the same fixture |
 | FR-005 | Unlisted failure still fails | As a maintainer, I want a failing file on no list to keep failing the gate, so that the new list adds no blind spot. | High | Open | [ratchet] | yes — paired with FR-002 on the same fixture |
-| FR-006 | Moved difference fails | As a maintainer, I want a listed file whose first difference moved (or whose refusal message changed) to fail the gate as a changed difference, so that an entry cannot hide a new loss. | High | Open | [build] | no |
+| FR-006 | Moved difference fails | As a maintainer, I want a listed file whose differences changed (or whose refusal message changed) to fail the gate as a changed difference, so that an entry cannot hide a new loss. | High | Open | [build] | no |
 | FR-007 | Misplaced entries fail | As a maintainer, I want an entry for a file not in the pack, an excluded file, a file of an unmodelled kind, or a file also listed as expected red to fail the gate, and a repeated or malformed entry to fail loading. | Medium | Open | [build] | no |
 | FR-008 | Known-failure count in the report | As a reader of the gate report, I want known failures counted on their own in the totals line and the per-kind table, beside green, expected red, excluded and red, with each row naming its reason and issue. | Medium | Open | [build] | no |
 | FR-009 | Workflow documented | As a contributor, I want the gate's docs to describe the workflow (file the open-packs issue per ADR-0036 decision 5, add the entry, remove it in the change that moves the pin) and a changelog entry announcing the list. | Medium | Open | [build] | no |
@@ -114,7 +114,7 @@ contributor to remove the entry, naming the known-failure list.
 
 ### Key Entities
 
-- **Known-failure entry**: path, first-difference location, reason, open-packs issue. One per file.
+- **Known-failure entry**: path, difference location (`at`), reason, open-packs issue. One per file.
 - **Known failure (status)**: a file's verdict in a gate run, beside green, expected red, excluded and red.
 
 ## Success Criteria *(mandatory)*
