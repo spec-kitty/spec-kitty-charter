@@ -104,7 +104,11 @@ Four facts force a decision:
    - the `**/*.config.yaml` exclusion is retired: its only match is the sidecar-less asset payload
      above (R1).
 
-   Validate mode lists a payload with its kind and does not parse it.
+   Validate mode walks `*.yaml` files only: it lists a YAML payload (the sidecar-less
+   `*.config.yaml`) with its kind and does not parse it, and of the rest it checks that a sidecar's
+   `path` stays inside `assets/`, not that the payload exists. That is a known gap: on the built-in
+   pack at the pin, validate mode reports no finding for the six sidecars the load refuses
+   (decision 6). It is tracked as a follow-up issue.
 3. **Asset payloads and templates are `bytes`.** They are read with no charset, held as a
    `Payload` (the exact bytes; equal when the bytes are equal), written byte for byte and compared
    byte for byte by the whole-pack gate, which reports the first differing offset. A payload that
@@ -142,9 +146,13 @@ Four facts force a decision:
    - one containment rule, `Companions.inPack`, for every pack-relative path the store writes
      (asset files, templates, every part of a whole-pack write), with the companion rule built on
      the same check;
-   - one bytes read (`FilesystemPackStore.readBytes`), with text as a strict UTF-8 view over it;
-   - one atomic write (`writeAtomically`) for artifact files, companions, asset files and
-     templates;
+   - in the store, one bytes read (`FilesystemPackStore.readBytes`), with text as a strict UTF-8
+     view over it. The source fingerprint (`FileSystemPackSources`), the commit path's revision
+     (`PackCommitStore`, `CommitStorePackWriteStore`) and validate mode (`FileSystemPackInspector`)
+     read bytes on their own, as before;
+   - in the store, one atomic write (`writeAtomically`) for artifact files, companions, asset files
+     and templates. The whole-pack write stages its files with its own `put` and swaps the directory
+     (ADR-0037 decision 5);
    - one fingerprint order (decision 9) and one revision over bytes.
 
    Nor can a companion be one. One file has one owner (ADR-0039 decision 3): a companion path that
@@ -198,7 +206,8 @@ Four facts force a decision:
 - Every asset payload and template at the pin round-trips byte for byte; a one-byte change is a
   gate failure at that file and a new fingerprint.
 - A broken pack (a sidecar naming nothing) is never written as if whole.
-- One containment rule, one bytes read and one atomic write serve companions and payloads alike.
+- In the store, one containment rule, one bytes read and one atomic write serve companions and
+  payloads alike.
 
 ### Negative
 
@@ -211,6 +220,11 @@ Four facts force a decision:
   `openPacksRef` moves; the gate then fails until the six known-failure entries are removed.
 - A written internal pack's scripts lose their executable bit.
 - The store's schema reason for an undeclared key now ends with the key, for every kind.
+- A load holds every asset file and template in memory, as the whole-pack gate needs to compare
+  them. That is about 0.6 MB for the largest open pack today (NFR-004); it is a scaling limit, and a
+  pack with large payloads would need them streamed.
+- Validate mode does not check that a sidecar's payload exists (decision 2), so it can pass a pack
+  the load refuses.
 
 ### Risks
 
