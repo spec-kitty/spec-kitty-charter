@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/whole-pack-round-trip-gate
 merge_target_branch: feat/whole-pack-round-trip-gate
 branch_strategy: Planning artifacts for this mission were generated on feat/whole-pack-round-trip-gate. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/whole-pack-round-trip-gate unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-whole-pack-round-trip-gate-01M5Y272
+base_commit: 4aadc4f0a9378b6a1f4d280a1fef24c8dba2c0a3
+created_at: '2026-10-27T07:06:22.769835+00:00'
 subtasks:
 - T004
 - T005
