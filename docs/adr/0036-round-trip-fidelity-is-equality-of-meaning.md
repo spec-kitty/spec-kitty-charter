@@ -227,8 +227,8 @@ left to #195 (open question 3, answered: decided there).
 
 ### 7. The charter's round-trip promise
 
-The charter companion says "open-packs YAML always round-trips exactly", and `charter.yaml`
-PROJECT_002 says "without loss or rewrite". *Reading:* under ruling 2 this means "without loss of
+The charter companion said "open-packs YAML always round-trips exactly", and `charter.yaml`
+PROJECT_002 said "without loss or rewrite" before this change. *Reading:* under ruling 2 this means "without loss of
 meaning", as Decision 2 defines it: nothing a reader can observe changes. It does not mean the same
 bytes. The operator amended the charter text to say so, in the same change that accepted this
 record (open question 2): PROJECT_002 now reads "round-trips without loss of meaning (ADR-0036)".
