@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The thin common spine of every doctrine artefact a pack carries: only what all kinds genuinely share. It lives in
- * {@code packs.domain} rather than the kernel because it returns a {@link PackIdentifier}.
+ * The thin common spine of every artefact a pack carries: only what all kinds genuinely share. It lives in the kernel
+ * so that every slice can implement it (ADR-0035).
  */
 public interface CharterArtifact {
 
@@ -31,9 +31,9 @@ public interface CharterArtifact {
     String localId();
 
     /**
-     * The schema version the artefact was authored against.
+     * The schema version the artefact was authored against, when its kind has one.
      *
-     * @return the {@code schema_version}
+     * @return the {@code schema_version}, or empty for a kind without one
      */
     Optional<String> schemaVersion();
 
@@ -57,7 +57,7 @@ public interface CharterArtifact {
      * whose {@code from} is this artefact, plus every {@link ai.speckitty.charter.kernel.domain.Directionality#BIDIRECTIONAL}
      * relationship whose {@code to} is this artefact. A purely directed relationship with this artefact as {@code to}
      * is <strong>not</strong> returned, so a walk never climbs back up a {@code requires}. The relations are the interim
-     * mapping (see {@link ArtifactEdges}): typed references mint {@code suggests}, bare references mint {@code requires}.
+     * mapping (see {@code ArtifactEdges}): typed references mint {@code suggests}, bare references mint {@code requires}.
      *
      * @return the relationships; empty when the kind mints none, as for a styleguide
      */

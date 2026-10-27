@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 
 /**
- * The identity of a {@link Pack}. It wraps the raw id so that a later change of identifier scheme does not ripple
+ * The identity of a {@code Pack}. It wraps the raw id so that a later change of identifier scheme does not ripple
  * into the ports.
  *
  * @param value the raw identifier text
