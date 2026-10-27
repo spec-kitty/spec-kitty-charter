@@ -1,0 +1,37 @@
+{
+  "accept_commit": "a1c7078cd380d669732059c51fe6e0e3f62c1c01",
+  "acceptance_history": [
+    {
+      "accept_commit": "a1c7078cd380d669732059c51fe6e0e3f62c1c01",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T17:20:05.506760+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "d9cc4e39557de85c387e248405e19d080e109b12"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-27T17:20:05.506760+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "d9cc4e39557de85c387e248405e19d080e109b12",
+  "baseline_merge_commit": "ca3c0c46956aa8677799bb27e28dbde6f81ecc15",
+  "contracts": "none",
+  "contracts_rationale": "Storage and domain only: no HTTP or wire contract is added or changed. The two new pack schemas (contracts/packs/schemas) are pack-file contracts recorded in the plan and ADR-0040, not mission interface contracts.",
+  "created_at": "2026-10-27T14:15:21.668803+00:00",
+  "flattened": true,
+  "friendly_name": "Glossary pack and skill round trip",
+  "merged_at": "2026-10-27T17:21:42.470418+00:00",
+  "merged_commit": "da6b38c12e86072e1c074a2b4c1651bcceab838f",
+  "mid8": "01M5YVEC",
+  "mission_id": "01M5YVECPX5EP9N9781C9VX22Y",
+  "mission_number": 9,
+  "mission_slug": "glossary-pack-skill-round-trip-01M5YVEC",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 brings all Charter Pack content into the service's domain model. This mission (#192) adds the glossary pack and skill kinds: the service reads each glossary pack and each skill with its prompt body, holds them as domain artifacts and writes them back unchanged in meaning, so the whole-pack round-trip gate turns glossary packs from expected red to green and the pack skills round-trip as descriptor-and-body pairs.",
+  "purpose_tldr": "Every glossary pack and skill in the pinned Charter Packs is read into the service's domain and written back with its meaning intact.",
+  "slug": "glossary-pack-skill-round-trip-01M5YVEC",
+  "status_phase": "1",
+  "target_branch": "feat/192-glossary-pack-skill-round-trip",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T16:18:38.443342+00:00"
+}

@@ -1,0 +1,109 @@
+{
+  "mission_slug": "glossary-pack-skill-round-trip-01M5YVEC",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GlossaryPackYamlTest.everyFieldRoundTrips/termsKeepTheirOrder/numbersAndStringsKeepTheirTypes; GlossaryPackTest (Java 25, :packs:test green on lane-f 222a482)",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:18:55.720386+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "SkillYamlTest.aPromptSkillRoundTrips/theBodyIsTheCompanion/aPackLoadsSkillsWithTheirBodies; SkillTest",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:02.255288+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GlossaryPackYamlTest.absentStaysAbsent; SkillYamlTest.nothingIsForced/typesAreKept; WholePackStoreTest.aSkillIsWrittenWithItsBody",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:08.008641+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "CompanionDigestTest (body digested after skill; body change moves fingerprint); PackFileSetExactnessTest (glossary-pack, skill); KindBindingsTest",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:18.820194+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "CompanionFilesTest (12: read, upsert, every refusal); WholePackStoreTest.aRefusedCompanionRefusesTheWrite; ADR-0039",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:24.715743+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/packs/file-kinds.yaml rules; PackFileKindTest; PackSchemasTest (16); GlossaryPackAndSkillSchemaTest",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:32.268771+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GlossaryPackAndSkillSchemaTest (unknown key at every level, terms: [], form rules); GlossaryPackYamlTest.aRepeatedSurfaceIsAViolation/anUnknownKeyIsAPackViolation",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:38.934422+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": ":packs:wholePackRoundTrip green; report glossary-pack 1 green, 0 red; expected-red.yaml drops other:glossary_packs",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:45.117864+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GlossaryPackAndSkillCorpusTest (4 glossary packs, 5 skill pairs byte for byte, lossy-writer control) under :packs:openPacksRoundTrip",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:50.972601+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GlossaryPackTest.buildsAndKeepsOrder and SkillTest.aPromptSkillBuilds assert relationships() is empty",
+      "pass_fail": "pass",
+      "verified_by": "claude-coordinator",
+      "verified_at": "2026-10-27T17:19:56.668327+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
