@@ -1,7 +1,7 @@
 ---
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
-doc_status: draft
+doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
@@ -24,9 +24,8 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-27, for
-[#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189). Needs the operator's
-acceptance: it changes the order that
+**Accepted** — 2026-10-27. Decider: Stijn Dejongh (operator). Proposed earlier the same day for
+[#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189); it changes the order that
 [ADR-0024](/adr/0024-doctrine-artifact-family-contract/)'s amendment of 2026-10-26 set.
 
 Supersedes in part ADR-0024's amendment of 2026-10-26, step 3: a **narrow slice** of the shared
@@ -144,7 +143,7 @@ nothing about how a new kind is shaped.
    the first such kind, not here. Mission types are not an `ArtifactKind` at all. *(Reversed
    2026-10-27, see Status: the pack store binds such a kind.)*
 7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
-   (round-trip fidelity, Proposed):
+   (round-trip fidelity, Accepted 2026-10-27):
    - The CRG reader and writer keep every declared field (node `provenance` and `tags`, fragment
      `body_path`, the shard header fields), and edges compare in canonical form.
    - An unreadable CRG document refuses the whole-pack load as `drg_schema_error` (its decision 3).

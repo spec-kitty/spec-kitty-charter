@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-27 — ADR-0037 and ADR-0038 are accepted](/changelog/2026-10-27-adrs-0037-0038-accepted/)
 - [2026-10-27 — Agent profiles round-trip through the domain](/changelog/2026-10-27-agent-profile-round-trip/)
 - [2026-10-27 — Mission step contracts round-trip through the domain](/changelog/2026-10-27-mission-step-contract-kind/)
 - [2026-10-27 — Round-trip fidelity accepted, and the charter moves to rc8 synthesis](/changelog/2026-10-27-operator-rulings-and-charter-rc8/)

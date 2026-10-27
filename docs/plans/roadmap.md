@@ -78,7 +78,7 @@ As of 2026-10-27.
     the kind registry (#169) are extracted after two or three more kinds are built
     ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26), while the
     storage and aggregate plumbing is keyed by kind first, with the whole-pack seam (#189,
-    [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), proposed). Then the
+    [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), accepted 2026-10-27). Then the
     offering reads under `/offering` (#126).
 
   Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),

@@ -2,7 +2,7 @@
 title: "ADR-0011: At runtime the seam fails closed, a daemon serves every read, and the service stays fresh by fingerprint and push"
 description: No Python fallback or cache; one daemon per worktree, CI included; first-load state stays in core; the service rebuilds on a changed input fingerprint and on write.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -33,6 +33,8 @@ Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-s
 [Amendment](#amendment-2026-10-19).
 
 Superseded in part by [ADR-0034](/adr/0034-local-and-hosted-deployment-options/) (2026-10-26): loopback is the local deployment option, and a configured remote endpoint is allowed (decision 2).
+
+Superseded in part by [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) (2026-10-27): packs are discovered under one configuration root, not configured, so a missing pack directory is simply not served; the fail-closed refusal for a configured pack whose directory is missing no longer has a case (decision 4).
 
 ## Context
 
