@@ -1,0 +1,17 @@
+{
+  "coordination_branch": "kitty/mission-whole-pack-round-trip-gate-01M5Y272",
+  "created_at": "2026-10-27T06:54:26.778154+00:00",
+  "flattened": false,
+  "friendly_name": "Whole-pack round-trip gate",
+  "mid8": "01M5Y272",
+  "mission_id": "01M5Y2728DYJGR84Z0TAMJ945H",
+  "mission_number": null,
+  "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 needs a visible safety net while each kind of pack content is brought into the domain model. This gate loads the built-in pack at the pinned open-packs commit, writes it back through the service's storage, and compares the result with the source by meaning. It reports per kind and per file, records what is not yet modelled as expected red, and fails when anything changes unexpectedly in either direction, so each later mission turns its own part green.",
+  "purpose_tldr": "A red-first gate that proves every file of the built-in Charter Pack survives read, write and read-back with its meaning intact.",
+  "slug": "whole-pack-round-trip-gate-01M5Y272",
+  "target_branch": "feat/whole-pack-round-trip-gate",
+  "topology": "coord"
+}
