@@ -37,7 +37,9 @@ decision 4 (Accepted), which left non-YAML content to the kind missions, and sup
 Made by [#193](https://github.com/spec-kitty/spec-kitty-charter/issues/193) on the operator's
 ruling of 2026-10-27, `DM-01M5ZAMP0R5V5YF5KM09YXY0NS` (reconcile with ADR-0039: keep pack-level
 asset files and templates, share the low-level pieces), recorded in
-[ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed). The decision text below is
+[ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed). The amended points are in force
+for the code #193 ships, which implements them; ADR-0040 itself is Proposed, pending the operator's
+acceptance, which the pull request for #193 asks for. The decision text below is
 unchanged, and each point this note changes is annotated where it stands. It corrects three
 statements about #193 that did not come true as written, and extends decision 3's rule to the new
 pack-level files:
@@ -57,7 +59,7 @@ pack-level files:
 - **Decision 3, one owner.** A companion that resolves to an asset file or a template (a file a
   `payloads` rule classifies) is refused, `is a pack file of kind <kind>, not a companion`, on the
   read, the upsert and the fingerprint alike (ADR-0040 decision 5): the file has its one owner
-  already.
+  already. The reason joins decision 4's list of companion violation reasons (commit `198a686`).
 
 ## Context
 
@@ -107,6 +109,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    `missing`, `leaves the pack`, `is a YAML file`, `is not a regular file`,
    `cannot be read as UTF-8 text`, `named by two artifacts`). The whole-pack write then refuses the pack rather than drop the
    companion.
+   *(Amended 2026-10-27, see Status: `is a pack file of kind <kind>, not a companion` joins this
+   list, a consequence of decision 3's one-owner rule.)*
 5. **Upsert.** `FilesystemPackStore.write` checks every companion before writing any. Each must
    have content, pass the rule, be named once, and not replace an existing file the element does
    not already own. It then writes the companions, then the artifact's file, then removes the

@@ -29,7 +29,9 @@ audience:
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), numbered R1 to R11 in the
 mission's research and held under `kitty-specs/asset-template-round-trip-01M5YY7G/decisions/`, and
 the reconciliation with [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) the
-operator ruled the same day (`DM-01M5ZAMP0R5V5YF5KM09YXY0NS`).
+operator ruled the same day (`DM-01M5ZAMP0R5V5YF5KM09YXY0NS`). The code #193 ships implements
+it, so the points it amends in ADR-0036 and ADR-0039 are in force for that code; the record stays
+Proposed pending the operator's acceptance, which the pull request for #193 asks for.
 
 It widens [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) decision 4
 (Accepted), which left non-YAML content to the kind missions.

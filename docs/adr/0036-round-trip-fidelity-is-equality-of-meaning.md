@@ -66,8 +66,10 @@ on the operator's rulings of 2026-10-27 on
 
 The decision text below is unchanged. The points it changes are annotated where they stand:
 Decision 2's "Other files" paragraph, Decision 6's list of exclusions, the per-kind table's
-introduction, and its `**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any other file" rows. Until ADR-0040 is
-accepted, the annotations record what it proposes and the original text stays in force.
+introduction, and its `**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any other file" rows. The
+amended points are in force for the code #193 ships, which implements them; the original text
+still governs everything else. ADR-0040 itself is Proposed, pending the operator's acceptance,
+which the pull request for #193 asks for.
 
 ## Context
 
