@@ -262,6 +262,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-27T15:56:59.687544Z",
+      "decision_id": "01M5Z18GX78VXESS14SH0Y3QZB",
+      "final_answer": null,
+      "input_key": "payload_classification",
+      "mission_id": "01M5YY7GCDBMADFQB5A2PSR5GX",
+      "mission_slug": "asset-template-round-trip-01M5YY7G",
+      "opened_by": "cli",
+      "options": [
+        "Fallback root rule: */assets/** is asset-payload (bytes) only for files no files/exclusions rule matches; retire the **/*.config.yaml exclusion",
+        "By reference: payload kind comes from sidecar path only; config file needs an upstream sidecar",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How does file-kinds.yaml classify an asset payload, given sidecars and the config file also live under assets/ and rules must not overlap?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.vocabulary.payload-classification",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M5YY7GCDBMADFQB5A2PSR5GX",
