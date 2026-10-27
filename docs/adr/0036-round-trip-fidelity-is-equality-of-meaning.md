@@ -43,6 +43,10 @@ record equality as the round-trip fidelity assertion). It clarifies
 "round-trips losslessly" compares). The charter's PROJECT_002 is amended in the same change to read
 "round-trips without loss of meaning (ADR-0036)" (open question 2).
 
+Extended in part by [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) (2026-10-27):
+the per-kind table's `*.skill.yaml`, `*.glossary-pack.yaml` and `*.skill.md` rows, where a kind
+binding carries companion files beside its YAML artifact.
+
 ## Context
 
 Epic #186 reads every file of a Charter Pack into the domain and writes it back. A gate (#187)
