@@ -1,0 +1,44 @@
+{
+  "accept_commit": "be6e7ec9b793f830f59c7993bab4d6daabc97902",
+  "acceptance_history": [
+    {
+      "accept_commit": "92a91bf9a33f54eea42543360050cf366b152693",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T12:18:12.413648+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "229c4a3ec1bef97c944653c281ad2b21425a4545"
+    },
+    {
+      "accept_commit": "be6e7ec9b793f830f59c7993bab4d6daabc97902",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T12:18:24.836352+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "b6b26d82899b4772777f528e95cfa2c549c1a25f"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-27T12:18:24.836352+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "b6b26d82899b4772777f528e95cfa2c549c1a25f",
+  "baseline_merge_commit": "dd71c0c4f3725e7cfab9d5f44eab27979bc6e840",
+  "contracts": "none",
+  "contracts_rationale": "Storage and domain only: no HTTP or wire contract is added or changed; the pack schema already exists and is unchanged.",
+  "created_at": "2026-10-27T11:29:20.955935+00:00",
+  "flattened": true,
+  "friendly_name": "Mission step contract round trip",
+  "merged_at": "2026-10-27T12:19:26.247391+00:00",
+  "merged_commit": "80b9a6374937cf66a08c8728372f07d5a7b18cf0",
+  "mid8": "01M5YHYD",
+  "mission_id": "01M5YHYD8H4YJZGWTCW8Q3P6QM",
+  "mission_number": 8,
+  "mission_slug": "mission-step-contract-round-trip-01M5YHYD",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 brings all Charter Pack content into the service's domain model. This mission (#191) adds the mission step contract kind: the service reads every step contract a pack carries, holds it as a domain artifact and writes it back unchanged in meaning, so the whole-pack round-trip gate turns this kind from expected red to green. It round-trips only what the pinned packs carry; gate-binding semantics and promotion to a full served kind stay with their own issues.",
+  "purpose_tldr": "Every mission step contract in the pinned Charter Packs is read into the service's domain and written back with its meaning intact.",
+  "slug": "mission-step-contract-round-trip-01M5YHYD",
+  "status_phase": "1",
+  "target_branch": "feat/mission-step-contract-round-trip",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T11:41:36.310794+00:00"
+}

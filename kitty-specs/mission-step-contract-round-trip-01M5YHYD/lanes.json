@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "mission_slug": "mission-step-contract-round-trip-01M5YHYD",
+  "mission_id": "01M5YHYD8H4YJZGWTCW8Q3P6QM",
+  "mission_branch": "kitty/mission-mission-step-contract-round-trip-01M5YHYD",
+  "target_branch": "feat/mission-step-contract-round-trip",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlSerializationStrategy.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/KindBindingsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ContractStep.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContract.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MissionStepContractIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepDelegation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/MissionStepContractTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetExactnessTest.java",
+        "service/packs/src/test/resources/whole-pack/expected-red.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MissionStepContractCorpusTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md",
+        "docs/changelog/2026-10-27-mission-step-contract-kind.md",
+        "docs/changelog/README.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-10-27T11:57:47.936577+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP05"
+  ],
+  "planning_commit_sha": "5247d0790f599ca42c21077ee60357399cd9d128"
+}

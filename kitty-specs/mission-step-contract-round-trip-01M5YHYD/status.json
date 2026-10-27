@@ -1,0 +1,106 @@
+{
+  "event_count": 40,
+  "last_event_id": "01M5YMSYQ9FSAY7WGQ3HA78DB5",
+  "materialized_at": "2026-10-27T12:19:19.401643+00:00",
+  "mission_number": "",
+  "mission_slug": "mission-step-contract-round-trip-01M5YHYD",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5YMSHHHJ2A79Z2K5Z1BCBAP",
+      "last_transition_at": "2026-10-27T12:19:05.905971+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/mission-step-contract-round-trip-01M5YHYD-coord/kitty-specs/mission-step-contract-round-trip-01M5YHYD/tasks/WP01-schema-name-seam/review-cycle-1.md",
+        "reference": "review-cycle://mission-step-contract-round-trip-01M5YHYD/WP01-schema-name-seam/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 6567,
+      "shell_pid_created_at": "1793101291.67"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5YMSMR11YM1ZCQG0R6G9ZF5",
+      "last_transition_at": "2026-10-27T12:19:09.185850+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/mission-step-contract-round-trip-01M5YHYD-coord/kitty-specs/mission-step-contract-round-trip-01M5YHYD/tasks/WP02-domain-entity/review-cycle-1.md",
+        "reference": "review-cycle://mission-step-contract-round-trip-01M5YHYD/WP02-domain-entity/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 7179,
+      "shell_pid_created_at": "1793101340.85"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5YMSR35FVMX7J91K3CJZQ2F",
+      "last_transition_at": "2026-10-27T12:19:12.613333+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/mission-step-contract-round-trip-01M5YHYD-coord/kitty-specs/mission-step-contract-round-trip-01M5YHYD/tasks/WP03-storage-binding/review-cycle-1.md",
+        "reference": "review-cycle://mission-step-contract-round-trip-01M5YHYD/WP03-storage-binding/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 14165,
+      "shell_pid_created_at": "1793101865.71"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5YMSVDX1X2TNQYX8P53PKSG",
+      "last_transition_at": "2026-10-27T12:19:16.029194+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/mission-step-contract-round-trip-01M5YHYD-coord/kitty-specs/mission-step-contract-round-trip-01M5YHYD/tasks/WP04-gate-and-corpus/review-cycle-1.md",
+        "reference": "review-cycle://mission-step-contract-round-trip-01M5YHYD/WP04-gate-and-corpus/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 18733,
+      "shell_pid_created_at": "1793102464.85"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5YMSYQ9FSAY7WGQ3HA78DB5",
+      "last_transition_at": "2026-10-27T12:19:19.401643+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/mission-step-contract-round-trip-01M5YHYD-coord/kitty-specs/mission-step-contract-round-trip-01M5YHYD/tasks/WP05-adr-amendment-and-changelog/review-cycle-2.md",
+        "reference": "review-cycle://mission-step-contract-round-trip-01M5YHYD/WP05-adr-amendment-and-changelog/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 23899,
+      "shell_pid_created_at": "1793103284.2"
+    }
+  }
+}
