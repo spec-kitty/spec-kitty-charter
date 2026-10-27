@@ -29,8 +29,8 @@ acceptance: it changes the order that
 [ADR-0024](/adr/0024-doctrine-artifact-family-contract/)'s amendment of 2026-10-26 set.
 
 Supersedes in part ADR-0024's amendment of 2026-10-26, step 3: a **narrow slice** of the shared
-read and write code (#169) is extracted before the new kinds are hand-built, not after. The rest of
-#169 (the read and registration services, the controllers) still waits for the rule of three.
+read and write code (#169) is extracted before the new kinds are hand-built, not after. The rest
+of #169 (the read and registration services, the controllers) still waits for the rule of three.
 
 ## Context
 
@@ -62,7 +62,7 @@ nothing about how a new kind is shaped.
    the set of loaded and fingerprinted kinds is that list (it replaces `PackFileSet.LoadedKind`).
    `FilesystemPackStore` reads and writes any bound kind through one generic path, and
    `DomainRepositoryService` assembles and commits through the registry.
-3. **`SerializationStrategy` is kind-parameterised.** One read and one write take the binding; the
+3. **`SerializationStrategy` is kind-parameterized.** One read and one write take the binding; the
    YAML strategy keeps one `YamlFormat` per kind. Adding a kind is a binding, a format and a
    schema; nothing else in the slice changes.
 4. **The registry does not decide a kind's file layout.** The generic path covers kinds stored as
@@ -128,7 +128,7 @@ Rejected: the bindings name persistence shapes, which the kernel must not see (A
 Rejected: where a file sits is how a pack is authored, not what the artifact means; the kind
 entities stay free of paths.
 
-### Pass unmodelled files through the write
+### Pass files the domain does not model through the write
 
 Rejected: it would make the round trip look complete while the domain holds nothing of those
 files, which hides the work #190 to #195 exist to do.

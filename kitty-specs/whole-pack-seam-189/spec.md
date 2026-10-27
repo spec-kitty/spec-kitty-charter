@@ -85,7 +85,7 @@ the written copy and compares the aggregates by meaning.
 | FR-001 | The `Pack` aggregate keys its artifacts by `ArtifactKind`, with generic belongs-to-pack and unique-id invariants. | Draft |
 | FR-002 | `Pack.with(artifact)` adds or replaces one artifact and revalidates; registration uses it. | Draft |
 | FR-003 | Storage binds each kind once (`KindBinding`); the registry is the single list of loaded and fingerprinted kinds. | Draft |
-| FR-004 | `SerializationStrategy` reads and writes any bound kind through one kind-parameterised pair. | Draft |
+| FR-004 | `SerializationStrategy` reads and writes any bound kind through one kind-parameterized pair. | Draft |
 | FR-005 | A whole pack loads from a directory into the aggregate plus a layout, including both DRG document shapes with every schema field. | Draft |
 | FR-006 | A whole pack writes to a target that does not exist, through a staging directory and a rename, refusing a pack with violations. | Draft |
 | FR-007 | The five existing kinds behave as before: every existing test passes and the HTTP contract is unchanged. | Draft |
