@@ -30,8 +30,9 @@ does not change.
 A pack is loaded and its agent profiles are in the aggregate as `AgentProfile` entities, every
 declared field kept, beside the five kinds already bound.
 
-**Independent Test**: load the pinned `built-in` and `qa` packs; the aggregate holds 26 and 5 agent
-profiles with no read violations.
+**Independent Test**: load the pinned `built-in` pack; the aggregate holds its 26 agent profiles with
+no read violations. The `qa` packs have no `pack.yaml`; each of their 5 profile files reads and
+writes back by meaning.
 
 **Acceptance Scenarios**:
 
@@ -84,7 +85,8 @@ changed.
 
 - **C-001**: No change to `contracts/charter` (the HTTP contract) or to any pack schema.
 - **C-002**: Shared files take append-only blocks for this kind, except the two seam defaults of
-  FR-005, which #191 needs too.
+  FR-005 and their consumers (file walk, schema validation, file location, the gate adapter), which
+  #191 needs too, and the comparator fix found on the way.
 - **C-003**: No profile selection, lineage resolution or `enhances`/`overrides` semantics.
 - **C-004**: Loading profiles changes two answers without a contract change: a relationship from a
   profile of the pack now resolves (it was `registration_conflict`), and a pack with two files of one

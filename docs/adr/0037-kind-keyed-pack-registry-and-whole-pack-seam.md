@@ -45,16 +45,30 @@ first kind that needs both. It changes decisions 4 and 6 and no other decision.
   location of an existing file resolve through the binding. An agent profile is `*.agent.yaml`,
   validated by `agent-profile`, with its id under `profile-id`. No schema file is renamed:
   `contracts/packs` is consumed by core. A mission step contract (#191) uses the same seam.
-- **Decision 6, a kind of another slice.** A kind whose domain belongs to another slice is bound
-  in `packs.infra.storage` like any other kind, and the store depends inward on that slice's
-  domain. That slice never depends on `packs`, which ADR-0006 forbids. The `AgentProfile` entity
-  lives in the `profiles` slice (module `:profiles`, package `profiles.domain`), as
+- **Decision 6 is reversed: a kind of another slice is in this registry.** A kind whose domain
+  belongs to another slice is bound in `packs.infra.storage` like any other kind. The store depends
+  inward on that slice's domain, and that slice never depends on `packs`. The `AgentProfile`
+  entity lives in the `profiles` slice (module `:profiles`, package `profiles.domain`), as
   [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) decision 4 requires. Its
-  DSO, YAML format and binding live in `packs.infra.storage`. This reads decision 6's "contribution
-  seam wired by `deployable`" as "the pack store binds the kind". A contribution seam stays
-  possible if a kind ever needs its own persistence. `packs.domain` cannot name `AgentProfile`, so
-  the `Pack` aggregate has no typed view for it. Callers use `artifacts(AGENT_PROFILE,
-  AgentProfile.class)`.
+  DSO, YAML format and binding live in `packs.infra.storage`. `packs.domain` cannot name
+  `AgentProfile`, so the `Pack` aggregate has no typed view for it; callers use
+  `artifacts(AGENT_PROFILE, AgentProfile.class)`.
+  - *Options.*
+    - (a) Put the entity in `packs.domain`. Rejected: ADR-0035 decision 4 and its rejected
+      alternative.
+    - (b) A contribution seam: the profiles slice brings its own binding, wired by `deployable`.
+      Rejected for now. The YAML and schema machinery is package-private to `packs.infra.storage`,
+      so the slice would duplicate it or force it public, and the seam would reshape the shared
+      registry while #191 to #193 append to it. It is built when a kind needs persistence of its
+      own.
+    - (c) The pack store binds the kind. Chosen: it is one appended binding, and the pack format,
+      the schemas and the fingerprint keep one owner.
+  - *Consequence for [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).* A slice's
+    `infra.storage` may depend on another slice's `domain`, and `packs` becomes the module that
+    stores every kind of a pack. No other ring of `packs` may name another slice's domain. The
+    architecture test pins that for the inbound adapter (`ENTRYPOINT_STAYS_IN_ITS_SLICE`); the
+    domain and application rings were already pinned. If this is to become the pattern for every
+    slice, not only for pack-stored kinds, it gets its own record.
 
 ## Context
 
@@ -94,7 +108,8 @@ nothing about how a new kind is shaped.
    (two shared lists, so parallel missions get trivial merge conflicts there and nowhere else). It
    also needs its rule in `contracts/packs/file-kinds.yaml` to map to a schema whose name is the
    kind's token, which is not yet the case for `agent_profile` (`agent`), `mission_step_contract`
-   (`step-contract`) and `glossary_pack` (excluded): that mission settles the mapping. A binding
+   (`step-contract`) and `glossary_pack` (excluded): that mission settles the mapping. *(Amended
+   2026-10-27, see Status: the binding names its schema and id key instead.)* A binding
    names its file-name token (`*.agent.yaml`), so a new artifact is created where the load finds it.
    A kind with its own repository port still adds that port to `DomainRepositoryService`. The
    registry does **not** yet cover, and these missions widen it when they are built (the
@@ -126,7 +141,8 @@ nothing about how a new kind is shaped.
 6. **Kinds owned by another slice are out of this registry.** Agent profiles and mission types may
    live in their own slices (ADR-0035), and ADR-0006 forbids those slices from depending on
    `packs`. Their bindings will need a contribution seam wired by `deployable`; it is built with
-   the first such kind, not here. Mission types are not an `ArtifactKind` at all.
+   the first such kind, not here. Mission types are not an `ArtifactKind` at all. *(Reversed
+   2026-10-27, see Status: the pack store binds such a kind.)*
 7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
    (round-trip fidelity, Proposed):
    - The CRG reader and writer keep every declared field (node `provenance` and `tags`, fragment

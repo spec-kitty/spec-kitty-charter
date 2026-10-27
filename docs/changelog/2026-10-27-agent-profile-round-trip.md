@@ -25,7 +25,8 @@ holds every field of the `agent-profile` schema. A defaulted field the file does
 undeclared, so a write never invents the default. Lineage stays a `specializes_from` edge of the
 pack's graph, and a profile mints no edges of its own. Resolving `enhances`, `overrides` or
 `excluding` is not part of this change. The whole-pack gate reports all 26 built-in profiles
-green. The 5 `qa` profiles and the 5 vendored ones load and reload with the same meaning.
+green, and every profile file of the pinned packs, the 5 `qa` ones included, is written back with
+the same meaning.
 
 **Agent profiles have their own slice.** The entity lives in the new `:profiles` module, as
 [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) requires. The pack store
@@ -40,6 +41,8 @@ What changes for a caller:
   `registration_conflict` while profiles were not loaded.
 - Two profile files with one `profile-id` in a pack break the pack's load, as for every other
   kind.
+- A profile file that breaks its schema, which the load used to ignore, is now a read violation of
+  the pack (`artifact_schema_error`), as for every other kind.
 
 The gate's comparator now also treats a declared object whose fields are all empty as absent
 ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) Decision 2). The HTTP contract
