@@ -121,7 +121,7 @@ class PackRoundTripTest {
                 readAlpha.steps().get(1));
         TacticDso droppedField = new TacticDso(
                 readAlpha.id(),
-                readAlpha.schemaVersion().orElseThrow(),
+                readAlpha.schemaVersion(),
                 readAlpha.name(),
                 withoutNested,
                 readAlpha.purpose(),
@@ -166,7 +166,7 @@ class PackRoundTripTest {
         TacticDso alpha = tactic(original, ALPHA_ID);
         TacticDso mutated = new TacticDso(
                 alpha.id(),
-                alpha.schemaVersion().orElseThrow(),
+                alpha.schemaVersion(),
                 "Alpha tactic, renamed",
                 alpha.steps(),
                 alpha.purpose(),
