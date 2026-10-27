@@ -136,7 +136,10 @@ Four facts force a decision:
      concrete `TemplateBinding`, not a `KindBinding`, which is YAML- and schema-shaped. The binding
      interface for non-YAML kinds is extracted at the second such kind (the rule of three), not
      here. A duplicate template id, and two templates or asset files whose paths fold to one path
-     with case ignored, are refused.
+     with case ignored, are refused. One file has one owner: a template or an asset file whose path
+     would not classify back as its kind (`templates/x.tactic.yaml` is a tactic's file,
+     `templates/plan-field-declaration.yaml` is excluded) is refused on the store's save and on the
+     whole-pack write, `is a pack file of kind <kind>, not a template`, as a companion is.
 
    No repository port is added. A sidecar with a key its schema does not declare is refused naming
    the key (`undeclared key '<name>'`); the store's schema reason names an undeclared key this way
