@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguidePattern;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.SerializationStrategy;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -40,7 +41,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * The doctrine kinds through the production path: the directive, styleguide and paradigm ports and the serializer
- * are the beans Spring wires from {@code charter.storage.root}, not instances built by the test. A save followed by a load
+ * are the beans Spring wires from {@code charter.config-root}, not instances built by the test. A save followed by a load
  * must hand back every field, compared field by field because entity {@code equals} is identity only; each
  * round-trip sits beside a control that the wired pack already serves its seeded entity.
  */
@@ -71,7 +72,8 @@ class DoctrineWiringRoundTripTest {
 
     @DynamicPropertySource
     static void configuredFixturePack(DynamicPropertyRegistry registry) throws IOException {
-        packs = Files.createTempDirectory("charter-doctrine-wiring");
+        packs = Files.createDirectories(
+                Files.createTempDirectory("charter-doctrine-wiring").resolve(ConfigRoot.PACKS));
         write("fixture/pack.yaml", """
                 pack_id: 01M5JHD0DOCTRINEWIRING0000A
                 pack_version: 1.0.0
@@ -87,7 +89,7 @@ class DoctrineWiringRoundTripTest {
                 enforcement: required
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.storage.root", () -> packs.toString());
+        registry.add("charter.config-root", () -> packs.getParent().toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
@@ -98,7 +100,7 @@ class DoctrineWiringRoundTripTest {
 
     @AfterAll
     static void deletePacks() throws IOException {
-        try (Stream<Path> walk = Files.walk(packs)) {
+        try (Stream<Path> walk = Files.walk(packs.getParent())) {
             for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
                 Files.delete(path);
             }

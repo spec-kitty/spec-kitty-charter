@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,7 +24,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * FR-010 through the production path: the persistence ports are the beans Spring wires from {@code charter.storage.root},
+ * FR-010 through the production path: the persistence ports are the beans Spring wires from {@code charter.config-root},
  * not instances built by the test. They are addressed by domain port type and domain identifiers only.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,7 +46,8 @@ class WiringRoundTripTest {
 
     @DynamicPropertySource
     static void configuredFixturePack(DynamicPropertyRegistry registry) throws IOException {
-        packs = Files.createTempDirectory("charter-wiring-roundtrip");
+        packs = Files.createDirectories(
+                Files.createTempDirectory("charter-wiring-roundtrip").resolve(ConfigRoot.PACKS));
         write("fixture/pack.yaml", """
                 pack_id: 01M5EET9WIRINGFIXTURE0000A
                 pack_version: 1.0.0
@@ -62,7 +64,7 @@ class WiringRoundTripTest {
                   - title: Only step
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.storage.root", () -> packs.toString());
+        registry.add("charter.config-root", () -> packs.getParent().toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
@@ -73,7 +75,7 @@ class WiringRoundTripTest {
 
     @AfterAll
     static void deletePacks() throws IOException {
-        try (Stream<Path> walk = Files.walk(packs)) {
+        try (Stream<Path> walk = Files.walk(packs.getParent())) {
             for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
                 Files.delete(path);
             }
