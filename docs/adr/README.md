@@ -64,10 +64,11 @@ stands.
 | [0033](/adr/0033-local-active-charter-is-source-of-truth/) | ADR-0033: The project's local activation file is the source of truth for its active charter | Accepted | 2026-10-26 |
 | [0034](/adr/0034-local-and-hosted-deployment-options/) | ADR-0034: The charter service has a local and a hosted deployment option | Accepted | 2026-10-26 |
 | [0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) | ADR-0035: The shared artifact interface lives in the kernel | Accepted | 2026-10-27 |
-| [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted; extended in part by ADR-0039 (2026-10-27) | 2026-10-27 |
+| [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) | 2026-10-27 |
 | [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Accepted; extended in part by ADR-0039 (2026-10-27) | 2026-10-27 |
 | [0038](/adr/0038-one-configuration-root-a-directory-per-domain/) | ADR-0038: The service keeps its files under one configuration root, a directory per domain | Accepted | 2026-10-27 |
-| [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Accepted | 2026-10-27 |
+| [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Accepted, with Amendment 2026-10-27 | 2026-10-27 |
+| [0040](/adr/0040-content-form-and-payload-kinds/) | ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content | Proposed | 2026-10-27 |
 
 ## Core decisions this repository builds on
 
