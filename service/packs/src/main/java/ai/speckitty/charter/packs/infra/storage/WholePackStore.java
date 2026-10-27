@@ -6,8 +6,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -19,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -30,8 +31,9 @@ import org.jspecify.annotations.Nullable;
  * Loads a whole pack from a directory into the {@link Pack} aggregate, and writes an aggregate to a new directory
  * (ADR-0037 decision 5). This is the seam the whole-pack round-trip gate drives.
  *
- * <p>The load reads {@code pack.yaml} and every file of every kind bound in {@link KindBindings} into the aggregate,
- * records where each artifact sat in a {@link PackLayout}, and reads the DRG documents (the root {@code *.graph.yaml}
+ * <p>The load reads {@code pack.yaml}, every file of every kind bound in {@link KindBindings}, the asset files and the
+ * templates into the aggregate (one assembly with {@link DomainRepositoryService#load(PackIdentifier)}), records where
+ * each artifact sat in a {@link PackLayout}, and reads the DRG documents (the root {@code *.graph.yaml}
  * shards and {@code drg/fragment.yaml}, the files the source fingerprint covers) with every field. It lists every
  * other file of the pack as {@linkplain LoadedPack#unmodelled() unmodelled}: nothing models those yet. It is
  * partial-tolerant like {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable artifact file is a
@@ -40,10 +42,11 @@ import org.jspecify.annotations.Nullable;
  * load reads the directory as it finds it; it takes no lock, so a pack swapped by a concurrent commit may be read
  * half before and half after.
  *
- * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039) and
- * each DRG document at its own path into a
+ * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039), each
+ * asset file at {@code assets/<path>} and each DRG document at its own path into a
  * staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
- * does; a failure removes the staging directory and leaves no target. It writes what the aggregate and the DRG
+ * does; a failure removes the staging directory and leaves no target. Templates and asset files are written byte for
+ * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG
  * documents hold and nothing else: the unmodelled files are not copied, and the caller has their list. It refuses a
  * target that already exists (replacing a live pack is the commit store's job), a pack with read violations, and a
  * descriptor with undeclared keys, whose values the descriptor does not keep: writing either would drop content
@@ -108,13 +111,8 @@ public final class WholePackStore {
         PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
         FilesystemPackStore.PackRead read = store.read(key);
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
-        Pack.Builder builder =
-                Pack.builder().id(id).descriptor(read.descriptor().toDescriptor());
-        read.violations().forEach(builder::violation);
         Map<Urn, String> places = new HashMap<>();
-        for (KindBinding<?, ?> kind : KindBindings.all()) {
-            DomainRepositoryService.collect(id, kind, read, builder, places);
-        }
+        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places);
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
         if (!graphs.violations().isEmpty()) {
             PackElementViolation first = graphs.violations().getFirst();
@@ -131,6 +129,7 @@ public final class WholePackStore {
         modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
+        pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
         return new LoadedPack(pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key));
     }
 
@@ -216,13 +215,21 @@ public final class WholePackStore {
             put(
                     staging,
                     PackFileSet.PACK_YAML,
-                    strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor())),
+                    utf8(strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor()))),
                     written);
             for (CharterArtifact artifact : pack.artifacts()) {
                 putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
             }
+            for (AssetFile file : pack.assetFiles()) {
+                putPayload(
+                        staging,
+                        PackFileSet.ASSETS + file.path(),
+                        file.payload().bytes(),
+                        PackFileKind.ASSET_PAYLOAD,
+                        written);
+            }
             for (GraphDocument graph : loaded.graphs()) {
-                put(staging, graph.file(), strategy.writeGraph(graph), written);
+                put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
             }
             moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
@@ -277,8 +284,18 @@ public final class WholePackStore {
         }
     }
 
+    /** A template's bytes as they are; any other artifact's text through its binding, as UTF-8, with its companions. */
     private void putArtifact(Path staging, String path, CharterArtifact artifact, Set<String> written)
             throws IOException {
+        if (artifact instanceof Template template) {
+            putPayload(
+                    staging,
+                    path,
+                    TemplateBinding.INSTANCE.payloadOf(template).bytes(),
+                    PackFileKind.TEMPLATE,
+                    written);
+            return;
+        }
         KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
                 .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"));
         putArtifact(staging, path, kind, artifact, written);
@@ -292,7 +309,7 @@ public final class WholePackStore {
             Path staging, String path, KindBinding<D, ?> kind, CharterArtifact artifact, Set<String> written)
             throws IOException {
         D dso = kind.dsoOf(artifact);
-        put(staging, path, strategy.write(kind, dso), written);
+        put(staging, path, utf8(strategy.write(kind, dso)), written);
         for (KindBinding.Companion companion : kind.companions(dso)) {
             String named = path + ": companion " + companion.path();
             CompanionContent content = companion
@@ -303,23 +320,45 @@ public final class WholePackStore {
                 case Companions.Refused refused ->
                     throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " " + refused.reason());
             };
-            put(staging, at.packRelative(), Companions.text(content), written);
+            put(staging, at.packRelative(), utf8(Companions.text(content)), written);
         }
     }
 
+    private static byte[] utf8(String text) {
+        return text.getBytes(StandardCharsets.UTF_8);
+    }
+
     /**
-     * Writes one file of the staged pack. A path that leaves the pack is refused, and so is one already written, case
-     * ignored, so a case-insensitive file system cannot fold two parts into one file.
+     * Writes one {@code bytes} file of the staged pack, an asset file or a template, as {@link #put} does. Its path must
+     * classify back as {@code kind} ({@link PackFileSet#notHeldAs}): one file, one owner, as the store's own write
+     * refuses it.
      */
-    private static void put(Path staging, String relative, String content, Set<String> written) throws IOException {
-        Path file = staging.resolve(relative).normalize();
-        if (!file.startsWith(staging) || file.equals(staging)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "path " + relative + " leaves the pack");
+    private static void putPayload(Path staging, String relative, byte[] content, String kind, Set<String> written)
+            throws IOException {
+        if (Companions.inPack(staging, relative) instanceof Companions.Inside at) {
+            PackFileSet.notHeldAs(staging, at.packRelative(), kind).ifPresent(reason -> {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "path " + relative + " " + reason);
+            });
         }
-        if (!written.add(staging.relativize(file).toString().toLowerCase(Locale.ROOT))) {
+        put(staging, relative, content, written);
+    }
+
+    /**
+     * Writes one file of the staged pack. A path the containment rule refuses ({@link Companions#inPack}: one that
+     * leaves the pack, among others) is refused, and so is one already written, case ignored, so a case-insensitive
+     * file system cannot fold two parts into one file.
+     */
+    private static void put(Path staging, String relative, byte[] content, Set<String> written) throws IOException {
+        Companions.Inside at = switch (Companions.inPack(staging, relative)) {
+            case Companions.Inside inside -> inside;
+            case Companions.Refused refused ->
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "path " + relative + " " + refused.reason());
+        };
+        Path file = at.file();
+        if (!written.add(at.claim())) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "two parts of the pack are written to " + relative);
         }
         Files.createDirectories(Objects.requireNonNull(file.getParent()));
-        Files.writeString(file, content, StandardCharsets.UTF_8);
+        Files.write(file, content);
     }
 }

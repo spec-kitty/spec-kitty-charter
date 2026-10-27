@@ -69,6 +69,23 @@ class CharterArtifactFamilyTest {
 
     private static final List<CharterArtifact> FAMILY = List.of(DIRECTIVE, STYLEGUIDE, PARADIGM, TACTIC);
 
+    private static final Asset ASSET = Asset.builder()
+            .id(new AssetIdentifier("family-asset"))
+            .packId(PACK)
+            .mime("text/markdown")
+            .path("family/asset.md")
+            .title("Asset title")
+            .build();
+
+    private static final Template TEMPLATE = Template.builder()
+            .id(new TemplateIdentifier("writing/family-template.md"))
+            .packId(PACK)
+            .content(Payload.of(new byte[] {'#'}))
+            .build();
+
+    /** The payload-bearing kinds: no schema version, no description, no relationships. */
+    private static final List<CharterArtifact> PAYLOAD_KINDS = List.of(ASSET, TEMPLATE);
+
     @Test
     @DisplayName("every kind is a CharterArtifact of its own kind, in its pack, at schema 1.0")
     void everyKindIsOneUniformArtifact() {
@@ -137,5 +154,25 @@ class CharterArtifactFamilyTest {
                 .containsExactly(
                         tuple(TACTIC.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), RelationType.SUGGESTS));
         assertThat(TACTIC.relationships().get(0).when()).contains("when ready");
+    }
+
+    @Test
+    @DisplayName(
+            "asset and template join the family through the same spine, with no schema version, description or edges")
+    void payloadKindsAreUniformArtifacts() {
+        assertThat(PAYLOAD_KINDS)
+                .extracting(CharterArtifact::kind)
+                .containsExactly(ArtifactKind.ASSET, ArtifactKind.TEMPLATE);
+        assertThat(PAYLOAD_KINDS).extracting(CharterArtifact::packId).containsOnly(PACK);
+        assertThat(PAYLOAD_KINDS).extracting(CharterArtifact::schemaVersion).containsOnly(Optional.empty());
+        assertThat(PAYLOAD_KINDS).extracting(CharterArtifact::description).containsOnly(Optional.empty());
+        assertThat(PAYLOAD_KINDS)
+                .allSatisfy(artifact -> assertThat(artifact.relationships()).isEmpty());
+        assertThat(PAYLOAD_KINDS)
+                .extracting(CharterArtifact::label)
+                .containsExactly("Asset title", "family-template.md");
+        assertThat(PAYLOAD_KINDS)
+                .extracting(artifact -> artifact.urn().toString())
+                .containsExactly("asset:family-asset", "template:writing/family-template.md");
     }
 }

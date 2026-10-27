@@ -34,17 +34,35 @@ public final class PackRevision {
      * Computes the revision of a committed state from its serialized child content.
      *
      * <p>The caller passes the committed file texts (the serialized DSOs and the registered-relationship shard) in a
-     * stable order; a change to any of them changes the revision, and an unchanged commit yields an equal revision.
+     * stable order; a change to any of them changes the revision, and an unchanged commit yields an equal revision. It
+     * is {@link #computeOverBytes} over each text's UTF-8 encoding, so a text and its UTF-8 bytes share one revision.
      *
      * @param committedContent the serialized contents of the committed state, in a stable order
      * @return the revision, {@code sha256:} and 64 lower-case hex digits
      */
     public static PackRevision compute(List<String> committedContent) {
         Objects.requireNonNull(committedContent, "committedContent");
+        return computeOverBytes(committedContent.stream()
+                .map(content -> Objects.requireNonNull(content, "content").getBytes(StandardCharsets.UTF_8))
+                .toList());
+    }
+
+    /**
+     * Computes the revision of a committed state from the raw bytes of its committed files, which need not be UTF-8
+     * text (a binary payload is digested as it is stored).
+     *
+     * <p>The digest is the domain tag, then per item its decimal byte length, a {@code '\n'} and its bytes, in the
+     * order given; a change to any byte changes the revision.
+     *
+     * @param committedContent the bytes of each committed file, in a stable order
+     * @return the revision, {@code sha256:} and 64 lower-case hex digits
+     */
+    public static PackRevision computeOverBytes(List<byte[]> committedContent) {
+        Objects.requireNonNull(committedContent, "committedContent");
         MessageDigest digest = sha256();
         digest.update(DOMAIN_TAG);
-        for (String content : committedContent) {
-            byte[] bytes = Objects.requireNonNull(content, "content").getBytes(StandardCharsets.UTF_8);
+        for (byte[] content : committedContent) {
+            byte[] bytes = Objects.requireNonNull(content, "content");
             // Length-prefix each item so that re-partitioning the same bytes cannot collide.
             digest.update(Integer.toString(bytes.length).getBytes(StandardCharsets.UTF_8));
             digest.update((byte) '\n');

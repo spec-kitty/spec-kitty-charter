@@ -11,12 +11,17 @@ import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -203,6 +208,132 @@ class FileSystemPackSourcesTest {
         } finally {
             assertThat(nested.toFile().setReadable(true)).isTrue();
         }
+    }
+
+    // ---- NFR-002 / FR-011: the fingerprint of packs without asset files or templates is the one main had -----------
+
+    /**
+     * The fixture packs without asset files or templates, by location name: the digested list and the fingerprint each
+     * had before this mission. Captured on {@code main} at 90de8f9 with a throwaway test in a scratch {@code git
+     * worktree} of that commit: it printed {@code PackFileSet.digested(dir)} and
+     * {@code new FileSystemPackSources(() -> List.of(new PackLocation(name, PackLevel.ORG, dir))).fingerprint()} for
+     * each fixture below, and the fingerprint of all three locations in this order. The fixtures are byte-identical on
+     * 90de8f9 and on this branch.
+     */
+    private static final List<PinnedPack> PINNED = List.of(
+            new PinnedPack(
+                    "pack-a",
+                    "/roundtrip-fixtures/pack-a",
+                    List.of(
+                            "pack.yaml",
+                            "alpha-tactic.tactic.yaml",
+                            "beta-tactic.tactic.yaml",
+                            "broken-tactic.tactic.yaml"),
+                    "sha256:b1b6a8c40896b5f5a769e37c41c90d4fb9185062e6ea0da9cf74a727128f9a58"),
+            new PinnedPack(
+                    "pack-descriptor-only",
+                    "/roundtrip-fixtures/pack-descriptor-only",
+                    List.of("pack.yaml"),
+                    "sha256:ded97480fbaeab435de330a315be5c06c60544d7d61aa4b876cbfd490c65b47b"),
+            new PinnedPack(
+                    "shards-and-fragment",
+                    "/load-fixtures/shards-and-fragment-merge-their-nodes/files",
+                    List.of("pack.yaml", "a.graph.yaml", "b.graph.yaml", "drg/fragment.yaml"),
+                    "sha256:731c25459783e328fb650111f46747f0b9bdc84f80f96388a9e6cfff682ffa44"));
+
+    /** The fingerprint of the three {@link #PINNED} locations together, in that order (captured as above). */
+    private static final String PINNED_ALL = "sha256:f3c3fc76bb4d5b7b2a319e41d6b507b9fbb0f44fc109ee131ee6cb22ec7c3aa7";
+
+    private record PinnedPack(String name, String resource, List<String> digested, String fingerprint) {}
+
+    @Test
+    void fixturePacksWithoutAssetFilesOrTemplatesDigestAndFingerprintExactlyAsOnMain(@TempDir Path host)
+            throws IOException {
+        List<PackLocation> all = new ArrayList<>();
+        for (PinnedPack pinned : PINNED) {
+            Path dir = copyOfResource(pinned.resource(), host.resolve(pinned.name()));
+            assertThat(PackFileSet.assetFiles(dir))
+                    .as("%s has no asset files", pinned.name())
+                    .isEmpty();
+            assertThat(PackFileSet.templates(dir))
+                    .as("%s has no templates", pinned.name())
+                    .isEmpty();
+            PackLocation location = new PackLocation(pinned.name(), PackLevel.ORG, dir);
+            all.add(location);
+
+            assertThat(PackFileSet.digested(dir))
+                    .as("%s digested", pinned.name())
+                    .containsExactlyElementsOf(pinned.digested());
+            assertThat(new FileSystemPackSources(() -> List.of(location)).fingerprint())
+                    .as("%s fingerprint", pinned.name())
+                    .isEqualTo(pinned.fingerprint());
+        }
+        assertThat(new FileSystemPackSources(() -> List.copyOf(all)).fingerprint())
+                .isEqualTo(PINNED_ALL);
+    }
+
+    /**
+     * FR-011, the positive controls on a pinned fixture through the production path: an asset file, a byte of it, a
+     * template and a byte of it each move the fingerprint, and each step is a fingerprint not seen before.
+     */
+    @Test
+    void anAssetFileATemplateAndOneByteOfEitherEachChangeThePinnedFingerprint(@TempDir Path host) throws IOException {
+        PinnedPack pinned = PINNED.getFirst();
+        Path dir = copyOfResource(pinned.resource(), host.resolve(pinned.name()));
+        FileSystemPackSources sources =
+                new FileSystemPackSources(() -> List.of(new PackLocation(pinned.name(), PackLevel.ORG, dir)));
+        List<String> seen = new ArrayList<>(List.of(sources.fingerprint()));
+        assertThat(seen.getFirst()).as("the unchanged fixture").isEqualTo(pinned.fingerprint());
+
+        Path payload = Files.createDirectories(dir.resolve("assets/debrief")).resolve("logo.png");
+        Files.write(payload, new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0, (byte) 0xff});
+        assertThat(PackFileSet.assetFiles(dir)).containsExactly("assets/debrief/logo.png");
+        assertNewFingerprint(sources, seen, "an added asset file");
+
+        flipByte(payload, 6);
+        assertNewFingerprint(sources, seen, "one flipped byte of the asset file");
+
+        Path template =
+                Files.createDirectories(dir.resolve("templates/writing")).resolve("minutes.md");
+        Files.write(template, "# Minutes\n".getBytes(StandardCharsets.UTF_8));
+        assertThat(PackFileSet.templates(dir)).containsExactly("templates/writing/minutes.md");
+        assertNewFingerprint(sources, seen, "an added template");
+
+        flipByte(template, 2);
+        assertNewFingerprint(sources, seen, "one flipped byte of the template");
+    }
+
+    private static void assertNewFingerprint(FileSystemPackSources sources, List<String> seen, String step) {
+        String fingerprint = sources.fingerprint();
+        assertThat(seen).as("after %s", step).doesNotContain(fingerprint);
+        seen.add(fingerprint);
+    }
+
+    private static void flipByte(Path file, int offset) throws IOException {
+        byte[] bytes = Files.readAllBytes(file);
+        bytes[offset] ^= 0x01;
+        Files.write(file, bytes);
+    }
+
+    private static Path copyOfResource(String resource, Path target) throws IOException {
+        Path source;
+        try {
+            source = Path.of(Objects.requireNonNull(FileSystemPackSourcesTest.class.getResource(resource), resource)
+                    .toURI());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
+        try (Stream<Path> walk = Files.walk(source)) {
+            for (Path path : walk.sorted().toList()) {
+                Path to = target.resolve(source.relativize(path).toString());
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(to);
+                } else {
+                    Files.copy(path, to);
+                }
+            }
+        }
+        return target;
     }
 
     private static FileSystemPackSources sources(Path root) {

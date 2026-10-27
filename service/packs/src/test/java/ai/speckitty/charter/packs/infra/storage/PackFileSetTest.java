@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -92,6 +93,58 @@ class PackFileSetTest {
                         "drg/fragment.yaml");
     }
 
+    /**
+     * NFR-002: a pack without asset files or templates keeps its exact fingerprint. The value was captured over this
+     * tree with the store as it was before asset files and templates were read (lane commit 57b49e2).
+     */
+    @Test
+    void aPackWithoutPayloadsKeepsTheFingerprintItHadBeforePayloadsWereDigested() {
+        assertThat(PackFileSet.assetFiles(pack)).isEmpty();
+        assertThat(PackFileSet.templates(pack)).isEmpty();
+        assertThat(new FileSystemPackSources(() -> List.of(new PackLocation("qa", PackLevel.ORG, pack))).fingerprint())
+                .isEqualTo("sha256:02c8a8cdbc2e6458ec35c1b9fb34a2110d814b2503cf1f030b2851592c395125");
+    }
+
+    /**
+     * A pack holding every payload shape: the sidecar is listed with the YAML kinds, the asset files and then the
+     * template come last, after the fragment; the README under {@code assets/} and the mission template are neither.
+     */
+    @Test
+    void assetFilesAndTemplatesAreDigestedLastAfterTheFragment(@TempDir Path host) throws IOException {
+        Path withPayloads = Files.createDirectories(host.resolve("payloads/qa"));
+        for (String file : List.of(
+                "pack.yaml",
+                "a.tactic.yaml",
+                "drg/fragment.yaml",
+                "assets/logo.png.asset.yaml",
+                "assets/logo.png",
+                "assets/a/b/nested.bin",
+                "assets/lint.config.yaml",
+                "assets/README.md",
+                "assets/a/README.md",
+                "templates/writing/minutes.md",
+                "missions/m/templates/t.md",
+                "docs/logo.png")) {
+            Files.createDirectories(withPayloads.resolve(file).getParent());
+            Files.write(withPayloads.resolve(file), new byte[] {0, '\r', '\n', (byte) 0xff});
+        }
+
+        assertThat(PackFileSet.files(withPayloads, ArtifactKind.ASSET)).containsExactly("assets/logo.png.asset.yaml");
+        assertThat(PackFileSet.assetFiles(withPayloads))
+                .containsExactly("assets/a/b/nested.bin", "assets/lint.config.yaml", "assets/logo.png");
+        assertThat(PackFileSet.templates(withPayloads)).containsExactly("templates/writing/minutes.md");
+        assertThat(PackFileSet.digested(withPayloads))
+                .containsExactly(
+                        "pack.yaml",
+                        "a.tactic.yaml",
+                        "assets/logo.png.asset.yaml",
+                        "drg/fragment.yaml",
+                        "assets/a/b/nested.bin",
+                        "assets/lint.config.yaml",
+                        "assets/logo.png",
+                        "templates/writing/minutes.md");
+    }
+
     @Test
     void aSubsetOfTheKindsLeavesTheOthersOutButKeepsThePackYamlAndTheGraphInputs() {
         assertThat(PackFileSet.digested(pack, EnumSet.of(ArtifactKind.PARADIGM, ArtifactKind.DIRECTIVE)))
@@ -166,5 +219,31 @@ class PackFileSetTest {
         for (ArtifactKind kind : KindBindings.kinds()) {
             assertThat(kind.token()).isEqualTo(kind.name().toLowerCase(java.util.Locale.ROOT));
         }
+    }
+
+    /**
+     * F1: the rule's content form decides the store. On one pack, a table whose payload rule under {@code assets/}
+     * declares {@code bytes} holds the file as an asset file (the positive control); the same rule declaring
+     * {@code yaml}, with the same kind token and path, would hold it nowhere, so the table refuses to load (#193)
+     * rather than drop the file silently.
+     */
+    @Test
+    void theContentFormNotTheKindTokenDecidesWhetherAFileIsHeldAsBytes() throws IOException {
+        Files.createDirectories(pack.resolve("assets"));
+        Files.writeString(pack.resolve("assets/x.bin"), "x");
+        String table = """
+                node_kinds: []
+                fragment_kinds: {}
+                files: []
+                exclusions: []
+                payloads: [{match: '*/assets/**/*', kind: asset-payload, content_form: %s}]
+                """;
+
+        PackFileSet.Listing bytes = PackFileSet.listing(pack, new PackFileKind(table.formatted("bytes")));
+
+        assertThat(bytes.assetFiles()).containsExactly("assets/x.bin");
+        assertThatThrownBy(() -> new PackFileKind(table.formatted("yaml")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("the payloads rule for '*/assets/**/*' declares content_form 'yaml'");
     }
 }

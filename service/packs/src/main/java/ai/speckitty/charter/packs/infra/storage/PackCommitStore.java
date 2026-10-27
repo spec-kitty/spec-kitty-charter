@@ -210,13 +210,16 @@ public final class PackCommitStore {
 
     // ---- revision ------------------------------------------------------------------------------------------------
 
-    /** The revision of a staged directory: the digest over the texts of every file the fingerprint would cover. */
+    /**
+     * The revision of a staged directory: the digest over the bytes of every file the fingerprint would cover, so a
+     * file that is not UTF-8 text (a binary payload) is digested, not refused.
+     */
     private static PackRevision revisionOf(Path packDir) throws IOException {
-        List<String> contents = new ArrayList<>();
+        List<byte[]> contents = new ArrayList<>();
         for (String relative : PackFileSet.digested(packDir)) {
-            contents.add(Files.readString(packDir.resolve(relative), StandardCharsets.UTF_8));
+            contents.add(Files.readAllBytes(packDir.resolve(relative)));
         }
-        return PackRevision.compute(contents);
+        return PackRevision.computeOverBytes(contents);
     }
 
     // ---- id to directory -----------------------------------------------------------------------------------------

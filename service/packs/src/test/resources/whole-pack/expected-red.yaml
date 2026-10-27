@@ -5,15 +5,6 @@
 # kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
 # empty_kinds: a modelled kind the pinned pack has no file of; it goes stale when the pack gains one.
 kinds:
-  - kind: asset
-    reason: Asset descriptors have no domain model, reader or writer yet.
-    issue: "#193"
-  - kind: other:assets
-    reason: Asset payloads (Markdown, Python, tool configuration) are not modelled yet.
-    issue: "#193"
-  - kind: other:templates
-    reason: Templates are not modelled yet.
-    issue: "#193"
   - kind: procedure
     reason: Procedures have no domain model, reader or writer yet.
     issue: "#194"

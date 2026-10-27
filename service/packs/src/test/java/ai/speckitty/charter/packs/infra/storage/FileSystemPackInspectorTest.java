@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.PackVerdict;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -355,6 +357,64 @@ class FileSystemPackInspectorTest {
         assertThat(full(dir).assets())
                 .containsExactly(
                         new PackContents.AssetFacts("assets/a.asset.yaml", "a", "..\\x.png", "Image/PNG ", true));
+    }
+
+    @Test
+    void aSchemaLessPayloadIsListedWithItsKindAndNotReadWhileItsSidecarsFactsStand(@TempDir Path dir)
+            throws IOException {
+        write(dir, "assets/x.md.asset.yaml", ASSET.formatted("x", "text/markdown", "x.md"));
+        write(dir, "assets/x.md", "# a payload\n");
+        // No payload is YAML a schema would pass: were one read and validated, it would be unreadable. Validate mode
+        // walks *.yaml files only, so the two Markdown payloads are not listed at all.
+        write(dir, "assets/tools/x.config.yaml", "rules: [\n");
+        write(dir, "templates/writing/t.md", "---\ntitle: [\n---\n");
+        write(dir, "templates/writing/t.yaml", "a: [\n");
+
+        PackContents contents = full(dir);
+
+        assertThat(contents.unreadableFiles()).isEmpty();
+        assertThat(contents.files())
+                .containsExactly(
+                        classified("assets/tools/x.config.yaml", "asset-payload"),
+                        classified("assets/x.md.asset.yaml", "asset"),
+                        classified("templates/writing/t.yaml", "template"));
+        assertThat(contents.assets())
+                .as("the sidecar is read and judged as it is without payload rules")
+                .containsExactly(
+                        new PackContents.AssetFacts("assets/x.md.asset.yaml", "x", "x.md", "text/markdown", true));
+        assertThat(contents.artifacts())
+                .containsExactly(new PackContents.ArtifactFacts("assets/x.md.asset.yaml", "asset", "x"));
+    }
+
+    /**
+     * Acceptance check 12: validate mode over the pinned built-in pack reports no exception for its sidecar-less asset
+     * payload {@code assets/docs_structural_lint.config.yaml}, and its findings are those of main at 90de8f9.
+     *
+     * <p>The expected findings were captured, not recomputed: on 90de8f9 (open-packs at 01edb4e) a throwaway
+     * {@code @Tag("open-packs")} test printed {@code PackPolicy.judge(inspect(built-in, FULL)).findings()} and the
+     * size of {@code files()}, run with {@code ./gradlew :packs:openPacksRoundTrip --tests '<that test>'
+     * -PopenPacksDir=<checkout>}. It printed no findings and 386 classified files. The one expected difference in the
+     * file list is the config payload: excluded by {@code **}{@code /*.config.yaml} then, kind {@code asset-payload}
+     * now.
+     */
+    @Test
+    @Tag("open-packs")
+    void validateModeOverTheBuiltInPackFindsWhatMainFoundAndListsTheConfigPayload() throws IOException {
+        OpenPacksCorpus.assertPinned();
+        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
+        PackRoot root = new PackRoot("built-in", Optional.of(PackLevel.BUILT_IN), builtIn.toString());
+
+        PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
+
+        assertThat(verdict.findings()).as("the findings of main at 90de8f9").isEqualTo(List.of());
+        assertThat(verdict.files()).hasSize(386);
+        assertThat(verdict.files())
+                .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
+                .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
+        assertThat(verdict.files())
+                .as("no file is excluded by the retired rule")
+                .noneMatch(f ->
+                        f.exclusionClass().filter("**/*.config.yaml"::equals).isPresent());
     }
 
     // ---- asset containment ---------------------------------------------------------------------------------------

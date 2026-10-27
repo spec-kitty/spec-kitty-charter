@@ -13,17 +13,32 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.Asset;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
+import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
+import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
+import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
+import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.Specialization;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +46,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The kind-neutral relationship registration use case over in-memory ports (FR-009/012). Every refusal is paired with
+ * The kind-neutral relationship registration use case over in-memory ports (FR-009/012), and, for the {@code asset:}
+ * and {@code template:} endpoints, over the real storage edge. Every refusal is paired with
  * a same-fixture positive control (SC-003, DIRECTIVE_041): a refused write commits nothing, and the matching accepted
  * write proves the fixture itself is sound.
  */
@@ -183,6 +200,141 @@ class RelationshipRegistrationServiceTest {
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.MISSING));
+    }
+
+    // ---- FR-012 / R6: asset: and template: URNs as endpoints, through the real store (not the fake) ----------------
+
+    private static final Urn LOGO = new Urn(NodeKind.ASSET, "logo");
+    private static final Urn MINUTES = new Urn(NodeKind.TEMPLATE, "writing/minutes.md");
+
+    /**
+     * Over the real {@code DomainRepositoryService} and commit store on a temp pack holding a sidecar, its payload and
+     * a template: an edge from the held asset to the template, one from the template, and one to the asset register
+     * and read back from the shard; the real ADR-0012 gate (every target open) accepts the new kinds.
+     */
+    @Test
+    void relationshipsFromAndToAHeldAssetAndTemplateRegisterThroughTheRealStore(@TempDir Path host) throws IOException {
+        RealPack real = RealPack.over(host, new PackMutabilityPolicy());
+        Pack loaded = real.repository.load(PACK);
+        assertThat(loaded.assets()).extracting(Asset::urn).containsExactly(LOGO);
+        assertThat(loaded.templates()).extracting(Template::urn).containsExactly(MINUTES);
+        real.directives.registerDirective(
+                PACK,
+                directive("GUARD"),
+                List.of(),
+                false,
+                real.writeStore.currentRevision(PACK).token());
+        Urn guard = new Urn(NodeKind.DIRECTIVE, "GUARD");
+        Relationship assetToTemplate = Relationship.of(LOGO, MINUTES, RelationType.REQUIRES);
+        Relationship templateToDirective = Relationship.of(MINUTES, guard, RelationType.SUGGESTS);
+        Relationship directiveToAsset = Relationship.of(guard, LOGO, RelationType.REQUIRES);
+
+        for (Relationship edge : List.of(assetToTemplate, templateToDirective, directiveToAsset)) {
+            PackRevision before = real.writeStore.currentRevision(PACK);
+            RelationshipRegistrationService.Registered registered =
+                    real.relationships.registerRelationship(PACK, edge, before.token());
+            assertThat(registered.created()).as("%s is new", edge).isTrue();
+            assertThat(registered.revision())
+                    .as("%s advanced the revision", edge)
+                    .isNotEqualTo(before);
+        }
+
+        assertThat(real.writeStore.registeredRelationships(PACK))
+                .containsExactlyInAnyOrder(assetToTemplate, templateToDirective, directiveToAsset);
+        assertThat(real.repository.load(PACK).assetFiles())
+                .as("the relationship commits kept the asset file")
+                .extracting(AssetFile::path)
+                .containsExactly("debrief/logo.png");
+    }
+
+    /** An {@code asset:} URN the pack does not hold is refused as before; the held one is the same-fixture control. */
+    @Test
+    void anAssetTheRealPackDoesNotHoldIsRefusedWhileTheHeldOneRegisters(@TempDir Path host) throws IOException {
+        RealPack real = RealPack.over(host, new PackMutabilityPolicy());
+        PackRevision before = real.writeStore.currentRevision(PACK);
+
+        assertThatThrownBy(() -> real.relationships.registerRelationship(
+                        PACK,
+                        Relationship.of(new Urn(NodeKind.ASSET, "ghost"), MINUTES, RelationType.REQUIRES),
+                        before.token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+                    assertThat(r.getMessage()).contains("asset:ghost");
+                });
+        assertThat(real.writeStore.currentRevision(PACK))
+                .as("the refusal committed nothing")
+                .isEqualTo(before);
+        assertThat(real.writeStore.registeredRelationships(PACK)).isEmpty();
+
+        assertThatCode(() -> real.relationships.registerRelationship(
+                        PACK, Relationship.of(LOGO, MINUTES, RelationType.REQUIRES), before.token()))
+                .doesNotThrowAnyException();
+        assertThat(real.writeStore.registeredRelationships(PACK))
+                .containsExactly(Relationship.of(LOGO, MINUTES, RelationType.REQUIRES));
+    }
+
+    /**
+     * The mutability gate resolves the new kinds by their kind: a source locking {@code asset} refuses the edge from
+     * the asset, while the template edge on the same fixture and gate registers.
+     */
+    @Test
+    void aMutabilityPolicyLockingAssetsRefusesTheAssetEdgeWhileTheTemplateEdgeRegisters(@TempDir Path host)
+            throws IOException {
+        RealPack real = RealPack.over(
+                host,
+                new PackMutabilityPolicy(MutabilityPolicySource.builder()
+                        .kindDefault(NodeKind.ASSET, MutabilityLevel.LOCKED)
+                        .build()));
+        PackRevision before = real.writeStore.currentRevision(PACK);
+
+        assertThatThrownBy(() -> real.relationships.registerRelationship(
+                        PACK, Relationship.of(LOGO, MINUTES, RelationType.REQUIRES), before.token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        r -> assertThat(r.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION));
+        assertThat(real.writeStore.currentRevision(PACK)).isEqualTo(before);
+
+        assertThatCode(() -> real.relationships.registerRelationship(
+                        PACK, Relationship.of(MINUTES, LOGO, RelationType.REQUIRES), before.token()))
+                .doesNotThrowAnyException();
+        assertThat(real.writeStore.registeredRelationships(PACK))
+                .containsExactly(Relationship.of(MINUTES, LOGO, RelationType.REQUIRES));
+    }
+
+    /** The production wiring over a temp pack named {@code pack-a} holding a sidecar, its payload and a template. */
+    private record RealPack(
+            DomainRepositoryService repository,
+            CommitStorePackWriteStore writeStore,
+            DirectiveRegistrationService directives,
+            RelationshipRegistrationService relationships) {
+
+        static RealPack over(Path host, WritePolicyGate policy) throws IOException {
+            Path pack = host.resolve(PACK.value());
+            write(
+                    pack,
+                    "pack.yaml",
+                    "pack_id: 01M5DEH8RELATIONSHIPASSET0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n");
+            write(pack, "assets/debrief/logo.png.asset.yaml", "id: logo\nmime: image/png\npath: debrief/logo.png\n");
+            Files.write(
+                    pack.resolve("assets/debrief/logo.png"), new byte[] {(byte) 0x89, 'P', 'N', 'G', 0, '\r', '\n'});
+            write(pack, "templates/writing/minutes.md", "# Minutes\n");
+            StorageRootLocations locations = new StorageRootLocations(host);
+            YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+            DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
+            CommitStorePackWriteStore writeStore =
+                    new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
+            return new RealPack(
+                    repository,
+                    writeStore,
+                    new DirectiveRegistrationService(repository, writeStore, policy),
+                    new RelationshipRegistrationService(repository, writeStore, policy));
+        }
+
+        private static void write(Path pack, String relative, String text) throws IOException {
+            Path file = pack.resolve(relative);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, text, StandardCharsets.UTF_8);
+        }
     }
 
     // ---- fixtures and fakes --------------------------------------------------------------------------------------

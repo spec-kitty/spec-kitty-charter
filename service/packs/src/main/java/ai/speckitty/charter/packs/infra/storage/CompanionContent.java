@@ -4,8 +4,9 @@ import java.util.Objects;
 
 /**
  * What a companion file holds (ADR-0039): the content the store reads beside an artifact's file and writes back with
- * it. Only text exists today, read and written byte for byte as UTF-8; binary content (asset payloads, templates) is
- * #193's case to add.
+ * it. Only text exists, read and written byte for byte as UTF-8 over the store's one bytes read and atomic write.
+ * Asset payloads and templates (#193) are not companions: they are pack-level files the pack holds in its own right
+ * (ADR-0040), so no {@code Bytes} case exists until a companion needs one.
  */
 sealed interface CompanionContent {
 

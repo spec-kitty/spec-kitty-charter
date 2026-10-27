@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -38,6 +39,9 @@ import org.jspecify.annotations.Nullable;
  * <p>A new artefact is written as {@code <id>.<fileToken>.yaml} at the pack root, wherever its source lived, so source
  * and written files are paired by kind and {@code id}. The modelled artefact kinds are the registry's: a kind joins the
  * gate by binding itself, with no edit here.
+ *
+ * <p>#193: an asset sidecar is saved like an artefact; asset files and templates are written in place, byte for byte,
+ * and paired by path. A sidecar the store refused for a missing payload is refused with the store's exact reason.
  */
 final class DomainRoundTrip implements WholePackRoundTrip {
 
@@ -46,15 +50,21 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** The read-back key that stands for every written file when the written pack does not load at all. */
     private static final String READ_BACK_FAILED = "";
 
+    // #193: an asset sidecar is an artefact; asset files and templates are payloads, written in place, paired by path.
+    static final String ASSET = "asset";
+    static final String ASSET_PAYLOAD = PackFileSet.ASSET_PAYLOAD;
+    static final String TEMPLATE = "template";
+
     /** The gate kinds of the bound artefact kinds: each binding's schema name, as the census names its files. */
     static final Set<String> ARTEFACT_KINDS =
             KindBindings.all().stream().map(KindBinding::schemaName).collect(Collectors.toUnmodifiableSet());
 
     private static final Set<String> MODELLED = Stream.concat(
-                    ARTEFACT_KINDS.stream(), Stream.of(DESCRIPTOR, GRAPH_SHARD))
+                    ARTEFACT_KINDS.stream(), Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
+    private final UnaryOperator<Pack> beforeSave;
 
     /**
      * An adapter over a format.
@@ -62,7 +72,19 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * @param strategy the format to read and write with; the gate uses {@link YamlSerializationStrategy}
      */
     DomainRoundTrip(SerializationStrategy strategy) {
+        this(strategy, UnaryOperator.identity());
+    }
+
+    /**
+     * An adapter that changes the loaded pack before saving it: the gate's positive controls (#193) flip or drop
+     * payload bytes here, so a loss travels the production write path and is never edited into a written file.
+     *
+     * @param strategy the format to read and write with
+     * @param beforeSave maps the loaded pack to the pack that is saved; outcomes still answer for the loaded pack
+     */
+    DomainRoundTrip(SerializationStrategy strategy, UnaryOperator<Pack> beforeSave) {
         this.strategy = strategy;
+        this.beforeSave = beforeSave;
     }
 
     @Override
@@ -81,7 +103,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         SortedMap<String, Outcome> outcomes = new TreeMap<>();
         Loaded loaded = load(from, id);
         @Nullable Pack pack = loaded.pack();
-        @Nullable String descriptorFailure = writeAll(from, to, id, pack);
+        @Nullable String descriptorFailure = writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack));
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
         Loaded reloaded = descriptorFailure == null ? load(to, id) : new Loaded(null, "nothing was written");
@@ -90,6 +112,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 : byFile(reloaded.pack().violations(), "read-back: ");
         Map<String, String> written = writtenByKindAndId(target);
         Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf);
+        Map<String, List<String>> missingPayloads = pack == null ? Map.of() : missingPayloads(pack);
         kindOf.forEach((path, kind) -> {
             if (DESCRIPTOR.equals(kind)) {
                 outcomes.put(
@@ -97,12 +120,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                         descriptorFailure != null
                                 ? new Refused(descriptorFailure)
                                 : readBackOr(PackFileSet.PACK_YAML, readBack));
+            } else if (missingPayloads.containsKey(path)) {
+                outcomes.put(path, new Refused(String.join("; ", missingPayloads.get(path))));
             } else if (ARTEFACT_KINDS.contains(kind)) {
                 outcomes.put(
                         path,
                         artefact(source, path, kind, refusals, readBack, written, kindOf, sourceIds, assemblyFailure));
             } else if (GRAPH_SHARD.equals(kind)) {
                 outcomes.put(path, shard(name, source, target, path));
+            } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
+                outcomes.put(path, payload(path, kind, pack, assemblyFailure, reloaded));
             }
         });
         return outcomes;
@@ -122,6 +149,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 return null;
             }
             to.save(id, pack.descriptor());
+            // #193: asset files byte for byte, in place; sidecars and templates are artefacts like any other.
+            pack.assetFiles().forEach(file -> to.writeAssetFile(id, file));
             pack.artifacts().forEach(to::saveArtifact);
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
@@ -258,6 +287,51 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                     .add(prefix + violation.kind() + ": " + violation.reason());
         }
         return byFile;
+    }
+
+    // ---- asset files and templates (#193) -------------------------------------------------------
+
+    /**
+     * The store's refusal of a sidecar whose payload it does not hold, by sidecar file, with the store's exact reason
+     * ({@code payload assets/<path> does not exist}); the gate pins that reason, so it carries no kind prefix.
+     */
+    private static Map<String, List<String>> missingPayloads(Pack pack) {
+        Map<String, List<String>> byFile = new TreeMap<>();
+        for (PackElementViolation violation : pack.violations()) {
+            if (ASSET.equals(violation.kind()) && violation.reason().startsWith("payload ")) {
+                byFile.computeIfAbsent(violation.file(), file -> new ArrayList<>())
+                        .add(violation.reason());
+            }
+        }
+        return byFile;
+    }
+
+    /**
+     * An asset file or a template is written in place: {@link Written} at its own path when the loaded pack held it
+     * and the read-back pack holds it again, else {@link Refused}. The bytes are the gate's to compare.
+     */
+    private static Outcome payload(
+            String path, String kind, @Nullable Pack pack, @Nullable String assemblyFailure, Loaded reloaded) {
+        if (pack == null) {
+            return new Refused("the pack does not assemble: " + assemblyFailure);
+        }
+        if (!holds(pack, path)) {
+            return new Refused("not read: the loaded pack holds no " + kind + " at " + path);
+        }
+        @Nullable Pack readBack = reloaded.pack();
+        if (readBack == null) {
+            return new Refused("read-back: the written pack does not load: " + reloaded.failure());
+        }
+        return holds(readBack, path)
+                ? new Written(path)
+                : new Refused("read-back: the written pack holds no " + kind + " at " + path);
+    }
+
+    /** Whether {@code pack} holds the asset file or template at the pack-relative {@code path}. */
+    private static boolean holds(Pack pack, String path) {
+        return pack.assetFiles().stream().anyMatch(file -> path.equals(PackFileSet.ASSETS + file.path()))
+                || pack.templates().stream()
+                        .anyMatch(template -> path.equals(PackFileSet.TEMPLATES + template.localId()));
     }
 
     // ---- graph shards --------------------------------------------------------------------------

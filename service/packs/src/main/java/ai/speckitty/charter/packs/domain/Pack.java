@@ -8,10 +8,12 @@ import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,8 +24,15 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Every kind is held the same way (ADR-0037): a kind joins the aggregate by its artifacts implementing
  * {@link CharterArtifact}, with no field, accessor or builder slot of its own. The typed views
- * ({@link #tactics()}, …) are conveniences over the same map. It holds no doctrine graph and no file paths. Build one with
- * {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.
+ * ({@link #tactics()}, …) are conveniences over the same map. It holds no doctrine graph.
+ *
+ * <p>The one recorded exception is the pack's {@linkplain #assetFiles() asset files}: the one pack-level collection
+ * beside the kind map, with a field, accessor and builder slot of its own (operator ruling R1: an asset payload may
+ * have no sidecar and no id, so it cannot be an artifact). By design they hold payload paths, relative to the pack's
+ * {@code assets/} directory; no other part of the aggregate holds file paths. Every {@link Asset} names a held asset
+ * file by its path, and no two assets name the same one.
+ *
+ * <p>Build one with {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.
  */
 public final class Pack {
 
@@ -31,6 +40,7 @@ public final class Pack {
     private final PackDescriptor descriptor;
     private final Map<ArtifactKind, List<CharterArtifact>> artifacts;
     private final List<PackElementViolation> violations;
+    private final Map<String, AssetFile> assetFiles;
 
     /**
      * Reconstructs a pack from its parts; reachable only inside the domain package.
@@ -39,13 +49,15 @@ public final class Pack {
      * @param descriptor the pack's descriptor
      * @param artifacts the readable artifacts of each kind, each list in a stable order
      * @param violations the files that could not be read or validated
+     * @param assetFiles the payload files under {@code assets/}, in any order; at most one per path
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Pack(
             PackIdentifier id,
             PackDescriptor descriptor,
             Map<ArtifactKind, List<CharterArtifact>> artifacts,
-            List<PackElementViolation> violations) {
+            List<PackElementViolation> violations,
+            List<AssetFile> assetFiles) {
         this.id = Objects.requireNonNull(id, "id");
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
         Map<ArtifactKind, List<CharterArtifact>> copy = new EnumMap<>(ArtifactKind.class);
@@ -58,6 +70,41 @@ public final class Pack {
         this.violations = List.copyOf(violations);
         for (Map.Entry<ArtifactKind, List<CharterArtifact>> entry : copy.entrySet()) {
             guardKind(entry.getKey(), entry.getValue());
+        }
+        this.assetFiles = sortedByPath(assetFiles);
+        guardAssets();
+    }
+
+    /** The asset files keyed by path, in path order; a path held twice breaches. */
+    private static Map<String, AssetFile> sortedByPath(List<AssetFile> files) {
+        Map<String, AssetFile> byPath = new TreeMap<>();
+        for (AssetFile file : files) {
+            ModularRuleset.<AssetFile>emptyRules()
+                    .must(Constraints.of(
+                            "A pack must not hold two asset files with the path '" + file.path() + "'.",
+                            candidate -> !byPath.containsKey(candidate.path())))
+                    .guard(file);
+            byPath.put(file.path(), file);
+        }
+        return byPath;
+    }
+
+    /** The asset-to-file link: every asset names a held asset file, and no two assets name the same one. */
+    private void guardAssets() {
+        Map<String, String> claimedBy = new HashMap<>();
+        for (Asset asset : assets()) {
+            String path = asset.path();
+            ModularRuleset.<Asset>emptyRules()
+                    .must(Constraints.of(
+                            "The asset '" + asset.localId() + "' names the asset file '" + path
+                                    + "', which the pack does not hold.",
+                            candidate -> assetFiles.containsKey(path)))
+                    .must(Constraints.of(
+                            "The asset '" + asset.localId() + "' names the asset file '" + path + "', which the asset '"
+                                    + claimedBy.get(path) + "' already names.",
+                            candidate -> !claimedBy.containsKey(path)))
+                    .guard(asset);
+            claimedBy.put(path, asset.localId());
         }
     }
 
@@ -94,18 +141,20 @@ public final class Pack {
     /**
      * Starts a builder that holds everything this pack holds.
      *
-     * @return a builder seeded with this pack's identity, descriptor, artifacts and violations
+     * @return a builder seeded with this pack's identity, descriptor, artifacts, violations and asset files
      */
     public Builder toBuilder() {
         Builder builder = builder().id(id).descriptor(descriptor);
         artifacts().forEach(builder::artifact);
         violations.forEach(builder::violation);
+        assetFiles.values().forEach(builder::assetFile);
         return builder;
     }
 
     /**
      * This pack with {@code artifact} added, or replacing the artifact of the same kind and local id, revalidated.
-     * Every other artifact and violation is kept; a replaced artifact moves to the end of its kind.
+     * Every other artifact, every violation and every asset file is kept; a replaced artifact moves to the end of its
+     * kind.
      *
      * @param artifact the artifact to add or replace
      * @return the revalidated pack
@@ -113,15 +162,9 @@ public final class Pack {
      */
     public Pack with(CharterArtifact artifact) {
         Objects.requireNonNull(artifact, "artifact");
-        Builder builder = builder().id(id).descriptor(descriptor);
-        for (CharterArtifact existing : artifacts()) {
-            if (existing.kind() != artifact.kind() || !existing.localId().equals(artifact.localId())) {
-                builder.artifact(existing);
-            }
-        }
-        builder.artifact(artifact);
-        violations.forEach(builder::violation);
-        return builder.build();
+        Builder builder = toBuilder();
+        builder.remove(artifact.kind(), artifact.localId());
+        return builder.artifact(artifact).build();
     }
 
     /**
@@ -220,6 +263,33 @@ public final class Pack {
     }
 
     /**
+     * The readable assets, in a stable order.
+     *
+     * @return an immutable list; empty when the pack holds none
+     */
+    public List<Asset> assets() {
+        return artifacts(ArtifactKind.ASSET, Asset.class);
+    }
+
+    /**
+     * The readable templates, in a stable order.
+     *
+     * @return an immutable list; empty when the pack holds none
+     */
+    public List<Template> templates() {
+        return artifacts(ArtifactKind.TEMPLATE, Template.class);
+    }
+
+    /**
+     * The payload files under the pack's {@code assets/} directory, with or without a sidecar.
+     *
+     * @return an immutable list sorted by path, at most one per path
+     */
+    public List<AssetFile> assetFiles() {
+        return List.copyOf(assetFiles.values());
+    }
+
+    /**
      * The files that could not be read or validated while loading. This is the single, canonical owner of
      * read-time violations; no other surface may report them.
      *
@@ -251,6 +321,7 @@ public final class Pack {
         private @Nullable PackDescriptor descriptor;
         private final Map<ArtifactKind, List<CharterArtifact>> artifacts = new EnumMap<>(ArtifactKind.class);
         private final List<PackElementViolation> violations = new ArrayList<>();
+        private final List<AssetFile> assetFiles = new ArrayList<>();
 
         private Builder() {}
 
@@ -339,6 +410,26 @@ public final class Pack {
             return artifact(value);
         }
 
+        /** Drops the artifact of {@code kind} with {@code localId}, if any; {@link Pack#with} replaces through it. */
+        private void remove(ArtifactKind kind, String localId) {
+            List<CharterArtifact> ofKind = artifacts.get(kind);
+            if (ofKind != null) {
+                ofKind.removeIf(existing -> existing.localId().equals(localId));
+            }
+        }
+
+        /**
+         * Adds a payload file under the pack's {@code assets/} directory; {@link #build()} breaches when two share a
+         * path.
+         *
+         * @param value the asset file
+         * @return this builder
+         */
+        public Builder assetFile(AssetFile value) {
+            this.assetFiles.add(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
         /**
          * Appends a read violation.
          *
@@ -362,7 +453,8 @@ public final class Pack {
                     Objects.requireNonNull(id, "id"),
                     Objects.requireNonNull(descriptor, "descriptor"),
                     artifacts,
-                    violations);
+                    violations,
+                    assetFiles);
         }
     }
 }

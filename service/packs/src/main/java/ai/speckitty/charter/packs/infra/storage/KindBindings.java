@@ -23,7 +23,8 @@ final class KindBindings {
             AgentProfileBinding.INSTANCE,
             MissionStepContractBinding.INSTANCE,
             GlossaryPackBinding.INSTANCE,
-            SkillBinding.INSTANCE);
+            SkillBinding.INSTANCE,
+            AssetBinding.INSTANCE);
 
     private KindBindings() {}
 
