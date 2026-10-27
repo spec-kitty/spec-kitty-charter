@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 83e19810255dd579f55bcd9334b4684cac92e3a8
+created_at: '2026-10-27T17:23:29.976227+00:00'
 subtasks:
 - T014
 - T015
@@ -21,14 +24,14 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-role: implementer
 authoritative_surface: service/packs/src/test/
+create_intent: []
 execution_mode: code_change
 owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java
 - service/packs/src/test/resources/whole-pack/expected-red.yaml
-create_intent: []
+role: implementer
 tags: []
 task_type: implement
 ---
