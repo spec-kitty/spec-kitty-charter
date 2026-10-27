@@ -126,6 +126,8 @@ final class GeneratedPackTree {
         DECOY_SUB_R(Verdict.DECOY),
         DECOY_PROCEDURE(Verdict.DECOY),
         DECOY_ASSETS_README(Verdict.DECOY),
+        DECOY_ASSETS_HIDDEN(Verdict.DECOY),
+        DECOY_TEMPLATES_HIDDEN(Verdict.DECOY),
         DECOY_MISSION_TEMPLATE(Verdict.DECOY),
         DECOY_PAYLOAD_OUTSIDE_ASSETS(Verdict.DECOY),
         DECOY_ORG_CHARTER(Verdict.DECOY),
@@ -165,7 +167,9 @@ final class GeneratedPackTree {
             Shape.PAYLOAD_NESTED,
             Shape.TEMPLATE_TOP,
             Shape.DECOY_MISSION_TEMPLATE,
-            Shape.DECOY_PAYLOAD_OUTSIDE_ASSETS);
+            Shape.DECOY_PAYLOAD_OUTSIDE_ASSETS,
+            Shape.DECOY_ASSETS_HIDDEN,
+            Shape.DECOY_TEMPLATES_HIDDEN);
 
     private static final List<String> DIRECTORIES = List.of("a", "b", "c", "sub", "d-1", "drg");
     private static final String DECOY_CONTENT = "a: 1\n";
@@ -564,6 +568,9 @@ final class GeneratedPackTree {
             case PAYLOAD_NESTED -> PackFileSet.ASSETS + "a/b/" + stem + ".png";
             case TEMPLATE_TOP -> PackFileSet.TEMPLATES + directories(2) + stem + ".md";
             case DECOY_ASSETS_README -> PackFileSet.ASSETS + directories(1) + "README.md";
+            // The store's own temporary file, left behind by a write that was cut off, and a .gitkeep.
+            case DECOY_ASSETS_HIDDEN -> PackFileSet.ASSETS + directories(2) + ".pack-write-" + stem + ".tmp";
+            case DECOY_TEMPLATES_HIDDEN -> PackFileSet.TEMPLATES + directories(2) + "." + stem;
             case DECOY_MISSION_TEMPLATE -> "missions/m/templates/" + stem + ".md";
             case DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + ".png";
             case DECOY_ORG_CHARTER -> "org-charter.yaml";

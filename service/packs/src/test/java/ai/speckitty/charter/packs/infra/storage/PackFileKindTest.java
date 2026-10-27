@@ -53,7 +53,11 @@ class PackFileKindTest {
             "built-in.source.yaml",
             "core/missions/software-dev/templates/plan-field-declaration.yaml",
             "built-in/assets/README.md",
-            "built-in/assets/audiences/README.md");
+            "built-in/assets/audiences/README.md",
+            "built-in/assets/.DS_Store",
+            "internal/assets/debrief/fonts/.gitkeep",
+            "built-in/templates/.pack-write-123.tmp",
+            "built-in/templates/writing/.gitkeep");
 
     /** Schema-less payload samples, nested on purpose (a trailing `**` would match one segment only), with their kind. */
     private static final Map<String, String> PAYLOADS = Map.ofEntries(
@@ -140,6 +144,29 @@ class PackFileKindTest {
                 .containsExactly("*/assets/**/*");
         assertThat(KINDS.matchingPayloadRules("x/missions/m/templates/a.md")).isEmpty();
         assertThat(KINDS.matchingPayloadRules("x/templates/a.md")).containsExactly("*/templates/**/*");
+    }
+
+    /**
+     * F5: a hidden file under a pack's {@code assets/} or top-level {@code templates/} is excluded, not a payload,
+     * while the same name without its leading dot, beside it, is one; a hidden mission template stays unclassified.
+     */
+    @Test
+    void aHiddenFileUnderAssetsOrTemplatesIsExcludedWhileItsUnhiddenTwinIsAPayload() {
+        assertThat(KINDS.classify("qa/assets/a/.DS_Store"))
+                .isEqualTo(new PackFileKind.Excluded(
+                        "*/assets/**/.*",
+                        KINDS.exclusionRules().stream()
+                                .filter(r -> r.match().equals("*/assets/**/.*"))
+                                .findFirst()
+                                .orElseThrow()
+                                .reason()));
+        assertThat(KINDS.classify("qa/assets/a/DS_Store"))
+                .isEqualTo(new PackFileKind.Mapped("asset-payload", Optional.empty(), ContentForm.BYTES));
+        assertThat(KINDS.classify("qa/templates/.gitkeep")).isInstanceOf(PackFileKind.Excluded.class);
+        assertThat(KINDS.classify("qa/templates/gitkeep"))
+                .isEqualTo(new PackFileKind.Mapped("template", Optional.empty(), ContentForm.BYTES));
+        assertThat(KINDS.classify("built-in/missions/plan/templates/.gitkeep"))
+                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
     }
 
     @ParameterizedTest

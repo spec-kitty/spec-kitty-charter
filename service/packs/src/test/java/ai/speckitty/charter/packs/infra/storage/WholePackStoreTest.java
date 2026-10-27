@@ -467,6 +467,8 @@ class WholePackStoreTest {
         write(pack, "assets/lint.config.yaml", "rules:\n  - a\n");
         write(pack, "assets/README.md", "# assets\n");
         write(pack, "assets/debrief/README.md", "# debrief\n");
+        write(pack, "assets/debrief/.DS_Store", OTF);
+        write(pack, "templates/.gitkeep", new byte[0]);
         write(pack, "templates/writing/meeting-minutes.md", "---\r\ntitle: M\r\n---\r\nbody".getBytes(UTF_8));
         write(pack, "templates/empty.md", new byte[0]);
         write(pack, "missions/plan/templates/spec.md", "# mission template\n");
@@ -507,12 +509,17 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("of the files under assets/ and templates/, only the READMEs are unmodelled")
-    void onlyTheReadmesUnderAssetsAreUnmodelled(@TempDir Path host) throws IOException {
+    @DisplayName("of the files under assets/ and templates/, only the READMEs and the hidden files are unmodelled")
+    void onlyTheReadmesAndHiddenFilesUnderAssetsAndTemplatesAreUnmodelled(@TempDir Path host) throws IOException {
         WholePackStore.LoadedPack loaded = store.load(payloadPack(host));
 
         assertThat(loaded.unmodelled())
-                .containsExactly("assets/README.md", "assets/debrief/README.md", "missions/plan/templates/spec.md");
+                .containsExactly(
+                        "assets/README.md",
+                        "assets/debrief/.DS_Store",
+                        "assets/debrief/README.md",
+                        "missions/plan/templates/spec.md",
+                        "templates/.gitkeep");
     }
 
     @Test

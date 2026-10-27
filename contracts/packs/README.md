@@ -24,7 +24,8 @@ model, since core exports no schema for it. Where a schema differs from core's b
 `file-kinds.yaml` classifies a pack file in three steps: its `files` rules map a file to the schema that
 validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
 reason), and its `payloads` rules, consulted only when neither matches, give a schema-less file a kind: a file
-under a pack's `assets/` is an `asset-payload` and a file under its top-level `templates/` is a `template`. Each
+under a pack's `assets/` is an `asset-payload` and a file under its top-level `templates/` is a `template` (a
+`README.md` under `assets/` and a hidden file under either are excluded). Each
 rule also says the file's **content form**, how it is read, held, written and compared: `yaml` (the default of a
 `files` rule), `markdown`, `text` or `bytes`. The form decides how the service holds the file: a `bytes` file is
 held by its rule's kind, an `asset-payload` as an asset file and a `template` as a template, round-tripped byte for

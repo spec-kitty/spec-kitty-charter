@@ -167,6 +167,17 @@ exclusions:
     reason: >-
       Orientation notes beside the assets they describe. Not pack content and not an asset
       payload (operator ruling R4, #193).
+  # `*` matches a leading dot within one segment and `**/` zero or more whole segments, so these
+  # cover a hidden file at any depth under a pack's `assets/` or top-level `templates/`. A hidden
+  # file a `files` rule maps (a `.x.asset.yaml`) keeps that kind: `files` rules are consulted first.
+  - match: "*/assets/**/.*"
+    reason: >-
+      Hidden files under assets/ (a file manager's .DS_Store, a .gitkeep, the store's own
+      .pack-write-*.tmp temporary file) are not pack content and not asset payloads (#193).
+  - match: "*/templates/**/.*"
+    reason: >-
+      Hidden files under templates/ (a file manager's .DS_Store, a .gitkeep, the store's own
+      .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
 
 # Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
 payloads:

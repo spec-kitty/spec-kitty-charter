@@ -101,6 +101,9 @@ Four facts force a decision:
      pack's top-level `templates/`: mission templates (`missions/*/templates/`) stay outside this
      record (#194);
    - `*/assets/**/README.md` is excluded: an orientation note, not a payload (R4);
+   - `*/assets/**/.*` and `*/templates/**/.*` are excluded: a hidden file at any depth (a
+     `.DS_Store`, a `.gitkeep`, the store's own `.pack-write-*.tmp` temporary file) is not pack
+     content. A hidden file that a `files` rule maps keeps that kind, since `files` rules come first;
    - the `**/*.config.yaml` exclusion is retired: its only match is the sidecar-less asset payload
      above (R1).
 
