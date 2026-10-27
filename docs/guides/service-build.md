@@ -97,7 +97,8 @@ It lands red first. `service/packs/src/test/resources/whole-pack/expected-red.ya
 yet: a whole kind that has no reader and writer (`kinds:`), or a single file of a modelled kind with every place it
 differs (`files:`, `at:` lists each difference path, joined by ` ; `), each with a reason and the issue that owns it.
 Because `at:` holds every difference, a new loss in a file that is already expected red still fails the gate. `exclusions.yaml` next to it is the gate's
-own append-only list of files it does not compare. The gate passes only when the result matches both lists exactly:
+own append-only list of files it does not compare. The gate passes only when the result matches its lists exactly (the third,
+`known-failures.yaml`, is below):
 
 - an unlisted red file fails it (`UNEXPECTED_RED`), and so does a listed file whose differences changed
   (`CHANGED_RED`);
@@ -137,7 +138,7 @@ The gate fails on:
 - `AMBIGUOUS_ENTRY`, when the file is also in `expected-red.yaml`.
 
 The report counts known failures on their own: a `known failure` column per kind, and a `known failure` count in the
-totals line beside `expected red`.
+totals line, both after `red`.
 
 Where the gate still differs from ADR-0036, on purpose and only towards false reds, never false greens:
 

@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: The whole-pack gate carries known pack failures until the pin moves
-description: A fourth list in the whole-pack gate holds files that fail the round trip because the pack's own data is inconsistent, and expires when the pin moves to the fix.
+description: A third list in the whole-pack gate holds files that fail the round trip because the pack's own data is inconsistent, and expires when the pin moves to the fix.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: Changelog
@@ -21,7 +21,7 @@ audience:
 **A file that fails the round trip because the pack is wrong can now be listed, pinned to its issue.** The whole-pack
 gate ([#247](https://github.com/spec-kitty/spec-kitty-charter/issues/247)) reads a new file,
 `service/packs/src/test/resources/whole-pack/known-failures.yaml`. Each entry names the file, where it differs, a
-reason and an open issue of spec-kitty-open-packs, as `spec-kitty/spec-kitty-open-packs#<number>`. The list ships
+reason and the spec-kitty-open-packs issue that owns the fix, as `spec-kitty/spec-kitty-open-packs#<number>`. The list ships
 empty. The report counts these files as `known failure`, apart from `expected red`.
 
 **An entry expires by itself.** When the fix merges and `openPacksRef` moves, the file round-trips and the gate fails

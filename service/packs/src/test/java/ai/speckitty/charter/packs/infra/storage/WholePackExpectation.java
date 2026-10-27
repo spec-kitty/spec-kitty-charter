@@ -37,7 +37,7 @@ final class WholePackExpectation {
     static final String EXCLUSIONS_RESOURCE = "whole-pack/exclusions.yaml";
     static final String KNOWN_FAILURES_RESOURCE = "whole-pack/known-failures.yaml";
 
-    /** The only issue a known failure may name: an open issue of spec-kitty-open-packs. */
+    /** The only form of issue a known failure may name: an issue of spec-kitty-open-packs. */
     private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
     /** The status of one file in a gate run. */
@@ -173,7 +173,7 @@ final class WholePackExpectation {
      * @throws IllegalArgumentException when an entry lacks a reason or issue, carries an unknown key, or repeats
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml) {
-        return load(expectedRedYaml, exclusionsYaml, "known-failures: []\n");
+        return load(expectedRedYaml, exclusionsYaml, "known_failures: []\n");
     }
 
     /**
@@ -208,14 +208,14 @@ final class WholePackExpectation {
                 entries(excluded.get("exclusions"), "exclusions", List.of("match", "reason"))) {
             exclusions.add(new Exclusion(entry.get("match"), entry.get("reason")));
         }
-        Map<String, Object> known = document(knownFailuresYaml, KNOWN_FAILURES_RESOURCE, Set.of("known-failures"));
+        Map<String, Object> known = document(knownFailuresYaml, KNOWN_FAILURES_RESOURCE, Set.of("known_failures"));
         List<KnownFailure> knownFailures = new ArrayList<>();
         for (Map<String, String> entry :
-                entries(known.get("known-failures"), "known-failures", List.of("path", "at", "reason", "issue"))) {
+                entries(known.get("known_failures"), "known_failures", List.of("path", "at", "reason", "issue"))) {
             String path = entry.get("path");
             String issue = entry.get("issue");
             if (!OPEN_PACKS_ISSUE.matcher(issue).matches()) {
-                throw new IllegalArgumentException("known-failures entry " + path + " has issue '" + issue
+                throw new IllegalArgumentException("known_failures entry " + path + " has issue '" + issue
                         + "'; expected spec-kitty/spec-kitty-open-packs#<number> (ADR-0036 decision 5)");
             }
             knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue));

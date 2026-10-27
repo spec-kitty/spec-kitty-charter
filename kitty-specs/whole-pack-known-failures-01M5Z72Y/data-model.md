@@ -4,20 +4,20 @@
 
 ```yaml
 # header comment: what the list is for and the workflow (ADR-0036 decision 5)
-known-failures: []
+known_failures: []
 ```
 
 An entry (when one exists):
 
 ```yaml
-known-failures:
+known_failures:
   - path: directives/example.directive.yaml          # pack-relative, as in the census
     at: "refused: example.yaml is a multi-document file"  # every difference path as the report shows it; for a refusal, the whole red detail
     reason: The pack file holds two YAML documents.
     issue: spec-kitty/spec-kitty-open-packs#123
 ```
 
-Load rules (each a load failure naming the entry): only the key `known-failures`; entries are maps with exactly
+Load rules (each a load failure naming the entry): only the key `known_failures` (snake case, as `empty_kinds` in `expected-red.yaml`); entries are maps with exactly
 `path`, `at`, `reason`, `issue`, all non-blank text; `issue` matches `^spec-kitty/spec-kitty-open-packs#[1-9]\d*$`;
 a path appears once. A missing resource fails `fromClasspath()`.
 
