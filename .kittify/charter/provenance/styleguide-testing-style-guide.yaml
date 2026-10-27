@@ -9,13 +9,15 @@ artifact_slug: testing-style-guide
 artifact_urn: styleguide:testing-style-guide
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:57:21.014946+00:00'
-inputs_hash: 2a612d0e75a88b55043be9affcf14d9fb8c166abdd44496258a376e0f7bb4e40
-produced_at: '2026-10-18T15:58:11.525687+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619193+00:00'
+inputs_hash: 3b8bdb0c160f67d992048bf05d4652d1f3f045b5e8c9c7bdfc8baee02ceb2133
+produced_at: '2026-10-27T12:03:59.551928+00:00'
 schema_version: '2'
-source_input_ids: []
+source_input_ids:
+- directive:DIRECTIVE_034
 source_section: testing_philosophy
-source_urns: []
-synthesis_run_id: 639C18D844024A828B9A2F0325
+source_urns:
+- directive:DIRECTIVE_034
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8

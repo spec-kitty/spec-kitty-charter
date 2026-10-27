@@ -9,15 +9,15 @@ artifact_slug: how-we-apply-directive-037
 artifact_urn: tactic:how-we-apply-directive-037
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:56:15.079332+00:00'
-inputs_hash: 1f8454ab7de9322e3440f1035b95f22203bb8ab5e434719a8d4a249a6b8462ec
-produced_at: '2026-10-18T15:58:11.486722+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619459+00:00'
+inputs_hash: 2330ea027cf875c678d04e4c1f428b7a2895d34eb0124fb1b58d18d289f08320
+produced_at: '2026-10-27T12:03:59.492148+00:00'
 schema_version: '2'
 source_input_ids:
 - directive:DIRECTIVE_037
 source_section: selected_directives
 source_urns:
 - directive:DIRECTIVE_037
-synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8

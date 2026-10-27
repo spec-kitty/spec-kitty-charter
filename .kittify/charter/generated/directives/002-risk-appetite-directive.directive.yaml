@@ -8,7 +8,8 @@ intent: >-
   match closely enough that core does not break); (2) the service not honoring
   the OpenAPI contract, or an incompatible contract change reaching core. Also
   never traded away: spec-kitty-open-packs YAML content always round-trips
-  without loss or rewrite, and no unverified dependency enters the build. No
+  without loss of meaning (ADR-0036: meaning, not bytes, so formatting and
+  comments may change), and no unverified dependency enters the build. No
   exception is granted for the first two failures.
 enforcement: required
 scope: >-
@@ -25,8 +26,10 @@ procedures:
     contracts/charter/CHANGELOG.md (scenario changes included), and keep
     changes backward compatible for core's vendored DTOs.
   - Keep the open-packs round trip (openPacksRoundTrip) green and never
-    skipped; a change that cannot round-trip every open-packs YAML file does
-    not merge.
+    skipped; a change that cannot round-trip every open-packs YAML file, by
+    meaning (ADR-0036), does not merge. A file on the gate's self-expiring
+    known-failure list, keyed to an open spec-kitty-open-packs issue, waits on
+    an upstream pack fix and is not a skip; the gate fails once it passes.
   - Admit a dependency only with strict SHA-256 entries in
     gradle/verification-metadata.xml.
   - For any other risk, an exception names its scope, the reason, the approver

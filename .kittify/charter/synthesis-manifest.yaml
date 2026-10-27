@@ -4,11 +4,11 @@ artifacts:
 - content_hash: cc091b094bb78cc48b15262df498b0db8fb80983172a6de216cb1720d1d13339
   kind: directive
   path: 
-    .kittify/charter-packs/directive/001-mission-type-scope-directive.directive.yaml
+    .kittify/charter-packs/directive/001-project-intent-directive.directive.yaml
   provenance_path: 
-    .kittify/charter/provenance/directive-mission-type-scope-directive.yaml
-  slug: mission-type-scope-directive
-- content_hash: 8c5c8a9223737bfef5ebc4a74df07e804e1f46d7e9b6f11a1ce127b35b254c69
+    .kittify/charter/provenance/directive-project-intent-directive.yaml
+  slug: project-intent-directive
+- content_hash: 92678d7ec25b60babeecbdfc8aad344431b47526ca8e2098eb2927216240f320
   kind: directive
   path: 
     .kittify/charter-packs/directive/002-risk-appetite-directive.directive.yaml
@@ -113,6 +113,18 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-how-we-apply-no-full-heavy-suites-in-mission.yaml
   slug: how-we-apply-no-full-heavy-suites-in-mission
+- content_hash: 806433998dc8aceb5ffc2459321588923c8cbac081c1b7f46304a53c09788d47
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-project-001.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-project-001.yaml
+  slug: how-we-apply-project-001
+- content_hash: b154e899bc2151ad0b1ad507ddeca3912d737bb40a4a1075462da01dbbb13717
+  kind: tactic
+  path: .kittify/charter-packs/tactic/how-we-apply-project-002.tactic.yaml
+  provenance_path: 
+    .kittify/charter/provenance/tactic-how-we-apply-project-002.yaml
+  slug: how-we-apply-project-002
 - content_hash: cdf939488d6cb4a2160c153ec4dbe1fa36b9f3721063a285fc1b3896f8b76044
   kind: tactic
   path: .kittify/charter-packs/tactic/how-we-apply-qa-003.tactic.yaml
@@ -143,24 +155,12 @@ artifacts:
   provenance_path: 
     .kittify/charter/provenance/tactic-testing-philosophy-tactic.yaml
   slug: testing-philosophy-tactic
-- content_hash: cc091b094bb78cc48b15262df498b0db8fb80983172a6de216cb1720d1d13339
-  kind: directive
-  path: 
-    .kittify/charter-packs/directive/001-mission-type-scope-directive.directive.yaml
-  provenance_path: .kittify/charter/provenance/directive-project-001.yaml
-  slug: project-001
-- content_hash: 8c5c8a9223737bfef5ebc4a74df07e804e1f46d7e9b6f11a1ce127b35b254c69
-  kind: directive
-  path: 
-    .kittify/charter-packs/directive/002-risk-appetite-directive.directive.yaml
-  provenance_path: .kittify/charter/provenance/directive-project-002.yaml
-  slug: project-002
 built_in_only: false
 bundle_content_hash: 
-  sha256:de0fb903aa15a7a25b6616f0ca7fddb2535e1f0f72d8dcde1998ca85bf24a4f8
-created_at: '2026-10-18T15:58:12.872153+00:00'
-manifest_hash: 97d1bde33f7f9d8d67a562b6930cd63c5751ab503db95bb4f65afb65a92d3784
+  sha256:ee071a3b723f918a4cd4826808ac2836031d43f3233e904612bd397edc13f2b0
+created_at: '2026-10-27T12:04:00.398026+00:00'
+manifest_hash: 3e8c909c5a3f5a04ee89202c870dadbf49aace52275d375a423768d445c9fdb4
 mission_id:
-run_id: 639C18D844024A828B9A2F0325
+run_id: 34528D1B836E4BCCBCE0837F5F
 schema_version: '3'
 synthesizer_version: 4.0.0rc8
