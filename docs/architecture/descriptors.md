@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -87,6 +87,10 @@ well as a string. Only the fields the schema marks optional may be left out. A k
 declare is tolerated (DIV-005): the pack still loads and the pack listing carries the warning
 `pack_unknown_key`, naming the key. Retired core fields such as `accompanies_doctrine_pack`
 are unknown keys like any other (DIV-006).
+
+**Planned** ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/), proposed): an
+undeclared key, a retired field included, is a schema violation, and the pack is refused as
+`pack_unreadable`; `pack_unknown_key` is retired. DIV-005 and DIV-006 close when the code changes.
 
 DRG: none directly; it scopes the nodes the pack contributes.
 

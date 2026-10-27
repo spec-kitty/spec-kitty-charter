@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: Hub
 audience:
@@ -64,6 +64,7 @@ stands.
 | [0033](/adr/0033-local-active-charter-is-source-of-truth/) | ADR-0033: The project's local activation file is the source of truth for its active charter | Accepted | 2026-10-26 |
 | [0034](/adr/0034-local-and-hosted-deployment-options/) | ADR-0034: The charter service has a local and a hosted deployment option | Accepted | 2026-10-26 |
 | [0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) | ADR-0035: The shared artifact interface lives in the kernel | Accepted | 2026-10-27 |
+| [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Proposed | 2026-10-27 |
 
 ## Core decisions this repository builds on
 
