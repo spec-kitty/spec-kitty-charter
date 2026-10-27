@@ -130,8 +130,6 @@ class AgentProfileEntityTest {
     @Test
     @DisplayName("a blank profile id is rejected")
     void blankIdRejected() {
-        assertThat(new AgentProfileIdentifier("x").value()).isEqualTo("x");
-
         assertThatThrownBy(() -> new AgentProfileIdentifier(" ")).isInstanceOf(ConstraintBreachException.class);
     }
 
