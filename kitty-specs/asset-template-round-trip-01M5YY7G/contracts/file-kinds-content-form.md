@@ -17,10 +17,10 @@ files:
 
 ```yaml
 payloads:
-  - match: "*/assets/**"
+  - match: "*/assets/**/*"
     kind: asset-payload
     content_form: bytes
-  - match: "*/templates/**"
+  - match: "*/templates/**/*"
     kind: template
     content_form: bytes
 ```
@@ -28,10 +28,14 @@ payloads:
 - Consulted only when no `files` or `exclusions` rule matches the path; payload rules must not overlap each other.
 - `kind` is the gate kind and the census kind. `template` maps to `ArtifactKind.TEMPLATE`; `asset-payload` names the
   pack-level asset files.
-- `*/templates/**` covers only a pack's top-level `templates/` (the single leading `*/`); mission templates
+- The glob language has no trailing `**`: `**/*` is written so nested files match (`**/` is zero or more segments).
+- `*/templates/**/*` covers only a pack's top-level `templates/` (the single leading `*/`); mission templates
   (`*/missions/*/templates/**`) stay unclassified (#194).
 
 ## `exclusions`
+
+Added: `*/assets/**/README.md` (orientation notes beside assets, not payloads; R4). The section header changes
+from "YAML files that have no schema" to "files that are not pack content or have no schema".
 
 Retired: `**/*.config.yaml` (its only match is the asset payload `built-in/assets/docs_structural_lint.config.yaml`,
 operator ruling R1).
@@ -39,4 +43,8 @@ operator ruling R1).
 ## Classification
 
 `classify(path)` → `Mapped(kind, schema?, contentForm)` | `Excluded` | `Unclassified`, in the order `files`,
-`exclusions`, `payloads`. Validate mode and `PackSchemas` keep iterating `files` (schema-bearing) only.
+`exclusions`, `payloads`. `PackSchemas` keeps iterating `files` (schema-bearing) only. Validate mode (`FileSystemPackInspector`) classifies
+every `*.yaml` file: a `Mapped` result with no schema (a payload rule) is skipped there, not validated.
+`matchingRules` and the no-overlap check stay over `files` + `exclusions`; a separate check proves payload rules do not
+overlap each other. A rule naming a `content_form` the store does not build yet (`markdown`, `text`) loads, but the
+store refuses to read its kind, naming the form.

@@ -17,7 +17,7 @@ Equality and hash by content. `size()`; a short content digest for diagnostics. 
 | path | `String` | relative to the pack's `assets/` directory, `/`-separated, non-blank, no `..` segment, not absolute |
 | payload | `Payload` | |
 
-A file the `*/assets/**` payload rule classifies (README.md stays excluded by the gate's own list). Equal when path and
+A file the `*/assets/**/*` payload rule classifies (`*/assets/**/README.md` is excluded in file-kinds.yaml). Equal when path and
 payload are equal.
 
 ## Asset (entity, `CharterArtifact`, kind `ASSET`)
@@ -51,14 +51,15 @@ URN `template:<id>` (for example `template:writing/meeting-minutes.md`).
 - Invariants (new): every `Asset` names a held `AssetFile` by `path`; no two assets name the same file. Breach →
   `ConstraintBreachException` (a hand-built pack); the store never builds a breaching pack (it refuses the sidecar as a
   violation first).
-- `with(artifact)` unchanged; `withAssetFile(AssetFile)` adds or replaces one file and revalidates.
+- `toBuilder()` carries the asset files; `with(artifact)` starts from `toBuilder()` minus the replaced artifact, so a
+  registration into a pack holding assets keeps them (no silent drop, no false invariant breach).
+- The class javadoc records the exception: asset files are the one pack-level collection beside the kind map (R1).
 
-## Repository ports (new)
+## Persistence entry points (no new ports)
 
-- `AssetRepository`: `save(Asset)` writes the sidecar; `save(PackIdentifier, AssetFile)` writes the payload file.
-- `TemplateRepository`: `save(Template)` writes `templates/<id>`.
-
-Realized by `DomainRepositoryService`.
+No repository port is added: assets and templates have no application service or endpoint (C-001). Sidecars and
+templates are written through the existing generic `DomainRepositoryService.writeArtifact`/`saveArtifact`; asset
+files through one package-private `writeAssetFile`. The gate's `DomainRoundTrip` (same package) calls these.
 
 ## Storage (packs.infra.storage)
 
@@ -66,8 +67,13 @@ Realized by `DomainRepositoryService`.
   declared form; this mission reads and writes only `YAML` and `BYTES`, and nothing in the table uses the others yet.
 - `AssetDso(id, mime, path, @Nullable title)`; `AssetBinding` (`KindBinding<AssetDso, Asset>`, file token `asset`,
   file name `<id>.asset.yaml`); `AssetYaml` in `YamlFormats`.
-- `FileBinding<E>` / `FileBindings` with `TemplateBinding`.
-- `PackFileKind.Mapped` gains `contentForm`; a `payloads` rule classifies as `Mapped(kind, no schema, form)`.
+- `TemplateBinding`: a concrete mapping `(pack, path under templates/, Payload) → Template` and `pathOf(Template)`
+  (`templates/<id>`), used by the store's one `bytes` branch and by `PackLayout`. No second registry (rule of three;
+  #192 extracts an interface when markdown bodies arrive).
+- `PackFileKind.Mapped` gains `Optional<String> schema` and `contentForm`; a `payloads` rule classifies as
+  `Mapped(kind, empty, form)`.
+- `PackRevision.compute` takes the files' bytes (values unchanged for UTF-8 text); `PackCommitStore` and
+  `CommitStorePackWriteStore` read digested files with `readAllBytes`.
 
 ## State and refusals
 

@@ -76,21 +76,23 @@ service/packs/src/main/java/ai/speckitty/charter/packs/
 ├── domain/
 │   ├── Asset.java, AssetIdentifier.java, AssetFile.java, Payload.java       # new
 │   ├── Template.java, TemplateIdentifier.java                               # new
-│   ├── AssetRepository.java, TemplateRepository.java                        # new ports
-│   └── Pack.java                    # + assetFiles, + assets()/templates() views, + payload invariant
+│   └── Pack.java                    # + assetFiles (carried by toBuilder/with), + views, + payload invariant
+service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRevision.java  # compute over bytes
 └── infra/storage/
     ├── ContentForm.java                                                     # new
     ├── AssetBinding.java, AssetDso.java, AssetYaml.java                     # new (YAML kind)
-    ├── FileBinding.java, FileBindings.java, TemplateBinding.java            # new (bytes kinds)
+    ├── TemplateBinding.java                                                 # new (bytes kind, concrete)
     ├── KindBindings.java, YamlFormats.java                                  # append ASSET
     ├── PackFileKind.java            # parse content_form + payloads section
     ├── PackFileSet.java             # walk all files; digest payload kinds after YAML kinds
     ├── FilesystemPackStore.java     # read/write bytes; asset payload presence check
-    ├── DomainRepositoryService.java # AssetRepository, TemplateRepository; assemble payloads
+    ├── DomainRepositoryService.java # writeAssetFile; shared assembly of assets/templates
+    ├── PackCommitStore.java, CommitStorePackWriteStore.java             # revision over bytes
+    ├── FileSystemPackInspector.java # skip schema-less Mapped in validate mode
     └── WholePackStore.java          # write bytes; layout for assets/templates
 service/packs/src/test/…/infra/storage/
 ├── DomainRoundTrip.java, WholePackRoundTripTest.java, WholePackCensus.java  # append our kinds; bytes comparison
-├── WholePackOpenPacksRoundTripTest.java + resources/whole-pack/expected-violations.yaml   # pinned six
+├── WholePackOpenPacksRoundTripTest.java, WholePackExpectation.java    # pinned six read from expected-red.yaml
 └── resources/whole-pack/expected-red.yaml                                   # − 3 kinds, + 6 files
 docs/adr/0040-content-form-and-payload-kinds.md, docs/adr/0036-…, docs/adr/README.md
 docs/architecture/logical-model.md, docs/changelog/2026-10-27-asset-and-template-round-trip.md, site/.contextive/definitions.yaml (glossary)
@@ -114,14 +116,39 @@ None.
 - **D3 Missing payload is refused at assembly, guarded in the domain.** The store refuses a sidecar whose payload
   file is absent as a `PackElementViolation` (R3); the `Pack` invariant "every asset names a held asset file" then
   holds for every pack the store builds and breaches loudly for a hand-built one.
-- **D4 Template is a bytes artifact.** `Template(TemplateIdentifier = path under templates/, Payload)`, bound by a
-  `FileBinding` (not a `KindBinding`, which is YAML-shaped and schema-named).
+- **D4 Template is a bytes artifact.** `Template(TemplateIdentifier = path under templates/, Payload)`, mapped by a
+  concrete `TemplateBinding` (not a `KindBinding`, which is YAML-shaped and schema-named; no second registry).
 - **D5 Fingerprint covers the new files.** Sidecars join through `KindBindings` (appended); asset files and templates are digested
   last (after `drg/fragment.yaml`), so packs without them keep their exact digest (NFR-002).
 - **D6 The gate keeps `DomainRoundTrip`.** Append-only blocks: save assets, asset files and templates; compare files
   of a `bytes` kind by bytes. The adapter switch to `WholePackStore` stays out of scope (shared with siblings).
-- **D7 Pinned expected violations.** `WholePackOpenPacksRoundTripTest` reads
-  `whole-pack/expected-violations.yaml` (pack, file, reason, issue) and ratchets both ways (R10).
+- **D7 One pinned list.** The six built-in refusals are `expected-red.yaml` file entries with an exact `refused`
+  reason; the gate and `WholePackOpenPacksRoundTripTest` both read them and both ratchet two ways (R10).
+
+## Acceptance checks (post-plan squad, binding for tasks)
+
+1. Open-packs test: compares every source file with its written file (sidecars by `MeaningComparator`, asset files and
+   templates by SHA-256), extends `meaning()` with asset files and templates, and pins counts per pack and kind
+   (internal: 10 sidecars, 10 asset files, 4 binary; qa: 3; event-driven: 1; built-in: 2 templates); no file under
+   `assets/` or `templates/` is left in `unmodelled()` other than the excluded READMEs.
+2. A temp copy of built-in with the six `path` values corrected (the open-packs fix, test fixture only): 0 violations,
+   6 green sidecars, full write and reload with file comparison; the unmodified copy gives exactly the 6 pinned
+   violations, matched by file and reason (same fixture, positive and negative).
+3. The gate asserts each of the six asset reds names its missing `assets/assets/…` path (no-op cannot match).
+4. A lossy-byte control through the production write path (a byte flipped in each loaded asset file and template before
+   the save), over every bytes-kind file, red at the flipped offset; plus a truncation variant; the count of bytes
+   outcomes equals the loaded asset files plus templates.
+5. `GeneratedPackTree` shape rows (sidecar + payload, sidecar-less payload, top-level template, mission-template decoy,
+   README under `assets/`), `DECOY_ASSET` reclassified, driven through `FileSystemPackSources.fingerprint()`.
+6. A literal digest list and fingerprint pinned (captured at main 90de8f9) for fixture packs without assets/templates.
+7. README classification rule and test (no `EXCLUDED_MODELLED`).
+8. Exact gate counts: `asset` 6 expected red; `asset-payload` and `template` 0 expected red; `REQUIRED_KINDS` gains
+   exactly `asset`, `asset-payload`, `template`.
+9. Unit test of the gate's bytes branch over a PNG/OTF fixture (NUL bytes, CR/LF pairs, no final newline).
+10. Case-collision refusal on write; 0-byte asset file and template round trip.
+11. Registration into a pack that holds an asset keeps its asset files (`Pack.with`), through a real registration
+    service; If-Match/ETag over `packs/internal` (binary payloads) computes without error.
+12. Validate mode over built-in reports no exception for the config payload.
 
 ## Implementation Concern Map
 
@@ -129,12 +156,14 @@ None.
 
 - **Purpose**: Let `file-kinds.yaml` say how each file is read and compared, and classify schema-less payload files.
 - **Relevant requirements**: FR-001, FR-004, FR-008, FR-013
-- **Affected surfaces**: `contracts/packs/file-kinds.yaml`, `contracts/packs/README.md`, `PackFileKind`,
-  `PackFileKindTest`, `VocabularyEqualityTest`, `FileSystemPackInspector`/`PackSchemas` (they iterate `files` rules —
-  unaffected as `payloads` rules carry no schema), `ContentForm`
+- **Affected surfaces**: `contracts/packs/file-kinds.yaml`, `contracts/packs/README.md`, `PackFileKind`
+  (`Mapped` with optional schema, `payloads` parsing, glob `**/*`), `PackFileKindTest` (nested samples, payload
+  no-overlap check, drop the `lint.config.yaml` EXCLUDED sample), `VocabularyEqualityTest`, `FileSystemPackInspector`
+  (skips schema-less `Mapped` in validate mode), `ContentForm`
 - **Sequencing/depends-on**: none
 - **Risks**: shared file with #192 (adds `markdown` rows): keep our rows in one block; retiring the `**/*.config.yaml`
-  exclusion is the one non-append edit, justified by R1 (its only match is our payload).
+  exclusion is the one non-append edit, justified by R1 (its only match is our payload); trailing `**` is not in the
+  glob language, so rules use `**/*`; `*/assets/**/README.md` is excluded (R4).
 
 ### IC-02 — Asset and template domain model
 
@@ -150,8 +179,10 @@ None.
 - **Purpose**: Bind assets (YAML) and templates (bytes), read and write payload bytes, refuse missing payloads, digest
   the new files.
 - **Relevant requirements**: FR-002–FR-007, FR-011
-- **Affected surfaces**: `KindBindings`, `YamlFormats`, `FileBinding(s)`, `TemplateBinding`, `AssetBinding/Dso/Yaml`,
-  `PackFileSet`, `FilesystemPackStore`, `DomainRepositoryService`, `WholePackStore`, `PackLayout`
+- **Affected surfaces**: `KindBindings`, `YamlFormats`, `TemplateBinding`, `AssetBinding/Dso/Yaml`,
+  `PackFileSet`, `FilesystemPackStore`, `DomainRepositoryService`, `WholePackStore` (bytes `put`, template path,
+  modelled set), `PackLayout`, `PackCommitStore`, `CommitStorePackWriteStore`, `PackRevision`, `Pack.toBuilder/with`,
+  `GeneratedPackTree`/`PackFileSetExactnessTest` shape rows
 - **Sequencing/depends-on**: IC-01, IC-02
 - **Risks**: `KindBindings`/`YamlFormats` are append-only hotspots shared with #190/#191/#192; the walk widening must
   keep the YAML kinds' order and digests unchanged.
@@ -168,8 +199,10 @@ None.
 
 - **Purpose**: Turn our three gate kinds green; pin the six built-in refusals in both gates.
 - **Relevant requirements**: FR-009, FR-010, SC-001–SC-003, NFR-001
-- **Affected surfaces**: `DomainRoundTrip`, `WholePackRoundTripTest` (`REQUIRED_KINDS`, bytes comparison, lossy-byte
-  control), `WholePackCensus`, `expected-red.yaml`, `WholePackOpenPacksRoundTripTest` + `expected-violations.yaml`
+- **Affected surfaces**: `DomainRoundTrip`, `WholePackRoundTripTest` (`REQUIRED_KINDS`, bytes branch before any text
+  read, lossy-byte control), `WholePackExpectation` (optional exact `refused` reason and `pack` on file entries),
+  `WholePackCensus`, `expected-red.yaml`, `WholePackOpenPacksRoundTripTest` (reads the pinned entries from
+  `expected-red.yaml`; file-level comparison; corrected built-in copy)
 - **Sequencing/depends-on**: IC-03
 - **Risks**: `REQUIRED_KINDS`/`ARTEFACT_KINDS`/`expected-red.yaml` are edited by every sibling: rebase after any
   sibling merge and keep edits to our lines.

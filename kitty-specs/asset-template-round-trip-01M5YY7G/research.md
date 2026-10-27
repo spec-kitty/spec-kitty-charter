@@ -61,13 +61,15 @@ code at `main` 90de8f9 with open-packs pinned at 01edb4e.
   (`writing/meeting-minutes.md`); label = file name; no schema version, description or relationships.
 - **Rationale**: R2; mirrors core's `<dir>/<file>` template ids; frontmatter is opaque (R9).
 
-### D5 A separate binding for file-shaped kinds
+### D5 Templates map through a concrete binding; no second registry
 
-- **Decision**: `FileBinding<E>` (kind, entity type, `toEntity(pack, relativePath, Payload)`, `pathOf(E)`,
-  `payloadOf(E)`) and a `FileBindings` list (`TemplateBinding`). Asset sidecars use an ordinary `KindBinding`
-  (`AssetBinding`, `AssetDso`, `AssetYaml`). Asset files are pack-level values, read and written by the store.
-- **Rationale**: `KindBinding` is YAML- and schema-shaped (KindBindingsTest); a sealed union would touch every sibling's
-  binding. Rule of three: #192 (markdown) can generalize.
+- **Decision**: a concrete `TemplateBinding` maps `(pack, path under templates/, Payload) → Template` and back; the
+  store's one `bytes` branch and `PackLayout` call it. Asset sidecars use an ordinary `KindBinding` (`AssetBinding`,
+  `AssetDso`, `AssetYaml`). Asset files are pack-level values written by a package-private `writeAssetFile`. No new
+  repository ports.
+- **Rationale**: `KindBinding` is YAML- and schema-shaped (KindBindingsTest); a one-entry registry would restate
+  file-kinds.yaml and add a shared list siblings append to (post-plan reducer). #192 extracts the interface at its
+  second case (markdown bodies).
 
 ### D6 Fingerprint and load order
 
@@ -83,11 +85,12 @@ code at `main` 90de8f9 with open-packs pinned at 01edb4e.
   detail); a positive control flips one payload byte.
 - **Alternatives**: switch the gate to `WholePackStore` (deferred: shared with all Wave 1 siblings).
 
-### D8 Pinned expected violations (R10)
+### D8 One pinned list for both ratchets (R10)
 
-- **Decision**: `whole-pack/expected-violations.yaml` lists `pack`, `file`, `reason`, `issue` for the six built-in
-  sidecars; the open-packs test fails on an unlisted violation and on a listed one that no longer occurs; a pack whose
-  violations are exactly the pinned ones is not written (the write refuses it) and is reported as pinned.
+- **Decision**: the six built-in sidecars are `expected-red.yaml` file entries with an optional exact `refused` reason
+  (and `pack`, default `built-in`); the gate matches the reason, not just `refused`; `WholePackOpenPacksRoundTripTest`
+  reads the same entries, fails on an unlisted violation or a listed one that no longer occurs (matched by file and
+  reason), and round-trips a temp copy of built-in with the six paths corrected so built-in stays covered whole.
 
 ### D9 Byte-level hazards
 
@@ -115,9 +118,34 @@ assets/ directory", gate output (the six refusals), `openPacksRef` 01edb4e. Fix:
 | S7 | Template has no identity (researcher, architect) | accepted | D4 |
 | S8 | Binaries only in internal pack; gate sees built-in only (planner) | accepted | FR-003 tests over internal fixture; open-packs test |
 | S15 | With all six built-in sidecars refused, the gate holds no green `asset` file, so an empty reader would pass it (planner) | changed: green sidecars are proven over the other packs by the open-packs round trip (aggregate meaning) and by unit tests over a fixture with a consistent sidecar | D8, FR-002 tests |
-| S9 | `atOf` pins only `refused` for refused files (planner) | deferred_with_rationale: gate mechanics are shared; the exact reasons are pinned by D8's list | D8 |
+| S9 | `atOf` pins only `refused` for refused files (planner) | accepted: exact `refused` reason on the file entry | D8, check 3 |
 | S10 | Relationship endpoints widen silently (architect) | accepted | R6, IC-04 |
 | S11 | manifest `content_hash` (researcher) | deferred_with_rationale: #195 owns it | spec Out of Scope |
 | S12 | No `.gitattributes` binary/eol upstream (researcher) | deferred_with_rationale: open-packs concern; pinned checkout is LF | open-packs issue note |
 | S13 | `OPEN_MAPS` restates ADR-0036 (architect) | deferred_with_rationale: not this mission's kind | — |
 | S14 | Term "format" collides (doctrine) | accepted: "content form" | R8, glossary |
+
+## Post-plan squad (architect-alphonso, reviewer-renata, randy-reducer) — dispositions
+
+| # | Finding | Disposition | Evidence |
+|---|---|---|---|
+| P1 | Trailing `**` matches one segment only (`PackFileKind.glob`) | accepted: rules use `**/*`, nested test samples | contract, IC-01 |
+| P2 | READMEs under assets/ become payloads → EXCLUDED_MODELLED | accepted: `*/assets/**/README.md` exclusion in file-kinds.yaml | contract, check 7 |
+| P3 | `Pack.with` drops asset files → registrations breach or drop | accepted: `toBuilder` carries them, `with` builds from it | data-model, check 11 |
+| P4 | Revision reads are UTF-8 text → binaries throw | accepted: `PackRevision` over bytes | data-model, IC-03, check 11 |
+| P5 | Validate mode validates schema-less `Mapped` → throws | accepted: inspector skips them | contract, check 12 |
+| P6 | Payload rules overlap file rules by design | accepted: overlap check stays files+exclusions; payload-vs-payload check | contract |
+| P7 | WholePackStore write/layout/unmodelled cannot handle templates | accepted: template path via `TemplateBinding`, bytes `put`, modelled set; one shared assembly helper | IC-03 |
+| P8 | Open-packs `meaning()` blind to payloads; stability not fidelity | accepted | check 1 |
+| P9 | Gate asset kind no-op passable (`at: refused`) | accepted | checks 3, 8 |
+| P10 | Built-in never written under D8 | accepted: corrected temp copy | check 2 |
+| P11 | Lossy-byte control has no seam | accepted: flip bytes in the loaded pack before the save | check 4 |
+| P12 | Generated-tree oracle and literal fingerprint missing | accepted | checks 5, 6 |
+| P13 | `observe` reads text before branching | accepted | check 9 |
+| P14 | FR-009 tokens wrong; FR-006 label | accepted | spec FR-006, FR-009 |
+| P15 | Two pinned lists (reducer) | accepted: one list | D8 |
+| P16 | `FileBinding`/`FileBindings` one-entry registry (reducer) | accepted: dropped | D5 |
+| P17 | `AssetRepository`/`TemplateRepository` speculative (reducer) | accepted: dropped | data-model |
+| P18 | `withAssetFile` unused; Pack javadoc contradiction (reducer) | accepted | data-model |
+| P19 | Unbuilt content forms must not be silently treated (reducer) | accepted: store refuses, naming the form | contract |
+| P20 | Store + domain missing-payload check (reducer: keep both) | accepted as planned | D3 |
