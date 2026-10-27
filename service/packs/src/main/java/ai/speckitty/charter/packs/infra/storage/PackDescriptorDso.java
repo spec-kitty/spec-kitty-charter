@@ -1,5 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,5 +59,41 @@ record PackDescriptorDso(
         Objects.requireNonNull(activeCharter, "activeCharter");
         Objects.requireNonNull(packDrg, "packDrg");
         undeclaredKeys = List.copyOf(undeclaredKeys);
+    }
+
+    /**
+     * The persistence shape of a domain descriptor; the one owner of this mapping.
+     *
+     * @param descriptor the descriptor
+     * @return the shape
+     */
+    static PackDescriptorDso of(PackDescriptor descriptor) {
+        return new PackDescriptorDso(
+                descriptor.packId(),
+                descriptor.packVersion(),
+                descriptor.parentPack(),
+                descriptor.name(),
+                descriptor.declaredLevel().map(PackLevel::token),
+                descriptor.requiresCore(),
+                descriptor.paths().activeCharter(),
+                descriptor.paths().packDrg(),
+                descriptor.undeclaredKeys());
+    }
+
+    /**
+     * The domain descriptor this shape holds.
+     *
+     * @return the descriptor
+     */
+    PackDescriptor toDescriptor() {
+        return new PackDescriptor(
+                packId,
+                packVersion,
+                parentPack,
+                name,
+                packLevel.flatMap(PackLevel::fromToken),
+                requiresCore,
+                undeclaredKeys,
+                new PackPaths(activeCharter, packDrg));
     }
 }

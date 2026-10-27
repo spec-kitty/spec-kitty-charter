@@ -68,21 +68,21 @@ class PackDoctrineCorpusRoundTripTest {
 
     @Test
     void everyCorpusDirectiveReadsBackEqualAfterAWrite() throws IOException {
-        int count = roundTripEveryFile(".directive.yaml", yaml::readDirective, yaml::writeDirective);
+        int count = roundTripEveryFile(".directive.yaml", (text, file) -> yaml.read(DirectiveBinding.INSTANCE, text, file), dso -> yaml.write(DirectiveBinding.INSTANCE, dso));
 
         assertThat(count).as("directives in the corpus").isPositive();
     }
 
     @Test
     void everyCorpusStyleguideReadsBackEqualAfterAWrite() throws IOException {
-        int count = roundTripEveryFile(".styleguide.yaml", yaml::readStyleguide, yaml::writeStyleguide);
+        int count = roundTripEveryFile(".styleguide.yaml", (text, file) -> yaml.read(StyleguideBinding.INSTANCE, text, file), dso -> yaml.write(StyleguideBinding.INSTANCE, dso));
 
         assertThat(count).as("styleguides in the corpus").isPositive();
     }
 
     @Test
     void everyCorpusParadigmReadsBackEqualAfterAWrite() throws IOException {
-        int count = roundTripEveryFile(".paradigm.yaml", yaml::readParadigm, yaml::writeParadigm);
+        int count = roundTripEveryFile(".paradigm.yaml", (text, file) -> yaml.read(ParadigmBinding.INSTANCE, text, file), dso -> yaml.write(ParadigmBinding.INSTANCE, dso));
 
         assertThat(count).as("paradigms in the corpus").isPositive();
     }

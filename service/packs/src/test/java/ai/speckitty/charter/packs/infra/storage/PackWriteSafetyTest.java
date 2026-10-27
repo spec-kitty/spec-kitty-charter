@@ -48,7 +48,7 @@ class PackWriteSafetyTest {
     void aWriteWithTheRealRenameUpdatesTheTargetAndLeavesNoTemp(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
 
-        store(host).writeTactic(PACK, tactic("alpha-tactic", "Written for real"));
+        store(host).write(PACK, TacticBinding.INSTANCE, tactic("alpha-tactic", "Written for real"));
 
         assertThat(Files.readString(pack.resolve(ALPHA_FILE))).contains("Written for real");
         assertThat(fileNames(pack)).noneMatch(name -> name.endsWith(".tmp"));
@@ -68,7 +68,7 @@ class PackWriteSafetyTest {
             throw new IOException("injected failure");
         });
 
-        assertThatThrownBy(() -> failing.writeTactic(PACK, tactic("alpha-tactic", "Never written")))
+        assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, tactic("alpha-tactic", "Never written")))
                 .isInstanceOf(CharterRefusal.class);
 
         assertThat(tempSeen[0])
@@ -87,13 +87,13 @@ class PackWriteSafetyTest {
         List<String> namesBefore = fileNames(pack);
         FilesystemPackStore store = store(host);
 
-        assertThatThrownBy(() -> store.writeTactic(PACK, tactic("escape-tactic", "Escape")))
+        assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, tactic("escape-tactic", "Escape")))
                 .isInstanceOf(CharterRefusal.class);
         assertThat(Files.readString(outside)).isEqualTo("id: escape-tactic\n");
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
 
         // Positive control, same fixture and store: an in-root target is accepted.
-        store.writeTactic(PACK, tactic("alpha-tactic", "Written in root"));
+        store.write(PACK, TacticBinding.INSTANCE, tactic("alpha-tactic", "Written in root"));
         assertThat(Files.readString(pack.resolve(ALPHA_FILE))).contains("Written in root");
     }
 

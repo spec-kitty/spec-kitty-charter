@@ -15,11 +15,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -27,10 +25,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The single declaration of which files of a pack the service loads and which it digests. The store reads the files
- * of each {@link LoadedKind}; the source fingerprint digests {@code pack.yaml}, every file of every {@link LoadedKind}
- * and the declared graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}). Both take their
- * list from here, so a file the service loads cannot escape the fingerprint. Adding a kind is adding a
- * {@link LoadedKind}, which the digest then covers.
+ * of each kind bound in {@link KindBindings}; the source fingerprint digests {@code pack.yaml}, every file of every
+ * bound kind and the declared graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}). Both
+ * take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind is all it takes
+ * for the digest to cover it.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}.
  * The walk is the store's: {@link Files#walkFileTree} (hidden directories are entered, a directory link is not
@@ -46,49 +44,6 @@ final class PackFileSet {
     /** The DRG fragment's pack-relative path. */
     static final String FRAGMENT = "drg/fragment.yaml";
 
-    /**
-     * The kinds of pack file the service loads, each spelled as in a file name and in {@code file-kinds.yaml}. This is
-     * the persistence-side registry of loaded kinds, the typed declaration of what the store reads: a kind that is not
-     * declared here cannot be read, because it does not compile. Issue #169 extends it. Each constant carries the
-     * kernel's {@link ArtifactKind}, whose token is the spelling.
-     */
-    enum LoadedKind {
-        /** {@code *.tactic.yaml}. */
-        TACTIC(ArtifactKind.TACTIC),
-        /** {@code *.directive.yaml}. */
-        DIRECTIVE(ArtifactKind.DIRECTIVE),
-        /** {@code *.styleguide.yaml}. */
-        STYLEGUIDE(ArtifactKind.STYLEGUIDE),
-        /** {@code *.toolguide.yaml}. */
-        TOOLGUIDE(ArtifactKind.TOOLGUIDE),
-        /** {@code *.paradigm.yaml}. */
-        PARADIGM(ArtifactKind.PARADIGM);
-
-        private final ArtifactKind artifactKind;
-
-        LoadedKind(ArtifactKind artifactKind) {
-            this.artifactKind = artifactKind;
-        }
-
-        /**
-         * The kind's spelling in a file name ({@code <id>.<token>.yaml}) and as the schema kind.
-         *
-         * @return the kernel kind's token
-         */
-        String token() {
-            return artifactKind.token();
-        }
-
-        private static Optional<LoadedKind> of(ArtifactKind artifactKind) {
-            for (LoadedKind kind : values()) {
-                if (kind.artifactKind == artifactKind) {
-                    return Optional.of(kind);
-                }
-            }
-            return Optional.empty();
-        }
-    }
-
     private PackFileSet() {}
 
     /**
@@ -100,20 +55,20 @@ final class PackFileSet {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the directory cannot
      *     be listed
      */
-    static List<String> files(Path packDir, LoadedKind kind) {
+    static List<String> files(Path packDir, ArtifactKind kind) {
         Path directory = normalized(packDir);
         return loaded(directory, nameOf(directory)).getOrDefault(kind, List.of());
     }
 
     /**
-     * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every {@link LoadedKind}, the
+     * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every bound kind, the
      * root graph shards and {@code drg/fragment.yaml}.
      *
      * @param packDir the pack directory
      * @return the pack-relative paths, in digest order
      */
     static List<String> digested(Path packDir) {
-        return digested(packDir, EnumSet.allOf(LoadedKind.class));
+        return digested(packDir, Set.copyOf(KindBindings.kinds()));
     }
 
     /**
@@ -124,7 +79,7 @@ final class PackFileSet {
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file
      */
-    static List<String> digested(Path packDir, Set<LoadedKind> kinds) {
+    static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
         return digested(packDir, kinds, nameOf(normalized(packDir)));
     }
 
@@ -136,17 +91,17 @@ final class PackFileSet {
      * @return the pack-relative paths, in digest order
      */
     static List<String> digested(Path packDir, String packName) {
-        return digested(packDir, EnumSet.allOf(LoadedKind.class), packName);
+        return digested(packDir, Set.copyOf(KindBindings.kinds()), packName);
     }
 
-    private static List<String> digested(Path packDir, Set<LoadedKind> kinds, String packName) {
+    private static List<String> digested(Path packDir, Set<ArtifactKind> kinds, String packName) {
         Path directory = normalized(packDir);
         List<String> out = new ArrayList<>();
         if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
             out.add(PACK_YAML);
         }
-        Map<LoadedKind, List<String>> loaded = loaded(directory, packName);
-        for (LoadedKind kind : LoadedKind.values()) {
+        Map<ArtifactKind, List<String>> loaded = loaded(directory, packName);
+        for (ArtifactKind kind : KindBindings.kinds()) {
             if (kinds.contains(kind)) {
                 out.addAll(loaded.getOrDefault(kind, List.of()));
             }
@@ -176,15 +131,15 @@ final class PackFileSet {
         }
     }
 
-    /** One walk of the pack, every loaded kind's files grouped. */
-    private static Map<LoadedKind, List<String>> loaded(Path directory, String packName) {
+    /** One walk of the pack, every bound kind's files grouped. */
+    private static Map<ArtifactKind, List<String>> loaded(Path directory, String packName) {
         // The classification globs are relative to the directory that holds the pack directories.
         String prefix = nameOf(directory) + "/";
-        Map<LoadedKind, List<String>> byKind = new EnumMap<>(LoadedKind.class);
+        Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
         for (String file : yamlFiles(directory, packName)) {
             if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
                 ArtifactKind.fromToken(mapped.kind())
-                        .flatMap(LoadedKind::of)
+                        .filter(KindBindings.kinds()::contains)
                         .ifPresent(kind -> byKind.computeIfAbsent(kind, k -> new ArrayList<>())
                                 .add(file));
             }

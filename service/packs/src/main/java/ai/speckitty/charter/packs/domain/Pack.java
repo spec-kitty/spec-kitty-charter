@@ -1,73 +1,42 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The pack aggregate root, identified by its {@link PackIdentifier}. It composes the pack's descriptor, its
- * {@link Tactic}, {@link Directive}, {@link Styleguide}, {@link Toolguide} and {@link Paradigm} child entities and the violations found while reading, so a partial-tolerant load can be
- * represented. Two packs are equal when they have the same identity, whatever else they hold.
+ * The pack aggregate root, identified by its {@link PackIdentifier}. It composes the pack's descriptor, its artifacts
+ * keyed by {@link ArtifactKind}, the DRG documents as authored and the violations found while reading, so a
+ * partial-tolerant load can be represented. Two packs are equal when they have the same identity, whatever else they
+ * hold.
  *
- * <p>It holds no doctrine graph. Build one with {@link #builder()}.
+ * <p>Every kind is held the same way (ADR-0036): a kind joins the aggregate by its artifacts implementing
+ * {@link CharterArtifact}, with no field, accessor or builder slot of its own. The typed views
+ * ({@link #tactics()}, …) are conveniences over the same map. It holds no resolved doctrine graph. Build one with
+ * {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.
  */
 public final class Pack {
 
     private static final ModularRuleset<Pack> RULES = ModularRuleset.<Pack>emptyRules()
-            .must(Constraints.of(
-                    "Every tactic of a pack must belong to that pack.",
-                    pack -> pack.tactics.stream()
-                            .allMatch(tactic -> tactic.packId().equals(pack.id))))
-            .must(Constraints.of("A pack must not hold two tactics with the same identifier.", pack -> {
-                var seen = new HashSet<TacticIdentifier>();
-                return pack.tactics.stream().allMatch(tactic -> seen.add(tactic.id()));
-            }))
-            .must(Constraints.of(
-                    "Every directive of a pack must belong to that pack.",
-                    pack -> pack.directives.stream()
-                            .allMatch(child -> child.packId().equals(pack.id))))
-            .must(Constraints.of("A pack must not hold two directives with the same identifier.", pack -> {
-                var seen = new HashSet<DirectiveIdentifier>();
-                return pack.directives.stream().allMatch(child -> seen.add(child.id()));
-            }))
-            .must(Constraints.of(
-                    "Every styleguide of a pack must belong to that pack.",
-                    pack -> pack.styleguides.stream()
-                            .allMatch(child -> child.packId().equals(pack.id))))
-            .must(Constraints.of("A pack must not hold two styleguides with the same identifier.", pack -> {
-                var seen = new HashSet<StyleguideIdentifier>();
-                return pack.styleguides.stream().allMatch(child -> seen.add(child.id()));
-            }))
-            .must(Constraints.of(
-                    "Every toolguide of a pack must belong to that pack.",
-                    pack -> pack.toolguides.stream()
-                            .allMatch(child -> child.packId().equals(pack.id))))
-            .must(Constraints.of("A pack must not hold two toolguides with the same identifier.", pack -> {
-                var seen = new HashSet<ToolguideIdentifier>();
-                return pack.toolguides.stream().allMatch(child -> seen.add(child.id()));
-            }))
-            .must(Constraints.of(
-                    "Every paradigm of a pack must belong to that pack.",
-                    pack -> pack.paradigms.stream()
-                            .allMatch(child -> child.packId().equals(pack.id))))
-            .must(Constraints.of("A pack must not hold two paradigms with the same identifier.", pack -> {
-                var seen = new HashSet<ParadigmIdentifier>();
-                return pack.paradigms.stream().allMatch(child -> seen.add(child.id()));
+            .must(Constraints.of("A pack must not hold two graph documents at the same path.", pack -> {
+                var seen = new HashSet<String>();
+                return pack.graphs.stream().allMatch(graph -> seen.add(graph.file()));
             }));
 
     private final PackIdentifier id;
     private final PackDescriptor descriptor;
-    private final List<Tactic> tactics;
-    private final List<Directive> directives;
-    private final List<Styleguide> styleguides;
-    private final List<Toolguide> toolguides;
-    private final List<Paradigm> paradigms;
+    private final Map<ArtifactKind, List<CharterArtifact>> artifacts;
+    private final List<GraphDocument> graphs;
     private final List<PackElementViolation> violations;
 
     /**
@@ -75,32 +44,52 @@ public final class Pack {
      *
      * @param id the pack's identity
      * @param descriptor the pack's descriptor
-     * @param tactics the readable tactics, in a stable order
-     * @param directives the readable directives, in a stable order
-     * @param styleguides the readable styleguides, in a stable order
-     * @param toolguides the readable toolguides, in a stable order
-     * @param paradigms the readable paradigms, in a stable order
+     * @param artifacts the readable artifacts of each kind, each list in a stable order
+     * @param graphs the DRG documents, in a stable order
      * @param violations the files that could not be read or validated
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Pack(
             PackIdentifier id,
             PackDescriptor descriptor,
-            List<Tactic> tactics,
-            List<Directive> directives,
-            List<Styleguide> styleguides,
-            List<Toolguide> toolguides,
-            List<Paradigm> paradigms,
+            Map<ArtifactKind, List<CharterArtifact>> artifacts,
+            List<GraphDocument> graphs,
             List<PackElementViolation> violations) {
         this.id = Objects.requireNonNull(id, "id");
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-        this.tactics = List.copyOf(tactics);
-        this.directives = List.copyOf(directives);
-        this.styleguides = List.copyOf(styleguides);
-        this.toolguides = List.copyOf(toolguides);
-        this.paradigms = List.copyOf(paradigms);
+        Map<ArtifactKind, List<CharterArtifact>> copy = new EnumMap<>(ArtifactKind.class);
+        artifacts.forEach((kind, list) -> {
+            if (!list.isEmpty()) {
+                copy.put(kind, List.copyOf(list));
+            }
+        });
+        this.artifacts = copy;
+        this.graphs = List.copyOf(graphs);
         this.violations = List.copyOf(violations);
+        for (Map.Entry<ArtifactKind, List<CharterArtifact>> entry : copy.entrySet()) {
+            guardKind(entry.getKey(), entry.getValue());
+        }
         RULES.guard(this);
+    }
+
+    /**
+     * The per-kind invariants, the same for every kind: each artifact is of the kind it is filed under and belongs to
+     * this pack, and no two share a local id.
+     */
+    private void guardKind(ArtifactKind kind, List<CharterArtifact> ofKind) {
+        ModularRuleset.<List<CharterArtifact>>emptyRules()
+                .must(Constraints.of(
+                        "Every " + kind.token() + " of a pack must be a " + kind.token() + ".",
+                        list -> list.stream().allMatch(artifact -> artifact.kind() == kind)))
+                .must(Constraints.of(
+                        "Every " + kind.token() + " of a pack must belong to that pack.",
+                        list -> list.stream().allMatch(artifact -> artifact.packId().equals(id))))
+                .must(Constraints.of(
+                        "A pack must not hold two " + kind.plural() + " with the same identifier.", list -> {
+                            var seen = new HashSet<String>();
+                            return list.stream().allMatch(artifact -> seen.add(artifact.localId()));
+                        }))
+                .guard(ofKind);
     }
 
     /**
@@ -110,6 +99,41 @@ public final class Pack {
      */
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * Starts a builder that holds everything this pack holds.
+     *
+     * @return a builder seeded with this pack's identity, descriptor, artifacts, graph documents and violations
+     */
+    public Builder toBuilder() {
+        Builder builder = builder().id(id).descriptor(descriptor);
+        artifacts().forEach(builder::artifact);
+        graphs.forEach(builder::graph);
+        violations.forEach(builder::violation);
+        return builder;
+    }
+
+    /**
+     * This pack with {@code artifact} added, or replacing the artifact of the same kind and local id, revalidated.
+     * Every other artifact, graph document and violation is kept; a replaced artifact moves to the end of its kind.
+     *
+     * @param artifact the artifact to add or replace
+     * @return the revalidated pack
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
+     */
+    public Pack with(CharterArtifact artifact) {
+        Objects.requireNonNull(artifact, "artifact");
+        Builder builder = builder().id(id).descriptor(descriptor);
+        for (CharterArtifact existing : artifacts()) {
+            if (existing.kind() != artifact.kind() || !existing.localId().equals(artifact.localId())) {
+                builder.artifact(existing);
+            }
+        }
+        builder.artifact(artifact);
+        graphs.forEach(builder::graph);
+        violations.forEach(builder::violation);
+        return builder.build();
     }
 
     /**
@@ -131,12 +155,44 @@ public final class Pack {
     }
 
     /**
+     * Every readable artifact, grouped by kind in {@link ArtifactKind} order, each kind in its stable order.
+     *
+     * @return an immutable list
+     */
+    public List<CharterArtifact> artifacts() {
+        return artifacts.values().stream().flatMap(List::stream).toList();
+    }
+
+    /**
+     * The readable artifacts of one kind, in a stable order.
+     *
+     * @param kind the kind
+     * @return an immutable list; empty when the pack holds none
+     */
+    public List<CharterArtifact> artifacts(ArtifactKind kind) {
+        return artifacts.getOrDefault(Objects.requireNonNull(kind, "kind"), List.of());
+    }
+
+    /**
+     * The readable artifacts of one kind, typed.
+     *
+     * @param kind the kind
+     * @param type the entity type of that kind
+     * @param <T> the entity type
+     * @return an immutable list; empty when the pack holds none
+     * @throws ClassCastException when an artifact of {@code kind} is not a {@code type}
+     */
+    public <T extends CharterArtifact> List<T> artifacts(ArtifactKind kind, Class<T> type) {
+        return artifacts(kind).stream().map(type::cast).toList();
+    }
+
+    /**
      * The readable tactics, in a stable order.
      *
      * @return an immutable list; empty for a descriptor-only pack
      */
     public List<Tactic> tactics() {
-        return tactics;
+        return artifacts(ArtifactKind.TACTIC, Tactic.class);
     }
 
     /**
@@ -145,7 +201,7 @@ public final class Pack {
      * @return an immutable list; empty when the pack holds none
      */
     public List<Directive> directives() {
-        return directives;
+        return artifacts(ArtifactKind.DIRECTIVE, Directive.class);
     }
 
     /**
@@ -154,7 +210,7 @@ public final class Pack {
      * @return an immutable list; empty when the pack holds none
      */
     public List<Styleguide> styleguides() {
-        return styleguides;
+        return artifacts(ArtifactKind.STYLEGUIDE, Styleguide.class);
     }
 
     /**
@@ -163,7 +219,7 @@ public final class Pack {
      * @return an immutable list; empty when the pack holds none
      */
     public List<Toolguide> toolguides() {
-        return toolguides;
+        return artifacts(ArtifactKind.TOOLGUIDE, Toolguide.class);
     }
 
     /**
@@ -172,7 +228,16 @@ public final class Pack {
      * @return an immutable list; empty when the pack holds none
      */
     public List<Paradigm> paradigms() {
-        return paradigms;
+        return artifacts(ArtifactKind.PARADIGM, Paradigm.class);
+    }
+
+    /**
+     * The DRG documents as authored, in a stable order.
+     *
+     * @return an immutable list; empty when the pack holds none or they were not loaded
+     */
+    public List<GraphDocument> graphs() {
+        return graphs;
     }
 
     /**
@@ -205,11 +270,8 @@ public final class Pack {
     public static final class Builder {
         private @Nullable PackIdentifier id;
         private @Nullable PackDescriptor descriptor;
-        private final List<Tactic> tactics = new ArrayList<>();
-        private final List<Directive> directives = new ArrayList<>();
-        private final List<Styleguide> styleguides = new ArrayList<>();
-        private final List<Toolguide> toolguides = new ArrayList<>();
-        private final List<Paradigm> paradigms = new ArrayList<>();
+        private final Map<ArtifactKind, List<CharterArtifact>> artifacts = new EnumMap<>(ArtifactKind.class);
+        private final List<GraphDocument> graphs = new ArrayList<>();
         private final List<PackElementViolation> violations = new ArrayList<>();
 
         private Builder() {}
@@ -237,14 +299,24 @@ public final class Pack {
         }
 
         /**
+         * Appends an artifact to the artifacts of its kind.
+         *
+         * @param value the artifact
+         * @return this builder
+         */
+        public Builder artifact(CharterArtifact value) {
+            this.artifacts.computeIfAbsent(value.kind(), kind -> new ArrayList<>()).add(value);
+            return this;
+        }
+
+        /**
          * Appends a tactic.
          *
          * @param tactic the tactic
          * @return this builder
          */
         public Builder tactic(Tactic tactic) {
-            this.tactics.add(tactic);
-            return this;
+            return artifact(tactic);
         }
 
         /**
@@ -254,8 +326,7 @@ public final class Pack {
          * @return this builder
          */
         public Builder directive(Directive value) {
-            this.directives.add(value);
-            return this;
+            return artifact(value);
         }
 
         /**
@@ -265,8 +336,7 @@ public final class Pack {
          * @return this builder
          */
         public Builder styleguide(Styleguide value) {
-            this.styleguides.add(value);
-            return this;
+            return artifact(value);
         }
 
         /**
@@ -276,8 +346,7 @@ public final class Pack {
          * @return this builder
          */
         public Builder toolguide(Toolguide value) {
-            this.toolguides.add(value);
-            return this;
+            return artifact(value);
         }
 
         /**
@@ -287,7 +356,17 @@ public final class Pack {
          * @return this builder
          */
         public Builder paradigm(Paradigm value) {
-            this.paradigms.add(value);
+            return artifact(value);
+        }
+
+        /**
+         * Appends a DRG document.
+         *
+         * @param value the document
+         * @return this builder
+         */
+        public Builder graph(GraphDocument value) {
+            this.graphs.add(Objects.requireNonNull(value, "value"));
             return this;
         }
 
@@ -313,11 +392,8 @@ public final class Pack {
             return new Pack(
                     Objects.requireNonNull(id, "id"),
                     Objects.requireNonNull(descriptor, "descriptor"),
-                    tactics,
-                    directives,
-                    styleguides,
-                    toolguides,
-                    paradigms,
+                    artifacts,
+                    graphs,
                     violations);
         }
     }

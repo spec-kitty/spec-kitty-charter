@@ -5,11 +5,14 @@ import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BETA_FILE;
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -72,11 +75,23 @@ class PackRoundTripTest {
         return new FilesystemPackStore(root, new YamlSerializationStrategy());
     }
 
+    private static List<TacticDso> tactics(FilesystemPackStore.PackRead read) {
+        return read.dsos(TacticBinding.INSTANCE);
+    }
+
+    private static FilesystemPackStore.PackRead withTactics(
+            PackDescriptorDso descriptor, List<TacticDso> tactics, List<PackElementViolation> violations) {
+        List<FilesystemPackStore.Stored<?>> stored = tactics.stream()
+                .<FilesystemPackStore.Stored<?>>map(t -> new FilesystemPackStore.Stored<>(t.id() + ".tactic.yaml", t))
+                .toList();
+        return new FilesystemPackStore.PackRead(descriptor, Map.of(ArtifactKind.TACTIC, stored), violations);
+    }
+
     private static TacticDso tactic(FilesystemPackStore.PackRead read, String id) {
-        return read.tactics().stream()
+        return tactics(read).stream()
                 .filter(t -> t.id().equals(id))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("no tactic " + id + " in " + read.tactics()));
+                .orElseThrow(() -> new AssertionError("no tactic " + id + " in " + tactics(read)));
     }
 
     /**
@@ -87,12 +102,12 @@ class PackRoundTripTest {
             throws IOException {
         Path pack = Files.createDirectories(fresh.resolve(PACK.value()));
         Files.writeString(pack.resolve("pack.yaml"), "pack_id: placeholder\n");
-        for (TacticDso tactic : original.tactics()) {
+        for (TacticDso tactic : tactics(original)) {
             Files.writeString(pack.resolve(tactic.id() + ".tactic.yaml"), "id: " + tactic.id() + "\n");
         }
         FilesystemPackStore store = storeOver(fresh);
         store.writeDescriptor(PACK, original.descriptor());
-        original.tactics().forEach(t -> store.writeTactic(PACK, t));
+        tactics(original).forEach(t -> store.write(PACK, TacticBinding.INSTANCE, t));
         return store.read(PACK);
     }
 
@@ -104,7 +119,7 @@ class PackRoundTripTest {
         FilesystemPackStore.PackRead read = storeOver(host).read(PACK);
 
         assertThat(read.descriptor()).isEqualTo(PACK_A_DESCRIPTOR);
-        assertThat(read.tactics()).containsExactly(ALPHA, BETA);
+        assertThat(tactics(read)).containsExactly(ALPHA, BETA);
     }
 
     /** The oracle bites: dropping one nested reference from the literal makes it differ from what was read. */
@@ -143,7 +158,7 @@ class PackRoundTripTest {
 
         FilesystemPackStore.PackRead refetched = roundTrip(original, host.resolve("fresh"));
 
-        assertThat(refetched.tactics()).isEqualTo(original.tactics());
+        assertThat(tactics(refetched)).isEqualTo(tactics(original));
         assertThat(refetched.descriptor()).isEqualTo(original.descriptor());
         // active_charter and pack_drg would be deleted by a from-scratch writer that did not model them.
         assertThat(refetched.descriptor().activeCharter()).contains("org-charter.yaml");
@@ -174,16 +189,16 @@ class PackRoundTripTest {
                 alpha.failureModes(),
                 alpha.appliesToLanguages(),
                 alpha.references());
-        FilesystemPackStore.PackRead withMutation = new FilesystemPackStore.PackRead(
+        FilesystemPackStore.PackRead withMutation = withTactics(
                 original.descriptor(),
-                original.tactics().stream()
+                tactics(original).stream()
                         .map(t -> t.id().equals(ALPHA_ID) ? mutated : t)
                         .toList(),
                 original.violations());
 
         FilesystemPackStore.PackRead refetched = roundTrip(withMutation, host.resolve("fresh"));
 
-        assertThat(refetched.tactics()).isNotEqualTo(original.tactics());
+        assertThat(tactics(refetched)).isNotEqualTo(tactics(original));
         assertThat(tactic(refetched, ALPHA_ID).name()).isEqualTo("Alpha tactic, renamed");
         assertThat(tactic(refetched, BETA_ID)).isEqualTo(BETA);
     }
@@ -207,7 +222,7 @@ class PackRoundTripTest {
                 d.undeclaredKeys());
 
         FilesystemPackStore.PackRead refetched =
-                roundTrip(new FilesystemPackStore.PackRead(mutated, List.of(), List.of()), host.resolve("fresh"));
+                roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));
 
         assertThat(refetched.descriptor()).isNotEqualTo(original.descriptor());
         assertThat(refetched.descriptor().packLevel()).contains("project");
@@ -238,7 +253,7 @@ class PackRoundTripTest {
 
         FilesystemPackStore.PackRead read = storeOver(host).read(PACK);
 
-        assertThat(read.tactics()).extracting(TacticDso::id).containsExactly(ALPHA_ID, BETA_ID);
+        assertThat(tactics(read)).extracting(TacticDso::id).containsExactly(ALPHA_ID, BETA_ID);
         assertThat(read.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo(BROKEN_FILE);
             assertThat(violation.kind()).isEqualTo("schema");

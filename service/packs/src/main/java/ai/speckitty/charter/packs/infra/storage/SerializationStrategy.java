@@ -1,31 +1,39 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 
 /**
  * The pluggable format seam of pack persistence: it turns a persistence shape into text and back. A strategy knows a
  * format and nothing of where the text lives; {@link FilesystemPackStore} owns the paths.
  *
- * <p>A read never throws on content: text that is not the format or breaks its schema is a {@link FileRead.Unreadable}.
+ * <p>Artifacts are read and written through one kind-parameterised pair (ADR-0036): the {@link KindBinding} names the
+ * kind and its persistence shape, and the strategy supplies the format for every bound kind. A read never throws on
+ * content: text that is not the format or breaks its schema is a {@link FileRead.Unreadable}.
  */
 public interface SerializationStrategy {
 
     /**
-     * Serializes a tactic from scratch.
+     * Serializes an artifact's persistence shape from scratch.
      *
-     * @param tactic the tactic to write
+     * @param kind the kind's binding
+     * @param dso the shape to write
+     * @param <D> the kind's persistence shape
      * @return the file text
      */
-    String writeTactic(TacticDso tactic);
+    <D> String write(KindBinding<D, ?> kind, D dso);
 
     /**
-     * Reads a tactic file.
+     * Reads an artifact file of one kind.
      *
+     * @param kind the kind's binding
      * @param text the file text
      * @param file the pack-relative file name, named in a failure
-     * @return the tactic, or why the text is unreadable
+     * @param <D> the kind's persistence shape
+     * @return the shape, or why the text is unreadable
      */
-    FileRead<TacticDso> readTactic(String text, String file);
+    <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file);
 
     /**
      * Serializes a descriptor from scratch.
@@ -44,70 +52,20 @@ public interface SerializationStrategy {
     FileRead<PackDescriptorDso> readDescriptor(String text);
 
     /**
-     * Serializes a directive from scratch.
+     * Serializes a DRG document from scratch, every field it holds written.
      *
-     * @param directive the directive to write
+     * @param document the document to write
      * @return the file text
      */
-    String writeDirective(DirectiveDso directive);
+    String writeGraph(GraphDocument document);
 
     /**
-     * Reads a directive file.
+     * Reads a DRG document with every field its schema allows.
      *
      * @param text the file text
-     * @param file the pack-relative file name, named in a failure
-     * @return the directive, or why the text is unreadable
+     * @param shape which of the two shapes the document has
+     * @param file the pack-relative file name, named in a failure and kept on the document
+     * @return the document, or why the text is unreadable
      */
-    FileRead<DirectiveDso> readDirective(String text, String file);
-
-    /**
-     * Serializes a styleguide from scratch.
-     *
-     * @param styleguide the styleguide to write
-     * @return the file text
-     */
-    String writeStyleguide(StyleguideDso styleguide);
-
-    /**
-     * Reads a styleguide file.
-     *
-     * @param text the file text
-     * @param file the pack-relative file name, named in a failure
-     * @return the styleguide, or why the text is unreadable
-     */
-    FileRead<StyleguideDso> readStyleguide(String text, String file);
-
-    /**
-     * Serializes a toolguide from scratch.
-     *
-     * @param toolguide the toolguide to write
-     * @return the file text
-     */
-    String writeToolguide(ToolguideDso toolguide);
-
-    /**
-     * Reads a toolguide file.
-     *
-     * @param text the file text
-     * @param file the pack-relative file name, named in a failure
-     * @return the toolguide, or why the text is unreadable
-     */
-    FileRead<ToolguideDso> readToolguide(String text, String file);
-
-    /**
-     * Serializes a paradigm from scratch.
-     *
-     * @param paradigm the paradigm to write
-     * @return the file text
-     */
-    String writeParadigm(ParadigmDso paradigm);
-
-    /**
-     * Reads a paradigm file.
-     *
-     * @param text the file text
-     * @param file the pack-relative file name, named in a failure
-     * @return the paradigm, or why the text is unreadable
-     */
-    FileRead<ParadigmDso> readParadigm(String text, String file);
+    FileRead<GraphDocument> readGraph(String text, Shape shape, String file);
 }

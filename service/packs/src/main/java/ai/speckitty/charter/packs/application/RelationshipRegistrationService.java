@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -113,13 +112,7 @@ public final class RelationshipRegistrationService {
     }
 
     private static Set<Urn> urnsOf(Pack pack) {
-        return Stream.of(
-                        pack.tactics().stream(),
-                        pack.directives().stream(),
-                        pack.styleguides().stream(),
-                        pack.toolguides().stream(),
-                        pack.paradigms().stream())
-                .flatMap(stream -> stream)
+        return pack.artifacts().stream()
                 .map(CharterArtifact::urn)
                 .collect(Collectors.toUnmodifiableSet());
     }
