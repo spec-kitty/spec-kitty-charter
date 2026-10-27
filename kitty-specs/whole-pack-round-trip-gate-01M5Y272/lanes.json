@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+  "mission_id": "01M5Y2728DYJGR84Z0TAMJ945H",
+  "mission_branch": "kitty/mission-whole-pack-round-trip-gate-01M5Y272",
+  "target_branch": "feat/whole-pack-round-trip-gate",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MeaningComparator.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MeaningComparatorTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTrip.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackCensus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackReport.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        ".github/workflows/whole-pack.yml",
+        "docs/changelog/2026-10-27-whole-pack-round-trip-gate.md",
+        "docs/changelog/README.md",
+        "docs/guides/service-build.md",
+        "service/packs/build.gradle.kts",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java",
+        "service/packs/src/test/resources/whole-pack/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-10-27T07:02:41.550469+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "d092574b2d9b3f2b97e2fd9c49a66efdc4ec7606"
+}
