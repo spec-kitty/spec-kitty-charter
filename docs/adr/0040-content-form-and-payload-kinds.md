@@ -83,7 +83,12 @@ Four facts force a decision:
    payload's extension, a policy finding when it is not), and never a selector. The table
    admits only the forms the store builds, `yaml` and `bytes`; a rule naming `markdown` or `text`
    fails when the table loads, naming the form, and so does any key a rule's section does not
-   define. The mission that first needs another form builds it and admits it.
+   define. The mission that first needs another form builds it and admits it. The form decides how
+   the store holds a file, never its path or its kind token alone: a `bytes` file is held by its
+   rule's kind, an `asset-payload` as an asset file and a `template` as a template (decision 4), and
+   a `bytes` rule of any other kind fails when the table loads, naming the rule. A `files` rule has a
+   schema, which validates a parsed YAML document, so a `files` rule declaring any form but `yaml`
+   fails when the table loads, naming the rule: no schema-bearing kind is `bytes` today.
 2. **Files with no schema have their own section, `payloads`.** A payload rule names `match`,
    `kind` and `content_form`, all required. It is consulted only when no `files` and no
    `exclusions` rule matches, so it overlaps them by design and the first match counts; no two
@@ -208,7 +213,8 @@ Four facts force a decision:
 ### Risks
 
 - The `payloads` section could grow into a second `files` list. A payload rule has no schema by
-  definition; a schema-bearing kind belongs in `files` with its `content_form`.
+  definition; a schema-bearing kind belongs in `files`, whose rules are `yaml` until a schema-bearing
+  kind of another form is built.
 - A payload rule shadowing a future `files` rule is resolved by order, silently. The sample-path
   tests catch it for the paths they list.
 

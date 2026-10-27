@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -191,10 +192,34 @@ class PackFileKindTest {
     @Test
     void aPayloadRuleThatNamesABuiltFormLoads() {
         PackFileKind table = new PackFileKind(TABLE.formatted(
-                "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', kind: k, content_form: bytes}]"));
+                "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', kind: asset-payload, content_form: bytes}]"));
 
         assertThat(table.classify("p/assets/a.bin"))
-                .isEqualTo(new PackFileKind.Mapped("k", Optional.empty(), ContentForm.BYTES));
+                .isEqualTo(new PackFileKind.Mapped("asset-payload", Optional.empty(), ContentForm.BYTES));
+    }
+
+    /**
+     * F1: the store holds a {@code bytes} file only as an asset file or a template, so a {@code bytes} rule of any other
+     * kind is refused when the table loads, naming the rule; the same rule with a kind the store holds loads.
+     */
+    @Test
+    void aBytesRuleOfAKindTheStoreDoesNotHoldFailsToLoadNamingTheRule() {
+        String rule = "files: []\nexclusions: []\npayloads: [{match: '*/blobs/**/*', kind: %s, content_form: bytes}]";
+
+        assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rule.formatted("blob"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("packs/file-kinds.yaml: the payloads rule for '*/blobs/**/*' declares content_form 'bytes'"
+                        + " for kind 'blob', which the store does not hold; a bytes file is one of"
+                        + " [asset-payload, template]");
+        assertThat(new PackFileKind(TABLE.formatted(rule.formatted("template"))).classify("p/blobs/a.bin"))
+                .isEqualTo(new PackFileKind.Mapped("template", Optional.empty(), ContentForm.BYTES));
+        assertThat(PackFileKind.TEMPLATE).isEqualTo(ArtifactKind.TEMPLATE.token());
+        assertThat(PackFileKind.BYTES_KINDS)
+                .as("every bundled bytes rule names a kind the store holds")
+                .containsAll(KINDS.payloadRules().stream()
+                        .filter(r -> r.contentForm() == ContentForm.BYTES)
+                        .map(PackFileKind.PayloadRule::kind)
+                        .toList());
     }
 
     @Test
@@ -228,13 +253,21 @@ class PackFileKindTest {
                 .hasMessageContaining(problem));
     }
 
+    /**
+     * F1: a {@code files} rule has a schema, which validates a parsed YAML document, so one declaring another form is
+     * refused when the table loads, naming the rule; the same rule declaring {@code yaml} loads.
+     */
     @Test
-    void aFilesRuleThatNamesBytesLoadsAndATableWithoutPayloadsHasNone() {
-        PackFileKind table = new PackFileKind(
-                TABLE.formatted("files: [{match: '*/a.bin', schema: s, content_form: bytes}]\nexclusions: []"));
+    void aFilesRuleThatDeclaresAFormOtherThanYamlFailsToLoadAndATableWithoutPayloadsHasNone() {
+        String rule = "files: [{match: '*/a.bin', schema: s, content_form: %s}]\nexclusions: []";
 
+        assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rule.formatted("bytes"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("packs/file-kinds.yaml: the files rule for '*/a.bin' declares content_form 'bytes'; a"
+                        + " files rule has a schema and its files are yaml");
+        PackFileKind table = new PackFileKind(TABLE.formatted(rule.formatted("yaml")));
         assertThat(table.classify("p/a.bin"))
-                .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.BYTES));
+                .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.YAML));
         assertThat(table.payloadRules()).isEmpty();
     }
 }

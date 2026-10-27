@@ -23,6 +23,10 @@
 #   `markdown` and `text` are declared but not built yet (no mission has built them: #192 shipped
 #   text companions under ADR-0039, not a form). A rule naming either fails when the table loads,
 #   until the mission that first needs it builds and admits it.
+#   The form decides how the store holds a file: a `bytes` file is held by its rule's kind
+#   (`asset-payload` as an asset file, `template` as a template), and a `bytes` rule of any other
+#   kind fails when the table loads. A `files` rule has a schema and is `yaml`; one naming another
+#   form fails when the table loads.
 #
 # Matching
 #   `match` is a glob over the file's path relative to the directory that holds the pack

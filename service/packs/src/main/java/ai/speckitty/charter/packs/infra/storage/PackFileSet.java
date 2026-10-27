@@ -36,9 +36,10 @@ import org.jspecify.annotations.Nullable;
  * its exact digest list.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}:
- * a {@code files} rule of a bound kind makes a file of that kind; the {@code payloads} rule {@value #ASSET_PAYLOAD}
- * makes an asset file (under {@code assets/}) and the payload rule {@code template} a template (under the top-level
- * {@code templates/}), both of the {@code bytes} content form. The walk is the store's: {@link Files#walkFileTree}
+ * the rule's content form decides the store. A file of the {@code bytes} form is held by its rule's kind: an
+ * {@value #ASSET_PAYLOAD} file is an asset file (under {@code assets/}), a {@code template} file a template (under the
+ * top-level {@code templates/}); the table admits no {@code bytes} rule of another kind ({@link PackFileKind}). A file
+ * of the {@code yaml} form, which every {@code files} rule declares, is a file of its schema's bound kind. The walk is the store's: {@link Files#walkFileTree}
  * (hidden directories are entered, a directory link is not followed, an entry that vanishes mid-walk is not listed),
  * every regular file ({@link Files#isRegularFile} follows a file link) classified once, in {@link String} order. Every
  * entry point normalizes the directory first, so a configured root such as {@code packs/foo/.} classifies like the
@@ -62,7 +63,7 @@ final class PackFileSet {
     static final String TEMPLATES = "templates/";
 
     /** The {@code payloads} rule kind of an asset file. */
-    static final String ASSET_PAYLOAD = "asset-payload";
+    static final String ASSET_PAYLOAD = PackFileKind.ASSET_PAYLOAD;
 
     /**
      * One walk of a pack: the files of every bound kind, the asset files and the templates, each list in
@@ -110,8 +111,20 @@ final class PackFileSet {
      *     be listed
      */
     static Listing listing(Path packDir) {
+        return listing(packDir, PackFileKind.bundled());
+    }
+
+    /**
+     * Walks a pack once, classifying with {@code table} in place of the bundled one: the seam a test uses to show that
+     * a rule's content form, not its path or kind token alone, decides where a file is held.
+     *
+     * @param packDir the pack directory
+     * @param table the file-kind table
+     * @return the files of every bound kind, the asset files and the templates
+     */
+    static Listing listing(Path packDir, PackFileKind table) {
         Path directory = normalized(packDir);
-        return loaded(directory, nameOf(directory));
+        return loaded(directory, nameOf(directory), table);
     }
 
     /**
@@ -190,7 +203,7 @@ final class PackFileSet {
         if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
             out.add(PACK_YAML);
         }
-        Listing loaded = loaded(directory, packName);
+        Listing loaded = loaded(directory, packName, PackFileKind.bundled());
         Set<String> listed = new HashSet<>(out);
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             if (!kinds.contains(binding.kind())) {
@@ -259,29 +272,38 @@ final class PackFileSet {
     }
 
     /** One walk of the pack, each file classified once: every bound kind's files grouped, the payload files apart. */
-    private static Listing loaded(Path directory, String packName) {
+    private static Listing loaded(Path directory, String packName, PackFileKind table) {
         // The classification globs are relative to the directory that holds the pack directories.
         String prefix = nameOf(directory) + "/";
         Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
         List<String> assetFiles = new ArrayList<>();
         List<String> templates = new ArrayList<>();
         for (String file : regularFiles(directory, packName)) {
-            if (!(PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped)) {
+            if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)) {
                 continue;
             }
-            if (mapped.schema().isEmpty()) {
-                if (ASSET_PAYLOAD.equals(mapped.kind())) {
-                    assetFiles.add(file);
-                } else if (ArtifactKind.TEMPLATE.token().equals(mapped.kind())) {
-                    templates.add(file);
-                }
-                continue;
+            // The rule's content form decides the store, never the path: a bytes file is held by its rule's kind.
+            if (mapped.contentForm() == ContentForm.BYTES) {
+                bytesHolder(mapped.kind(), assetFiles, templates).add(file);
+            } else if (mapped.schema().isPresent()) {
+                KindBindings.bySchema(mapped.kind())
+                        .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
+                                .add(file));
             }
-            KindBindings.bySchema(mapped.kind())
-                    .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
-                            .add(file));
         }
         return new Listing(byKind, assetFiles, templates);
+    }
+
+    /**
+     * The list a {@code bytes} file of {@code kind} joins. The table admits a {@code bytes} rule only of a kind in
+     * {@link PackFileKind#BYTES_KINDS}, so any other kind is a table the store was not built for.
+     */
+    private static List<String> bytesHolder(String kind, List<String> assetFiles, List<String> templates) {
+        return switch (kind) {
+            case PackFileKind.ASSET_PAYLOAD -> assetFiles;
+            case PackFileKind.TEMPLATE -> templates;
+            default -> throw new IllegalStateException("a bytes file of kind '" + kind + "' has no place in the store");
+        };
     }
 
     /**

@@ -20,6 +20,10 @@ import org.jspecify.annotations.Nullable;
  * reason, or not classified at all. The {@code files} rules are consulted first, then the {@code exclusions}, then the
  * {@code payloads}.
  *
+ * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
+ * rule declares a form other than {@code yaml} (its schema validates a parsed YAML document) or a {@code bytes} rule
+ * names a kind outside {@link #BYTES_KINDS}, the kinds the store holds a {@code bytes} file as.
+ *
  * <p>A rule's {@code match} is a glob over the path relative to the directory that holds the pack directories, with
  * forward slashes. {@code *} matches within one path segment, {@code **}{@code /} matches zero or more whole
  * segments, and every other character is literal.
@@ -43,6 +47,18 @@ final class PackFileKind {
      * form is one entry here plus its codec.
      */
     private static final Set<ContentForm> BUILT_FORMS = EnumSet.of(ContentForm.YAML, ContentForm.BYTES);
+
+    /** The {@code payloads} rule kind of an asset file. */
+    static final String ASSET_PAYLOAD = "asset-payload";
+
+    /** The {@code payloads} rule kind of a template, the {@code template} artifact kind's token. */
+    static final String TEMPLATE = "template";
+
+    /**
+     * The kinds the store holds a {@code bytes} file as: an asset file or a template. A {@code bytes} rule of any other
+     * kind fails when the table loads; a new one is one entry here plus where the store holds it.
+     */
+    static final Set<String> BYTES_KINDS = Set.of(ASSET_PAYLOAD, TEMPLATE);
 
     private static final PackFileKind BUNDLED = load();
 
@@ -258,6 +274,12 @@ final class PackFileKind {
         for (Object entry : list(table.get("files"), "files")) {
             Map<String, Object> rule = rule(entry, "files", FILE_KEYS);
             ContentForm form = rule.containsKey(CONTENT_FORM) ? contentForm(rule) : ContentForm.YAML;
+            if (form != ContentForm.YAML) {
+                // Every schema'd kind is YAML today: the schema validates the parsed document.
+                throw new IllegalStateException(RESOURCE + ": the files rule for '" + string(rule, MATCH)
+                        + "' declares content_form '" + form.token()
+                        + "'; a files rule has a schema and its files are yaml");
+            }
             files.add(new FileRule(string(rule, MATCH), string(rule, "schema"), form));
         }
         List<ExclusionRule> exclusions = new ArrayList<>();
@@ -270,7 +292,16 @@ final class PackFileKind {
         Object payloadSection = table.get("payloads");
         for (Object entry : payloadSection == null ? List.of() : list(payloadSection, "payloads")) {
             Map<String, Object> rule = rule(entry, "payloads", PAYLOAD_KEYS);
-            payloads.add(new PayloadRule(string(rule, MATCH), string(rule, "kind"), contentForm(rule)));
+            ContentForm form = contentForm(rule);
+            String kind = string(rule, "kind");
+            if (form == ContentForm.BYTES && !BYTES_KINDS.contains(kind)) {
+                throw new IllegalStateException(RESOURCE + ": the payloads rule for '" + string(rule, MATCH)
+                        + "' declares content_form 'bytes' for kind '" + kind
+                        + "', which the store does not hold; a bytes file is one of " + BYTES_KINDS.stream()
+                                .sorted()
+                                .toList());
+            }
+            payloads.add(new PayloadRule(string(rule, MATCH), kind, form));
         }
         return new Table(nodeKinds, fragments, files, exclusions, payloads);
     }

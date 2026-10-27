@@ -220,4 +220,31 @@ class PackFileSetTest {
             assertThat(kind.token()).isEqualTo(kind.name().toLowerCase(java.util.Locale.ROOT));
         }
     }
+
+    /**
+     * F1: the rule's content form decides the store. On one pack, a table whose payload rule under {@code assets/}
+     * declares {@code bytes} holds the file as an asset file (the positive control); the same rule declaring
+     * {@code yaml}, with the same kind token and path, holds nothing, since only a {@code bytes} file is a payload and
+     * a {@code yaml} file needs a schema.
+     */
+    @Test
+    void theContentFormNotTheKindTokenDecidesWhetherAFileIsHeldAsBytes() throws IOException {
+        Files.createDirectories(pack.resolve("assets"));
+        Files.writeString(pack.resolve("assets/x.bin"), "x");
+        String table = """
+                node_kinds: []
+                fragment_kinds: {}
+                files: []
+                exclusions: []
+                payloads: [{match: '*/assets/**/*', kind: asset-payload, content_form: %s}]
+                """;
+
+        PackFileSet.Listing bytes = PackFileSet.listing(pack, new PackFileKind(table.formatted("bytes")));
+        PackFileSet.Listing yaml = PackFileSet.listing(pack, new PackFileKind(table.formatted("yaml")));
+
+        assertThat(bytes.assetFiles()).containsExactly("assets/x.bin");
+        assertThat(yaml.assetFiles()).isEmpty();
+        assertThat(yaml.templates()).isEmpty();
+        assertThat(yaml.byKind()).isEmpty();
+    }
 }
