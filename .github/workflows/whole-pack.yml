@@ -1,0 +1,89 @@
+name: whole-pack
+
+# The whole-pack round-trip gate (#187, epic #186): every file of the pinned spec-kitty-open-packs built-in pack is read
+# into the domain, written back, read again and compared with its source by meaning, against the checked-in
+# expected-red baseline (service/packs/src/test/resources/whole-pack). It uploads the report as `whole-pack-report`.
+#
+# Not a required check yet: ci.yml does not call this workflow, so it never feeds `CI gate / gate` (ADR-0023). It
+# becomes required once the gate is green.
+on:
+  pull_request:
+    paths:
+      - "contracts/packs/**"
+      - "service/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/whole-pack.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/packs/**"
+      - "service/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/whole-pack.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whole-pack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  whole-pack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      # The pin lives in gradle.properties only (openPacksRef); Gradle reads it too.
+      - name: Read the open-packs pin
+        id: open-packs-pin
+        run: |
+          ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
+          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check out spec-kitty-open-packs
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: spec-kitty/spec-kitty-open-packs
+          ref: ${{ steps.open-packs-pin.outputs.ref }}
+          path: .open-packs
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Whole-pack round trip
+        run: ./gradlew :packs:wholePackRoundTrip -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+
+      - name: Show the report
+        if: always()
+        run: |
+          report=service/packs/build/reports/whole-pack/report.md
+          if [ -f "$report" ]; then sed -n '1,/^## Files/p' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
+
+      # Uploaded on a red run too, so the per-kind and per-file result is always visible.
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: whole-pack-report
+          path: service/packs/build/reports/whole-pack/report.md
+          if-no-files-found: warn

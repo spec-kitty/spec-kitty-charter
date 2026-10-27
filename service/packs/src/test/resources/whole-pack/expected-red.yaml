@@ -1,0 +1,59 @@
+# What the whole-pack gate (#187) expects NOT to round-trip yet, at the pinned open-packs commit, under the rules of
+# ADR-0036. The gate passes only when the observed reds are exactly these: an unlisted red fails, and a listed item
+# that round-trips fails with "remove it". When your mission turns a kind green, remove its entry in the same change.
+#
+# kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
+kinds:
+  - kind: agent-profile
+    reason: Agent profiles have no domain model, reader or writer yet.
+    issue: "#190"
+  - kind: mission-step-contract
+    reason: Mission step contracts have no domain model, reader or writer yet.
+    issue: "#191"
+  - kind: other:glossary_packs
+    reason: Glossary packs have no schema, domain model, reader or writer yet.
+    issue: "#192"
+  - kind: asset
+    reason: Asset descriptors have no domain model, reader or writer yet.
+    issue: "#193"
+  - kind: other:assets
+    reason: Asset payloads (Markdown, Python, tool configuration) are not modelled yet.
+    issue: "#193"
+  - kind: other:templates
+    reason: Templates are not modelled yet.
+    issue: "#193"
+  - kind: procedure
+    reason: Procedures have no domain model, reader or writer yet.
+    issue: "#194"
+  - kind: other:missions
+    reason: Mission types, mission steps, actions and mission templates are not modelled yet.
+    issue: "#194"
+  - kind: other:presets
+    reason: Presets are not modelled yet.
+    issue: "#195"
+  - kind: other:pack.md
+    reason: The pack's Markdown description is not modelled yet.
+    issue: "#195"
+  - kind: other:pack-manifest.yaml
+    reason: The generated pack manifest is not modelled yet.
+    issue: "#195"
+  - kind: other:toolguides
+    reason: >-
+      The Markdown guides a toolguide points to with guide_path are not read or written with the toolguide; no
+      Wave 1 issue owns them yet (raised on #187).
+    issue: "#186"
+files:
+  - path: anti_pattern.graph.yaml
+    at: 'nodes{anti_pattern:anemic-domain-model}.tags ; nodes{anti_pattern:big-ball-of-mud}.tags ; nodes{anti_pattern:big-bang-rewrite}.tags ; nodes{anti_pattern:big-upfront-design}.tags ; nodes{anti_pattern:code-is-the-documentation}.tags ; nodes{anti_pattern:database-driven-design}.tags ; nodes{anti_pattern:feature-envy}.tags ; nodes{anti_pattern:global-data}.tags ; nodes{anti_pattern:implicit-concept}.tags ; nodes{anti_pattern:misplaced-field}.tags ; nodes{anti_pattern:repeated-switches-on-state}.tags ; nodes{anti_pattern:single-diagram-architecture}.tags ; nodes{anti_pattern:unencapsulated-record}.tags'
+    reason: >-
+      Node tags are not carried: the DRG node model has no tags, so the shard writer leaves them out (every tagged
+      node is pinned in at).
+    issue: "#186"
+  - path: directive.graph.yaml
+    at: 'edges{{"reason"="Locality of Change bounds new work to the minimum scope the goal requires; Boy Scout Rule endorses opportunistic improvement of touched areas, which can justify expanding a change beyond that boundary. Both remain valid, co-activatable rules -- the tension is resolved per-change by keeping adjacent campsite cleaning inside the touched area while deferring genuinely broad refactors with an explicit rationale, not by retiring either rule. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="in_tension_with","source"="directive:DIRECTIVE_024","target"="directive:DIRECTIVE_025"}} ; edges{{"reason"="The Boy Scout Rule encourages leaving touched code better than found, which can justify changes beyond the smallest viable diff the tactic prescribes. Both remain valid, co-activatable rules -- apply smallest-viable-diff discipline for goal delivery, and fold in only the touched-area fixes Boy Scout Rule requires, deferring broader opportunistic improvement to an explicit task. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="in_tension_with","source"="directive:DIRECTIVE_025","target"="tactic:change-apply-smallest-viable-diff"}} ; edges{{"reason"="Locality of Change bounds new work to the minimum scope the goal requires; Boy Scout Rule endorses opportunistic improvement of touched areas, which can justify expanding a change beyond that boundary. Both remain valid, co-activatable rules -- the tension is resolved per-change by keeping adjacent campsite cleaning inside the touched area while deferring genuinely broad refactors with an explicit rationale, not by retiring either rule. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="impacts","source"="directive:DIRECTIVE_024","target"="directive:DIRECTIVE_025"}} ; edges{{"reason"="The Boy Scout Rule encourages leaving touched code better than found, which can justify changes beyond the smallest viable diff the tactic prescribes. Both remain valid, co-activatable rules -- apply smallest-viable-diff discipline for goal delivery, and fold in only the touched-area fixes Boy Scout Rule requires, deferring broader opportunistic improvement to an explicit task. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="impacts","source"="directive:DIRECTIVE_025","target"="tactic:change-apply-smallest-viable-diff"}}'
+    reason: >-
+      Two edges use the legacy relation in_tension_with. The policy reads it as impacts with strength -1 (ADR-0009),
+      but the shard writer writes relation impacts with no strength, so the tension is lost on write. The pack needs
+      the canonical relation (a fix in spec-kitty core, which seeds the built-in pack; operator ruling 3 on #188)
+      and the writer must keep the signed strength; neither has an issue yet, both raised on #187.
+    issue: "#187"

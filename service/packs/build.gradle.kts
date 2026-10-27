@@ -85,9 +85,8 @@ tasks.processResources {
     }
 }
 
-// The open-packs round-trip: every YAML file of spec-kitty-open-packs must survive the file-based
-// adapter unchanged (operator decision, 2026-10-18). Point -PopenPacksDir at a checkout; by default
-// the sibling directory ../spec-kitty-open-packs. A missing checkout fails the task, it never skips.
+// The pinned spec-kitty-open-packs checkout the corpus tests read. Point -PopenPacksDir at a checkout; by default the
+// sibling directory ../spec-kitty-open-packs. A missing checkout fails the task, it never skips.
 val openPacksDir = providers.gradleProperty("openPacksDir")
     .orElse(rootProject.layout.projectDirectory.dir("../spec-kitty-open-packs").asFile.absolutePath)
 
@@ -98,10 +97,13 @@ val openPacksRef = providers.gradleProperty("openPacksRef")
 val testSourceSet = sourceSets.test.get()
 val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     group = "verification"
-    description = "Round-trips every spec-kitty-open-packs YAML file through the file-based adapter."
+    description = "Corpus checks over the pinned spec-kitty-open-packs checkout (part of check)."
     testClassesDirs = testSourceSet.output.classesDirs
     classpath = testSourceSet.runtimeClasspath
-    useJUnitPlatform { includeTags("open-packs") }
+    useJUnitPlatform {
+        includeTags("open-packs")
+        excludeTags("whole-pack")
+    }
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
@@ -120,8 +122,36 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     }
 }
 
+// The whole-pack round-trip gate (#187): every file of the pinned built-in pack is read into the domain, written back,
+// read again and compared with its source by meaning, against the checked-in expected-red baseline
+// (src/test/resources/whole-pack). It lands red-first and is NOT part of check until it is green; CI runs it in its own
+// non-required workflow (.github/workflows/whole-pack.yml).
+val wholePackReport = layout.buildDirectory.file("reports/whole-pack/report.md")
+tasks.register<Test>("wholePackRoundTrip") {
+    group = "verification"
+    description = "The whole-pack round-trip gate over the pinned built-in pack (#187); not part of check."
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = testSourceSet.runtimeClasspath
+    useJUnitPlatform { includeTags("whole-pack") }
+    val dir = openPacksDir
+    inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
+    systemProperty("charter.openPacksDir", dir.get())
+    val report = wholePackReport
+    outputs.file(report).withPropertyName("wholePackReport")
+    systemProperty("charter.wholePackReport", report.get().asFile.absolutePath)
+    val ref = openPacksRef
+    inputs.property("openPacksRef", ref.orElse(""))
+    doFirst {
+        val pin = ref.orNull
+        check(pin != null && Regex("[0-9a-f]{40}").matches(pin)) {
+            "openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '${pin ?: ""}'"
+        }
+        systemProperty("charter.openPacksRef", pin)
+    }
+}
+
 tasks.test {
-    useJUnitPlatform { excludeTags("open-packs") }
+    useJUnitPlatform { excludeTags("open-packs", "whole-pack") }
     // PackSchemasTest checks that every schema file in the repository is bundled and listed in file-kinds.yaml;
     // PlantedFilesTest reads the repository's conformance files. Both find the repository by this property.
     val schemaFiles = packContracts.dir("schemas")

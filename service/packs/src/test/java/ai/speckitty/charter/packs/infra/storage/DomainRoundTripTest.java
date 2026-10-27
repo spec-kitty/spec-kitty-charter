@@ -1,0 +1,311 @@
+package ai.speckitty.charter.packs.infra.storage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
+import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
+import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+/**
+ * The domain adapter of the whole-pack gate over a small pack: one file of each modelled kind (small real examples
+ * from the built-in pack), a descriptor and a graph shard. The adapter reports what it read, wrote and read back; the
+ * comparison of meaning is the gate's, so these tests assert on outcomes and on the written files themselves.
+ */
+class DomainRoundTripTest {
+
+    private static final String PACK_YAML = """
+            pack_id: 01ARWG13C000000000000000FG
+            pack_version: 1.0.0
+            parent_pack: null
+            name: built-in
+            pack_level: built-in
+            """;
+    private static final String TACTIC = """
+            schema_version: "1.0"
+            id: refactoring-inline-temp
+            name: Refactoring Inline Temp
+            purpose: Remove temporary variables that only alias simple expressions.
+            steps:
+              - title: Identify trivial temporary aliases
+                description: Find temp variables that store pure expressions.
+              - title: Inline the expression
+                description: Replace the temp usage with the underlying expression.
+            """;
+    private static final String DIRECTIVE = """
+            schema_version: "1.0"
+            id: DIRECTIVE_018
+            title: Doctrine Versioning Requirement
+            intent: Doctrine artifacts must be versioned with traceable change rationale.
+            enforcement: required
+            """;
+    private static final String STYLEGUIDE = """
+            schema_version: "1.0"
+            id: reasons-canvas-writing
+            title: REASONS Canvas Writing Styleguide
+            scope: docs
+            principles:
+              - Lead each section with a one-sentence summary, then bullet specifics.
+            """;
+    private static final String TOOLGUIDE = """
+            schema_version: "1.0"
+            id: powershell-syntax
+            tool: powershell
+            title: PowerShell Syntax Guide
+            guide_path: packs/built-in/toolguides/POWERSHELL_SYNTAX.md
+            summary: PowerShell-specific command, parameter, and path conventions for agents.
+            commands:
+              - spec-kitty
+              - git
+            """;
+    private static final String PARADIGM = """
+            schema_version: "1.0"
+            id: atomic-design
+            name: Atomic Design
+            summary: Compose interfaces from a five-level hierarchy.
+            """;
+    private static final String SHARD = """
+            schema_version: '1.0'
+            generated_at: STATIC
+            generated_by: drg-migration-v1
+            nodes:
+            - urn: tactic:refactoring-inline-temp
+              kind: tactic
+              label: Refactoring Inline Temp
+            - urn: directive:DIRECTIVE_018
+              kind: directive
+              label: Doctrine Versioning Requirement
+            edges:
+            - source: directive:DIRECTIVE_018
+              target: tactic:refactoring-inline-temp
+              relation: requires
+            """;
+
+    @TempDir
+    Path temp;
+
+    private Path source;
+    private Map<String, String> kinds;
+
+    @BeforeEach
+    void writeThePack() throws IOException {
+        source = temp.resolve("src/built-in");
+        kinds = new TreeMap<>();
+        put("pack.yaml", "pack-descriptor", PACK_YAML);
+        put("tactics/refactoring/refactoring-inline-temp.tactic.yaml", "tactic", TACTIC);
+        put("directives/018-doctrine-versioning-requirement.directive.yaml", "directive", DIRECTIVE);
+        put("styleguides/reasons-canvas-writing.styleguide.yaml", "styleguide", STYLEGUIDE);
+        put("toolguides/powershell-syntax.toolguide.yaml", "toolguide", TOOLGUIDE);
+        put("paradigms/atomic-design.paradigm.yaml", "paradigm", PARADIGM);
+        put("tactic.graph.yaml", "graph-shard", SHARD);
+        put("procedures/x.procedure.yaml", "procedure", "id: x\n");
+    }
+
+    private void put(String path, String kind, String text) throws IOException {
+        Path file = source.resolve(path);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, text, StandardCharsets.UTF_8);
+        kinds.put(path, kind);
+    }
+
+    private Map<String, Outcome> roundTrip(SerializationStrategy strategy) {
+        return new DomainRoundTrip(strategy).roundTrip(source, temp.resolve("out/built-in"), kinds);
+    }
+
+    private String written(Outcome outcome) throws IOException {
+        assertThat(outcome).isInstanceOf(Written.class);
+        return Files.readString(temp.resolve("out/built-in").resolve(((Written) outcome).writtenPath()));
+    }
+
+    @Test
+    void everyModelledFileIsWrittenAndReadBack() {
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes)
+                .containsOnlyKeys(kinds.keySet().stream()
+                        .filter(path -> !path.startsWith("procedures/"))
+                        .toList());
+        assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+    }
+
+    @Test
+    void anArtefactIsWrittenAtThePackRootNotAtItsSourcePath() {
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
+                .isEqualTo(new Written("refactoring-inline-temp.tactic.yaml"));
+        assertThat(outcomes.get("pack.yaml")).isEqualTo(new Written("pack.yaml"));
+        assertThat(outcomes.get("tactic.graph.yaml")).isEqualTo(new Written("tactic.graph.yaml"));
+    }
+
+    @Test
+    void theWrittenShardKeepsItsWriterAndItsEdge() throws IOException {
+        String shard = written(roundTrip(new YamlSerializationStrategy()).get("tactic.graph.yaml"));
+
+        assertThat(shard).contains("generated_by: drg-migration-v1").contains("relation: requires");
+        assertThat(GraphDocumentReader.read(shard, GraphDocumentReader.Shape.SHARD, "tactic.graph.yaml"))
+                .isInstanceOf(FileRead.Read.class);
+    }
+
+    @Test
+    void aFieldOutsideTheSchemaIsRefusedAndNamedWhileSiblingsAreWritten() throws IOException {
+        put("tactics/refactoring/refactoring-inline-temp.tactic.yaml", "tactic", TACTIC + "x_unknown: 1\n");
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
+                .isInstanceOfSatisfying(
+                        Refused.class, refused -> assertThat(refused.reason()).contains("x_unknown"));
+        assertThat(outcomes.get("directives/018-doctrine-versioning-requirement.directive.yaml"))
+                .isInstanceOf(Written.class);
+    }
+
+    @Test
+    void twoFilesDeclaringOneIdAreRefused() throws IOException {
+        put("tactics/copy.tactic.yaml", "tactic", TACTIC);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("tactics/copy.tactic.yaml"))
+                .isInstanceOfSatisfying(
+                        Refused.class, refused -> assertThat(refused.reason()).contains("same id"));
+    }
+
+    @Test
+    void aBrokenDescriptorRefusesThePackInsteadOfAbortingTheGate() throws IOException {
+        put("pack.yaml", "pack-descriptor", "pack_id: [unclosed\n");
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("pack.yaml")).isInstanceOf(Refused.class);
+        assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
+                .isInstanceOfSatisfying(
+                        Refused.class, refused -> assertThat(refused.reason()).contains("does not assemble"));
+        assertThat(outcomes.get("tactic.graph.yaml")).isInstanceOf(Written.class);
+    }
+
+    /** Positive control: a writer that loses a field still yields a written file, and the loss is in that file. */
+    @Test
+    void aLossyWriterIsVisibleInTheWrittenFile() throws IOException {
+        SerializationStrategy lossy = new LossyTacticWriter(new YamlSerializationStrategy());
+
+        String tactic = written(roundTrip(lossy).get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"));
+
+        assertThat(TACTIC).contains("purpose:");
+        assertThat(tactic).doesNotContain("purpose:").contains("id: refactoring-inline-temp");
+    }
+
+    @Test
+    void theSourcePackIsLeftUnchanged() throws IOException {
+        Map<String, String> before = digests(source);
+
+        roundTrip(new YamlSerializationStrategy());
+
+        assertThat(digests(source)).isEqualTo(before);
+    }
+
+    @Test
+    void theAdapterModelsExactlyTheSevenGateKinds() {
+        assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
+                .containsExactlyInAnyOrder(
+                        "directive", "tactic", "styleguide", "toolguide", "paradigm", "pack-descriptor", "graph-shard");
+    }
+
+    private static Map<String, String> digests(Path root) throws IOException {
+        Map<String, String> digests = new TreeMap<>();
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path file : files.filter(Files::isRegularFile).toList()) {
+                digests.put(root.relativize(file).toString(), sha256(Files.readAllBytes(file)));
+            }
+        }
+        return digests;
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Writes tactics without their {@code purpose} line; everything else is delegated unchanged. */
+    private record LossyTacticWriter(SerializationStrategy delegate) implements SerializationStrategy {
+
+        @Override
+        public String writeTactic(TacticDso tactic) {
+            return delegate.writeTactic(tactic)
+                    .lines()
+                    .filter(line -> !line.startsWith("purpose:"))
+                    .reduce("", (text, line) -> text + line + "\n");
+        }
+
+        @Override
+        public FileRead<TacticDso> readTactic(String text, String file) {
+            return delegate.readTactic(text, file);
+        }
+
+        @Override
+        public String writeDescriptor(PackDescriptorDso descriptor) {
+            return delegate.writeDescriptor(descriptor);
+        }
+
+        @Override
+        public FileRead<PackDescriptorDso> readDescriptor(String text) {
+            return delegate.readDescriptor(text);
+        }
+
+        @Override
+        public String writeDirective(DirectiveDso directive) {
+            return delegate.writeDirective(directive);
+        }
+
+        @Override
+        public FileRead<DirectiveDso> readDirective(String text, String file) {
+            return delegate.readDirective(text, file);
+        }
+
+        @Override
+        public String writeStyleguide(StyleguideDso styleguide) {
+            return delegate.writeStyleguide(styleguide);
+        }
+
+        @Override
+        public FileRead<StyleguideDso> readStyleguide(String text, String file) {
+            return delegate.readStyleguide(text, file);
+        }
+
+        @Override
+        public String writeToolguide(ToolguideDso toolguide) {
+            return delegate.writeToolguide(toolguide);
+        }
+
+        @Override
+        public FileRead<ToolguideDso> readToolguide(String text, String file) {
+            return delegate.readToolguide(text, file);
+        }
+
+        @Override
+        public String writeParadigm(ParadigmDso paradigm) {
+            return delegate.writeParadigm(paradigm);
+        }
+
+        @Override
+        public FileRead<ParadigmDso> readParadigm(String text, String file) {
+            return delegate.readParadigm(text, file);
+        }
+    }
+}
