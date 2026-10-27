@@ -43,6 +43,8 @@ __pycache__/
 build/
 .kotlin/
 .open-packs/
+# Generated javac @argfiles (e.g. service/javac.<timestamp>.args)
+javac.*.args
 
 # Aggregate lifecycle telemetry (not per-mission; machine-local)
 kitty-ops/lifecycle.jsonl
