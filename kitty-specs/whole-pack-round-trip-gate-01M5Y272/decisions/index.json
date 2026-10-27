@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-27T06:54:43.088177Z",
+      "decision_id": "01M5Y27JWGFR5CV0QY1Y2F0CBH",
+      "final_answer": "built-in only, not required (operator brief for the Wave 0 mission; internal, packs/ and the required-check flip raised as operator questions on #187)",
+      "input_key": "packs_covered",
+      "mission_id": "01M5Y2728DYJGR84Z0TAMJ945H",
+      "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+      "opened_by": "cli",
+      "options": [
+        "built-in only, not required",
+        "built-in + internal + packs/, required",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which packs does the gate cover in this mission, and is it a required check?",
+      "rationale": null,
+      "resolved_at": "2026-10-27T06:54:46.089640Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.packs-covered",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5Y2728DYJGR84Z0TAMJ945H",
+  "version": 1
+}
