@@ -20,7 +20,7 @@ public class CharterServiceApplication {
     /**
      * Starts the service.
      *
-     * @param args Spring Boot command-line arguments, for example {@code --charter.packs[0].path=/packs/built-in}
+     * @param args Spring Boot command-line arguments, for example {@code --charter.storage.root=/path/to/packs}
      */
     public static void main(String[] args) {
         SpringApplication.run(CharterServiceApplication.class, args);
