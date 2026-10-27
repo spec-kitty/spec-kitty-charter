@@ -2,8 +2,7 @@
 work_package_id: WP08
 title: Decision record and living docs
 dependencies:
-- WP06
-- WP07
+- WP09
 requirement_refs:
 - FR-014
 - C-001
@@ -27,6 +26,7 @@ history:
 agent_profile: architect-alphonso
 authoritative_surface: docs/
 create_intent:
+- docs/adr/0039-a-kind-binding-can-carry-companion-files.md
 - docs/adr/0040-content-form-and-payload-kinds.md
 - docs/changelog/2026-10-27-asset-and-template-round-trip.md
 execution_mode: code_change
@@ -34,6 +34,7 @@ owned_files:
 - docs/adr/0040-content-form-and-payload-kinds.md
 - docs/adr/0036-round-trip-fidelity-is-equality-of-meaning.md
 - docs/adr/README.md
+- docs/adr/0039-a-kind-binding-can-carry-companion-files.md
 - docs/architecture/logical-model.md
 - docs/changelog/2026-10-27-asset-and-template-round-trip.md
 - site/.contextive/definitions.yaml
@@ -79,8 +80,11 @@ Java 25 via `JAVA_HOME=/usr/lib/jvm/temurin-25`; Maven Central HTTP 429 → wait
 
 ### T032 — ADR-0040 and the index
 
-- Check `main` first (`git fetch origin main && git ls-tree --name-only origin/main docs/adr/`): 0039 is earmarked
-  for #227; if 0040 is taken by a sibling, take the next free number and say so.
+- ADR-0039 is #192's (companion files); this record is **ADR-0040** (operator decision 01M5ZAMVQ19X9GT3RN2SNJ44QM).
+  Check `main` again before committing; if 0040 was taken meanwhile, stop and ask.
+- Record why asset payloads and templates are not ADR-0039 companions (R1 sidecar-less payloads, R2 templates are
+  artifacts, payload base is `assets/`), which seams are shared with ADR-0039 (WP09), and amend ADR-0039's "#193 adds a
+  `Bytes` case" and "revision digests move to bytes with #193" notes accordingly (append-only amendment note on ADR-0039).
 - House ADR shape (read ADR-0035, ADR-0037). Status **Proposed**; decider the operator; rulings of 2026-10-27 on #193.
 - Decisions: (1) content form (`yaml`, `markdown`, `text`, `bytes`) declared by the file-kind rule; extension and
   `mime` never choose it; `mime` stays validated metadata; the table admits only built forms (`yaml`, `bytes`); (2)

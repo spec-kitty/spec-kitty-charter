@@ -174,6 +174,28 @@
       "parallel_group": 2
     },
     {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Companions.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e",
+        "lane-f",
+        "lane-g"
+      ],
+      "parallel_group": 3
+    },
+    {
       "lane_id": "lane-h",
       "wp_ids": [
         "WP08"
@@ -181,6 +203,7 @@
       "write_scope": [
         "cspell.json",
         "docs/adr/0036-round-trip-fidelity-is-equality-of-meaning.md",
+        "docs/adr/0039-a-kind-binding-can-carry-companion-files.md",
         "docs/adr/0040-content-form-and-payload-kinds.md",
         "docs/adr/README.md",
         "docs/architecture/logical-model.md",
@@ -192,14 +215,13 @@
         "artifact-rendering"
       ],
       "depends_on_lanes": [
-        "lane-f",
-        "lane-g"
+        "lane-i"
       ],
-      "parallel_group": 3
+      "parallel_group": 4
     }
   ],
-  "computed_at": "2026-10-27T17:20:35.789852+00:00",
+  "computed_at": "2026-10-27T18:43:23.852433+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "f61bf2300508817cedf420fd3140eadb72ffa0ff"
+  "planning_commit_sha": "d2760b5b97cac953e35ccc88eb7cbdc2bb0ec0c4"
 }

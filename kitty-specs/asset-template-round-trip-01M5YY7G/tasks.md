@@ -3,7 +3,7 @@
 **Mission**: `asset-template-round-trip-01M5YY7G` · **Spec**: [spec.md](spec.md) · **Plan**: [plan.md](plan.md)
 **Planning branch / merge target**: `feat/asset-template-round-trip` (PR to `main`, issue #193)
 
-Eight work packages. WP01 (vocabulary), WP02 (domain), WP03 (revision over bytes) and WP04 (pinned refusals in the
+Nine work packages (WP09 added after the sibling merges on main). WP01 (vocabulary), WP02 (domain), WP03 (revision over bytes) and WP04 (pinned refusals in the
 gate expectation) start in parallel. WP05 (the whole storage read and write path, with the fingerprint oracle and the
 open-packs round trip it would otherwise break) needs all four. WP06 (storage proofs) and WP07 (whole-pack gate) then
 run in parallel; WP08 (ADR and living docs) needs both. Every WP leaves `:packs:test :packs:check` green using only
@@ -51,6 +51,9 @@ Acceptance-check owners (plan "Acceptance checks"): 1, 2, 5, 10 → WP05; 3, 4, 
 | T033 | ADR-0036 revised | WP08 | |
 | T034 | Logical model and glossary | WP08 | [P] |
 | T035 | Changelog, open-packs issue text, docs checks | WP08 | |
+| T036 | Merge `origin/main` (sibling #190/#191/#192 merges) and resolve conflicts | WP09 | |
+| T037 | Unify low-level seams with ADR-0039 companions (one path rule, one bytes I/O, fingerprint order) | WP09 | |
+| T038 | All gates and proofs green on the merged code | WP09 | |
 
 ## Phase 1 — Foundations
 
@@ -153,11 +156,23 @@ T033 ADR-0036 (WP08)
 T034 Logical model, glossary (WP08)
 T035 Changelog, issue text, docs checks (WP08)
 
-Dependencies: WP06, WP07.
+Dependencies: WP09.
+
+### WP09 — Reconcile with the sibling merges on main
+
+**Prompt**: [tasks/WP09-reconcile-with-main.md](tasks/WP09-reconcile-with-main.md)
+**Goal**: merge `origin/main` after #190/#191/#192 landed (ADR-0039 companion files) and unify the seams so one
+non-YAML low-level path remains; keep pack-level asset files and templates (operator decision 01M5ZAMP0R5V5YF5KM09YXY0NS).
+
+T036 Merge `origin/main` (WP09)
+T037 Unify seams (WP09)
+T038 Gates and proofs (WP09)
+
+Dependencies: WP05, WP06, WP07.
 
 ## Parallel opportunities
 
-- WP01 ∥ WP02 ∥ WP03 ∥ WP04; then WP05; then WP06 ∥ WP07; then WP08.
+- WP01 ∥ WP02 ∥ WP03 ∥ WP04; then WP05; then WP06 ∥ WP07; then WP09 (reconcile with main); then WP08.
 
 ## MVP
 
