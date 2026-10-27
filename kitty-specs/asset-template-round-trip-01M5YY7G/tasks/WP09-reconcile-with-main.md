@@ -16,6 +16,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 36e247d85c613852af508485ecbd8628f32d2167
+created_at: '2026-10-27T18:44:10.665308+00:00'
 subtasks:
 - T036
 - T037
@@ -27,16 +30,16 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-role: implementer
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/
+create_intent:
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Companions.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java
 execution_mode: code_change
 owned_files:
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Companions.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java
-create_intent:
-- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Companions.java
-- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java
+role: implementer
 tags: []
 task_type: implement
 ---
