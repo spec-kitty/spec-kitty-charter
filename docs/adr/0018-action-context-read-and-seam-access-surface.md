@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -42,6 +42,8 @@ file-set authority in the storage ring feeds both the load and the fingerprint, 
 verified-read rule in the application ring serves `/info` and both tactic reads. The Risks bullet
 on #120 is replaced. The decision text of D8 and D11 is unchanged. The points are annotated where
 they stand.
+
+Superseded in part by [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) (2026-10-27): D11 as amended 2026-10-24 refuses every read when a configured pack's directory is missing; packs are now discovered under one configuration root, so a missing pack is simply not served (decision 4).
 
 **Amendment 2026-10-25** (regular-artefact read + registration mission, WP10): D10's "200 is the
 only success" is reconciled with [ADR-0026](/adr/0026-write-surface-is-functional-registration/),
@@ -283,6 +285,8 @@ is the one carve-out from the sentence above, which spoke only of the read-only 
   (`pack_not_found`, `tactic_not_found`) whose inputs changed meanwhile is `stale_input`. The first
   digest is global, so a missing pack directory or an unreadable file in any configured pack refuses
   every read with `pack_unreadable`. The residual window above now covers tactic files too.)*
+  *(Superseded in part by ADR-0038, 2026-10-27: a missing pack directory no longer refuses; the
+  pack is simply not served. An unreadable file still refuses.)*
 
 - `pack_unreadable` is pinned by a scenario with a graph shard that is not valid YAML.
   *(Amended 2026-10-20, R17: a graph shard that is not valid YAML is now `drg_schema_error`, so that

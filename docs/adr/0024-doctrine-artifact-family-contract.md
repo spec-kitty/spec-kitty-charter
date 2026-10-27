@@ -23,7 +23,7 @@ audience:
 
 Superseded in part by [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) (2026-10-27): the interface lives in `kernel.domain`, and its schema version is optional.
 
-[ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Proposed, 2026-10-27) would supersede in part the amendment's step 3: the storage and aggregate plumbing of #169 is keyed by kind before the new kinds are built; the read and registration services keep the amendment's order.
+Superseded in part by [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (2026-10-27): the amendment's step 3 no longer holds as written; the storage and aggregate plumbing of #169 is keyed by kind before the new kinds are built; the read and registration services keep the amendment's order.
 
 ### Amendment 2026-10-26: when the registry is built
 
