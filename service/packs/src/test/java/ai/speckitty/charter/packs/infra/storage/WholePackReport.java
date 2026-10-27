@@ -85,8 +85,9 @@ final class WholePackReport {
      * @return the Markdown table
      */
     static String kindTable(Evaluation evaluation) {
-        StringBuilder out = new StringBuilder("| kind | files | green | expected red | excluded | red |\n");
-        out.append("| --- | ---: | ---: | ---: | ---: | ---: |\n");
+        StringBuilder out =
+                new StringBuilder("| kind | files | green | expected red | excluded | red | known failure |\n");
+        out.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n");
         for (Map.Entry<String, SortedMap<Status, Integer>> kind :
                 evaluation.byKind().entrySet()) {
             SortedMap<Status, Integer> counts = kind.getValue();
@@ -103,6 +104,8 @@ final class WholePackReport {
                     .append(counts.getOrDefault(Status.EXCLUDED, 0))
                     .append(" | ")
                     .append(counts.getOrDefault(Status.RED, 0))
+                    .append(" | ")
+                    .append(counts.getOrDefault(Status.KNOWN_FAILURE, 0))
                     .append(" |\n");
         }
         return out.toString();
@@ -120,6 +123,7 @@ final class WholePackReport {
             case EXPECTED_RED -> "expected red";
             case EXCLUDED -> "excluded";
             case RED -> "red";
+            case KNOWN_FAILURE -> "known failure";
         };
     }
 

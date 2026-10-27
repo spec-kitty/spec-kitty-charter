@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.abort;
 
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The whole-pack gate's census, expectation and two-way ratchet, by example. Each case states the pack, what the round
@@ -72,6 +75,25 @@ class WholePackExpectationTest {
 
     private static Evaluation evaluate(String red, String exclusions, Map<String, Optional<String>> observed) {
         return WholePackExpectation.load(red, exclusions).evaluate(PACK, MODELLED, observed);
+    }
+
+    private static Evaluation evaluate(
+            String red, String exclusions, String known, Map<String, Optional<String>> observed) {
+        return WholePackExpectation.load(red, exclusions, known).evaluate(PACK, MODELLED, observed);
+    }
+
+    private static final String NO_KNOWN_FAILURES = "known-failures: []\n";
+    private static final String OPEN_PACKS_ISSUE = "spec-kitty/spec-kitty-open-packs#123";
+
+    /** A known-failure list with one entry for {@code path}, pinned {@code at}, owned by {@code issue}. */
+    private static String known(String path, String at, String issue) {
+        return """
+                known-failures:
+                  - path: %s
+                    at: "%s"
+                    reason: The pack file holds two YAML documents.
+                    issue: "%s"
+                """.formatted(path, at, issue);
     }
 
     private static Map<String, Optional<String>> withRed(String path, String detail) {
@@ -223,6 +245,243 @@ class WholePackExpectationTest {
                     .singleElement()
                     .asString()
                     .startsWith("UNEXPECTED_RED tactics/b.tactic.yaml");
+        }
+    }
+
+    @Nested
+    class KnownFailures {
+
+        private static final String A = "tactics/a.tactic.yaml";
+
+        private FileResult resultOf(Evaluation evaluation, String path) {
+            return evaluation.files().stream()
+                    .filter(file -> file.path().equals(path))
+                    .findFirst()
+                    .orElseThrow();
+        }
+
+        @Test
+        void aListedFileThatFailsWhereItIsPinnedIsAKnownFailureAndPasses() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known(A, "steps[2].title", OPEN_PACKS_ISSUE),
+                    withRed(A, "steps[2].title: x, <absent>"));
+
+            assertThat(evaluation.problems()).isEmpty();
+            assertThat(resultOf(evaluation, A)).satisfies(file -> {
+                assertThat(file.status()).isEqualTo(Status.KNOWN_FAILURE);
+                assertThat(file.detail())
+                        .contains("steps[2].title: x, <absent>")
+                        .contains("holds two YAML documents")
+                        .contains(OPEN_PACKS_ISSUE);
+            });
+        }
+
+        @Test
+        void aListedFileThatNowRoundTripsFailsWithRemoveIt() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED, MATCHING_EXCLUSIONS, known(A, "steps[2].title", OPEN_PACKS_ISSUE), ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly("UNEXPECTEDLY_GREEN tactics/a.tactic.yaml: it round-trips now; remove it from "
+                            + "whole-pack/known-failures.yaml");
+            assertThat(statuses(evaluation)).containsEntry(A, Status.GREEN);
+        }
+
+        @Test
+        void anUnlistedFailureStillFails() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED, MATCHING_EXCLUSIONS, NO_KNOWN_FAILURES, withRed(A, "steps[2].title: x, <absent>"));
+
+            assertThat(evaluation.problems())
+                    .containsExactly("UNEXPECTED_RED tactics/a.tactic.yaml (tactic): steps[2].title: x, <absent>");
+            assertThat(statuses(evaluation)).containsEntry(A, Status.RED);
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "#12",
+                    "TODO",
+                    "spec-kitty/spec-kitty-charter#12",
+                    "spec-kitty/spec-kitty-open-packs#0",
+                    "spec-kitty/spec-kitty-open-packs#12 and more"
+                })
+        void anEntryWithoutAnOpenPacksIssueFailsToLoad(String issue) {
+            String yaml = known(A, "steps[2].title", issue);
+
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("has issue '" + issue + "'")
+                    .hasMessageContaining("expected spec-kitty/spec-kitty-open-packs#<number>");
+        }
+
+        @Test
+        void anEntryWithNoIssueFailsToLoad() {
+            String yaml = known(A, "steps[2].title", OPEN_PACKS_ISSUE)
+                    .replace("    issue: \"" + OPEN_PACKS_ISSUE + "\"\n", "");
+
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("has no issue");
+        }
+
+        @Test
+        void aListedFileWhoseDifferencesChangedFails() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known(A, "steps[2].title", OPEN_PACKS_ISSUE),
+                    withRed(A, "notes: x, <absent>"));
+
+            assertThat(evaluation.problems())
+                    .containsExactly("CHANGED_RED tactics/a.tactic.yaml (tactic): expected the first difference at "
+                            + "'steps[2].title', now: notes: x, <absent>");
+            assertThat(statuses(evaluation)).containsEntry(A, Status.RED);
+        }
+
+        @Test
+        void aRefusedFileMustMatchTheWholeRefusal() {
+            String yaml = known(A, "refused: a.tactic.yaml holds two documents", OPEN_PACKS_ISSUE);
+
+            Evaluation same = evaluate(
+                    MATCHING_RED, MATCHING_EXCLUSIONS, yaml, withRed(A, "refused: a.tactic.yaml holds two documents"));
+            Evaluation other = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    yaml,
+                    withRed(A, "refused: a.tactic.yaml has an unknown field x"));
+
+            assertThat(same.problems()).isEmpty();
+            assertThat(statuses(same)).containsEntry(A, Status.KNOWN_FAILURE);
+            assertThat(other.problems())
+                    .containsExactly("CHANGED_RED tactics/a.tactic.yaml (tactic): expected the first difference at "
+                            + "'refused: a.tactic.yaml holds two documents', now: "
+                            + "refused: a.tactic.yaml has an unknown field x");
+            assertThat(statuses(other)).containsEntry(A, Status.RED);
+        }
+
+        @Test
+        void aRepeatedPathFailsToLoad() {
+            String twice = known(A, "steps[2].title", OPEN_PACKS_ISSUE)
+                    + known(A, "notes", OPEN_PACKS_ISSUE).replace("known-failures:\n", "");
+
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, twice))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("lists 'tactics/a.tactic.yaml' twice");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"unknown", "at", "reason"})
+        void anUnknownFieldOrMissingFieldFailsToLoad(String change) {
+            String entry = known(A, "steps[2].title", OPEN_PACKS_ISSUE);
+            String yaml = switch (change) {
+                case "unknown" -> entry + "    kind: tactic\n";
+                case "at" -> entry.replace("    at: \"steps[2].title\"\n", "");
+                default -> entry.replace("    reason: The pack file holds two YAML documents.\n", "");
+            };
+            String message = "unknown".equals(change) ? "unknown key 'kind'" : "has no " + change;
+
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(message);
+        }
+
+        @Test
+        void anUnknownTopLevelKeyFailsToLoad() {
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, "files: []\n"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("unknown key 'files'");
+        }
+
+        @Test
+        void anEntryForAFileNotInThePackIsStale() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known("tactics/z.tactic.yaml", "steps[2].title", OPEN_PACKS_ISSUE),
+                    ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly("STALE_KNOWN_FAILURE tactics/z.tactic.yaml: no such file; remove it from "
+                            + "whole-pack/known-failures.yaml");
+        }
+
+        @Test
+        void anEntryForAnExcludedFileIsStale() {
+            Evaluation evaluation =
+                    evaluate(MATCHING_RED, MATCHING_EXCLUSIONS, known("README.md", "x", OPEN_PACKS_ISSUE), ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .contains("STALE_KNOWN_FAILURE README.md: the file is excluded; remove it from "
+                            + "whole-pack/known-failures.yaml");
+            assertThat(statuses(evaluation)).containsEntry("README.md", Status.EXCLUDED);
+        }
+
+        @Test
+        void anEntryForAnUnmodelledKindCanNeverExpire() {
+            String path = "procedures/p.procedure.yaml";
+
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known(path, "no adapter models kind procedure", OPEN_PACKS_ISSUE),
+                    ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .contains("KNOWN_FAILURE_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models "
+                            + "this kind, so the entry can never expire");
+            assertThat(statuses(evaluation)).containsEntry(path, Status.EXPECTED_RED);
+        }
+
+        @Test
+        void aFileOnBothListsIsAmbiguous() {
+            String red = MATCHING_RED.replace("files: []", """
+                    files:
+                      - path: tactics/a.tactic.yaml
+                        at: steps[2].title
+                        reason: The writer drops the title.
+                        issue: "#187"
+                    """);
+
+            Evaluation evaluation = evaluate(
+                    red,
+                    MATCHING_EXCLUSIONS,
+                    known(A, "steps[2].title", OPEN_PACKS_ISSUE),
+                    withRed(A, "steps[2].title: x, <absent>"));
+
+            assertThat(evaluation.problems())
+                    .contains("AMBIGUOUS_ENTRY tactics/a.tactic.yaml: listed in both whole-pack/expected-red.yaml "
+                            + "and whole-pack/known-failures.yaml");
+            assertThat(resultOf(evaluation, A)).satisfies(file -> {
+                assertThat(file.status()).isEqualTo(Status.RED);
+                assertThat(file.detail()).isEqualTo("steps[2].title: x, <absent>");
+            });
+        }
+
+        @Test
+        void theCheckedInListLoads() {
+            assertThatCode(WholePackExpectation::fromClasspath).doesNotThrowAnyException();
+        }
+
+        @Test
+        void theReportCountsKnownFailuresLast() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known(A, "steps[2].title", OPEN_PACKS_ISSUE),
+                    withRed(A, "steps[2].title: x, <absent>"));
+
+            String report = WholePackReport.render(evaluation, "built-in", "abc", Map.of());
+
+            assertThat(report)
+                    .isEqualTo(WholePackReport.render(evaluation, "built-in", "abc", Map.of()))
+                    .contains("- Files: 5, green 2, expected red 1, excluded 1, red 0, known failure 1\n")
+                    .contains("| kind | files | green | expected red | excluded | red | known failure |")
+                    .contains("| tactics/a.tactic.yaml | tactic | known failure | ")
+                    .contains(OPEN_PACKS_ISSUE);
+            assertThat(WholePackReport.kindTable(evaluation)).contains("| tactic | 2 | 1 | 0 | 0 | 0 | 1 |");
         }
     }
 

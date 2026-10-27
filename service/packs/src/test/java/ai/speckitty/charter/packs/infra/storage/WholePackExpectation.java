@@ -19,11 +19,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * What the whole-pack gate expects to see, and the two-way ratchet that holds the observed result to it.
  *
- * <p>Two checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
+ * <p>Three checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
  * whole gate kind with no adapter ({@code kinds}), or a single file of a modelled kind ({@code files}), each with a
  * reason and the issue that owns it; it also names a modelled kind the pack has no file of ({@code empty_kinds}), which
  * the gate cannot prove and must not pass in silence. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
- * does not compare, each with a reason.
+ * does not compare, each with a reason. {@code whole-pack/known-failures.yaml} names files of a modelled kind that fail
+ * because the pack's own data is inconsistent, each pinned to where it differs and to the spec-kitty-open-packs issue
+ * that owns the fix (ADR-0036 decision 5).
  *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
  * listed item that now round-trips, so a fix is recorded the moment it lands. Stale entries, an exclusion over a
@@ -33,6 +35,10 @@ final class WholePackExpectation {
 
     static final String EXPECTED_RED_RESOURCE = "whole-pack/expected-red.yaml";
     static final String EXCLUSIONS_RESOURCE = "whole-pack/exclusions.yaml";
+    static final String KNOWN_FAILURES_RESOURCE = "whole-pack/known-failures.yaml";
+
+    /** The only issue a known failure may name: an open issue of spec-kitty-open-packs. */
+    private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
     /** The status of one file in a gate run. */
     enum Status {
@@ -43,7 +49,9 @@ final class WholePackExpectation {
         /** Not compared, for a listed reason. */
         EXCLUDED,
         /** Differs, and nothing expects it to: a problem. */
-        RED
+        RED,
+        /** Differs because of a pack inconsistency tracked upstream, and is listed as a known failure. */
+        KNOWN_FAILURE
     }
 
     /**
@@ -75,6 +83,17 @@ final class WholePackExpectation {
      * @param issue the issue that owns the fix
      */
     record FileEntry(String path, String at, String reason, String issue) {}
+
+    /**
+     * A file of a modelled kind that fails because the pack's own data is inconsistent, while the fix is pending in
+     * spec-kitty-open-packs (ADR-0036 decision 5). It expires itself: once the file round-trips, the gate fails.
+     *
+     * @param path the pack-relative path
+     * @param at where the file differs (as {@link #atOf}), or the whole red detail for a refused file
+     * @param reason why it fails
+     * @param issue the open-packs issue, {@code spec-kitty/spec-kitty-open-packs#<number>}
+     */
+    record KnownFailure(String path, String at, String reason, String issue) {}
 
     /**
      * A class of files the gate does not compare.
@@ -121,13 +140,19 @@ final class WholePackExpectation {
     private final List<FileEntry> files;
     private final List<EmptyKindEntry> emptyKinds;
     private final List<Exclusion> exclusions;
+    private final List<KnownFailure> knownFailures;
 
     private WholePackExpectation(
-            List<KindEntry> kinds, List<FileEntry> files, List<EmptyKindEntry> emptyKinds, List<Exclusion> exclusions) {
+            List<KindEntry> kinds,
+            List<FileEntry> files,
+            List<EmptyKindEntry> emptyKinds,
+            List<Exclusion> exclusions,
+            List<KnownFailure> knownFailures) {
         this.kinds = List.copyOf(kinds);
         this.files = List.copyOf(files);
         this.emptyKinds = List.copyOf(emptyKinds);
         this.exclusions = List.copyOf(exclusions);
+        this.knownFailures = List.copyOf(knownFailures);
     }
 
     /**
@@ -136,7 +161,7 @@ final class WholePackExpectation {
      * @return the expectation
      */
     static WholePackExpectation fromClasspath() {
-        return load(resource(EXPECTED_RED_RESOURCE), resource(EXCLUSIONS_RESOURCE));
+        return load(resource(EXPECTED_RED_RESOURCE), resource(EXCLUSIONS_RESOURCE), resource(KNOWN_FAILURES_RESOURCE));
     }
 
     /**
@@ -148,6 +173,20 @@ final class WholePackExpectation {
      * @throws IllegalArgumentException when an entry lacks a reason or issue, carries an unknown key, or repeats
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml) {
+        return load(expectedRedYaml, exclusionsYaml, "known-failures: []\n");
+    }
+
+    /**
+     * Reads an expectation from the texts of the three lists.
+     *
+     * @param expectedRedYaml the text of {@code expected-red.yaml}
+     * @param exclusionsYaml the text of {@code exclusions.yaml}
+     * @param knownFailuresYaml the text of {@code known-failures.yaml}
+     * @return the expectation
+     * @throws IllegalArgumentException when an entry lacks a field, carries an unknown key, or repeats, or when a known
+     *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue
+     */
+    static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
         Map<String, Object> red =
                 document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files", "empty_kinds"));
         Map<String, Object> excluded = document(exclusionsYaml, EXCLUSIONS_RESOURCE, Set.of("exclusions"));
@@ -169,7 +208,19 @@ final class WholePackExpectation {
                 entries(excluded.get("exclusions"), "exclusions", List.of("match", "reason"))) {
             exclusions.add(new Exclusion(entry.get("match"), entry.get("reason")));
         }
-        return new WholePackExpectation(kinds, files, emptyKinds, exclusions);
+        Map<String, Object> known = document(knownFailuresYaml, KNOWN_FAILURES_RESOURCE, Set.of("known-failures"));
+        List<KnownFailure> knownFailures = new ArrayList<>();
+        for (Map<String, String> entry :
+                entries(known.get("known-failures"), "known-failures", List.of("path", "at", "reason", "issue"))) {
+            String path = entry.get("path");
+            String issue = entry.get("issue");
+            if (!OPEN_PACKS_ISSUE.matcher(issue).matches()) {
+                throw new IllegalArgumentException("known-failures entry " + path + " has issue '" + issue
+                        + "'; expected spec-kitty/spec-kitty-open-packs#<number> (ADR-0036 decision 5)");
+            }
+            knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue));
+        }
+        return new WholePackExpectation(kinds, files, emptyKinds, exclusions, knownFailures);
     }
 
     /**
@@ -188,6 +239,10 @@ final class WholePackExpectation {
         files.forEach(entry -> fileEntries.put(entry.path(), entry));
         Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
         kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
+        Map<String, KnownFailure> knownEntries = new LinkedHashMap<>();
+        knownFailures.forEach(entry -> knownEntries.put(entry.path(), entry));
+        Set<String> ambiguous = new HashSet<>(fileEntries.keySet());
+        ambiguous.retainAll(knownEntries.keySet());
         List<Pattern> patterns = exclusions.stream().map(e -> glob(e.match())).toList();
 
         List<FileResult> results = new ArrayList<>();
@@ -217,9 +272,23 @@ final class WholePackExpectation {
                     problems.add("UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from "
                             + EXPECTED_RED_RESOURCE);
                 }
+                if (knownEntries.containsKey(path) && !ambiguous.contains(path)) {
+                    problems.add("UNEXPECTEDLY_GREEN " + path + ": it round-trips now; remove it from "
+                            + KNOWN_FAILURES_RESOURCE);
+                }
                 return;
             }
             redKinds.add(kind);
+            if (ambiguous.contains(path)) {
+                // Judged by neither list, so it cannot pass by accident; the whole-list check names the conflict.
+                results.add(new FileResult(path, kind, Status.RED, red.get()));
+                return;
+            }
+            @Nullable KnownFailure knownEntry = modelled ? knownEntries.get(path) : null;
+            if (knownEntry != null) {
+                results.add(knownFailure(path, kind, red.get(), knownEntry, problems));
+                return;
+            }
             @Nullable FileEntry fileEntry = fileEntries.get(path);
             // A kind entry only ever covers a kind no adapter models; for a modelled kind each file is listed alone.
             @Nullable KindEntry kindEntry = modelled ? null : kindEntries.get(kind);
@@ -246,6 +315,23 @@ final class WholePackExpectation {
             } else if (excludedPaths.contains(entry.path())) {
                 problems.add("STALE_BASELINE " + entry.path() + ": the file is excluded; remove it from "
                         + EXPECTED_RED_RESOURCE);
+            }
+        }
+        for (KnownFailure entry : knownFailures) {
+            @Nullable String kind = census.get(entry.path());
+            if (kind == null) {
+                problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": no such file; remove it from "
+                        + KNOWN_FAILURES_RESOURCE);
+            } else if (excludedPaths.contains(entry.path())) {
+                problems.add("STALE_KNOWN_FAILURE " + entry.path() + ": the file is excluded; remove it from "
+                        + KNOWN_FAILURES_RESOURCE);
+            } else if (!modelledKinds.contains(kind)) {
+                problems.add("KNOWN_FAILURE_UNMODELLED " + entry.path() + " (" + kind
+                        + "): no adapter models this kind, so the entry can never expire");
+            }
+            if (ambiguous.contains(entry.path())) {
+                problems.add("AMBIGUOUS_ENTRY " + entry.path() + ": listed in both " + EXPECTED_RED_RESOURCE + " and "
+                        + KNOWN_FAILURES_RESOURCE);
             }
         }
         for (KindEntry entry : kinds) {
@@ -292,6 +378,29 @@ final class WholePackExpectation {
     static String atOf(String red) {
         int colon = red.indexOf(": ");
         return colon < 0 ? red : red.substring(0, colon);
+    }
+
+    /**
+     * Judges a red file of a modelled kind that the known-failure list names: a known failure when it still differs
+     * where the entry pins it, else a changed red.
+     */
+    private static FileResult knownFailure(
+            String path, String kind, String red, KnownFailure entry, List<String> problems) {
+        if (matches(red, entry.at())) {
+            return new FileResult(
+                    path,
+                    kind,
+                    Status.KNOWN_FAILURE,
+                    red + " — known failure: " + entry.reason() + " (" + entry.issue() + ")");
+        }
+        problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '" + entry.at()
+                + "', now: " + red);
+        return new FileResult(path, kind, Status.RED, red);
+    }
+
+    /** Whether a red detail is the one a known failure pins: the same {@link #atOf}, or the whole refusal. */
+    private static boolean matches(String red, String at) {
+        return "refused".equals(atOf(red)) ? red.equals(at) : atOf(red).equals(at);
     }
 
     private static String expected(String red, String reason, String issue) {
