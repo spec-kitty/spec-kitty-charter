@@ -13,8 +13,9 @@ import java.util.Set;
  * an edge is authoritative is not settled, so nothing here pretends to keep them in step. Resolving them into a
  * doctrine graph is not this value's business.
  *
- * <p>Edges compare in canonical form: {@link #canonicalEdges()} ignores their order and duplicates. Nodes keep the
- * order they were written in. The values hold what the documents mean, not their bytes: an {@code impacts} weight is a
+ * <p>The record's {@code equals()} compares edges in file order and by count; {@link #canonicalEdges()} is the order-
+ * and duplicate-insensitive view. Nodes keep the order they were written in. The values hold what the documents mean,
+ * not their bytes: an {@code impacts} weight is a
  * number ({@code 1} and {@code 1.0} are equal), and an absent list reads like an empty one.
  */
 public sealed interface GraphDocument permits GraphDocument.Shard, GraphDocument.Fragment {
