@@ -13,5 +13,7 @@
   "purpose_tldr": "A red-first gate that proves every file of the built-in Charter Pack survives read, write and read-back with its meaning intact.",
   "slug": "whole-pack-round-trip-gate-01M5Y272",
   "target_branch": "feat/whole-pack-round-trip-gate",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "Test-scope harness only: no API, wire or schema contract is added or changed."
 }
