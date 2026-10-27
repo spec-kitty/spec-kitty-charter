@@ -28,9 +28,9 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-19. The runner decided under the operator's steer ("design
-it on its own merits, not as a copy of core"). Confirmation is pending in the pull request
-handover. Four rulings of the same day are operator-confirmed and marked so below: decisions
+**Accepted** — 2026-10-27 (provisional since 2026-10-19). The runner decided under the operator's steer ("design
+it on its own merits, not as a copy of core"). Confirmation came with its ratification on
+2026-10-27. Four rulings of the same day are operator-confirmed and marked so below: decisions
 D2 (DIV-110 kept), D5 (R9 gates cutover stage 3), D6 (tensions go to the creed set) and D10
 (refresh as `POST /packs/refresh`).
 

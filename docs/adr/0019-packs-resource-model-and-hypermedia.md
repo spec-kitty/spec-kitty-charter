@@ -29,8 +29,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Like the decisions of
-2026-10-19, it is provisional: it is revisited as the system evolves, on the
+**Accepted** — 2026-10-27 (provisional since 2026-10-24), proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Like the decisions of
+2026-10-19, it was provisional and is ratified on 2026-10-27; it is still revisited as the system evolves, on the
 triggers under [Revisit when](#revisit-when). The design is in
 [Packs resource model](/architecture/packs-resource-model/); the conventions it follows are in
 [Development conventions](/development/). The charter itself, which this record first named

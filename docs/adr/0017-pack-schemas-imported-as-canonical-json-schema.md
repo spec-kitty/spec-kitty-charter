@@ -25,8 +25,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator). Like every decision
-taken on 2026-10-19, this one is provisional: it is revisited as the system evolves, on the
+**Accepted** — 2026-10-27 (provisional since 2026-10-19). Decider: Stijn Dejongh (operator). Taken on
+2026-10-19 and ratified on 2026-10-27, this decision is still revisited as the system evolves, on the
 triggers under [Revisit when](#revisit-when).
 
 See [Amendment 2026-10-19](#amendment-2026-10-19-operator-rulings): the operator's rulings of that

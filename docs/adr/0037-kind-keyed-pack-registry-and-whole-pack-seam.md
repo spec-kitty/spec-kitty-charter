@@ -32,6 +32,9 @@ Supersedes in part ADR-0024's amendment of 2026-10-26, step 3: a **narrow slice*
 read and write code (#169) is extracted before the new kinds are hand-built, not after. The rest
 of #169 (the read and registration services, the controllers) still waits for the rule of three.
 
+Extended in part by [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) (2026-10-27):
+decision 4, a kind binding can carry companion files beside its YAML artifact.
+
 ### Amendment 2026-10-27: a kind that spells itself otherwise, and a kind of another slice
 
 Made by [#190](https://github.com/spec-kitty/spec-kitty-charter/issues/190) (agent profiles), the

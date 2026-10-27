@@ -26,9 +26,9 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decision D1 is **(ruled)**;
+**Accepted** — 2026-10-27 (provisional since 2026-10-24), proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decision D1 is **(ruled)**;
 the others are **(default)** and stand as decided until revisited. D1 and D2 are built (#129).
-It is provisional.
+It is ratified as of 2026-10-27.
 
 This record amends:
 
