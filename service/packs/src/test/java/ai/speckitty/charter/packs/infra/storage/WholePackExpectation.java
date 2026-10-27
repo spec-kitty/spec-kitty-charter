@@ -21,7 +21,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Two checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
  * whole gate kind with no adapter ({@code kinds}), or a single file of a modelled kind ({@code files}), each with a
- * reason and the issue that owns it. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
+ * reason and the issue that owns it; it also names a modelled kind the pack has no file of ({@code empty_kinds}), which
+ * the gate cannot prove and must not pass in silence. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
  * does not compare, each with a reason.
  *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
@@ -53,6 +54,16 @@ final class WholePackExpectation {
      * @param issue the issue that turns it green
      */
     record KindEntry(String kind, String reason, String issue) {}
+
+    /**
+     * A modelled gate kind the pinned pack has no file of, so the gate cannot prove it; listed so that an empty modelled
+     * kind is never passed in silence. The entry goes stale the moment the pack gains a file of the kind.
+     *
+     * @param kind the modelled gate kind
+     * @param reason why the pack has none, and where the kind is proved instead
+     * @param issue the issue that owns it
+     */
+    record EmptyKindEntry(String kind, String reason, String issue) {}
 
     /**
      * An expected-red file of a modelled kind.
@@ -107,11 +118,14 @@ final class WholePackExpectation {
 
     private final List<KindEntry> kinds;
     private final List<FileEntry> files;
+    private final List<EmptyKindEntry> emptyKinds;
     private final List<Exclusion> exclusions;
 
-    private WholePackExpectation(List<KindEntry> kinds, List<FileEntry> files, List<Exclusion> exclusions) {
+    private WholePackExpectation(
+            List<KindEntry> kinds, List<FileEntry> files, List<EmptyKindEntry> emptyKinds, List<Exclusion> exclusions) {
         this.kinds = List.copyOf(kinds);
         this.files = List.copyOf(files);
+        this.emptyKinds = List.copyOf(emptyKinds);
         this.exclusions = List.copyOf(exclusions);
     }
 
@@ -133,7 +147,8 @@ final class WholePackExpectation {
      * @throws IllegalArgumentException when an entry lacks a reason or issue, carries an unknown key, or repeats
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml) {
-        Map<String, Object> red = document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files"));
+        Map<String, Object> red =
+                document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files", "empty_kinds"));
         Map<String, Object> excluded = document(exclusionsYaml, EXCLUSIONS_RESOURCE, Set.of("exclusions"));
         List<KindEntry> kinds = new ArrayList<>();
         for (Map<String, String> entry : entries(red.get("kinds"), "kinds", List.of("kind", "reason", "issue"))) {
@@ -143,12 +158,17 @@ final class WholePackExpectation {
         for (Map<String, String> entry : entries(red.get("files"), "files", List.of("path", "at", "reason", "issue"))) {
             files.add(new FileEntry(entry.get("path"), entry.get("at"), entry.get("reason"), entry.get("issue")));
         }
+        List<EmptyKindEntry> emptyKinds = new ArrayList<>();
+        for (Map<String, String> entry :
+                entries(red.get("empty_kinds"), "empty_kinds", List.of("kind", "reason", "issue"))) {
+            emptyKinds.add(new EmptyKindEntry(entry.get("kind"), entry.get("reason"), entry.get("issue")));
+        }
         List<Exclusion> exclusions = new ArrayList<>();
         for (Map<String, String> entry :
                 entries(excluded.get("exclusions"), "exclusions", List.of("match", "reason"))) {
             exclusions.add(new Exclusion(entry.get("match"), entry.get("reason")));
         }
-        return new WholePackExpectation(kinds, files, exclusions);
+        return new WholePackExpectation(kinds, files, emptyKinds, exclusions);
     }
 
     /**
@@ -245,8 +265,19 @@ final class WholePackExpectation {
                 problems.add("STALE_EXCLUSION " + exclusions.get(i).match() + ": matches no file");
             }
         }
+        Set<String> listedEmpty = new HashSet<>();
+        for (EmptyKindEntry entry : emptyKinds) {
+            listedEmpty.add(entry.kind());
+            if (!modelledKinds.contains(entry.kind())) {
+                problems.add("STALE_BASELINE empty kind " + entry.kind() + ": not a modelled kind; remove it from "
+                        + EXPECTED_RED_RESOURCE);
+            } else if (census.containsValue(entry.kind())) {
+                problems.add("STALE_BASELINE empty kind " + entry.kind() + ": the pack has a file of it now; remove it"
+                        + " from " + EXPECTED_RED_RESOURCE);
+            }
+        }
         for (String kind : new java.util.TreeSet<>(modelledKinds)) {
-            if (!census.containsValue(kind)) {
+            if (!census.containsValue(kind) && !listedEmpty.contains(kind)) {
                 problems.add("EMPTY_MODELLED_KIND " + kind + ": the pack has no file of this modelled kind");
             }
         }
