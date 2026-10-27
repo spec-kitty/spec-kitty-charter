@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable.bdd;
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.deployable.CharterWiring;
 import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
@@ -52,7 +53,7 @@ public class CucumberSpringConfiguration {
 
         @Bean
         @Primary
-        CharterWiring.PackLocations scenarioPackLocations(ScenarioPacks packs) {
+        DomainRepositoryService.Locations scenarioPackLocations(ScenarioPacks packs) {
             return packs::locations;
         }
 

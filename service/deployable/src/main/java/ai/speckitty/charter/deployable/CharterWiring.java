@@ -1,10 +1,10 @@
 package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.kernel.domain.Fingerprint;
-import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackValidation;
+import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
@@ -49,17 +49,13 @@ public class CharterWiring {
         return () -> configured;
     }
 
+    /**
+     * The packs the read path fingerprints and validates: the same ones the storage layer reads and writes, from its
+     * {@code charter.storage.root}, so the two can never disagree.
+     */
     @Bean
-    PackLocations packLocations(CharterProperties properties) {
-        List<PackLocation> locations = properties.packs().stream()
-                .map(p -> new PackLocation(
-                        p.name(),
-                        PackLevel.fromToken(p.level())
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                        "charter.packs: unknown level '" + p.level() + "' for " + p.name())),
-                        p.path()))
-                .toList();
-        return () -> locations;
+    PackLocations packLocations(DomainRepositoryService.Locations storage) {
+        return storage::all;
     }
 
     @Bean
@@ -89,24 +85,24 @@ public class CharterWiring {
     }
 
     @Bean
-    ServiceInfoQuery serviceInfoQuery(CharterProperties properties, ConsistentRead read) {
+    ServiceInfoQuery serviceInfoQuery(CharterProperties properties, PackLocations packs, ConsistentRead read) {
         String configured = properties.worktreeId();
         return new ServiceInfoQuery(
-                configured == null || configured.isBlank() ? derivedWorktreeId(properties) : configured, read);
+                configured == null || configured.isBlank() ? derivedWorktreeId(packs.get()) : configured, read);
     }
 
     /**
      * The worktree id of a service started without {@code charter.worktree-id}: the first 16 hex digits of a digest
-     * of the configured pack directories, resolved to their real paths where they exist. It is stable for one
+     * of the pack directories at startup, resolved to their real paths where they exist. It is stable for one
      * configuration and names no host path.
      *
-     * @param properties the bound configuration
+     * @param packs the packs at startup
      * @return 16 lower-case hex digits
      */
-    static String derivedWorktreeId(CharterProperties properties) {
+    static String derivedWorktreeId(List<PackLocation> packs) {
         Fingerprint fingerprint = Fingerprint.sha256();
-        for (CharterProperties.Pack pack : properties.packs()) {
-            fingerprint.add(realPath(pack.path()).toString());
+        for (PackLocation pack : packs) {
+            fingerprint.add(realPath(pack.root()).toString());
         }
         String digest = fingerprint.value();
         return digest.substring(digest.indexOf(':') + 1, digest.indexOf(':') + 1 + 16);

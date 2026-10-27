@@ -8,3 +8,10 @@ server:
   # Loopback only (docs/architecture/service-lifecycle.md); port 0 until the launcher assigns one.
   address: 127.0.0.1
   port: 0
+# charter:
+#   storage:
+#     # Where the packs live, read and written in place: every directory directly under the root is a pack
+#     # (`built-in` is the built-in pack; any other directory is an org pack named after itself). Unset, the
+#     # service serves no packs. Set it here, in an external config file (--spring.config.additional-location),
+#     # or on the command line: --charter.storage.root=/path/to/packs.
+#     root: /path/to/packs

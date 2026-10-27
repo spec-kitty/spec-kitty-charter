@@ -23,7 +23,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * FR-010 through the production path: the persistence ports are the beans Spring wires from {@code charter.packs},
+ * FR-010 through the production path: the persistence ports are the beans Spring wires from {@code charter.storage.root},
  * not instances built by the test. They are addressed by domain port type and domain identifiers only.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -62,9 +62,7 @@ class WiringRoundTripTest {
                   - title: Only step
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.packs[0].name", () -> "fixture");
-        registry.add("charter.packs[0].level", () -> "org");
-        registry.add("charter.packs[0].path", () -> packs.resolve("fixture").toString());
+        registry.add("charter.storage.root", () -> packs.toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {

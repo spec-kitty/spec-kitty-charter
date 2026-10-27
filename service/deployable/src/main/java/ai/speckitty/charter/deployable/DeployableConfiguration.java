@@ -8,11 +8,12 @@ import org.springframework.context.annotation.Configuration;
  * storage adapter, inbound adapter), so a test can wire a layer slice from its own {@code config} package without
  * listing beans. An empty package scans to nothing; each layer's configuration lands in its own package.
  *
- * <p>This aggregates only the layers' stereotyped beans. The property-bound composition-root beans
- * (for example {@code DomainRepositoryService.Locations}, {@code PackLocations}, the guard, {@code FileSystemPackSources})
- * are supplied by the {@code deployable} wiring classes ({@code CharterWiring}, {@code PackPersistenceWiring},
- * {@code GuardWiring}) through {@code CharterServiceApplication}'s own scan — so this class alone does not boot the
- * full application context; a full-context test goes through {@code CharterServiceApplication}.
+ * <p>This aggregates only the layers' own beans, including the storage layer's {@code DomainRepositoryService.Locations}
+ * bound from {@code charter.storage.root}. The remaining property-bound composition-root beans (for example
+ * {@code PackLocations}, the guard, {@code FileSystemPackSources}) are supplied by the {@code deployable} wiring classes
+ * ({@code CharterWiring}, {@code GuardWiring}) through {@code CharterServiceApplication}'s own scan — so this class
+ * alone does not boot the full application context; a full-context test goes through
+ * {@code CharterServiceApplication}.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan({
