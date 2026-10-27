@@ -1,0 +1,129 @@
+{
+  "mission_slug": "whole-pack-round-trip-gate-01M5Y272",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackRoundTripTest calls OpenPacksCorpus.assertPinned() before and after the run; missing/moved/dirty checkout fails, never skips",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:07:41.468727+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "DomainRoundTripTest (9 tests): read into Pack via DomainRepositoryService, written to fresh dir, read back; graph shards via reader/policy/writer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:07:46.907642+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MeaningComparatorTest (31): parsed-tree comparison with unequal twins; source-vs-written in the gate; lossy-writer control turns >100 real tactics red at purpose",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:07:52.093401+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MeaningComparatorTest GraphShards: typed canonical edge set (order/duplicates free), nodes keyed by urn, duplicate URNs counted",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:07:57.060269+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "DomainRoundTripTest aFieldOutsideTheSchemaIsRefusedAndNamed + aBrokenDescriptorRefusesThePack: refusals are red with the reader's reason",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:02.808523+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackReport: per-kind table + per-file rows; report.md written by :packs:wholePackRoundTrip; WholePackExpectationTest TheReport",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:08.320545+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackExpectationTest everyFileIsAccountedForExactlyOnce; real run 505 = 213 green + 272 expected red + 20 excluded + 0 red",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:13.678946+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackExpectationTest TheRatchet: unlisted red fails, listed red passes with reason+issue, at: pins every difference (CHANGED_RED)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:18.968900+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackExpectationTest aListedFileThatNowRoundTripsFailsAsUnexpectedlyGreen + kind variant",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:24.190762+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackExpectationTest StaleAndVacuousEntries: stale exclusion, exclusion over a modelled file, excluded baseline entry all fail",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:29.321098+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "review",
+      "evidence": "WholePackRoundTrip interface is the gate's only storage dependency; DomainRoundTrip adapter; seam note on #189 (issuecomment 6436646253)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:34.740541+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "manual",
+      "evidence": "gradle :packs:check --dry-run lists test and openPacksRoundTrip, not wholePackRoundTrip; .github/workflows/whole-pack.yml not called by ci.yml",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T08:08:39.923113+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
