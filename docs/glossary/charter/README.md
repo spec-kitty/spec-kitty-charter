@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-27T09:25:39Z"
-  content_hash: "sha256:7d71082dcf2f"
+  at: "2026-10-27T10:19:53Z"
+  content_hash: "sha256:198d25a272f3"
 ---
 
 # Charter
@@ -91,7 +91,7 @@ The materialized `.kittify/charter/` tree as a unit: `charter.md`, the synthesis
 
 ## Charter Facade
 
-A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a charter surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from doctrine.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → offering boundary's public surface.
+A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a charter surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from charter.offering.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → offering boundary's public surface.
 
 {#charter-offering}
 
