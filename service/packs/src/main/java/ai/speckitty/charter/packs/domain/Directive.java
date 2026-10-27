@@ -1,7 +1,9 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -131,8 +133,8 @@ public final class Directive implements CharterArtifact {
     }
 
     @Override
-    public String schemaVersion() {
-        return schemaVersion;
+    public Optional<String> schemaVersion() {
+        return Optional.of(schemaVersion);
     }
 
     @Override

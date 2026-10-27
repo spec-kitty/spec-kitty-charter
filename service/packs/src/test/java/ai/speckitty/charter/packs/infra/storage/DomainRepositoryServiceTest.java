@@ -6,11 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import java.io.IOException;
@@ -105,7 +105,7 @@ class DomainRepositoryServiceTest {
         Tactic renamed = Tactic.builder()
                 .id(original.id())
                 .packId(original.packId())
-                .schemaVersion(original.schemaVersion())
+                .schemaVersion(original.schemaVersion()).orElseThrow()
                 .name("Alpha tactic, renamed")
                 .step(original.steps().get(0))
                 .build();

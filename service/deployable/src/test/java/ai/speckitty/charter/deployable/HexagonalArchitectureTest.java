@@ -4,6 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
@@ -363,6 +364,27 @@ class HexagonalArchitectureTest {
     @Test
     void theSliceRuleFailsOnADomainThatNamesAnotherSlice() {
         assertBites(sliceDomainDoesNotCross("packs"), ROOT + ".packs.domain.badfixture", "DomainCrossesSlice");
+    }
+
+    /**
+     * ADR-0035 (issue #171): the shared artifact interface lives in the kernel, so a domain type of a slice other than
+     * packs can implement it without crossing a slice. The positive control runs the unchanged cross-slice rule on
+     * such a type and checks that it is a {@link CharterArtifact}.
+     */
+    @Test
+    void aSecondSliceCanImplementTheSharedArtifactInterface() {
+        JavaClasses fixture = new ClassFileImporter().importPackages(ROOT + ".profiles.domain.sharedfixture");
+        sliceDomainDoesNotCross("profiles").check(fixture);
+        classes()
+                .that()
+                .resideInAPackage(ROOT + ".profiles.domain.sharedfixture")
+                .and()
+                .areTopLevelClasses()
+                .and()
+                .doNotHaveSimpleName("package-info")
+                .should()
+                .implement(CharterArtifact.class)
+                .check(fixture);
     }
 
     /** The top-level owners that are not concern slices: the shared kernel, the generated contract and the root. */

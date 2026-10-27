@@ -4,8 +4,8 @@ import ai.speckitty.charter.api.TacticsApi;
 import ai.speckitty.charter.api.model.Tactic;
 import ai.speckitty.charter.api.model.TacticReference;
 import ai.speckitty.charter.api.model.TacticStep;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.TacticReadService;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -51,7 +51,7 @@ public class TacticController implements TacticsApi {
     private static Tactic toDto(ai.speckitty.charter.packs.domain.Tactic tactic) {
         return new Tactic(
                 tactic.id().value(),
-                tactic.schemaVersion(),
+                tactic.schemaVersion().orElseThrow(),
                 tactic.name(),
                 tactic.purpose().orElse(null),
                 tactic.notes().orElse(null),

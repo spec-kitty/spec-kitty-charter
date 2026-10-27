@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.Optional;
 
 /** The port through which a pack's styleguides are stored and fetched one at a time, whatever the storage. */

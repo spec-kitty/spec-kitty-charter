@@ -5,12 +5,12 @@ import ai.speckitty.charter.api.model.Paradigm;
 import ai.speckitty.charter.api.model.ParadigmReference;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -147,7 +147,7 @@ public class ParadigmController implements ParadigmsApi {
     private static Paradigm toDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
         return new Paradigm(
                 paradigm.id().value(),
-                paradigm.schemaVersion(),
+                paradigm.schemaVersion().orElseThrow(),
                 paradigm.name(),
                 paradigm.summary(),
                 paradigm.directiveRefs(),

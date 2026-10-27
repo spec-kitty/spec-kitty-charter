@@ -27,7 +27,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     public String writeTactic(TacticDso tactic) {
         YamlDumpEmitter emitter = new YamlDumpEmitter()
                 .scalar("id", tactic.id())
-                .scalar("schema_version", tactic.schemaVersion())
+                .scalar("schema_version", tactic.schemaVersion().orElseThrow())
                 .scalar("name", tactic.name())
                 .scalar("purpose", tactic.purpose());
         List<Map<String, Object>> steps = new ArrayList<>();
@@ -95,7 +95,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         }
         return new YamlDumpEmitter()
                 .scalar("id", directive.id())
-                .scalar("schema_version", directive.schemaVersion())
+                .scalar("schema_version", directive.schemaVersion().orElseThrow())
                 .scalar("title", directive.title())
                 .scalar("intent", directive.intent())
                 .scalar("enforcement", directive.enforcement())
@@ -155,7 +155,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         }
         YamlDumpEmitter emitter = new YamlDumpEmitter()
                 .scalar("id", styleguide.id())
-                .scalar("schema_version", styleguide.schemaVersion())
+                .scalar("schema_version", styleguide.schemaVersion().orElseThrow())
                 .scalar("title", styleguide.title())
                 .scalar("scope", styleguide.scope())
                 .strings("principles", styleguide.principles())
@@ -230,7 +230,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         }
         return new YamlDumpEmitter()
                 .scalar("id", paradigm.id())
-                .scalar("schema_version", paradigm.schemaVersion())
+                .scalar("schema_version", paradigm.schemaVersion().orElseThrow())
                 .scalar("name", paradigm.name())
                 .scalar("summary", paradigm.summary())
                 .strings("directive_refs", paradigm.directiveRefs())
@@ -261,7 +261,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     public String writeToolguide(ToolguideDso toolguide) {
         return new YamlDumpEmitter()
                 .scalar("id", toolguide.id())
-                .scalar("schema_version", toolguide.schemaVersion())
+                .scalar("schema_version", toolguide.schemaVersion().orElseThrow())
                 .scalar("tool", toolguide.tool())
                 .scalar("title", toolguide.title())
                 .scalar("guide_path", toolguide.guidePath())

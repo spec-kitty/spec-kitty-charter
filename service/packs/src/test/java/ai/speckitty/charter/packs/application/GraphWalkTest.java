@@ -3,15 +3,15 @@ package ai.speckitty.charter.packs.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -246,8 +246,8 @@ class GraphWalkTest {
         }
 
         @Override
-        public String schemaVersion() {
-            return "1.0";
+        public Optional<String> schemaVersion() {
+            return Optional.of("1.0");
         }
 
         @Override

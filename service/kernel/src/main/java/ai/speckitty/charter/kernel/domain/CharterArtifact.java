@@ -1,9 +1,5 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.kernel.domain;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +35,7 @@ public interface CharterArtifact {
      *
      * @return the {@code schema_version}
      */
-    String schemaVersion();
+    Optional<String> schemaVersion();
 
     /**
      * The human-readable name, normalized across kinds.

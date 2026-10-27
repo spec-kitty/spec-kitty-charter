@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 
 /** The port through which a pack's descriptor is fetched and replaced, whatever the storage. */
 public interface PackDescriptorRepository {

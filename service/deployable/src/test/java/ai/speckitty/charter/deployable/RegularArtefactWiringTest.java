@@ -3,10 +3,10 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.CompositeComponentResolver;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
