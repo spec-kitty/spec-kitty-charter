@@ -70,7 +70,9 @@ final class GeneratedPackTree {
         TOOLGUIDE("toolguide"),
         PARADIGM("paradigm"),
         AGENT_PROFILE("agent"),
-        MISSION_STEP_CONTRACT("step-contract");
+        MISSION_STEP_CONTRACT("step-contract"),
+        GLOSSARY_PACK("glossary-pack"),
+        SKILL("skill");
 
         private final String token;
 
@@ -521,6 +523,8 @@ final class GeneratedPackTree {
             case PARADIGM -> "p-" + n;
             case AGENT_PROFILE -> "ap-" + n;
             case MISSION_STEP_CONTRACT -> "msc-" + n;
+            case GLOSSARY_PACK -> "gp-" + n;
+            case SKILL -> "sk-" + n;
         };
     }
 
@@ -536,6 +540,13 @@ final class GeneratedPackTree {
                 "profile-id: " + id + "\nname: N\nroles: [r]\npurpose: P\nspecialization:\n  primary-focus: F\n";
             case MISSION_STEP_CONTRACT ->
                 "id: " + id + "\nschema_version: '1.0'\naction: a\nmission: m\nsteps:\n  - id: s\n    description: D\n";
+            case GLOSSARY_PACK ->
+                "id: " + id
+                        + "\nprovenance: org\nterms:\n  - surface: s\n    definition: D\n    confidence: 0.9\n    status: active\n";
+            // A wrapper skill names no companion, so the tree plants the skill file alone.
+            case SKILL ->
+                "id: " + id
+                        + "\nschema_version: '1.0'\ntitle: T\ndescription: D\nform: wrapper\nexpands_to:\n  target: builtin:x\n";
         };
     }
 

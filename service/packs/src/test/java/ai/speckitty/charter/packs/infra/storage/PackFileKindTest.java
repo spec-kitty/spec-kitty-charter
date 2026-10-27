@@ -31,6 +31,8 @@ class PackFileKindTest {
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
             Map.entry("core/step-contracts/a.step-contract.yaml", "mission-step-contract"),
             Map.entry("core/assets/a.asset.yaml", "asset"),
+            Map.entry("core/glossary/a.glossary-pack.yaml", "glossary-pack"),
+            Map.entry("core/skills/a.skill.yaml", "skill"),
             Map.entry("project/charter.yaml", "charter"));
 
     /** One sample path for each exclusion rule. */
@@ -43,8 +45,6 @@ class PackFileKindTest {
             "core/missions/software-dev/governance-profile.yaml",
             "core/mission_types/software-dev.yaml",
             "core/presets/minimal.yaml",
-            "core/skills/a.skill.yaml",
-            "core/glossary/a.glossary-pack.yaml",
             "core/assets/lint.config.yaml",
             "core/pack-manifest.yaml",
             "built-in.source.yaml",
@@ -112,6 +112,6 @@ class PackFileKindTest {
                 .hasSize(15)
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(14);
+        assertThat(KINDS.fileRules()).hasSize(16);
     }
 }

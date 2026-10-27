@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/glossary-pack.schema.json",
+  "$defs": {
+    "GlossaryTerm": {
+      "additionalProperties": false,
+      "description": "A single canonical-term entity within a glossary pack (core's GlossaryTerm).\n\nconfidence is a number, never an enum or a string. status is free text: core declares no\nenumeration. The optional lists default to null, not to an empty list.",
+      "properties": {
+        "surface": {
+          "title": "Surface",
+          "type": "string"
+        },
+        "definition": {
+          "title": "Definition",
+          "type": "string"
+        },
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "see_also": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "See Also"
+        },
+        "introduced_in_mission": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Introduced In Mission"
+        },
+        "synonyms_to_avoid": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Synonyms To Avoid"
+        },
+        "aliases": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aliases"
+        },
+        "banned_synonyms": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Banned Synonyms"
+        }
+      },
+      "required": [
+        "surface",
+        "definition",
+        "confidence",
+        "status"
+      ],
+      "title": "GlossaryTerm",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A named, provenance-tagged collection of canonical terms, distributed as one\n*.glossary-pack.yaml file (URN glossary_pack:<id>).\n\nCore exports no schema for this kind. This schema is authored here from core's pydantic\nmodel (charter.offering.glossary_packs.models.GlossaryPack and GlossaryTerm, extra=\"forbid\",\nat core 581b5c46da), so every object is closed.\n\nFields\n------\nid:\n    Stable identifier of the pack.\nprovenance:\n    Where the pack comes from, as free text.\ndescription:\n    Optional human-facing description.\nterms:\n    The terms, in authored order; at least one.\n\nEach term's surface must be unique within the pack. JSON Schema cannot express that; it is\nthe domain's invariant, as it is core's.",
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "provenance": {
+      "title": "Provenance",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "terms": {
+      "items": {
+        "$ref": "#/$defs/GlossaryTerm"
+      },
+      "minItems": 1,
+      "title": "Terms",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "provenance",
+    "terms"
+  ],
+  "title": "GlossaryPack",
+  "type": "object"
+}

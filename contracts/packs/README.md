@@ -1,7 +1,7 @@
 # Pack schemas
 
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
-descriptor, graph shards, the org fragment, the org charter, the nine artifact kinds, and the
+descriptor, graph shards, the org fragment, the org charter, the eleven artifact kinds, and the
 project `charter.yaml`.
 
 These schemas are canonical in this repository and are edited in place; core consumes them
@@ -9,14 +9,16 @@ These schemas are canonical in this repository and are edited in place; core con
 and 5, ruling R20). Their history is a one-time import from core commit `9554e7b2` with changes C1-C16,
 recorded in the mission's
 [`research.md`](../../kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)
-and in git history. Where a schema differs from core's behavior, the
+and in git history. The two added later have their own sources: `skill` is core's
+`skill.schema.yaml` at `581b5c46da` as JSON, and `glossary-pack` is authored here from core's pydantic
+model, since core exports no schema for it. Where a schema differs from core's behavior, the
 [divergence register](../../docs/conformance/divergence-register.md) says why.
 
 ## Files
 
 | Path | Holds |
 |---|---|
-| `schemas/<kind>.schema.json` | One schema per kind, 14 in all |
+| `schemas/<kind>.schema.json` | One schema per kind, 16 in all |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, and the reviewed exclusions |
 
 ## Validate a file

@@ -28,7 +28,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** FR-006 and NFR-005: the 14 bundled pack schemas load strictly, offline and once. */
+/** FR-006 and NFR-005: the 16 bundled pack schemas load strictly, offline and once. */
 class PackSchemasTest {
 
     private static final String ID_PREFIX = "https://schemas.spec-kitty.ai/charter/packs/";
@@ -57,8 +57,8 @@ class PackSchemasTest {
     // ---- the bundle -------------------------------------------------------------------------
 
     @Test
-    void thereAreFourteenBundledSchemas() {
-        assertThat(bundledKinds()).hasSize(14);
+    void thereAreSixteenBundledSchemas() {
+        assertThat(bundledKinds()).hasSize(16);
     }
 
     @ParameterizedTest

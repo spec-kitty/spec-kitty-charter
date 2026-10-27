@@ -163,7 +163,7 @@ class VocabularyEqualityTest {
 
         assertThat(FileSystemPackInspector.artifactKinds()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(FileSystemPackInspector.artifactKinds())
-                .as("the eight kinds that were listed by hand")
+                .as("the ten kinds that were listed by hand")
                 .containsExactlyInAnyOrder(
                         "directive",
                         "tactic",
@@ -172,7 +172,9 @@ class VocabularyEqualityTest {
                         "paradigm",
                         "procedure",
                         "mission-step-contract",
-                        "asset");
+                        "asset",
+                        "glossary-pack",
+                        "skill");
     }
 
     // ---- relations ---------------------------------------------------------------------------------
