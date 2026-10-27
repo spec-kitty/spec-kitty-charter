@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 52949d4f60b01903e64845686d6804756f23103b
+created_at: '2026-10-27T18:18:49.410049+00:00'
 subtasks:
 - T025
 - T026
@@ -22,17 +25,17 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-role: implementer
 authoritative_surface: service/packs/src/test/java/ai/speckitty/charter/packs/
+create_intent:
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/AssetPackRegistrationTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/BinaryPayloadRevisionTest.java
 execution_mode: code_change
 owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackSourcesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/AssetPackRegistrationTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/RelationshipRegistrationServiceTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/BinaryPayloadRevisionTest.java
-create_intent:
-- service/packs/src/test/java/ai/speckitty/charter/packs/application/AssetPackRegistrationTest.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/BinaryPayloadRevisionTest.java
+role: implementer
 tags: []
 task_type: implement
 ---
