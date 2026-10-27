@@ -5,7 +5,7 @@ import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BETA_FILE;
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +121,7 @@ class PackRoundTripTest {
                 readAlpha.steps().get(1));
         TacticDso droppedField = new TacticDso(
                 readAlpha.id(),
-                readAlpha.schemaVersion(),
+                readAlpha.schemaVersion().orElseThrow(),
                 readAlpha.name(),
                 withoutNested,
                 readAlpha.purpose(),
@@ -166,7 +166,7 @@ class PackRoundTripTest {
         TacticDso alpha = tactic(original, ALPHA_ID);
         TacticDso mutated = new TacticDso(
                 alpha.id(),
-                alpha.schemaVersion(),
+                alpha.schemaVersion().orElseThrow(),
                 "Alpha tactic, renamed",
                 alpha.steps(),
                 alpha.purpose(),

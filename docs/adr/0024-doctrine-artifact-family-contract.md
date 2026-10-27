@@ -2,7 +2,7 @@
 title: "ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports"
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -20,6 +20,8 @@ audience:
 ## Status
 
 **Accepted** — 2026-10-24. Decider: Stijn Dejongh (operator). Amended 2026-10-26.
+
+Superseded in part by [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) (2026-10-27): the interface lives in `kernel.domain`, and its schema version is optional.
 
 ### Amendment 2026-10-26: when the registry is built
 
@@ -87,6 +89,8 @@ interface would invert the dependency and break the "no kernel change" guarantee
    spine (`kind`, `packId`, `localId`, `schemaVersion`, `label`, `description`, `edges`, and a
    default `urn()` of `<kind>:<localId>`). It is placed in `packs.domain`, not the kernel,
    because it returns a `PackIdentifier`; the kernel stays untouched (ADR-0006).
+
+   *Superseded in part by ADR-0035: `CharterArtifact` and `PackIdentifier` live in `kernel.domain`, and `schemaVersion` is optional.*
 2. **One rich entity per kind**, each with its own typed identifier value object, its
    concept-bearing body, `ModularRuleset` invariants, a package-private all-args constructor
    behind a public fluent builder, a flat persistence DSO whose record equality is the

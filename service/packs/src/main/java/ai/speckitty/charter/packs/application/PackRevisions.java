@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
-import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 
 /**
  * The read side of the pack revision: what a read needs to answer an {@code ETag}, and nothing of the write path.

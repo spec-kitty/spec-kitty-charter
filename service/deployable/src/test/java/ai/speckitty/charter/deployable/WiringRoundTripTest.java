@@ -2,7 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
@@ -88,7 +88,7 @@ class WiringRoundTripTest {
         Tactic renamed = Tactic.builder()
                 .id(original.id())
                 .packId(original.packId())
-                .schemaVersion(original.schemaVersion())
+                .schemaVersion(original.schemaVersion().orElseThrow())
                 .name("Alpha tactic, renamed through the wired bean")
                 .step(original.steps().get(0))
                 .build();

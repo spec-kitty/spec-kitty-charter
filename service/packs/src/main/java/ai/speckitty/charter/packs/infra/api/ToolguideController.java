@@ -4,11 +4,11 @@ import ai.speckitty.charter.api.ToolguidesApi;
 import ai.speckitty.charter.api.model.Toolguide;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -157,7 +157,7 @@ public class ToolguideController implements ToolguidesApi {
     private static Toolguide toDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
         return new Toolguide(
                 toolguide.id().value(),
-                toolguide.schemaVersion(),
+                toolguide.schemaVersion().orElseThrow(),
                 toolguide.tool(),
                 toolguide.title(),
                 toolguide.guidePath(),

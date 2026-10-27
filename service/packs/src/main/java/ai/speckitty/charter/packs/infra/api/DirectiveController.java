@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.Directive;
 import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
@@ -12,7 +13,6 @@ import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -173,7 +173,7 @@ public class DirectiveController implements DirectivesApi {
     private static Directive toDto(ai.speckitty.charter.packs.domain.Directive directive) {
         return new Directive(
                 directive.id().value(),
-                directive.schemaVersion(),
+                directive.schemaVersion().orElseThrow(),
                 directive.title(),
                 directive.intent(),
                 directive.enforcement().token(),

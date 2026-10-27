@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 
 /** The aggregating port that fetches a whole {@link Pack}: descriptor, readable tactics and read violations. */

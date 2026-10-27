@@ -52,7 +52,7 @@ stands.
 | [0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) | ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation | Accepted (provisional) | 2026-10-24 |
 | [0022](/adr/0022-contract-versions-start-at-0-x/) | ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable | Accepted (provisional) | 2026-10-24 |
 | [0023](/adr/0023-ci-gate-required-check/) | ADR-0023: An always-on CI gate is the single required status check | Accepted | 2026-10-22 |
-| [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted | 2026-10-24 |
+| [0024](/adr/0024-doctrine-artifact-family-contract/) | ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports | Accepted, with Amendment 2026-10-26; superseded in part by ADR-0035 (2026-10-27) | 2026-10-24 |
 | [0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) | ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories | Accepted; superseded in part by ADR-0028 (2026-10-26) | 2026-10-25 |
 | [0026](/adr/0026-write-surface-is-functional-registration/) | ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage | Accepted; superseded in part by ADR-0030 (2026-10-26) | 2026-10-25 |
 | [0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) | ADR-0027: DRG relationship identity is a bounded, conditional unidirectional collapse | Accepted; superseded in part by ADR-0028 (2026-10-26) | 2026-10-25 |
@@ -63,6 +63,7 @@ stands.
 | [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) | ADR-0032: Steps name roles, and a profile is selected by role fit, then specialization, then fallback | Accepted | 2026-10-26 |
 | [0033](/adr/0033-local-active-charter-is-source-of-truth/) | ADR-0033: The project's local activation file is the source of truth for its active charter | Accepted | 2026-10-26 |
 | [0034](/adr/0034-local-and-hosted-deployment-options/) | ADR-0034: The charter service has a local and a hosted deployment option | Accepted | 2026-10-26 |
+| [0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) | ADR-0035: The shared artifact interface lives in the kernel | Accepted | 2026-10-27 |
 
 ## Core decisions this repository builds on
 

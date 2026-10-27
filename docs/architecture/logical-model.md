@@ -423,7 +423,7 @@ this mission type in this project".
   (`missions/`, `mission-steps/`, `mission_types/`). Candidate target:
   `missions/<type>/mission.yaml`, `missions/<type>/steps/<step>/` and
   `missions/<type>/steps/<step>/template.md`.
-- **The `CharterArtifact` home** (Operator ruling (concept session 2026-10-26), not yet ADR-backed,
+- **The `CharterArtifact` home** (target, [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/),
   [#171](https://github.com/spec-kitty/spec-kitty-charter/issues/171)). With separate domain
   models for mission types and profiles, a shared artifact interface lives in `kernel.domain`, the
   only home that can span those slices; otherwise mission types and profiles do not implement it.

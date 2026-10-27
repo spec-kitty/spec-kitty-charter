@@ -7,12 +7,12 @@ import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.ConfigValue;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
 import java.util.LinkedHashMap;
@@ -212,7 +212,7 @@ public class StyleguideController implements StyleguidesApi {
     private static Styleguide toDto(ai.speckitty.charter.packs.domain.Styleguide styleguide) {
         return new Styleguide(
                 styleguide.id().value(),
-                styleguide.schemaVersion(),
+                styleguide.schemaVersion().orElseThrow(),
                 styleguide.title(),
                 styleguide.scope().token(),
                 styleguide.principles(),

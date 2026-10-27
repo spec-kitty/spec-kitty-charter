@@ -1,5 +1,8 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,7 +57,7 @@ class ToolguideEntityTest {
 
         assertThat(toolguide.kind()).isEqualTo(ArtifactKind.TOOLGUIDE);
         assertThat(toolguide.localId()).isEqualTo("ripgrep");
-        assertThat(toolguide.schemaVersion()).isEqualTo("1.0");
+        assertThat(toolguide.schemaVersion().orElseThrow()).isEqualTo("1.0");
         assertThat(toolguide.label()).isEqualTo("Use ripgrep for code search");
         assertThat(toolguide.description()).contains("How to search the codebase with ripgrep.");
         assertThat(toolguide.urn().toString()).isEqualTo("toolguide:ripgrep");

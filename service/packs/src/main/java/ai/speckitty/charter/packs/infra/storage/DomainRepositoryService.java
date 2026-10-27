@@ -1,12 +1,13 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveReference;
@@ -15,7 +16,6 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -349,7 +349,7 @@ public final class DomainRepositoryService
     private static DirectiveDso toDso(Directive directive) {
         return new DirectiveDso(
                 directive.id().value(),
-                directive.schemaVersion(),
+                directive.schemaVersion().orElseThrow(),
                 directive.title(),
                 directive.intent(),
                 directive.enforcement().token(),
@@ -389,7 +389,7 @@ public final class DomainRepositoryService
     private static StyleguideDso toDso(Styleguide styleguide) {
         return new StyleguideDso(
                 styleguide.id().value(),
-                styleguide.schemaVersion(),
+                styleguide.schemaVersion().orElseThrow(),
                 styleguide.title(),
                 styleguide.scope().token(),
                 styleguide.principles(),
@@ -426,7 +426,7 @@ public final class DomainRepositoryService
     private static ToolguideDso toDso(Toolguide toolguide) {
         return new ToolguideDso(
                 toolguide.id().value(),
-                toolguide.schemaVersion(),
+                toolguide.schemaVersion().orElseThrow(),
                 toolguide.tool(),
                 toolguide.title(),
                 toolguide.guidePath(),
@@ -452,7 +452,7 @@ public final class DomainRepositoryService
     private static ParadigmDso toDso(Paradigm paradigm) {
         return new ParadigmDso(
                 paradigm.id().value(),
-                paradigm.schemaVersion(),
+                paradigm.schemaVersion().orElseThrow(),
                 paradigm.name(),
                 paradigm.summary(),
                 paradigm.directiveRefs(),
@@ -468,7 +468,7 @@ public final class DomainRepositoryService
     private static TacticDso toDso(Tactic tactic) {
         return new TacticDso(
                 tactic.id().value(),
-                tactic.schemaVersion(),
+                tactic.schemaVersion().orElseThrow(),
                 tactic.name(),
                 tactic.steps().stream()
                         .map(step -> new TacticDso.Step(
