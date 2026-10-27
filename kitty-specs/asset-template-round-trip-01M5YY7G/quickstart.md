@@ -15,6 +15,6 @@ sed -n '1,60p' service/packs/build/reports/whole-pack/report.md
 ./gradlew verifyAll
 ```
 
-Expected: the gate's kind table (built-in only) shows `asset` 6 expected red (the pinned inconsistency, so the gate holds
-no green sidecar; the 14 consistent sidecars of the other packs are proven by the open-packs round trip and unit tests),
+Expected: the gate's kind table (built-in only) shows `asset` 6 known failure (the pinned inconsistency,
+spec-kitty/spec-kitty-open-packs#75, so the gate holds no green sidecar; the 14 consistent sidecars of the other packs are proven by the open-packs round trip and unit tests),
 `asset-payload` 7 green with 2 READMEs excluded, and `template` 2 green; a one-byte lossy writer turns a payload red.

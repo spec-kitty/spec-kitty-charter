@@ -25,7 +25,9 @@ audience:
 file its `path` names under `assets/`; when that file does not exist, the sidecar is a violation
 (`payload assets/<path> does not exist`) and the whole-pack write refuses the pack. An undeclared
 sidecar key is refused, naming it. The `built-in` pack's six sidecars anchor `path` at the pack
-root and are refused: a pack inconsistency, fixed in `spec-kitty-open-packs` and pinned until then
+root and are refused: a pack inconsistency, fixed in `spec-kitty-open-packs`
+([open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75)) and pinned until
+then as known failures of the whole-pack gate
 ([ADR-0040](/adr/0040-content-form-and-payload-kinds/), proposed).
 
 **Asset payloads and templates survive a write to the byte**: scripts, Markdown, fonts and

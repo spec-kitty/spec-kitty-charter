@@ -748,141 +748,41 @@ class WholePackExpectationTest {
     @Nested
     class PinnedRefusals {
 
-        private static final String REASON = "payload assets/assets/x.md does not exist";
-        private static final String REFUSED_A = MATCHING_RED.replace("files: []", """
-                files:
-                  - path: tactics/a.tactic.yaml
-                    refused: "payload assets/assets/x.md does not exist"
-                    reason: The sidecar anchors path at the pack root.
-                    issue: "#193"
-                """);
+        private static final String SIDECAR = "tactics/a.tactic.yaml";
+        private static final String REFUSAL = "refused: payload assets/assets/x.md does not exist";
 
         @Test
-        void aRefusalWithTheExactReasonPasses() {
-            Evaluation evaluation =
-                    evaluate(REFUSED_A, MATCHING_EXCLUSIONS, withRed("tactics/a.tactic.yaml", "refused: " + REASON));
-
-            assertThat(evaluation.problems()).isEmpty();
-            assertThat(statuses(evaluation)).containsEntry("tactics/a.tactic.yaml", Status.EXPECTED_RED);
-        }
-
-        @Test
-        void aRefusalWithADifferentReasonIsANewRed() {
+        void aRefusalThatOnlyExtendsThePinnedOneIsANewRed() {
             Evaluation evaluation = evaluate(
-                    REFUSED_A,
+                    MATCHING_RED,
                     MATCHING_EXCLUSIONS,
-                    withRed("tactics/a.tactic.yaml", "refused: payload assets/x.md does not exist"));
+                    known(SIDECAR, REFUSAL, OPEN_PACKS_ISSUE),
+                    withRed(SIDECAR, REFUSAL + "!"));
 
             assertThat(evaluation.problems())
                     .singleElement()
                     .asString()
-                    .startsWith("CHANGED_RED tactics/a.tactic.yaml (tactic): expected refused: " + REASON)
-                    .endsWith("now: refused: payload assets/x.md does not exist");
-            assertThat(statuses(evaluation)).containsEntry("tactics/a.tactic.yaml", Status.RED);
+                    .startsWith("CHANGED_RED tactics/a.tactic.yaml (tactic)")
+                    .endsWith("now: " + REFUSAL + "!");
+            assertThat(statuses(evaluation)).containsEntry(SIDECAR, Status.RED);
         }
 
         @Test
-        void aDifferenceOtherThanTheRefusalIsANewRed() {
-            Evaluation evaluation = evaluate(
-                    REFUSED_A, MATCHING_EXCLUSIONS, withRed("tactics/a.tactic.yaml", "refused: " + REASON + "!"));
+        void theKnownFailuresAreReadableByOtherRatchets() {
+            WholePackExpectation expectation =
+                    WholePackExpectation.load(MATCHING_RED, NO_EXCLUSIONS, known(SIDECAR, REFUSAL, OPEN_PACKS_ISSUE));
 
-            assertThat(evaluation.problems())
-                    .singleElement()
-                    .asString()
-                    .startsWith("CHANGED_RED tactics/a.tactic.yaml");
+            assertThat(expectation.knownFailures())
+                    .containsExactly(new WholePackExpectation.KnownFailure(
+                            SIDECAR, REFUSAL, "The pack file holds two YAML documents.", OPEN_PACKS_ISSUE));
         }
 
         @Test
-        void aPinnedFileThatIsNowWrittenAndGreenFailsAsUnexpectedlyGreen() {
-            Evaluation evaluation = evaluate(REFUSED_A, MATCHING_EXCLUSIONS, ALL_GREEN);
-
-            assertThat(evaluation.problems())
-                    .singleElement()
-                    .asString()
-                    .startsWith("UNEXPECTEDLY_GREEN tactics/a.tactic.yaml")
-                    .contains("remove it");
-        }
-
-        @Test
-        void anEntryForAnotherPackNeitherMatchesNorGoesStaleHere() {
-            String otherPack = MATCHING_RED.replace("files: []", """
-                    files:
-                      - path: tactics/a.tactic.yaml
-                        pack: other
-                        refused: "payload assets/assets/x.md does not exist"
-                        reason: Another pack's sidecar.
-                        issue: "#193"
-                      - path: tactics/only-in-other.tactic.yaml
-                        pack: other
-                        at: l
-                        reason: Another pack's file.
-                        issue: "#193"
-                    """);
-
-            Evaluation evaluation =
-                    evaluate(otherPack, MATCHING_EXCLUSIONS, withRed("tactics/a.tactic.yaml", "refused: " + REASON));
-
-            assertThat(evaluation.problems())
-                    .containsExactly("UNEXPECTED_RED tactics/a.tactic.yaml (tactic): refused: " + REASON);
-        }
-
-        @Test
-        void theEvaluatedPackPicksItsOwnEntries() {
-            String otherPack = REFUSED_A.replace("    refused:", "    pack: other\n    refused:");
-
-            Evaluation evaluation = WholePackExpectation.load(otherPack, MATCHING_EXCLUSIONS)
-                    .evaluate("other", PACK, MODELLED, withRed("tactics/a.tactic.yaml", "refused: " + REASON));
-
-            assertThat(evaluation.problems()).isEmpty();
-        }
-
-        @Test
-        void refusedAndAtTogetherAreRefused() {
-            String both = REFUSED_A.replace("    refused:", "    at: refused\n    refused:");
-
-            assertThatThrownBy(() -> WholePackExpectation.load(both, NO_EXCLUSIONS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("both at and refused");
-        }
-
-        @Test
-        void anEntryWithNeitherAtNorRefusedIsRefused() {
-            String neither = REFUSED_A.replace("    refused: \"" + REASON + "\"\n", "");
-
-            assertThatThrownBy(() -> WholePackExpectation.load(neither, NO_EXCLUSIONS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("has no at or refused");
-        }
-
-        @Test
-        void anUnknownFileKeyIsRefused() {
-            String unknown = REFUSED_A.replace("    refused:", "    owner: me\n    refused:");
-
-            assertThatThrownBy(() -> WholePackExpectation.load(unknown, NO_EXCLUSIONS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("unknown key 'owner'");
-        }
-
-        @Test
-        void theRefusalsOfAPackAreReadableByOtherRatchets() {
-            WholePackExpectation expectation = WholePackExpectation.load(REFUSED_A, NO_EXCLUSIONS);
-
-            assertThat(expectation.refusals("built-in"))
-                    .containsExactly(new WholePackExpectation.PinnedRefusal(
-                            "built-in",
-                            "tactics/a.tactic.yaml",
-                            REASON,
-                            "The sidecar anchors path at the pack root.",
-                            "#193"));
-            assertThat(expectation.refusals("other")).isEmpty();
-        }
-
-        @Test
-        void theBundledListPinsExactlyTheSixBuiltInSidecars() {
+        void theBundledListPinsExactlyTheSixBuiltInSidecarsAsKnownFailures() {
             WholePackExpectation bundled = WholePackExpectation.fromClasspath();
 
-            assertThat(bundled.refusals("built-in"))
-                    .extracting(WholePackExpectation.PinnedRefusal::path, WholePackExpectation.PinnedRefusal::refused)
+            assertThat(bundled.knownFailures())
+                    .extracting(WholePackExpectation.KnownFailure::path, WholePackExpectation.KnownFailure::at)
                     .containsExactlyInAnyOrder(
                             sidecar("assets/docs_structural_lint.py"),
                             sidecar("assets/audiences/agentic-framework-core-team.md"),
@@ -890,14 +790,14 @@ class WholePackExpectationTest {
                             sidecar("assets/audiences/line_manager.md"),
                             sidecar("assets/audiences/nontech_educator.md"),
                             sidecar("assets/audiences/software_engineer.md"));
-            assertThat(bundled.refusals("built-in"))
-                    .allSatisfy(refusal -> assertThat(refusal.issue()).isEqualTo("#193"));
-            assertThat(bundled.refusals("other")).isEmpty();
+            assertThat(bundled.knownFailures())
+                    .allSatisfy(
+                            failure -> assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75"));
         }
 
         private static org.assertj.core.groups.Tuple sidecar(String payload) {
             return org.assertj.core.groups.Tuple.tuple(
-                    payload + ".asset.yaml", "payload assets/" + payload + " does not exist");
+                    payload + ".asset.yaml", "refused: payload assets/" + payload + " does not exist");
         }
     }
 

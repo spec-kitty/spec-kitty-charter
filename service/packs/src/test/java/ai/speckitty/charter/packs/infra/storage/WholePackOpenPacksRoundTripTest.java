@@ -31,10 +31,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack and every pack of
- * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it in
- * {@code whole-pack/expected-red.yaml} (none for most packs), and every pack that loads clean writes to a fresh
- * directory and reloads with the same meaning: every bound kind, the asset files, the templates and every DRG document.
- * The files are compared too: asset sidecars by meaning (ADR-0036), asset files and templates by SHA-256.
+ * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it as known
+ * failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack that
+ * loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files, the
+ * templates and every DRG document. The files are compared too: asset sidecars by meaning (ADR-0036), asset files and
+ * templates by SHA-256.
  *
  * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused; a temporary copy with the
  * six paths corrected (the open-packs fix, applied here to a test fixture only) round-trips whole, so built-in stays
@@ -47,6 +48,7 @@ class WholePackOpenPacksRoundTripTest {
 
     private static final String BUILT_IN = "built-in";
     private static final String SIDECAR_SUFFIX = ".asset.yaml";
+    private static final String REFUSED = "refused: ";
     private static final String README = "README.md";
 
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
@@ -124,14 +126,14 @@ class WholePackOpenPacksRoundTripTest {
 
     /**
      * The violations of a pack against its pinned refusals, matched by file and reason (R10): a violation nobody
-     * pinned, and a pinned refusal that no longer occurs, are both problems.
+     * pinned, and a pinned refusal that no longer occurs, are both problems. The refusals are the gate's own known
+     * failures ({@code known-failures.yaml}), which pin the open-packs built-in pack; every other pack has none.
      */
     private List<String> unpinned(Path pack, WholePackStore.LoadedPack loaded) {
-        Set<String> pinned = expectation.refusals(String.valueOf(pack.getFileName())).stream()
-                .map(refusal -> refusal.path() + ": " + refusal.refused())
-                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> pinned =
+                pack.equals(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN)) ? pinnedRefusals() : Set.of();
         Set<String> actual = loaded.pack().violations().stream()
-                .map(violation -> violation.file() + ": " + violation.reason())
+                .map(violation -> violation.file() + ": " + REFUSED + violation.reason())
                 .collect(Collectors.toCollection(TreeSet::new));
         List<String> out = new ArrayList<>();
         actual.stream()
@@ -139,6 +141,14 @@ class WholePackOpenPacksRoundTripTest {
                 .forEach(v -> out.add(pack + " has an unpinned violation " + v));
         pinned.stream().filter(p -> !actual.contains(p)).forEach(p -> out.add(pack + " no longer refuses " + p));
         return out;
+    }
+
+    /** The built-in pack's pinned refusals, each as {@code <file>: refused: <reason>}. */
+    private Set<String> pinnedRefusals() {
+        return expectation.knownFailures().stream()
+                .filter(failure -> failure.at().startsWith(REFUSED))
+                .map(failure -> failure.path() + ": " + failure.at())
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**
@@ -306,7 +316,7 @@ class WholePackOpenPacksRoundTripTest {
         Path builtIn = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
         WholePackStore.LoadedPack original = store.load(builtIn);
 
-        assertThat(expectation.refusals(BUILT_IN)).hasSize(6);
+        assertThat(pinnedRefusals()).hasSize(6);
         assertThat(original.pack().violations())
                 .hasSize(6)
                 .allSatisfy(v -> assertThat(v.kind()).isEqualTo("asset"));

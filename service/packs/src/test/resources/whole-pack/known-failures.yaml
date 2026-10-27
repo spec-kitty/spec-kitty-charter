@@ -12,4 +12,40 @@
 #
 # Self-expiring: a listed file that round-trips fails the gate (UNEXPECTEDLY_GREEN). Remove its entry in the change
 # that moves openPacksRef to the commit with the fix.
-known_failures: []
+known_failures:
+  - path: assets/docs_structural_lint.py.asset.yaml
+    at: "refused: payload assets/assets/docs_structural_lint.py does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"
+  - path: assets/audiences/agentic-framework-core-team.md.asset.yaml
+    at: "refused: payload assets/assets/audiences/agentic-framework-core-team.md does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"
+  - path: assets/audiences/automation_agent.md.asset.yaml
+    at: "refused: payload assets/assets/audiences/automation_agent.md does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"
+  - path: assets/audiences/line_manager.md.asset.yaml
+    at: "refused: payload assets/assets/audiences/line_manager.md does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"
+  - path: assets/audiences/nontech_educator.md.asset.yaml
+    at: "refused: payload assets/assets/audiences/nontech_educator.md does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"
+  - path: assets/audiences/software_engineer.md.asset.yaml
+    at: "refused: payload assets/assets/audiences/software_engineer.md does not exist"
+    reason: >-
+      The built-in sidecar anchors `path` at the pack root, not at `assets/`, so it names a payload that does not
+      exist (pack inconsistency, ADR-0036 Decision 5, ADR-0040 decision 6).
+    issue: "spec-kitty/spec-kitty-open-packs#75"

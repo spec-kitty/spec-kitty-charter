@@ -149,12 +149,15 @@ Four facts force a decision:
    with any violation (ADR-0037 decision 5).
 
    The six built-in sidecars write `path: assets/...`, anchored at the pack root, against the
-   schema and core's model. That is a pack inconsistency, fixed in `spec-kitty-open-packs` (ADR-0036
+   schema and core's model. That is a pack inconsistency, fixed in `spec-kitty-open-packs`
+   ([open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75), ADR-0036
    Decision 5); the service adds no built-in anchoring as core does (ruling 3 of ADR-0036). The six
-   refusals are pinned with their exact reasons in the gate's expectation list, which both the
+   refusals are pinned with their exact details (`refused: payload assets/<path> does not exist`)
+   as known failures in the gate's known-failure list
+   ([#247](https://github.com/spec-kitty/spec-kitty-charter/issues/247)), which both the
    whole-pack gate and the open-packs round trip read: either fails on a new refusal or on a pinned
-   one that no longer occurs (R10). A copy of the built-in pack with the six paths corrected
-   round-trips whole.
+   one that no longer occurs (R10), and the gate fails once the pin moves past the fix until the
+   six entries are removed. A copy of the built-in pack with the six paths corrected round-trips whole.
 7. **File mode is not meaning** (R5). The executable bit is neither compared nor preserved: a
    written payload has the default mode.
 8. **`asset:` and `template:` URNs are relationship endpoints** once the pack holds the artifact
@@ -188,8 +191,9 @@ Four facts force a decision:
   ADR-0037's "the kind entities stay free of paths".
 - `TemplateBinding` is a second binding shape beside `KindBinding` until the interface is extracted.
 - The `built-in`, `internal`, `qa` and `event-driven` packs' fingerprints and ETags change once.
-- The built-in pack's six sidecars stay refused until the open-packs fix lands and `openPacksRef`
-  moves; the gate then fails until the six pinned entries are removed.
+- The built-in pack's six sidecars stay refused until the open-packs fix
+  ([open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75)) lands and
+  `openPacksRef` moves; the gate then fails until the six known-failure entries are removed.
 - A written internal pack's scripts lose their executable bit.
 - The store's schema reason for an undeclared key now ends with the key, for every kind.
 
@@ -245,7 +249,9 @@ and compares a `bytes` file by bytes.
   `PackFileKind.java`, `PackFileSet.java`, `FilesystemPackStore.java`, `Companions.java`,
   `AssetBinding.java`, `TemplateBinding.java`, `WholePackStore.java`.
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRevision.java`.
-- `service/packs/src/test/resources/whole-pack/expected-red.yaml` (the six pinned refusals).
+- `service/packs/src/test/resources/whole-pack/known-failures.yaml` (the six pinned refusals).
+- [spec-kitty-open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75) (the
+  fix for the six built-in sidecars).
 - [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/),
   [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/),
   [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/).

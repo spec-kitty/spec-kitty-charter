@@ -117,8 +117,9 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * #193, exact: every built-in sidecar is refused because its {@code path} names {@code assets/assets/…}, while
-     * every asset file and template round-trips byte for byte. A no-op adapter cannot match: each refusal must name
+     * #193, exact: every built-in sidecar is refused because its {@code path} names {@code assets/assets/…}, a known
+     * failure until spec-kitty/spec-kitty-open-packs#75 lands, while every asset file and template round-trips byte for
+     * byte. A no-op adapter cannot match: each refusal must name
      * the very path its sidecar declares.
      */
     private static void assertAssetsAndTemplates(
@@ -127,7 +128,7 @@ class WholePackRoundTripTest {
             Evaluation evaluation,
             Map<String, Optional<String>> observed) {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
-        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.EXPECTED_RED, 6));
+        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.KNOWN_FAILURE, 6));
         assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
         assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 2));
         List<String> sidecars = census.entrySet().stream()

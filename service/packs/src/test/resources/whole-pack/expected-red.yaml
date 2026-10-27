@@ -39,42 +39,6 @@ files:
       impacts with strength -1 and written back as impacts without a strength (ADR-0028): a service defect, not a
       pack inconsistency. Both tension edges are pinned in at, lost and added.
     issue: "#235"
-  - path: assets/docs_structural_lint.py.asset.yaml
-    refused: "payload assets/assets/docs_structural_lint.py does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
-  - path: assets/audiences/agentic-framework-core-team.md.asset.yaml
-    refused: "payload assets/assets/audiences/agentic-framework-core-team.md does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
-  - path: assets/audiences/automation_agent.md.asset.yaml
-    refused: "payload assets/assets/audiences/automation_agent.md does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
-  - path: assets/audiences/line_manager.md.asset.yaml
-    refused: "payload assets/assets/audiences/line_manager.md does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
-  - path: assets/audiences/nontech_educator.md.asset.yaml
-    refused: "payload assets/assets/audiences/nontech_educator.md does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
-  - path: assets/audiences/software_engineer.md.asset.yaml
-    refused: "payload assets/assets/audiences/software_engineer.md does not exist"
-    reason: >-
-      the built-in sidecars anchor `path` at the pack root, not at `assets/` (pack inconsistency, ADR-0036
-      Decision 5; fixed in spec-kitty-open-packs)
-    issue: "#193"
 empty_kinds:
   - kind: skill
     reason: >-
