@@ -2,6 +2,8 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -10,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -311,5 +314,56 @@ class AssetStoreTest {
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("payload assets\\x.bin is not a valid path");
         assertThat(host.resolve("outside.bin")).doesNotExist();
+    }
+
+    /**
+     * F6: a read never throws on content. An asset file whose name the domain refuses (blank) is a {@code domain}
+     * violation of its file, while the asset file beside it loads.
+     */
+    @Test
+    void anAssetFileWithABlankNameIsAViolationNotAThrow(@TempDir Path host) throws IOException {
+        pack(host, "source");
+        Path source = host.resolve("source");
+        write(source, "assets/   ", BINARY);
+        write(source, "assets/a/kept.bin", BINARY);
+
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+
+        assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("a/kept.bin");
+        assertThat(read.violations())
+                .extracting(PackElementViolation::file, PackElementViolation::kind)
+                .containsExactly(tuple("assets/   ", "domain"));
+    }
+
+    /**
+     * F8: the walk follows a file link, so an asset file passes the companions' containment rule on its real path. A
+     * link that leaves the pack is a violation and is not read; a link to a file inside the pack, beside it, loads.
+     */
+    @Test
+    void anAssetFileLinkThatLeavesThePackIsAViolationWhileOneInsideLoads(@TempDir Path host) throws IOException {
+        Path source = pack(host, "source");
+        Path outside = host.resolve("outside.bin");
+        Files.write(outside, BINARY);
+        write(source, "assets/real.bin", BINARY);
+        assumeTrue(
+                link(source.resolve("assets/leak.bin"), outside), "the file system cannot create symbolic links");
+        link(source.resolve("assets/inside.bin"), source.resolve("assets/real.bin"));
+
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+
+        assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("inside.bin", "real.bin");
+        assertThat(read.violations())
+                .containsExactly(new PackElementViolation("assets/leak.bin", "unreadable", "the file leaves the pack"));
+    }
+
+    /** Creates a symbolic link; false when the file system does not allow one. */
+    static boolean link(Path link, Path target) throws IOException {
+        try {
+            Files.createDirectories(link.getParent());
+            Files.createSymbolicLink(link, target);
+            return true;
+        } catch (UnsupportedOperationException | FileSystemException e) {
+            return false;
+        }
     }
 }

@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
@@ -49,7 +50,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>An asset sidecar is held only when its payload is: a sidecar whose {@code path} names no asset file the read found
  * under {@code assets/} is dropped and recorded as a violation ({@code payload assets/<path> does not exist}), and so is
- * a second sidecar naming a file another sidecar already named. A payload that is not UTF-8 is no violation.
+ * a second sidecar naming a file another sidecar already named. A payload that is not UTF-8 is no violation. An asset
+ * file or a template reached through a link whose real location is outside the pack is a violation and is not read,
+ * and so is an asset file whose name the domain refuses.
  *
  * <p>A write, replace or create, serializes from scratch, writes a temporary file beside the target and renames it
  * into place, so a failure leaves the original untouched (or the new file absent) and removes the temporary file. A target that resolves, symlinks followed,
@@ -274,13 +277,19 @@ final class FilesystemPackStore {
         List<PackElementViolation> violations = new ArrayList<>();
         List<AssetFile> assetFiles = new ArrayList<>();
         for (String file : listing.assetFiles()) {
-            readBytes(directory, file, violations)
-                    .ifPresent(bytes -> assetFiles.add(
-                            new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes))));
+            readPayload(directory, file, violations).ifPresent(bytes -> {
+                // A read never throws on content: a name the domain refuses (a blank one) is a violation, as a
+                // template's is.
+                try {
+                    assetFiles.add(new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes)));
+                } catch (ConstraintBreachException breach) {
+                    violations.add(new PackElementViolation(file, "domain", String.valueOf(breach.getMessage())));
+                }
+            });
         }
         List<TemplateFile> templates = new ArrayList<>();
         for (String file : listing.templates()) {
-            readBytes(directory, file, violations)
+            readPayload(directory, file, violations)
                     .ifPresent(bytes -> templates.add(
                             new TemplateFile(file.substring(PackFileSet.TEMPLATES.length()), Payload.of(bytes))));
         }
@@ -326,8 +335,16 @@ final class FilesystemPackStore {
         return kept;
     }
 
-    /** A file's bytes; a file that cannot be read is a violation, not a refusal. */
-    private static Optional<byte[]> readBytes(Path directory, String file, List<PackElementViolation> violations) {
+    /**
+     * An asset file's or a template's bytes. The walk follows a file link, so the file passes the containment rule a
+     * companion's does ({@link #realPathContained}): a link whose real location is outside the pack is a violation and
+     * is not read. A file that cannot be read is a violation too, not a refusal.
+     */
+    private static Optional<byte[]> readPayload(Path directory, String file, List<PackElementViolation> violations) {
+        if (!realPathContained(directory, directory.resolve(file))) {
+            violations.add(new PackElementViolation(file, "unreadable", "the file leaves the pack"));
+            return Optional.empty();
+        }
         Optional<byte[]> bytes = readBytes(directory.resolve(file));
         if (bytes.isEmpty()) {
             violations.add(new PackElementViolation(file, "unreadable", "the file cannot be read"));

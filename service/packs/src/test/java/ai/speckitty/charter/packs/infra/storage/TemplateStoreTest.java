@@ -1,10 +1,12 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
@@ -102,5 +104,30 @@ class TemplateStoreTest {
         assertThat(new PackLayout(Map.of(template.urn(), "templates/elsewhere.md")).pathOf(template))
                 .isEqualTo("templates/elsewhere.md");
         assertThat(TemplateBinding.INSTANCE.payloadOf(template)).isEqualTo(Payload.of(TEMPLATE));
+    }
+
+    /**
+     * F8: a template reached through a link that leaves the pack is a violation and is not read; a link to a file
+     * inside the pack, beside it, loads.
+     */
+    @Test
+    void aTemplateLinkThatLeavesThePackIsAViolationWhileOneInsideLoads(@TempDir Path host) throws IOException {
+        Path source = pack(host, "source");
+        Path outside = host.resolve("outside.md");
+        Files.write(outside, TEMPLATE);
+        write(source, "templates/real.md", TEMPLATE);
+        assumeTrue(
+                AssetStoreTest.link(source.resolve("templates/leak.md"), outside),
+                "the file system cannot create symbolic links");
+        AssetStoreTest.link(source.resolve("templates/inside.md"), source.resolve("templates/real.md"));
+
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+
+        assertThat(read.templates())
+                .extracting(FilesystemPackStore.TemplateFile::path)
+                .containsExactly("inside.md", "real.md");
+        assertThat(read.violations())
+                .containsExactly(new PackElementViolation(
+                        "templates/leak.md", "unreadable", "the file leaves the pack"));
     }
 }
