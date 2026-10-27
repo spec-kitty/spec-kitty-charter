@@ -1,0 +1,34 @@
+failure_modes:
+- An exception, waiver, skip or deferral against oracle fidelity or contract 
+  compatibility.
+- Skipping or quarantining the round trip, or disabling dependency verification,
+  to reach green.
+- An exception without scope, reason, approver and sunset or review date.
+id: how-we-apply-project-002
+name: How We Apply PROJECT_002 (Risk Appetite and Non-Negotiable Failures)
+purpose: Never trade oracle fidelity, contract compatibility, the open-packs 
+  round trip or dependency verification for speed, and give every other risk 
+  exception an owner and an end date.
+schema_version: '1.0'
+steps:
+- description: Contract scenarios are taken from core's Python charter behavior.
+    A divergence is checked against the oracle before it is accepted, and a 
+    deliberately stricter Java answer is recorded as an operator ruling, not a 
+    silent divergence.
+  title: Pin governance content to the oracle
+- description: Every edit runs the contract validation in ./gradlew verifyAll, 
+    adds a line to contracts/charter/CHANGELOG.md (scenario changes included), 
+    and stays backward compatible for core's vendored DTOs.
+  title: Treat contracts/charter/ as public
+- description: openPacksRoundTrip runs on every build and is never skipped; 
+    every open-packs YAML file round-trips by meaning (ADR-0036). A file waiting
+    on an upstream pack fix sits on the gate's self-expiring known-failure list,
+    keyed to its spec-kitty-open-packs issue, and the gate fails once it passes.
+  title: Keep the round trip green
+- description: A dependency enters only with strict SHA-256 entries in 
+    gradle/verification-metadata.xml.
+  title: Verify every dependency
+- description: An exception for any other risk names its scope, the reason, the 
+    approver and a sunset or review date in the pull request, and in 
+    docs/plans/open-questions.md when it outlives the change.
+  title: Bound any other exception

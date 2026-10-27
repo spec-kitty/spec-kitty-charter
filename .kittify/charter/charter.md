@@ -9,7 +9,8 @@ It is NEVER a charter-resolving input, and `charter generate` NEVER overwrites
 it. Keep it in step with charter.yaml's governance and activation sections.
 -->
 
-Interviewed with the operator on 2026-10-18.
+Interviewed with the operator on 2026-10-18. Amended 2026-10-27 (operator): the round-trip
+rule of PROJECT_002 reads as equality of meaning (ADR-0036).
 
 ## What this repository is for
 
@@ -26,8 +27,9 @@ DTOs from it.
 2. **Breaking the OpenAPI contract.** The service honors the contract, and no
    incompatible contract change reaches core.
 
-Also: open-packs YAML always round-trips exactly, and no unverified dependency enters
-the build. None of these is traded for speed, and no exception is granted for the first
+Also: open-packs YAML always round-trips without loss of meaning (ADR-0036: the same
+meaning, not the same bytes, so formatting and comments may change), and no unverified
+dependency enters the build. None of these is traded for speed, and no exception is granted for the first
 two.
 
 ## How work lands

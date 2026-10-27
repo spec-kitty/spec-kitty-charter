@@ -9,13 +9,13 @@ artifact_slug: testing-philosophy-tactic
 artifact_urn: tactic:testing-philosophy-tactic
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:56:15.095754+00:00'
-inputs_hash: 21cba13081dba794c66d88da91ad16bc59077bfa26471c1e6025bc98b85f4a38
-produced_at: '2026-10-18T15:58:11.507691+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619459+00:00'
+inputs_hash: 62ba1f2f2ef09cc43ff2956bcc2611b3107d92e02bf79ca958b60ee44b364652
+produced_at: '2026-10-27T12:03:59.524488+00:00'
 schema_version: '2'
 source_input_ids: []
 source_section: testing_philosophy
 source_urns: []
-synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8

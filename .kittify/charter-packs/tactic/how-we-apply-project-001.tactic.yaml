@@ -1,0 +1,29 @@
+failure_modes:
+- Non-trivial work done as an Op to avoid the mission workflow.
+- A contract, architecture or domain change merged without both squad passes and
+  an operator approval on record.
+- A call made without review and not logged as an open review item.
+id: how-we-apply-project-001
+name: How We Apply PROJECT_001 (Mission Type and Work Intake Scope)
+purpose: Route every request to the right workflow, a mission or an Op, and give
+  contract, architecture and domain changes their review squads and operator 
+  approval before they merge.
+schema_version: '1.0'
+steps:
+- description: Anything beyond a small, contained fix (a new or changed contract
+    operation, a new module or gate, a domain rule, a cross-module refactor) is 
+    a software-dev mission (/spec-kitty.specify). A typo, a broken link or a 
+    one-line defect fix is an Op opened with spec-kitty dispatch and closed with
+    its real outcome.
+  title: Classify the request first
+- description: Every change, mission or Op, lands by pull request; nothing is 
+    pushed to main.
+  title: Land everything by pull request
+- description: A mission that touches the charter contract, the onion module 
+    boundaries of ADR-0006 or the domain model gets an adversarial review squad 
+    at the plan point and again before merge. Its findings and dispositions are 
+    recorded in the mission, then the operator approves.
+  title: Squad the high-stakes changes
+- description: A call made without review is recorded as an open review item, in
+    the mission or in docs/plans/open-questions.md.
+  title: Log unreviewed calls

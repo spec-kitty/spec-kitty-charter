@@ -9,15 +9,15 @@ artifact_slug: how-we-apply-use-c4-model-techniques
 artifact_urn: tactic:how-we-apply-use-c4-model-techniques
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:56:31.189555+00:00'
-inputs_hash: 4aaaf06c9c8dd82086f3007cbde4b8505aae22495df0496774902ed4b4590897
-produced_at: '2026-10-18T15:58:11.502318+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619459+00:00'
+inputs_hash: b72c304790c4e2e85d1f1d71dec6118c1be6c6fd8b5eacca41f802666c6f9285
+produced_at: '2026-10-27T12:03:59.513369+00:00'
 schema_version: '2'
 source_input_ids:
 - directive:USE_C4_MODEL_TECHNIQUES
 source_section: selected_directives
 source_urns:
 - directive:USE_C4_MODEL_TECHNIQUES
-synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8
