@@ -10,9 +10,12 @@ package ai.speckitty.charter.packs.infra.storage;
 enum ContentForm {
     /** A YAML document, compared by meaning; the default of a {@code files} rule. */
     YAML("yaml"),
-    /** A Markdown document. Not built yet (#192). */
+    /**
+     * A Markdown document. Declared but not built yet: no mission has built it (#192 shipped text companions under
+     * ADR-0039, not this form); the mission that first needs it builds and admits it.
+     */
     MARKDOWN("markdown"),
-    /** Plain text. Not built yet. */
+    /** Plain text. Declared but not built yet, like {@link #MARKDOWN}. */
     TEXT("text"),
     /** Opaque bytes, written and compared byte for byte. */
     BYTES("bytes");

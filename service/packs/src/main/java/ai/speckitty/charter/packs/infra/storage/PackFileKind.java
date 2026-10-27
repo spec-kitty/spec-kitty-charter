@@ -292,7 +292,8 @@ final class PackFileKind {
         ContentForm form = ContentForm.fromToken(string(rule, CONTENT_FORM));
         if (!BUILT_FORMS.contains(form)) {
             throw new IllegalStateException(RESOURCE + ": content_form '" + form.token()
-                    + "' is not built yet (#192 builds markdown); the rule for '" + string(rule, MATCH)
+                    + "' is declared but not built yet (the mission that first needs it builds it); the rule for '"
+                    + string(rule, MATCH)
                     + "' cannot be read");
         }
         return form;

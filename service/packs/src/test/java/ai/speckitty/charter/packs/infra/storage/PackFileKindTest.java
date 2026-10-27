@@ -207,8 +207,10 @@ class PackFileKindTest {
                 Map.entry(payload.formatted("kind: k, content_form: html"), "unknown content_form 'html'"),
                 Map.entry(
                         payload.formatted("kind: k, content_form: markdown"),
-                        "content_form 'markdown' is not built yet (#192 builds markdown)"),
-                Map.entry(payload.formatted("kind: k, content_form: text"), "content_form 'text' is not built yet"),
+                        "content_form 'markdown' is declared but not built yet (the mission that first needs it builds it)"),
+                Map.entry(
+                        payload.formatted("kind: k, content_form: text"),
+                        "content_form 'text' is declared but not built yet"),
                 Map.entry(
                         "files: [{match: a, schema: s, mode: x}]\nexclusions: []",
                         "a rule in files has the unknown key 'mode'"),
@@ -217,7 +219,7 @@ class PackFileKindTest {
                         "a rule in exclusions has the unknown key 'note'"),
                 Map.entry(
                         "files: [{match: a, schema: s, content_form: markdown}]\nexclusions: []",
-                        "content_form 'markdown' is not built yet"));
+                        "content_form 'markdown' is declared but not built yet"));
 
         problems.forEach((rules, problem) -> assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rules)))
                 .as(rules)
