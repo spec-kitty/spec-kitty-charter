@@ -218,8 +218,9 @@ class PackFileKindTest {
 
     @Test
     void aPayloadRuleThatNamesABuiltFormLoads() {
-        PackFileKind table = new PackFileKind(TABLE.formatted(
-                "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', kind: asset-payload, content_form: bytes}]"));
+        PackFileKind table = new PackFileKind(
+                TABLE.formatted(
+                        "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', kind: asset-payload, content_form: bytes}]"));
 
         assertThat(table.classify("p/assets/a.bin"))
                 .isEqualTo(new PackFileKind.Mapped("asset-payload", Optional.empty(), ContentForm.BYTES));

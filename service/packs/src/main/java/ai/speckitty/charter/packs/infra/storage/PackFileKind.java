@@ -297,9 +297,8 @@ final class PackFileKind {
             if (form == ContentForm.BYTES && !BYTES_KINDS.contains(kind)) {
                 throw new IllegalStateException(RESOURCE + ": the payloads rule for '" + string(rule, MATCH)
                         + "' declares content_form 'bytes' for kind '" + kind
-                        + "', which the store does not hold; a bytes file is one of " + BYTES_KINDS.stream()
-                                .sorted()
-                                .toList());
+                        + "', which the store does not hold; a bytes file is one of "
+                        + BYTES_KINDS.stream().sorted().toList());
             }
             payloads.add(new PayloadRule(string(rule, MATCH), kind, form));
         }
