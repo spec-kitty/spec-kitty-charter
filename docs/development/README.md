@@ -36,6 +36,8 @@ operations themselves are in the [service contract](/api/service-contract/).
   vs Persistence Entity, DTO vs DSO, and the other domain-driven design terms the docs use.
 - [HTTP status codes](/development/http-status-codes/) — which status this API answers with, what
   each one means, its body and whether a client may retry.
+- [Set up a Claude Code cloud session](/development/cloud-session-setup/) — Java 25, the domains to
+  allow and the per-session steps, so a cloud session runs what CI runs.
 
 - [Development notes](/development/notes/) — pre-decision investigation notes that feed future
   ADRs, including the [relationship identity / multigraph-collapse question](/development/notes/relationship-identity-collapse-review/).
