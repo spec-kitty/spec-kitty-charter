@@ -3,7 +3,7 @@
     {
       "created_at": "2026-10-27T17:39:02.818441Z",
       "decision_id": "01M5Z73CH2336MGVKF64EJ444G",
-      "final_answer": null,
+      "final_answer": "Yes to both (recommended)",
       "input_key": "known_failure_entry_shape",
       "mission_id": "01M5Z72Y0HB97SQF4P7V832TJF",
       "mission_slug": "whole-pack-known-failures-01M5Z72Y",
@@ -18,10 +18,10 @@
       "other_answer": false,
       "question": "Known-failure entries: (1) must 'issue' be exactly spec-kitty/spec-kitty-open-packs#N (bare #N refused), and (2) one entry per file (a file with two upstream defects names one issue), with 'at' pinned so a moved difference fails?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-10-27T17:49:53.257560Z",
       "resolved_by": null,
       "slot_key": "specify.entries.issue-reference-and-keying",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }
