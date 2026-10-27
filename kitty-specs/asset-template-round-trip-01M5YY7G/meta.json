@@ -14,9 +14,8 @@
   "accepted_by": "system",
   "accepted_from_commit": "e57e168efa558fb8fa85c9229cfeafb8765160d7",
   "baseline_merge_commit": "c6bed93556448fddef893f835a1d8b09840d6d67",
-  "coordination_branch": "kitty/mission-asset-template-round-trip-01M5YY7G",
   "created_at": "2026-10-27T15:04:02.219725+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Asset and template round trip",
   "merged_at": "2026-10-27T19:44:28.018453+00:00",
   "merged_commit": "198898c8b2bee3da1fe49aebaa26913e1728ac26",
@@ -31,7 +30,6 @@
   "slug": "asset-template-round-trip-01M5YY7G",
   "status_phase": "1",
   "target_branch": "feat/asset-template-round-trip",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-10-27T17:22:14.398016+00:00"
 }
