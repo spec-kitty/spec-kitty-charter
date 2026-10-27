@@ -13,9 +13,12 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.ContractStep;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.MissionStepContract;
+import ai.speckitty.charter.packs.domain.MissionStepContractIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
@@ -217,6 +220,51 @@ class RelationshipRegistrationServiceTest {
         current.directives().forEach(builder::directive);
         builder.directive(directive(id));
         store.packs.put(PACK, builder.build());
+    }
+
+    /**
+     * #191: mission step contracts are in the aggregate now, so a relationship from a contract of the pack resolves (it
+     * was a conflict while the kind was not loaded), and one from a contract the pack does not hold stays a conflict.
+     */
+    @Test
+    void aRelationshipFromAMissionStepContractOfThePackResolves() {
+        store.packs.put(PACK, store.packs.get(PACK).with(contract("implement")));
+        Urn implement = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "implement");
+        Urn ghost = new Urn(NodeKind.of(ArtifactKind.MISSION_STEP_CONTRACT), "ghost");
+        Urn external = new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_030");
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(ghost, external, RelationType.REQUIRES),
+                        store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
+        assertThat(store.commits).isEqualTo(before);
+
+        assertThatCode(() -> service.registerRelationship(
+                        PACK,
+                        Relationship.of(implement, external, RelationType.REQUIRES),
+                        store.currentRevision(PACK).token()))
+                .doesNotThrowAnyException();
+        assertThat(store.commits).isEqualTo(before + 1);
+    }
+
+    private static MissionStepContract contract(String id) {
+        return MissionStepContract.builder()
+                .id(new MissionStepContractIdentifier(id))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .action(id)
+                .mission("software-dev")
+                .step(new ContractStep(
+                        "bootstrap",
+                        "Load charter context",
+                        Optional.empty(),
+                        List.of(),
+                        Optional.empty(),
+                        Optional.empty()))
+                .build();
     }
 
     /** One fake that realizes both the load port and the write-path port, recording what a commit persisted. */
