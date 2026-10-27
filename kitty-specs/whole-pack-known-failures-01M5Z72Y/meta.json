@@ -1,4 +1,6 @@
 {
+  "contracts": "none",
+  "contracts_rationale": "Test-scope harness change only: no API, wire or schema contract is added or changed.",
   "coordination_branch": "kitty/mission-whole-pack-known-failures-01M5Z72Y",
   "created_at": "2026-10-27T17:38:49.280763+00:00",
   "flattened": false,

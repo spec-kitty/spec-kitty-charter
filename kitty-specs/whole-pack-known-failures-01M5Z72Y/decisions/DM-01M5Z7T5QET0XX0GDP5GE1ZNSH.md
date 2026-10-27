@@ -4,8 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.report.known-failure-column`
 - **Input key:** `known_failure_column_position`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-10-27T17:51:29.518979+00:00`
+- **Resolved:** `2026-10-27T18:06:44.240516+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Report: append the KNOWN_FAILURE status and its per-kind column last (after red)
 
 ## Final answer
 
-_(none)_
+Append last (recommended)
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-10-27T17:51:29.518979+00:00` — opened
+- `2026-10-27T18:06:44.240516+00:00` — resolved (final_answer="Append last (recommended)")
