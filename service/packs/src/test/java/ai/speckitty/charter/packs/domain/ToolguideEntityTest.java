@@ -1,13 +1,11 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

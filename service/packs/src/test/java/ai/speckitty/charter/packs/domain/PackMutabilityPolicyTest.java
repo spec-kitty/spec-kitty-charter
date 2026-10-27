@@ -1,7 +1,5 @@
 package ai.speckitty.charter.packs.domain;
 
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,14 +7,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import java.util.ArrayList;
 import java.util.HashMap;
