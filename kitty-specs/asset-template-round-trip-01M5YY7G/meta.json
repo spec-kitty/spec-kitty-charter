@@ -1,0 +1,35 @@
+{
+  "accept_commit": "c1c1009e9fe771ec2fa2f7c0d6765e9e25968140",
+  "acceptance_history": [
+    {
+      "accept_commit": "c1c1009e9fe771ec2fa2f7c0d6765e9e25968140",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-27T19:42:06.171303+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "e57e168efa558fb8fa85c9229cfeafb8765160d7"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-27T19:42:06.171303+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "e57e168efa558fb8fa85c9229cfeafb8765160d7",
+  "baseline_merge_commit": "c6bed93556448fddef893f835a1d8b09840d6d67",
+  "created_at": "2026-10-27T15:04:02.219725+00:00",
+  "flattened": true,
+  "friendly_name": "Asset and template round trip",
+  "merged_at": "2026-10-27T19:44:28.018453+00:00",
+  "merged_commit": "198898c8b2bee3da1fe49aebaa26913e1728ac26",
+  "mid8": "01M5YY7G",
+  "mission_id": "01M5YY7GCDBMADFQB5A2PSR5GX",
+  "mission_number": 10,
+  "mission_slug": "asset-template-round-trip-01M5YY7G",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Part of the whole-pack round trip (epic #186, issue #193). Assets (a sidecar descriptor plus a file payload) and top-level templates are loaded into the charter domain with their metadata and written back byte-for-byte, so the whole-pack round-trip gate turns green for these kinds and pack authors can trust the service not to lose or alter their scripts, documents, fonts and images.",
+  "purpose_tldr": "Read every asset and template of a Charter Pack into the domain and write it back unchanged.",
+  "slug": "asset-template-round-trip-01M5YY7G",
+  "status_phase": "1",
+  "target_branch": "feat/asset-template-round-trip",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T17:22:14.398016+00:00"
+}
