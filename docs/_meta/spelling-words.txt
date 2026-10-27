@@ -225,3 +225,6 @@ contextive
 opening
 statement
 SIGPIPE
+Adoptium
+Temurin
+docsites
