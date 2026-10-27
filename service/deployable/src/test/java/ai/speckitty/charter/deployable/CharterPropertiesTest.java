@@ -9,7 +9,8 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
 /** How {@code charter.*} binds: the worktree id and the project configuration directory are optional. Where the packs
- * are is the storage layer's {@code charter.storage.root}. */
+ * are is the storage layer's {@code charter.config-root} (ADR-0038); the former {@code charter.packs[*]} /
+ * {@code charter.storage.*} properties are retired and fail the start. */
 class CharterPropertiesTest {
 
     private static CharterProperties bind(Map<String, String> properties) {
