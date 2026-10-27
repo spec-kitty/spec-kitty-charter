@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-27 — Assets and templates round-trip through the domain, byte for byte](/changelog/2026-10-27-asset-and-template-round-trip/)
 - [2026-10-27 — The whole-pack gate carries known pack failures until the pin moves](/changelog/2026-10-27-whole-pack-known-failures/)
 - [2026-10-27 — The decision log is ratified](/changelog/2026-10-27-adrs-ratified/)
 - [2026-10-27 — ADR-0037 and ADR-0038 are accepted](/changelog/2026-10-27-adrs-0037-0038-accepted/)

@@ -219,6 +219,22 @@ contexts:
         definition: "The stable, kebab-case identifier of a Workflow Sequence (e.g. `software-dev-default`). Used as the lookup key in the workflow schema registry and in the `meta.json` `workflow_id` field to record which sequence drove a given mission run. Org packs must not reuse shipped workflow IDs without explicit override semantics."
       - name: "Workflow Sequence"
         definition: "A named, ordered list of mission-action steps with declared entry conditions, exit conditions, and optional per-step runtime hooks. Stored as a `WorkflowSequence` Pydantic model in `spec-kitty next`'s internal runtime schema registry. Org packs may contribute custom workflow sequences that extend or override the shipped set when activated via the Activation Registry."
+      - name: "Asset"
+        definition: "A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040)."
+        meta:
+          status: "canonical"
+      - name: "Asset payload"
+        definition: "A file under a pack's `assets/` directory, held as its exact bytes and written back byte for byte: the file an asset names, or one that no sidecar names (such as a tool configuration shipped beside the assets). The service holds each one as an `AssetFile` of the pack, not as an artifact, so it needs no id. A `README.md` under `assets/` is not one (ADR-0040)."
+        meta:
+          status: "canonical"
+      - name: "Content form"
+        definition: "What a pack file-kind rule declares about how its files are read, held, written and compared: `yaml` (the default), `markdown`, `text` or `bytes` (`content_form` in `contracts/packs/file-kinds.yaml`). Never chosen by a file's extension or an asset's `mime`. Distinct from `YamlFormat`, the codec of one YAML kind, from `mime`, an asset's declared media type, and from `SerializationStrategy`, the store's YAML read and write. Only `yaml` and `bytes` are built so far (ADR-0040)."
+        meta:
+          status: "canonical"
+      - name: "Template (pack)"
+        definition: "A file under a pack's top-level `templates/` directory, read as an artifact whose local id is its path under that directory (`writing/meeting-minutes.md`, URN `template:writing/meeting-minutes.md`) and held as its exact bytes, frontmatter included. Not activatable. Mission templates under `missions/<mission>/templates/` are mission-type content, not pack templates (ADR-0040)."
+        meta:
+          status: "canonical"
   - name: "Governance"
     domainVisionStatement: "Rule ownership, precedence and policy controls: the charter interview and compiler, pack levels, and agent-profile activation."
     terms:
