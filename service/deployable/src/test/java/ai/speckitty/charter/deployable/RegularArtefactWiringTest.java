@@ -65,9 +65,7 @@ class RegularArtefactWiringTest {
                 pack_level: org
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.packs[0].name", () -> "qa");
-        registry.add("charter.packs[0].level", () -> "org");
-        registry.add("charter.packs[0].path", () -> packs.resolve("qa").toString());
+        registry.add("charter.storage.root", () -> packs.toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {

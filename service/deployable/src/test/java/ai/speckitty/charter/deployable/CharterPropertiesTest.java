@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
-/** How {@code charter.*} binds: no configured pack is an empty list, never {@code null}; the project configuration
- * directory is optional. */
+/** How {@code charter.*} binds: the worktree id and the project configuration directory are optional. Where the packs
+ * are is the storage layer's {@code charter.storage.root}. */
 class CharterPropertiesTest {
 
     private static CharterProperties bind(Map<String, String> properties) {
@@ -18,18 +18,9 @@ class CharterPropertiesTest {
     }
 
     @Test
-    void noConfiguredPackBindsAsAnEmptyList() {
-        assertThat(bind(Map.of("charter.other", "x")).packs()).isEmpty();
-    }
-
-    @Test
-    void aConfiguredPackBindsWithItsNameLevelAndPath() {
-        assertThat(bind(Map.of(
-                                "charter.packs[0].name", "built-in",
-                                "charter.packs[0].level", "built-in",
-                                "charter.packs[0].path", "/packs/built-in"))
-                        .packs())
-                .containsExactly(new CharterProperties.Pack("built-in", "built-in", Path.of("/packs/built-in")));
+    void theWorktreeIdBindsWhenSetAndIsNullWhenNot() {
+        assertThat(bind(Map.of("charter.worktree-id", "wt-7")).worktreeId()).isEqualTo("wt-7");
+        assertThat(bind(Map.of("charter.other", "x")).worktreeId()).isNull();
     }
 
     @Test

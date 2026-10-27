@@ -40,7 +40,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * The doctrine kinds through the production path: the directive, styleguide and paradigm ports and the serializer
- * are the beans Spring wires from {@code charter.packs}, not instances built by the test. A save followed by a load
+ * are the beans Spring wires from {@code charter.storage.root}, not instances built by the test. A save followed by a load
  * must hand back every field, compared field by field because entity {@code equals} is identity only; each
  * round-trip sits beside a control that the wired pack already serves its seeded entity.
  */
@@ -87,9 +87,7 @@ class DoctrineWiringRoundTripTest {
                 enforcement: required
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.packs[0].name", () -> "fixture");
-        registry.add("charter.packs[0].level", () -> "org");
-        registry.add("charter.packs[0].path", () -> packs.resolve("fixture").toString());
+        registry.add("charter.storage.root", () -> packs.toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {

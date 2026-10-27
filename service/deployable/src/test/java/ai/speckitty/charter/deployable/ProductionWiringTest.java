@@ -21,7 +21,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The service as it ships: a real server on a free loopback port, the packs named by {@code charter.packs[*]}
+ * The service as it ships: a real server on a free loopback port, the packs under {@code charter.storage.root}
  * through Spring configuration and nothing overridden. A wiring that drops a configured pack fails it.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -64,15 +64,7 @@ class ProductionWiringTest {
         // The token is configured as the launcher does, not with the development flag: the production wiring is
         // guarded.
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.packs[0].name", () -> "qa");
-        registry.add("charter.packs[0].level", () -> "org");
-        registry.add("charter.packs[0].path", () -> packs.resolve("qa").toString());
-        registry.add("charter.packs[1].name", () -> "built-in");
-        registry.add("charter.packs[1].level", () -> "built-in");
-        registry.add("charter.packs[1].path", () -> packs.resolve("built-in").toString());
-        registry.add("charter.packs[2].name", () -> "audit");
-        registry.add("charter.packs[2].level", () -> "org");
-        registry.add("charter.packs[2].path", () -> packs.resolve("audit").toString());
+        registry.add("charter.storage.root", () -> packs.toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
