@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 49845533acebd90461f152276bb4195ff0a9a5b0
+created_at: '2026-10-27T18:35:14.235839+00:00'
 subtasks:
 - T032
 - T033
@@ -22,8 +25,10 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: architect-alphonso
-role: implementer
 authoritative_surface: docs/
+create_intent:
+- docs/adr/0040-content-form-and-payload-kinds.md
+- docs/changelog/2026-10-27-asset-and-template-round-trip.md
 execution_mode: code_change
 owned_files:
 - docs/adr/0040-content-form-and-payload-kinds.md
@@ -33,9 +38,7 @@ owned_files:
 - docs/changelog/2026-10-27-asset-and-template-round-trip.md
 - site/.contextive/definitions.yaml
 - cspell.json
-create_intent:
-- docs/adr/0040-content-form-and-payload-kinds.md
-- docs/changelog/2026-10-27-asset-and-template-round-trip.md
+role: implementer
 tags: []
 task_type: implement
 ---
