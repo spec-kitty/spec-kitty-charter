@@ -105,8 +105,7 @@ class DomainRepositoryServiceTest {
         Tactic renamed = Tactic.builder()
                 .id(original.id())
                 .packId(original.packId())
-                .schemaVersion(original.schemaVersion())
-                .orElseThrow()
+                .schemaVersion(original.schemaVersion().orElseThrow())
                 .name("Alpha tactic, renamed")
                 .step(original.steps().get(0))
                 .build();

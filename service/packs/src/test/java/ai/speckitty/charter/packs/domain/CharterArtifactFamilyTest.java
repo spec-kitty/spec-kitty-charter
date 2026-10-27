@@ -77,7 +77,7 @@ class CharterArtifactFamilyTest {
                 .containsExactly(
                         ArtifactKind.DIRECTIVE, ArtifactKind.STYLEGUIDE, ArtifactKind.PARADIGM, ArtifactKind.TACTIC);
         assertThat(FAMILY).extracting(CharterArtifact::packId).containsOnly(PACK);
-        assertThat(FAMILY).extracting(CharterArtifact::schemaVersion).containsOnly("1.0");
+        assertThat(FAMILY).extracting(CharterArtifact::schemaVersion).containsOnly(Optional.of("1.0"));
         assertThat(FAMILY)
                 .extracting(CharterArtifact::localId)
                 .containsExactly("DIRECTIVE_700", "family-style", "family-paradigm", "family-tactic");
