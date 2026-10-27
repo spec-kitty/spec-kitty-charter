@@ -22,7 +22,8 @@ so a kind the code does not name cannot be dropped.
 restructure first, as a narrow slice of #169, recorded in an ADR. The grounding and the open
 questions are on [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189#issuecomment-6435708786);
 the mission proceeds on the defaults stated there. ADR-0037 is **Proposed** and the PR must not
-merge until the operator accepts it and the #188 fidelity ADR has landed.
+merge until the operator accepts it. The #188 fidelity record has landed as ADR-0036 (Proposed); this
+mission aligns with it (ADR-0037 decision 7).
 
 ## Grounding (main 0b2503b)
 
