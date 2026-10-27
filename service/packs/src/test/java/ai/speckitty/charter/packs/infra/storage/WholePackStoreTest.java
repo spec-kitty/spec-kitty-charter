@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -10,7 +11,10 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
+import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +27,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Whole-pack load and write (ADR-0037 decision 5)")
 class WholePackStoreTest {
@@ -118,6 +124,13 @@ class WholePackStoreTest {
             out.put(kind.kind().token(), dsos);
         }
         out.put("graphs", loaded.graphs());
+        out.put("assetFiles", loaded.pack().assetFiles());
+        out.put(
+                "templates",
+                loaded.pack().templates().stream()
+                        .map(template ->
+                                template.id().value() + "=" + template.content().sha256())
+                        .toList());
         return out;
     }
 
@@ -425,5 +438,203 @@ class WholePackStoreTest {
                 .isInstanceOf(CharterRefusal.class)
                 .extracting(refusal -> ((CharterRefusal) refusal).code())
                 .isEqualTo(RefusalCode.VALIDATION_FAILED);
+    }
+
+    // ---- asset files and templates, byte for byte (T022) -------------------------------------------------------
+
+    private static final byte[] OTF = {'O', 'T', 'T', 'O', 0, 0, '\r', '\n', (byte) 0xff, '\r', '\n', 'z'};
+
+    private static void write(Path pack, String relative, byte[] bytes) throws IOException {
+        Path file = pack.resolve(relative);
+        Files.createDirectories(file.getParent());
+        Files.write(file, bytes);
+    }
+
+    /** The rich pack plus nested binary payloads with their sidecars, a sidecar-less payload, READMEs and templates. */
+    private static Path payloadPack(Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "assets/debrief/fonts/Bold.otf.asset.yaml", """
+                id: font-bold
+                mime: font/otf
+                path: debrief/fonts/Bold.otf
+                """);
+        write(pack, "assets/debrief/fonts/Bold.otf", OTF);
+        write(pack, "assets/debrief/logo.png.asset.yaml", """
+                id: logo
+                mime: image/png
+                path: debrief/logo.png
+                title: Logo
+                """);
+        write(pack, "assets/debrief/logo.png", AssetStoreTest.BINARY);
+        write(pack, "assets/lint.config.yaml", "rules:\n  - a\n");
+        write(pack, "assets/README.md", "# assets\n");
+        write(pack, "assets/debrief/README.md", "# debrief\n");
+        write(pack, "assets/debrief/.DS_Store", OTF);
+        write(pack, "templates/.gitkeep", new byte[0]);
+        write(pack, "templates/writing/meeting-minutes.md", "---\r\ntitle: M\r\n---\r\nbody".getBytes(UTF_8));
+        write(pack, "templates/empty.md", new byte[0]);
+        write(pack, "missions/plan/templates/spec.md", "# mission template\n");
+        return pack;
+    }
+
+    @Test
+    @DisplayName("asset files, a sidecar-less payload and templates write and reload with identical bytes and meaning")
+    void payloadsRoundTripByteForByte(@TempDir Path host) throws IOException {
+        Path source = payloadPack(host.resolve("source"));
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        store.write(loaded, target);
+        WholePackStore.LoadedPack reloaded = store.load(target);
+
+        assertThat(loaded.pack().violations()).isEmpty();
+        assertThat(loaded.pack().assets()).hasSize(2);
+        assertThat(loaded.pack().assetFiles()).hasSize(3);
+        assertThat(loaded.pack().templates()).hasSize(2);
+        assertThat(meaning(reloaded)).isEqualTo(meaning(loaded));
+        for (String file : List.of(
+                "assets/debrief/fonts/Bold.otf",
+                "assets/debrief/logo.png",
+                "assets/lint.config.yaml",
+                "templates/writing/meeting-minutes.md",
+                "templates/empty.md")) {
+            assertThat(AssetStoreTest.sha256(target.resolve(file)))
+                    .as(file)
+                    .isEqualTo(AssetStoreTest.sha256(source.resolve(file)));
+        }
+        assertThat(Files.size(target.resolve("templates/empty.md"))).isZero();
+        assertThat(loaded.layout().paths())
+                .containsEntry(
+                        new Urn(NodeKind.TEMPLATE, "writing/meeting-minutes.md"),
+                        "templates/writing/meeting-minutes.md")
+                .containsEntry(new Urn(NodeKind.ASSET, "logo"), "assets/debrief/logo.png.asset.yaml");
+    }
+
+    @Test
+    @DisplayName("of the files under assets/ and templates/, only the READMEs and the hidden files are unmodelled")
+    void onlyTheReadmesAndHiddenFilesUnderAssetsAndTemplatesAreUnmodelled(@TempDir Path host) throws IOException {
+        WholePackStore.LoadedPack loaded = store.load(payloadPack(host));
+
+        assertThat(loaded.unmodelled())
+                .containsExactly(
+                        "assets/README.md",
+                        "assets/debrief/.DS_Store",
+                        "assets/debrief/README.md",
+                        "missions/plan/templates/spec.md",
+                        "templates/.gitkeep");
+    }
+
+    @Test
+    @DisplayName("two asset files whose paths differ only by case refuse the write and leave no target")
+    void assetFilesThatFoldToOnePathAreRefused(@TempDir Path host) throws IOException {
+        Path source = payloadPack(host.resolve("source"));
+        write(source, "assets/A.png", OTF);
+        write(source, "assets/a.png", OTF);
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("two parts");
+        assertThat(target).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("two templates whose paths differ only by case refuse the write and leave no target")
+    void templatesThatFoldToOnePathAreRefused(@TempDir Path host) throws IOException {
+        Path source = payloadPack(host.resolve("source"));
+        write(source, "templates/x/A.md", OTF);
+        write(source, "templates/x/a.md", OTF);
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("two parts");
+        assertThat(target).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a sidecar whose payload is missing is a violation, so the pack is not written as if whole")
+    void aMissingPayloadRefusesTheWrite(@TempDir Path host) throws IOException {
+        Path source = payloadPack(host.resolve("source"));
+        Files.delete(source.resolve("assets/debrief/logo.png"));
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThat(loaded.pack().violations())
+                .containsExactly(new PackElementViolation(
+                        "assets/debrief/logo.png.asset.yaml",
+                        "asset",
+                        "payload assets/debrief/logo.png does not exist"));
+        assertThatThrownBy(() -> store.write(loaded, target)).isInstanceOf(CharterRefusal.class);
+        assertThat(target).doesNotExist();
+    }
+
+    /**
+     * One file has one owner (ADR-0039 decision 3): a skill whose body names a file the {@code payloads} rules classify
+     * (a template, an asset file) is a pack inconsistency. The file stays with the rule that classifies it; the skill
+     * is refused as a {@code companion} violation, so the pack is never written as if whole, and the fingerprint lists
+     * the file once.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"templates/body.md", "assets/body.md"})
+    @DisplayName("a companion that is a template or an asset file is refused; the file keeps its one owner")
+    void aCompanionThatIsATemplateOrAnAssetFileIsRefused(String claimed, @TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: ../" + claimed));
+        write(source, claimed, "body\n");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThat(loaded.pack().violations())
+                .containsExactly(new PackElementViolation(
+                        SKILL_FILE,
+                        "companion",
+                        "../" + claimed + ": is a pack file of kind "
+                                + (claimed.startsWith("templates/") ? "template" : "asset-payload")
+                                + ", not a companion"));
+        assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
+        assertThat(Stream.concat(
+                        loaded.pack().templates().stream().map(t -> "templates/" + t.id().value()),
+                        loaded.pack().assetFiles().stream().map(f -> "assets/" + f.path())))
+                .containsExactly(claimed);
+        assertThat(PackFileSet.digested(source)).containsOnlyOnce(claimed).endsWith(claimed);
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("unreadable files");
+        assertThat(target).doesNotExist();
+    }
+
+    /**
+     * F7: one file, one owner. A pack holding a template whose path another rule classifies ({@code templates/
+     * x.tactic.yaml}) is refused by the whole-pack write, naming the path, and no target remains; the same pack with a
+     * template whose path only the template rule classifies is written.
+     */
+    @Test
+    @DisplayName("a template whose path another rule classifies refuses the whole-pack write")
+    void aTemplateWhosePathAnotherRuleClassifiesRefusesTheWrite(@TempDir Path host) throws IOException {
+        WholePackStore.LoadedPack loaded = store.load(payloadPack(host.resolve("source")));
+        Payload content = Payload.of("x".getBytes(UTF_8));
+
+        store.write(
+                with(loaded, TemplateBinding.INSTANCE.toEntity(loaded.pack().id(), "x.md", content)),
+                host.resolve("ok"));
+        WholePackStore.LoadedPack claimed =
+                with(loaded, TemplateBinding.INSTANCE.toEntity(loaded.pack().id(), "x.tactic.yaml", content));
+
+        assertThat(host.resolve("ok/templates/x.md")).hasContent("x");
+        assertThatThrownBy(() -> store.write(claimed, host.resolve("out")))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("path templates/x.tactic.yaml is a pack file of kind tactic, not a template");
+        assertThat(host.resolve("out")).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {
+        return new WholePackStore.LoadedPack(
+                loaded.pack().with(template), loaded.layout(), loaded.graphs(), loaded.unmodelled());
     }
 }

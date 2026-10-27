@@ -104,6 +104,21 @@ class CompanionDigestTest {
     }
 
     @Test
+    @DisplayName("a body that is a template or an asset file is no companion: digested once, as a payload, last")
+    void aBodyThatIsAPayloadIsDigestedOnceAsThePayload() throws IOException {
+        Path pack = pack();
+        write(pack, "skills/t.skill.yaml", skill("t", "../templates/t.md"));
+        write(pack, "templates/t.md", "body\n");
+        write(pack, "skills/a.skill.yaml", skill("a", "../assets/a.md"));
+        write(pack, "assets/a.md", "body\n");
+
+        List<String> digested = PackFileSet.digested(pack);
+
+        assertThat(digested).containsOnlyOnce("templates/t.md", "assets/a.md");
+        assertThat(digested).endsWith("skills/a.skill.yaml", "skills/t.skill.yaml", "assets/a.md", "templates/t.md");
+    }
+
+    @Test
     @DisplayName("binding skills adds nothing to the digest of a pack with no skill, and no Markdown is digested")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
         // The vendored qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
@@ -113,9 +128,12 @@ class CompanionDigestTest {
         withoutSkills.remove(ArtifactKind.SKILL);
 
         List<String> digested = PackFileSet.digested(qa);
+        // #193 digests the pack's asset files (three .py payloads), last; every file before them is YAML.
+        List<String> assetFiles = PackFileSet.assetFiles(qa);
 
-        assertThat(digested)
-                .hasSizeGreaterThan(10)
+        assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
+        assertThat(digested).hasSizeGreaterThan(10).endsWith(assetFiles.toArray(String[]::new));
+        assertThat(digested.subList(0, digested.size() - assetFiles.size()))
                 .allSatisfy(file -> assertThat(file).endsWith(".yaml"));
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)

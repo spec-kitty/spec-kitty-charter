@@ -9,15 +9,35 @@
 #   node_kinds       The service's DRG node kind tokens (NodeKind.java), in schema order.
 #   artifact_kinds   The artifact kind tokens (ArtifactKind.java). Each is also a node kind.
 #   fragment_kinds   Fragment node `kind` plural -> node kind. One name per concept (R14).
-#   files            Rules that map a pack file to the schema that validates it.
-#   exclusions       Rules for YAML files that have no schema, each with a reviewable reason.
+#   files            Rules that map a pack file to the schema that validates it, each with an
+#                    optional `content_form`.
+#   exclusions       Rules for files that are not pack content or have no schema, each with a
+#                    reviewable reason.
+#   payloads         Rules for files with no schema (`match`, `kind`, `content_form`, all
+#                    required), consulted only when no `files` or `exclusions` rule matches.
+#
+# Content form
+#   `content_form` says how a file is read, held, written and compared: `yaml` (the default, so
+#   the existing `files` rules do not write it), `markdown`, `text` or `bytes`. A file's
+#   extension and an asset's `mime` never choose it. Only `yaml` and `bytes` are built so far;
+#   `markdown` and `text` are declared but not built yet (no mission has built them: #192 shipped
+#   text companions under ADR-0039, not a form). A rule naming either fails when the table loads,
+#   until the mission that first needs it builds and admits it.
+#   The form decides how the store holds a file: a `bytes` file is held by its rule's kind
+#   (`asset-payload` as an asset file, `template` as a template), and a `bytes` rule of any other
+#   kind fails when the table loads. A `files` rule has a schema and is `yaml`; one naming another
+#   form fails when the table loads. A `payloads` rule has no schema and is `bytes`, the only form
+#   the store holds a schema-less file in; one naming another form fails when the table loads.
 #
 # Matching
 #   `match` is a glob over the file's path relative to the directory that holds the pack
 #   directories (`<checkout>/packs/`), written with forward slashes. `*` matches within one path
-#   segment, `**/` matches zero or more whole segments, every other character is literal.
-#   No file may match more than one rule across `files` and `exclusions`; the open-packs
-#   acceptance test fails on an overlap, and on a file that matches nothing.
+#   segment, `**/` matches zero or more whole segments, every other character is literal. There
+#   is no trailing `**`: a rule spans nested files with `**/*`.
+#   No file may match more than one rule across `files` and `exclusions`, and no file may match
+#   more than one `payloads` rule; a payload rule overlaps the other two by design and only the
+#   first match counts. The only overlap check is PackFileKindTest, over its sample paths; a file
+#   that matches nothing is left unclassified, not refused.
 
 node_kinds:
   - directive
@@ -133,10 +153,6 @@ exclusions:
   - match: "**/presets/*.yaml"
     reason: >-
       Activation presets. Core resolves them by name and has no pack-schema model at 9554e7b2.
-  - match: "**/*.config.yaml"
-    reason: >-
-      Tool configuration shipped as an asset (for example the structural lint config). Free
-      form, with no model in core at 9554e7b2.
   - match: "*/pack-manifest.yaml"
     reason: >-
       The generated manifest of a pack (constituents and hashes), machine-written and never
@@ -147,3 +163,28 @@ exclusions:
   - match: "**/templates/plan-field-declaration.yaml"
     reason: >-
       A mission template's plan-field declaration. No model in core at 9554e7b2.
+  # Asset and template round trip (#193): the README exclusion and the payloads section below.
+  - match: "*/assets/**/README.md"
+    reason: >-
+      Orientation notes beside the assets they describe. Not pack content and not an asset
+      payload (operator ruling R4, #193).
+  # `*` matches a leading dot within one segment and `**/` zero or more whole segments, so these
+  # cover a hidden file at any depth under a pack's `assets/` or top-level `templates/`. A hidden
+  # file a `files` rule maps (a `.x.asset.yaml`) keeps that kind: `files` rules are consulted first.
+  - match: "*/assets/**/.*"
+    reason: >-
+      Hidden files under assets/ (a file manager's .DS_Store, a .gitkeep, the store's own
+      .pack-write-*.tmp temporary file) are not pack content and not asset payloads (#193).
+  - match: "*/templates/**/.*"
+    reason: >-
+      Hidden files under templates/ (a file manager's .DS_Store, a .gitkeep, the store's own
+      .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
+
+# Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
+payloads:
+  - match: "*/assets/**/*"
+    kind: asset-payload
+    content_form: bytes
+  - match: "*/templates/**/*"
+    kind: template
+    content_form: bytes

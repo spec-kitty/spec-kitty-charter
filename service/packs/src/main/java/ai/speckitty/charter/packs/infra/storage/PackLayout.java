@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.Template;
 import java.util.Map;
 import java.util.Objects;
 
@@ -9,7 +10,7 @@ import java.util.Objects;
  * Where each artifact of a pack sits, as pack-relative paths (ADR-0037 decision 5). A file's place is how a pack is
  * authored, not what the artifact means, so it is kept here beside the aggregate instead of on the entities. An
  * artifact with no recorded place goes where a registration creates one: its kind's
- * {@link KindBinding#fileName file name} directly in the pack directory.
+ * {@link KindBinding#fileName file name} directly in the pack directory, or, for a {@link Template}, {@code templates/<id>}.
  */
 public final class PackLayout {
 
@@ -38,6 +39,7 @@ public final class PackLayout {
      *
      * @param artifact the artifact
      * @return its recorded path, or its kind's file name in the pack directory when none is recorded
+     *     ({@code templates/<id>} for a template)
      * @throws IllegalArgumentException when no place is recorded and the kind is not stored
      */
     public String pathOf(CharterArtifact artifact) {
@@ -45,6 +47,9 @@ public final class PackLayout {
         String recorded = paths.get(artifact.urn());
         if (recorded != null) {
             return recorded;
+        }
+        if (artifact instanceof Template template) {
+            return TemplateBinding.INSTANCE.pathOf(template);
         }
         return KindBindings.of(artifact.kind())
                 .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"))

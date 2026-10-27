@@ -746,6 +746,62 @@ class WholePackExpectationTest {
     }
 
     @Nested
+    class PinnedRefusals {
+
+        private static final String SIDECAR = "tactics/a.tactic.yaml";
+        private static final String REFUSAL = "refused: payload assets/assets/x.md does not exist";
+
+        @Test
+        void aRefusalThatOnlyExtendsThePinnedOneIsANewRed() {
+            Evaluation evaluation = evaluate(
+                    MATCHING_RED,
+                    MATCHING_EXCLUSIONS,
+                    known(SIDECAR, REFUSAL, OPEN_PACKS_ISSUE),
+                    withRed(SIDECAR, REFUSAL + "!"));
+
+            assertThat(evaluation.problems())
+                    .singleElement()
+                    .asString()
+                    .startsWith("CHANGED_RED tactics/a.tactic.yaml (tactic)")
+                    .endsWith("now: " + REFUSAL + "!");
+            assertThat(statuses(evaluation)).containsEntry(SIDECAR, Status.RED);
+        }
+
+        @Test
+        void theKnownFailuresAreReadableByOtherRatchets() {
+            WholePackExpectation expectation =
+                    WholePackExpectation.load(MATCHING_RED, NO_EXCLUSIONS, known(SIDECAR, REFUSAL, OPEN_PACKS_ISSUE));
+
+            assertThat(expectation.knownFailures())
+                    .containsExactly(new WholePackExpectation.KnownFailure(
+                            SIDECAR, REFUSAL, "The pack file holds two YAML documents.", OPEN_PACKS_ISSUE));
+        }
+
+        @Test
+        void theBundledListPinsExactlyTheSixBuiltInSidecarsAsKnownFailures() {
+            WholePackExpectation bundled = WholePackExpectation.fromClasspath();
+
+            assertThat(bundled.knownFailures())
+                    .extracting(WholePackExpectation.KnownFailure::path, WholePackExpectation.KnownFailure::at)
+                    .containsExactlyInAnyOrder(
+                            sidecar("assets/docs_structural_lint.py"),
+                            sidecar("assets/audiences/agentic-framework-core-team.md"),
+                            sidecar("assets/audiences/automation_agent.md"),
+                            sidecar("assets/audiences/line_manager.md"),
+                            sidecar("assets/audiences/nontech_educator.md"),
+                            sidecar("assets/audiences/software_engineer.md"));
+            assertThat(bundled.knownFailures())
+                    .allSatisfy(
+                            failure -> assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75"));
+        }
+
+        private static org.assertj.core.groups.Tuple sidecar(String payload) {
+            return org.assertj.core.groups.Tuple.tuple(
+                    payload + ".asset.yaml", "refused: payload assets/" + payload + " does not exist");
+        }
+    }
+
+    @Nested
     class TheCensus {
 
         @TempDir

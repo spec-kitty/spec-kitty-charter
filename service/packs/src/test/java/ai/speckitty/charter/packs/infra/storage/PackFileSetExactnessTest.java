@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Kind;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Pack;
@@ -40,12 +42,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The service loads exactly the files it digests (issue 120): over generated pack trees, the files the store reads
- * are exactly the planted loaded files, and the source fingerprint changes if and only if a file is {@code pack.yaml},
- * a loaded file or a declared graph input.
+ * are exactly the planted loaded files and payloads (asset files and templates), and the source fingerprint changes if
+ * and only if a file is {@code pack.yaml}, a loaded file, a payload or a declared graph input. An asset sidecar whose
+ * payload does not exist is digested and refused by the load.
  *
  * <p>The expected sets come from {@link GeneratedPackTree}'s own name-shape table. The load is observed only through
- * {@code FilesystemPackStore.read} and {@code DomainRepositoryService.tacticsOf}; the digest is observed only by
- * appending bytes to a file and digesting again. Nothing here asks {@code PackFileKind} what a path is.
+ * {@code FilesystemPackStore.read}, {@code DomainRepositoryService.tacticsOf} and {@code DomainRepositoryService.load};
+ * the digest is observed only by appending bytes to a file and digesting again, through the production
+ * {@code FileSystemPackSources.fingerprint()}. Nothing here asks {@code PackFileKind} what a path is.
  *
  * <p>Replay a failure with {@code -DpackFileSet.seed=<seed>} where the assertion message says {@code seed}; tree
  * <em>i</em> uses the base seed plus <em>i</em>.
@@ -93,7 +97,7 @@ class PackFileSetExactnessTest {
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
-    void theFingerprintChangesIfAndOnlyIfAFileIsPackYamlLoadedOrAGraphInput() throws IOException {
+    void theFingerprintChangesIfAndOnlyIfAFileIsPackYamlLoadedAPayloadOrAGraphInput() throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
         Set<Shape> seen = EnumSet.noneOf(Shape.class);
         long start = cpuNanos();
@@ -175,6 +179,20 @@ class PackFileSetExactnessTest {
                         .toList());
 
         assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.verdict() == Verdict.GRAPH_INPUT));
+    }
+
+    @Test
+    @Timeout(HANG_CAP_SECONDS)
+    void aDigestThatDropsThePayloadsFailsTheOracleNamingAPayload() throws IOException {
+        GeneratedPackTree tree = tree(0);
+        Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(locations, dir -> {
+            List<String> files = new ArrayList<>(PackFileSet.digested(dir));
+            files.removeAll(PackFileSet.assetFiles(dir));
+            files.removeAll(PackFileSet.templates(dir));
+            return files;
+        });
+
+        assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.verdict() == Verdict.PAYLOAD));
     }
 
     @Test
@@ -271,6 +289,7 @@ class PackFileSetExactnessTest {
                     ids(read.dsos(MissionStepContractBinding.INSTANCE), MissionStepContractDso::id));
             typed.put(Kind.GLOSSARY_PACK, ids(read.dsos(GlossaryPackBinding.INSTANCE), GlossaryPackDso::id));
             typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
+            typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);
             for (Kind kind : Kind.values()) {
@@ -285,6 +304,18 @@ class PackFileSetExactnessTest {
                         .forEach(p -> observed.add(p.path()));
             }
             read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
+            Set<String> payloads = new LinkedHashSet<>();
+            for (AssetFile file : read.assetFiles()) {
+                payloads.add(PackFileSet.ASSETS + file.path());
+                assertSameBytes(pack, PackFileSet.ASSETS + file.path(), file.payload(), where);
+            }
+            for (FilesystemPackStore.TemplateFile file : read.templates()) {
+                payloads.add(PackFileSet.TEMPLATES + file.path());
+                assertSameBytes(pack, PackFileSet.TEMPLATES + file.path(), file.content(), where);
+            }
+            assertThat(payloads)
+                    .as("%s the asset files and templates the store read", where)
+                    .isEqualTo(pack.paths(Verdict.PAYLOAD));
 
             Set<String> expected = new LinkedHashSet<>();
             expected.add(PACK_YAML);
@@ -302,6 +333,28 @@ class PackFileSetExactnessTest {
                             .collect(Collectors.toSet()))
                     .as("%s the tactics the service answers", where)
                     .isEqualTo(validIds(pack, Kind.TACTIC));
+            ai.speckitty.charter.packs.domain.Pack loaded = service.load(new PackIdentifier(pack.name()));
+            Set<String> held = new LinkedHashSet<>();
+            loaded.assetFiles().forEach(file -> held.add(PackFileSet.ASSETS + file.path()));
+            loaded.templates()
+                    .forEach(template ->
+                            held.add(PackFileSet.TEMPLATES + template.id().value()));
+            assertThat(held)
+                    .as("%s the asset files and templates the loaded pack holds", where)
+                    .isEqualTo(pack.paths(Verdict.PAYLOAD));
+            assertThat(loaded.assets().stream().map(asset -> asset.id().value()).collect(Collectors.toSet()))
+                    .as("%s the assets the loaded pack holds", where)
+                    .isEqualTo(validIds(pack, Kind.ASSET));
+        }
+    }
+
+    private static void assertSameBytes(Pack pack, String path, Payload payload, String where) {
+        try {
+            assertThat(payload)
+                    .as("%s the bytes of %s", where, path)
+                    .isEqualTo(Payload.of(Files.readAllBytes(pack.directory().resolve(path))));
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 
@@ -350,8 +403,8 @@ class PackFileSetExactnessTest {
                         tree.index(),
                         pack.name(),
                         added.path(),
-                        added.verdict() == Verdict.LOADED ? "must" : "must not")
-                .isEqualTo(added.verdict() == Verdict.LOADED);
+                        added.verdict() != Verdict.DECOY ? "must" : "must not")
+                .isEqualTo(added.verdict() != Verdict.DECOY);
     }
 
     private static boolean changesWhenAppended(

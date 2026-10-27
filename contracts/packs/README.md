@@ -19,7 +19,21 @@ model, since core exports no schema for it. Where a schema differs from core's b
 | Path | Holds |
 |---|---|
 | `schemas/<kind>.schema.json` | One schema per kind, 16 in all |
-| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, and the reviewed exclusions |
+| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, and the schema-less payloads |
+
+`file-kinds.yaml` classifies a pack file in three steps: its `files` rules map a file to the schema that
+validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
+reason), and its `payloads` rules, consulted only when neither matches, give a schema-less file a kind: a file
+under a pack's `assets/` is an `asset-payload` and a file under its top-level `templates/` is a `template` (a
+`README.md` under `assets/` and a hidden file under either are excluded). Each
+rule also says the file's **content form**, how it is read, held, written and compared: `yaml` (the default of a
+`files` rule), `markdown`, `text` or `bytes`. The form decides how the service holds the file: a `bytes` file is
+held by its rule's kind, an `asset-payload` as an asset file and a `template` as a template, round-tripped byte for
+byte; a `yaml` file is validated by its rule's schema. A file's extension and an asset's `mime` never choose the
+form. The table fails when it loads, naming the rule, if a rule names a form the service does not build yet
+(`markdown`, `text`), a `files` rule names a form other than `yaml` (every schema-bearing kind is YAML today), a
+`payloads` rule names a form other than `bytes` (the only form the service holds a schema-less file in), or a
+`bytes` rule names a kind other than `asset-payload` or `template`.
 
 ## Validate a file
 

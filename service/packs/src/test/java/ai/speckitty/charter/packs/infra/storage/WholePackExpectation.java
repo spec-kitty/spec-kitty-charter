@@ -224,6 +224,16 @@ final class WholePackExpectation {
     }
 
     /**
+     * The known failures, in list order: the single list the gate and every other ratchet over the gate's pack
+     * (built-in) read, never a copy. A refused file's entry pins the whole detail, {@code refused: <reason>}.
+     *
+     * @return the known failures
+     */
+    List<KnownFailure> knownFailures() {
+        return knownFailures;
+    }
+
+    /**
      * Judges one gate run.
      *
      * @param census every file of the pack with its gate kind

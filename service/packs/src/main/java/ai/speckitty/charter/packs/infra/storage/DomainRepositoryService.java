@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
@@ -23,6 +24,7 @@ import ai.speckitty.charter.packs.domain.StyleguideRepository;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.TacticRepository;
+import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
@@ -49,7 +51,9 @@ import org.springframework.stereotype.Service;
  *
  * <p>The persistence shapes ({@link TacticDso}, {@link PackDescriptorDso}) stay inside this package. Each kind is
  * mapped to and from its domain entity by its {@link KindBinding}, and assembled and committed through the
- * {@link KindBindings} registry (ADR-0037); only domain types leave the service.
+ * {@link KindBindings} registry (ADR-0037); only domain types leave the service. Templates and asset files, the
+ * {@code bytes} content form, are assembled beside them by the same helper ({@link #assembly}) and written byte for
+ * byte; they have no repository port of their own.
  */
 @Service
 public final class DomainRepositoryService
@@ -156,8 +160,34 @@ public final class DomainRepositoryService
      * @param artifact the artifact to save
      */
     void saveArtifact(CharterArtifact artifact) {
-        Resolved pack = resolve(artifact.packId());
-        writeArtifact(pack.store, pack.key, artifact);
+        saveArtifact(artifact.packId(), artifact);
+    }
+
+    /**
+     * Saves one artifact of any stored kind, a {@link Template} included, into a configured pack: a known id replaces
+     * its file, an unknown id creates it at its kind's canonical place. The whole-pack gate's adapter writes through it.
+     *
+     * @param pack the pack to write into
+     * @param artifact the artifact
+     * @throws IllegalArgumentException when the artifact is of a kind this store does not persist
+     * @throws CharterRefusal when the pack is not configured or the write fails
+     */
+    void saveArtifact(PackIdentifier pack, CharterArtifact artifact) {
+        Resolved resolved = resolve(pack);
+        writeArtifact(resolved.store, resolved.key, artifact);
+    }
+
+    /**
+     * Writes one asset file of a configured pack, byte for byte, at {@code assets/<path>}.
+     *
+     * @param pack the pack to write into
+     * @param file the asset file
+     * @throws CharterRefusal when the pack is not configured or the write fails
+     */
+    void writeAssetFile(PackIdentifier pack, AssetFile file) {
+        Resolved resolved = resolve(pack);
+        resolved.store.writePayload(
+                resolved.key, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
     }
 
     private <D, E extends CharterArtifact> Optional<E> loadOne(
@@ -200,6 +230,8 @@ public final class DomainRepositoryService
      * file, an unknown id creates {@code <id>.<kind>.yaml}. The {@link PackCommitStore} calls it to stage the one
      * artefact a registration added or replaced before the atomic directory swap, leaving the descriptor and every
      * sibling byte-identical; the mapping stays in the binding so the commit path and the per-child saves cannot drift.
+     * A {@link Template} is written byte for byte at {@code templates/<id>}, refused when another rule classifies that
+     * path (a {@code templates/x.tactic.yaml}): one file, one owner.
      *
      * @param store the store to write through (for a commit, one rooted at the staging directory's parent)
      * @param key the directory-name key the store addresses the pack by
@@ -207,6 +239,14 @@ public final class DomainRepositoryService
      * @throws IllegalArgumentException when {@code artifact} is of a kind this store does not persist
      */
     static void writeArtifact(FilesystemPackStore store, PackIdentifier key, CharterArtifact artifact) {
+        if (artifact instanceof Template template) {
+            store.writePayload(
+                    key,
+                    TemplateBinding.INSTANCE.pathOf(template),
+                    TemplateBinding.INSTANCE.payloadOf(template),
+                    PackFileKind.TEMPLATE);
+            return;
+        }
         KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
                 .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"));
         write(store, key, kind, artifact);
@@ -219,14 +259,39 @@ public final class DomainRepositoryService
 
     private Pack assemble(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
-        FilesystemPackStore.PackRead read = resolved.store.read(resolved.key);
+        return assembly(pack, resolved.store.read(resolved.key), new HashMap<>())
+                .build();
+    }
+
+    /**
+     * The one assembly of a read into the aggregate, shared by {@link #load(PackIdentifier)} and
+     * {@link WholePackStore#load}: the descriptor, the read violations, every bound kind (through {@link #collect}),
+     * the asset files and the templates. Each added artifact's file is put in {@code places} under its URN.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(PackIdentifier pack, FilesystemPackStore.PackRead read, Map<Urn, String> places) {
         Pack.Builder builder =
                 Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
         for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, new HashMap<>());
+            collect(pack, kind, read, builder, places);
         }
-        return builder.build();
+        read.assetFiles().forEach(builder::assetFile);
+        for (FilesystemPackStore.TemplateFile file : read.templates()) {
+            String place = PackFileSet.TEMPLATES + file.path();
+            try {
+                Template template = TemplateBinding.INSTANCE.toEntity(pack, file.path(), file.content());
+                builder.artifact(template);
+                places.put(template.urn(), place);
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
+                builder.violation(new PackElementViolation(place, "domain", String.valueOf(breach.getMessage())));
+            }
+        }
+        return builder;
     }
 
     /**

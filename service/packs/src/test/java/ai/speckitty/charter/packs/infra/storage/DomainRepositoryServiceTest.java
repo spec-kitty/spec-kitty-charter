@@ -9,11 +9,15 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.domain.Asset;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
+import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -238,5 +242,107 @@ class DomainRepositoryServiceTest {
     void tacticsOfIsThePointWiseEquivalentOfTheAggregatesTactics() {
         assertThat(service.tacticsOf(BY_ID)).isEqualTo(service.load(BY_ID).tactics());
         assertThat(service.tacticsOf(BY_ID)).hasSize(2);
+    }
+
+    // ---- asset files and templates (FR-002 to FR-007) -----------------------------------------------------------
+
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, (byte) 0xff};
+
+    private static Path withAssetsAndTemplates(Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-a", host.resolve("assets-and-templates"));
+        Files.delete(pack.resolve(BROKEN_FILE));
+        Files.createDirectories(pack.resolve("assets/debrief"));
+        Files.writeString(
+                pack.resolve("assets/debrief/logo.png.asset.yaml"),
+                "id: debrief-logo\nmime: image/png\npath: debrief/logo.png\ntitle: Logo\n");
+        Files.write(pack.resolve("assets/debrief/logo.png"), PNG);
+        Files.writeString(pack.resolve("assets/lint.config.yaml"), "rules: []\n");
+        Files.createDirectories(pack.resolve("templates/writing"));
+        Files.write(pack.resolve("templates/writing/meeting-minutes.md"), new byte[] {'#', '\r', '\n', 0});
+        return pack;
+    }
+
+    private static DomainRepositoryService serviceOver(Path pack) {
+        return new DomainRepositoryService(
+                () -> List.of(new PackLocation("pack-a", PackLevel.ORG, pack)), new YamlSerializationStrategy());
+    }
+
+    /** The live load path assembles the sidecar, both asset files and the template into one valid aggregate. */
+    @Test
+    void theLoadHoldsAssetsAssetFilesAndTemplates(@TempDir Path host) throws IOException {
+        Pack pack = serviceOver(withAssetsAndTemplates(host)).load(BY_ID);
+
+        assertThat(pack.violations()).isEmpty();
+        assertThat(pack.assets()).singleElement().satisfies(asset -> {
+            assertThat(asset.id().value()).isEqualTo("debrief-logo");
+            assertThat(asset.path()).isEqualTo("debrief/logo.png");
+            assertThat(asset.title()).contains("Logo");
+        });
+        assertThat(pack.assetFiles())
+                .extracting(AssetFile::path)
+                .containsExactly("debrief/logo.png", "lint.config.yaml");
+        assertThat(pack.assetFiles().getFirst().payload()).isEqualTo(Payload.of(PNG));
+        assertThat(pack.templates()).singleElement().satisfies(template -> {
+            assertThat(template.id().value()).isEqualTo("writing/meeting-minutes.md");
+            assertThat(template.content()).isEqualTo(Payload.of(new byte[] {'#', '\r', '\n', 0}));
+        });
+        assertThat(pack.tactics()).hasSize(2);
+    }
+
+    /** A sidecar whose payload is missing is a violation of the loaded pack, never a breach of its invariant. */
+    @Test
+    void aMissingPayloadIsAViolationOfTheLoadedPack(@TempDir Path host) throws IOException {
+        Path source = withAssetsAndTemplates(host);
+        Files.delete(source.resolve("assets/debrief/logo.png"));
+
+        Pack pack = serviceOver(source).load(BY_ID);
+
+        assertThat(pack.assets()).isEmpty();
+        assertThat(pack.violations())
+                .containsExactly(new PackElementViolation(
+                        "assets/debrief/logo.png.asset.yaml",
+                        "asset",
+                        "payload assets/debrief/logo.png does not exist"));
+        assertThat(pack.templates()).hasSize(1);
+    }
+
+    /** The gate adapter's entry points: a template and the asset files are written byte for byte, and reload equal. */
+    @Test
+    void saveArtifactAndWriteAssetFileWriteByteIdenticalFiles(@TempDir Path host) throws IOException {
+        Path source = withAssetsAndTemplates(host);
+        Pack loaded = serviceOver(source).load(BY_ID);
+        Path target = PackFixtures.copyOf("pack-descriptor-only", host.resolve("target"));
+        DomainRepositoryService into = new DomainRepositoryService(
+                () -> List.of(new PackLocation("target", PackLevel.ORG, target)), new YamlSerializationStrategy());
+        PackIdentifier targetId = new PackIdentifier("target");
+
+        for (Template template : loaded.templates()) {
+            into.saveArtifact(targetId, template);
+        }
+        for (Asset asset : loaded.assets()) {
+            into.saveArtifact(targetId, asset);
+        }
+        for (AssetFile file : loaded.assetFiles()) {
+            into.writeAssetFile(targetId, file);
+        }
+
+        for (String file :
+                List.of("templates/writing/meeting-minutes.md", "assets/debrief/logo.png", "assets/lint.config.yaml")) {
+            assertThat(Files.readAllBytes(target.resolve(file)))
+                    .as(file)
+                    .isEqualTo(Files.readAllBytes(source.resolve(file)));
+        }
+        Pack reloaded = into.load(targetId);
+        assertThat(reloaded.violations()).isEmpty();
+        assertThat(reloaded.assetFiles()).isEqualTo(loaded.assetFiles());
+        assertThat(reloaded.templates())
+                .extracting(Template::content)
+                .containsExactlyElementsOf(
+                        loaded.templates().stream().map(Template::content).toList());
+        assertThat(reloaded.assets())
+                .extracting(AssetBinding.INSTANCE::toDso)
+                .containsExactlyElementsOf(loaded.assets().stream()
+                        .map(AssetBinding.INSTANCE::toDso)
+                        .toList());
     }
 }
