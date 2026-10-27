@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.identity.template-local-id`
 - **Input key:** `template_local_id`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-10-27T15:05:59.096379+00:00`
+- **Resolved:** `2026-10-27T15:54:29.898644+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -20,7 +21,7 @@ A top-level template's local id is its path relative to the pack's templates/ fo
 
 ## Final answer
 
-_(none)_
+Accept: path under templates/ (duplicate id refused by the pack invariant, fixed in open-packs)
 
 ## Rationale
 
@@ -29,3 +30,4 @@ _(none)_
 ## Change log
 
 - `2026-10-27T15:05:59.096379+00:00` — opened
+- `2026-10-27T15:54:29.898644+00:00` — resolved (final_answer="Accept: path under templates/ (duplicate id refused by the pack invariant, fixed in open-packs)")

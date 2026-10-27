@@ -243,7 +243,7 @@
     {
       "created_at": "2026-10-27T15:05:59.096379Z",
       "decision_id": "01M5YYB41RYAY95SCWX6Y72AV5",
-      "final_answer": null,
+      "final_answer": "Accept: path under templates/ (duplicate id refused by the pack invariant, fixed in open-packs)",
       "input_key": "template_local_id",
       "mission_id": "01M5YY7GCDBMADFQB5A2PSR5GX",
       "mission_slug": "asset-template-round-trip-01M5YY7G",
@@ -256,10 +256,10 @@
       "other_answer": false,
       "question": "A top-level template's local id is its path relative to the pack's templates/ folder (e.g. writing/meeting-minutes.md, URN template:writing/meeting-minutes.md), the same <dir>/<file> shape core mints for mission templates (template:<mission>/<file>). Accept, knowing a same-named mission template would share that id?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-10-27T15:54:29.898644Z",
       "resolved_by": null,
       "slot_key": "specify.identity.template-local-id",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }
