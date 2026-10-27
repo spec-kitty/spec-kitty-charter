@@ -20,6 +20,9 @@ requirement_refs:
 - SC-001
 - SC-002
 - SC-003
+planning_base_branch: feat/whole-pack-known-failures
+merge_target_branch: feat/whole-pack-known-failures
+branch_strategy: Planning artifacts for this mission were generated on feat/whole-pack-known-failures. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/whole-pack-known-failures unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -29,9 +32,6 @@ subtasks:
 - T006
 - T007
 phase: Phase 1 - Gate harness
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - at: '2026-10-27T18:10:00Z'
   actor: system
@@ -48,7 +48,9 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java
 - service/packs/src/test/resources/whole-pack/known-failures.yaml
 role: implementer
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP01 – Known-failure list, judgement and report

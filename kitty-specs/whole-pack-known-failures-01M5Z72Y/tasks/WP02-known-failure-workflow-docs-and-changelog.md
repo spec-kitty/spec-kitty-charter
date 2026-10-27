@@ -1,17 +1,18 @@
 ---
 work_package_id: WP02
 title: Known-failure workflow docs and changelog
-dependencies: [WP01]
+dependencies:
+- WP01
 requirement_refs:
 - FR-009
+planning_base_branch: feat/whole-pack-known-failures
+merge_target_branch: feat/whole-pack-known-failures
+branch_strategy: Planning artifacts for this mission were generated on feat/whole-pack-known-failures. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/whole-pack-known-failures unless the human explicitly redirects the landing branch.
 subtasks:
 - T008
 - T009
 - T010
 phase: Phase 2 - Documentation
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - at: '2026-10-27T18:10:00Z'
   actor: system
@@ -27,7 +28,9 @@ owned_files:
 - docs/changelog/2026-10-27-whole-pack-known-failures.md
 - docs/changelog/README.md
 role: documentarian
+tags: []
 task_type: implement
+tracker_refs: []
 ---
 
 # Work Package Prompt: WP02 – Known-failure workflow docs and changelog
