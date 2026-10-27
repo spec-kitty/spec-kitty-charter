@@ -204,7 +204,13 @@ enum AgentProfileYaml implements YamlFormat<AgentProfileDso> {
         }
         if (value instanceof Map<?, ?> map) {
             Map<String, List<String>> values = new LinkedHashMap<>();
-            map.forEach((field, removed) -> values.put(String.valueOf(field), strings(map, String.valueOf(field))));
+            map.forEach((field, removed) -> {
+                List<String> items = new ArrayList<>();
+                if (removed instanceof List<?> list) {
+                    list.forEach(item -> YamlFields.text(item).ifPresent(items::add));
+                }
+                values.put(String.valueOf(field), items);
+            });
             return Optional.of(new AgentProfileDso.Excluding.Values(values));
         }
         return Optional.empty();
