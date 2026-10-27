@@ -58,6 +58,7 @@ ones scream the concern.
 | `kernel.domain` | Shared kernel | Vocabulary every slice may read: `PackDescriptor`, `DoctrineGraph`, `Urn`, `RefusalCode` |
 | `kernel.validation` | Shared kernel, pure library | `ModularRuleset`, `Constraint`, `Evaluation`, `Reason`; `java` and `jspecify` only |
 | `packs.domain` | Domain core | Aggregate root `Pack` (artifacts keyed by kind, CRG documents), child entities such as `Tactic`, value objects, identifier value objects, ports |
+| `profiles.domain` | Domain core of the profiles slice | `AgentProfile` and its value objects; it implements the kernel's `CharterArtifact` and never depends on `packs`. The pack store binds the kind (ADR-0037, amendment of 2026-10-27) |
 | `packs.application` | Application edge (use cases) | `@Service` read use cases, such as the tactic read service, that orchestrate domain ports. An outer edge, peer to storage; not pure |
 | `packs.infra.storage` | Outbound, driven adapter | `DomainRepositoryService` (`@Service`), the `KindBindings` registry, `SerializationStrategy`, `WholePackStore`, DSO records |
 | `packs.infra.api` | Inbound, driving adapter | REST controllers, Problem handling, the only users of generated DTOs |

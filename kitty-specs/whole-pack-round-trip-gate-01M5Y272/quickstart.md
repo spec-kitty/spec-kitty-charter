@@ -11,7 +11,7 @@ cat service/packs/build/reports/whole-pack/report.md
 ## When your mission turns a kind green
 
 1. Implement the kind's read/write and extend the round-trip adapter.
-2. Run the gate. It fails with `UNEXPECTEDLY GREEN: kind <kind> — remove it from expected-red.yaml`.
+2. Run the gate. It fails with `BASELINED_MODELLED_KIND <kind>: a modelled kind is never expected red as a whole; remove it from …expected-red.yaml …`.
 3. Remove the entry (and any per-file entries that now pass), run again, commit both.
 
 ## When a modelled file goes red

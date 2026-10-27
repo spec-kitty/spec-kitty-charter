@@ -108,11 +108,12 @@ own append-only list of files it does not compare. The gate passes only when the
 
 Where the gate still differs from ADR-0036, on purpose and only towards false reds, never false greens:
 
-- written artifacts are paired with their source by kind and `id`, not path for path, because the store writes a new
+- written artifacts are paired with their source by kind and id (the binding's id key: `profile-id` for an agent
+  profile), not path for path, because the store writes a new
   artefact at the pack root; any written file nothing pairs with fails the gate;
 - an absent field is not yet treated as its schema default;
-- the open maps are listed per kind in `MeaningComparator` (styleguide `tooling` and `structural_lint_config`), not
-  derived from the schemas; a kind that brings an open map adds it there.
+- the open maps are listed per kind in `MeaningComparator` (styleguide `tooling` and `structural_lint_config`, agent-profile
+  `excluding`), not derived from the schemas; a kind that brings an open map adds it there.
 
 The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
 in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required

@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-27 — Agent profiles round-trip through the domain](/changelog/2026-10-27-agent-profile-round-trip/)
 - [2026-10-27 — Doctrine is retired as a term; the glossary and docs say charter](/changelog/2026-10-27-retire-doctrine-term/)
 - [2026-10-27 — A whole-pack round-trip gate shows what of the built-in pack survives](/changelog/2026-10-27-whole-pack-round-trip-gate/)
 - [2026-10-27 — Round-trip fidelity is equality of meaning](/changelog/2026-10-27-round-trip-fidelity-adr/)

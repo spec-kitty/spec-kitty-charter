@@ -76,7 +76,7 @@ rules below are how this one is scoped to its worktree.
 ## Freshness
 
 - The fingerprint covers, per configured pack in order, `pack.yaml`, every file of a loaded kind
-  (today tactic, directive, styleguide and paradigm files, at any depth) and the declared graph inputs (root
+  (today tactic, directive, styleguide, toolguide, paradigm and agent-profile files, at any depth) and the declared graph inputs (root
   `*.graph.yaml` shards, then `drg/fragment.yaml`), each as its path under the pack's configured
   name and its bytes; and, when configured, `config.yaml` and `charter.yaml` under the project
   configuration directory, with presence.
