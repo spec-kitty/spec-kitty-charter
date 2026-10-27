@@ -26,6 +26,7 @@ import ai.speckitty.charter.packs.domain.TacticRepository;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -138,7 +139,23 @@ public final class DomainRepositoryService
         return loadOne(pack, ParadigmBinding.INSTANCE, paradigm.value());
     }
 
-    private void saveArtifact(CharterArtifact artifact) {
+    /**
+     * Saves an agent profile into its pack, in place when a file of the pack already declares its {@code profile-id}.
+     * No port names it yet: profile selection (ADR-0032) adds one to the profiles slice.
+     *
+     * @param profile the profile to save
+     * @throws CharterRefusal when the pack is not stored here or the file cannot be written
+     */
+    public void save(AgentProfile profile) {
+        saveArtifact(profile);
+    }
+
+    /**
+     * Saves one artifact of any bound kind, as the typed saves do; the whole-pack gate's adapter uses it.
+     *
+     * @param artifact the artifact to save
+     */
+    void saveArtifact(CharterArtifact artifact) {
         Resolved pack = resolve(artifact.packId());
         writeArtifact(pack.store, pack.key, artifact);
     }

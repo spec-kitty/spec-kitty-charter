@@ -35,7 +35,7 @@ the schemas are edited here and core pulls them; the import tooling is retired.
 
 Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): the relation between two rules is `tension`; `impacts` is a per-value list on one artifact.
 
-To be superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (proposed 2026-10-27, on its acceptance): unknown and retired `pack.yaml` keys are refused, not warned (rulings R5 and R13).
+Superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (accepted 2026-10-27): unknown and retired `pack.yaml` keys are refused, not warned (rulings R5 and R13).
 
 ## Amendment 2026-10-19 (operator rulings)
 
@@ -58,7 +58,7 @@ and every change the import made to the schemas (C1-C16) is tabled in
 - **Edge endpoints are URNs only** (R6), in shards and in fragments. A bare local id is refused. DIV-007.
 - **Unknown and retired `pack.yaml` keys are warned, not refused** (R5, R13), with the diagnostic
   `pack_unknown_key`. DIV-005 and DIV-006.
-  *(To be superseded in part by ADR-0036, proposed 2026-10-27: an unknown or retired key is a
+  *(Superseded in part by ADR-0036, accepted 2026-10-27: an unknown or retired key is a
   schema violation and is refused; `pack_unknown_key` is retired.)*
 - **Fragment node kinds have one name per concept** (R14), with no aliases. `actions` and
   `anti_patterns` are accepted; `mission_steps` and `mission_type` are refused. DIV-011.

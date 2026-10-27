@@ -7,6 +7,8 @@ plugins {
 
 dependencies {
     api(project(":kernel"))
+    // The profiles slice's domain: the pack store binds the agent-profile kind (ADR-0037, amendment of 2026-10-27).
+    api(project(":profiles"))
 
     // infra.storage: YAML codec and pack-file schema validation (confined to this module, ADR-0017).
     implementation(catalog.lib("snakeyaml-engine"))

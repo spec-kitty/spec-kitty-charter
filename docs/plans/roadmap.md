@@ -2,7 +2,7 @@
 title: Charter service bootstrap roadmap
 description: The bootstrap steps for the charter service, from the contract skeleton and Gradle build to a read shadow, aligned with the core's seam work.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -51,7 +51,7 @@ migration then follows, one operation at a time.
 
 ## Progress
 
-As of 2026-10-26.
+As of 2026-10-27.
 
 - **Step 1, done, then reshaped.** `contracts/charter/` is at `0.1.0-SNAPSHOT`, unreleased, and is
   published as 0.x until it is stable (ADR-0022, built by PR #129). PR #139 rebuilt the service on
@@ -68,15 +68,17 @@ As of 2026-10-26.
   aggregate owns tactics behind repository ports and a filesystem adapter (PR #139). PR #170 added
   directive, styleguide and paradigm ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/)), and PR #180 added toolguide and registration for all four. Merge, activation and cascade are not built.
 - **Next.** Two tracks:
-  - **unblock core:** #119 is fixed and the publishing workflow (#45) is built; next, cut 0.1.0
-    (the release itself, an operator call), then publish the activation set as 0.2.0 (#125);
+  - **unblock core:** #119 is fixed and the publishing workflow (#45) is built. Cutting 0.1.0 is
+    held (operator, 2026-10-27); the tag ruleset (#196) comes first when it is cut. Then the
+    activation set is 0.2.0 (#125), and an additive change ready earlier, such as
+    `GET /openapi.yaml` (#208), rides that minor;
   - **model before breadth:** the whole-pack round trip
     ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every pack file
     into the domain and write it back. #171 comes first; the read and registration services of
     the kind registry (#169) are extracted after two or three more kinds are built
     ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26), while the
     storage and aggregate plumbing is keyed by kind first, with the whole-pack seam (#189,
-    [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), proposed). Then the
+    [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), accepted 2026-10-27). Then the
     offering reads under `/offering` (#126).
 
   Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),
@@ -119,6 +121,6 @@ the shadow comparison stay in core.
 The first release is 0.1.0 ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)). Both things it
 waited on are built: the fix for the duplicate classes code generation emitted (#119), so that
 core's generated client is clean, and the publishing workflow (#45). What remains is cutting the
-release, following
+release, which the operator holds for now (2026-10-27), following
 [the release procedure](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#releasing-a-contract-version). Shapes may still change in a 0.x minor; they freeze at 1.0.0
 (#128).

@@ -1,0 +1,89 @@
+{
+  "mission_slug": "mission-step-contract-round-trip-01M5YHYD",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 9a11655 MissionStepContractTest 15/15; WP03 b6c3019 MissionStepContractRoundTripTest everyFieldSurvives (every schema field read, mapped, written, re-read equal)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:24.684302+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 b6c3019 MissionStepContractRoundTripTest (absent stays absent, defaults kept as written, booleans stay booleans); WP04 2457834 MissionStepContractCorpusTest compares source vs written text with MeaningComparator, 28/28",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:30.782789+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 b6c3019: binding appended to KindBindings/YamlFormats; PackFileSetExactnessTest and GeneratedPackTree load and digest step contracts; aPackLoadsAndCreatesContracts loads via DomainRepositoryService",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:36.210786+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 d4ca3a7: KindBinding schema hook, KindBindings.bySchema, PackFileSet and YamlSerializationStrategy resolve through it; KindBindingsTest ties file name and schema to file-kinds.yaml",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:41.907722+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 b6c3019 expected-red entry removed; :packs:wholePackRoundTrip report: mission-step-contract 21 files, 21 green, 0 red; totals 250 green / 235 expected red / 0 red",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:48.095035+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04 2457834 MissionStepContractCorpusTest (open-packs): 28/28 pinned files incl. qa, coverage floors, lossy positive control caught at gates[0].fail_open and steps[i].guidance",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:53.829816+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 b6c3019 anUnknownKeyIsRefused (top, step, delegation, input, gate) names the key; anUnknownKeyIsAPackViolation",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:17:59.748724+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 9a11655 MissionStepContractTest: relationships() is empty; delegations are values",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-27T12:18:05.944849+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

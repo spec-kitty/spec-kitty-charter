@@ -30,7 +30,7 @@ conditional basis.
 
 Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): a `tension` relationship may exist beside one structural relationship between the same two artifacts (decisions 1 and 4).
 
-To be clarified by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (proposed 2026-10-27, on its acceptance): in decision 2, "round-trips losslessly" means equality of meaning, with edges compared as a set of directed `(source, target, relation)` triples. The one-per-pair rule stays a domain invariant, and a source that breaks it is still fixed upstream, never collapsed on read.
+Clarified by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (accepted 2026-10-27): in decision 2, "round-trips losslessly" means equality of meaning, with edges compared as a set of directed `(source, target, relation)` triples. The one-per-pair rule stays a domain invariant, and a source that breaks it is still fixed upstream, never collapsed on read.
 
 ## Context
 

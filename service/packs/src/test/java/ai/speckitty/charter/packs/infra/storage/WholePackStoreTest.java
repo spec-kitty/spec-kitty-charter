@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.Skill;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,19 @@ class WholePackStoreTest {
     private static final String DIRECTIVE_FILE = "directives/043-close-the-class.directive.yaml";
     private static final String NESTED_TACTIC = "tactics/analysis/gamma.tactic.yaml";
     private static final String SHARD = "tactic.graph.yaml";
+    private static final String SKILL_FILE = "skills/land-pr.skill.yaml";
+    private static final String SKILL_BODY = "skills/land-pr.skill.md";
+    private static final String SKILL = """
+            schema_version: "1.0"
+            id: land-pr
+            title: Land a PR
+            description: Use when a pull request needs landing.
+            form: prompt
+            body_path: land-pr.skill.md
+            invocation:
+              user_invocable: true
+              side_effects: [git-push]
+            """;
 
     private final WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
 
@@ -285,14 +300,88 @@ class WholePackStoreTest {
     void unmodelledFilesAreListedNotCopied(@TempDir Path host) throws IOException {
         Path source = richPack(host.resolve("source"));
         write(source, "README.md", "# hello\n");
-        write(source, "agent_profiles/a.agent.yaml", "profile-id: a\n");
+        write(source, "sub/r.yaml", "a: 1\n");
         WholePackStore.LoadedPack loaded = store.load(source);
         Path target = host.resolve("out");
 
         store.write(loaded, target);
 
-        assertThat(loaded.unmodelled()).containsExactly("README.md", "agent_profiles/a.agent.yaml");
-        assertThat(filesUnder(target)).doesNotContain("README.md", "agent_profiles/a.agent.yaml");
+        assertThat(loaded.unmodelled()).containsExactly("README.md", "sub/r.yaml");
+        assertThat(filesUnder(target)).doesNotContain("README.md", "sub/r.yaml");
+    }
+
+    @Test
+    @DisplayName("a skill and its body are loaded, modelled and written as a pair, the body byte for byte")
+    void aSkillIsWrittenWithItsBody(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, SKILL_FILE, SKILL);
+        write(source, SKILL_BODY, "Goal: land it.\r\nNo final newline — kept");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        store.write(loaded, target);
+
+        assertThat(loaded.pack().violations()).isEmpty();
+        assertThat(loaded.unmodelled()).doesNotContain(SKILL_BODY);
+        assertThat(Files.readString(target.resolve(SKILL_BODY))).isEqualTo("Goal: land it.\r\nNo final newline — kept");
+        assertThat(meaning(store.load(target))).isEqualTo(meaning(loaded));
+    }
+
+    @Test
+    @DisplayName("a skill whose body is missing is a violation, and the write refuses the pack")
+    void aMissingBodyRefusesTheWrite(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, SKILL_FILE, SKILL);
+        WholePackStore.LoadedPack loaded = store.load(source);
+
+        assertThat(loaded.pack().violations())
+                .extracting(v -> v.file() + ": " + v.reason())
+                .containsExactly(SKILL_FILE + ": land-pr.skill.md: missing");
+        assertThatThrownBy(() -> store.write(loaded, host.resolve("out")))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("unreadable files");
+    }
+
+    @Test
+    @DisplayName("a companion the rule refuses refuses the write, and nothing is left behind")
+    void aRefusedCompanionRefusesTheWrite(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, SKILL_FILE, SKILL);
+        write(source, SKILL_BODY, "body\n");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        SkillDso escaping = SkillBinding.INSTANCE
+                .toDso(loaded.pack().artifacts(ArtifactKind.SKILL, Skill.class).getFirst())
+                .withBody(Optional.of("body\n"));
+        SkillDso moved = new SkillDso(
+                escaping.schemaVersion(),
+                escaping.id(),
+                escaping.title(),
+                escaping.description(),
+                escaping.triggers(),
+                escaping.form(),
+                Optional.of("../../escape.md"),
+                escaping.expandsTo(),
+                escaping.parameters(),
+                escaping.invocation(),
+                escaping.tools(),
+                escaping.version(),
+                escaping.maintainers(),
+                escaping.overrides(),
+                escaping.enhances(),
+                escaping.body());
+        WholePackStore.LoadedPack tampered = new WholePackStore.LoadedPack(
+                loaded.pack().with(SkillBinding.INSTANCE.toEntity(loaded.pack().id(), moved)),
+                loaded.layout(),
+                loaded.graphs(),
+                loaded.unmodelled());
+        Path target = host.resolve("out");
+
+        assertThatThrownBy(() -> store.write(tampered, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("companion ../../escape.md leaves the pack");
+        assertThat(target).doesNotExist();
+        assertThat(host.resolve("escape.md")).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
     }
 
     @Test

@@ -13,8 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,6 +97,19 @@ class DomainRoundTripTest {
               relation: requires
             """;
 
+    private static final String PROFILE = """
+            profile-id: java-jenny
+            name: Java Jenny
+            roles: [implementer]
+            purpose: Writes Java.
+            specialization:
+              primary-focus: Java.
+            directive-references:
+              - code: "003"
+                name: Decision Documentation
+                rationale: Record decisions.
+            """;
+
     @TempDir
     Path temp;
 
@@ -112,6 +127,7 @@ class DomainRoundTripTest {
         put("toolguides/powershell-syntax.toolguide.yaml", "toolguide", TOOLGUIDE);
         put("paradigms/atomic-design.paradigm.yaml", "paradigm", PARADIGM);
         put("tactic.graph.yaml", "graph-shard", SHARD);
+        put("agent_profiles/a-file-named-otherwise.agent.yaml", "agent-profile", PROFILE);
         put("procedures/x.procedure.yaml", "procedure", "id: x\n");
     }
 
@@ -149,7 +165,28 @@ class DomainRoundTripTest {
         assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
                 .isEqualTo(new Written("refactoring-inline-temp.tactic.yaml"));
         assertThat(outcomes.get("pack.yaml")).isEqualTo(new Written("pack.yaml"));
+        assertThat(outcomes.get("agent_profiles/a-file-named-otherwise.agent.yaml"))
+                .as("paired by profile-id, written under the agent file token")
+                .isEqualTo(new Written("java-jenny.agent.yaml"));
         assertThat(outcomes.get("tactic.graph.yaml")).isEqualTo(new Written("tactic.graph.yaml"));
+    }
+
+    @Test
+    void aStepContractIsModelledThroughItsBindingAndWrittenUnderItsFileToken() throws IOException {
+        put("missions/built_in_step_contracts/review.step-contract.yaml", "mission-step-contract", """
+                schema_version: "1.0"
+                id: review
+                action: review
+                mission: software-dev
+                steps:
+                  - id: bootstrap
+                    description: Load charter context for this action
+                """);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("missions/built_in_step_contracts/review.step-contract.yaml"))
+                .isEqualTo(new Written("review.step-contract.yaml"));
     }
 
     @Test
@@ -219,10 +256,21 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void theAdapterModelsExactlyTheSevenGateKinds() {
+    void theAdapterModelsEveryBoundKindAndTheTwoPackDocuments() {
+        Set<String> expected = new HashSet<>(Set.of("pack-descriptor", "graph-shard"));
+        KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
-                .containsExactlyInAnyOrder(
-                        "directive", "tactic", "styleguide", "toolguide", "paradigm", "pack-descriptor", "graph-shard");
+                .containsAll(Set.of(
+                        "directive",
+                        "tactic",
+                        "styleguide",
+                        "toolguide",
+                        "paradigm",
+                        "agent-profile",
+                        "mission-step-contract",
+                        "pack-descriptor",
+                        "graph-shard"))
+                .isEqualTo(expected);
     }
 
     private static Map<String, String> digests(Path root) throws IOException {

@@ -107,7 +107,7 @@ final class PackSchemas {
         this.declaredProperties = Map.copyOf(declared);
     }
 
-    /** The 14 schemas bundled with this adapter, built on first use and shared afterwards. */
+    /** The 16 schemas bundled with this adapter, built on first use and shared afterwards. */
     static synchronized PackSchemas bundled() {
         PackSchemas current = bundled;
         if (current == null) {

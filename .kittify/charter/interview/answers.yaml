@@ -54,9 +54,9 @@ answers:
     differs from core's Python charter oracle - the wire format may differ,
     but the data must match closely enough that core does not break; (2) the
     service not honoring the OpenAPI contract, or an incompatible contract
-    change reaching core. Also never lose or rewrite open-packs YAML content
-    in a way that fails to round-trip, and never admit an unverified
-    dependency. These are not traded for speed.
+    change reaching core. Also never lose the meaning of open-packs YAML
+    content in a round trip (equality of meaning, not of bytes: ADR-0036),
+    and never admit an unverified dependency. These are not traded for speed.
   amendment_process: >-
     Charter changes are proposed by pull request, through /spec-kitty.charter,
     and approved by the operator.

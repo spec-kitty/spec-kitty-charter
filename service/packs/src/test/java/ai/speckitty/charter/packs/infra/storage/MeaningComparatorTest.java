@@ -57,6 +57,22 @@ class MeaningComparatorTest {
         }
 
         @Test
+        void aDeclaredObjectOfEmptyFieldsIsTheSameAsAnAbsentOne() {
+            assertThat(compare("agent-profile", "id: x\nctx:\n  frameworks: []\n", "id: x\n"))
+                    .isEmpty();
+            assertThat(compare("agent-profile", "id: x\nctx:\n  a: {b: null}\n", "id: x\nctx: {}\n"))
+                    .isEmpty();
+            // the twin: an open map's content is data, so an entry with an empty value is not nothing
+            assertThat(compare("styleguide", "id: x\ntooling:\n  lint: []\n", "id: x\n"))
+                    .isPresent();
+            assertThat(compare("agent-profile", "id: x\nexcluding:\n  roles: []\n", "id: x\n"))
+                    .isPresent();
+            // and a declared object with one value is not empty
+            assertThat(compare("agent-profile", "id: x\nctx:\n  frameworks: [spring]\n", "id: x\n"))
+                    .isPresent();
+        }
+
+        @Test
         void numbersCompareByValue() {
             assertThat(compare(ARTEFACT, "impacts: 1\n", "impacts: 1.0\n")).isEmpty(); // E13
         }

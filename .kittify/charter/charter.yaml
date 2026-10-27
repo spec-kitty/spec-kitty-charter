@@ -142,7 +142,7 @@ catalog:
   - id: DIRECTIVE:PROJECT_002
     kind: directive
     title: Risk Appetite and Non-Negotiable Failures
-    summary: "Two failures are the costliest and are never traded for speed, scope or convenience: (1) the service answering governance content that differs from core's Python charter oracle (the wire format may differ, but the data must match closely enough that core does not break); (2) the service not honoring the OpenAPI contract, or an incompatible contract change reaching core. Also never traded away: spec-kitty-open-packs YAML content always round-trips without loss or rewrite, and no unverified dependency enters the build. No exception is granted for the first two failures."
+    summary: "Two failures are the costliest and are never traded for speed, scope or convenience: (1) the service answering governance content that differs from core's Python charter oracle (the wire format may differ, but the data must match closely enough that core does not break); (2) the service not honoring the OpenAPI contract, or an incompatible contract change reaching core. Also never traded away: spec-kitty-open-packs YAML content always round-trips without loss of meaning (ADR-0036: meaning, not bytes, so formatting and comments may change), and no unverified dependency enters the build. No exception is granted for the first two failures."
     source_path: ''
     local_path: _LIBRARY/directive-project-002.md
   - id: DIRECTIVE:QA_003
@@ -355,7 +355,7 @@ activated_directives:
 - qa-003-no-fake-green
 - reconcile-change-scope-tensions
 - use-c4-model-techniques
-- 001-mission-type-scope-directive
+- 001-project-intent-directive
 - 002-risk-appetite-directive
 activated_paradigms:
 - behaviour-driven-development

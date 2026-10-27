@@ -19,7 +19,11 @@ final class KindBindings {
             DirectiveBinding.INSTANCE,
             StyleguideBinding.INSTANCE,
             ToolguideBinding.INSTANCE,
-            ParadigmBinding.INSTANCE);
+            ParadigmBinding.INSTANCE,
+            AgentProfileBinding.INSTANCE,
+            MissionStepContractBinding.INSTANCE,
+            GlossaryPackBinding.INSTANCE,
+            SkillBinding.INSTANCE);
 
     private KindBindings() {}
 
@@ -49,5 +53,17 @@ final class KindBindings {
      */
     static Optional<KindBinding<?, ?>> of(ArtifactKind kind) {
         return ALL.stream().filter(binding -> binding.kind() == kind).findFirst();
+    }
+
+    /**
+     * The binding of the kind whose files a schema validates.
+     *
+     * @param schemaName a schema name, as {@code file-kinds.yaml} maps a file to it
+     * @return the binding; empty when no stored kind uses that schema
+     */
+    static Optional<KindBinding<?, ?>> bySchema(String schemaName) {
+        return ALL.stream()
+                .filter(binding -> binding.schemaName().equals(schemaName))
+                .findFirst();
     }
 }

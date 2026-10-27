@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-27T14:15:35.830469Z",
+      "decision_id": "01M5YVEVMPMHPE0GDFQD0BZA6F",
+      "final_answer": "In scope: the body is a value on the Skill, written as a pair through a text-only companion-file seam #192 builds and #193 extends; recorded in ADR-0040. Intent summary confirmed (closed schemas, glossary gate green, skill corpus evidence on packs/internal, id\u2260stem kept as authored and raised upstream).",
+      "input_key": "skill_body_scope",
+      "mission_id": "01M5YVECPX5EP9N9781C9VX22Y",
+      "mission_slug": "glossary-pack-skill-round-trip-01M5YVEC",
+      "opened_by": "cli",
+      "options": [
+        "In scope: companion-file seam, ADR-0040 (recommended)",
+        "Descriptor only: body listed as unmodelled, follow-up issue",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Is the skill's Markdown prompt body (body_path) in scope, held on the Skill and written as a pair, through a companion-file seam that #192 builds and #193 extends (recorded in a new ADR-0040)?",
+      "rationale": null,
+      "resolved_at": "2026-10-27T15:55:02.311366Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.skill-body",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M5YVECPX5EP9N9781C9VX22Y",
+  "version": 1
+}

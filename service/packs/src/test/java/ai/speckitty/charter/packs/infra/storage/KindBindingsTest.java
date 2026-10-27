@@ -44,13 +44,48 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("every bound kind has a bundled schema named by its token")
+    @DisplayName("every bound kind has a bundled schema, and its schema name leads back to its binding")
     void everyBoundKindHasASchema() {
-        for (ArtifactKind kind : KindBindings.kinds()) {
-            assertThat(PackSchemas.bundled().validate(kind.token(), "probe.yaml", Map.of()))
-                    .as(kind.token())
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            assertThat(PackSchemas.bundled().validate(binding.schemaName(), "probe.yaml", Map.of()))
+                    .as(binding.kind().token())
                     .isNotEmpty();
+            assertThat(KindBindings.bySchema(binding.schemaName()))
+                    .as(binding.kind().token())
+                    .containsSame(binding);
         }
+    }
+
+    @Test
+    @DisplayName("a kind whose schema, file token and id key are not its token names all three")
+    void theAgentProfileNamesItsSpellings() {
+        assertThat(AgentProfileBinding.INSTANCE.schemaName()).isEqualTo("agent-profile");
+        assertThat(AgentProfileBinding.INSTANCE.fileName("p")).isEqualTo("p.agent.yaml");
+        assertThat(AgentProfileBinding.INSTANCE.idKey()).isEqualTo("profile-id");
+        assertThat(ParadigmBinding.INSTANCE.schemaName()).isEqualTo("paradigm");
+        assertThat(ParadigmBinding.INSTANCE.idKey()).isEqualTo("id");
+    }
+
+    @Test
+    @DisplayName("file-kinds.yaml classifies each binding's file name to the schema the binding names (ADR-0037)")
+    void eachFileNameIsClassifiedToItsBindingsSchema() {
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            String file = "probe-pack/" + binding.fileName("x");
+            assertThat(PackFileKind.bundled().classify(file))
+                    .as(file)
+                    .isInstanceOfSatisfying(
+                            PackFileKind.Mapped.class,
+                            mapped -> assertThat(mapped.kind()).isEqualTo(binding.schemaName()));
+        }
+    }
+
+    @Test
+    @DisplayName("a schema name finds the binding that names it, and only that one")
+    void aSchemaFindsItsBinding() {
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            assertThat(KindBindings.bySchema(binding.schemaName())).containsSame(binding);
+        }
+        assertThat(KindBindings.bySchema("no-such-schema")).isEmpty();
     }
 
     @Test
@@ -58,7 +93,7 @@ class KindBindingsTest {
     void entityTypesMatchTheKinds() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             assertThat(binding.entityType().getSimpleName().toLowerCase(Locale.ROOT))
-                    .isEqualTo(binding.kind().token());
+                    .isEqualTo(binding.kind().token().replace("_", ""));
         }
     }
 

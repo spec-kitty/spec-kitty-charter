@@ -20,10 +20,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -204,12 +208,25 @@ final class FilesystemPackStore {
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackRead read(PackIdentifier id) {
+        return read(id, KindBindings.all());
+    }
+
+    /**
+     * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
+     *
+     * @param id the pack
+     * @param kinds the bindings to read, in order
+     * @return the descriptor, the readable files of each binding's kind and a violation per broken file
+     * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
+     */
+    PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
         Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
         List<PackElementViolation> violations = new ArrayList<>();
-        for (KindBinding<?, ?> kind : KindBindings.all()) {
-            elements.put(kind.kind(), readKind(directory, kind, violations));
+        Set<String> claimed = new HashSet<>();
+        for (KindBinding<?, ?> kind : kinds) {
+            elements.put(kind.kind(), readKind(directory, kind, violations, claimed));
         }
         return new PackRead(descriptor, elements, violations);
     }
@@ -235,13 +252,15 @@ final class FilesystemPackStore {
      * @return the readable elements, in path order
      */
     <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
-        return readKind(existingDirectory(id), kind, new ArrayList<>()).stream()
+        return readKind(existingDirectory(id), kind, new ArrayList<>(), new HashSet<>()).stream()
                 .map(stored -> kind.dsoType().cast(stored.dso()))
                 .toList();
     }
 
     /**
-     * Reads one element: only the file that declares the id is parsed as the kind.
+     * Reads one element: only the file that declares the id is parsed as the kind. Its companions pass the companion
+     * rule, but whether another artifact also names one is not checked: that needs the whole pack, and {@link #read}
+     * refuses it.
      *
      * @param id the pack
      * @param kind the kind's binding
@@ -251,13 +270,14 @@ final class FilesystemPackStore {
      */
     <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
         Path directory = existingDirectory(id);
-        return locate(directory, kind.kind(), elementId).flatMap(file -> {
+        return locate(directory, kind, elementId).flatMap(file -> {
             String name = directory
                     .relativize(file)
                     .toString()
                     .replace(file.getFileSystem().getSeparator(), "/");
             return switch (readFile(file, name, text -> strategy.read(kind, text, name))) {
-                case FileRead.Read<D> good -> Optional.of(good.value());
+                case FileRead.Read<D> good ->
+                    withCompanions(directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
                 case FileRead.Unreadable<D> bad -> Optional.empty();
                 case FileRead.Absent<D> absent -> Optional.empty();
             };
@@ -309,16 +329,59 @@ final class FilesystemPackStore {
     }
 
     private <D> List<Stored<?>> readKind(
-            Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations) {
+            Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations, Set<String> claimed) {
         List<Stored<?>> into = new ArrayList<>();
         for (String file : PackFileSet.files(directory, kind.kind())) {
             switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
-                case FileRead.Read<D> good -> into.add(new Stored<>(file, good.value()));
+                case FileRead.Read<D> good ->
+                    withCompanions(directory, file, kind, good.value(), violations, claimed)
+                            .ifPresent(dso -> into.add(new Stored<>(file, dso)));
                 case FileRead.Unreadable<D> bad -> violations.addAll(violationsOf(bad));
                 case FileRead.Absent<D> absent -> {}
             }
         }
         return into;
+    }
+
+    /**
+     * The shape with its companions read in (ADR-0039), or empty when one cannot be read: the artifact is then left
+     * out and the reason recorded as a {@code companion} violation of its file, so a whole-pack write refuses the pack
+     * rather than drop the companion. A companion another artifact of this read already named, case ignored, is
+     * refused for the second artifact: one file has one owner. {@code claimed} collects the companions read so far.
+     */
+    private static <D> Optional<D> withCompanions(
+            Path directory,
+            String file,
+            KindBinding<D, ?> kind,
+            D dso,
+            List<PackElementViolation> violations,
+            Set<String> claimed) {
+        List<KindBinding.Companion> companions = kind.companions(dso);
+        if (companions.isEmpty()) {
+            return Optional.of(dso);
+        }
+        Map<String, CompanionContent> contents = new LinkedHashMap<>();
+        Set<String> claims = new HashSet<>();
+        for (KindBinding.Companion companion : companions) {
+            @Nullable String refusal = null;
+            switch (Companions.read(directory, file, companion.path())) {
+                case Companions.Refused refused -> refusal = refused.reason();
+                case Companions.Found found -> {
+                    String claim = found.at().claim();
+                    if (claimed.contains(claim) || !claims.add(claim)) {
+                        refusal = "named by two artifacts";
+                    } else {
+                        contents.put(companion.path(), found.content());
+                    }
+                }
+            }
+            if (refusal != null) {
+                violations.add(new PackElementViolation(file, "companion", companion.path() + ": " + refusal));
+                return Optional.empty();
+            }
+        }
+        claimed.addAll(claims);
+        return Optional.of(kind.withCompanions(dso, contents));
     }
 
     /**
@@ -336,18 +399,170 @@ final class FilesystemPackStore {
      * Upserts an element: the file of the element of this kind with this id is replaced; an unknown id is created as
      * {@link KindBinding#fileName} in the pack directory. Both arms are atomic and contained in the pack.
      *
+     * <p>An element's companions (ADR-0039) are all checked before anything is written, then written, each atomically
+     * and beside the element's file, then the element's file. A companion never replaces an existing file the element
+     * did not already own. A replaced element then removes the companions its old file named and the new one does
+     * not, so a changed path leaves no orphan. The companions and
+     * the element are atomic together only through the commit path, which writes into a staging copy of the pack and
+     * swaps the whole directory ({@link PackCommitStore}); that is the only production writer of kinds with companions.
+     *
      * @param id the pack
      * @param kind the kind's binding
      * @param dso what to write
      * @param <D> the kind's persistence shape
-     * @throws CharterRefusal when the file resolves outside the pack, or a new element's file name is taken by
-     *     something that is not an element of the kind with that id
+     * @throws CharterRefusal when the file resolves outside the pack, a new element's file name is taken by something
+     *     that is not an element of the kind with that id, or a companion has no content, breaks the companion path
+     *     rule, is named twice, is named by another artifact, differs only in case from the companion it replaces, or
+     *     would replace an existing file the element does not own
      */
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
         String elementId = kind.idOf(dso);
-        Path target = locate(directory, kind.kind(), elementId).orElseGet(() -> newFile(directory, kind, elementId));
+        Optional<Path> existing = locate(directory, kind, elementId);
+        Path target = existing.orElseGet(() -> newFile(directory, kind, elementId));
+        String file = relative(directory, target);
+        List<Companions.Inside> owned =
+                existing.isPresent() ? companionsOf(directory, file, kind) : List.<Companions.Inside>of();
+        Set<String> others = kind.hasCompanions() ? claimsOfOthers(directory, file, kind) : Set.of();
+        Map<Companions.Inside, String> planned = planCompanions(directory, file, kind, dso, owned, others);
+        for (Map.Entry<Companions.Inside, String> companion : planned.entrySet()) {
+            Path at = companion.getKey().file();
+            try {
+                Files.createDirectories(Objects.requireNonNull(at.getParent()));
+            } catch (IOException e) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "cannot write " + companion.getKey().packRelative() + " in pack",
+                        e);
+            }
+            writeAtomically(directory, at, companion.getValue());
+        }
         writeAtomically(directory, target, strategy.write(kind, dso));
+        Set<String> kept = new HashSet<>();
+        planned.keySet().forEach(companion -> kept.add(companion.claim()));
+        removeDropped(directory, owned, kept);
+    }
+
+    /**
+     * Checks every companion of {@code dso} before any is written: each has content, passes the companion rule beside
+     * {@code file}, stays in the pack with links resolved, is named once, and does not replace an existing file the
+     * element does not already own ({@code owned}).
+     *
+     * @return each companion's place and text, in the order the element names them
+     */
+    private static <D> Map<Companions.Inside, String> planCompanions(
+            Path directory,
+            String file,
+            KindBinding<D, ?> kind,
+            D dso,
+            List<Companions.Inside> owned,
+            Set<String> others) {
+        String what = kind.kind().token() + " '" + kind.idOf(dso) + "'";
+        Map<String, String> ownedPaths = new HashMap<>();
+        owned.forEach(companion -> ownedPaths.put(companion.claim(), companion.packRelative()));
+        Map<Companions.Inside, String> planned = new LinkedHashMap<>();
+        Set<String> claims = new HashSet<>();
+        for (KindBinding.Companion companion : kind.companions(dso)) {
+            String named = what + ": companion " + companion.path();
+            CompanionContent content = companion
+                    .content()
+                    .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " has no content"));
+            Companions.Inside at = switch (Companions.resolve(directory, file, companion.path())) {
+                case Companions.Inside inside -> inside;
+                case Companions.Refused refused ->
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " " + refused.reason());
+            };
+            if (!claims.add(at.claim())) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named twice");
+            }
+            // One file has one owner, case ignored, as the read decides it.
+            if (others.contains(at.claim())) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named by another artifact");
+            }
+            @Nullable String replaced = ownedPaths.get(at.claim());
+            if (replaced != null && !replaced.equals(at.packRelative())) {
+                // A case-only rename would orphan the old file, or replace the new one on a case-insensitive file
+                // system.
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " differs only in case from " + replaced);
+            }
+            if (Files.exists(at.file(), LinkOption.NOFOLLOW_LINKS) && replaced == null) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is taken");
+            }
+            if (!realPathContained(directory, at.file())) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " leaves the pack");
+            }
+            planned.put(at, Companions.text(content));
+        }
+        return planned;
+    }
+
+    /**
+     * The claims of the companions every other artifact of the pack names (every file but {@code file} of the written
+     * kind and of every registered kind with companions), so an upsert refuses a companion another artifact owns, as
+     * the read does.
+     */
+    private Set<String> claimsOfOthers(Path directory, String file, KindBinding<?, ?> written) {
+        Set<String> out = new HashSet<>();
+        List<KindBinding<?, ?>> bindings = new ArrayList<>(List.of(written));
+        KindBindings.all().stream().filter(b -> b.kind() != written.kind()).forEach(bindings::add);
+        for (KindBinding<?, ?> binding : bindings) {
+            if (!binding.hasCompanions()) {
+                continue;
+            }
+            for (String other : PackFileSet.files(directory, binding.kind())) {
+                if (!other.equals(file)) {
+                    companionsOf(directory, other, binding).forEach(companion -> out.add(companion.claim()));
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The companions an element's file names now, where the companion rule allows them; none when its kind has no
+     * companions or the file no longer reads. An element whose file no longer reads therefore owns no companion, and a
+     * write that names an existing one is refused as taken: such a file is repaired by hand, not over the top of it.
+     */
+    private <D> List<Companions.Inside> companionsOf(Path directory, String file, KindBinding<D, ?> kind) {
+        if (!kind.hasCompanions()
+                || !(readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))
+                        instanceof FileRead.Read<D> read)) {
+            return List.of();
+        }
+        List<Companions.Inside> out = new ArrayList<>();
+        for (KindBinding.Companion companion : kind.companions(read.value())) {
+            if (Companions.resolve(directory, file, companion.path()) instanceof Companions.Inside at) {
+                out.add(at);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Deletes the companions an element owned before its write and no longer names ({@code kept} holds the ones it
+     * names now). It runs after the element's file is written, so a failed write leaves the old companions in place.
+     * Only a regular file inside the pack is deleted.
+     */
+    private static void removeDropped(Path directory, List<Companions.Inside> owned, Set<String> kept) {
+        for (Companions.Inside at : owned) {
+            if (!kept.contains(at.claim())
+                    && Files.isRegularFile(at.file(), LinkOption.NOFOLLOW_LINKS)
+                    && realPathContained(directory, at.file())) {
+                try {
+                    Files.delete(at.file());
+                } catch (IOException e) {
+                    throw new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE, "cannot remove " + at.packRelative() + " from pack", e);
+                }
+            }
+        }
+    }
+
+    private static String relative(Path directory, Path file) {
+        return directory
+                .relativize(file)
+                .toString()
+                .replace(file.getFileSystem().getSeparator(), "/");
     }
 
     // ---- id to path ----------------------------------------------------------------------------------------------
@@ -360,12 +575,15 @@ final class FilesystemPackStore {
         return directory;
     }
 
-    /** The existing file of the kind whose {@code id} is {@code elementId}; the first in path order if several do. */
-    private static Optional<Path> locate(Path directory, ArtifactKind kind, String elementId) {
-        for (String file : PackFileSet.files(directory, kind)) {
+    /**
+     * The existing file of the kind whose id (under the kind's {@link KindBinding#idKey()}) is {@code elementId}; the
+     * first in path order if several do.
+     */
+    private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
+        for (String file : PackFileSet.files(directory, kind.kind())) {
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
-            if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get("id"))) {
+            if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {
                 return Optional.of(directory.resolve(file));
             }
         }
@@ -373,7 +591,7 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The file a new element is created at: {@code <id>.<kind>.yaml} directly in the pack directory. An id that would
+     * The file a new element is created at: {@code <id>.<fileToken>.yaml} directly in the pack directory. An id that would
      * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
      * so a create never overwrites a file or follows a planted link.
      */
@@ -404,7 +622,7 @@ final class FilesystemPackStore {
     }
 
     /** The file's text; empty when its bytes are not UTF-8 or it cannot be read. */
-    private static Optional<String> readText(Path path) {
+    static Optional<String> readText(Path path) {
         try {
             byte[] bytes = Files.readAllBytes(path);
             return Optional.of(StandardCharsets.UTF_8
@@ -458,7 +676,7 @@ final class FilesystemPackStore {
     }
 
     /** Whether the target's real location, following symlinks, is inside the pack's real directory. */
-    private static boolean realPathContained(Path packRoot, Path target) {
+    static boolean realPathContained(Path packRoot, Path target) {
         try {
             Path realRoot = packRoot.toRealPath();
             Path existing = target;

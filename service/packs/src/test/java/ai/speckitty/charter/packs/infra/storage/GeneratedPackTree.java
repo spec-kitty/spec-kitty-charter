@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * <table>
  * <caption>Name shapes and their verdicts</caption>
  * <tr><th>Shape</th><th>Verdict</th></tr>
- * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm</td><td>loaded</td></tr>
+ * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm, agent</td><td>loaded</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (a files rule wins over the presets exclusion)</td><td>loaded</td></tr>
@@ -39,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
- * <tr><td>procedure, agent, asset and step-contract files</td><td>decoy</td></tr>
+ * <tr><td>procedure and asset files</td><td>decoy</td></tr>
  * <tr><td>root {@code org-charter.yaml}, {@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
  *     <td>decoy</td></tr>
  * <tr><td>nested {@code sub/y.graph.yaml}, nested {@code sub/drg/fragment.yaml}</td><td>decoy</td></tr>
@@ -68,7 +68,11 @@ final class GeneratedPackTree {
         DIRECTIVE("directive"),
         STYLEGUIDE("styleguide"),
         TOOLGUIDE("toolguide"),
-        PARADIGM("paradigm");
+        PARADIGM("paradigm"),
+        AGENT_PROFILE("agent"),
+        MISSION_STEP_CONTRACT("step-contract"),
+        GLOSSARY_PACK("glossary-pack"),
+        SKILL("skill");
 
         private final String token;
 
@@ -100,9 +104,7 @@ final class GeneratedPackTree {
         DECOY_NOTES(Verdict.DECOY),
         DECOY_SUB_R(Verdict.DECOY),
         DECOY_PROCEDURE(Verdict.DECOY),
-        DECOY_AGENT(Verdict.DECOY),
         DECOY_ASSET(Verdict.DECOY),
-        DECOY_STEP_CONTRACT(Verdict.DECOY),
         DECOY_ORG_CHARTER(Verdict.DECOY),
         DECOY_SUB_CHARTER(Verdict.DECOY),
         DECOY_SUB_PACK(Verdict.DECOY),
@@ -135,9 +137,7 @@ final class GeneratedPackTree {
             Shape.DECOY_BAK,
             Shape.DECOY_KIND_THEN_CONFIG,
             Shape.DECOY_PROCEDURE,
-            Shape.DECOY_AGENT,
-            Shape.DECOY_ASSET,
-            Shape.DECOY_STEP_CONTRACT);
+            Shape.DECOY_ASSET);
 
     private static final List<String> DIRECTORIES = List.of("a", "b", "c", "sub", "d-1", "drg");
     private static final String DECOY_CONTENT = "a: 1\n";
@@ -474,9 +474,7 @@ final class GeneratedPackTree {
             case DECOY_NOTES -> "notes.yaml";
             case DECOY_SUB_R -> "sub/r.yaml";
             case DECOY_PROCEDURE -> directories(2) + stem + ".procedure.yaml";
-            case DECOY_AGENT -> directories(2) + stem + ".agent.yaml";
             case DECOY_ASSET -> directories(2) + stem + ".asset.yaml";
-            case DECOY_STEP_CONTRACT -> directories(2) + stem + ".step-contract.yaml";
             case DECOY_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_SUB_CHARTER -> "sub/charter.yaml";
             case DECOY_SUB_PACK -> "sub/pack.yaml";
@@ -523,6 +521,10 @@ final class GeneratedPackTree {
             case STYLEGUIDE -> "s-" + n;
             case TOOLGUIDE -> "tg-" + n;
             case PARADIGM -> "p-" + n;
+            case AGENT_PROFILE -> "ap-" + n;
+            case MISSION_STEP_CONTRACT -> "msc-" + n;
+            case GLOSSARY_PACK -> "gp-" + n;
+            case SKILL -> "sk-" + n;
         };
     }
 
@@ -534,6 +536,17 @@ final class GeneratedPackTree {
             case TOOLGUIDE ->
                 "id: " + id + "\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
             case PARADIGM -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsummary: S\n";
+            case AGENT_PROFILE ->
+                "profile-id: " + id + "\nname: N\nroles: [r]\npurpose: P\nspecialization:\n  primary-focus: F\n";
+            case MISSION_STEP_CONTRACT ->
+                "id: " + id + "\nschema_version: '1.0'\naction: a\nmission: m\nsteps:\n  - id: s\n    description: D\n";
+            case GLOSSARY_PACK ->
+                "id: " + id
+                        + "\nprovenance: org\nterms:\n  - surface: s\n    definition: D\n    confidence: 0.9\n    status: active\n";
+            // A wrapper skill names no companion, so the tree plants the skill file alone.
+            case SKILL ->
+                "id: " + id
+                        + "\nschema_version: '1.0'\ntitle: T\ndescription: D\nform: wrapper\nexpands_to:\n  target: builtin:x\n";
         };
     }
 

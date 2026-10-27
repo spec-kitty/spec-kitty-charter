@@ -95,6 +95,10 @@ files:
     schema: mission-step-contract
   - match: "**/*.asset.yaml"
     schema: asset
+  - match: "**/*.glossary-pack.yaml"
+    schema: glossary-pack
+  - match: "**/*.skill.yaml"
+    schema: skill
   # A project file. It is not expected inside a pack; the rule exists so that a stray one is
   # validated, not silently ignored.
   - match: "**/charter.yaml"
@@ -129,13 +133,6 @@ exclusions:
   - match: "**/presets/*.yaml"
     reason: >-
       Activation presets. Core resolves them by name and has no pack-schema model at 9554e7b2.
-  - match: "**/*.skill.yaml"
-    reason: >-
-      Skill artifacts. Core has no skill model at 9554e7b2, so no schema exists to import.
-  - match: "**/*.glossary-pack.yaml"
-    reason: >-
-      Glossary-pack artifacts. Core has no glossary-pack model at 9554e7b2, so no schema exists
-      to import.
   - match: "**/*.config.yaml"
     reason: >-
       Tool configuration shipped as an asset (for example the structural lint config). Free

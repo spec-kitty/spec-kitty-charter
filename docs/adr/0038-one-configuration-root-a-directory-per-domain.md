@@ -1,7 +1,7 @@
 ---
 title: "ADR-0038: The service keeps its files under one configuration root, a directory per domain"
 description: charter.config-root holds packs/ and activations/; every registered pack lives in packs/ at its declared level, so one layout serves a local machine and a hosted store.
-doc_status: draft
+doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
@@ -23,10 +23,11 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-27. Decider: Stijn Dejongh (operator), rulings of 2026-10-27 given while
+**Accepted** — 2026-10-27. Decider: Stijn Dejongh (operator). Proposed earlier the same day from
+the operator's rulings given while
 [#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187) was closed out. Builds on
-[ADR-0034](/adr/0034-local-and-hosted-deployment-options/) (local and hosted options). On
-acceptance it supersedes in part [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)
+[ADR-0034](/adr/0034-local-and-hosted-deployment-options/) (local and hosted options). It
+supersedes in part [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)
 (the fail-closed-daemon origin) and, specifically, [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)
 decision 11 as amended 2026-10-24, where they refuse every read for a configured pack whose directory is
 missing (decision 4 below).

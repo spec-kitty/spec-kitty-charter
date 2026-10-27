@@ -238,6 +238,7 @@ ruling, its status and the evidence.
   - Core: `activation/org_charter.py:217-235` (`schema_version` "1" to an integer)
   - Core: pydantic lax mode, no strict config (a quoted number to an integer)
   - Charter: `contracts/packs/schemas/agent-profile.schema.json and org-charter.schema.json: the lenient conversions are dropped (import change C10; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
+  - Charter: `contracts/packs/schemas/glossary-pack.schema.json and skill.schema.json (#192): a quoted confidence or a quoted boolean, which core's pydantic models convert, is refused (ADR-0039)`
 
 ### DIV-011: Org-fragment node kinds
 

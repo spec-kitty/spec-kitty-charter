@@ -41,9 +41,20 @@ class WholePackRoundTripTest {
 
     private static final String BUILT_IN = "built-in";
 
-    /** The gate kinds the round trip must model today; an adapter that models fewer cannot pass by omission. */
-    private static final Set<String> REQUIRED_KINDS =
-            Set.of("directive", "tactic", "styleguide", "toolguide", "paradigm", "pack-descriptor", "graph-shard");
+    /**
+     * The gate kinds the round trip must model at least; an adapter that models fewer cannot pass by omission. The
+     * adapter models every bound kind besides (checked against the registry below).
+     */
+    private static final Set<String> REQUIRED_KINDS = Set.of(
+            "directive",
+            "tactic",
+            "styleguide",
+            "toolguide",
+            "paradigm",
+            "pack-descriptor",
+            "graph-shard",
+            "agent-profile",
+            "mission-step-contract");
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -75,9 +86,12 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
+        Set<String> bound = new TreeSet<>(Set.of(DomainRoundTrip.DESCRIPTOR, DomainRoundTrip.GRAPH_SHARD));
+        KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
-                .isEqualTo(REQUIRED_KINDS);
+                .containsAll(REQUIRED_KINDS)
+                .isEqualTo(bound);
         assertThat(evaluation.problems())
                 .as("whole-pack round trip against %s; report: %s", WholePackExpectation.EXPECTED_RED_RESOURCE, report)
                 .isEmpty();

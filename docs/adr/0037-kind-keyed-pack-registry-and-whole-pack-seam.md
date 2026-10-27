@@ -1,7 +1,7 @@
 ---
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
-doc_status: draft
+doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
@@ -24,14 +24,50 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-27, for
-[#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189). Needs the operator's
-acceptance: it changes the order that
+**Accepted** — 2026-10-27. Decider: Stijn Dejongh (operator). Proposed earlier the same day for
+[#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189); it changes the order that
 [ADR-0024](/adr/0024-doctrine-artifact-family-contract/)'s amendment of 2026-10-26 set.
 
 Supersedes in part ADR-0024's amendment of 2026-10-26, step 3: a **narrow slice** of the shared
 read and write code (#169) is extracted before the new kinds are hand-built, not after. The rest
 of #169 (the read and registration services, the controllers) still waits for the rule of three.
+
+### Amendment 2026-10-27: a kind that spells itself otherwise, and a kind of another slice
+
+Made by [#190](https://github.com/spec-kitty/spec-kitty-charter/issues/190) (agent profiles), the
+first kind that needs both. It changes decisions 4 and 6 and no other decision.
+
+- **Decision 4, the mapping.** A kind no longer needs a schema named by its token. Its binding
+  names the schema (`KindBinding.schemaName()`) and the field that holds its id
+  (`KindBinding.idKey()`), beside the file token it already named. The defaults are the token and
+  `id`, so the five kinds bound before are unchanged. The file walk, the schema validation and the
+  location of an existing file resolve through the binding. An agent profile is `*.agent.yaml`,
+  validated by `agent-profile`, with its id under `profile-id`. No schema file is renamed:
+  `contracts/packs` is consumed by core. A mission step contract (#191) uses the same seam.
+- **Decision 6 is reversed: a kind of another slice is in this registry.** A kind whose domain
+  belongs to another slice is bound in `packs.infra.storage` like any other kind. The store depends
+  inward on that slice's domain, and that slice never depends on `packs`. The `AgentProfile`
+  entity lives in the `profiles` slice (module `:profiles`, package `profiles.domain`), as
+  [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) decision 4 requires. Its
+  DSO, YAML format and binding live in `packs.infra.storage`. `packs.domain` cannot name
+  `AgentProfile`, so the `Pack` aggregate has no typed view for it; callers use
+  `artifacts(AGENT_PROFILE, AgentProfile.class)`.
+  - *Options.*
+    - (a) Put the entity in `packs.domain`. Rejected: ADR-0035 decision 4 and its rejected
+      alternative.
+    - (b) A contribution seam: the profiles slice brings its own binding, wired by `deployable`.
+      Rejected for now. The YAML and schema machinery is package-private to `packs.infra.storage`,
+      so the slice would duplicate it or force it public, and the seam would reshape the shared
+      registry while #191 to #193 append to it. It is built when a kind needs persistence of its
+      own.
+    - (c) The pack store binds the kind. Chosen: it is one appended binding, and the pack format,
+      the schemas and the fingerprint keep one owner.
+  - *Consequence for [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).* A slice's
+    `infra.storage` may depend on another slice's `domain`, and `packs` becomes the module that
+    stores every kind of a pack. No other ring of `packs` may name another slice's domain. The
+    architecture test pins that for the inbound adapter (`ENTRYPOINT_STAYS_IN_ITS_SLICE`); the
+    domain and application rings were already pinned. If this is to become the pattern for every
+    slice, not only for pack-stored kinds, it gets its own record.
 
 ## Context
 
@@ -71,7 +107,8 @@ nothing about how a new kind is shaped.
    (two shared lists, so parallel missions get trivial merge conflicts there and nowhere else). It
    also needs its rule in `contracts/packs/file-kinds.yaml` to map to a schema whose name is the
    kind's token, which is not yet the case for `agent_profile` (`agent`), `mission_step_contract`
-   (`step-contract`) and `glossary_pack` (excluded): that mission settles the mapping. A binding
+   (`step-contract`) and `glossary_pack` (excluded): that mission settles the mapping. *(Amended
+   2026-10-27, see Status: the binding names its schema and id key instead.)* A binding
    names its file-name token (`*.agent.yaml`), so a new artifact is created where the load finds it.
    A kind with its own repository port still adds that port to `DomainRepositoryService`. The
    registry does **not** yet cover, and these missions widen it when they are built (the
@@ -103,9 +140,10 @@ nothing about how a new kind is shaped.
 6. **Kinds owned by another slice are out of this registry.** Agent profiles and mission types may
    live in their own slices (ADR-0035), and ADR-0006 forbids those slices from depending on
    `packs`. Their bindings will need a contribution seam wired by `deployable`; it is built with
-   the first such kind, not here. Mission types are not an `ArtifactKind` at all.
+   the first such kind, not here. Mission types are not an `ArtifactKind` at all. *(Reversed
+   2026-10-27, see Status: the pack store binds such a kind.)*
 7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
-   (round-trip fidelity, Proposed):
+   (round-trip fidelity, Accepted 2026-10-27):
    - The CRG reader and writer keep every declared field (node `provenance` and `tags`, fragment
      `body_path`, the shard header fields), and edges compare in canonical form.
    - An unreadable CRG document refuses the whole-pack load as `drg_schema_error` (its decision 3).
@@ -119,6 +157,37 @@ nothing about how a new kind is shaped.
      them.
    - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
+
+### Amendment 2026-10-27 (#191): a binding names its schema
+
+The agent-profile amendment above (#190) relaxed Decision 4 and introduced `KindBinding.schemaName()`
+and `idKey()`. The mission step contract mission
+([#191](https://github.com/spec-kitty/spec-kitty-charter/issues/191)) is the first kind whose schema
+is not its token to run the full read and write path through that hook, and wires it through the
+store, the strategy, the generic save and the gate adapter: **a binding names its schema, as it
+names its file token.**
+
+- `KindBinding.schemaName()` gives the name of the schema that validates the kind's files. It
+  defaults to the token, so the five bound kinds are unchanged. `mission_step_contract` names
+  `mission-step-contract` and the file token `step-contract`. The agent-profile kind (#190) already
+  uses the same mapping (`agent-profile`, `agent`).
+- The store's file walk (`PackFileSet`) finds the kind of a schema-mapped file through the registry
+  (`KindBindings.bySchema`), never by reading a schema name as a token. A kind whose schema is not
+  its token would otherwise load no file, silently. The strategy validates a file against the schema
+  its binding names.
+- A test ties every binding's file name and schema to `file-kinds.yaml`, the single authority.
+- The whole-pack gate's adapter takes its kinds, writes and file tokens from the registry, so a kind
+  joins the gate by binding itself.
+
+The relaxation of "a schema whose name is the kind's token" is #190's; this change wires the hook
+through the full read and write path. Renaming the schemas instead would change
+their `$id`, the gate's kind names and the kebab-case naming every schema uses. The hook is a
+one-time change to the store (`PackFileSet`), the strategy (`YamlSerializationStrategy`), the
+repository service (a generic save for the gate adapter) and the gate's test adapter. That is the
+exception to Consequences/Positive, "does not edit … the store, the strategy"; after it, a kind
+whose names differ still only binds itself. Validate mode (`FileSystemPackInspector`) still maps a
+schema name to a token by replacing `-` with `_`; aligning it with the registry is left for a later
+change.
 
 ## Consequences
 

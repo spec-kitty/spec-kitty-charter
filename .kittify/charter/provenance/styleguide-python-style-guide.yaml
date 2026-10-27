@@ -9,13 +9,13 @@ artifact_slug: python-style-guide
 artifact_urn: styleguide:python-style-guide
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:57:06.811658+00:00'
-inputs_hash: 73aa3078ed53da208b8d39f6ac7fc6c6285830c792388311425ae5fce1c1e403
-produced_at: '2026-10-18T15:58:11.518360+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619193+00:00'
+inputs_hash: 2f42a0f358a7aae2071c0d43be89aa18f518872f550da8a3b2dedab6f72fe8ff
+produced_at: '2026-10-27T12:03:59.540890+00:00'
 schema_version: '2'
 source_input_ids: []
 source_section: language_scope
 source_urns: []
-synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8

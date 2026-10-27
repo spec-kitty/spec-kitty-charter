@@ -1,4 +1,4 @@
-/** A type of another slice, the target of the cross-slice known-bad of {@code HexagonalArchitectureTest}. */
+/** The known-bad controls of the profiles slice's rules in {@code HexagonalArchitectureTest}. */
 @NullMarked
 package ai.speckitty.charter.profiles.domain.badfixture;
 

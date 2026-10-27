@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +40,8 @@ import org.jspecify.annotations.Nullable;
  * load reads the directory as it finds it; it takes no lock, so a pack swapped by a concurrent commit may be read
  * half before and half after.
  *
- * <p>The write puts {@code pack.yaml}, each artifact at its layout path and each DRG document at its own path into a
+ * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039) and
+ * each DRG document at its own path into a
  * staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
  * does; a failure removes the staging directory and leaves no target. It writes what the aggregate and the DRG
  * documents hold and nothing else: the unmodelled files are not copied, and the caller has their list. It refuses a
@@ -126,9 +128,37 @@ public final class WholePackStore {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }
         Set<String> modelled = new HashSet<>(places.values());
+        modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
         return new LoadedPack(pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key));
+    }
+
+    /**
+     * The pack-relative paths of the companions every readable artifact names (ADR-0039), as the companion rule resolves
+     * them: they are modelled with their artifact, so none is listed as unmodelled.
+     */
+    private static Set<String> companionFiles(Path packDir, FilesystemPackStore.PackRead read) {
+        Set<String> out = new HashSet<>();
+        for (KindBinding<?, ?> kind : KindBindings.all()) {
+            if (kind.hasCompanions()) {
+                out.addAll(companionFiles(packDir, kind, read));
+            }
+        }
+        return out;
+    }
+
+    private static <D> List<String> companionFiles(
+            Path packDir, KindBinding<D, ?> kind, FilesystemPackStore.PackRead read) {
+        List<String> out = new ArrayList<>();
+        for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
+            for (KindBinding.Companion companion : kind.companions(stored.dso())) {
+                if (Companions.resolve(packDir, stored.file(), companion.path()) instanceof Companions.Inside at) {
+                    out.add(at.packRelative());
+                }
+            }
+        }
+        return out;
     }
 
     /** Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted. */
@@ -189,7 +219,7 @@ public final class WholePackStore {
                     strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor())),
                     written);
             for (CharterArtifact artifact : pack.artifacts()) {
-                put(staging, loaded.layout().pathOf(artifact), text(artifact), written);
+                putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
             }
             for (GraphDocument graph : loaded.graphs()) {
                 put(staging, graph.file(), strategy.writeGraph(graph), written);
@@ -247,14 +277,34 @@ public final class WholePackStore {
         }
     }
 
-    private String text(CharterArtifact artifact) {
+    private void putArtifact(Path staging, String path, CharterArtifact artifact, Set<String> written)
+            throws IOException {
         KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
                 .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"));
-        return text(kind, artifact);
+        putArtifact(staging, path, kind, artifact, written);
     }
 
-    private <D> String text(KindBinding<D, ?> kind, CharterArtifact artifact) {
-        return strategy.write(kind, kind.dsoOf(artifact));
+    /**
+     * Writes an artifact's file and then each of its companions beside it (ADR-0039). A companion without content, or
+     * one the companion rule refuses, refuses the write: after a load neither can happen, so it is a caller's error.
+     */
+    private <D> void putArtifact(
+            Path staging, String path, KindBinding<D, ?> kind, CharterArtifact artifact, Set<String> written)
+            throws IOException {
+        D dso = kind.dsoOf(artifact);
+        put(staging, path, strategy.write(kind, dso), written);
+        for (KindBinding.Companion companion : kind.companions(dso)) {
+            String named = path + ": companion " + companion.path();
+            CompanionContent content = companion
+                    .content()
+                    .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " has no content"));
+            Companions.Inside at = switch (Companions.resolve(staging, path, companion.path())) {
+                case Companions.Inside inside -> inside;
+                case Companions.Refused refused ->
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " " + refused.reason());
+            };
+            put(staging, at.packRelative(), Companions.text(content), written);
+        }
     }
 
     /**

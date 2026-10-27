@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -15,9 +16,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -26,8 +29,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * The single declaration of which files of a pack the service loads and which it digests. The store reads the files
  * of each kind bound in {@link KindBindings}; the source fingerprint digests {@code pack.yaml}, every file of every
- * bound kind and the declared graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}). Both
- * take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind is all it takes
+ * bound kind, each followed by the companions it names (ADR-0039), and the declared graph inputs (the root
+ * {@code *.graph.yaml} shards and {@code drg/fragment.yaml}). Both take their list from here, so a file the service
+ * loads cannot escape the fingerprint. Binding a kind is all it takes
  * for the digest to cover it.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}.
@@ -43,6 +47,9 @@ final class PackFileSet {
 
     /** The DRG fragment's pack-relative path. */
     static final String FRAGMENT = "drg/fragment.yaml";
+
+    /** Reads an artifact's file to name its companions; see {@link #companions}. */
+    private static final SerializationStrategy COMPANION_READER = new YamlSerializationStrategy();
 
     private PackFileSet() {}
 
@@ -101,9 +108,21 @@ final class PackFileSet {
             out.add(PACK_YAML);
         }
         Map<ArtifactKind, List<String>> loaded = loaded(directory, packName);
-        for (ArtifactKind kind : KindBindings.kinds()) {
-            if (kinds.contains(kind)) {
-                out.addAll(loaded.getOrDefault(kind, List.of()));
+        Set<String> listed = new HashSet<>(out);
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            if (!kinds.contains(binding.kind())) {
+                continue;
+            }
+            for (String file : loaded.getOrDefault(binding.kind(), List.of())) {
+                out.add(file);
+                listed.add(file);
+                if (binding.hasCompanions()) {
+                    for (String companion : companions(directory, file, binding)) {
+                        if (listed.add(companion)) {
+                            out.add(companion);
+                        }
+                    }
+                }
             }
         }
         for (Path shard : rootShards(directory, packName)) {
@@ -111,6 +130,27 @@ final class PackFileSet {
         }
         if (Files.isRegularFile(directory.resolve(FRAGMENT))) {
             out.add(FRAGMENT);
+        }
+        return out;
+    }
+
+    /**
+     * The companions an artifact's file names that the companion rule allows and that read as text (ADR-0039), pack
+     * relative. The names come from the binding itself ({@link KindBinding#companions}) on the store's own
+     * schema-valid read of the file, so the digest and the load agree on them. The read is static, as the
+     * classification and the store's id lookup already parse YAML statically: YAML is the store's one format, and the
+     * digest's callers need no strategy. A file that does not read names none; the load reports it.
+     */
+    private static <D> List<String> companions(Path directory, String file, KindBinding<D, ?> binding) {
+        Optional<String> text = FilesystemPackStore.readText(directory.resolve(file));
+        if (text.isEmpty() || !(COMPANION_READER.read(binding, text.get(), file) instanceof FileRead.Read<D> read)) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (KindBinding.Companion companion : binding.companions(read.value())) {
+            if (Companions.read(directory, file, companion.path()) instanceof Companions.Found found) {
+                out.add(found.at().packRelative());
+            }
         }
         return out;
     }
@@ -138,9 +178,8 @@ final class PackFileSet {
         Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
         for (String file : yamlFiles(directory, packName)) {
             if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
-                ArtifactKind.fromToken(mapped.kind())
-                        .filter(KindBindings.kinds()::contains)
-                        .ifPresent(kind -> byKind.computeIfAbsent(kind, k -> new ArrayList<>())
+                KindBindings.bySchema(mapped.kind())
+                        .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
                                 .add(file));
             }
         }

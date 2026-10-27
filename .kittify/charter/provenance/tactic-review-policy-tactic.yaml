@@ -9,13 +9,13 @@ artifact_slug: review-policy-tactic
 artifact_urn: tactic:review-policy-tactic
 corpus_snapshot_id: generic-v1.0.0
 evidence_bundle_hash: 
-  bca8ade3c9123b0a1623aa7f5257136a81d992aca8ebb11b2ca225cc3e594c61
-generated_at: '2026-10-18T15:56:15.093724+00:00'
-inputs_hash: 6f13d48a362b9deef60f289e1c50389f046b3cb3e6323844f5c326ffa9d3029f
-produced_at: '2026-10-18T15:58:11.504977+00:00'
+  6375164f368fda52119948b6074c3dc79f8afdf3a30c63c5f2d540b95f8f8745
+generated_at: '2026-10-26T05:38:45.619459+00:00'
+inputs_hash: 39ff8c2661aedd50fc632b5ee2a619cfdabb7bfd2efab4c70dd07dadcdc78ce5
+produced_at: '2026-10-27T12:03:59.520687+00:00'
 schema_version: '2'
 source_input_ids: []
 source_section: review_policy
 source_urns: []
-synthesis_run_id: 639C18D844024A828B9A2F0325
+synthesis_run_id: 34528D1B836E4BCCBCE0837F5F
 synthesizer_version: 4.0.0rc8

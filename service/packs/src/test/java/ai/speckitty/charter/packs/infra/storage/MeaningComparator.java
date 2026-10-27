@@ -23,9 +23,12 @@ import org.jspecify.annotations.Nullable;
  *
  * <ul>
  *   <li>maps compare by key set, then per key; lists are sequences, so order and repetition count;
- *   <li>for a declared field, an absent field, an explicit {@code null} and an empty list or map mean the same (E2,
- *       E16); inside an open map (styleguide {@code tooling} and {@code structural_lint_config}) they are data and
- *       differ (E14);
+ *   <li>for a declared field, an absent field, an explicit {@code null}, an empty list or map, and an object whose
+ *       own fields are all of these mean the same, at any depth (E2, E16); inside an open map (styleguide
+ *       {@code tooling} and {@code structural_lint_config}, agent-profile {@code excluding}) they are data and differ
+ *       (E14). Only the top-level open maps listed in {@code OPEN_MAPS} are known: an open map elsewhere (the
+ *       descriptor root, a nested {@code activation_context}) is compared as declared fields until the open maps are
+ *       derived from the schemas;
  *   <li>scalars compare by resolved value: a string is not a number ({@code '1.0'} is not {@code 1.0}), but numbers
  *       compare by value ({@code 1} equals {@code 1.0}, E13);
  *   <li>in a graph shard, the root {@code edges} are a set of canonical edges over every declared field (order and
@@ -53,8 +56,9 @@ final class MeaningComparator {
     record Difference(String path, String source, String written) {}
 
     /** ADR-0036's open maps per gate kind: top-level keys whose content is data, not fields. */
-    private static final Map<String, Set<String>> OPEN_MAPS =
-            Map.of("styleguide", Set.of("tooling", "structural_lint_config"));
+    private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
+            "styleguide", Set.of("tooling", "structural_lint_config"),
+            "agent-profile", Set.of("excluding"));
 
     private MeaningComparator() {}
 
@@ -297,7 +301,9 @@ final class MeaningComparator {
         Map<String, @Nullable Object> w = stringKeys(written);
         boolean inSource = s.containsKey(key);
         boolean inWritten = w.containsKey(key);
-        if (!open && (!inSource || isEmpty(s.get(key))) && (!inWritten || isEmpty(w.get(key)))) {
+        if (!open
+                && (!inSource || isEmptyField(s.get(key), openBelow))
+                && (!inWritten || isEmptyField(w.get(key), openBelow))) {
             return; // absent, null and empty mean the same for a declared field (ADR-0036 Decision 2)
         }
         if (inSource && !inWritten) {
@@ -313,6 +319,18 @@ final class MeaningComparator {
     private static boolean isFinite(Number number) {
         return !(number instanceof Double d && (d.isNaN() || d.isInfinite()))
                 && !(number instanceof Float f && (f.isNaN() || f.isInfinite()));
+    }
+
+    /**
+     * Whether a declared field's value means the same as an absent one: it is null or empty, or it is an object whose
+     * own declared fields all are, at any depth (ADR-0036 Decision 2). The content of an open map is data, so there only
+     * a null or an empty map or list counts.
+     */
+    private static boolean isEmptyField(@Nullable Object value, boolean open) {
+        if (!open && value instanceof Map<?, ?> map) {
+            return map.values().stream().allMatch(item -> isEmptyField(item, false));
+        }
+        return isEmpty(value);
     }
 
     private static boolean isEmpty(@Nullable Object value) {

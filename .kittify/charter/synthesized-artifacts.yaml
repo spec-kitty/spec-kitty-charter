@@ -1,0 +1,23 @@
+# Artifact ids spec-kitty synthesis has created, per kind. Synthesis adds an
+# artifact to an explicit activated_<kind>s list only the first time it creates
+# it, so an artifact you remove stays removed. Written by spec-kitty; do not edit.
+created_tactics:
+- how-we-apply-directive-001
+- how-we-apply-directive-003
+- how-we-apply-directive-010
+- how-we-apply-directive-025
+- how-we-apply-directive-030
+- how-we-apply-directive-032
+- how-we-apply-directive-034
+- how-we-apply-directive-037
+- how-we-apply-directive-041
+- how-we-apply-directive-051
+- how-we-apply-no-full-heavy-suites-in-mission
+- how-we-apply-project-001
+- how-we-apply-project-002
+- how-we-apply-qa-003
+- how-we-apply-reconcile-change-scope-tensions
+- how-we-apply-use-c4-model-techniques
+- review-policy-tactic
+- testing-philosophy-tactic
+created_styleguides: []

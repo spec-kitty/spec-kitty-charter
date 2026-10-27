@@ -13,7 +13,11 @@ final class YamlFormats {
             DirectiveYaml.INSTANCE,
             StyleguideYaml.INSTANCE,
             ToolguideYaml.INSTANCE,
-            ParadigmYaml.INSTANCE);
+            ParadigmYaml.INSTANCE,
+            AgentProfileYaml.INSTANCE,
+            MissionStepContractYaml.INSTANCE,
+            GlossaryPackYaml.INSTANCE,
+            SkillYaml.INSTANCE);
 
     private YamlFormats() {}
 
