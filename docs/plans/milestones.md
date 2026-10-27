@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -20,13 +20,13 @@ audience:
 
 # Milestones
 
-The issue tracker groups the open work into four milestones. This page says what closes
+The issue tracker groups the open work into five milestones. This page says what closes
 each milestone and which issue goes where. The checkable steps are in the
 [Roadmap](/plans/roadmap/), and the phases in the [High-level approach](/plans/overhaul-approach/).
 All `#N` are `spec-kitty-charter` issues unless prefixed with another repository.
 
-> **Status:** in effect (updated 2026-10-26). The assignment is provisional and changes as the plan
-> does. Fourteen open issues have no milestone yet; they are listed under
+> **Status:** in effect (updated 2026-10-27). The assignment is provisional and changes as the plan
+> does. Twenty open issues have no milestone yet; they are listed under
 > [Not yet assigned](#not-yet-assigned).
 
 ## The milestones
@@ -36,6 +36,7 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 | **4.0 GA (contract adopted)** | What core's 4.0 GA needs from this repository (core epic spec-kitty#6518). Contract 0.1.0 and the activation minor (#125) are released. Core's generated client and routing proxy run with every operation still on core's Python ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)). The service answers the first offering reads against open-packs on the canonical `Pack` model, with the artifact kinds and edge relations modelled here ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)). |
 | **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. |
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
+| **Infra & Enablers** | Not a delivery target either, and never on the release critical path: background work, enablers, automation and deployment concerns. An item whose outcome can change the contract before 1.0.0 moves to the milestone that needs it. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
 
 The operator set this definition on 2026-10-19 and refined how the cutover happens on 2026-10-20
@@ -67,18 +68,24 @@ contract, and model the artifact kinds before more of them are exposed.
 
 Delivered so far: issues #120 and #173, by PR #177 (every read answers with the source fingerprint
 it verified). PR #180 delivered the toolguide half of #168: directive, styleguide, paradigm and
-toolguide can be read and registered.
+toolguide can be read and registered. PR #198 fixed #119 (one generated model per schema) and built
+the publishing workflow of #45. ADR-0035 settled #171 (the shared artifact interface lives in the
+kernel).
+
+**Release 0.1.0 is held** (operator, 2026-10-27): the workflow is ready, and no tag is cut yet. When
+it is cut, the tag ruleset (#196) comes first. Numbering of the next minor (operator, 2026-10-27):
+the activation set (#125) is 0.2.0, and an additive change that is ready earlier, such as
+`GET /openapi.yaml` (#208), rides that minor rather than taking its own number.
 
 | Issue | Title | Why it is here |
 |---|---|---|
-| #119 | Duplicate DTOs from code generation | Core's generated client must be clean before 0.1.0 |
-| #45 | Contract release publishing | Core vendors a released, checksummed bundle; the first is 0.1.0 |
+| #45 | Contract release publishing | Built (PR #198); open until 0.1.0 is cut, which is held |
 | #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
 | #13 | Core ingests the contract: generated client and routing proxy | The contract is core's seam from 0.1.0 (ADR-0021) |
 | #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
 | #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
-| #171 | `CharterArtifact` family: its home under ADR-0006, and what every kind has | The one prerequisite of #186: every new kind implements this interface |
 | #169 | Charter-kinds adapter tidy-ups (kind registry) | Extracted after two or three more kinds are built, not before them ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26) |
+| #240 | Re-evaluate the artifact fields that mint relationships | The graph documents (CRG) are the authoritative copy of an edge (operator, 2026-10-27); the registration bodies' `relationships` may change before 1.0.0 |
 | #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
 | #167 | Own the charter-artifact edge-relation table here | The relations each field creates are this repository's to define |
 | #168 | Toolguide and procedure as first-class pack artifacts | Toolguide delivered by PR #180; procedure waits on #150 |
@@ -97,6 +104,7 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 |---|---|---|
 | #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
 | #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
+| #233 | Spike: the multi-instance state model for hosted | Its answers (activation store, ETag consistency across replicas, tenancy) can change the contract, so it lands before 1.0.0 with #127. Moved from Infra & Enablers (operator, 2026-10-27) |
 | #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
 | #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; each switch is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
@@ -144,6 +152,18 @@ operation at a time.
 | #52 | Closure checker and YAML adapter follow-ups | Quality follow-up; blocks nothing |
 | #36, #37 | Bootstrap review follow-ups; home the internal pack upstream | Wait on `spec-kitty-open-packs` |
 
+### Infra & Enablers
+
+Created on 2026-10-27 by the operator. Three epics, each with its operator rulings on the epic
+issue:
+
+| Issue | Title | Why it is here |
+|---|---|---|
+| #207, #208 to #214 | Epic and steps: read, fetch and try the contract | The service serves its own bundle at `GET /openapi.yaml` (token required, linked from the info operation with `rel=service-desc`), the docsite renders it with Redoc, and IntelliJ HTTP Client examples run in CI. No Swagger UI |
+| #217, #218 to #225 | Epic and steps: a generated Java client and client guidance | An openapi-generator `okhttp-gson` client (`ai.speckitty.charter.client`), released as a sources-only zip with the contract, plus a how-to for generating any client. It stays 0.x until `_links` lands (#126) |
+| #226, #227 to #232, #234 | Epic and steps: hosted configuration and the container image | Validated hosted properties, secrets only from env and mounted files, no Spring Cloud Config, and no setting that changes without a redeploy. A platform-neutral container. Tenancy is undecided. #233 moved to 4.x cutover |
+| #241 | ADR: service versioning and release tags | The service gets its own tags and SemVer, separate from `contract-charter-v*`; the container image (#234) builds on it |
+
 ### Backlog
 
 | Issue | Title | Why it is here |
@@ -171,6 +191,12 @@ revised.
 | #183 | Guard pack registration writes against writers in other processes | Follow-up of PR #180; a deployment decision |
 | #184 | Single-source the pack id to directory resolution | Follow-up of PR #180; refactor |
 | #185 | Pack commit swap: readers in the window, staging leftovers, repair by `pack_id` | Follow-up of PR #180; hardening |
+| #196 | Protect `contract-charter-v*` tags with a ruleset | A repository setting; before the first contract tag |
+| #197 | Lint the workflows in CI, and make every workflow change reach a CI group | CI hygiene |
+| #203 | Mirror the red-main procedure-to-directive move from open-packs#74 | Doctrine alignment |
+| #205 | Re-render the class and component diagrams for the ADR-0035 kernel move | Docs |
+| #235 | CRG: a tension edge is read as `impacts` and written back without its strength | Round-trip defect; relates to #186 |
+| #236 | CRG: graph-shard node tags are dropped on read and write | Round-trip defect; relates to #186 |
 
 ## Decided on 2026-10-19
 
