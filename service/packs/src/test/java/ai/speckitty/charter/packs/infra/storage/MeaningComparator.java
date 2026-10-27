@@ -23,9 +23,12 @@ import org.jspecify.annotations.Nullable;
  *
  * <ul>
  *   <li>maps compare by key set, then per key; lists are sequences, so order and repetition count;
- *   <li>for a declared field, an absent field, an explicit {@code null} and an empty list or map mean the same (E2,
- *       E16); inside an open map (styleguide {@code tooling} and {@code structural_lint_config}) they are data and
- *       differ (E14);
+ *   <li>for a declared field, an absent field, an explicit {@code null}, an empty list or map, and an object whose
+ *       own fields are all of these mean the same, at any depth (E2, E16); inside an open map (styleguide
+ *       {@code tooling} and {@code structural_lint_config}, agent-profile {@code excluding}) they are data and differ
+ *       (E14). Only the top-level open maps listed in {@code OPEN_MAPS} are known: an open map elsewhere (the
+ *       descriptor root, a nested {@code activation_context}) is compared as declared fields until the open maps are
+ *       derived from the schemas;
  *   <li>scalars compare by resolved value: a string is not a number ({@code '1.0'} is not {@code 1.0}), but numbers
  *       compare by value ({@code 1} equals {@code 1.0}, E13);
  *   <li>in a graph shard, the root {@code edges} are a set of canonical edges over every declared field (order and

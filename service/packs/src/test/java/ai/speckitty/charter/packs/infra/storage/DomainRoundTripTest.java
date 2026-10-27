@@ -236,7 +236,7 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void theAdapterModelsExactlyTheSevenGateKinds() {
+    void theAdapterModelsExactlyTheEightGateKinds() {
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
                 .containsExactlyInAnyOrder(
                         "directive",
