@@ -28,3 +28,24 @@ until the overlap with the existing ratchet was defined; they converge, so no se
 - **Exact issue format.** Decision: `spec-kitty/spec-kitty-open-packs#N` only. Rationale: one canonical surface; a bare `#N` reads as a charter issue. Alternatives: full URL too (rejected: two spellings).
 - **Status appended last.** Decision: `KNOWN_FAILURE` after `RED`; report column after `red`. Rationale: existing ordering, columns and assertions stay byte-stable. Alternatives: beside expected red (rejected: edits existing rows).
 - **2-arg `load` delegates.** Decision: keep `load(red, exclusions)` and add `load(red, exclusions, known)`. Rationale: the existing tests stay untouched. Alternatives: change every caller (rejected: collision surface).
+
+## Pre-PR squad (2026-10-27)
+
+Point-cut: pre-merge, after consolidation and the rebase onto `main` (which brought #192's `empty_kinds` into the
+same classes). Lenses: `reviewer-renata` (correctness, tests) and `architect-alphonso` (seam, collisions), both loaded
+through the CLI. Verdicts: "approve with changes" and "safe to merge"; no blocker, no false-green path found.
+
+| # | Lens | Severity | Finding | Disposition |
+|---|------|----------|---------|-------------|
+| P1 | both | MED/LOW | Changelog said "a fourth list"; the guide and Javadoc say third | accepted: "a third list" (changelog description) |
+| P2 | both | MED/LOW | Guide still said the gate matches "both lists" | accepted: "its lists exactly (the third, `known-failures.yaml`, is below)" (service-build.md) |
+| P3 | reviewer | LOW | Guide said the count sits "beside `expected red`"; it prints after `red` | accepted: "both after `red`" |
+| P4 | both | LOW | "an open issue" claims what the format check cannot know | accepted: Javadoc and changelog say the issue's form only |
+| P5 | reviewer | LOW | Three new tests used `contains` where the problem list is known | accepted: `containsExactly` in the excluded, unmodelled and ambiguous tests |
+| P6 | reviewer | LOW | Untested: a double-listed file that round-trips; an entry missing `path` | accepted: `aFileOnBothListsThatRoundTripsFailsOnceForEachList`; `path` case in the missing-field test |
+| P7 | reviewer | LOW | The report test matched the issue anywhere, not the row with its reason | accepted: the exact known-failure row is asserted |
+| P8 | reviewer | LOW | Determinism checked by rendering one evaluation twice | deferred_with_rationale: the report has no clock or unordered input; the existing determinism test uses the same shape and NFR-003 is about the renderer, not the evaluation |
+| P9 | architect | LOW | Key `known-failures` (hyphen) beside `empty_kinds` (snake case) | accepted: renamed to `known_failures` while the list is empty (YAML, code, tests, data-model.md) |
+| P10 | architect | INFO | A refused entry pins the whole message; variable text would make it flap | accepted (note): refusal text comes from file content, not the run; recorded in the list's header comment |
+| P11 | reviewer | INFO | An `at` with no `": "` (e.g. "gave no outcome") could pin a harness defect | deferred_with_rationale: the expected-red list behaves the same; an entry needs a filed open-packs issue, so it is a deliberate act |
+| P12 | architect | INFO | `whole-pack.yml` header mentions only the expected-red baseline | deferred_with_rationale: no functional change needed (paths filter and summary step work); outside this mission's owned files |

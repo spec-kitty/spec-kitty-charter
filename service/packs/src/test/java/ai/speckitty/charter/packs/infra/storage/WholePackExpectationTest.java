@@ -82,13 +82,13 @@ class WholePackExpectationTest {
         return WholePackExpectation.load(red, exclusions, known).evaluate(PACK, MODELLED, observed);
     }
 
-    private static final String NO_KNOWN_FAILURES = "known-failures: []\n";
+    private static final String NO_KNOWN_FAILURES = "known_failures: []\n";
     private static final String OPEN_PACKS_ISSUE = "spec-kitty/spec-kitty-open-packs#123";
 
     /** A known-failure list with one entry for {@code path}, pinned {@code at}, owned by {@code issue}. */
     private static String known(String path, String at, String issue) {
         return """
-                known-failures:
+                known_failures:
                   - path: %s
                     at: "%s"
                     reason: The pack file holds two YAML documents.
@@ -365,7 +365,7 @@ class WholePackExpectationTest {
         @Test
         void aRepeatedPathFailsToLoad() {
             String twice = known(A, "steps[2].title", OPEN_PACKS_ISSUE)
-                    + known(A, "notes", OPEN_PACKS_ISSUE).replace("known-failures:\n", "");
+                    + known(A, "notes", OPEN_PACKS_ISSUE).replace("known_failures:\n", "");
 
             assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, twice))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -373,11 +373,12 @@ class WholePackExpectationTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"unknown", "at", "reason"})
+        @ValueSource(strings = {"unknown", "path", "at", "reason"})
         void anUnknownFieldOrMissingFieldFailsToLoad(String change) {
             String entry = known(A, "steps[2].title", OPEN_PACKS_ISSUE);
             String yaml = switch (change) {
                 case "unknown" -> entry + "    kind: tactic\n";
+                case "path" -> entry.replace("  - path: " + A + "\n    at:", "  - at:");
                 case "at" -> entry.replace("    at: \"steps[2].title\"\n", "");
                 default -> entry.replace("    reason: The pack file holds two YAML documents.\n", "");
             };
@@ -414,7 +415,7 @@ class WholePackExpectationTest {
                     evaluate(MATCHING_RED, MATCHING_EXCLUSIONS, known("README.md", "x", OPEN_PACKS_ISSUE), ALL_GREEN);
 
             assertThat(evaluation.problems())
-                    .contains("STALE_KNOWN_FAILURE README.md: the file is excluded; remove it from "
+                    .containsExactly("STALE_KNOWN_FAILURE README.md: the file is excluded; remove it from "
                             + "whole-pack/known-failures.yaml");
             assertThat(statuses(evaluation)).containsEntry("README.md", Status.EXCLUDED);
         }
@@ -430,8 +431,9 @@ class WholePackExpectationTest {
                     ALL_GREEN);
 
             assertThat(evaluation.problems())
-                    .contains("KNOWN_FAILURE_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models "
-                            + "this kind, so the entry can never expire");
+                    .containsExactly(
+                            "KNOWN_FAILURE_UNMODELLED procedures/p.procedure.yaml (procedure): no adapter models "
+                                    + "this kind, so the entry can never expire");
             assertThat(statuses(evaluation)).containsEntry(path, Status.EXPECTED_RED);
         }
 
@@ -452,12 +454,35 @@ class WholePackExpectationTest {
                     withRed(A, "steps[2].title: x, <absent>"));
 
             assertThat(evaluation.problems())
-                    .contains("AMBIGUOUS_ENTRY tactics/a.tactic.yaml: listed in both whole-pack/expected-red.yaml "
-                            + "and whole-pack/known-failures.yaml");
+                    .containsExactly(
+                            "AMBIGUOUS_ENTRY tactics/a.tactic.yaml: listed in both whole-pack/expected-red.yaml "
+                                    + "and whole-pack/known-failures.yaml");
             assertThat(resultOf(evaluation, A)).satisfies(file -> {
                 assertThat(file.status()).isEqualTo(Status.RED);
                 assertThat(file.detail()).isEqualTo("steps[2].title: x, <absent>");
             });
+        }
+
+        @Test
+        void aFileOnBothListsThatRoundTripsFailsOnceForEachList() {
+            String red = MATCHING_RED.replace("files: []", """
+                    files:
+                      - path: tactics/a.tactic.yaml
+                        at: steps[2].title
+                        reason: The writer drops the title.
+                        issue: "#187"
+                    """);
+
+            Evaluation evaluation =
+                    evaluate(red, MATCHING_EXCLUSIONS, known(A, "steps[2].title", OPEN_PACKS_ISSUE), ALL_GREEN);
+
+            assertThat(evaluation.problems())
+                    .containsExactly(
+                            "UNEXPECTEDLY_GREEN tactics/a.tactic.yaml: it round-trips now; remove it from "
+                                    + "whole-pack/expected-red.yaml",
+                            "AMBIGUOUS_ENTRY tactics/a.tactic.yaml: listed in both whole-pack/expected-red.yaml "
+                                    + "and whole-pack/known-failures.yaml");
+            assertThat(statuses(evaluation)).containsEntry(A, Status.GREEN);
         }
 
         @Test
@@ -479,8 +504,8 @@ class WholePackExpectationTest {
                     .isEqualTo(WholePackReport.render(evaluation, "built-in", "abc", Map.of()))
                     .contains("- Files: 5, green 2, expected red 1, excluded 1, red 0, known failure 1\n")
                     .contains("| kind | files | green | expected red | excluded | red | known failure |")
-                    .contains("| tactics/a.tactic.yaml | tactic | known failure | ")
-                    .contains(OPEN_PACKS_ISSUE);
+                    .contains("| tactics/a.tactic.yaml | tactic | known failure | steps[2].title: x, <absent> — known "
+                            + "failure: The pack file holds two YAML documents. (" + OPEN_PACKS_ISSUE + ") |\n");
             assertThat(WholePackReport.kindTable(evaluation)).contains("| tactic | 2 | 1 | 0 | 0 | 0 | 1 |");
         }
     }
