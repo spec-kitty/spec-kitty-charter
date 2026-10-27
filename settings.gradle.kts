@@ -20,6 +20,7 @@ rootProject.name = "spec-kitty-charter"
 listOf(
     "kernel",
     "packs",
+    "profiles",
     "charter-api",
     "deployable",
     // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
