@@ -65,8 +65,8 @@ on the operator's rulings of 2026-10-27 on
   place"; because this record is Accepted, the edit takes this amendment's form.
 
 The decision text below is unchanged. The points it changes are annotated where they stand:
-Decision 2's "Other files" paragraph, the per-kind table's introduction, and its
-`**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any other file" rows. Until ADR-0040 is
+Decision 2's "Other files" paragraph, Decision 6's list of exclusions, the per-kind table's
+introduction, and its `**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any other file" rows. Until ADR-0040 is
 accepted, the annotations record what it proposes and the original text stays in force.
 
 ## Context
