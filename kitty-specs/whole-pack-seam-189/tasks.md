@@ -12,30 +12,30 @@ Hand-authored (no CLI in the session). One lane, in order.
 
 ## WP01
 
-- [ ] Replace the five lists and ten invariants with a kind map and two generic invariants; keep the messages.
-- [ ] Add `artifacts()`, `artifacts(kind)`, `artifacts(kind, type)`, `with(artifact)`, `toBuilder()`; typed views delegate.
-- [ ] Replace the copy-every-kind blocks in the four registration services and the URN collection in `RelationshipRegistrationService`.
-- [ ] Tests: `with` adds and replaces; a registration keeps every other kind.
+- [x] Replace the five lists and ten invariants with a kind map and two generic invariants; keep the messages.
+- [x] Add `artifacts()`, `artifacts(kind)`, `artifacts(kind, type)`, `with(artifact)`, `toBuilder()`; typed views delegate.
+- [x] Replace the copy-every-kind blocks in the four registration services and the URN collection in `RelationshipRegistrationService`.
+- [x] Tests: `with` adds and replaces; a registration keeps every other kind.
 
 ## WP02
 
-- [ ] `KindBinding`, five bindings (mappers moved from `DomainRepositoryService`), `KindBindings`.
-- [ ] `YamlFormat` and five formats (moved from `YamlSerializationStrategy`); generic strategy methods.
-- [ ] `PackFileSet` takes kinds from the registry; `LoadedKind` removed.
-- [ ] `FilesystemPackStore` and `DomainRepositoryService` generic; tactic on the shared path; one `toDso` for the descriptor.
-- [ ] Tests updated; `KindBindingsTest`.
+- [x] `KindBinding`, five bindings (mappers moved from `DomainRepositoryService`), `KindBindings`.
+- [x] `YamlFormat` and five formats (moved from `YamlSerializationStrategy`); generic strategy methods.
+- [x] `PackFileSet` takes kinds from the registry; `LoadedKind` removed.
+- [x] `FilesystemPackStore` and `DomainRepositoryService` generic; tactic on the shared path; one `toDso` for the descriptor.
+- [x] Tests updated; `KindBindingsTest`.
 
 ## WP03
 
-- [ ] `GraphDocument` sealed value; YAML read and write for both shapes; canonical edge view.
-- [ ] Round-trip test over every shard and fragment in the packs.
+- [x] `GraphDocument` sealed value; YAML read and write for both shapes; canonical edge view.
+- [x] Round-trip test over every shard and fragment in the packs.
 
 ## WP04
 
-- [ ] `PackLayout`, `LoadedPack`, `WholePackStore.load` and `write`.
-- [ ] Refusals: existing target, violations; failure leaves nothing behind.
-- [ ] `WholePackRoundTripTest` over fixtures; open-packs variant in `openPacksRoundTrip`.
+- [x] `PackLayout`, `LoadedPack`, `WholePackStore.load` and `write`.
+- [x] Refusals: existing target, violations; failure leaves nothing behind.
+- [x] `WholePackRoundTripTest` over fixtures; open-packs variant in `openPacksRoundTrip`.
 
 ## WP05
 
-- [ ] ADR index row; `docs/architecture` pages that describe the aggregate and storage; changelog entry.
+- [x] ADR index row; `docs/architecture` pages that describe the aggregate and storage; changelog entry.

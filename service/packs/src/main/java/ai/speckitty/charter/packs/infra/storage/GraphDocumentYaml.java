@@ -5,7 +5,6 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.optional;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
-import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;

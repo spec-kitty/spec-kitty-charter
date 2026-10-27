@@ -63,25 +63,42 @@ nothing about how a new kind is shaped.
    `FilesystemPackStore` reads and writes any bound kind through one generic path, and
    `DomainRepositoryService` assembles and commits through the registry.
 3. **`SerializationStrategy` is kind-parameterized.** One read and one write take the binding; the
-   YAML strategy keeps one `YamlFormat` per kind. Adding a kind is a binding, a format and a
-   schema; nothing else in the slice changes.
-4. **The registry does not decide a kind's file layout.** The generic path covers kinds stored as
-   one schema-validated YAML file per artifact, which is all five bound kinds. A kind stored
-   otherwise (an asset and its blob, an anti-pattern inside a graph) widens the binding when it is
-   built, which is where the amendment's rule of three still applies.
-5. **The whole pack is loaded from and written to a directory.** The load reads the descriptor,
-   every bound kind and the DRG documents (the root `*.graph.yaml` shards and
-   `drg/fragment.yaml`, every schema field kept) into the aggregate. Where each artifact's file sits
-   is a storage fact, not domain meaning, so the load also returns a **layout** (artifact to
-   pack-relative path); the write puts each artifact back at its path, and a new artifact at
-   `<plural>/<id>.<kind>.yaml`. The write:
-   - refuses a pack that has read violations, since writing it would silently drop content;
-   - writes into a staging directory beside the target and renames it into place, as the commit
-     store does, so a failure leaves no partial target;
-   - refuses a target that already exists. Replacing a live pack stays the commit store's job
-     (ADR-0026 decision 3).
-   - writes what the domain models and nothing else. Files no kind or pack-level model covers are
-     not passed through; the round-trip gate (#187) reports them as not covered.
+   YAML strategy keeps one `YamlFormat` per kind.
+4. **What a kind mission still touches, and where the registry stops.** A kind stored as one
+   schema-validated YAML file per artifact, the shape of all five bound kinds, adds its entity, DSO,
+   binding, YAML format and schema, and appends one line each to `KindBindings` and `YamlFormats`
+   (two shared lists, so parallel missions get trivial merge conflicts there and nowhere else). It
+   also needs its rule in `contracts/packs/file-kinds.yaml` to map to a schema whose name is the
+   kind's token, which is not yet the case for `agent_profile` (`agent`), `mission_step_contract`
+   (`step-contract`) and `glossary_pack` (excluded): that mission settles the mapping. A binding
+   names its file-name token (`*.agent.yaml`), so a new artifact is created where the load finds it.
+   A kind with its own repository port still adds that port to `DomainRepositoryService`. The
+   registry does **not** yet cover, and these missions widen it when they are built (the
+   amendment's rule of three):
+   - non-YAML content (asset blobs, templates, markdown bodies): the file walk takes `*.yaml` only,
+     and the strategy and the whole-pack write move text, not bytes;
+   - kinds that are not files of their own (anti-patterns are nodes in a graph shard): a binding
+     would write standalone files that must not exist;
+   - pack-level files (#195).
+5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
+   reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:
+   - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is
+     authored, not what the artifact means; a new artifact goes where a registration would create
+     it;
+   - the **DRG documents** as authored (the root `*.graph.yaml` shards and `drg/fragment.yaml`, the
+     files the fingerprint covers), every schema field kept. They stay out of the aggregate: the
+     artifacts mint relationships too, and which copy of an edge is authoritative is an open
+     question for the operator, so nothing pretends to keep the two in step;
+   - the **unmodelled files**: every other file of the pack, listed so a caller sees exactly what
+     the write will not reproduce.
+
+   The write puts the descriptor, each artifact at its layout path and each DRG document into a
+   staging directory, then renames it over an empty target it reserved first, so a failure leaves no
+   partial target and a target that appears meanwhile is not written over. It refuses, before
+   writing anything, a target that exists (replacing a live pack stays the commit store's job,
+   ADR-0026 decision 3), a pack with read violations, and a descriptor with undeclared keys, whose
+   values are not kept: each would drop content without a word. Unmodelled files are listed, not
+   passed through.
 6. **Kinds owned by another slice are out of this registry.** Agent profiles and mission types may
    live in their own slices (ADR-0035), and ADR-0006 forbids those slices from depending on
    `packs`. Their bindings will need a contribution seam wired by `deployable`; it is built with
@@ -91,7 +108,7 @@ nothing about how a new kind is shaped.
 
 ### Positive
 
-- Each kind mission (#190 to #195) adds its entity, DSO, binding, YAML format and schema, and
+- A YAML kind mission (decision 4) adds its entity, DSO, binding, YAML format and schema, and
   registers them; it does not edit the aggregate, the store, the strategy or the registration
   services.
 - A registration can no longer drop a kind it does not know.
@@ -103,13 +120,26 @@ nothing about how a new kind is shaped.
 - The typed accessors and the generic map coexist: the five old kinds have both.
 - The strategy dispatches by kind at run time; a binding without a format is caught by a test, not
   by the compiler.
+- Binding a kind adds its files to the source fingerprint and the commit revision, so every pack
+  that has files of that kind gets a new `Charter-Source-Fingerprint` and ETag once, although its
+  bytes did not change. The order is kept (new kinds are appended), so a pack without such files
+  keeps its fingerprint.
+- The per-pack load (`PackRepository.load`) and the whole-pack load give the same aggregate but
+  differ beside it: the per-pack load names the pack by the identifier asked for and reads no DRG
+  documents; the whole-pack load names it by its `pack_id` and returns the layout, the documents and
+  the unmodelled files.
+- `Pack.with` moves a replaced artifact to the end of its kind, as the registration services did.
+- `SerializationStrategy` is public but takes the package-private binding and DSOs, as it took the
+  package-private DSOs before: a second format is written inside `packs.infra.storage`.
 
 ### Risks
 
 - The binding could harden around "one YAML file per artifact". Decision 4 keeps the layout out of
   the binding's contract until a kind needs otherwise.
 - The layout is outside the aggregate, so a caller that writes a `Pack` without its layout gets
-  the canonical paths. The gate and the commit path always carry it.
+  the paths a registration would use. The gate always carries it.
+- The whole-pack load takes no lock; a pack swapped by a concurrent commit can be read half before
+  and half after. The gate reads packs nobody writes.
 
 ## Alternatives considered
 
@@ -131,13 +161,20 @@ entities stay free of paths.
 ### Pass files the domain does not model through the write
 
 Rejected: it would make the round trip look complete while the domain holds nothing of those
-files, which hides the work #190 to #195 exist to do.
+files, which hides the work #190 to #195 exist to do. They are listed instead.
+
+### Hold the DRG documents in the aggregate
+
+Rejected for now: the artifacts already mint relationships, so the aggregate would hold two copies
+of an edge with nothing to keep them in step, and a registration would leave the documents stale.
+Which copy is authoritative is for the operator to settle.
 
 ## References
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/domain/Pack.java`
 - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java`,
-  `KindBindings.java`, `WholePackStore.java`
+  `KindBindings.java`, `YamlFormats.java`, `WholePackStore.java`, `PackLayout.java`,
+  `GraphDocument.java`
 - [ADR-0006: Onion vertical slices with ArchUnit](/adr/0006-onion-vertical-slices-archunit/)
 - [ADR-0024: Doctrine artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
 - [ADR-0026: The write surface is functional registration](/adr/0026-write-surface-is-functional-registration/)

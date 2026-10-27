@@ -10,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -104,7 +103,7 @@ class WholePackStoreTest {
             }
             out.put(kind.kind().token(), dsos);
         }
-        out.put("graphs", loaded.pack().graphs());
+        out.put("graphs", loaded.graphs());
         return out;
     }
 
@@ -137,13 +136,13 @@ class WholePackStoreTest {
         assertThat(loaded.layout().paths())
                 .containsEntry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_043"),
                         DIRECTIVE_FILE);
-        assertThat(loaded.pack().graphs()).extracting(GraphDocument::file).containsExactly(SHARD, PackFileSet.FRAGMENT);
-        GraphDocument.Shard shard = (GraphDocument.Shard) loaded.pack().graphs().getFirst();
+        assertThat(loaded.graphs()).extracting(GraphDocument::file).containsExactly(SHARD, PackFileSet.FRAGMENT);
+        GraphDocument.Shard shard = (GraphDocument.Shard) loaded.graphs().getFirst();
         assertThat(shard.generatedBy()).contains("drg-migration-v1");
         assertThat(shard.nodes().getFirst().provenance()).contains("hand-written");
         assertThat(shard.nodes().getFirst().tags()).containsExactly("analysis", "analysis");
         assertThat(shard.edges().getFirst().impacts()).contains(0.5);
-        GraphDocument.Fragment fragment = (GraphDocument.Fragment) loaded.pack().graphs().get(1);
+        GraphDocument.Fragment fragment = (GraphDocument.Fragment) loaded.graphs().get(1);
         assertThat(fragment.nodes().getFirst().bodyPath()).contains(DIRECTIVE_FILE);
     }
 
@@ -172,18 +171,18 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("an artifact with no recorded place is written at <plural>/<id>.<kind>.yaml")
+    @DisplayName("an artifact with no recorded place is written where a registration would create it")
     void anUnplacedArtifactGoesToItsCanonicalPath(@TempDir Path host) throws IOException {
         WholePackStore.LoadedPack loaded = store.load(richPack(host.resolve("source")));
         Path target = host.resolve("out");
 
-        store.write(new WholePackStore.LoadedPack(loaded.pack(), PackLayout.canonical()), target);
+        store.write(
+                new WholePackStore.LoadedPack(
+                        loaded.pack(), PackLayout.canonical(), loaded.graphs(), loaded.unmodelled()),
+                target);
 
         assertThat(filesUnder(target))
-                .contains(
-                        "directives/DIRECTIVE_043.directive.yaml",
-                        "tactics/gamma-tactic.tactic.yaml",
-                        "tactics/alpha-tactic.tactic.yaml");
+                .contains("DIRECTIVE_043.directive.yaml", "gamma-tactic.tactic.yaml", "alpha-tactic.tactic.yaml");
         assertThat(meaning(store.load(target))).isEqualTo(meaning(loaded));
     }
 
@@ -228,7 +227,7 @@ class WholePackStoreTest {
         Path target = parent.resolve("pack");
 
         assertThatThrownBy(() -> store.write(
-                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places)), target))
+                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()), target))
                 .isInstanceOf(CharterRefusal.class);
         assertThat(target).doesNotExist();
         assertThat(parent.resolve("escaped.directive.yaml")).doesNotExist();
@@ -244,7 +243,7 @@ class WholePackStoreTest {
         Path target = host.resolve("out");
 
         assertThatThrownBy(() -> store.write(
-                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places)), target))
+                        new WholePackStore.LoadedPack(loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()), target))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("two parts");
         assertThat(target).doesNotExist();
@@ -272,7 +271,62 @@ class WholePackStoreTest {
         WholePackStore.LoadedPack loaded = store.load(pack);
 
         assertThat(loaded.pack().violations()).extracting(PackElementViolation::file).contains("broken.graph.yaml");
-        assertThat(loaded.pack().graphs()).extracting(GraphDocument::file).doesNotContain("broken.graph.yaml");
-        assertThat(loaded.pack().graphs()).hasSize(2);
+        assertThat(loaded.graphs()).extracting(GraphDocument::file).doesNotContain("broken.graph.yaml");
+        assertThat(loaded.graphs()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("every file nothing models is listed on load and is not written")
+    void unmodelledFilesAreListedNotCopied(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        write(source, "README.md", "# hello\n");
+        write(source, "agent_profiles/a.agent.yaml", "profile-id: a\n");
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        store.write(loaded, target);
+
+        assertThat(loaded.unmodelled()).containsExactly("README.md", "agent_profiles/a.agent.yaml");
+        assertThat(filesUnder(target)).doesNotContain("README.md", "agent_profiles/a.agent.yaml");
+    }
+
+    @Test
+    @DisplayName("the target may have another name than the source; the identity is the declared pack_id")
+    void theTargetNameIsFree(@TempDir Path host) throws IOException {
+        WholePackStore.LoadedPack loaded = store.load(richPack(host.resolve("source")));
+        Path target = host.resolve("renamed");
+
+        store.write(loaded, target);
+
+        assertThat(store.load(target).pack().id()).isEqualTo(loaded.pack().id());
+        assertThat(meaning(store.load(target))).isEqualTo(meaning(loaded));
+    }
+
+    @Test
+    @DisplayName("a descriptor with undeclared keys is refused, since their values are not kept")
+    void undeclaredDescriptorKeysAreRefused(@TempDir Path host) throws IOException {
+        Path source = richPack(host.resolve("source"));
+        Files.writeString(source.resolve(PackFileSet.PACK_YAML), "surprise: kept-nowhere\n", java.nio.file.StandardOpenOption.APPEND);
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path target = host.resolve("out");
+
+        assertThat(loaded.pack().descriptor().undeclaredKeys()).contains("surprise");
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("undeclared keys");
+        assertThat(target).doesNotExist();
+        assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("two files declaring one id are a refusal on load, not a raw invariant breach")
+    void aDuplicateIdIsARefusal(@TempDir Path host) throws IOException {
+        Path source = richPack(host);
+        Files.copy(source.resolve(NESTED_TACTIC), source.resolve("tactics/again.tactic.yaml"));
+
+        assertThatThrownBy(() -> store.load(source))
+                .isInstanceOf(CharterRefusal.class)
+                .extracting(refusal -> ((CharterRefusal) refusal).code())
+                .isEqualTo(RefusalCode.VALIDATION_FAILED);
     }
 }

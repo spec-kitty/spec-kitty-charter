@@ -16,27 +16,20 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The pack aggregate root, identified by its {@link PackIdentifier}. It composes the pack's descriptor, its artifacts
- * keyed by {@link ArtifactKind}, the DRG documents as authored and the violations found while reading, so a
- * partial-tolerant load can be represented. Two packs are equal when they have the same identity, whatever else they
+ * keyed by {@link ArtifactKind} and the violations found while reading, so a partial-tolerant load can be
+ * represented. Two packs are equal when they have the same identity, whatever else they
  * hold.
  *
  * <p>Every kind is held the same way (ADR-0036): a kind joins the aggregate by its artifacts implementing
  * {@link CharterArtifact}, with no field, accessor or builder slot of its own. The typed views
- * ({@link #tactics()}, …) are conveniences over the same map. It holds no resolved doctrine graph. Build one with
+ * ({@link #tactics()}, …) are conveniences over the same map. It holds no doctrine graph and no file paths. Build one with
  * {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.
  */
 public final class Pack {
 
-    private static final ModularRuleset<Pack> RULES = ModularRuleset.<Pack>emptyRules()
-            .must(Constraints.of("A pack must not hold two graph documents at the same path.", pack -> {
-                var seen = new HashSet<String>();
-                return pack.graphs.stream().allMatch(graph -> seen.add(graph.file()));
-            }));
-
     private final PackIdentifier id;
     private final PackDescriptor descriptor;
     private final Map<ArtifactKind, List<CharterArtifact>> artifacts;
-    private final List<GraphDocument> graphs;
     private final List<PackElementViolation> violations;
 
     /**
@@ -45,7 +38,6 @@ public final class Pack {
      * @param id the pack's identity
      * @param descriptor the pack's descriptor
      * @param artifacts the readable artifacts of each kind, each list in a stable order
-     * @param graphs the DRG documents, in a stable order
      * @param violations the files that could not be read or validated
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
@@ -53,7 +45,6 @@ public final class Pack {
             PackIdentifier id,
             PackDescriptor descriptor,
             Map<ArtifactKind, List<CharterArtifact>> artifacts,
-            List<GraphDocument> graphs,
             List<PackElementViolation> violations) {
         this.id = Objects.requireNonNull(id, "id");
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
@@ -64,12 +55,10 @@ public final class Pack {
             }
         });
         this.artifacts = copy;
-        this.graphs = List.copyOf(graphs);
         this.violations = List.copyOf(violations);
         for (Map.Entry<ArtifactKind, List<CharterArtifact>> entry : copy.entrySet()) {
             guardKind(entry.getKey(), entry.getValue());
         }
-        RULES.guard(this);
     }
 
     /**
@@ -104,19 +93,18 @@ public final class Pack {
     /**
      * Starts a builder that holds everything this pack holds.
      *
-     * @return a builder seeded with this pack's identity, descriptor, artifacts, graph documents and violations
+     * @return a builder seeded with this pack's identity, descriptor, artifacts and violations
      */
     public Builder toBuilder() {
         Builder builder = builder().id(id).descriptor(descriptor);
         artifacts().forEach(builder::artifact);
-        graphs.forEach(builder::graph);
         violations.forEach(builder::violation);
         return builder;
     }
 
     /**
      * This pack with {@code artifact} added, or replacing the artifact of the same kind and local id, revalidated.
-     * Every other artifact, graph document and violation is kept; a replaced artifact moves to the end of its kind.
+     * Every other artifact and violation is kept; a replaced artifact moves to the end of its kind.
      *
      * @param artifact the artifact to add or replace
      * @return the revalidated pack
@@ -131,7 +119,6 @@ public final class Pack {
             }
         }
         builder.artifact(artifact);
-        graphs.forEach(builder::graph);
         violations.forEach(builder::violation);
         return builder.build();
     }
@@ -232,15 +219,6 @@ public final class Pack {
     }
 
     /**
-     * The DRG documents as authored, in a stable order.
-     *
-     * @return an immutable list; empty when the pack holds none or they were not loaded
-     */
-    public List<GraphDocument> graphs() {
-        return graphs;
-    }
-
-    /**
      * The files that could not be read or validated while loading. This is the single, canonical owner of
      * read-time violations; no other surface may report them.
      *
@@ -271,7 +249,6 @@ public final class Pack {
         private @Nullable PackIdentifier id;
         private @Nullable PackDescriptor descriptor;
         private final Map<ArtifactKind, List<CharterArtifact>> artifacts = new EnumMap<>(ArtifactKind.class);
-        private final List<GraphDocument> graphs = new ArrayList<>();
         private final List<PackElementViolation> violations = new ArrayList<>();
 
         private Builder() {}
@@ -360,17 +337,6 @@ public final class Pack {
         }
 
         /**
-         * Appends a DRG document.
-         *
-         * @param value the document
-         * @return this builder
-         */
-        public Builder graph(GraphDocument value) {
-            this.graphs.add(Objects.requireNonNull(value, "value"));
-            return this;
-        }
-
-        /**
          * Appends a read violation.
          *
          * @param violation the violation
@@ -393,7 +359,6 @@ public final class Pack {
                     Objects.requireNonNull(id, "id"),
                     Objects.requireNonNull(descriptor, "descriptor"),
                     artifacts,
-                    graphs,
                     violations);
         }
     }

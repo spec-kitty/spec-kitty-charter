@@ -225,8 +225,9 @@ public final class DomainRepositoryService
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
+                Urn urn = entity.urn();
                 builder.artifact(entity);
-                places.put(entity.urn(), stored.file());
+                places.put(urn, stored.file());
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(
                         kind.idOf(stored.dso()), "domain", String.valueOf(breach.getMessage())));

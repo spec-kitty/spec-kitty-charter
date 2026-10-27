@@ -72,9 +72,11 @@ As of 2026-10-26.
     (the release itself, an operator call), then publish the activation set as 0.2.0 (#125);
   - **model before breadth:** the whole-pack round trip
     ([#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)): read every pack file
-    into the domain and write it back. #171 comes first; the kind registry (#169) is extracted
-    after two or three more kinds are built
-    ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26). Then the
+    into the domain and write it back. #171 comes first; the read and registration services of
+    the kind registry (#169) are extracted after two or three more kinds are built
+    ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26), while the
+    storage and aggregate plumbing is keyed by kind first, with the whole-pack seam (#189,
+    [ADR-0036](/adr/0036-kind-keyed-pack-registry-and-whole-pack-seam/), proposed). Then the
     offering reads under `/offering` (#126).
 
   Step 3, the first corpus slice ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)),

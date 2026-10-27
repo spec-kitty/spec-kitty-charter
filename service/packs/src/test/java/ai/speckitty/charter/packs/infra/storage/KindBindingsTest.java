@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +47,7 @@ class KindBindingsTest {
     @DisplayName("every bound kind has a bundled schema named by its token")
     void everyBoundKindHasASchema() {
         for (ArtifactKind kind : KindBindings.kinds()) {
-            assertThat(PackSchemas.bundled().validate(kind.token(), "probe.yaml", java.util.Map.of()))
+            assertThat(PackSchemas.bundled().validate(kind.token(), "probe.yaml", Map.of()))
                     .as(kind.token())
                     .isNotEmpty();
         }
@@ -55,8 +57,20 @@ class KindBindingsTest {
     @DisplayName("each binding's entity type is the kind's entity")
     void entityTypesMatchTheKinds() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
-            assertThat(binding.entityType().getSimpleName().toLowerCase(java.util.Locale.ROOT))
+            assertThat(binding.entityType().getSimpleName().toLowerCase(Locale.ROOT))
                     .isEqualTo(binding.kind().token());
+        }
+    }
+
+    @Test
+    @DisplayName("the file a new artifact is created under is read back as that kind")
+    void theDefaultFileNameClassifiesBackToTheKind(@org.junit.jupiter.api.io.TempDir java.nio.file.Path host)
+            throws java.io.IOException {
+        java.nio.file.Path pack = java.nio.file.Files.createDirectories(host.resolve("probe-pack"));
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            String name = binding.fileName("probe-" + binding.kind().token());
+            java.nio.file.Files.writeString(pack.resolve(name), "id: x\n");
+            assertThat(PackFileSet.files(pack, binding.kind())).as(binding.kind().token()).contains(name);
         }
     }
 }

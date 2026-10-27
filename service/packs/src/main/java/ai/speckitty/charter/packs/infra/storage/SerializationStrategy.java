@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 
