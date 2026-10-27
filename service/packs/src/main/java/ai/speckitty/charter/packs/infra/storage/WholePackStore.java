@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -32,8 +33,9 @@ import org.jspecify.annotations.Nullable;
  * records where each artifact sat in a {@link PackLayout}, and reads the DRG documents (the root {@code *.graph.yaml}
  * shards and {@code drg/fragment.yaml}, the files the source fingerprint covers) with every field. It lists every
  * other file of the pack as {@linkplain LoadedPack#unmodelled() unmodelled}: nothing models those yet. It is
- * partial-tolerant like {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable file is a violation on the
- * aggregate. The pack's identity is the {@code pack_id} its descriptor declares, whatever the directory is called. The
+ * partial-tolerant like {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable artifact file is a
+ * violation on the aggregate. An unreadable DRG document refuses the pack as {@code drg_schema_error} (ADR-0036
+ * decision 3). The pack's identity is the {@code pack_id} its descriptor declares, whatever the directory is called. The
  * load reads the directory as it finds it; it takes no lock, so a pack swapped by a concurrent commit may be read
  * half before and half after.
  *
@@ -90,8 +92,9 @@ public final class WholePackStore {
      * @param directory the pack directory
      * @return the aggregate, its layout, the DRG documents and the unmodelled files
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the directory is not a pack directory or has no
-     *     readable {@code pack.yaml}; with {@code VALIDATION_FAILED} when the readable artifacts break an aggregate
-     *     invariant, such as two files declaring one id
+     *     readable {@code pack.yaml}; with {@code DRG_SCHEMA_ERROR} when a DRG document cannot be read or breaks its
+     *     schema; with {@code VALIDATION_FAILED} when the readable artifacts break an aggregate invariant, such as two
+     *     files declaring one id
      */
     public LoadedPack load(Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
@@ -111,7 +114,11 @@ public final class WholePackStore {
             DomainRepositoryService.collect(id, kind, read, builder, places);
         }
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
-        graphs.violations().forEach(builder::violation);
+        if (!graphs.violations().isEmpty()) {
+            PackElementViolation first = graphs.violations().getFirst();
+            throw new CharterRefusal(
+                    RefusalCode.DRG_SCHEMA_ERROR, id.value() + "/" + first.file() + ": " + first.reason());
+        }
         Pack pack;
         try {
             pack = builder.build();

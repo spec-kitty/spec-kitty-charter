@@ -10,6 +10,7 @@ related:
   - adr/0024-doctrine-artifact-family-contract
   - adr/0026-write-surface-is-functional-registration
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
+  - adr/0036-round-trip-fidelity-is-equality-of-meaning
   - context/conceptual-model
   - architecture/logical-model
 audience:
@@ -103,6 +104,21 @@ nothing about how a new kind is shaped.
    live in their own slices (ADR-0035), and ADR-0006 forbids those slices from depending on
    `packs`. Their bindings will need a contribution seam wired by `deployable`; it is built with
    the first such kind, not here. Mission types are not an `ArtifactKind` at all.
+7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
+   (round-trip fidelity, Proposed):
+   - The DRG reader and writer keep every declared field (node `provenance` and `tags`, fragment
+     `body_path`, the shard header fields), and edges compare in canonical form.
+   - An unreadable DRG document refuses the whole-pack load as `drg_schema_error` (its decision 3).
+     No operation on the wire loads a pack's graph yet, so `drg_schema_error` stays `raised: false`
+     in the contract; it changes when a served operation uses this seam.
+   - An unreadable artifact file stays a violation on the aggregate, not on the wire: this record
+     proposes no contract change for skipped files. The whole-pack write refuses a pack that has
+     any.
+   - Until `pack-descriptor.schema.json` is closed and `undeclaredKeys()` goes (its follow-up
+     work, not done here), the write refuses a descriptor with undeclared keys rather than drop
+     them.
+   - The DRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
+     it becomes set-based is decided with the authority of an edge (open on #189).
 
 ## Consequences
 

@@ -10,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -269,18 +268,16 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("an unreadable DRG document is a violation on the aggregate, not a refusal")
-    void anUnreadableGraphIsAViolation(@TempDir Path host) throws IOException {
+    @DisplayName("an unreadable DRG document refuses the pack as drg_schema_error (ADR-0036 decision 3)")
+    void anUnreadableGraphRefusesThePack(@TempDir Path host) throws IOException {
         Path pack = richPack(host);
         Files.writeString(pack.resolve("broken.graph.yaml"), "schema_version: '1.0'\nsurprise: 1\n");
 
-        WholePackStore.LoadedPack loaded = store.load(pack);
-
-        assertThat(loaded.pack().violations())
-                .extracting(PackElementViolation::file)
-                .contains("broken.graph.yaml");
-        assertThat(loaded.graphs()).extracting(GraphDocument::file).doesNotContain("broken.graph.yaml");
-        assertThat(loaded.graphs()).hasSize(2);
+        assertThatThrownBy(() -> store.load(pack))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("broken.graph.yaml")
+                .extracting(refusal -> ((CharterRefusal) refusal).code())
+                .isEqualTo(RefusalCode.DRG_SCHEMA_ERROR);
     }
 
     @Test
