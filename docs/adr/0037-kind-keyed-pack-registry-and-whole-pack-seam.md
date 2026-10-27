@@ -251,9 +251,9 @@ Rejected: the bindings name persistence shapes, which the kernel must not see (A
 ### Keep the source path on each artifact
 
 Rejected: where a file sits is how a pack is authored, not what the artifact means; the kind
-entities stay free of paths. (Amended 2026-10-27 by [ADR-0040](/adr/0040-content-form-and-payload-kinds/),
-#193: one recorded exception — the `Pack` aggregate holds its asset files by pack-relative path, so a
-payload with no sidecar still has an owner.)
+entities stay free of paths. (Amended 2026-10-27 by [ADR-0040](/adr/0040-content-form-and-payload-kinds/)
+on #193: one recorded exception — the `Pack` aggregate holds its asset files by pack-relative path,
+so a payload with no sidecar still has an owner.)
 
 ### Pass files the domain does not model through the write
 
