@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -170,7 +171,7 @@ class FileSystemPackSourcesTest {
             for (int i = 0; i < 2000 && System.nanoTime() < deadline; i++) {
                 try {
                     sources(root).fingerprint();
-                    PackFileSet.files(root, PackFileSet.LoadedKind.TACTIC);
+                    PackFileSet.files(root, ArtifactKind.TACTIC);
                 } catch (CharterRefusal refusal) {
                     refused++;
                     first = first == null ? refusal.getMessage() : first;

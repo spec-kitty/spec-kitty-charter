@@ -4,10 +4,12 @@ import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -184,14 +186,16 @@ class DomainRepositoryServiceTest {
         SerializationStrategy yaml = new YamlSerializationStrategy();
         SerializationStrategy counting = new SerializationStrategy() {
             @Override
-            public String writeTactic(TacticDso tactic) {
-                return yaml.writeTactic(tactic);
+            public <D> String write(KindBinding<D, ?> kind, D dso) {
+                return yaml.write(kind, dso);
             }
 
             @Override
-            public FileRead<TacticDso> readTactic(String text, String file) {
-                tacticFilesOpened.add(file);
-                return yaml.readTactic(text, file);
+            public <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file) {
+                if (kind.kind() == ArtifactKind.TACTIC) {
+                    tacticFilesOpened.add(file);
+                }
+                return yaml.read(kind, text, file);
             }
 
             @Override
@@ -205,43 +209,13 @@ class DomainRepositoryServiceTest {
             }
 
             @Override
-            public String writeDirective(DirectiveDso directive) {
-                return yaml.writeDirective(directive);
+            public String writeGraph(GraphDocument document) {
+                return yaml.writeGraph(document);
             }
 
             @Override
-            public FileRead<DirectiveDso> readDirective(String text, String file) {
-                return yaml.readDirective(text, file);
-            }
-
-            @Override
-            public String writeStyleguide(StyleguideDso styleguide) {
-                return yaml.writeStyleguide(styleguide);
-            }
-
-            @Override
-            public FileRead<StyleguideDso> readStyleguide(String text, String file) {
-                return yaml.readStyleguide(text, file);
-            }
-
-            @Override
-            public String writeToolguide(ToolguideDso toolguide) {
-                return yaml.writeToolguide(toolguide);
-            }
-
-            @Override
-            public FileRead<ToolguideDso> readToolguide(String text, String file) {
-                return yaml.readToolguide(text, file);
-            }
-
-            @Override
-            public String writeParadigm(ParadigmDso paradigm) {
-                return yaml.writeParadigm(paradigm);
-            }
-
-            @Override
-            public FileRead<ParadigmDso> readParadigm(String text, String file) {
-                return yaml.readParadigm(text, file);
+            public FileRead<GraphDocument> readGraph(String text, GraphDocumentReader.Shape shape, String file) {
+                return yaml.readGraph(text, shape, file);
             }
         };
         DomainRepositoryService counted = new DomainRepositoryService(

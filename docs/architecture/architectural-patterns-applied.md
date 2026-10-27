@@ -57,16 +57,20 @@ ones scream the concern.
 |---|---|---|
 | `kernel.domain` | Shared kernel | Vocabulary every slice may read: `PackDescriptor`, `DoctrineGraph`, `Urn`, `RefusalCode` |
 | `kernel.validation` | Shared kernel, pure library | `ModularRuleset`, `Constraint`, `Evaluation`, `Reason`; `java` and `jspecify` only |
-| `packs.domain` | Domain core | Aggregate root `Pack`, child entity `Tactic`, value objects, identifier value objects, ports |
+| `packs.domain` | Domain core | Aggregate root `Pack` (artifacts keyed by kind, DRG documents), child entities such as `Tactic`, value objects, identifier value objects, ports |
 | `packs.application` | Application edge (use cases) | `@Service` read use cases, such as the tactic read service, that orchestrate domain ports. An outer edge, peer to storage; not pure |
-| `packs.infra.storage` | Outbound, driven adapter | `DomainRepositoryService` (`@Service`), `SerializationStrategy`, DSO records |
+| `packs.infra.storage` | Outbound, driven adapter | `DomainRepositoryService` (`@Service`), the `KindBindings` registry, `SerializationStrategy`, `WholePackStore`, DSO records |
 | `packs.infra.api` | Inbound, driving adapter | REST controllers, Problem handling, the only users of generated DTOs |
 | `deployable` | Composition root | The `@SpringBootApplication` and an aggregate `DeployableConfiguration` that imports each layer's `@Configuration`; the only code that knows every module |
 
 Each `domain` package also holds the **ports**: `TacticRepository`, `PackDescriptorRepository`,
 the aggregating `PackRepository` and the `PackInspectionQuery`. Serialization is a **strategy**
 (`SerializationStrategy`, with `YamlSerializationStrategy` today) so a database-backed sibling
-could be added behind the same port.
+could be added behind the same port. Each stored kind registers a `KindBinding` (its DSO and the
+mapping to its entity) and a YAML format, and the aggregate, the store and the strategy handle
+every kind through that registry ([ADR-0036](/adr/0036-kind-keyed-pack-registry-and-whole-pack-seam/)).
+`WholePackStore` loads a whole pack directory into the aggregate and writes it to a new
+directory.
 
 ## Edge rings around a pure core
 
@@ -101,7 +105,8 @@ Reading a tactic through the service touches every ring, once, in order.
    tacticId)`, for the tactic. It names only domain types.
 3. `DomainRepositoryService` in `packs.infra.storage` implements that port. It finds the file for
    the identifiers inside the pack root, reads the YAML through the
-   `YamlSerializationStrategy` into a `TacticDso` record, and maps the DSO into a `Tactic`.
+   `YamlSerializationStrategy` into a `TacticDso` record, and maps the DSO into a `Tactic`
+   through the tactic's `KindBinding`.
 4. `Tactic` is built through its builder. Its `ModularRuleset` runs `guard`, so a tactic with no
    steps cannot exist. Its `TacticStep` and `TacticReference` lists are value objects whose
    order and duplicates are kept.

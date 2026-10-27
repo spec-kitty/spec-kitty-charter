@@ -1,13 +1,15 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.GraphDocument;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.infra.storage.PackFileSet.LoadedKind;
+import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CodingErrorAction;
@@ -17,7 +19,10 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -28,10 +33,11 @@ import org.jspecify.annotations.Nullable;
  * directory, reads the directory partial-tolerantly into DSOs, and writes a DSO back atomically and inside the pack.
  * Format is the {@link SerializationStrategy}'s business; this class only moves text.
  *
- * <p>The identifier's value names the pack directory under the storage root. A tactic is located by scanning the
- * pack's tactic files, as {@link PackFileSet} declares them, for the one whose {@code id}
- * matches. A tactic write is an upsert: a known id replaces its file, an unknown id creates {@code <id>.tactic.yaml}
- * directly in the pack directory (and never over an existing file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
+ * <p>The identifier's value names the pack directory under the storage root. Every kind bound in {@link KindBindings}
+ * is read and written through one path (ADR-0036). An element is located by scanning the pack's files of its kind, as
+ * {@link PackFileSet} declares them, for the one whose {@code id} matches. A write is an upsert: a known id replaces
+ * its file, an unknown id creates {@code <id>.<kind>.yaml} directly in the pack directory (and never over an existing
+ * file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
  * {@code pack.yaml} refuses it.
  *
  * <p>A write, replace or create, serializes from scratch, writes a temporary file beside the target and renames it
@@ -56,45 +62,94 @@ final class FilesystemPackStore {
         void move(Path temp, Path target) throws IOException;
     }
 
-    /** What a pack directory held. */
+    /**
+     * One readable artifact file: where it sits in the pack and what it held.
+     *
+     * @param file the pack-relative, {@code /}-separated path
+     * @param dso what the file held
+     * @param <D> the kind's persistence shape
+     */
+    record Stored<D>(String file, D dso) {
+        /**
+         * Checks the fields.
+         *
+         * @param file the pack-relative path
+         * @param dso what the file held
+         */
+        Stored {
+            Objects.requireNonNull(file, "file");
+            Objects.requireNonNull(dso, "dso");
+        }
+    }
+
+    /**
+     * What a pack directory held: the descriptor, the readable files of every bound kind and a violation per file
+     * that could not be read.
+     *
+     * @param descriptor the descriptor
+     * @param elements the readable files of each bound kind, in path order; a kind with none may be absent
+     * @param violations the files that could not be read, in kind then path order
+     */
     record PackRead(
             PackDescriptorDso descriptor,
-            List<TacticDso> tactics,
-            List<DirectiveDso> directives,
-            List<StyleguideDso> styleguides,
-            List<ToolguideDso> toolguides,
-            List<ParadigmDso> paradigms,
+            Map<ArtifactKind, List<Stored<?>>> elements,
             List<PackElementViolation> violations) {
         /**
-         * Copies the lists.
+         * Copies the collections.
          *
          * @param descriptor the descriptor
-         * @param tactics the readable tactics, in path order
-         * @param directives the readable directives, in path order
-         * @param styleguides the readable styleguides, in path order
-         * @param toolguides the readable toolguides, in path order
-         * @param paradigms the readable paradigms, in path order
-         * @param violations the files that could not be read, in path order
+         * @param elements the readable files of each kind
+         * @param violations the unreadable files
          */
         PackRead {
             Objects.requireNonNull(descriptor, "descriptor");
-            tactics = List.copyOf(tactics);
-            directives = List.copyOf(directives);
-            styleguides = List.copyOf(styleguides);
-            toolguides = List.copyOf(toolguides);
-            paradigms = List.copyOf(paradigms);
+            Map<ArtifactKind, List<Stored<?>>> copy = new EnumMap<>(ArtifactKind.class);
+            elements.forEach((kind, list) -> copy.put(kind, List.copyOf(list)));
+            elements = Collections.unmodifiableMap(copy);
             violations = List.copyOf(violations);
         }
 
         /**
-         * A pack read that holds no doctrine kinds beyond tactics.
+         * The readable files of one kind, typed by its binding.
          *
-         * @param descriptor the descriptor
-         * @param tactics the readable tactics, in path order
-         * @param violations the files that could not be read, in path order
+         * @param kind the kind's binding
+         * @param <D> the kind's persistence shape
+         * @return the files, in path order
          */
-        PackRead(PackDescriptorDso descriptor, List<TacticDso> tactics, List<PackElementViolation> violations) {
-            this(descriptor, tactics, List.of(), List.of(), List.of(), List.of(), violations);
+        <D> List<Stored<D>> elements(KindBinding<D, ?> kind) {
+            return elements.getOrDefault(kind.kind(), List.of()).stream()
+                    .map(stored -> new Stored<>(stored.file(), kind.dsoType().cast(stored.dso())))
+                    .toList();
+        }
+
+        /**
+         * The readable persistence shapes of one kind.
+         *
+         * @param kind the kind's binding
+         * @param <D> the kind's persistence shape
+         * @return the shapes, in path order
+         */
+        <D> List<D> dsos(KindBinding<D, ?> kind) {
+            return elements(kind).stream().map(Stored::dso).toList();
+        }
+    }
+
+    /**
+     * The DRG documents of a pack directory and a violation per document that could not be read.
+     *
+     * @param documents the readable documents: the root shards by name, then the fragment
+     * @param violations the unreadable documents
+     */
+    record GraphRead(List<GraphDocument> documents, List<PackElementViolation> violations) {
+        /**
+         * Copies the lists.
+         *
+         * @param documents the readable documents
+         * @param violations the unreadable documents
+         */
+        GraphRead {
+            documents = List.copyOf(documents);
+            violations = List.copyOf(violations);
         }
     }
 
@@ -146,28 +201,22 @@ final class FilesystemPackStore {
      * Reads a pack, tolerating broken element files.
      *
      * @param id the pack
-     * @return the descriptor, the readable tactics and a violation per broken file
+     * @return the descriptor, the readable files of every bound kind and a violation per broken file
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackRead read(PackIdentifier id) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
-        List<TacticDso> tactics = new ArrayList<>();
-        List<DirectiveDso> directives = new ArrayList<>();
-        List<StyleguideDso> styleguides = new ArrayList<>();
-        List<ToolguideDso> toolguides = new ArrayList<>();
-        List<ParadigmDso> paradigms = new ArrayList<>();
+        Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
         List<PackElementViolation> violations = new ArrayList<>();
-        readTactics(directory, tactics, violations);
-        readKind(directory, LoadedKind.DIRECTIVE, strategy::readDirective, directives, violations);
-        readKind(directory, LoadedKind.STYLEGUIDE, strategy::readStyleguide, styleguides, violations);
-        readKind(directory, LoadedKind.TOOLGUIDE, strategy::readToolguide, toolguides, violations);
-        readKind(directory, LoadedKind.PARADIGM, strategy::readParadigm, paradigms, violations);
-        return new PackRead(descriptor, tactics, directives, styleguides, toolguides, paradigms, violations);
+        for (KindBinding<?, ?> kind : KindBindings.all()) {
+            elements.put(kind.kind(), readKind(directory, kind, violations));
+        }
+        return new PackRead(descriptor, elements, violations);
     }
 
     /**
-     * Reads only a pack's {@code pack.yaml}: no tactic file is opened. This is how an identifier is matched to a pack
+     * Reads only a pack's {@code pack.yaml}: no element file is opened. This is how an identifier is matched to a pack
      * without reading every pack's elements.
      *
      * @param id the pack
@@ -179,37 +228,71 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Reads the readable tactics of a pack, without its descriptor.
+     * Reads the readable elements of one kind of a pack, without its descriptor.
      *
      * @param id the pack
-     * @return the readable tactics, in path order
+     * @param kind the kind's binding
+     * @param <D> the kind's persistence shape
+     * @return the readable elements, in path order
      */
-    List<TacticDso> readTactics(PackIdentifier id) {
-        List<TacticDso> tactics = new ArrayList<>();
-        readTactics(existingDirectory(id), tactics, new ArrayList<>());
-        return tactics;
+    <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
+        return readKind(existingDirectory(id), kind, new ArrayList<>()).stream()
+                .map(Stored::dso)
+                .toList();
     }
 
     /**
-     * Reads one tactic: only the file that declares the id is parsed as a tactic.
+     * Reads one element: only the file that declares the id is parsed as the kind.
      *
      * @param id the pack
-     * @param tacticId the tactic's id
-     * @return the tactic, or empty when the pack has no readable tactic with that id
+     * @param kind the kind's binding
+     * @param elementId the element's id
+     * @param <D> the kind's persistence shape
+     * @return the element, or empty when the pack has no readable element of the kind with that id
      */
-    Optional<TacticDso> readTactic(PackIdentifier id, String tacticId) {
+    <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
         Path directory = existingDirectory(id);
-        return locate(directory, LoadedKind.TACTIC, tacticId).flatMap(file -> {
+        return locate(directory, kind.kind(), elementId).flatMap(file -> {
             String name = directory
                     .relativize(file)
                     .toString()
                     .replace(file.getFileSystem().getSeparator(), "/");
-            return switch (readFile(file, name, text -> strategy.readTactic(text, name))) {
-                case FileRead.Read<TacticDso> good -> Optional.of(good.value());
-                case FileRead.Unreadable<TacticDso> bad -> Optional.empty();
-                case FileRead.Absent<TacticDso> absent -> Optional.empty();
+            return switch (readFile(file, name, text -> strategy.read(kind, text, name))) {
+                case FileRead.Read<D> good -> Optional.of(good.value());
+                case FileRead.Unreadable<D> bad -> Optional.empty();
+                case FileRead.Absent<D> absent -> Optional.empty();
             };
         });
+    }
+
+    /**
+     * Reads a pack's DRG documents with every field: the root {@code *.graph.yaml} shards by name, then
+     * {@code drg/fragment.yaml} when the pack has one. A document that cannot be read is a violation, not a refusal.
+     *
+     * @param id the pack
+     * @return the readable documents and a violation per unreadable one
+     */
+    GraphRead readGraphs(PackIdentifier id) {
+        Path directory = existingDirectory(id);
+        List<GraphDocument> documents = new ArrayList<>();
+        List<PackElementViolation> violations = new ArrayList<>();
+        List<String> files = new ArrayList<>();
+        for (Path shard : PackFileSet.rootShards(directory, id.value())) {
+            files.add(String.valueOf(shard.getFileName()));
+        }
+        boolean hasFragment = Files.isRegularFile(directory.resolve(PackFileSet.FRAGMENT));
+        if (hasFragment) {
+            files.add(PackFileSet.FRAGMENT);
+        }
+        for (String file : files) {
+            Shape shape = file.equals(PackFileSet.FRAGMENT) ? Shape.FRAGMENT : Shape.SHARD;
+            switch (readFile(directory.resolve(file), file, text -> strategy.readGraph(text, shape, file))) {
+                case FileRead.Read<GraphDocument> good -> documents.add(good.value());
+                case FileRead.Unreadable<GraphDocument> bad -> violations.addAll(violationsOf(bad));
+                case FileRead.Absent<GraphDocument> absent -> {}
+            }
+        }
+        return new GraphRead(documents, violations);
     }
 
     private PackDescriptorDso descriptorOf(Path directory, PackIdentifier id) {
@@ -226,14 +309,16 @@ final class FilesystemPackStore {
         };
     }
 
-    private void readTactics(Path directory, List<TacticDso> tactics, List<PackElementViolation> violations) {
-        for (String file : PackFileSet.files(directory, LoadedKind.TACTIC)) {
-            switch (readFile(directory.resolve(file), file, text -> strategy.readTactic(text, file))) {
-                case FileRead.Read<TacticDso> good -> tactics.add(good.value());
-                case FileRead.Unreadable<TacticDso> bad -> violations.addAll(violationsOf(bad));
-                case FileRead.Absent<TacticDso> absent -> {}
+    private <D> List<Stored<?>> readKind(Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations) {
+        List<Stored<?>> into = new ArrayList<>();
+        for (String file : PackFileSet.files(directory, kind.kind())) {
+            switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
+                case FileRead.Read<D> good -> into.add(new Stored<>(file, good.value()));
+                case FileRead.Unreadable<D> bad -> violations.addAll(violationsOf(bad));
+                case FileRead.Absent<D> absent -> {}
             }
         }
+        return into;
     }
 
     /**
@@ -248,151 +333,22 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Upserts a tactic: the file of the tactic with this id is replaced; an unknown id is created as
-     * {@code <id>.tactic.yaml} in the pack directory. Both arms are atomic and contained in the pack.
+     * Upserts an element: the file of the element of this kind with this id is replaced; an unknown id is created as
+     * {@code <id>.<kind>.yaml} in the pack directory. Both arms are atomic and contained in the pack.
      *
      * @param id the pack
-     * @param tactic what to write
-     * @throws CharterRefusal when the file resolves outside the pack, or a new tactic's file name is taken by
-     *     something that is not a tactic with that id
+     * @param kind the kind's binding
+     * @param dso what to write
+     * @param <D> the kind's persistence shape
+     * @throws CharterRefusal when the file resolves outside the pack, or a new element's file name is taken by
+     *     something that is not an element of the kind with that id
      */
-    void writeTactic(PackIdentifier id, TacticDso tactic) {
+    <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
-        Path target = locate(directory, LoadedKind.TACTIC, tactic.id())
-                .orElseGet(() -> newFile(directory, LoadedKind.TACTIC, tactic.id()));
-        writeAtomically(directory, target, strategy.writeTactic(tactic));
-    }
-
-    /**
-     * Upserts a directive, as {@link #writeTactic} does for a tactic: a known id replaces its file, an unknown id is
-     * created as {@code <id>.directive.yaml}.
-     *
-     * @param id the pack
-     * @param directive what to write
-     */
-    void writeDirective(PackIdentifier id, DirectiveDso directive) {
-        Path directory = existingDirectory(id);
-        Path target = locate(directory, LoadedKind.DIRECTIVE, directive.id())
-                .orElseGet(() -> newFile(directory, LoadedKind.DIRECTIVE, directive.id()));
-        writeAtomically(directory, target, strategy.writeDirective(directive));
-    }
-
-    /**
-     * Upserts a styleguide: a known id replaces its file, an unknown id is created as {@code <id>.styleguide.yaml}.
-     *
-     * @param id the pack
-     * @param styleguide what to write
-     */
-    void writeStyleguide(PackIdentifier id, StyleguideDso styleguide) {
-        Path directory = existingDirectory(id);
-        Path target = locate(directory, LoadedKind.STYLEGUIDE, styleguide.id())
-                .orElseGet(() -> newFile(directory, LoadedKind.STYLEGUIDE, styleguide.id()));
-        writeAtomically(directory, target, strategy.writeStyleguide(styleguide));
-    }
-
-    /**
-     * Upserts a toolguide: a known id replaces its file, an unknown id is created as {@code <id>.toolguide.yaml}.
-     *
-     * @param id the pack
-     * @param toolguide what to write
-     */
-    void writeToolguide(PackIdentifier id, ToolguideDso toolguide) {
-        Path directory = existingDirectory(id);
-        Path target = locate(directory, LoadedKind.TOOLGUIDE, toolguide.id())
-                .orElseGet(() -> newFile(directory, LoadedKind.TOOLGUIDE, toolguide.id()));
-        writeAtomically(directory, target, strategy.writeToolguide(toolguide));
-    }
-
-    /**
-     * Upserts a paradigm: a known id replaces its file, an unknown id is created as {@code <id>.paradigm.yaml}.
-     *
-     * @param id the pack
-     * @param paradigm what to write
-     */
-    void writeParadigm(PackIdentifier id, ParadigmDso paradigm) {
-        Path directory = existingDirectory(id);
-        Path target = locate(directory, LoadedKind.PARADIGM, paradigm.id())
-                .orElseGet(() -> newFile(directory, LoadedKind.PARADIGM, paradigm.id()));
-        writeAtomically(directory, target, strategy.writeParadigm(paradigm));
-    }
-
-    /**
-     * Reads one directive.
-     *
-     * @param id the pack
-     * @param directiveId the directive's id
-     * @return the directive, or empty when the pack has no readable directive with that id
-     */
-    Optional<DirectiveDso> readDirective(PackIdentifier id, String directiveId) {
-        return readOne(id, LoadedKind.DIRECTIVE, directiveId, strategy::readDirective);
-    }
-
-    /**
-     * Reads one styleguide.
-     *
-     * @param id the pack
-     * @param styleguideId the styleguide's id
-     * @return the styleguide, or empty when the pack has no readable styleguide with that id
-     */
-    Optional<StyleguideDso> readStyleguide(PackIdentifier id, String styleguideId) {
-        return readOne(id, LoadedKind.STYLEGUIDE, styleguideId, strategy::readStyleguide);
-    }
-
-    /**
-     * Reads one toolguide.
-     *
-     * @param id the pack
-     * @param toolguideId the toolguide's id
-     * @return the toolguide, or empty when the pack has no readable toolguide with that id
-     */
-    Optional<ToolguideDso> readToolguide(PackIdentifier id, String toolguideId) {
-        return readOne(id, LoadedKind.TOOLGUIDE, toolguideId, strategy::readToolguide);
-    }
-
-    /**
-     * Reads one paradigm.
-     *
-     * @param id the pack
-     * @param paradigmId the paradigm's id
-     * @return the paradigm, or empty when the pack has no readable paradigm with that id
-     */
-    Optional<ParadigmDso> readParadigm(PackIdentifier id, String paradigmId) {
-        return readOne(id, LoadedKind.PARADIGM, paradigmId, strategy::readParadigm);
-    }
-
-    @FunctionalInterface
-    private interface KindReader<T> {
-        FileRead<T> read(String text, String file);
-    }
-
-    private <T> Optional<T> readOne(PackIdentifier id, LoadedKind kind, String elementId, KindReader<T> reader) {
-        Path directory = existingDirectory(id);
-        return locate(directory, kind, elementId).flatMap(file -> {
-            String name = directory
-                    .relativize(file)
-                    .toString()
-                    .replace(file.getFileSystem().getSeparator(), "/");
-            return switch (readFile(file, name, text -> reader.read(text, name))) {
-                case FileRead.Read<T> good -> Optional.of(good.value());
-                case FileRead.Unreadable<T> bad -> Optional.empty();
-                case FileRead.Absent<T> absent -> Optional.empty();
-            };
-        });
-    }
-
-    private <T> void readKind(
-            Path directory,
-            LoadedKind kind,
-            KindReader<T> reader,
-            List<T> into,
-            List<PackElementViolation> violations) {
-        for (String file : PackFileSet.files(directory, kind)) {
-            switch (readFile(directory.resolve(file), file, text -> reader.read(text, file))) {
-                case FileRead.Read<T> good -> into.add(good.value());
-                case FileRead.Unreadable<T> bad -> violations.addAll(violationsOf(bad));
-                case FileRead.Absent<T> absent -> {}
-            }
-        }
+        String elementId = kind.idOf(dso);
+        Path target = locate(directory, kind.kind(), elementId)
+                .orElseGet(() -> newFile(directory, kind.kind(), elementId));
+        writeAtomically(directory, target, strategy.write(kind, dso));
     }
 
     // ---- id to path ----------------------------------------------------------------------------------------------
@@ -406,7 +362,7 @@ final class FilesystemPackStore {
     }
 
     /** The existing file of the kind whose {@code id} is {@code elementId}; the first in path order if several do. */
-    private static Optional<Path> locate(Path directory, LoadedKind kind, String elementId) {
+    private static Optional<Path> locate(Path directory, ArtifactKind kind, String elementId) {
         for (String file : PackFileSet.files(directory, kind)) {
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
@@ -422,7 +378,7 @@ final class FilesystemPackStore {
      * place the file anywhere else (a separator, a climb) is refused, and so is a name already taken, links included,
      * so a create never overwrites a file or follows a planted link.
      */
-    private static Path newFile(Path directory, LoadedKind kind, String elementId) {
+    private static Path newFile(Path directory, ArtifactKind kind, String elementId) {
         String token = kind.token();
         Path target = directory.resolve(elementId + "." + token + ".yaml").normalize();
         if (!directory.equals(target.getParent())) {

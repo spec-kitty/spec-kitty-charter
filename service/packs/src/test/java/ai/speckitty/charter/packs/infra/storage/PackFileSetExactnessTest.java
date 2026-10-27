@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Tactic;
@@ -35,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The service loads exactly the files it digests (issue 120): over generated pack trees, the files the store reads
@@ -145,18 +146,22 @@ class PackFileSetExactnessTest {
     // build the mutant; no expected set is computed from it.
 
     @ParameterizedTest
-    @EnumSource(PackFileSet.LoadedKind.class)
+    @MethodSource("boundKinds")
     @Timeout(HANG_CAP_SECONDS)
-    void aDigestThatOmitsOneLoadedKindFailsTheOracleNamingAPlantedFileOfThatKind(PackFileSet.LoadedKind omitted)
+    void aDigestThatOmitsOneLoadedKindFailsTheOracleNamingAPlantedFileOfThatKind(ArtifactKind omitted)
             throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
         GeneratedPackTree tree = tree(0);
-        Set<PackFileSet.LoadedKind> kept = EnumSet.complementOf(EnumSet.of(omitted));
+        Set<ArtifactKind> kept = EnumSet.complementOf(EnumSet.of(omitted));
         Function<List<PackLocation>, String> mutant =
                 locations -> FileSystemPackSources.digest(locations, dir -> PackFileSet.digested(dir, kept));
 
         Kind kind = Kind.valueOf(omitted.name());
         assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.kind() == kind));
+    }
+
+    static List<ArtifactKind> boundKinds() {
+        return KindBindings.kinds();
     }
 
     @Test

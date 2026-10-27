@@ -65,6 +65,7 @@ stands.
 | [0034](/adr/0034-local-and-hosted-deployment-options/) | ADR-0034: The charter service has a local and a hosted deployment option | Accepted | 2026-10-26 |
 | [0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) | ADR-0035: The shared artifact interface lives in the kernel | Accepted | 2026-10-27 |
 | [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Proposed | 2026-10-27 |
+| [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Proposed; would supersede in part ADR-0024's amendment of 2026-10-26 | 2026-10-27 |
 
 ## Core decisions this repository builds on
 

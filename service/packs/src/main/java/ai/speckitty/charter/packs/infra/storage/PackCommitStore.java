@@ -291,7 +291,7 @@ public final class PackCommitStore {
         });
     }
 
-    private static void moveDirectory(Path from, Path to) throws IOException {
+    static void moveDirectory(Path from, Path to) throws IOException {
         try {
             Files.move(from, to, StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException notAtomic) {
@@ -299,7 +299,7 @@ public final class PackCommitStore {
         }
     }
 
-    private static void deleteTree(@Nullable Path root) {
+    static void deleteTree(@Nullable Path root) {
         if (root == null) {
             return;
         }

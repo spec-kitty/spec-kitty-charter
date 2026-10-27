@@ -115,22 +115,12 @@ public final class ToolguideRegistrationService {
 
     /**
      * Rebuilds the whole aggregate with {@code toolguide} added (or replacing the one of the same id) and revalidates
-     * it: {@link Pack.Builder#build()} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id = FR-008),
+     * it: {@link Pack#with} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id = FR-008),
      * so a breach is a validation refusal (422) rather than a 500, and the write never reaches the commit.
      */
     private static Pack revalidated(Pack current, Toolguide toolguide) {
-        Pack.Builder builder = Pack.builder().id(current.id()).descriptor(current.descriptor());
-        current.tactics().forEach(builder::tactic);
-        current.directives().forEach(builder::directive);
-        current.styleguides().forEach(builder::styleguide);
-        current.toolguides().stream()
-                .filter(existing -> !existing.id().equals(toolguide.id()))
-                .forEach(builder::toolguide);
-        builder.toolguide(toolguide);
-        current.paradigms().forEach(builder::paradigm);
-        current.violations().forEach(builder::violation);
         try {
-            return builder.build();
+            return current.with(toolguide);
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }

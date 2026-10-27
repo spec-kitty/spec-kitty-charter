@@ -139,22 +139,12 @@ public final class ParadigmRegistrationService {
 
     /**
      * Rebuilds the whole aggregate with {@code paradigm} added (or replacing the one of the same id) and revalidates
-     * it: {@link Pack.Builder#build()} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id), so a
+     * it: {@link Pack#with} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id), so a
      * breach is a validation refusal (422) rather than a 500, and the write never reaches the commit.
      */
     private static Pack revalidated(Pack current, Paradigm paradigm) {
-        Pack.Builder builder = Pack.builder().id(current.id()).descriptor(current.descriptor());
-        current.tactics().forEach(builder::tactic);
-        current.directives().forEach(builder::directive);
-        current.styleguides().forEach(builder::styleguide);
-        current.toolguides().forEach(builder::toolguide);
-        current.paradigms().stream()
-                .filter(existing -> !existing.id().equals(paradigm.id()))
-                .forEach(builder::paradigm);
-        builder.paradigm(paradigm);
-        current.violations().forEach(builder::violation);
         try {
-            return builder.build();
+            return current.with(paradigm);
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }

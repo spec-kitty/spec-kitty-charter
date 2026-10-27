@@ -50,7 +50,7 @@ class TacticSaveContractTest {
         List<String> namesBefore = fileNames(pack);
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
 
-        store.writeTactic(PACK, tactic("beta-tactic", "Replaced beta"));
+        store.write(PACK, TacticBinding.INSTANCE, tactic("beta-tactic", "Replaced beta"));
 
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
         assertThat(store.read(PACK).tactics())
@@ -75,23 +75,23 @@ class TacticSaveContractTest {
             tempSeen[0] = Files.exists(temp);
             throw new IOException("injected failure");
         });
-        assertThatThrownBy(() -> failing.writeTactic(PACK, fresh)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, fresh)).isInstanceOf(CharterRefusal.class);
         assertThat(tempSeen[0]).isTrue();
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
 
         // Containment: a climbing id and a dangling link planted at the new file's name are refused.
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
-        assertThatThrownBy(() -> store.writeTactic(PACK, tactic("../escaped", "Escaped")))
+        assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, tactic("../escaped", "Escaped")))
                 .isInstanceOf(CharterRefusal.class);
         Path outside = host.resolve("outside.yaml");
         Files.createSymbolicLink(pack.resolve("brand-new-tactic.tactic.yaml"), outside);
-        assertThatThrownBy(() -> store.writeTactic(PACK, fresh)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, fresh)).isInstanceOf(CharterRefusal.class);
         assertThat(outside).doesNotExist();
         assertThat(host.resolve("escaped.tactic.yaml")).doesNotExist();
         Files.delete(pack.resolve("brand-new-tactic.tactic.yaml"));
 
         // The positive arm, same fixture: the unknown id is created, and only that file is added.
-        store.writeTactic(PACK, fresh);
+        store.write(PACK, TacticBinding.INSTANCE, fresh);
 
         assertThat(fileNames(pack))
                 .containsExactlyInAnyOrder(

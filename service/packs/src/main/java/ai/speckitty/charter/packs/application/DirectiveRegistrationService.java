@@ -138,22 +138,12 @@ public final class DirectiveRegistrationService {
 
     /**
      * Rebuilds the whole aggregate with {@code directive} added (or replacing the one of the same id) and revalidates
-     * it: {@link Pack.Builder#build()} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id = FR-008),
+     * it: {@link Pack#with} re-runs the aggregate invariants (belongs-to-pack, no-duplicate-id = FR-008),
      * so a breach is a validation refusal (422) rather than a 500, and the write never reaches the commit.
      */
     private static Pack revalidated(Pack current, Directive directive) {
-        Pack.Builder builder = Pack.builder().id(current.id()).descriptor(current.descriptor());
-        current.tactics().forEach(builder::tactic);
-        current.directives().stream()
-                .filter(existing -> !existing.id().equals(directive.id()))
-                .forEach(builder::directive);
-        builder.directive(directive);
-        current.styleguides().forEach(builder::styleguide);
-        current.toolguides().forEach(builder::toolguide);
-        current.paradigms().forEach(builder::paradigm);
-        current.violations().forEach(builder::violation);
         try {
-            return builder.build();
+            return current.with(directive);
         } catch (ConstraintBreachException breach) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(breach.getMessage()), breach);
         }

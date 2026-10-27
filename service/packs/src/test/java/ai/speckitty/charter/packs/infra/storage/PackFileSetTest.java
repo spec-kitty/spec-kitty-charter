@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.infra.storage.PackFileSet.LoadedKind;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,7 +58,7 @@ class PackFileSetTest {
 
     @Test
     void theFilesOfAKindAreTheOnesItsNameShapeSelectsInStringOrder() {
-        assertThat(PackFileSet.files(pack, LoadedKind.TACTIC))
+        assertThat(PackFileSet.files(pack, ArtifactKind.TACTIC))
                 .containsExactly(
                         ".h/in-hidden.tactic.yaml",
                         ".hidden.tactic.yaml",
@@ -66,10 +66,10 @@ class PackFileSetTest {
                         "b.tactic.yaml",
                         "presets/p.tactic.yaml",
                         "x.config.tactic.yaml");
-        assertThat(PackFileSet.files(pack, LoadedKind.DIRECTIVE)).containsExactly("deep/er/c.directive.yaml");
-        assertThat(PackFileSet.files(pack, LoadedKind.STYLEGUIDE)).containsExactly("d.styleguide.yaml");
-        assertThat(PackFileSet.files(pack, LoadedKind.TOOLGUIDE)).containsExactly("f.toolguide.yaml");
-        assertThat(PackFileSet.files(pack, LoadedKind.PARADIGM)).containsExactly("e.paradigm.yaml");
+        assertThat(PackFileSet.files(pack, ArtifactKind.DIRECTIVE)).containsExactly("deep/er/c.directive.yaml");
+        assertThat(PackFileSet.files(pack, ArtifactKind.STYLEGUIDE)).containsExactly("d.styleguide.yaml");
+        assertThat(PackFileSet.files(pack, ArtifactKind.TOOLGUIDE)).containsExactly("f.toolguide.yaml");
+        assertThat(PackFileSet.files(pack, ArtifactKind.PARADIGM)).containsExactly("e.paradigm.yaml");
     }
 
     @Test
@@ -94,7 +94,7 @@ class PackFileSetTest {
 
     @Test
     void aSubsetOfTheKindsLeavesTheOthersOutButKeepsThePackYamlAndTheGraphInputs() {
-        assertThat(PackFileSet.digested(pack, EnumSet.of(LoadedKind.PARADIGM, LoadedKind.DIRECTIVE)))
+        assertThat(PackFileSet.digested(pack, EnumSet.of(ArtifactKind.PARADIGM, ArtifactKind.DIRECTIVE)))
                 .containsExactly(
                         "pack.yaml",
                         "deep/er/c.directive.yaml",
@@ -102,7 +102,7 @@ class PackFileSetTest {
                         ".a.graph.yaml",
                         "b.graph.yaml",
                         "drg/fragment.yaml");
-        assertThat(PackFileSet.digested(pack, EnumSet.noneOf(LoadedKind.class)))
+        assertThat(PackFileSet.digested(pack, EnumSet.noneOf(ArtifactKind.class)))
                 .containsExactly("pack.yaml", ".a.graph.yaml", "b.graph.yaml", "drg/fragment.yaml");
     }
 
@@ -126,8 +126,8 @@ class PackFileSetTest {
         assertThat(expected).contains("presets/p.tactic.yaml");
         assertThat(PackFileSet.digested(pack.resolve("."))).isEqualTo(expected);
         assertThat(PackFileSet.digested(pack.resolve("deep").resolve(".."))).isEqualTo(expected);
-        assertThat(PackFileSet.files(pack.resolve("."), LoadedKind.TACTIC))
-                .isEqualTo(PackFileSet.files(pack, LoadedKind.TACTIC));
+        assertThat(PackFileSet.files(pack.resolve("."), ArtifactKind.TACTIC))
+                .isEqualTo(PackFileSet.files(pack, ArtifactKind.TACTIC));
     }
 
     @Test
@@ -143,7 +143,7 @@ class PackFileSetTest {
     void aDirectoryThatCannotBeListedIsRefusedAsUnreadable(@TempDir Path host) {
         Path missing = host.resolve("missing");
 
-        assertThatThrownBy(() -> PackFileSet.files(missing, LoadedKind.TACTIC))
+        assertThatThrownBy(() -> PackFileSet.files(missing, ArtifactKind.TACTIC))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refusal.getMessage()).isEqualTo("pack missing cannot be listed");
@@ -163,7 +163,7 @@ class PackFileSetTest {
 
     @Test
     void everyLoadedKindHasItsOwnTokenAndAFileNameCarriesIt() {
-        for (LoadedKind kind : LoadedKind.values()) {
+        for (ArtifactKind kind : KindBindings.kinds()) {
             assertThat(kind.token()).isEqualTo(kind.name().toLowerCase(java.util.Locale.ROOT));
         }
     }

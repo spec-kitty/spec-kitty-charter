@@ -42,9 +42,9 @@ class ToolguideDsoRoundTripTest {
                 Optional.of("2026-07-29"),
                 List.of("docs/a.md", "docs/a.md"));
 
-        String written = yaml.writeToolguide(dso);
+        String written = yaml.write(ToolguideBinding.INSTANCE, dso);
 
-        assertThat(read(yaml.readToolguide(written, FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, written, FILE))).isEqualTo(dso);
         // Core loads packs with a YAML 1.1 resolver, which reads a plain 2026-07-29 as a date, not the str it declares.
         assertThat(written).containsPattern("(?m)^last_updated: (['\"])2026-07-29\\1$");
         assertThat(written).as("a plain string stays plain").containsPattern("(?m)^tool: ripgrep$");
@@ -56,7 +56,7 @@ class ToolguideDsoRoundTripTest {
         ToolguideDso dso =
                 new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
 
-        assertThat(read(yaml.readToolguide(yaml.writeToolguide(dso), FILE))).isEqualTo(dso);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, dso), FILE))).isEqualTo(dso);
     }
 
     @Test
@@ -67,8 +67,8 @@ class ToolguideDsoRoundTripTest {
         ToolguideDso absent =
                 new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
 
-        assertThat(read(yaml.readToolguide(yaml.writeToolguide(present), FILE))).isEqualTo(present);
-        assertThat(read(yaml.readToolguide(yaml.writeToolguide(absent), FILE))).isEqualTo(absent);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, present), FILE))).isEqualTo(present);
+        assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, absent), FILE))).isEqualTo(absent);
         assertThat(present).isNotEqualTo(absent);
     }
 
@@ -77,8 +77,8 @@ class ToolguideDsoRoundTripTest {
     void anUnknownTopLevelKeyIsUnreadableWhileTheKnownKeyControlReadsClean() {
         String clean = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
 
-        assertThat(yaml.readToolguide(clean, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.readToolguide(clean + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, clean, FILE)).isInstanceOf(FileRead.Read.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, clean + "surprise: 1\n", FILE)).isInstanceOf(FileRead.Unreadable.class);
     }
 
     @Test
@@ -87,7 +87,7 @@ class ToolguideDsoRoundTripTest {
         String relative = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
         String absolute = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: /g.md\nsummary: S\n";
 
-        assertThat(yaml.readToolguide(relative, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.readToolguide(absolute, FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, relative, FILE)).isInstanceOf(FileRead.Read.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, absolute, FILE)).isInstanceOf(FileRead.Unreadable.class);
     }
 }
