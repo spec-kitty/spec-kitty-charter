@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.domain.badfixture;
 
-import ai.speckitty.charter.profiles.domain.badfixture.ForeignSliceType;
+import ai.speckitty.charter.foreign.domain.badfixture.ForeignSliceType;
 
 /** A packs-domain class that names a type of another slice: the known-bad of the slice-isolation rule. */
 public final class DomainCrossesSlice {
