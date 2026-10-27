@@ -114,7 +114,8 @@ final class MeaningComparator {
         } else if (source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
             Set<String> open = OPEN_MAPS.getOrDefault(kind, Set.of());
             for (String key : keys(s, w)) {
-                entry(ROOT, key, s, w, open.contains(key), out);
+                // The open map's own key is a declared field; only what is inside it is data.
+                entry(ROOT, key, s, w, false, open.contains(key), out);
             }
         } else {
             value(ROOT, source, written, false, out);
@@ -150,14 +151,14 @@ final class MeaningComparator {
             switch (key) {
                 case "edges" -> edges(source, written, out);
                 case "nodes" -> nodes(source, written, out);
-                default -> entry(ROOT, key, source, written, false, out);
+                default -> entry(ROOT, key, source, written, false, false, out);
             }
         }
     }
 
     private void edges(Map<?, ?> source, Map<?, ?> written, List<Difference> out) {
         if (!(source.get("edges") instanceof List<?>) || !(written.get("edges") instanceof List<?>)) {
-            entry(ROOT, "edges", source, written, false, out);
+            entry(ROOT, "edges", source, written, false, false, out);
             return;
         }
         SortedSet<String> sourceEdges = canonicalEdges(listAt(source, "edges"));
@@ -177,7 +178,7 @@ final class MeaningComparator {
 
     private void nodes(Map<?, ?> source, Map<?, ?> written, List<Difference> out) {
         if (!(source.get("nodes") instanceof List<?>) || !(written.get("nodes") instanceof List<?>)) {
-            entry(ROOT, "nodes", source, written, false, out);
+            entry(ROOT, "nodes", source, written, false, false, out);
             return;
         }
         Map<String, List<Object>> sourceNodes = nodesByUrn(listAt(source, "nodes"));
@@ -261,7 +262,7 @@ final class MeaningComparator {
             String path, @Nullable Object source, @Nullable Object written, boolean open, List<Difference> out) {
         if (source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
             for (String key : keys(s, w)) {
-                entry(path, key, s, w, open, out);
+                entry(path, key, s, w, open, open, out);
             }
         } else if (source instanceof List<?> s && written instanceof List<?> w) {
             for (int i = 0; i < Math.max(s.size(), w.size()); i++) {
@@ -279,8 +280,18 @@ final class MeaningComparator {
         }
     }
 
+    /**
+     * @param open true inside an open map: an absent, null or empty value of this key is data
+     * @param openBelow true when this key's own value is an open map, so what is inside it is data
+     */
     private void entry(
-            String path, String key, Map<?, ?> source, Map<?, ?> written, boolean open, List<Difference> out) {
+            String path,
+            String key,
+            Map<?, ?> source,
+            Map<?, ?> written,
+            boolean open,
+            boolean openBelow,
+            List<Difference> out) {
         String at = path.isEmpty() ? key : path + "." + key;
         Map<String, @Nullable Object> s = stringKeys(source);
         Map<String, @Nullable Object> w = stringKeys(written);
@@ -294,7 +305,7 @@ final class MeaningComparator {
         } else if (!inSource && inWritten) {
             out.add(new Difference(at, ABSENT, render(w.get(key))));
         } else {
-            value(at, s.get(key), w.get(key), open, out);
+            value(at, s.get(key), w.get(key), openBelow, out);
         }
     }
 
@@ -324,10 +335,13 @@ final class MeaningComparator {
         return keys;
     }
 
-    /** A YAML map's keys as strings, so a non-string key still compares and renders deterministically. */
+    /**
+     * A YAML map's keys as strings: a string key as written, any other key in its typed canonical form, so {@code 1}
+     * and {@code "1"} stay two keys.
+     */
     private static Map<String, @Nullable Object> stringKeys(Map<?, ?> map) {
         Map<String, @Nullable Object> result = new TreeMap<>();
-        map.forEach((key, value) -> result.put(String.valueOf(key), value));
+        map.forEach((key, value) -> result.put(key instanceof String text ? text : canonical(key), value));
         return result;
     }
 

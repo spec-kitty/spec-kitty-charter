@@ -106,6 +106,14 @@ own append-only list of files it does not compare. The gate passes only when the
 - stale entries, an exclusion over a modelled file, a `kinds:` entry for a modelled kind and a modelled kind with no
   files fail it, so it cannot pass vacuously.
 
+Where the gate still differs from ADR-0036, on purpose and only towards false reds, never false greens:
+
+- written artifacts are paired with their source by kind and `id`, not path for path, because the store writes a new
+  artefact at the pack root; any written file nothing pairs with fails the gate;
+- an absent field is not yet treated as its schema default;
+- the open maps are listed per kind in `MeaningComparator` (styleguide `tooling` and `structural_lint_config`), not
+  derived from the schemas; a kind that brings an open map adds it there.
+
 The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
 in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required
 check until the gate is green.

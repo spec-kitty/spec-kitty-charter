@@ -1,13 +1,14 @@
 ---
 okf_version: "0.2"
 title: A whole-pack round-trip gate shows what of the built-in pack survives
-description: A red-first gate round-trips every file of the pinned built-in pack and compares it by meaning, per kind and per file; the pack store gets one storage root.
+description: A red-first gate round-trips every file of the pinned built-in pack and compares it by meaning, per kind and per file; the service gets one configuration root.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
   - guides/service-build
+  - adr/0037-one-configuration-root-a-directory-per-domain
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
 audience:
   - profile: charter-service-contributor
@@ -32,6 +33,10 @@ drops node tags, and it writes the legacy `in_tension_with` edges as plain `impa
 so the tension is lost. It runs as `./gradlew :packs:wholePackRoundTrip` and in its own CI
 workflow, and is not a required check until it is green ([Building the service](/guides/service-build/)).
 
-**The pack store is configured by one storage root.** `charter.storage.root` names the directory whose
-subdirectories are the packs the service reads and writes (`built-in` at the built-in level, any other at org). It is
-the storage layer's own setting, documented in `application.yaml`, and replaces `charter.packs[*]`.
+**The service keeps its files under one configuration root.** `charter.config-root` (default
+`~/.spec-kitty/charter`, overridden with `--configRootLocation <path>`) holds a directory per domain: `packs/<pack>/`
+for every registered pack, built-in, org and project, at the level its `pack.yaml` declares, and `activations/`,
+reserved for the activation documents ([ADR-0037](/adr/0037-one-configuration-root-a-directory-per-domain/)). The
+same layout serves one machine or a hosted store; packs are provisioned by copying them in until registration of new
+packs is served. It replaces `charter.packs[*]`, which now fails the start. Symbolic links are not packs, because a
+write would replace the link.

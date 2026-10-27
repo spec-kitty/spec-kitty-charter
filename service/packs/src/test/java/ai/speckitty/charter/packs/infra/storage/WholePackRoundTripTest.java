@@ -19,7 +19,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,7 +52,9 @@ class WholePackRoundTripTest {
         WholePackRoundTrip roundTrip = new DomainRoundTrip(new YamlSerializationStrategy());
         Map<String, List<String>> information = new TreeMap<>();
 
-        Map<String, Optional<String>> observed = observe(roundTrip, pack, temp.resolve(BUILT_IN), census, information);
+        Set<String> paired = new TreeSet<>();
+        Map<String, Optional<String>> observed =
+                observe(roundTrip, pack, temp.resolve(BUILT_IN), census, information, paired);
         Evaluation evaluation =
                 WholePackExpectation.fromClasspath().evaluate(census, roundTrip.modelledKinds(), observed);
 
@@ -67,6 +71,9 @@ class WholePackRoundTripTest {
         System.out.println(WholePackReport.kindTable(evaluation));
 
         OpenPacksCorpus.assertPinned(); // the run left the checkout untouched (NFR-004)
+        assertThat(unpaired(temp.resolve(BUILT_IN), paired))
+                .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
+                .isEmpty();
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
                 .isEqualTo(REQUIRED_KINDS);
@@ -99,10 +106,10 @@ class WholePackRoundTripTest {
                     return method.getName().equals("writeTactic") ? withoutPurpose((String) result) : result;
                 });
 
-        Map<String, Optional<String>> faithful =
-                observe(new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>());
-        Map<String, Optional<String>> observed =
-                observe(new DomainRoundTrip(lossy), pack, temp.resolve("lossy"), census, new TreeMap<>());
+        Map<String, Optional<String>> faithful = observe(
+                new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>(), new TreeSet<>());
+        Map<String, Optional<String>> observed = observe(
+                new DomainRoundTrip(lossy), pack, temp.resolve("lossy"), census, new TreeMap<>(), new TreeSet<>());
 
         List<String> withPurpose = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("tactic"))
@@ -142,7 +149,8 @@ class WholePackRoundTripTest {
             Path pack,
             Path written,
             SortedMap<String, String> census,
-            Map<String, List<String>> information) {
+            Map<String, List<String>> information,
+            Set<String> paired) {
         Map<String, Outcome> outcomes = roundTrip.roundTrip(pack, written, census);
         MeaningComparator comparator = MeaningComparator.adr0036();
         Map<String, Optional<String>> observed = new TreeMap<>();
@@ -153,8 +161,11 @@ class WholePackRoundTripTest {
             observed.put(
                     path,
                     switch (entry.getValue()) {
-                        case Written w ->
-                            red(comparator.differencesOfTexts(kind, source, read(written.resolve(w.writtenPath()))));
+                        case Written w -> {
+                            paired.add(w.writtenPath());
+                            yield red(comparator.differencesOfTexts(
+                                    kind, source, read(written.resolve(w.writtenPath()))));
+                        }
                         case Refused r -> Optional.of("refused: " + r.reason());
                     });
             List<String> duplicates = comparator.duplicateEdges(kind, source);
@@ -180,6 +191,25 @@ class WholePackRoundTripTest {
         MeaningComparator.Difference first = differences.get(0);
         String at = differences.stream().map(MeaningComparator.Difference::path).collect(Collectors.joining(" ; "));
         return Optional.of(at + ": source " + first.source() + ", written " + first.written());
+    }
+
+    /**
+     * The written files no source file paired with. Pairing is by kind and id, not by path: the store writes a new
+     * artefact at the pack root ({@code <id>.<kind>.yaml}) whatever its source path, a known divergence from ADR-0036's
+     * "path for path" until the whole-pack seam (#189) writes artefacts in place.
+     */
+    private static List<String> unpaired(Path written, Set<String> paired) {
+        try (Stream<Path> files = Files.walk(written)) {
+            return files.filter(Files::isRegularFile)
+                    .map(file -> written.relativize(file)
+                            .toString()
+                            .replace(file.getFileSystem().getSeparator(), "/"))
+                    .filter(path -> !paired.contains(path))
+                    .sorted()
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static String read(Path file) {
