@@ -63,10 +63,8 @@ class CompanionDigestTest {
         write(pack, "skills/a.skill.yaml", skill("a", "a.skill.md"));
         write(pack, "skills/a.skill.md", "body\n");
 
-        assertThat(PackFileSet.digested(pack))
-                .containsSubsequence("skills/a.skill.yaml", "skills/a.skill.md")
-                .containsOnlyOnce("skills/a.skill.md");
         List<String> digested = PackFileSet.digested(pack);
+        assertThat(digested).containsOnlyOnce("skills/a.skill.md");
         assertThat(digested.get(digested.indexOf("skills/a.skill.yaml") + 1)).isEqualTo("skills/a.skill.md");
     }
 
