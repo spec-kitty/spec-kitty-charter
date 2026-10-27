@@ -122,6 +122,19 @@ class MeaningComparatorTest {
         }
 
         @Test
+        void anOpenMapsOwnKeyIsADeclaredField() {
+            assertThat(compare("styleguide", "id: x\nstructural_lint_config: null\n", "id: x\n"))
+                    .isEmpty();
+            assertThat(compare("styleguide", "id: x\ntooling: {}\n", "id: x\n")).isEmpty();
+        }
+
+        @Test
+        void aNumberKeyIsNotAStringKey() {
+            assertThat(compare("styleguide", "tooling:\n  1: x\n", "tooling:\n  '1': x\n"))
+                    .isPresent();
+        }
+
+        @Test
         void anEmptyValueIsStillAValue() {
             assertThat(compare(ARTEFACT, "l: [x]\n", "l: []\n")).contains(new Difference("l[0]", "x", "<absent>"));
             assertThat(compare(ARTEFACT, "l: [x, null]\n", "l: [x]\n")).isPresent(); // a null item is an item
@@ -271,6 +284,16 @@ class MeaningComparatorTest {
                     .contains(new Difference("nodes{tactic:c}", "<absent>", "{urn=tactic:c, kind=tactic, label=C}"));
             assertThat(compare(SHARD, shard(third, EDGE_AB), shard(NODES, EDGE_AB)))
                     .hasValueSatisfying(d -> assertThat(d.written()).isEqualTo("<absent>"));
+        }
+
+        @Test
+        void nodeTagsCountAndKeepTheirOrder() {
+            String tagged = NODES.replace("label: B\n", "label: B\n  tags: [x, y]\n");
+
+            assertThat(compare(SHARD, shard(tagged, EDGE_AB), shard(NODES, EDGE_AB))) // E10
+                    .contains(new Difference("nodes{tactic:b}.tags", "[x, y]", "<absent>"));
+            assertThat(compare(SHARD, shard(tagged, EDGE_AB), shard(tagged.replace("[x, y]", "[y, x]"), EDGE_AB)))
+                    .isPresent(); // E15: tags is a sequence
         }
 
         @Test
