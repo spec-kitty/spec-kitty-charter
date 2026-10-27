@@ -12,6 +12,9 @@ requirement_refs:
 planning_base_branch: feat/asset-template-round-trip
 merge_target_branch: feat/asset-template-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/asset-template-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/asset-template-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-asset-template-round-trip-01M5YY7G
+base_commit: 7ec3b5f6cfc1f0432351c5eb0ffbcbca2435ba3d
+created_at: '2026-10-27T17:22:15.409305+00:00'
 subtasks:
 - T001
 - T002
@@ -25,8 +28,9 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-role: implementer
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/
+create_intent:
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ContentForm.java
 execution_mode: code_change
 owned_files:
 - contracts/packs/file-kinds.yaml
@@ -37,8 +41,7 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileKindTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java
-create_intent:
-- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ContentForm.java
+role: implementer
 tags: []
 task_type: implement
 ---

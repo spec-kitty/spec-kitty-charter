@@ -13,5 +13,7 @@
   "purpose_tldr": "Read every asset and template of a Charter Pack into the domain and write it back unchanged.",
   "slug": "asset-template-round-trip-01M5YY7G",
   "target_branch": "feat/asset-template-round-trip",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T17:22:14.398016+00:00"
 }
