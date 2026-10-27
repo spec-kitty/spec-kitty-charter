@@ -159,6 +159,34 @@ nothing about how a new kind is shaped.
    - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
 
+### Amendment 2026-10-27 (#191): a binding names its schema
+
+Decision 4 asked a kind's `file-kinds.yaml` rule to map to a schema whose name is the kind's token,
+and left the mapping to the kind missions. The mission step contract mission
+([#191](https://github.com/spec-kitty/spec-kitty-charter/issues/191)) settles it the other way: **a
+binding names its schema, as it names its file token.**
+
+- `KindBinding.schemaName()` gives the name of the schema that validates the kind's files. It
+  defaults to the token, so the five bound kinds are unchanged. `mission_step_contract` names
+  `mission-step-contract` and the file token `step-contract`. The agent-profile mission (#190)
+  needs the same mapping (`agent-profile`, `agent`) and builds the same hook.
+- The store's file walk (`PackFileSet`) finds the kind of a schema-mapped file through the registry
+  (`KindBindings.bySchema`), never by reading a schema name as a token. A kind whose schema is not
+  its token would otherwise load no file, silently. The strategy validates a file against the schema
+  its binding names.
+- A test ties every binding's file name and schema to `file-kinds.yaml`, the single authority.
+- The whole-pack gate's adapter takes its kinds, writes and file tokens from the registry, so a kind
+  joins the gate by binding itself.
+
+This relaxes "a schema whose name is the kind's token". Renaming the schemas instead would change
+their `$id`, the gate's kind names and the kebab-case naming every schema uses. The hook is a
+one-time change to the store (`PackFileSet`), the strategy (`YamlSerializationStrategy`), the
+repository service (a generic save for the gate adapter) and the gate's test adapter. That is the
+exception to Consequences/Positive, "does not edit … the store, the strategy"; after it, a kind
+whose names differ still only binds itself. Validate mode (`FileSystemPackInspector`) still maps a
+schema name to a token by replacing `-` with `_`; aligning it with the registry is left for a later
+change.
+
 ## Consequences
 
 ### Positive
