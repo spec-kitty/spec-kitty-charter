@@ -1,4 +1,6 @@
 {
+  "contracts": "none",
+  "contracts_rationale": "Test-scope harness only: no API, wire or schema contract is added or changed.",
   "coordination_branch": "kitty/mission-whole-pack-round-trip-gate-01M5Y272",
   "created_at": "2026-10-27T06:54:26.778154+00:00",
   "flattened": false,
@@ -14,6 +16,6 @@
   "slug": "whole-pack-round-trip-gate-01M5Y272",
   "target_branch": "feat/whole-pack-round-trip-gate",
   "topology": "coord",
-  "contracts": "none",
-  "contracts_rationale": "Test-scope harness only: no API, wire or schema contract is added or changed."
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T07:03:33.304454+00:00"
 }
