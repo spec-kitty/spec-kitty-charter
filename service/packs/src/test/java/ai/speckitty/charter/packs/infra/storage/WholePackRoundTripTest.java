@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
@@ -103,7 +104,10 @@ class WholePackRoundTripTest {
                     } catch (InvocationTargetException thrown) {
                         throw thrown.getCause();
                     }
-                    return method.getName().equals("writeTactic") ? withoutPurpose((String) result) : result;
+                    boolean tacticWrite = method.getName().equals("write")
+                            && args[0] instanceof KindBinding<?, ?> binding
+                            && binding.kind() == ArtifactKind.TACTIC;
+                    return tacticWrite ? withoutPurpose((String) result) : result;
                 });
 
         Map<String, Optional<String>> faithful = observe(

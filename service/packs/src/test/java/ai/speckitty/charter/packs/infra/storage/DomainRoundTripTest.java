@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
@@ -246,16 +247,19 @@ class DomainRoundTripTest {
     private record LossyTacticWriter(SerializationStrategy delegate) implements SerializationStrategy {
 
         @Override
-        public String writeTactic(TacticDso tactic) {
-            return delegate.writeTactic(tactic)
-                    .lines()
+        public <D> String write(KindBinding<D, ?> kind, D dso) {
+            String text = delegate.write(kind, dso);
+            if (kind.kind() != ArtifactKind.TACTIC) {
+                return text;
+            }
+            return text.lines()
                     .filter(line -> !line.startsWith("purpose:"))
-                    .reduce("", (text, line) -> text + line + "\n");
+                    .reduce("", (joined, line) -> joined + line + "\n");
         }
 
         @Override
-        public FileRead<TacticDso> readTactic(String text, String file) {
-            return delegate.readTactic(text, file);
+        public <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file) {
+            return delegate.read(kind, text, file);
         }
 
         @Override
@@ -269,43 +273,13 @@ class DomainRoundTripTest {
         }
 
         @Override
-        public String writeDirective(DirectiveDso directive) {
-            return delegate.writeDirective(directive);
+        public String writeGraph(GraphDocument document) {
+            return delegate.writeGraph(document);
         }
 
         @Override
-        public FileRead<DirectiveDso> readDirective(String text, String file) {
-            return delegate.readDirective(text, file);
-        }
-
-        @Override
-        public String writeStyleguide(StyleguideDso styleguide) {
-            return delegate.writeStyleguide(styleguide);
-        }
-
-        @Override
-        public FileRead<StyleguideDso> readStyleguide(String text, String file) {
-            return delegate.readStyleguide(text, file);
-        }
-
-        @Override
-        public String writeToolguide(ToolguideDso toolguide) {
-            return delegate.writeToolguide(toolguide);
-        }
-
-        @Override
-        public FileRead<ToolguideDso> readToolguide(String text, String file) {
-            return delegate.readToolguide(text, file);
-        }
-
-        @Override
-        public String writeParadigm(ParadigmDso paradigm) {
-            return delegate.writeParadigm(paradigm);
-        }
-
-        @Override
-        public FileRead<ParadigmDso> readParadigm(String text, String file) {
-            return delegate.readParadigm(text, file);
+        public FileRead<GraphDocument> readGraph(String text, GraphDocumentReader.Shape shape, String file) {
+            return delegate.readGraph(text, shape, file);
         }
     }
 }
