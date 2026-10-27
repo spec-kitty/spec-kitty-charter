@@ -35,6 +35,13 @@ of #169 (the read and registration services, the controllers) still waits for th
 Extended in part by [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) (2026-10-27):
 decision 4, a kind binding can carry companion files beside its YAML artifact.
 
+Extended in part by [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (2026-10-27, Proposed) on
+[#193](https://github.com/spec-kitty/spec-kitty-charter/issues/193): decision 4 again — how a file
+is read and compared is the content form its rule declares, and payload kinds (asset files,
+templates) hold bytes; and the single recorded exception to "the kind entities stay free of paths"
+below — the `Pack` aggregate holds its asset files by pack-relative path, because a payload may have
+no sidecar to carry it.
+
 ### Amendment 2026-10-27: a kind that spells itself otherwise, and a kind of another slice
 
 Made by [#190](https://github.com/spec-kitty/spec-kitty-charter/issues/190) (agent profiles), the
@@ -244,7 +251,9 @@ Rejected: the bindings name persistence shapes, which the kernel must not see (A
 ### Keep the source path on each artifact
 
 Rejected: where a file sits is how a pack is authored, not what the artifact means; the kind
-entities stay free of paths.
+entities stay free of paths. (Amended 2026-10-27 by [ADR-0040](/adr/0040-content-form-and-payload-kinds/),
+#193: one recorded exception — the `Pack` aggregate holds its asset files by pack-relative path, so a
+payload with no sidecar still has an owner.)
 
 ### Pass files the domain does not model through the write
 
