@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "mission_slug": "glossary-pack-skill-round-trip-01M5YVEC",
+  "mission_id": "01M5YVECPX5EP9N9781C9VX22Y",
+  "mission_branch": "kitty/mission-glossary-pack-skill-round-trip-01M5YVEC",
+  "target_branch": "feat/192-glossary-pack-skill-round-trip",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompanionFilesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/packs/README.md",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/glossary-pack.schema.json",
+        "contracts/packs/schemas/skill.schema.json",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackSchemas.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackAndSkillSchemaTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileKindTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackSchemasTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/SchemaKeywordCoverageTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryPack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryPackIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GlossaryTerm.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/GlossaryPackTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackYamlTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "docs/adr/0040-a-kind-binding-can-carry-companion-files.md",
+        "docs/adr/README.md",
+        "docs/changelog/2026-10-27-glossary-pack-and-skill-kinds.md",
+        "docs/changelog/README.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Skill.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillExpansion.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillForm.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillInvocation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillParameter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SkillBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SkillDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SkillYaml.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/SkillTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/SkillYamlTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompanionDigestTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GlossaryPackAndSkillCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectationTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java",
+        "service/packs/src/test/resources/whole-pack/expected-red.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-e"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-27T16:17:35.153373+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP07"
+  ],
+  "planning_commit_sha": "529d0c1fbb7d37cdb44fb30435c21172c88c8e19"
+}
