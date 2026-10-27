@@ -86,14 +86,14 @@ nothing about how a new kind is shaped.
    - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is
      authored, not what the artifact means; a new artifact goes where a registration would create
      it;
-   - the **DRG documents** as authored (the root `*.graph.yaml` shards and `drg/fragment.yaml`, the
+   - the **CRG documents** as authored (the root `*.graph.yaml` shards and `drg/fragment.yaml`, the
      files the fingerprint covers), every schema field kept. They stay out of the aggregate: the
      artifacts mint relationships too, and which copy of an edge is authoritative is an open
      question for the operator, so nothing pretends to keep the two in step;
    - the **unmodelled files**: every other file of the pack, listed so a caller sees exactly what
      the write will not reproduce.
 
-   The write puts the descriptor, each artifact at its layout path and each DRG document into a
+   The write puts the descriptor, each artifact at its layout path and each CRG document into a
    staging directory, then renames it over an empty target it reserved first, so a failure leaves no
    partial target and a target that appears meanwhile is not written over. It refuses, before
    writing anything, a target that exists (replacing a live pack stays the commit store's job,
@@ -106,9 +106,9 @@ nothing about how a new kind is shaped.
    the first such kind, not here. Mission types are not an `ArtifactKind` at all.
 7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
    (round-trip fidelity, Proposed):
-   - The DRG reader and writer keep every declared field (node `provenance` and `tags`, fragment
+   - The CRG reader and writer keep every declared field (node `provenance` and `tags`, fragment
      `body_path`, the shard header fields), and edges compare in canonical form.
-   - An unreadable DRG document refuses the whole-pack load as `drg_schema_error` (its decision 3).
+   - An unreadable CRG document refuses the whole-pack load as `drg_schema_error` (its decision 3).
      No operation on the wire loads a pack's graph yet, so `drg_schema_error` stays `raised: false`
      in the contract; it changes when a served operation uses this seam.
    - An unreadable artifact file stays a violation on the aggregate, not on the wire: this record
@@ -117,7 +117,7 @@ nothing about how a new kind is shaped.
    - Until `pack-descriptor.schema.json` is closed and `undeclaredKeys()` goes (its follow-up
      work, not done here), the write refuses a descriptor with undeclared keys rather than drop
      them.
-   - The DRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
+   - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
 
 ## Consequences
@@ -141,7 +141,7 @@ nothing about how a new kind is shaped.
   bytes did not change. The order is kept (new kinds are appended), so a pack without such files
   keeps its fingerprint.
 - The per-pack load (`PackRepository.load`) and the whole-pack load give the same aggregate but
-  differ beside it: the per-pack load names the pack by the identifier asked for and reads no DRG
+  differ beside it: the per-pack load names the pack by the identifier asked for and reads no CRG
   documents; the whole-pack load names it by its `pack_id` and returns the layout, the documents and
   the unmodelled files.
 - `Pack.with` moves a replaced artifact to the end of its kind, as the registration services did.
@@ -179,7 +179,7 @@ entities stay free of paths.
 Rejected: it would make the round trip look complete while the domain holds nothing of those
 files, which hides the work #190 to #195 exist to do. They are listed instead.
 
-### Hold the DRG documents in the aggregate
+### Hold the CRG documents in the aggregate
 
 Rejected for now: the artifacts already mint relationships, so the aggregate would hold two copies
 of an edge with nothing to keep them in step, and a registration would leave the documents stale.
@@ -192,6 +192,6 @@ Which copy is authoritative is for the operator to settle.
   `KindBindings.java`, `YamlFormats.java`, `WholePackStore.java`, `PackLayout.java`,
   `GraphDocument.java`
 - [ADR-0006: Onion vertical slices with ArchUnit](/adr/0006-onion-vertical-slices-archunit/)
-- [ADR-0024: Doctrine artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
+- [ADR-0024: Charter artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
 - [ADR-0026: The write surface is functional registration](/adr/0026-write-surface-is-functional-registration/)
 - [ADR-0035: The shared artifact interface lives in the kernel](/adr/0035-charter-artifact-interface-lives-in-the-kernel/)

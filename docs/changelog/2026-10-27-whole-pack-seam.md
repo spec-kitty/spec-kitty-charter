@@ -33,7 +33,7 @@ the registry when they are built.
 The five existing kinds behave as before, and the fingerprint of an unchanged pack is unchanged.
 
 `WholePackStore` loads a pack directory into the aggregate (the descriptor and every bound kind)
-and returns beside it where each artifact's file sat, both DRG document shapes with every field
+and returns beside it where each artifact's file sat, both CRG document shapes with every field
 (shard `tags`, `provenance` and `generated_by`, fragment `body_path`), and the list of files nothing
 models yet. It writes all of that to a new directory through a staging directory and a rename,
 putting each file back at its path; it refuses an existing target, a pack with unreadable files and
