@@ -32,6 +32,28 @@ decision 4 (Accepted), which left non-YAML content to the kind missions, and sup
 [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)'s per-kind table: its rows for
 `*.skill.yaml`, `*.glossary-pack.yaml` and `*.skill.md`.
 
+### Amendment 2026-10-27 (#193): asset payloads and templates are not companions
+
+Made by [#193](https://github.com/spec-kitty/spec-kitty-charter/issues/193) on the operator's
+ruling of 2026-10-27, `DM-01M5ZAMP0R5V5YF5KM09YXY0NS` (reconcile with ADR-0039: keep pack-level
+asset files and templates, share the low-level pieces), recorded in
+[ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed). The decision text below is
+unchanged, and each point this note changes is annotated where it stands. It corrects three
+statements about #193 that did not come true as written:
+
+- **Decision 2, "#193 adds a `Bytes` case".** It does not. An asset payload may have no sidecar,
+  a template is an artifact of its own, and a payload resolves against `assets/`, not its
+  artifact's file; none fits a companion. They are pack-level files (ADR-0040 decisions 4 and 5),
+  and `CompanionContent` keeps its one `Text` case until a companion needs another.
+- **Decision 2, "the revision digests move to bytes with it".** They did, without a `Bytes` case:
+  the commit path computes its revision over bytes (`PackRevision.computeOverBytes`), with the same
+  value as before for text. The negative consequence "a binary companion would fail them until
+  #193 moves them to bytes" no longer holds.
+- **Consequences, "#193 can extend the same hooks".** It shares the low-level pieces instead: one
+  containment check (`Companions.inPack`, the check decision 3's rule makes), one bytes read with
+  text as a UTF-8 view over it, one atomic write, and decision 7's order, with asset files and
+  templates digested after the graph documents.
+
 ## Context
 
 ADR-0037 binds each kind once (`KindBinding`), and the store, the whole-pack seam and the source
@@ -62,6 +84,9 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    written byte for byte as UTF-8: nothing is trimmed and no line ending is converted. #193 adds a
    `Bytes` case. The revision digests of the commit path (`PackCommitStore`,
    `CommitStorePackWriteStore`) read every digested file as text and move to bytes with it.
+   *(Amended 2026-10-27, see Status: #193 adds no `Bytes` case; asset payloads and templates are
+   pack-level files, not companions. The revision moved to bytes without one
+   (`PackRevision.computeOverBytes`), with the same value for text.)*
 3. **One path rule, one owner** (`Companions`). A companion path is not empty and not absolute. It
    resolves, normalized, against the artifact file's directory to a file inside the pack directory.
    The resolved file name never ends in `.yaml`, so a companion can never be `pack.yaml`, a graph
@@ -133,6 +158,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
   path. They may need more than reuse: an asset names its payload relative to the pack, not to its
   own file, so a binding would choose its resolution base, and the `*.yaml` exclusion may have to
   narrow.
+  *(Amended 2026-10-27, see Status: #193 shares the low-level pieces instead of extending these
+  hooks: one containment check, one bytes read, one atomic write and decision 7's order.)*
 - A companion can never overwrite another part of the pack, through the upsert or the whole-pack
   write.
 
@@ -141,6 +168,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
 - The fingerprint parses each skill file once more to name its body.
 - The revision digests still read text; a binary companion would fail them until #193 moves them to
   bytes.
+  *(Amended 2026-10-27, see Status: no longer holds; the commit path's revision is computed over
+  bytes.)*
 - The #187 gate covers only the built-in pack, which has no skill. Its expectation lists `skill` as
   an empty modelled kind (`empty_kinds`); the gate does not yet pair a companion with its artifact,
   and that entry goes stale, forcing the pairing, the day the built-in pack gains a skill. Skills are

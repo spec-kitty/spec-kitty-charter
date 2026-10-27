@@ -3,7 +3,10 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
@@ -257,7 +260,7 @@ class DomainRoundTripTest {
 
     @Test
     void theAdapterModelsEveryBoundKindAndTheTwoPackDocuments() {
-        Set<String> expected = new HashSet<>(Set.of("pack-descriptor", "graph-shard"));
+        Set<String> expected = new HashSet<>(Set.of("pack-descriptor", "graph-shard", "asset-payload", "template"));
         KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
                 .containsAll(Set.of(
@@ -269,8 +272,83 @@ class DomainRoundTripTest {
                         "agent-profile",
                         "mission-step-contract",
                         "pack-descriptor",
-                        "graph-shard"))
+                        "graph-shard",
+                        "asset",
+                        "asset-payload",
+                        "template"))
                 .isEqualTo(expected);
+    }
+
+    // ---- #193: asset sidecars, asset files and templates -------------------------------------------------------
+
+    private static final byte[] LOGO = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, (byte) 0xFF};
+    private static final String LOGO_SIDECAR = """
+            id: pack-logo
+            mime: image/png
+            path: logo.png
+            title: The pack's logo
+            """;
+
+    private void putBytes(String path, String kind, byte[] bytes) throws IOException {
+        Path file = source.resolve(path);
+        Files.createDirectories(file.getParent());
+        Files.write(file, bytes);
+        kinds.put(path, kind);
+    }
+
+    @Test
+    void anAssetFileWithAndWithoutASidecarAndATemplateAreWrittenInPlaceByteForByte() throws IOException {
+        byte[] lint = "print('lint')\r\nno final newline".getBytes(StandardCharsets.UTF_8);
+        byte[] minutes = "---\ntitle: Minutes\n---\n# Minutes\n".getBytes(StandardCharsets.UTF_8);
+        putBytes("assets/logo.png", "asset-payload", LOGO);
+        put("assets/logo.png.asset.yaml", "asset", LOGO_SIDECAR);
+        putBytes("assets/tools/lint.py", "asset-payload", lint);
+        putBytes("templates/writing/minutes.md", "template", minutes);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("assets/logo.png")).isEqualTo(new Written("assets/logo.png"));
+        assertThat(outcomes.get("assets/tools/lint.py")).isEqualTo(new Written("assets/tools/lint.py"));
+        assertThat(outcomes.get("templates/writing/minutes.md")).isEqualTo(new Written("templates/writing/minutes.md"));
+        assertThat(outcomes.get("assets/logo.png.asset.yaml")).isEqualTo(new Written("pack-logo.asset.yaml"));
+        Path out = temp.resolve("out/built-in");
+        assertThat(Files.readAllBytes(out.resolve("assets/logo.png"))).isEqualTo(LOGO);
+        assertThat(Files.readAllBytes(out.resolve("assets/tools/lint.py"))).isEqualTo(lint);
+        assertThat(Files.readAllBytes(out.resolve("templates/writing/minutes.md")))
+                .isEqualTo(minutes);
+    }
+
+    @Test
+    void aSidecarWhosePayloadIsMissingIsRefusedWithTheStoresExactReason() throws IOException {
+        put("assets/logo.png.asset.yaml", "asset", LOGO_SIDECAR.replace("path: logo.png", "path: assets/logo.png"));
+        putBytes("assets/logo.png", "asset-payload", LOGO);
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("assets/logo.png.asset.yaml"))
+                .isEqualTo(new Refused("payload assets/assets/logo.png does not exist"));
+        assertThat(outcomes.get("assets/logo.png")).isEqualTo(new Written("assets/logo.png"));
+        assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
+                .isInstanceOf(Written.class);
+    }
+
+    /** The save hook of the gate's byte controls: what is written is the hook's pack, not the loaded one. */
+    @Test
+    void theSaveWritesThePackTheHookReturns() throws IOException {
+        putBytes("assets/logo.png", "asset-payload", LOGO);
+        DomainRoundTrip emptied = new DomainRoundTrip(
+                new YamlSerializationStrategy(),
+                pack -> Pack.builder()
+                        .id(pack.id())
+                        .descriptor(pack.descriptor())
+                        .assetFile(new AssetFile("logo.png", Payload.of(new byte[0])))
+                        .build());
+
+        Map<String, Outcome> outcomes = emptied.roundTrip(source, temp.resolve("out/built-in"), kinds);
+
+        assertThat(outcomes.get("assets/logo.png")).isEqualTo(new Written("assets/logo.png"));
+        assertThat(Files.readAllBytes(temp.resolve("out/built-in/assets/logo.png")))
+                .isEmpty();
     }
 
     private static Map<String, String> digests(Path root) throws IOException {

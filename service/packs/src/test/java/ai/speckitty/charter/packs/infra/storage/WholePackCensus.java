@@ -64,4 +64,19 @@ final class WholePackCensus {
         int slash = path.indexOf('/');
         return OTHER + (slash < 0 ? path : path.substring(0, slash));
     }
+
+    /**
+     * How the gate reads and compares one file (#193): the content form its {@code file-kinds.yaml} rule declares, so a
+     * {@link ContentForm#BYTES} file is compared byte for byte and never read as text. A file no rule maps keeps
+     * today's treatment, {@link ContentForm#YAML}.
+     *
+     * @param packName the pack directory's name
+     * @param path the pack-relative path
+     * @return the file's content form
+     */
+    static ContentForm contentFormOf(String packName, String path) {
+        return PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped
+                ? mapped.contentForm()
+                : ContentForm.YAML;
+    }
 }

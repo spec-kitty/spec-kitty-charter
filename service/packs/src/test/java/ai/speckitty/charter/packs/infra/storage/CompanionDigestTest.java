@@ -113,9 +113,12 @@ class CompanionDigestTest {
         withoutSkills.remove(ArtifactKind.SKILL);
 
         List<String> digested = PackFileSet.digested(qa);
+        // #193 digests the pack's asset files (three .py payloads), last; every file before them is YAML.
+        List<String> assetFiles = PackFileSet.assetFiles(qa);
 
-        assertThat(digested)
-                .hasSizeGreaterThan(10)
+        assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
+        assertThat(digested).hasSizeGreaterThan(10).endsWith(assetFiles.toArray(String[]::new));
+        assertThat(digested.subList(0, digested.size() - assetFiles.size()))
                 .allSatisfy(file -> assertThat(file).endsWith(".yaml"));
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)

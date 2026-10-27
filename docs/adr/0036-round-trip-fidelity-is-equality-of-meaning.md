@@ -47,6 +47,28 @@ Extended in part by [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-file
 the per-kind table's `*.skill.yaml`, `*.glossary-pack.yaml` and `*.skill.md` rows, where a kind
 binding carries companion files beside its YAML artifact.
 
+### Amendment 2026-10-27 (#193): content form is declared by the rule, and payloads are bytes
+
+Superseded in part by [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed, 2026-10-27)
+on the operator's rulings of 2026-10-27 on
+[#193](https://github.com/spec-kitty/spec-kitty-charter/issues/193), recorded under
+`kitty-specs/asset-template-round-trip-01M5YY7G/decisions/`:
+
+- R8 (`DM-01M5YY9WFDRVZT6GZS8X59E2AZ`): how a file is read and compared is the `content_form` its
+  rule in `contracts/packs/file-kinds.yaml` declares, never its extension or an asset's `mime`;
+- R9 (`DM-01M5YYA2CT1YSH7N6KVEPQ3XQC`): a template compares by bytes;
+- R1 (`DM-01M5YY8HQKCGHH77B7VY0GHYC4`): the sidecar-less `*.config.yaml` file under `assets/` is an
+  asset payload, compared by bytes;
+- R4 (`DM-01M5YY93YD7JZJZSV4W9H5EBCQ`): asset payloads are their own kind, and a `README.md` under
+  `assets/` stays excluded;
+- R11 (`DM-01M5YYAKM5S4TD42P0V115YFW0`): ADR-0040 owns the decision. The ruling read "edit in
+  place"; because this record is Accepted, the edit takes this amendment's form.
+
+The decision text below is unchanged. The points it changes are annotated where they stand:
+Decision 2's "Other files" paragraph, the per-kind table's introduction, and its
+`**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any other file" rows. Until ADR-0040 is
+accepted, the annotations record what it proposes and the original text stays in force.
+
 ## Context
 
 Epic #186 reads every file of a Charter Pack into the domain and writes it back. A gate (#187)
@@ -126,6 +148,10 @@ writing it unambiguously. None exists at `01edb4e`.
 its body as text, with line endings normalized to LF and one final newline. Any other file
 (binaries, scripts, CSV, templates, asset payloads) compares by bytes, because no other meaning is
 defined for it.
+*(Superseded in part by ADR-0040, 2026-10-27: a file's form is the `content_form`
+its file-kind rule declares, never its extension (R8). Asset payloads and top-level templates are
+`bytes` by their `payloads` rules, a Markdown payload included (R9). See the amendment under
+Status.)*
 
 ### 3. How an unknown field is refused
 
@@ -229,6 +255,11 @@ except for the open maps it declares. *Reading:* the gate covers what the classi
 schema, as epic #186's "done when" says. The generated hashes of `pack-manifest.yaml` are
 left to #195 (open question 3, answered: decided there).
 
+*(Superseded in part by ADR-0040, 2026-10-27: files with no schema and a declared form now have a
+`payloads` section beside `exclusions`. The `**/*.config.yaml` exclusion is retired (R1), and
+`*/assets/**/README.md` is a new exclusion (R4). A payload has no schema, so unknown-field refusal
+does not apply to it.)*
+
 ### 7. The charter's round-trip promise
 
 The charter companion said "open-packs YAML always round-trips exactly", and `charter.yaml`
@@ -245,6 +276,9 @@ compared, its sets and its open maps. When a kind mission adds a schema (#190 to
 the kind's sets and open maps against Decision 2, in its own record or as an amendment here. A
 reader change never does that. "Sets" lists the only lists compared as sets; every other list is a
 sequence. "Open maps" are found by the rule in Decision 2; the ones named are examples.
+*(Superseded in part by ADR-0040, 2026-10-27: the "Compared as" column restates each rule's
+declared `content_form`, not the file's extension (R8). Rows changed by that record are annotated
+below.)*
 
 | Files (`match`) | Schema | Compared as | Sets (member identity) | Unknown fields refused |
 |---|---|---|---|---|
@@ -261,16 +295,20 @@ sequence. "Open maps" are found by the rule in Decision 2; the ones named are ex
 | `**/*.agent.yaml` | agent-profile | YAML; the object form of `excluding` is an open map | none | yes |
 | `**/*.step-contract.yaml` | mission-step-contract | YAML | none | yes |
 | `**/*.asset.yaml` | asset | YAML; the payload it names compares by bytes | none | yes |
+| *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the payload is an `asset-payload` file of the `bytes` form under `assets/`, classified by its own rule whether or not a sidecar names it; a sidecar whose payload is missing is refused.)* | | | | |
 | `**/charter.yaml` | charter | YAML; open maps such as `overrides`, `activation_context` | none | yes (a project file; not expected in a pack) |
 | `**/mission-steps/**/step.yaml`, `**/actions/*/index.yaml`, `**/missions/*/mission.yaml`, `**/missions/*/mission-runtime.yaml`, `**/missions/*/expected-artifacts.yaml`, `**/governance-profile.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/mission_types/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/presets/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#195; the per-item must-have mark, and `required_<plural>` migrated then refused in #206) |
 | `**/*.skill.yaml`, `**/*.glossary-pack.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#192) |
 | `**/*.config.yaml` | none (excluded) | YAML, all open: free-form tool configuration | none | never: it has no fields, only data |
+| *(Superseded by ADR-0040, 2026-10-27, on the row above: the exclusion is retired. Its only match, `built-in/assets/docs_structural_lint.config.yaml`, is an asset payload compared by bytes (R1).)* | | | | |
 | `*/pack-manifest.yaml` | none (excluded) | YAML; the treatment of `content_hash` is decided in #195 (open question 3) | none until a schema names one | when a schema lands (#195) |
 | `built-in.source.yaml`, `**/templates/plan-field-declaration.yaml` | none (excluded) | YAML | none | when a schema lands |
 | `*.md` (`pack.md`, `*.skill.md`, mission-step `prompt.md` and `guidelines.md`, `PROVENANCE.md`, `README.md`) | none | frontmatter, if any, as YAML; body as text (LF, one final newline) | none | frontmatter: when a schema lands |
+| *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the extension no longer chooses the form (R8). A Markdown file under `assets/` or a top-level `templates/` compares by bytes, frontmatter included (R9); `assets/**/README.md` stays excluded (R4). A Markdown kind declares `markdown` on its own rule when that form is built.)* | | | | |
 | Any other file (asset payloads, templates, `.csv`, `.feature`, `.py`, images, fonts, `.gitkeep`) | none | bytes | none | not applicable |
+| *(Superseded in part by ADR-0040, 2026-10-27, on the row above: asset payloads (`*/assets/**/*`) and top-level templates (`*/templates/**/*`) are no longer "any other file": each has its own `payloads` rule, of the `bytes` form, and is read, written and fingerprinted as pack content.)* | | | | |
 
 ### Worked examples
 

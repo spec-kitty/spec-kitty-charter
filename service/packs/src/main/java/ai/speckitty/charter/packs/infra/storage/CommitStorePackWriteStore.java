@@ -69,11 +69,12 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     public PackRevision currentRevision(PackIdentifier pack) {
         Path directory = resolve(pack);
         try {
-            List<String> contents = new ArrayList<>();
+            // Over bytes, as PackCommitStore.revisionOf: a digested file need not be UTF-8 text.
+            List<byte[]> contents = new ArrayList<>();
             for (String relative : PackFileSet.digested(directory)) {
-                contents.add(Files.readString(directory.resolve(relative), StandardCharsets.UTF_8));
+                contents.add(Files.readAllBytes(directory.resolve(relative)));
             }
-            return PackRevision.compute(contents);
+            return PackRevision.computeOverBytes(contents);
         } catch (IOException failure) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot read the revision of pack " + pack.value(), failure);

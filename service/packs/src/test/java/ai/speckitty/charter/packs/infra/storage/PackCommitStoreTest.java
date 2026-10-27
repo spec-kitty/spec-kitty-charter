@@ -270,6 +270,99 @@ class PackCommitStoreTest {
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
 
+    /**
+     * The revision {@code CommitStorePackWriteStore.currentRevision} reported for the unmodified {@code pack-a}
+     * fixture on {@code main} at 90de8f9, when it still read every digested file as UTF-8 text. Captured by a
+     * throwaway test printing {@code currentRevision} on this lane's base before the change (its revision readers
+     * and the fixture were byte-identical to 90de8f9's); pinned so reading bytes does not move an existing ETag.
+     */
+    private static final String PACK_A_REVISION_ON_MAIN =
+            "sha256:b220d430031fc948dbdd597b9ab9d88297a68b6588537e87fadc68f4d648c711";
+
+    /** A root graph shard, which {@link PackFileSet#digested} covers, written with bytes that are not UTF-8. */
+    private static final String NON_UTF8_SHARD = "binary.graph.yaml";
+
+    private static final byte[] NON_UTF8_BYTES = {
+        (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0x00, 0x00, (byte) 0xFF, (byte) 0xFE
+    };
+
+    @Test
+    @DisplayName("the revision of a pack of UTF-8 files is the value main reported, read over bytes")
+    void aUtf8PackKeepsTheRevisionMainReported(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
+                locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
+
+        assertThat(writeStore.currentRevision(PACK).token()).isEqualTo(PACK_A_REVISION_ON_MAIN);
+    }
+
+    @Test
+    @DisplayName("a pack whose digested set holds a non-UTF-8 file reports a revision and commits, not pack_unreadable")
+    void aPackWithANonUtf8DigestedFileCommitsAndReportsARevision(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Files.write(packDir.resolve(NON_UTF8_SHARD), NON_UTF8_BYTES);
+        assertThat(PackFileSet.digested(packDir))
+                .as("the planted file is digested")
+                .contains(NON_UTF8_SHARD);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
+
+        PackRevision before = writeStore.currentRevision(PACK);
+        PackRevision committed = store.commit(PACK, null, null, SHARD);
+
+        assertThat(before.token()).isNotEqualTo(PACK_A_REVISION_ON_MAIN);
+        assertThat(committed).isNotEqualTo(before).isEqualTo(writeStore.currentRevision(PACK));
+        assertThat(Files.readAllBytes(packDir.resolve(NON_UTF8_SHARD))).isEqualTo(NON_UTF8_BYTES);
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
+
+    @Test
+    @DisplayName("If-Match with the reported revision passes over a non-UTF-8 file; after a one-byte edit of it the"
+            + " same If-Match is refused as stale and nothing changes")
+    void ifMatchHoldsOverBytesAndAOneByteEditMakesItStale(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Path binary = packDir.resolve(NON_UTF8_SHARD);
+        Files.write(binary, NON_UTF8_BYTES);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations(packDir), strategy, store);
+
+        // The ETag comes from currentRevision; the commit store matches it against its own revisionOf the live pack.
+        PackRevision committed =
+                store.commit(PACK, writeStore.currentRevision(PACK).token(), null, SHARD);
+        assertThat(committed).isEqualTo(writeStore.currentRevision(PACK));
+
+        byte[] edited = NON_UTF8_BYTES.clone();
+        edited[edited.length - 1] = (byte) 0xFD;
+        Files.write(binary, edited);
+        Map<String, byte[]> before = byteSnapshot(packDir);
+
+        assertThatThrownBy(() -> store.commit(PACK, committed.token(), null, SHARD))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(byteSnapshot(packDir))
+                .as("the live pack is byte-for-byte unchanged")
+                .containsOnlyKeys(before.keySet())
+                .allSatisfy((file, bytes) -> assertThat(bytes).isEqualTo(before.get(file)));
+        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
+    }
+
+    /** Every regular file under {@code dir}, relative path to raw bytes, for files that are not UTF-8 text. */
+    private static Map<String, byte[]> byteSnapshot(Path dir) {
+        Map<String, byte[]> out = new TreeMap<>();
+        try (Stream<Path> files = Files.walk(dir)) {
+            for (Path file : files.filter(Files::isRegularFile).toList()) {
+                out.put(dir.relativize(file).toString(), Files.readAllBytes(file));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return out;
+    }
+
     /** Whether the packs-root holds no staging ({@code .pack-commit-}) or aside ({@code .pack-old-}) residue. */
     private static boolean noCommitResidue(Path packsRoot) throws IOException {
         try (var entries = Files.list(packsRoot)) {

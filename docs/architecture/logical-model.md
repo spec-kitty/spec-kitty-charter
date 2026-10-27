@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -20,6 +20,7 @@ related:
   - adr/0032-steps-name-roles-and-profile-selection-order
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
+  - adr/0040-content-form-and-payload-kinds
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -447,9 +448,20 @@ these are resources, used rather than followed.
   (`skill:<id>`). It renders as `<skill_namespace>-<id>/SKILL.md` into each configured
   tool's project skill root. A non-built-in skill needs a `skill_namespace`.
 - A **glossary pack** contributes terms to the project's vocabulary.
-- An **asset** is a blob (script, document, image) described by a sidecar manifest.
-- A **template** is mission-type content that resolves specially and has no descriptor file
-  pattern.
+- An **asset** is a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`)
+  and the **asset payload** it names: a file under the pack's `assets/`, with `path` relative to
+  that directory. The payload (script, document, font, image) is held as its exact bytes. A
+  payload may have no sidecar (`built-in/assets/docs_structural_lint.config.yaml`): the pack holds
+  every file under `assets/` as an asset file, named by an asset or not. A sidecar whose payload
+  does not exist is refused. `mime` is metadata; it does not decide how the payload is read.
+- A **template** under a pack's top-level `templates/` is an artifact whose id is its path under
+  that directory (`templates/writing/meeting-minutes.md` is
+  `template:writing/meeting-minutes.md`), held as its exact bytes, frontmatter included. Mission
+  templates (`missions/<mission>/templates/`) are mission-type content that resolves specially;
+  they are not modelled yet.
+- How a pack file is read, written and compared is its **content form**, declared by its
+  rule in `contracts/packs/file-kinds.yaml`, never chosen by its extension: asset payloads and
+  templates are `bytes` ([ADR-0040](/adr/0040-content-form-and-payload-kinds/)).
 
 ## Deployment
 

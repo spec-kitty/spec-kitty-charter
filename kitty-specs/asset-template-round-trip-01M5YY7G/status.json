@@ -1,0 +1,316 @@
+{
+  "event_count": 71,
+  "last_event_id": "01M5ZE8RE1ZVFBR1420V9PZSZN",
+  "materialized_at": "2026-10-27T19:44:18.881781+00:00",
+  "mission_number": "10",
+  "mission_slug": "asset-template-round-trip-01M5YY7G",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 9,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE7RE36X0A7N0NHJXKG4KN",
+      "last_transition_at": "2026-10-27T19:43:46.115785+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Handoff WP01 (commit 648b841). Commands (Java 25, -PopenPacksDir=/home/user/spec-kitty-open-packs @01edb4e): ./gradlew :packs:test (full) 1087 tests, 0 failed, 3 skipped; targeted --tests *PackFileKind* (19/19) *VocabularyEquality* (7/7) *FileSystemPackInspector* (26/26) pass; :packs:check green (Spotless, Checkstyle, Error Prone, NullAway, openPacksRoundTrip 7/7 incl. new check-12 test). Check 12 captured literal: on base (no service/contracts diff vs 90de8f9) a throwaway open-packs test printed PackPolicy.judge(inspect(built-in, FULL)): findings = [] (0), files = 386; after the change the only diff in the file list is assets/docs_structural_lint.config.yaml excluded **/*.config.yaml -> kind asset-payload. Pinned as findings == List.of(), 386 files, config entry asset-payload. Non-vacuity: reverting the inspector skip turns the check-12 test and the fixture test red. Decisions: unbuilt forms (markdown/text) fail at TABLE LOAD per WP T002.6/P19 (contract md says 'loads, store refuses' - WP prompt followed); ContentForm.fromToken(String) names PackFileKind.RESOURCE (made package-private). Whole-pack gate not run (known red until WP07). No out-of-map edits; openapi untouched; markdownlint/cspell not run (not installed; contracts/ not in markdownlint globs).",
+        "Review passed (reviewer-renata, independent): T001-T005 match the prompt. ContentForm enum + Mapped(kind, Optional schema, form); payloads parsed and consulted after files+exclusions; matchingRules scope unchanged, matchingPayloadRules added; globs use **/* and nested depth-3 paths classify, */templates/**/* excludes mission templates; README exclusion added; **/*.config.yaml retirement the only non-append row edit; unknown keys on files/exclusions/payloads refused, markdown/text refused with 'not built yet (#192 builds markdown)', bytes positive control on same payload fixture. Validate mode skips schema-less Mapped. Check-12 independently re-captured on a scratch worktree of 90de8f9 (open-packs 01edb4e): findings=[] and 386 files, config entry excluded by **/*.config.yaml there; no yaml under built-in assets/ or templates/ was unclassified at base, so the only list delta is the config entry -> asset-payload. PackSchemas still iterates fileRules only; header overlap correction true. Files within owned_files. ./gradlew :packs:test :packs:check -PopenPacksDir=... BUILD SUCCESSFUL: test 1087 tests/3 skipped/0 failed, openPacksRoundTrip 7/0 failed. Non-blocking: exclusions unknown-key case has no same-fixture positive control (bundled table load covers it)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP01-content-form-in-the-pack-vocabulary/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP01-content-form-in-the-pack-vocabulary/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 17132,
+      "shell_pid_created_at": "1793122670.29",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE7VX8FZ8RBJ9D3P573XMX",
+      "last_transition_at": "2026-10-27T19:43:49.672336+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Commit 887fd90. Commands: :packs:test targeted (Payload/AssetEntity/TemplateEntity/PackAssetFiles/Pack*Test/CharterArtifactFamily) 538 pass 0 fail; :packs:test :packs:check (Spotless, Checkstyle, Error Prone, NullAway, javadoc, openPacksRoundTrip) BUILD SUCCESSFUL, 1121 tests 0 fail 3 skipped (pre-existing); :deployable:test HexagonalArchitecture 39 pass. Decisions: shared path rule lives in package-private AssetFile.isRelativePath, reused by TemplateIdentifier; asset-file uniqueness and asset-file link guarded in the Pack constructor (messages name asset id and path); with() = toBuilder() minus replaced artifact (P3); AssetFile value tests live in PackAssetFilesTest (nested) since no AssetFileTest is in owned_files; CharterArtifactFamilyTest gets a separate payload-kinds test rather than joining FAMILY (FAMILY asserts schema 1.0). No Builder.asset/template convenience slots added. No out-of-map edits; no kernel/storage/contract change.",
+        "Review passed: T006-T010 match prompt and data-model. Payload defensive copies both ways, content equality, toString size+sha256 only. Asset/Template spine per ADR-0035 (no schema version/description/edges; urn asset:<id>, template:writing/meeting-minutes.md accepted by kernel Urn). AssetFile/TemplateIdentifier share one relative-path rule; no MIME or containment logic duplicating PackPolicy/AssetMimeTable (Asset stores mime/path verbatim, C-003). Pack: asset files sorted by path, duplicate path breaches, asset->file and one-asset-per-file invariants with messages naming asset id and path; toBuilder carries files; with() builds from toBuilder minus replaced artifact, keeping files+violations and moving the replacement to the end (P3 test non-vacuous: old with() would breach; positive control present). Javadoc records R1 exception. Only owned files touched. Commands: ./gradlew :packs:test :packs:check --rerun-tasks (1121 tests, 0 failed, 3 skipped; Error Prone/NullAway/Checkstyle/Spotless green); :deployable:test --tests '*HexagonalArchitecture*' (39/39). Anti-pattern checklist: dead code N/A by sequencing (storage consumers land in WP03), others PASS. Downstream WP05 unaffected."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP02-asset-and-template-domain-model/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP02-asset-and-template-domain-model/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13249,
+      "shell_pid_created_at": "1793122438.12",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE7ZHPRXNEXP2TT8BB18TH",
+      "last_transition_at": "2026-10-27T19:43:53.398930+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "PackRevision.computeOverBytes (same tag + length-prefix framing; compute(List<String>) delegates via UTF-8); revisionOf/currentRevision read bytes. Pins: 3 text inputs + pack-a fixture revision captured from unmodified compute on lane base (== 90de8f9 for these files). Non-UTF-8 root graph shard commits; If-Match passes then STALE after one-byte edit. Mutation check: old readers fail the 2 new store tests. Gates: targeted 19/19; :packs:test 1083 (3 skipped) 0 fail; :packs:check green; :deployable:test 270 0 fail. Commit 6dd7215.",
+        "Review passed: computeOverBytes framing byte-identical to 90de8f9 compute (tag, decimal length, LF, bytes); compute(List<String>) delegates via UTF-8. Pins independently recomputed by compiling 90de8f9 PackRevision in a scratch dir: all 3 text pins (f0cc7d.., 31689a.., bfe20c..) and pack-a pin b220d4.. (old readString over pack.yaml+alpha/beta/broken tactics) match. Both revision readers use Files.readAllBytes + computeOverBytes; no other behaviour change. If-Match pass + one-byte-edit STALE on the same non-UTF-8 fixture; new tests would fail on old code (MalformedInput -> PACK_UNREADABLE). Only owned files touched (5). Checklist: dead code PASS, synthetic fixture PASS, silent empty return N/A, FR-011 coverage PASS, frozen surface PASS, locked decision PASS, shared-file ownership PASS (no overlap), fragility PASS (no new raise). Commands: ./gradlew :packs:test :packs:check :deployable:test -PopenPacksDir=/home/user/spec-kitty-open-packs --rerun-tasks -> BUILD SUCCESSFUL; packs 1083 tests 0 fail 3 skipped (PackRevisionTest 9, PackCommitStoreTest 10), deployable 270 tests 0 fail."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP03-revision-over-bytes/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP03-revision-over-bytes/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 14182,
+      "shell_pid_created_at": "1793122488.04",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE84016M7SVKQJ666D6AKS",
+      "last_transition_at": "2026-10-27T19:43:57.953139+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "FileEntry gains refused (exact reason, exclusive with at) and pack (default built-in); evaluate(pack,...) ignores other packs' entries (3-arg overload = built-in); refusals(pack) -> List<PinnedRefusal(pack,path,refused,reason,issue)> for WP05. expected-red.yaml: 3 kind entries removed, 6 sidecar file entries added (paths verified at open-packs 01edb4e). Tests: :packs:test --tests '*WholePackExpectation*' 37/0 fail; :packs:test :packs:check exit 0 (1087 tests, 3 skipped, 0 failures). wholePackRoundTrip not run (expected red until WP07).",
+        "Review passed (reviewer-renata): T014 refused/pack entries exact-match, T015 refusals(pack) accessor, T016 expected-red.yaml -3 kinds +6 built-in entries verified against open-packs 01edb4e; same-fixture controls; WholePackExpectation 37/0 (--rerun), :packs:check green. Nits: FQ Collectors/Tuple; duplicate-entry message omits pack."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP04-pinned-refusals-in-the-gate-expectation/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP04-pinned-refusals-in-the-gate-expectation/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 11706,
+      "shell_pid_created_at": "1793122379.15",
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE87A294ATZZY96N2FHAYV",
+      "last_transition_at": "2026-10-27T19:44:01.346905+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP05 done (commit e4484fd, lane-e, not pushed). Validation: ./gradlew :packs:test :packs:check :deployable:test -PopenPacksDir=/home/user/spec-kitty-open-packs (Java 25) GREEN: packs:test 1176 tests/3 skipped/0 failed; openPacksRoundTrip 9/0 failed (4 classes); deployable:test 270/0 failed. Half-by-half: (1) missing-payload refusal disabled -> red: AssetStoreTest 4, DomainRepositoryServiceTest 1, WholePackStoreTest 1, WholePackOpenPacksRoundTripTest 2; (2) bytes writes routed through a UTF-8 String in both stores -> red: AssetStoreTest, TemplateStoreTest, DomainRepositoryServiceTest, WholePackStoreTest binary tests (4) + open-packs 1. Oracle also has a payload-omission mutant and the omitted-ASSET mutant. NFR-004 (open-packs internal whole-pack load, 546211 payload bytes): cold 960/1034 ms before (57b49e2) vs 1230/1134 ms after; warm median 23-29 ms before vs 22-24 ms after: growth well under 1 s. NFR-002: literal fingerprint sha256:02c8a8cd...5125 captured at 57b49e2 pinned in PackFileSetTest. Decisions: (a) the store's schema reason names an undeclared key for additionalProperties (': undeclared key surprise'), generic for every kind, nothing pinned the old text (FR-006); (b) open-packs qa and event-driven have no pack.yaml, so no store loads them: their counts (3/3, 1/1) and repo packs/qa are pinned via the PackFileSet listing, internal (10/10/4 binary) and repo packs/internal via WholePackStore.load; (c) refused sidecars are excluded from the unmodelled check (they are violations); (d) PackRead keeps a 3-arg constructor, so PackRoundTripTest is untouched; (e) payloads always digested in the subset seam digested(dir, kinds); (f) writeAtomically creates missing parent dirs (nested asset files). U1/U2 pinned in AssetStoreTest (directive under assets/, ../ and absolute path: refused 'payload assets/<path> does not exist'). Whole-pack gate (not touched, WP07): red only with 'no adapter models kind asset/asset-payload/template'; DomainRoundTripTest stays green. No out-of-map edits.",
+        "Review passed: e4484fd. Fresh run (--rerun-tasks) ./gradlew :packs:test :packs:openPacksRoundTrip :packs:check :deployable:test -PopenPacksDir=/home/user/spec-kitty-open-packs green: packs:test 1176 (0 fail, 3 skipped), openPacksRoundTrip 9/9, deployable:test 270/270; NFR-004 internal whole-pack load 40 ms (546211 payload bytes). Reverts: missing-payload refusal disabled -> 17 packs:test + 2 open-packs red; byte writes via UTF-8 in both stores -> 4 packs:test + 1 open-packs red; asset files dropped from modelled set -> unmodelled check red (1 + 2). Ad-hoc probe: writePayload via symlinked dir (existing and new nested parents), ../ climb and absolute path all refused, nothing written outside; worktree restored clean. NFR-002 fingerprint literal re-derived on parent 57b49e2 (pre-change) and matches. undeclared-key reason suffix only reaches PackElementViolation (Pack.violations, WholePackStore refusal messages); no HTTP/contract/scenario/validate-mode consumer (validate uses FileSystemPackInspector/PackPolicy, unchanged). qa/event-driven have no pack.yaml at 01edb4e; open-packs test filters on pack.yaml. All 20 files within owned_files; no overlap with WP06-08; openapi.yaml and kernel untouched. Note: saveArtifact(PackIdentifier,..)/writeAssetFile have no production caller until WP07 (by design)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP05-storage-read-and-write-path/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP05-storage-read-and-write-path/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 26225,
+      "shell_pid_created_at": "1793124559.43",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done"
+      }
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE8BNP0XK3ZAZETAAMVBWE",
+      "last_transition_at": "2026-10-27T19:44:05.814448+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP06 storage proofs (tests only). T025: FileSystemPackSourcesTest pins PackFileSet.digested + FileSystemPackSources.fingerprint() literals for pack-a, pack-descriptor-only, shards-and-fragment-merge-their-nodes and all three combined, captured on main 90de8f9 via a throwaway test in a scratch git worktree (removed+pruned); does not duplicate PackFileSetTest's 02c8a8cd pin; positive controls: added asset file, flipped asset byte, added template, flipped template byte each give a new fingerprint. T026: AssetPackRegistrationTest via real DirectiveRegistrationService/DomainRepositoryService/CommitStorePackWriteStore/PackMutabilityPolicy; asset files, asset, template kept, payload SHA-256 unchanged, revision advanced; negative control hand-built Pack without asset file breaches. T027: RelationshipRegistrationServiceTest +3 real-store cases (asset->template, template->directive, directive->asset register and read back; asset:ghost refused REGISTRATION_CONFLICT with held control; ASSET-LOCKED policy refuses asset edge, template edge registers). T028: BinaryPayloadRevisionTest over copy of repo packs/internal (holds PNG+OTF) under StorageRootLocations: revision computes, commit succeeds, If-Match passes, pre-edit revision STALE after one payload byte edit, fresh passes. Validation: targeted 4 classes 26 tests (3 pre-existing root skips) green; ./gradlew :packs:test :packs:check :deployable:test -PopenPacksDir=/home/user/spec-kitty-open-packs exit 0: packs:test 1184 (3 skipped, 0 fail), openPacksRoundTrip 9, deployable:test 270 (from cache). No WP05 defects found.",
+        "Review passed: T025 pins independently recomputed on main 90de8f9 (scratch worktree, throwaway test; all 3 digested lists, 3 per-pack fingerprints and the combined fingerprint match exactly; worktree removed+pruned); payload/template add+byte-flip controls go through FileSystemPackSources.fingerprint(). T026/T027/T028 use real DomainRepositoryService + CommitStorePackWriteStore/PackCommitStore + real registration services, same-fixture negative controls present; mutability cases consistent with gate authorizing on relationship.from(). Mutation checks (each reverted, worktree clean): Pack.toBuilder dropping asset files -> 4 failures; PackFileSet.digested dropping asset files/templates -> 2 failures; currentRevision via UTF-8 readString -> 5 failures. ./gradlew :packs:test :packs:check -PopenPacksDir=... --rerun-tasks: BUILD SUCCESSFUL, 1184 tests, 0 failures, 3 skipped (pre-existing root-permission assumptions). Files limited to the 4 owned test files."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP06-storage-proofs/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP06-storage-proofs/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2506,
+      "shell_pid_created_at": "1793125745.43",
+      "subtasks": {
+        "T025": "done",
+        "T026": "done",
+        "T027": "done",
+        "T028": "done"
+      }
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE8G2BZBFT5KZPW4ESNNHQ",
+      "last_transition_at": "2026-10-27T19:44:10.315421+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP07 e578bda: gate green. :packs:wholePackRoundTrip 5/5 pass; :packs:test :packs:check 1179 tests, 0 failed (3 skipped). Kind table: asset 6 files 0 green 6 expected-red; asset-payload 7 files 7 green; template 2 files 2 green; other:assets 2 excluded (READMEs, no stale/unexpected); no problems. Bytes branch in observe before any text read (bytes[off]/length detail, duplicateEdges only on text path); REQUIRED_KINDS +asset,asset-payload,template; lossy flip + truncation through DomainRoundTrip beforeSave hook (9 = 7+2 bytes outcomes); six asset reds asserted against each sidecar's own assets/assets/... path; FR-013 mission templates census other:missions. Half-by-half: bytes branch reverted -> 4/5 fail (YAML parse of Markdown payloads; MalformedInputException in fixture test); mutation reverted -> lossy control fails 'expected bytes[5359]... but was empty'. ARTEFACT_KINDS line necessarily gained ASSET.",
+        "Review passed: e578bda touches only 4 owned test files (WholePackCensus, DomainRoundTrip, DomainRoundTripTest, WholePackRoundTripTest); no WP04 WholePackExpectation*/expected-red.yaml edits. observe branches on content form before any text read; duplicateEdges only on the YAML path. REQUIRED_KINDS/ARTEFACT_KINDS/MODELLED only gained asset/asset-payload/template, siblings unchanged. Lossy flip + truncation controls go through DomainRoundTrip beforeSave (test-only ctor) over all 9 bytes outcomes (7+2, equals loaded assetFiles+templates). Exact counts: asset 6 expected-red/0 green, asset-payload 7 green, template 2 green; each asset red == 'refused: payload assets/<path> does not exist'; FR-013 mission templates census other:missions on built-in. Commands: JAVA_HOME=temurin-25 ./gradlew :packs:wholePackRoundTrip --rerun :packs:test --rerun :packs:check -PopenPacksDir=... BUILD SUCCESSFUL (wholePack 5/5, test 1179 0 fail 3 skipped, openPacks 9/9). Mutations: bytes branch never matching -> 4/5 gate tests red; flip made identity -> lossy control red; both restored via git checkout, tree clean."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP07-whole-pack-gate/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP07-whole-pack-gate/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 3402,
+      "shell_pid_created_at": "1793125809.7",
+      "subtasks": {
+        "T029": "done",
+        "T030": "done",
+        "T031": "done"
+      }
+    },
+    "WP08": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE8RE1ZVFBR1420V9PZSZN",
+      "last_transition_at": "2026-10-27T19:44:18.881781+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Unclaimed before work: now depends on WP09",
+        "WP08 76eba31 (not pushed): ADR-0040 (Proposed; 0040 free on origin/main) + README index; ADR-0036 revised in place (Revision 2026-10-27 under Status, Proposed with ADR-0040; record stays Accepted): Decision 2 Other files -> declared content form, per-kind table intro + asset row + payload/template/README/markdown-kind/unclassified rows, **/*.config.yaml and *.md/any-other-file rows removed, Decision 6 note; ADR-0039 append-only amendment (no Bytes case, revision over bytes done, shared low-level pieces); logical-model assets/templates section; glossary +Asset, Asset payload, Content form, Template (pack); changelog entry + index line. Checks: check_docs.py all ok; cspell 9.2.0 155 files 0 issues; markdownlint-cli2 0.18.1 0 errors. Out-of-map: docs/adr/0039 (amendment, per orchestrator) and docs/changelog/README.md (index line required by check_docs changelog). cspell.json untouched (no new words). Stale for closeout: file-kinds.yaml header '#192 builds markdown' (also PackFileKind error text and ContentForm javadoc). Claim->test list and open-packs issue text in the handoff.",
+        "Rework cycle 1 (commits 8c60ade, f0bd5ce). B1: ADR-0036 kept verbatim (main's text; +38/-0 vs origin/main); '### Amendment 2026-10-27 (#193)' under Status cites R8 DM-01M5YY9WFDRVZT6GZS8X59E2AZ, R9 DM-01M5YYA2CT1YSH7N6KVEPQ3XQC, R1 DM-01M5YY8HQKCGHH77B7VY0GHYC4, R4 DM-01M5YY93YD7JZJZSV4W9H5EBCQ, R11 DM-01M5YYAKM5S4TD42P0V115YFW0 and ADR-0040 (Proposed: annotations record what it proposes; original in force until accepted); italic 'Superseded in part by ADR-0040' annotations in place after Decision 2 Other-files paragraph, Decision 6, per-kind table intro, and annotation rows after the **/*.asset.yaml, **/*.config.yaml, *.md and Any-other-file rows. ADR-0040 Status: 'supersedes in part ADR-0036' naming those points. Index 0036: 'Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed)'. B2: on main's index re-added 0040 row (Proposed) and 0039 'Accepted, with Amendment 2026-10-27'; changelog index line re-added; changelog entry says 'superseded in part by ADR-0040, through a dated amendment'. B3: ADR-0039 amendment cites DM-01M5ZAMP0R5V5YF5KM09YXY0NS and ADR-0040; '(Amended 2026-10-27, see Status: ...)' after Decision 2 Bytes/revision sentence, Consequences '#193 can extend the same hooks' and 'binary companion' bullets; original kept (+29/-0 vs main). N1: ADR-0040 decision 1 adds PackPolicy/AssetMimeTable mime check in validate mode, never a selector. N2: ADR-0040 decision 3 says #192 shipped text companions (CompanionContent.Text), not markdown; markdown stays declared, unbuilt. PackFileKind code strings left for closeout. f0bd5ce syncs 5 stale kitty-specs files on the lane to the planning branch (guard). check_docs all ok, cspell 0, markdownlint 0.",
+        "Review passed (cycle 2): B1 ADR-0036 additions-only vs origin/main with dated Amendment citing R8/R9/R1/R4/R11 DM ids + ADR-0040, in-place annotations on Decision 2, Decision 6, table intro and four rows; ADR-0040 Status supersedes in part naming those points. B2 index/changelog rows additions-only on b0bf89b. B3 ADR-0039 additions-only, cites DM-01M5ZAMP0R5V5YF5KM09YXY0NS, annotated in place. N1/N2 true to PackPolicy/CompanionContent.Text. f0bd5ce: 5 files equal feat/asset-template-round-trip. check_docs, cspell, markdownlint green."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP08-decision-record-and-living-docs/review-cycle-3.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP08-decision-record-and-living-docs/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 24285,
+      "shell_pid_created_at": "1793129822.95",
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done",
+        "T035": "done"
+      }
+    },
+    "WP09": {
+      "actor": "merge",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M5ZE8MTJGCHNQW2VBHEV57NN",
+      "last_transition_at": "2026-10-27T19:44:15.186746+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-10-27T19:06:57Z – claude – shell_pid=8530 – WP09 ready for review. Merge 4906432 (origin/main bc6ad11: #190, #191, #192) + T037 26ea40d. Not pushed.\nT036: 19 conflicts resolved, both sides kept; lists = main order then ours (KindBindings/YamlFormats: ...SKILL, ASSET; GeneratedPackTree.Kind; REQUIRED_KINDS + asset, asset-payload, template; expected-red: siblings' and our kind entries both removed, our 6 refused file entries then main's empty_kinds). file-kinds.yaml: main's glossary-pack/skill rows + our content_form/payloads/README exclusion, **/*.config.yaml stays retired. Fingerprint: companions after their artifact, asset files then templates last (deduped against companions).\nT037: Companions.inPack = one containment rule (companion resolve = inPack against artifact dir + YAML refusal); writePayload and WholePackStore.put go through it. FilesystemPackStore.readBytes(Path) = one bytes read; readText is a strict UTF-8 view over it (companions, artifacts); one writeAtomically (byte[]), duplicate companion createDirectories dropped. CompanionContent.Bytes NOT added (unused; WP08/ADR-0040 records why).\nGates: :packs:test 1308/0 fail (3 skipped), :packs:check green, :deployable:test 272/0, :profiles:test 9/0, :packs:wholePackRoundTrip 5/0, :packs:openPacksRoundTrip 20/0. Proofs: missing-payload refusal off -> 22 packs:test + 3 gate + 3 open-packs red; bytes branch off -> 4/5 gate red; restored.\nMoved literal pins: KindBindingsTest asset index 5 -> subList(5,10) after the 4 sibling kinds; DomainRoundTripTest/WholePackRoundTripTest modelled-kinds sets gain asset-payload, template.\nOut-of-map (merge resolution): contracts/packs/README.md, file-kinds.yaml, DomainRepositoryService, FilesystemPackStore, KindBindings, PackFileSet, WholePackStore, YamlFormats, RelationshipRegistrationServiceTest, DomainRoundTrip(+Test), GeneratedPackTree, KindBindingsTest, PackFileKindTest, PackFileSetExactnessTest, WholePackExpectation, WholePackRoundTripTest, WholePackStoreTest, expected-red.yaml; sibling tests edited (semantic conflicts, assertions kept): CompanionDigestTest, GlossaryPackYamlTest. Out-of-map (T037): FilesystemPackStore, WholePackStore, AssetStoreTest (+1 test). BLOCKED on move to for_review: the kitty-specs guard refuses the lane because the origin/main merge brings 74 sibling-mission kitty-specs files (#190/#191/#192 dossiers + 1 whole-pack-gate quickstart line); deleting them on the lane would delete them from main on landing. Needs operator choice: --force, or merge origin/main into feat/asset-template-round-trip first.",
+        "Ready for review: merge origin/main (#190/#191/#192) 4906432 + T037 26ea40d, mission branch merged in; gates green (packs 1308/0, deployable 272/0, profiles 9/0, wholePack 5/0, openPacks 20/0); full handoff in WP09 history",
+        "Review passed: merge 4906432 checked with git show --remerge-diff against both parents for all 19 conflicted files; every hunk from both sides kept (appended lists in main's order with ours after them, file-kinds main rows plus our payloads/README, readKind with files+claimed, putArtifact Template branch plus companions, empty_kinds plus refused/pack, REQUIRED_KINDS union). Later merges 1756082/7138749 are clean, with no code change after 26ea40d. origin/main bc6ad11 is an ancestor of HEAD. Sibling tests: only the merge-forced CompanionDigestTest edit (made stricter: 3 asset files last, the rest .yaml) and GlossaryPackYamlTest (3-arg Mapped) changed; KindBindingsTest subList and the modelled-kinds sets stay exact (isEqualTo). T037: Companions.inPack is the only containment owner (writePayload and WholePackStore.put use it, resolve() builds on contained()); one readBytes with readText as a strict UTF-8 view; one writeAtomically; ADR-0039 refusal reasons and the pinned 'payload assets/<path> does not exist' unchanged; no literal pin moved; openapi.yaml untouched; CompanionContent has no Bytes case. Gates: :packs:test 1308 tests (0 failed, 3 root-permission skips), :packs:check, :deployable:test 272, :profiles:test 9, :packs:wholePackRoundTrip 5, all green (cleanTest, --no-build-cache). Reverts: writePayload bypassing inPack -> AssetStoreTest red; removing the missing-payload violation -> AssetStoreTest/DomainRoundTripTest/DomainRepositoryServiceTest/PackFileSetExactnessTest/wholePackRoundTrip red; both restored and the tree is clean. Non-blocking: the listed-once guard for asset files/templates already listed as companions in PackFileSet.digested has no test (deleting it leaves :packs:test green); a CompanionDigestTest case for a skill body under templates/ or assets/ would pin it. Shared files: the edits outside the owned map are merge resolution, as the handoff records."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/asset-template-round-trip-01M5YY7G-coord/kitty-specs/asset-template-round-trip-01M5YY7G/tasks/WP09-reconcile-with-main/review-cycle-1.md",
+        "reference": "review-cycle://asset-template-round-trip-01M5YY7G/WP09-reconcile-with-main/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15919,
+      "shell_pid_created_at": "1793128116.86",
+      "subtasks": {
+        "T036": "done",
+        "T037": "done",
+        "T038": "done"
+      }
+    }
+  }
+}

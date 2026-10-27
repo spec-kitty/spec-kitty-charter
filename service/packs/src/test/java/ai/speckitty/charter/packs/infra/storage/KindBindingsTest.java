@@ -44,6 +44,21 @@ class KindBindingsTest {
     }
 
     @Test
+    @DisplayName("the asset sidecar is appended after the kinds bound before it (#190, #191, #192)")
+    void theAssetIsAppendedAfterTheSiblings() {
+        assertThat(KindBindings.kinds().subList(5, 10))
+                .isEqualTo(List.of(
+                        ArtifactKind.AGENT_PROFILE,
+                        ArtifactKind.MISSION_STEP_CONTRACT,
+                        ArtifactKind.GLOSSARY_PACK,
+                        ArtifactKind.SKILL,
+                        ArtifactKind.ASSET));
+        assertThat(KindBindings.of(ArtifactKind.ASSET)).containsSame(AssetBinding.INSTANCE);
+        assertThat(AssetBinding.INSTANCE.fileName("logo")).isEqualTo("logo.asset.yaml");
+        assertThat(YamlFormats.of(AssetBinding.INSTANCE)).isSameAs(AssetYaml.INSTANCE);
+    }
+
+    @Test
     @DisplayName("every bound kind has a bundled schema, and its schema name leads back to its binding")
     void everyBoundKindHasASchema() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {

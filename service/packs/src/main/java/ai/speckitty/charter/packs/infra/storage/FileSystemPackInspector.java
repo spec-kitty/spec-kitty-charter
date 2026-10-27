@@ -47,8 +47,9 @@ import java.util.stream.Stream;
  *
  * <p>{@link Scope#FULL} reads those the same way and then every other {@code *.yaml} file of the pack, in path order:
  * each is classified by {@link PackFileKind} (mapped to a schema, or excluded for a reviewed reason; a file no rule
- * covers is left out of the classification), and each mapped file is parsed and validated through
- * {@link PackSchemas}. The step ids, artifact ids and asset declarations of the files that passed their schema are the
+ * covers is left out of the classification), and each mapped file that has a schema is parsed and validated through
+ * {@link PackSchemas}; a schema-less payload (a {@code payloads} rule's kind, such as an asset payload that happens to
+ * be YAML) is listed with its kind and not read. The step ids, artifact ids and asset declarations of the files that passed their schema are the
  * facts the validate-only rules judge; a file that did not is {@link PackContents#unreadableFiles()}.
  *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
@@ -180,7 +181,8 @@ public final class FileSystemPackInspector implements PackInspector {
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
                     case PackFileKind.Mapped mapped -> {
                         files.add(new ClassifiedFile(file, Optional.of(mapped.kind()), Optional.empty()));
-                        if (!loadPath.contains(file)) {
+                        // A payload (a Mapped kind with no schema) has nothing to validate: it is listed, not read.
+                        if (mapped.schema().isPresent() && !loadPath.contains(file)) {
                             readMapped(path, file, mapped.kind());
                         }
                     }

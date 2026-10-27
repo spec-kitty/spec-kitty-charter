@@ -19,7 +19,16 @@ model, since core exports no schema for it. Where a schema differs from core's b
 | Path | Holds |
 |---|---|
 | `schemas/<kind>.schema.json` | One schema per kind, 16 in all |
-| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, and the reviewed exclusions |
+| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, and the schema-less payloads |
+
+`file-kinds.yaml` classifies a pack file in three steps: its `files` rules map a file to the schema that
+validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
+reason), and its `payloads` rules, consulted only when neither matches, give a schema-less file a kind: a file
+under a pack's `assets/` is an `asset-payload` and a file under its top-level `templates/` is a `template`. Each
+rule also says the file's **content form**, how it is read, held, written and compared: `yaml` (the default of a
+`files` rule), `markdown`, `text` or `bytes`. Payloads are `bytes`, round-tripped byte for byte. A file's extension
+and an asset's `mime` never choose the form, and a rule naming a form the service does not build yet (`markdown`,
+`text`) fails when the table loads.
 
 ## Validate a file
 

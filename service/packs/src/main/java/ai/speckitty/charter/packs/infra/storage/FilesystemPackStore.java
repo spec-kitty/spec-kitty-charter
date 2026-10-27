@@ -4,13 +4,16 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,7 +37,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * The filesystem storage of packs, at the persistence-shape level: it maps a {@link PackIdentifier} to a pack
  * directory, reads the directory partial-tolerantly into DSOs, and writes a DSO back atomically and inside the pack.
- * Format is the {@link SerializationStrategy}'s business; this class only moves text.
+ * Format is the {@link SerializationStrategy}'s business; this class only moves text, and the bytes of the files of the
+ * {@code bytes} content form (asset files and templates), which it reads and writes as they are, with no charset.
  *
  * <p>The identifier's value names the pack directory under the storage root. Every kind bound in {@link KindBindings}
  * is read and written through one path (ADR-0037). An element is located by scanning the pack's files of its kind, as
@@ -42,6 +46,10 @@ import org.jspecify.annotations.Nullable;
  * its file, an unknown id creates {@code <id>.<kind>.yaml} directly in the pack directory (and never over an existing
  * file). A read never throws on the content of a file (that is a {@link PackElementViolation}); only a missing or unreadable
  * {@code pack.yaml} refuses it.
+ *
+ * <p>An asset sidecar is held only when its payload is: a sidecar whose {@code path} names no asset file the read found
+ * under {@code assets/} is dropped and recorded as a violation ({@code payload assets/<path> does not exist}), and so is
+ * a second sidecar naming a file another sidecar already named. A payload that is not UTF-8 is no violation.
  *
  * <p>A write, replace or create, serializes from scratch, writes a temporary file beside the target and renames it
  * into place, so a failure leaves the original untouched (or the new file absent) and removes the temporary file. A target that resolves, symlinks followed,
@@ -96,13 +104,17 @@ final class FilesystemPackStore {
     record PackRead(
             PackDescriptorDso descriptor,
             Map<ArtifactKind, List<Stored<?>>> elements,
-            List<PackElementViolation> violations) {
+            List<PackElementViolation> violations,
+            List<AssetFile> assetFiles,
+            List<TemplateFile> templates) {
         /**
          * Copies the collections.
          *
          * @param descriptor the descriptor
          * @param elements the readable files of each kind
          * @param violations the unreadable files
+         * @param assetFiles the asset files, in path order
+         * @param templates the templates, in path order
          */
         PackRead {
             Objects.requireNonNull(descriptor, "descriptor");
@@ -110,6 +122,22 @@ final class FilesystemPackStore {
             elements.forEach((kind, list) -> copy.put(kind, List.copyOf(list)));
             elements = Collections.unmodifiableMap(copy);
             violations = List.copyOf(violations);
+            assetFiles = List.copyOf(assetFiles);
+            templates = List.copyOf(templates);
+        }
+
+        /**
+         * A read that holds no asset file and no template.
+         *
+         * @param descriptor the descriptor
+         * @param elements the readable files of each kind
+         * @param violations the unreadable files
+         */
+        PackRead(
+                PackDescriptorDso descriptor,
+                Map<ArtifactKind, List<Stored<?>>> elements,
+                List<PackElementViolation> violations) {
+            this(descriptor, elements, violations, List.of(), List.of());
         }
 
         /**
@@ -134,6 +162,25 @@ final class FilesystemPackStore {
          */
         <D> List<D> dsos(KindBinding<D, ?> kind) {
             return elements(kind).stream().map(Stored::dso).toList();
+        }
+    }
+
+    /**
+     * One template file as read: its bytes and where it sits.
+     *
+     * @param path the path relative to the pack's {@code templates/} directory, {@code /}-separated: the template's id
+     * @param content the file's bytes
+     */
+    record TemplateFile(String path, Payload content) {
+        /**
+         * Checks the fields.
+         *
+         * @param path the path under {@code templates/}
+         * @param content the bytes
+         */
+        TemplateFile {
+            Objects.requireNonNull(path, "path");
+            Objects.requireNonNull(content, "content");
         }
     }
 
@@ -222,13 +269,70 @@ final class FilesystemPackStore {
     PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
+        PackFileSet.Listing listing = PackFileSet.listing(directory);
         Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
         List<PackElementViolation> violations = new ArrayList<>();
+        List<AssetFile> assetFiles = new ArrayList<>();
+        for (String file : listing.assetFiles()) {
+            readBytes(directory, file, violations)
+                    .ifPresent(bytes -> assetFiles.add(
+                            new AssetFile(file.substring(PackFileSet.ASSETS.length()), Payload.of(bytes))));
+        }
+        List<TemplateFile> templates = new ArrayList<>();
+        for (String file : listing.templates()) {
+            readBytes(directory, file, violations)
+                    .ifPresent(bytes -> templates.add(
+                            new TemplateFile(file.substring(PackFileSet.TEMPLATES.length()), Payload.of(bytes))));
+        }
         Set<String> claimed = new HashSet<>();
         for (KindBinding<?, ?> kind : kinds) {
-            elements.put(kind.kind(), readKind(directory, kind, violations, claimed));
+            List<Stored<?>> read = readKind(directory, listing.files(kind.kind()), kind, violations, claimed);
+            if (kind == AssetBinding.INSTANCE) {
+                read = withPayloads(read, assetFiles, violations);
+            }
+            elements.put(kind.kind(), read);
         }
-        return new PackRead(descriptor, elements, violations);
+        return new PackRead(descriptor, elements, violations, assetFiles, templates);
+    }
+
+    /**
+     * The asset sidecars whose payload the read holds, in path order. A sidecar whose {@code path} names no asset file
+     * (missing, outside {@code assets/}, or a file another rule classifies) is a violation on the sidecar's file, and so
+     * is a sidecar naming a file an earlier sidecar named; neither joins the pack.
+     */
+    private static List<Stored<?>> withPayloads(
+            List<Stored<?>> sidecars, List<AssetFile> assetFiles, List<PackElementViolation> violations) {
+        Set<String> held = new HashSet<>();
+        assetFiles.forEach(file -> held.add(file.path()));
+        Map<String, String> namedBy = new HashMap<>();
+        List<Stored<?>> kept = new ArrayList<>();
+        for (Stored<?> stored : sidecars) {
+            AssetDso sidecar = AssetDso.class.cast(stored.dso());
+            String payload = PackFileSet.ASSETS + sidecar.path();
+            String claimant = namedBy.get(sidecar.path());
+            if (!held.contains(sidecar.path())) {
+                violations.add(new PackElementViolation(
+                        stored.file(), AssetBinding.INSTANCE.kind().token(), "payload " + payload + " does not exist"));
+            } else if (claimant != null) {
+                violations.add(new PackElementViolation(
+                        stored.file(),
+                        AssetBinding.INSTANCE.kind().token(),
+                        "payload " + payload + " is already named by asset " + claimant));
+            } else {
+                namedBy.put(sidecar.path(), sidecar.id());
+                kept.add(stored);
+            }
+        }
+        return kept;
+    }
+
+    /** A file's bytes; a file that cannot be read is a violation, not a refusal. */
+    private static Optional<byte[]> readBytes(Path directory, String file, List<PackElementViolation> violations) {
+        Optional<byte[]> bytes = readBytes(directory.resolve(file));
+        if (bytes.isEmpty()) {
+            violations.add(new PackElementViolation(file, "unreadable", "the file cannot be read"));
+        }
+        return bytes;
     }
 
     /**
@@ -252,7 +356,9 @@ final class FilesystemPackStore {
      * @return the readable elements, in path order
      */
     <D> List<D> readAll(PackIdentifier id, KindBinding<D, ?> kind) {
-        return readKind(existingDirectory(id), kind, new ArrayList<>(), new HashSet<>()).stream()
+        Path directory = existingDirectory(id);
+        return readKind(directory, PackFileSet.files(directory, kind.kind()), kind, new ArrayList<>(), new HashSet<>())
+                .stream()
                 .map(stored -> kind.dsoType().cast(stored.dso()))
                 .toList();
     }
@@ -329,9 +435,13 @@ final class FilesystemPackStore {
     }
 
     private <D> List<Stored<?>> readKind(
-            Path directory, KindBinding<D, ?> kind, List<PackElementViolation> violations, Set<String> claimed) {
+            Path directory,
+            List<String> files,
+            KindBinding<D, ?> kind,
+            List<PackElementViolation> violations,
+            Set<String> claimed) {
         List<Stored<?>> into = new ArrayList<>();
-        for (String file : PackFileSet.files(directory, kind.kind())) {
+        for (String file : files) {
             switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
                 case FileRead.Read<D> good ->
                     withCompanions(directory, file, kind, good.value(), violations, claimed)
@@ -392,7 +502,8 @@ final class FilesystemPackStore {
      */
     void writeDescriptor(PackIdentifier id, PackDescriptorDso descriptor) {
         Path directory = existingDirectory(id);
-        writeAtomically(directory, directory.resolve(PackFileSet.PACK_YAML), strategy.writeDescriptor(descriptor));
+        writeAtomically(
+                directory, directory.resolve(PackFileSet.PACK_YAML), utf8(strategy.writeDescriptor(descriptor)));
     }
 
     /**
@@ -425,19 +536,12 @@ final class FilesystemPackStore {
                 existing.isPresent() ? companionsOf(directory, file, kind) : List.<Companions.Inside>of();
         Set<String> others = kind.hasCompanions() ? claimsOfOthers(directory, file, kind) : Set.of();
         Map<Companions.Inside, String> planned = planCompanions(directory, file, kind, dso, owned, others);
+        // writeAtomically creates each companion's directories and refuses, as "cannot write <path> in pack", one it
+        // cannot write.
         for (Map.Entry<Companions.Inside, String> companion : planned.entrySet()) {
-            Path at = companion.getKey().file();
-            try {
-                Files.createDirectories(Objects.requireNonNull(at.getParent()));
-            } catch (IOException e) {
-                throw new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE,
-                        "cannot write " + companion.getKey().packRelative() + " in pack",
-                        e);
-            }
-            writeAtomically(directory, at, companion.getValue());
+            writeAtomically(directory, companion.getKey().file(), utf8(companion.getValue()));
         }
-        writeAtomically(directory, target, strategy.write(kind, dso));
+        writeAtomically(directory, target, utf8(strategy.write(kind, dso)));
         Set<String> kept = new HashSet<>();
         planned.keySet().forEach(companion -> kept.add(companion.claim()));
         removeDropped(directory, owned, kept);
@@ -565,6 +669,27 @@ final class FilesystemPackStore {
                 .replace(file.getFileSystem().getSeparator(), "/");
     }
 
+    /**
+     * Writes one file of the {@code bytes} content form (an asset file or a template) at its pack-relative path, byte
+     * for byte, creating its directories. A file already there is replaced. The path passes the containment rule a
+     * companion's does ({@link Companions#inPack}), and the write is the store's one atomic write.
+     *
+     * @param id the pack
+     * @param file the pack-relative, {@code /}-separated path, such as {@code assets/a/logo.png}
+     * @param payload the bytes to write
+     * @throws CharterRefusal when the path breaks the containment rule, the file resolves outside the pack, or it
+     *     cannot be written
+     */
+    void writePayload(PackIdentifier id, String file, Payload payload) {
+        Path directory = existingDirectory(id);
+        Path target = switch (Companions.inPack(directory, file)) {
+            case Companions.Inside inside -> inside.file();
+            case Companions.Refused refused ->
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "payload " + file + " " + refused.reason());
+        };
+        writeAtomically(directory, target, payload.bytes());
+    }
+
     // ---- id to path ----------------------------------------------------------------------------------------------
 
     private Path existingDirectory(PackIdentifier id) {
@@ -621,19 +746,35 @@ final class FilesystemPackStore {
         return reader.apply(text.get());
     }
 
-    /** The file's text; empty when its bytes are not UTF-8 or it cannot be read. */
-    static Optional<String> readText(Path path) {
+    /**
+     * The store's one read of a pack file: its bytes, as they are. Text (artifact files, companions) is a strict UTF-8
+     * view over these bytes ({@link #readText}); asset files and templates keep them.
+     *
+     * @param path the file
+     * @return the bytes; empty when the file cannot be read
+     */
+    static Optional<byte[]> readBytes(Path path) {
         try {
-            byte[] bytes = Files.readAllBytes(path);
-            return Optional.of(StandardCharsets.UTF_8
-                    .newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(bytes))
-                    .toString());
+            return Optional.of(Files.readAllBytes(path));
         } catch (IOException e) {
             return Optional.empty();
         }
+    }
+
+    /** The file's text; empty when its bytes are not UTF-8 or it cannot be read. */
+    static Optional<String> readText(Path path) {
+        return readBytes(path).flatMap(bytes -> {
+            try {
+                return Optional.of(StandardCharsets.UTF_8
+                        .newDecoder()
+                        .onMalformedInput(CodingErrorAction.REPORT)
+                        .onUnmappableCharacter(CodingErrorAction.REPORT)
+                        .decode(ByteBuffer.wrap(bytes))
+                        .toString());
+            } catch (CharacterCodingException e) {
+                return Optional.empty();
+            }
+        });
     }
 
     private static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
@@ -644,7 +785,11 @@ final class FilesystemPackStore {
         List<PackElementViolation> out = new ArrayList<>();
         for (SchemaViolation v : bad.violations()) {
             String where = v.pointer().isEmpty() ? "the document" : "/" + String.join("/", v.pointer());
-            out.add(new PackElementViolation(bad.file(), "schema", v.keyword() + " violated at " + where));
+            // An undeclared key is named, so the refusal says which field the schema does not declare (FR-006).
+            String key = "additionalProperties".equals(v.keyword())
+                    ? v.property().map(p -> ": undeclared key '" + p + "'").orElse("")
+                    : "";
+            out.add(new PackElementViolation(bad.file(), "schema", v.keyword() + " violated at " + where + key));
         }
         return out;
     }
@@ -656,23 +801,29 @@ final class FilesystemPackStore {
      * the {@link Rename} seam. A target outside the pack directory is refused before anything is written; a failure
      * at either step removes the temporary file and leaves {@code target} as it was.
      */
-    private void writeAtomically(Path directory, Path target, String content) {
+    private void writeAtomically(Path directory, Path target, byte[] content) {
         Path packRoot = directory.toAbsolutePath().normalize();
         Path resolved = target.toAbsolutePath().normalize();
-        if (!resolved.startsWith(packRoot) || !realPathContained(packRoot, resolved)) {
+        if (resolved.equals(packRoot) || !resolved.startsWith(packRoot) || !realPathContained(packRoot, resolved)) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "refusing to write outside pack " + directory.getFileName());
         }
         @Nullable Path temp = null;
         try {
-            temp = Files.createTempFile(resolved.getParent(), ".pack-write-", ".tmp");
-            Files.writeString(temp, content, StandardCharsets.UTF_8);
+            Path parent = Objects.requireNonNull(resolved.getParent(), "a file in the pack has a parent");
+            Files.createDirectories(parent);
+            temp = Files.createTempFile(parent, ".pack-write-", ".tmp");
+            Files.write(temp, content);
             rename.move(temp, resolved);
         } catch (IOException | RuntimeException e) {
             deleteQuietly(temp);
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot write " + packRoot.relativize(resolved) + " in pack", e);
         }
+    }
+
+    private static byte[] utf8(String text) {
+        return text.getBytes(StandardCharsets.UTF_8);
     }
 
     /** Whether the target's real location, following symlinks, is inside the pack's real directory. */

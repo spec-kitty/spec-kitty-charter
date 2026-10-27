@@ -3,7 +3,13 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
+import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Status;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Written;
@@ -14,6 +20,8 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +29,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
@@ -54,7 +64,10 @@ class WholePackRoundTripTest {
             "pack-descriptor",
             "graph-shard",
             "agent-profile",
-            "mission-step-contract");
+            "mission-step-contract",
+            "asset",
+            "asset-payload",
+            "template"); // #193
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -86,7 +99,12 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
-        Set<String> bound = new TreeSet<>(Set.of(DomainRoundTrip.DESCRIPTOR, DomainRoundTrip.GRAPH_SHARD));
+        // The two pack documents, #193's two payload kinds (bytes, no binding) and every bound kind.
+        Set<String> bound = new TreeSet<>(Set.of(
+                DomainRoundTrip.DESCRIPTOR,
+                DomainRoundTrip.GRAPH_SHARD,
+                DomainRoundTrip.ASSET_PAYLOAD,
+                DomainRoundTrip.TEMPLATE));
         KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
@@ -95,6 +113,223 @@ class WholePackRoundTripTest {
         assertThat(evaluation.problems())
                 .as("whole-pack round trip against %s; report: %s", WholePackExpectation.EXPECTED_RED_RESOURCE, report)
                 .isEmpty();
+        assertAssetsAndTemplates(pack, census, evaluation, observed);
+    }
+
+    /**
+     * #193, exact: every built-in sidecar is refused because its {@code path} names {@code assets/assets/…}, while
+     * every asset file and template round-trips byte for byte. A no-op adapter cannot match: each refusal must name
+     * the very path its sidecar declares.
+     */
+    private static void assertAssetsAndTemplates(
+            Path pack,
+            SortedMap<String, String> census,
+            Evaluation evaluation,
+            Map<String, Optional<String>> observed) {
+        SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
+        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.EXPECTED_RED, 6));
+        assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
+        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 2));
+        List<String> sidecars = census.entrySet().stream()
+                .filter(entry -> entry.getValue().equals("asset"))
+                .map(Map.Entry::getKey)
+                .toList();
+        assertThat(sidecars).hasSize(6).allSatisfy(sidecar -> {
+            String named = String.valueOf(((Map<?, ?>) Yaml.load(read(pack.resolve(sidecar)))).get("path"));
+            assertThat(named).as(sidecar).startsWith("assets/");
+            assertThat(observed.get(sidecar))
+                    .as(sidecar)
+                    .hasValue("refused: payload assets/" + named + " does not exist");
+        });
+    }
+
+    /**
+     * FR-013 at gate level: the mission templates under {@code missions/<mission>/templates/} census as
+     * {@code other:missions}, on the same pack whose top-level {@code templates/} census as {@code template}.
+     */
+    @Test
+    void missionTemplatesAreNotTemplates() {
+        OpenPacksCorpus.assertPinned();
+        SortedMap<String, String> census =
+                WholePackCensus.of(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN));
+
+        List<String> missionTemplates = census.keySet().stream()
+                .filter(path -> path.matches("missions/[^/]+/templates/.+"))
+                .toList();
+        assertThat(missionTemplates)
+                .isNotEmpty()
+                .allSatisfy(path -> assertThat(census.get(path)).as(path).isEqualTo("other:missions"));
+        assertThat(census.entrySet().stream()
+                        .filter(entry -> entry.getKey().startsWith("templates/"))
+                        .map(Map.Entry::getValue)
+                        .toList())
+                .containsExactly("template", "template");
+        assertThat(census.entrySet().stream()
+                        .filter(entry -> entry.getValue().equals("template"))
+                        .map(Map.Entry::getKey))
+                .allSatisfy(path -> assertThat(path).startsWith("templates/"));
+    }
+
+    /**
+     * Positive control through the production write path (#193): the loaded pack has one byte flipped in every asset
+     * file and template before the save, and every such file the faithful run turns green is red at the flipped
+     * offset; dropping the last byte instead is red at {@code length}. The bytes-kind outcomes are exactly the loaded
+     * pack's asset files and templates.
+     */
+    @Test
+    void aLossyByteWriterTurnsEveryAssetFileAndTemplateRed(@TempDir Path temp) throws IOException {
+        OpenPacksCorpus.assertPinned();
+        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        SortedMap<String, String> census = WholePackCensus.of(pack);
+        SerializationStrategy yaml = new YamlSerializationStrategy();
+        AtomicReference<Pack> loaded = new AtomicReference<>();
+
+        Map<String, Optional<String>> faithful = observe(
+                new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>(), new TreeSet<>());
+        Map<String, Optional<String>> flipped = observe(
+                new DomainRoundTrip(yaml, read -> {
+                    loaded.set(read);
+                    return withPayloads(read, WholePackRoundTripTest::flipMiddleByte);
+                }),
+                pack,
+                temp.resolve("flipped"),
+                census,
+                new TreeMap<>(),
+                new TreeSet<>());
+        Map<String, Optional<String>> truncated = observe(
+                new DomainRoundTrip(yaml, read -> withPayloads(read, bytes -> Arrays.copyOf(bytes, bytes.length - 1))),
+                pack,
+                temp.resolve("truncated"),
+                census,
+                new TreeMap<>(),
+                new TreeSet<>());
+
+        List<String> bytesKind = faithful.keySet().stream()
+                .filter(path -> WholePackCensus.contentFormOf(BUILT_IN, path) == ContentForm.BYTES)
+                .toList();
+        assertThat(bytesKind)
+                .as("bytes-kind outcomes: the loaded pack's asset files plus templates")
+                .hasSize(loaded.get().assetFiles().size()
+                        + loaded.get().templates().size())
+                .hasSize(7 + 2);
+        assertThat(bytesKind)
+                .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
+        for (String path : bytesKind) {
+            byte[] source = Files.readAllBytes(pack.resolve(path));
+            int middle = source.length / 2;
+            assertThat(flipped.get(path))
+                    .as(path)
+                    .hasValue("bytes[%d]: source 0x%s, written 0x%s"
+                            .formatted(middle, hex(source[middle]), hex((byte) ~source[middle])));
+            assertThat(truncated.get(path))
+                    .as(path)
+                    .hasValue("length: source %d, written %d".formatted(source.length, source.length - 1));
+        }
+    }
+
+    /**
+     * The bytes branch over a PNG/OTF-like fixture (NUL bytes, CR/LF pairs, bytes that are not UTF-8, no final
+     * newline): equal bytes are green, one changed byte is red at its offset, a shorter file is red at its length, and
+     * no file is ever read as text (that would throw on the bytes that are not UTF-8).
+     */
+    @Test
+    void theBytesBranchComparesBytesAndNeverReadsText(@TempDir Path temp) throws IOException {
+        byte[] png = {
+            (byte) 0x89,
+            'P',
+            'N',
+            'G',
+            '\r',
+            '\n',
+            0x1A,
+            '\n',
+            0,
+            0,
+            0,
+            0x0D,
+            'I',
+            'H',
+            'D',
+            'R',
+            (byte) 0xFF,
+            (byte) 0xFE
+        };
+        byte[] otf = {'O', 'T', 'T', 'O', 0, 0x0B, 0, (byte) 0x80, '\r', '\n', (byte) 0xC3, 0, '\r', '\n', 'x'};
+        byte[] changedOtf = otf.clone();
+        changedOtf[10] = (byte) 0xC4;
+        Path source = temp.resolve("src").resolve(BUILT_IN);
+        Path written = temp.resolve("out").resolve(BUILT_IN);
+        writeBytes(source.resolve("assets/logo.png"), png);
+        writeBytes(written.resolve("assets/logo.png"), png);
+        writeBytes(source.resolve("assets/fonts/body.otf"), otf);
+        writeBytes(written.resolve("assets/fonts/body.otf"), changedOtf);
+        writeBytes(source.resolve("templates/cover.png"), png);
+        writeBytes(written.resolve("templates/cover.png"), Arrays.copyOf(png, png.length - 1));
+        SortedMap<String, String> census = new TreeMap<>(Map.of(
+                "assets/logo.png", "asset-payload",
+                "assets/fonts/body.otf", "asset-payload",
+                "templates/cover.png", "template"));
+        assertThat(census.keySet())
+                .allSatisfy(path -> assertThat(WholePackCensus.contentFormOf(BUILT_IN, path))
+                        .isEqualTo(ContentForm.BYTES));
+        WholePackRoundTrip inPlace = new WholePackRoundTrip() {
+            @Override
+            public Set<String> modelledKinds() {
+                return Set.of("asset-payload", "template");
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
+                return kindOf.keySet().stream().collect(Collectors.toMap(path -> path, Written::new));
+            }
+        };
+        Set<String> paired = new TreeSet<>();
+        Map<String, List<String>> information = new TreeMap<>();
+
+        Map<String, Optional<String>> observed = observe(inPlace, source, written, census, information, paired);
+
+        assertThat(observed)
+                .containsEntry("assets/logo.png", Optional.empty())
+                .containsEntry("assets/fonts/body.otf", Optional.of("bytes[10]: source 0xc3, written 0xc4"))
+                .containsEntry("templates/cover.png", Optional.of("length: source 18, written 17"));
+        assertThat(paired).isEqualTo(census.keySet());
+        assertThat(information).isEmpty();
+    }
+
+    /** The loaded pack with every asset file's and template's bytes changed by {@code change}; nothing else moves. */
+    private static Pack withPayloads(Pack pack, UnaryOperator<byte[]> change) {
+        Pack.Builder builder = Pack.builder().id(pack.id()).descriptor(pack.descriptor());
+        for (CharterArtifact artifact : pack.artifacts()) {
+            builder.artifact(
+                    artifact instanceof Template template
+                            ? Template.builder()
+                                    .id(template.id())
+                                    .packId(template.packId())
+                                    .content(Payload.of(
+                                            change.apply(template.content().bytes())))
+                                    .build()
+                            : artifact);
+        }
+        pack.violations().forEach(builder::violation);
+        pack.assetFiles()
+                .forEach(file -> builder.assetFile(new AssetFile(
+                        file.path(), Payload.of(change.apply(file.payload().bytes())))));
+        return builder.build();
+    }
+
+    private static byte[] flipMiddleByte(byte[] bytes) {
+        byte[] flipped = bytes.clone();
+        flipped[bytes.length / 2] = (byte) ~bytes[bytes.length / 2];
+        return flipped;
+    }
+
+    private static String hex(byte value) {
+        return HexFormat.of().toHexDigits(value);
+    }
+
+    private static void writeBytes(Path file, byte[] bytes) throws IOException {
+        Files.createDirectories(file.getParent());
+        Files.write(file, bytes);
     }
 
     /**
@@ -172,9 +407,24 @@ class WholePackRoundTripTest {
         Map<String, Outcome> outcomes = roundTrip.roundTrip(pack, written, census);
         MeaningComparator comparator = MeaningComparator.adr0036();
         Map<String, Optional<String>> observed = new TreeMap<>();
+        String packName = String.valueOf(pack.getFileName());
         for (Map.Entry<String, Outcome> entry : outcomes.entrySet()) {
             String path = entry.getKey();
             String kind = census.get(path);
+            if (WholePackCensus.contentFormOf(packName, path) == ContentForm.BYTES) {
+                // #193: decided before any text read; a payload need not be text, and has no edges.
+                observed.put(
+                        path,
+                        switch (entry.getValue()) {
+                            case Written w -> {
+                                paired.add(w.writtenPath());
+                                yield bytesRed(
+                                        readBytes(pack.resolve(path)), readBytes(written.resolve(w.writtenPath())));
+                            }
+                            case Refused r -> Optional.of("refused: " + r.reason());
+                        });
+                continue;
+            }
             String source = read(pack.resolve(path));
             observed.put(
                     path,
@@ -212,6 +462,22 @@ class WholePackRoundTripTest {
     }
 
     /**
+     * The red detail of a {@code bytes} file: where the bytes first differ, {@code bytes[<offset>]: source 0x..,
+     * written 0x..}, or, when one is a prefix of the other, {@code length: source N, written M}.
+     */
+    private static Optional<String> bytesRed(byte[] source, byte[] written) {
+        int offset = Arrays.mismatch(source, written);
+        if (offset < 0) {
+            return Optional.empty();
+        }
+        if (offset == source.length || offset == written.length) {
+            return Optional.of("length: source " + source.length + ", written " + written.length);
+        }
+        return Optional.of(
+                "bytes[" + offset + "]: source 0x" + hex(source[offset]) + ", written 0x" + hex(written[offset]));
+    }
+
+    /**
      * The written files no source file paired with. Pairing is by kind and id, not by path: the store writes a new
      * artefact at the pack root ({@code <id>.<kind>.yaml}) whatever its source path, a known divergence from ADR-0036's
      * "path for path" until the whole-pack seam (#189) writes artefacts in place.
@@ -225,6 +491,14 @@ class WholePackRoundTripTest {
                     .filter(path -> !paired.contains(path))
                     .sorted()
                     .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static byte[] readBytes(Path file) {
+        try {
+            return Files.readAllBytes(file);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

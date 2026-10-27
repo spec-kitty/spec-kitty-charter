@@ -1,11 +1,14 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,10 +48,22 @@ class PackFileKindTest {
             "core/missions/software-dev/governance-profile.yaml",
             "core/mission_types/software-dev.yaml",
             "core/presets/minimal.yaml",
-            "core/assets/lint.config.yaml",
             "core/pack-manifest.yaml",
             "built-in.source.yaml",
-            "core/missions/software-dev/templates/plan-field-declaration.yaml");
+            "core/missions/software-dev/templates/plan-field-declaration.yaml",
+            "built-in/assets/README.md",
+            "built-in/assets/audiences/README.md");
+
+    /** Schema-less payload samples, nested on purpose (a trailing `**` would match one segment only), with their kind. */
+    private static final Map<String, String> PAYLOADS = Map.ofEntries(
+            Map.entry("built-in/assets/audiences/line_manager.md", "asset-payload"),
+            Map.entry("internal/assets/debrief/fonts/FallingSky-Bold.otf", "asset-payload"),
+            Map.entry("qa/assets/qa_carrier_lint.py", "asset-payload"),
+            Map.entry("built-in/assets/docs_structural_lint.config.yaml", "asset-payload"),
+            Map.entry("built-in/templates/writing/meeting-minutes.md", "template"));
+
+    /** A table text whose only rules are {@code %s}, written as YAML flow mappings. */
+    private static final String TABLE = "node_kinds: []\nfragment_kinds: {}\n%s\n";
 
     @Test
     void everyFilesRuleMapsItsSamplePathToItsSchema() {
@@ -58,7 +73,8 @@ class PackFileKindTest {
             assertThat(c).as(path).isInstanceOf(PackFileKind.Mapped.class);
             PackFileKind.Mapped mapped = (PackFileKind.Mapped) c;
             assertThat(mapped.kind()).as(path).isEqualTo(schema);
-            assertThat(mapped.schema()).as(path).isEqualTo("packs/schemas/" + schema + ".schema.json");
+            assertThat(mapped.schema()).as(path).contains("packs/schemas/" + schema + ".schema.json");
+            assertThat(mapped.contentForm()).as(path).isEqualTo(ContentForm.YAML);
             byPath.put(path, mapped.kind());
         });
         assertThat(KINDS.fileRules())
@@ -82,8 +98,59 @@ class PackFileKindTest {
                         .toList());
     }
 
+    @Test
+    void aSchemaLessPayloadIsMappedToItsKindWithNoSchemaAsBytes() {
+        PAYLOADS.forEach((path, kind) -> assertThat(KINDS.classify(path))
+                .as(path)
+                .isEqualTo(new PackFileKind.Mapped(kind, Optional.empty(), ContentForm.BYTES)));
+        assertThat(KINDS.payloadRules())
+                .containsExactly(
+                        new PackFileKind.PayloadRule("*/assets/**/*", "asset-payload", ContentForm.BYTES),
+                        new PackFileKind.PayloadRule("*/templates/**/*", "template", ContentForm.BYTES));
+    }
+
+    @Test
+    void aSidecarUnderAssetsIsMappedByItsFilesRuleBeforeThePayloadRule() {
+        assertThat(KINDS.classify("built-in/assets/audiences/line_manager.md.asset.yaml"))
+                .isEqualTo(new PackFileKind.Mapped(
+                        "asset", Optional.of("packs/schemas/asset.schema.json"), ContentForm.YAML));
+        assertThat(KINDS.matchingPayloadRules("built-in/assets/audiences/line_manager.md.asset.yaml"))
+                .as("the overlap with the payload rule is by design; the files rule is consulted first")
+                .containsExactly("*/assets/**/*");
+    }
+
+    @Test
+    void noSamplePathIsMatchedByTwoPayloadRules() {
+        List<String> all = new ArrayList<>(PAYLOADS.keySet());
+        all.addAll(MAPPED.keySet());
+        all.addAll(EXCLUDED);
+        for (String path : all) {
+            assertThat(KINDS.matchingPayloadRules(path)).as(path).hasSizeLessThanOrEqualTo(1);
+        }
+        PAYLOADS.keySet()
+                .forEach(path ->
+                        assertThat(KINDS.matchingPayloadRules(path)).as(path).hasSize(1));
+    }
+
+    @Test
+    void thePayloadGlobsSpanNestedFilesAndTheTemplatesRuleCoversOnlyAPacksTopLevelTemplates() {
+        assertThat(KINDS.matchingPayloadRules("x/assets/a/b/c/d.bin"))
+                .as("depth 3 under assets/")
+                .containsExactly("*/assets/**/*");
+        assertThat(KINDS.matchingPayloadRules("x/missions/m/templates/a.md")).isEmpty();
+        assertThat(KINDS.matchingPayloadRules("x/templates/a.md")).containsExactly("*/templates/**/*");
+    }
+
     @ParameterizedTest
-    @CsvSource({"foo/bar.yaml", "core/notes.yaml", "core/a.unknown.yaml", "pack.yaml", "core/deep/er/pack.yaml"})
+    @CsvSource({
+        "foo/bar.yaml",
+        "core/notes.yaml",
+        "core/a.unknown.yaml",
+        "pack.yaml",
+        "core/deep/er/pack.yaml",
+        "qa/missions/qa/templates/test-report-template.md",
+        "built-in/missions/software-dev/templates/spec-template.md"
+    })
     void anUnknownFileIsUnclassified(String path) {
         assertThat(KINDS.classify(path)).isEqualTo(PackFileKind.Unclassified.INSTANCE);
     }
@@ -113,5 +180,59 @@ class PackFileKindTest {
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
         assertThat(KINDS.fileRules()).hasSize(16);
+        assertThat(KINDS.fileRules())
+                .as("every files rule keeps the default form")
+                .extracting(PackFileKind.FileRule::contentForm)
+                .containsOnly(ContentForm.YAML);
+    }
+
+    // ---- table load --------------------------------------------------------------------------------
+
+    @Test
+    void aPayloadRuleThatNamesABuiltFormLoads() {
+        PackFileKind table = new PackFileKind(TABLE.formatted(
+                "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', kind: k, content_form: bytes}]"));
+
+        assertThat(table.classify("p/assets/a.bin"))
+                .isEqualTo(new PackFileKind.Mapped("k", Optional.empty(), ContentForm.BYTES));
+    }
+
+    @Test
+    void aRuleThatIsNotWellFormedFailsToLoadNamingTheProblem() {
+        String payload = "files: []\nexclusions: []\npayloads: [{match: '*/assets/**/*', %s}]";
+        Map<String, String> problems = Map.ofEntries(
+                Map.entry(payload.formatted("kind: k, content_form: bytes, mime: x"), "unknown key 'mime'"),
+                Map.entry(payload.formatted("content_form: bytes"), "non-blank 'kind'"),
+                Map.entry(payload.formatted("kind: k"), "non-blank 'content_form'"),
+                Map.entry(payload.formatted("kind: k, content_form: html"), "unknown content_form 'html'"),
+                Map.entry(
+                        payload.formatted("kind: k, content_form: markdown"),
+                        "content_form 'markdown' is not built yet (#192 builds markdown)"),
+                Map.entry(payload.formatted("kind: k, content_form: text"), "content_form 'text' is not built yet"),
+                Map.entry(
+                        "files: [{match: a, schema: s, mode: x}]\nexclusions: []",
+                        "a rule in files has the unknown key 'mode'"),
+                Map.entry(
+                        "files: []\nexclusions: [{match: a, reason: r, note: x}]",
+                        "a rule in exclusions has the unknown key 'note'"),
+                Map.entry(
+                        "files: [{match: a, schema: s, content_form: markdown}]\nexclusions: []",
+                        "content_form 'markdown' is not built yet"));
+
+        problems.forEach((rules, problem) -> assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rules)))
+                .as(rules)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("packs/file-kinds.yaml")
+                .hasMessageContaining(problem));
+    }
+
+    @Test
+    void aFilesRuleThatNamesBytesLoadsAndATableWithoutPayloadsHasNone() {
+        PackFileKind table = new PackFileKind(
+                TABLE.formatted("files: [{match: '*/a.bin', schema: s, content_form: bytes}]\nexclusions: []"));
+
+        assertThat(table.classify("p/a.bin"))
+                .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.BYTES));
+        assertThat(table.payloadRules()).isEmpty();
     }
 }

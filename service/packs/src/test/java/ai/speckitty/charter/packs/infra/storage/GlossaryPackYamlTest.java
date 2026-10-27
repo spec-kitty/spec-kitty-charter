@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -117,7 +118,8 @@ class GlossaryPackYamlTest {
         assertThat(KindBindings.bySchema("glossary-pack")).contains(GlossaryPackBinding.INSTANCE);
         assertThat(GlossaryPackBinding.INSTANCE.fileName("qa-glossary")).isEqualTo("qa-glossary.glossary-pack.yaml");
         assertThat(PackFileKind.bundled().classify("qa/glossary_packs/qa-glossary.glossary-pack.yaml"))
-                .isEqualTo(new PackFileKind.Mapped("glossary-pack", "packs/schemas/glossary-pack.schema.json"));
+                .isEqualTo(new PackFileKind.Mapped(
+                        "glossary-pack", Optional.of("packs/schemas/glossary-pack.schema.json"), ContentForm.YAML));
     }
 
     @Test

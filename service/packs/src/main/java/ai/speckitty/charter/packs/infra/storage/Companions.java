@@ -15,6 +15,11 @@ import java.util.Optional;
  * <p>A companion path is relative to its artifact's file and resolves, normalized, to a file inside the pack
  * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file:
  * writing a companion can never replace another part of the pack.
+ *
+ * <p>The containment half of the rule ({@link #inPack}) is also the one every other pack-relative path the store writes
+ * passes: an asset file at {@code assets/<path>} and a template at {@code templates/<id>} (#193, ADR-0040), and every
+ * part of a whole-pack write. Those are pack-level files, not companions, so they resolve against the pack directory
+ * and may be YAML (a sidecar-less {@code *.config.yaml} payload is one).
  */
 final class Companions {
 
@@ -101,6 +106,32 @@ final class Companions {
      * @return where it leads, or why the rule refuses it
      */
     static Resolution resolve(Path packDir, String artifactFile, String declared) {
+        Path base = Objects.requireNonNullElse(packDir.resolve(artifactFile).getParent(), packDir);
+        Resolution resolution = contained(packDir, base, declared);
+        // The resolved name, not the declared text: "pack.yaml/" and "x.tactic.yaml/." both normalize to a YAML file.
+        if (resolution instanceof Inside at
+                && String.valueOf(at.file().getFileName())
+                        .toLowerCase(Locale.ROOT)
+                        .endsWith(YAML)) {
+            return new Refused("is a YAML file");
+        }
+        return resolution;
+    }
+
+    /**
+     * Resolves a pack-relative path, without touching the file system: the containment half of the companion rule, for
+     * a file the pack holds in its own right (an asset file, a template, any part of a whole-pack write).
+     *
+     * @param packDir the pack directory, absolute and normalized
+     * @param packRelative the path relative to the pack directory, {@code /}-separated
+     * @return where it leads, or why the rule refuses it
+     */
+    static Resolution inPack(Path packDir, String packRelative) {
+        return contained(packDir, packDir, packRelative);
+    }
+
+    /** A declared path is not empty, not absolute, has no backslash, and resolves against {@code base} into the pack. */
+    private static Resolution contained(Path packDir, Path base, String declared) {
         if (declared.isBlank()) {
             return new Refused("is empty");
         }
@@ -118,14 +149,9 @@ final class Companions {
         if (relative.isAbsolute() || declared.startsWith("/")) {
             return new Refused("leaves the pack");
         }
-        Path base = Objects.requireNonNullElse(packDir.resolve(artifactFile).getParent(), packDir);
         Path file = base.resolve(relative).normalize();
         if (!file.startsWith(packDir) || file.equals(packDir)) {
             return new Refused("leaves the pack");
-        }
-        // The resolved name, not the declared text: "pack.yaml/" and "x.tactic.yaml/." both normalize to a YAML file.
-        if (String.valueOf(file.getFileName()).toLowerCase(Locale.ROOT).endsWith(YAML)) {
-            return new Refused("is a YAML file");
         }
         return new Inside(
                 file,

@@ -21,8 +21,11 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Two checked-in lists drive it. {@code whole-pack/expected-red.yaml} names what is known not to round-trip yet: a
  * whole gate kind with no adapter ({@code kinds}), or a single file of a modelled kind ({@code files}), each with a
- * reason and the issue that owns it; it also names a modelled kind the pack has no file of ({@code empty_kinds}), which
- * the gate cannot prove and must not pass in silence. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
+ * reason and the issue that owns it. A file entry pins either where the file first differs ({@code at}) or the exact
+ * reason it is refused ({@code refused}), and belongs to one pack ({@code pack}, default {@code built-in}); the
+ * refusals are the same list every other ratchet reads (see {@link #refusals(String)}), never a copy. The list also
+ * names a modelled kind the pack has no file of ({@code empty_kinds}), which the gate cannot prove and must not pass
+ * in silence. {@code whole-pack/exclusions.yaml} is the gate's own append-only list of files it
  * does not compare, each with a reason.
  *
  * <p>The gate passes only when the observed reds are exactly the expected ones: an unlisted red fails, and so does a
@@ -33,6 +36,8 @@ final class WholePackExpectation {
 
     static final String EXPECTED_RED_RESOURCE = "whole-pack/expected-red.yaml";
     static final String EXCLUSIONS_RESOURCE = "whole-pack/exclusions.yaml";
+    static final String DEFAULT_PACK = "built-in";
+    private static final String REFUSED_PREFIX = "refused: ";
 
     /** The status of one file in a gate run. */
     enum Status {
@@ -66,15 +71,50 @@ final class WholePackExpectation {
     record EmptyKindEntry(String kind, String reason, String issue) {}
 
     /**
-     * An expected-red file of a modelled kind.
+     * An expected-red file of a modelled kind. Exactly one of {@code at} and {@code refused} is set.
      *
+     * @param pack the pack the file belongs to; an evaluation of another pack ignores the entry
      * @param path the pack-relative path
      * @param at where its first difference is expected (the path before the first {@code ": "} of the red detail, or
      *     {@code refused}); a red file whose first difference moves elsewhere is a new loss, not this one
+     * @param refused the exact refusal reason (the red detail after {@code "refused: "}); a refusal for any other
+     *     reason, or any other difference, is a new loss, not this one
      * @param reason why it is red
      * @param issue the issue that owns the fix
      */
-    record FileEntry(String path, String at, String reason, String issue) {}
+    record FileEntry(
+            String pack,
+            String path,
+            @Nullable String at,
+            @Nullable String refused,
+            String reason,
+            String issue) {
+
+        /** Whether this entry expects exactly the given red detail. */
+        boolean expects(String red) {
+            return refused != null
+                    ? red.equals(REFUSED_PREFIX + refused)
+                    : atOf(red).equals(at);
+        }
+
+        /** What this entry expects, for a problem message. */
+        String expectation() {
+            return refused != null
+                    ? "expected " + REFUSED_PREFIX + refused
+                    : "expected the first difference at '" + at + "'";
+        }
+    }
+
+    /**
+     * A file a pack is known to refuse, pinned in {@code expected-red.yaml} for every ratchet that reads that pack.
+     *
+     * @param pack the pack
+     * @param path the pack-relative path of the refused file
+     * @param refused the exact refusal reason
+     * @param reason why it is refused
+     * @param issue the issue that owns the fix
+     */
+    record PinnedRefusal(String pack, String path, String refused, String reason, String issue) {}
 
     /**
      * A class of files the gate does not compare.
@@ -152,29 +192,83 @@ final class WholePackExpectation {
                 document(expectedRedYaml, EXPECTED_RED_RESOURCE, Set.of("kinds", "files", "empty_kinds"));
         Map<String, Object> excluded = document(exclusionsYaml, EXCLUSIONS_RESOURCE, Set.of("exclusions"));
         List<KindEntry> kinds = new ArrayList<>();
-        for (Map<String, String> entry : entries(red.get("kinds"), "kinds", List.of("kind", "reason", "issue"))) {
+        for (Map<String, String> entry :
+                entries(red.get("kinds"), "kinds", List.of("kind", "reason", "issue"), List.of(), List.of("kind"))) {
             kinds.add(new KindEntry(entry.get("kind"), entry.get("reason"), entry.get("issue")));
         }
         List<FileEntry> files = new ArrayList<>();
-        for (Map<String, String> entry : entries(red.get("files"), "files", List.of("path", "at", "reason", "issue"))) {
-            files.add(new FileEntry(entry.get("path"), entry.get("at"), entry.get("reason"), entry.get("issue")));
+        for (Map<String, String> entry : entries(
+                red.get("files"),
+                "files",
+                List.of("path", "reason", "issue"),
+                List.of("pack", "at", "refused"),
+                List.of("pack", "path"))) {
+            @Nullable String at = entry.get("at");
+            @Nullable String refused = entry.get("refused");
+            if ((at == null) == (refused == null)) {
+                throw new IllegalArgumentException("files entry " + entry
+                        + (at == null ? " has no at or refused" : " has both at and refused; give exactly one"));
+            }
+            files.add(new FileEntry(
+                    entry.getOrDefault("pack", DEFAULT_PACK),
+                    entry.get("path"),
+                    at,
+                    refused,
+                    entry.get("reason"),
+                    entry.get("issue")));
         }
         List<EmptyKindEntry> emptyKinds = new ArrayList<>();
-        for (Map<String, String> entry :
-                entries(red.get("empty_kinds"), "empty_kinds", List.of("kind", "reason", "issue"))) {
+        for (Map<String, String> entry : entries(
+                red.get("empty_kinds"),
+                "empty_kinds",
+                List.of("kind", "reason", "issue"),
+                List.of(),
+                List.of("kind"))) {
             emptyKinds.add(new EmptyKindEntry(entry.get("kind"), entry.get("reason"), entry.get("issue")));
         }
         List<Exclusion> exclusions = new ArrayList<>();
-        for (Map<String, String> entry :
-                entries(excluded.get("exclusions"), "exclusions", List.of("match", "reason"))) {
+        for (Map<String, String> entry : entries(
+                excluded.get("exclusions"), "exclusions", List.of("match", "reason"), List.of(), List.of("match"))) {
             exclusions.add(new Exclusion(entry.get("match"), entry.get("reason")));
         }
         return new WholePackExpectation(kinds, files, emptyKinds, exclusions);
     }
 
     /**
+     * The refusals pinned for one pack, in list order: the single source both the gate and any other ratchet over that
+     * pack read.
+     *
+     * @param pack the pack
+     * @return its pinned refusals
+     */
+    List<PinnedRefusal> refusals(String pack) {
+        List<PinnedRefusal> refusals = new ArrayList<>();
+        for (FileEntry entry : files) {
+            if (entry.pack().equals(pack) && entry.refused() != null) {
+                refusals.add(
+                        new PinnedRefusal(entry.pack(), entry.path(), entry.refused(), entry.reason(), entry.issue()));
+            }
+        }
+        return List.copyOf(refusals);
+    }
+
+    /**
+     * Judges one gate run of the built-in pack.
+     *
+     * @param census every file of the pack with its gate kind
+     * @param modelledKinds the gate kinds the round trip models
+     * @param observed see {@link #evaluate(String, SortedMap, Set, Map)}
+     * @return every file's verdict, and every problem
+     */
+    Evaluation evaluate(
+            SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
+        return evaluate(DEFAULT_PACK, census, modelledKinds, observed);
+    }
+
+    /**
      * Judges one gate run.
      *
+     * @param pack the pack being evaluated; file entries of any other pack are ignored
      * @param census every file of the pack with its gate kind
      * @param modelledKinds the gate kinds the round trip models
      * @param observed for each file of a modelled kind, empty when it round-tripped, else the red detail, which starts
@@ -183,9 +277,14 @@ final class WholePackExpectation {
      * @return every file's verdict, and every problem
      */
     Evaluation evaluate(
-            SortedMap<String, String> census, Set<String> modelledKinds, Map<String, Optional<String>> observed) {
+            String pack,
+            SortedMap<String, String> census,
+            Set<String> modelledKinds,
+            Map<String, Optional<String>> observed) {
+        List<FileEntry> packFiles =
+                files.stream().filter(entry -> entry.pack().equals(pack)).toList();
         Map<String, FileEntry> fileEntries = new LinkedHashMap<>();
-        files.forEach(entry -> fileEntries.put(entry.path(), entry));
+        packFiles.forEach(entry -> fileEntries.put(entry.path(), entry));
         Map<String, KindEntry> kindEntries = new LinkedHashMap<>();
         kinds.forEach(entry -> kindEntries.put(entry.kind(), entry));
         List<Pattern> patterns = exclusions.stream().map(e -> glob(e.match())).toList();
@@ -223,10 +322,10 @@ final class WholePackExpectation {
             @Nullable FileEntry fileEntry = fileEntries.get(path);
             // A kind entry only ever covers a kind no adapter models; for a modelled kind each file is listed alone.
             @Nullable KindEntry kindEntry = modelled ? null : kindEntries.get(kind);
-            if (fileEntry != null && !atOf(red.get()).equals(fileEntry.at())) {
+            if (fileEntry != null && !fileEntry.expects(red.get())) {
                 results.add(new FileResult(path, kind, Status.RED, red.get()));
-                problems.add("CHANGED_RED " + path + " (" + kind + "): expected the first difference at '"
-                        + fileEntry.at() + "', now: " + red.get());
+                problems.add(
+                        "CHANGED_RED " + path + " (" + kind + "): " + fileEntry.expectation() + ", now: " + red.get());
             } else if (fileEntry != null) {
                 results.add(new FileResult(
                         path, kind, Status.EXPECTED_RED, expected(red.get(), fileEntry.reason(), fileEntry.issue())));
@@ -239,7 +338,7 @@ final class WholePackExpectation {
             }
         });
 
-        for (FileEntry entry : files) {
+        for (FileEntry entry : packFiles) {
             if (!census.containsKey(entry.path())) {
                 problems.add(
                         "STALE_BASELINE " + entry.path() + ": no such file; remove it from " + EXPECTED_RED_RESOURCE);
@@ -354,7 +453,8 @@ final class WholePackExpectation {
         return document;
     }
 
-    private static List<Map<String, String>> entries(@Nullable Object list, String where, List<String> fields) {
+    private static List<Map<String, String>> entries(
+            @Nullable Object list, String where, List<String> fields, List<String> optional, List<String> identity) {
         if (list == null) {
             return List.of();
         }
@@ -369,9 +469,11 @@ final class WholePackExpectation {
             }
             Map<String, String> entry = new LinkedHashMap<>();
             map.forEach((key, value) -> {
-                if (!fields.contains(String.valueOf(key))) {
+                if (!fields.contains(String.valueOf(key)) && !optional.contains(String.valueOf(key))) {
+                    List<String> allowed = new ArrayList<>(fields);
+                    allowed.addAll(optional);
                     throw new IllegalArgumentException(
-                            where + " entry " + map + " has an unknown key '" + key + "'; allowed: " + fields);
+                            where + " entry " + map + " has an unknown key '" + key + "'; allowed: " + allowed);
                 }
                 if (value instanceof Map<?, ?> || value instanceof List<?>) {
                     throw new IllegalArgumentException(
@@ -385,8 +487,18 @@ final class WholePackExpectation {
                     throw new IllegalArgumentException(where + " entry " + map + " has no " + field);
                 }
             }
-            if (!seen.add(entry.get(fields.get(0)))) {
-                throw new IllegalArgumentException(where + " lists '" + entry.get(fields.get(0)) + "' twice");
+            for (String field : optional) {
+                String value = entry.get(field);
+                if (value != null && (value.isBlank() || "null".equals(value))) {
+                    throw new IllegalArgumentException(where + " entry " + map + " has an empty " + field);
+                }
+            }
+            String key = identity.stream()
+                    .map(field -> entry.getOrDefault(field, "pack".equals(field) ? DEFAULT_PACK : ""))
+                    .collect(java.util.stream.Collectors.joining(" "));
+            if (!seen.add(key)) {
+                throw new IllegalArgumentException(
+                        where + " lists '" + entry.get(identity.get(identity.size() - 1)) + "' twice");
             }
             entries.add(entry);
         }

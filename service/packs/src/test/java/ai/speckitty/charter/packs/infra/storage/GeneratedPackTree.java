@@ -28,7 +28,17 @@ import org.jspecify.annotations.Nullable;
  * <table>
  * <caption>Name shapes and their verdicts</caption>
  * <tr><th>Shape</th><th>Verdict</th></tr>
- * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm, agent</td><td>loaded</td></tr>
+ * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm,
+ *     agent, step-contract, glossary-pack, skill, asset</td><td>loaded</td></tr>
+ * <tr><td>an asset sidecar of a loaded shape names a payload {@code assets/<dirs><stem>.bin}, planted with it</td>
+ *     <td>payload</td></tr>
+ * <tr><td>{@code assets/<dirs><stem>.bin.asset.yaml} beside its payload {@code assets/<dirs><stem>.bin}</td>
+ *     <td>loaded, payload</td></tr>
+ * <tr><td>{@code <dirs><stem>.asset.yaml} whose payload does not exist: digested, refused by the load</td>
+ *     <td>loaded (refused)</td></tr>
+ * <tr><td>a sidecar-less {@code assets/<dirs><stem>.config.yaml}; a nested {@code assets/a/b/<stem>.png}</td>
+ *     <td>payload</td></tr>
+ * <tr><td>a top-level template {@code templates/<dirs><stem>.md}</td><td>payload</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (a files rule wins over the presets exclusion)</td><td>loaded</td></tr>
@@ -39,7 +49,9 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
- * <tr><td>procedure and asset files</td><td>decoy</td></tr>
+ * <tr><td>procedure files</td><td>decoy</td></tr>
+ * <tr><td>{@code assets/<dirs>README.md}; a mission template {@code missions/m/templates/<stem>.md}; a
+ *     payload-like {@code <dirs><stem>.png} outside {@code assets/}</td><td>decoy</td></tr>
  * <tr><td>root {@code org-charter.yaml}, {@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
  *     <td>decoy</td></tr>
  * <tr><td>nested {@code sub/y.graph.yaml}, nested {@code sub/drg/fragment.yaml}</td><td>decoy</td></tr>
@@ -48,7 +60,8 @@ import org.jspecify.annotations.Nullable;
  * </table>
  *
  * <p>Directory names that are both a files rule and an exclusion ({@code mission_types}, {@code missions},
- * {@code actions}) are kept out of the alphabet, so a verdict never depends on which rule comes first.
+ * {@code actions}) are kept out of the alphabet, so a verdict never depends on which rule comes first; so are
+ * {@code assets} and {@code templates}, which only the payload shapes plant.
  */
 final class GeneratedPackTree {
 
@@ -58,6 +71,8 @@ final class GeneratedPackTree {
         LOADED,
         /** A declared graph input: digested, never loaded. */
         GRAPH_INPUT,
+        /** An asset file or a template: digested and read as bytes. */
+        PAYLOAD,
         /** A file or directory the service neither loads nor digests. */
         DECOY
     }
@@ -72,7 +87,8 @@ final class GeneratedPackTree {
         AGENT_PROFILE("agent"),
         MISSION_STEP_CONTRACT("step-contract"),
         GLOSSARY_PACK("glossary-pack"),
-        SKILL("skill");
+        SKILL("skill"),
+        ASSET("asset");
 
         private final String token;
 
@@ -96,6 +112,11 @@ final class GeneratedPackTree {
         GRAPH_ROOT(Verdict.GRAPH_INPUT),
         GRAPH_HIDDEN_ROOT(Verdict.GRAPH_INPUT),
         GRAPH_FRAGMENT(Verdict.GRAPH_INPUT),
+        ASSET_WITH_PAYLOAD(Verdict.LOADED),
+        ASSET_WITHOUT_PAYLOAD(Verdict.LOADED),
+        PAYLOAD_UNNAMED(Verdict.PAYLOAD),
+        PAYLOAD_NESTED(Verdict.PAYLOAD),
+        TEMPLATE_TOP(Verdict.PAYLOAD),
         DECOY_YML(Verdict.DECOY),
         DECOY_UPPER_EXTENSION(Verdict.DECOY),
         DECOY_UPPER_KIND(Verdict.DECOY),
@@ -104,7 +125,9 @@ final class GeneratedPackTree {
         DECOY_NOTES(Verdict.DECOY),
         DECOY_SUB_R(Verdict.DECOY),
         DECOY_PROCEDURE(Verdict.DECOY),
-        DECOY_ASSET(Verdict.DECOY),
+        DECOY_ASSETS_README(Verdict.DECOY),
+        DECOY_MISSION_TEMPLATE(Verdict.DECOY),
+        DECOY_PAYLOAD_OUTSIDE_ASSETS(Verdict.DECOY),
         DECOY_ORG_CHARTER(Verdict.DECOY),
         DECOY_SUB_CHARTER(Verdict.DECOY),
         DECOY_SUB_PACK(Verdict.DECOY),
@@ -137,11 +160,21 @@ final class GeneratedPackTree {
             Shape.DECOY_BAK,
             Shape.DECOY_KIND_THEN_CONFIG,
             Shape.DECOY_PROCEDURE,
-            Shape.DECOY_ASSET);
+            Shape.ASSET_WITHOUT_PAYLOAD,
+            Shape.PAYLOAD_UNNAMED,
+            Shape.PAYLOAD_NESTED,
+            Shape.TEMPLATE_TOP,
+            Shape.DECOY_MISSION_TEMPLATE,
+            Shape.DECOY_PAYLOAD_OUTSIDE_ASSETS);
 
     private static final List<String> DIRECTORIES = List.of("a", "b", "c", "sub", "d-1", "drg");
     private static final String DECOY_CONTENT = "a: 1\n";
     private static final String MALFORMED = "id: [\n";
+    /** Payload bytes no text codec keeps: a PNG signature, a NUL, CR/LF pairs and no final newline. */
+    private static final byte[] PAYLOAD_BYTES = {
+        (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, (byte) 0xff, '\r', '\n', 'x'
+    };
+
     private static final int LATE_COUNTER = 1_000_000;
     private static final String PACK_YAML = packYaml();
 
@@ -150,8 +183,9 @@ final class GeneratedPackTree {
      *
      * @param path the path relative to the pack directory, with forward slashes
      * @param verdict what the service must do with it
-     * @param kind the loaded kind, or null when the file is not loaded
-     * @param id the planted element id, or null when the content is malformed or the file is not loaded
+     * @param kind the loaded kind, or null when the file is not loaded as a kind
+     * @param id the planted element id, or null when the store must refuse the file (malformed content, an asset
+     *     sidecar whose payload does not exist) or the file is not loaded as a kind
      * @param file where the file is on disk (through the link, for a symlink)
      * @param target the external file a symlink points to, or null
      */
@@ -360,8 +394,10 @@ final class GeneratedPackTree {
     private void plant(Pack pack, Shape shape) throws IOException {
         switch (shape) {
             case LOADED_PLAIN, LOADED_HIDDEN_STEM, LOADED_HIDDEN_DIR, LOADED_PRESETS, LOADED_CONFIG_STEM ->
-                plantLoaded(pack, shape, randomKind());
+                plantLoaded(pack, shape, randomKind(true));
             case LOADED_FILE_SYMLINK -> plantSymlink(pack);
+            case ASSET_WITH_PAYLOAD -> plantAssetBesideItsPayload(pack);
+            case ASSET_WITHOUT_PAYLOAD -> plantSidecarWithoutPayload(pack);
             case DECOY_TACTIC_DIRECTORY -> plantDirectory(pack);
             case DECOY_DIRECTORY_SYMLINK -> plantDirectorySymlink(pack);
             default -> plantFile(pack, shape);
@@ -380,11 +416,16 @@ final class GeneratedPackTree {
         random = new Random(seed * 31 + pack.name().hashCode());
         counter = LATE_COUNTER;
         Shape shape = STEM_SHAPES.get(random.nextInt(STEM_SHAPES.size()));
-        return shape.verdict() == Verdict.LOADED ? plantLoaded(pack, shape, randomKind()) : plantFile(pack, shape);
+        if (shape == Shape.ASSET_WITHOUT_PAYLOAD) {
+            return plantSidecarWithoutPayload(pack);
+        }
+        // A late file is one file: an asset with its payload would leave the payload behind when it is removed.
+        return shape.verdict() == Verdict.LOADED ? plantLoaded(pack, shape, randomKind(false)) : plantFile(pack, shape);
     }
 
-    private Kind randomKind() {
-        return Kind.values()[random.nextInt(Kind.values().length)];
+    private Kind randomKind(boolean withAsset) {
+        int kinds = Kind.values().length - (withAsset ? 0 : 1);
+        return Kind.values()[random.nextInt(kinds)];
     }
 
     private Planted plantLoaded(Pack pack, Shape shape, Kind kind) throws IOException {
@@ -394,10 +435,50 @@ final class GeneratedPackTree {
         boolean valid =
                 pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;
         String id = idOf(kind, n);
-        Path file = write(pack, path, valid ? contentOf(kind, id) : MALFORMED);
+        String content = MALFORMED;
+        if (valid && kind == Kind.ASSET) {
+            String payload = directories(2) + stem + ".bin";
+            plantPayload(pack, shape, PackFileSet.ASSETS + payload);
+            content = sidecar(id, payload);
+        } else if (valid) {
+            content = contentOf(kind, id);
+        }
+        Path file = write(pack, path, content);
         Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
         remember(pack, shape, planted);
         return planted;
+    }
+
+    /** A sidecar and its payload side by side under {@code assets/}, the way the open packs lay them out. */
+    private void plantAssetBesideItsPayload(Pack pack) throws IOException {
+        int n = ++counter;
+        String payload = directories(2) + "e" + n + ".bin";
+        String id = idOf(Kind.ASSET, n);
+        plantPayload(pack, Shape.ASSET_WITH_PAYLOAD, PackFileSet.ASSETS + payload);
+        String path = PackFileSet.ASSETS + payload + ".asset.yaml";
+        Path file = write(pack, path, sidecar(id, payload));
+        remember(pack, Shape.ASSET_WITH_PAYLOAD, new Planted(path, Verdict.LOADED, Kind.ASSET, id, file, null));
+    }
+
+    /** A valid sidecar whose payload does not exist: digested like any sidecar, refused by the load (no id). */
+    private Planted plantSidecarWithoutPayload(Pack pack) throws IOException {
+        int n = ++counter;
+        String path = directories(2) + "e" + n + ".asset.yaml";
+        Path file = write(pack, path, sidecar(idOf(Kind.ASSET, n), "missing/e" + n + ".bin"));
+        Planted planted = new Planted(path, Verdict.LOADED, Kind.ASSET, null, file, null);
+        remember(pack, Shape.ASSET_WITHOUT_PAYLOAD, planted);
+        return planted;
+    }
+
+    private void plantPayload(Pack pack, Shape shape, String path) throws IOException {
+        Path file = pack.directory().resolve(path);
+        Files.createDirectories(file.getParent());
+        Files.write(file, PAYLOAD_BYTES);
+        remember(pack, shape, new Planted(path, Verdict.PAYLOAD, null, null, file, null));
+    }
+
+    private static String sidecar(String id, String payload) {
+        return "id: " + id + "\nmime: application/octet-stream\npath: " + payload + "\n";
     }
 
     private String loadedPath(Shape shape, String stem, Kind kind) {
@@ -455,7 +536,12 @@ final class GeneratedPackTree {
         if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
             return pack.planted.get(path);
         }
-        write(pack, path, DECOY_CONTENT);
+        if (shape.verdict() == Verdict.PAYLOAD) {
+            Files.createDirectories(file.getParent());
+            Files.write(file, PAYLOAD_BYTES);
+        } else {
+            write(pack, path, DECOY_CONTENT);
+        }
         Planted planted = new Planted(path, shape.verdict(), null, null, file, null);
         remember(pack, shape, planted);
         return planted;
@@ -474,7 +560,12 @@ final class GeneratedPackTree {
             case DECOY_NOTES -> "notes.yaml";
             case DECOY_SUB_R -> "sub/r.yaml";
             case DECOY_PROCEDURE -> directories(2) + stem + ".procedure.yaml";
-            case DECOY_ASSET -> directories(2) + stem + ".asset.yaml";
+            case PAYLOAD_UNNAMED -> PackFileSet.ASSETS + directories(2) + stem + ".config.yaml";
+            case PAYLOAD_NESTED -> PackFileSet.ASSETS + "a/b/" + stem + ".png";
+            case TEMPLATE_TOP -> PackFileSet.TEMPLATES + directories(2) + stem + ".md";
+            case DECOY_ASSETS_README -> PackFileSet.ASSETS + directories(1) + "README.md";
+            case DECOY_MISSION_TEMPLATE -> "missions/m/templates/" + stem + ".md";
+            case DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + ".png";
             case DECOY_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_SUB_CHARTER -> "sub/charter.yaml";
             case DECOY_SUB_PACK -> "sub/pack.yaml";
@@ -525,6 +616,7 @@ final class GeneratedPackTree {
             case MISSION_STEP_CONTRACT -> "msc-" + n;
             case GLOSSARY_PACK -> "gp-" + n;
             case SKILL -> "sk-" + n;
+            case ASSET -> "a-" + n;
         };
     }
 
@@ -547,6 +639,7 @@ final class GeneratedPackTree {
             case SKILL ->
                 "id: " + id
                         + "\nschema_version: '1.0'\ntitle: T\ndescription: D\nform: wrapper\nexpands_to:\n  target: builtin:x\n";
+            case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }
 

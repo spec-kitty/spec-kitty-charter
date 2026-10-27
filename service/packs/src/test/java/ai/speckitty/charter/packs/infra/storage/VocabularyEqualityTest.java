@@ -177,6 +177,19 @@ class VocabularyEqualityTest {
                         "skill");
     }
 
+    @Test
+    void aPayloadKindIsTheDomainsTemplateKindOrTheAssetPayloadAndNoneHasASchema() {
+        List<String> payloadKinds = PackFileKind.bundled().payloadRules().stream()
+                .map(PackFileKind.PayloadRule::kind)
+                .toList();
+
+        assertThat(payloadKinds).containsExactly("asset-payload", ArtifactKind.TEMPLATE.token());
+        assertThat(PackFileKind.bundled().fileRules())
+                .extracting(PackFileKind.FileRule::schema)
+                .as("a payload kind is not a schema kind, so PackSchemas never sees it")
+                .doesNotContainAnyElementsOf(payloadKinds);
+    }
+
     // ---- relations ---------------------------------------------------------------------------------
 
     @Test
