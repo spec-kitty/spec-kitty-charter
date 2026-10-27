@@ -1,6 +1,6 @@
 ---
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
-description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical DRG edge, and how pack inconsistencies go upstream.
+description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: draft
 updated: 2026-10-27T00:00:00Z
 type: ADR
@@ -62,7 +62,7 @@ force the decision:
   record, writes it, reads it back and compares the two records. A field the reader drops is missing
   on both sides, so the test passes. Today the graph writer drops node `provenance` and `tags` and
   fragment node `body_path`, and it hard-codes the shard header (`generated_at`).
-- **The DRG sources do not fit the domain one to one.** Built-in shards carry 55 component pairs with
+- **The CRG sources do not fit the domain one to one.** Built-in shards carry 55 component pairs with
   more than one edge, where ADR-0027 keeps one structural relationship per pair. One of them is an
   `in_tension_with` beside a `requires`, which ADR-0028 allows, so 54 carry two structural edges.
   Edge lists repeat and reorder freely.
@@ -83,7 +83,7 @@ These are recorded as given on #188 (2026-10-27):
    each file. Byte-for-byte reproduction of YAML is not a goal.
 3. **Inconsistencies in source packs are fixed in the packs** (`spec-kitty-open-packs`). The service
    adds no special logic to keep or support an inconsistent structure.
-4. **DRG edges compare in canonical form.** Order and duplicates do not count. A pack whose edges
+4. **CRG edges compare in canonical form.** Order and duplicates do not count. A pack whose edges
    only work in another form is fixed in the pack.
 
 Decisions 2 to 7 derive the rules from these rulings. Where a rule is the author's reading rather
@@ -164,7 +164,7 @@ defined for it.
   retires a value. That is a contract change: a description change, a `CHANGELOG` entry and a minor
   version under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/).
 
-### 4. The canonical DRG edge
+### 4. The canonical CRG edge
 
 - **Edges are a set.** An edge's identity is the directed triple `(source, target, relation)`. Its
   value is every other field the schema declares (`when`, `reason`, `impacts` in a shard; `reason`,
@@ -333,7 +333,7 @@ These are asked on #188 (2026-10-27). Each is answered by the operator, not by t
 - **Comments are lost on write.** An authored file the service writes (for example a commented
   `pack.yaml`) loses its comments and its layout. Authors who keep comments keep editing the source.
 - **The epic finds upstream work.** The 54 built-in pairs that carry two structural edges, and the known
-  reverse pair in the internal fragment, must be fixed in open-packs before the DRG gate is green.
+  reverse pair in the internal fragment, must be fixed in open-packs before the CRG gate is green.
 
 ### Follow-up work (implemented elsewhere; this record changes no code)
 
@@ -342,7 +342,7 @@ These are asked on #188 (2026-10-27). Each is answered by the operator, not by t
   ("A pack descriptor with an undeclared key loads") and a `CHANGELOG` entry. Close DIV-005 and
   DIV-006 in the divergence register when the code lands. The operator places this in #189 or in its
   own issue.
-- Readers keep every declared field: DRG node `provenance` and `tags`, fragment `body_path`, and the
+- Readers keep every declared field: CRG node `provenance` and `tags`, fragment `body_path`, and the
   shard header fields the writer hard-codes today (#187 finds them; #189 or the kind missions fix
   them).
 - The gate compares source against written in canonical form over every covered kind (#187). The
@@ -353,7 +353,7 @@ These are asked on #188 (2026-10-27). Each is answered by the operator, not by t
   (#189).
 - How the gate reports a pack inconsistency or a difference (its output format, and whether the
   comparator or the domain invariant detects two structural edges on a pair) is #187's to design.
-- The gate compares DRG edges and nodes as sets (#187). Whether the domain's graph merge also
+- The gate compares CRG edges and nodes as sets (#187). Whether the domain's graph merge also
   becomes set-based is for #189 to decide; this record only defines comparison.
 
 ### Risks
