@@ -8,7 +8,7 @@ import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
  * The pluggable format seam of pack persistence: it turns a persistence shape into text and back. A strategy knows a
  * format and nothing of where the text lives; {@link FilesystemPackStore} owns the paths.
  *
- * <p>Artifacts are read and written through one kind-parameterised pair (ADR-0036): the {@link KindBinding} names the
+ * <p>Artifacts are read and written through one kind-parameterized pair (ADR-0036): the {@link KindBinding} names the
  * kind and its persistence shape, and the strategy supplies the format for every bound kind. A read never throws on
  * content: text that is not the format or breaks its schema is a {@link FileRead.Unreadable}.
  */
