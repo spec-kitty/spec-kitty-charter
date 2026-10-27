@@ -23,7 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@DisplayName("Whole-pack load and write (ADR-0036 decision 5)")
+@DisplayName("Whole-pack load and write (ADR-0037 decision 5)")
 class WholePackStoreTest {
 
     private static final String DIRECTIVE_FILE = "directives/043-close-the-class.directive.yaml";

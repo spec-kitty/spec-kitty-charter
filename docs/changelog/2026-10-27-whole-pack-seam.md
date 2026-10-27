@@ -7,7 +7,7 @@ updated: 2026-10-27T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
-  - adr/0036-kind-keyed-pack-registry-and-whole-pack-seam
+  - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
   - architecture/architectural-patterns-applied
 audience:
   - profile: charter-service-contributor
@@ -22,7 +22,7 @@ audience:
 pack by copying the five kinds across by hand, so a sixth kind would have vanished on the next
 commit. The `Pack` aggregate now keys its artifacts by kind, and a registration adds or replaces
 one artifact with `Pack.with`, keeping everything else
-([ADR-0036](/adr/0036-kind-keyed-pack-registry-and-whole-pack-seam/), proposed, for
+([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), proposed, for
 [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)).
 
 Adding a kind no longer edits the aggregate, the store, the format or the registration services.

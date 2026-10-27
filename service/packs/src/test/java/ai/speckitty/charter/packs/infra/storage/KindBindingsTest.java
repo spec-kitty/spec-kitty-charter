@@ -10,7 +10,7 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("The storage kind registry (ADR-0036)")
+@DisplayName("The storage kind registry (ADR-0037)")
 class KindBindingsTest {
 
     @Test

@@ -1,7 +1,7 @@
 # Implementation Plan: Whole-pack load and write through the Pack aggregate
 
 **Branch**: `feat/189-whole-pack-seam` | **Date**: 2026-10-27 | **Spec**: [spec.md](spec.md)
-**Decision record**: [ADR-0036](../../docs/adr/0036-kind-keyed-pack-registry-and-whole-pack-seam.md) (Proposed)
+**Decision record**: [ADR-0037](../../docs/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam.md) (Proposed)
 
 ## Summary
 
@@ -19,7 +19,7 @@ snakeyaml-engine through `ParsedYaml` and `YamlDumpEmitter`; schemas from `contr
 - ADR-0006 slices: the domain map holds `CharterArtifact` and `ArtifactKind` (kernel) only; bindings,
   formats and layout live in `packs.infra.storage`.
 - ADR-0026 D3: registration still loads, mutates (`Pack.with`), revalidates and commits the delta.
-- Charter: architecture change → ADR-0036 Proposed, operator acceptance before merge.
+- Charter: architecture change → ADR-0037 Proposed, operator acceptance before merge.
 
 ## Design
 

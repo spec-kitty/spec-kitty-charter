@@ -68,7 +68,7 @@ the aggregating `PackRepository` and the `PackInspectionQuery`. Serialization is
 (`SerializationStrategy`, with `YamlSerializationStrategy` today) so a database-backed sibling
 could be added behind the same port. Each stored kind registers a `KindBinding` (its DSO and the
 mapping to its entity) and a YAML format, and the aggregate, the store and the strategy handle
-every kind through that registry ([ADR-0036](/adr/0036-kind-keyed-pack-registry-and-whole-pack-seam/)).
+every kind through that registry ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)).
 `WholePackStore` loads a whole pack directory into the aggregate and writes it to a new
 directory.
 

@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * A DRG document of a pack as authored, every field its schema allows kept: a root graph shard
  * ({@code <name>.graph.yaml}, nodes by URN) or the org fragment ({@code drg/fragment.yaml}, nodes by id and plural
- * kind). {@link WholePackStore} carries these beside the aggregate so a whole pack can be written back (ADR-0036).
+ * kind). {@link WholePackStore} carries these beside the aggregate so a whole pack can be written back (ADR-0037).
  * They stay out of the {@code Pack} aggregate: the artifacts also mint relationships, and which of the two copies of
  * an edge is authoritative is not settled, so nothing here pretends to keep them in step. Resolving them into a
  * doctrine graph is not this value's business.

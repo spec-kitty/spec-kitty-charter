@@ -5,7 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 
 /**
- * How one artifact kind is stored (ADR-0036): its persistence shape and the mapping between that shape and the domain
+ * How one artifact kind is stored (ADR-0037): its persistence shape and the mapping between that shape and the domain
  * entity. A binding knows no format and no path; the {@link SerializationStrategy} turns the shape into text and
  * {@link FilesystemPackStore} places the text. {@link KindBindings} lists every bound kind.
  *

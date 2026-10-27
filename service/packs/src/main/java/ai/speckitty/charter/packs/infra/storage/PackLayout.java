@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Where each artifact of a pack sits, as pack-relative paths (ADR-0036 decision 5). A file's place is how a pack is
+ * Where each artifact of a pack sits, as pack-relative paths (ADR-0037 decision 5). A file's place is how a pack is
  * authored, not what the artifact means, so it is kept here beside the aggregate instead of on the entities. An
  * artifact with no recorded place goes where a registration creates one: its kind's
  * {@link KindBinding#fileName file name} directly in the pack directory.

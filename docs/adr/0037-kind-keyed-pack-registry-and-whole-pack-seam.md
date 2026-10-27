@@ -1,5 +1,5 @@
 ---
-title: "ADR-0036: A kind-keyed pack registry and the whole-pack seam"
+title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: draft
 updated: 2026-10-27T00:00:00Z
@@ -19,7 +19,7 @@ audience:
     guidance_text: Read this for how the service holds a whole pack; nothing on the wire changes.
 ---
 
-# ADR-0036: A kind-keyed pack registry and the whole-pack seam
+# ADR-0037: A kind-keyed pack registry and the whole-pack seam
 
 ## Status
 
