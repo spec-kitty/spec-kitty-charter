@@ -79,7 +79,7 @@ Following core ADR `2026-10-03-1` ("Cross-language contract"), the **charter con
 the OpenAPI document plus four more parts:
 
 1. the versioned **OpenAPI 3.1** document and the **YAML document schemas** of the inputs
-   (pack descriptor, org charter, DRG fragment and graph shards, artifact files,
+   (pack descriptor, org charter, CRG fragment and graph shards, artifact files,
    `charter.yaml`);
 2. the **semantic rules**: merge, activation, traversal and resolution;
 3. **canonical identifiers and diagnostics**: refusal and diagnostic codes such as

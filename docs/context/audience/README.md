@@ -24,7 +24,7 @@ everything to everyone.
 |---|---|---|
 | [Charter service contributor](/context/audience/charter-service-contributor/) | inside this repository | What to build, in what order, and which core behavior to reproduce |
 | [Core maintainer](/context/audience/core-maintainer/) | outside, owns the consuming side | What core must change, and what evidence gates each stage |
-| [Pack author and doctrine curator](/context/audience/pack-author/) | outside, writes the inputs | Which descriptor files exist, what their fields mean, and how packs resolve |
+| [Pack author and charter curator](/context/audience/pack-author/) | outside, writes the inputs | Which descriptor files exist, what their fields mean, and how packs resolve |
 | [Governance lead](/context/audience/governance-lead/) | outside, adopts what is produced | Governance that reaches every agent, or fails loudly |
 | [Evaluator](/context/audience/evaluator/) | outside, decides on adoption | Boundaries, status and trade-offs stated plainly |
 | [Individual developer](/context/audience/individual-developer/) | outside, adopts what is produced | Their own rules in force across agent sessions, with little setup |

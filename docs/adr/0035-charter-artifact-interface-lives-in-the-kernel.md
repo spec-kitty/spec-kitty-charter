@@ -86,4 +86,4 @@ an optional member keeps that without a placeholder.
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java`
   (`aSecondSliceCanImplementTheSharedArtifactInterface`)
 - [ADR-0006: Onion vertical slices with ArchUnit](/adr/0006-onion-vertical-slices-archunit/)
-- [ADR-0024: Doctrine artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
+- [ADR-0024: Charter artifact family contract](/adr/0024-doctrine-artifact-family-contract/)

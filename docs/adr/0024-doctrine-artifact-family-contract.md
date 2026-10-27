@@ -1,5 +1,5 @@
 ---
-title: "ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports"
+title: "ADR-0024: Charter kinds share a thin CharterArtifact interface over per-kind entities and ports"
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
@@ -10,12 +10,12 @@ related:
   - adr/0017-pack-schemas-imported-as-canonical-json-schema
 audience:
   - profile: core-maintainer
-    guidance_text: Read this for the contract every new doctrine kind follows and why adding one is a wide but bounded change until the registry lands.
+    guidance_text: Read this for the contract every new charter kind follows and why adding one is a wide but bounded change until the registry lands.
   - profile: charter-service-contributor
-    guidance_text: Read this before adding a doctrine kind — where the family interface lives, what each kind owns, and what is deferred.
+    guidance_text: Read this before adding a charter kind — where the family interface lives, what each kind owns, and what is deferred.
 ---
 
-# ADR-0024: Doctrine kinds share a thin CharterArtifact interface over per-kind entities and ports
+# ADR-0024: Charter kinds share a thin CharterArtifact interface over per-kind entities and ports
 
 ## Status
 
@@ -54,7 +54,7 @@ The order is:
 1. Settle #171 before any new kind: decide where `CharterArtifact` lives, and keep only what every
    kind has (`schemaVersion` optional). Every new kind implements this interface, so it is the one
    real prerequisite.
-2. Hand-build two or three new kinds, at least one of them not YAML doctrine (asset or template).
+2. Hand-build two or three new kinds, at least one of them not YAML-authored (asset or template).
 3. Then extract the shared read, write and registration code (#169) from those real examples,
    with the whole-pack round-trip gate
    ([#187](https://github.com/spec-kitty/spec-kitty-charter/issues/187)) as the safety net.
@@ -76,7 +76,7 @@ enforcement and integrity rules; a styleguide carries scope, principles, pattern
 machine-checkable config tree; a paradigm carries a summary and the directives it is realized
 by. Only `kind`, `packId`, `localId`, `schemaVersion`, `label`, `description`, `edges` and a
 derived `urn` are genuinely common. A fat shared base entity would force false commonality;
-no abstraction at all would leave the aggregate, the doctrine-reference-graph view and reports
+no abstraction at all would leave the aggregate, the charter-reference-graph view and reports
 switching on kind everywhere.
 
 The mission's decision record first placed the shared interface in `kernel.domain`. That is
@@ -111,7 +111,7 @@ interface would invert the dependency and break the "no kernel change" guarantee
 
 ### Positive
 
-- The aggregate, the DRG view and reports treat the four kinds uniformly through one spine,
+- The aggregate, the CRG view and reports treat the four kinds uniformly through one spine,
   while each kind keeps its own schema-distinct body.
 - The kernel is unchanged; the domain ring depends on nothing outward (the ArchUnit gate holds).
 - Round-trip fidelity is a per-kind DSO-record equality, provable field by field.
@@ -123,7 +123,7 @@ interface would invert the dependency and break the "no kernel change" guarantee
 
 ### Risks
 
-- The interim DRG edge relation mapping (typed reference → `SUGGESTS`, bare → `REQUIRES`) is
+- The interim CRG edge relation mapping (typed reference → `SUGGESTS`, bare → `REQUIRES`) is
   provisional pending confirmation against core's extractor
   ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)). Nothing in production
   assembles these edges yet, so an interim-wrong mapping misleads no consumer today; #167 must
@@ -138,7 +138,7 @@ one kind's concerns onto the others.
 
 ### No shared abstraction
 
-Rejected: every cross-kind reader (aggregate, DRG view, reports) would switch on kind, and a
+Rejected: every cross-kind reader (aggregate, CRG view, reports) would switch on kind, and a
 new kind would touch each reader.
 
 ### Build the kind registry now

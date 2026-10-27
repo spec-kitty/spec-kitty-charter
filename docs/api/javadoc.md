@@ -24,7 +24,7 @@ module on its overview page, with one index and one search across all of them:
 
 | Module | Package | What it holds |
 |---|---|---|
-| `kernel` | `ai.speckitty.charter.kernel` | The shared kernel: the pack and Doctrine Reference Graph vocabulary (`kernel.domain`) and the pure validation library (`kernel.validation`) |
+| `kernel` | `ai.speckitty.charter.kernel` | The shared kernel: the pack and Charter Reference Graph vocabulary (`kernel.domain`) and the pure validation library (`kernel.validation`) |
 | `packs` | `ai.speckitty.charter.packs` | The packs slice: the domain and its repository ports, the read use cases (`application`), the file-based storage adapter (`infra.storage`) and the inbound REST adapter (`infra.api`) |
 | `bootstrap` | `ai.speckitty.charter.bootstrap` | The Spring Boot wiring of the runnable service, the composition root |
 

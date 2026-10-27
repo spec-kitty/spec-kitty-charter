@@ -33,7 +33,7 @@ audience:
 
 ## What frustrates them
 
-- Pages that assume they know packs, schemas or the DRG.
+- Pages that assume they know packs, schemas or the CRG.
 - Errors that name internals instead of saying what to do next.
 
 ## Signal that the documentation served them

@@ -7,8 +7,8 @@ glossary_context: "Governance"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-26T21:16:31Z"
-  content_hash: "sha256:88df842d16f5"
+  at: "2026-10-27T09:25:39Z"
+  content_hash: "sha256:a467bff454be"
 ---
 
 # Governance
@@ -31,7 +31,7 @@ An available profile is any agent profile present in a layer of the charter offe
 
 ## Activation Chokepoint
 
-The single activation filter applied by `charter.activation.resolver.ActiveCharterService` (the activation-aware wrapper). It enforces the project charter's per-kind activation state on a doctrine service's `paradigms`, `procedures`, and `agent_profiles` surfaces, so every profile-resolving path passes through one consistent filter rather than re-implementing activation logic. The factory `charter.activation.active_charter_service_builder.build_active_charter_service` is the single construction seam that routes callers through this chokepoint.
+The single activation filter applied by `charter.activation.resolver.ActiveCharterService` (the activation-aware wrapper). It enforces the project charter's per-kind activation state on a charter service's `paradigms`, `procedures`, and `agent_profiles` surfaces, so every profile-resolving path passes through one consistent filter rather than re-implementing activation logic. The factory `charter.activation.active_charter_service_builder.build_active_charter_service` is the single construction seam that routes callers through this chokepoint.
 
 {#adr-architectural-decision-record}
 
@@ -53,7 +53,7 @@ A further role a profile can fill besides its primary role; for example a Python
 
 ## Charter Compiler
 
-The processor that takes the HiC's interview answers and their selected doctrine artifacts, and combines them into a finalized charter document and supporting governance files.
+The processor that takes the HiC's interview answers and their selected charter artifacts, and combines them into a finalized charter document and supporting governance files.
 
 {#charter-interview}
 

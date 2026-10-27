@@ -1,6 +1,6 @@
 ---
 title: Charter descriptor files
-description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and DRG links.
+description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
 updated: 2026-10-27T00:00:00Z
 type: Architecture
@@ -92,7 +92,7 @@ are unknown keys like any other (DIV-006).
 undeclared key, a retired field included, is a schema violation, and the pack is refused as
 `pack_unreadable`; `pack_unknown_key` is retired. DIV-005 and DIV-006 close when the code changes.
 
-DRG: none directly; it scopes the nodes the pack contributes.
+CRG: none directly; it scopes the nodes the pack contributes.
 
 ### `pack-manifest.yaml` — generated pack manifest
 
@@ -206,7 +206,7 @@ A binding rule. Schema: `directive.schema.yaml`.
   `explicit_allowances`, `references`.
 - **Naming:** `NNN-<slug>.directive.yaml` for numbered built-ins (id `DIRECTIVE_NNN`); ids
   match `^[A-Z][A-Z0-9_-]*$`.
-- **DRG:** `directive:<ID>`; typically `requires` or `suggests` tactics.
+- **CRG:** `directive:<ID>`; typically `requires` or `suggests` tactics.
 
 ### Tactic — `*.tactic.yaml`
 
@@ -215,7 +215,7 @@ A reusable technique as ordered steps. Schema: `tactic.schema.yaml`.
 - **Required:** `id`, `schema_version`, `name`, `steps`.
 - **Key fields:** `purpose`, `failure_modes`, `applies_to_languages`, `references`, `notes`.
 - **Naming:** `<kebab-id>.tactic.yaml`; built-ins may sit in topic subdirectories.
-- **DRG:** `tactic:<id>`; target of directive and action edges.
+- **CRG:** `tactic:<id>`; target of directive and action edges.
 
 ### Styleguide — `*.styleguide.yaml`
 
@@ -224,7 +224,7 @@ Conventions for a kind of work. Schema: `styleguide.schema.yaml`.
 - **Required:** `id`, `schema_version`, `title`, `scope`, `principles`.
 - **Key fields:** `patterns`, `anti_patterns`, `tooling`, `quality_test`,
   `applies_to_languages`, `references`, `structural_lint_config`.
-- **DRG:** `styleguide:<id>`.
+- **CRG:** `styleguide:<id>`.
 
 ### Toolguide — `*.toolguide.yaml`
 
@@ -233,7 +233,7 @@ How to use one tool. Schema: `toolguide.schema.yaml`.
 - **Required:** `id`, `schema_version`, `tool`, `title`, `guide_path`, `summary`.
 - **Key fields:** `commands`, `applies_to_languages`, `last_updated`, `references`.
 - `guide_path` points at a Markdown guide beside the descriptor.
-- **DRG:** `toolguide:<id>`.
+- **CRG:** `toolguide:<id>`.
 
 ### Paradigm — `*.paradigm.yaml`
 
@@ -241,7 +241,7 @@ A way of thinking about the work. Schema: `paradigm.schema.yaml`.
 
 - **Required:** `schema_version`, `id`, `name`, `summary`.
 - **Key fields:** `directive_refs`, `references`.
-- **DRG:** `paradigm:<id>`; some built-in paradigm nodes are re-kinded as `anti_pattern`.
+- **CRG:** `paradigm:<id>`; some built-in paradigm nodes are re-kinded as `anti_pattern`.
 
 ### Procedure — `*.procedure.yaml`
 
@@ -251,7 +251,7 @@ A multi-step operating procedure with entry and exit conditions. Schema:
 - **Required:** `schema_version`, `id`, `name`, `purpose`, `entry_condition`,
   `exit_condition`, `steps`.
 - **Key fields:** `anti_patterns`, `applies_to_languages`, `notes`, `references`.
-- **DRG:** `procedure:<id>`.
+- **CRG:** `procedure:<id>`.
 
 ### Agent profile — `*.agent.yaml`
 
@@ -264,7 +264,7 @@ kebab-case.
   `initialization-declaration`, `specialization-context`, `directive-references`,
   `tactic-references`, `toolguide-references`, `styleguide-references`,
   `self-review-protocol`, `model`, `effort`.
-- **DRG:** `agent_profile:<id>`. Lineage is a `specializes_from` edge in the graph, never a
+- **CRG:** `agent_profile:<id>`. Lineage is a `specializes_from` edge in the graph, never a
   profile field; `delegates_to` edges declare runtime handoff.
 - **Selection:** the first entry of `roles` is the primary role, the rest alt-roles, and
   `routing-priority` is the specificity level
@@ -277,7 +277,7 @@ The steps of one action of one mission type.
 
 - **Fields:** `schema_version`, `id`, `action`, `mission`, `steps[]`. Each step has `id`,
   `description` and either a `command` or a `delegates_to` block (`kind` plus `candidates`).
-- **DRG:** `mission_step_contract:<id>`, tied to `action:<mission>/<action>`.
+- **CRG:** `mission_step_contract:<id>`, tied to `action:<mission>/<action>`.
 
 ### Glossary pack — `*.glossary-pack.yaml`
 
@@ -285,7 +285,7 @@ Terms a pack contributes.
 
 - **Fields:** `id`, `description`, `provenance`, `terms[]` (each with `surface`,
   `definition`, `status`, `confidence`).
-- **DRG:** `glossary_pack:<id>`.
+- **CRG:** `glossary_pack:<id>`.
 
 ### Pack skill — `*.skill.yaml` plus body
 
@@ -297,7 +297,7 @@ A shared, parameterized entry point (core ADR [`2026-09-27-1`](https://github.co
   `invocation`, `tools`, `version`, `maintainers`, `enhances`, `overrides`.
 - **Naming:** id is lowercase ASCII, `[a-z0-9]` segments joined by single `-`, at most 64
   characters. Rendered as `<skill_namespace>-<id>/SKILL.md`.
-- **DRG:** `skill:<id>`.
+- **CRG:** `skill:<id>`.
 
 ### Asset — `*.asset.yaml` sidecar
 
@@ -306,7 +306,7 @@ Describes one blob. Model: `AssetManifest` (frozen, extra keys forbidden).
 - **Fields:** `id`, `mime`, `path` (relative to the pack's `assets/` directory, contained),
   optional `title`.
 - **Naming:** `<blob-file-name>.asset.yaml` beside the blob.
-- **DRG:** `asset:<id>`.
+- **CRG:** `asset:<id>`.
 
 ### Mission type — `missions/mission_types/<id>.yaml`
 

@@ -20,6 +20,6 @@ question, the evidence gathered, and a recommendation; the decision it feeds lan
 [ADR](/adr/), not here. Notes are not conventions in force.
 
 - [Relationship identity and the multigraph-collapse question](/development/notes/relationship-identity-collapse-review/) —
-  whether DRG multigraph pairs can collapse to one unidirectional relationship, the data and
+  whether CRG multigraph pairs can collapse to one unidirectional relationship, the data and
   architecture findings, and the conditions a collapse must carry. Feeds a future identity ADR that
   would revise [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/).

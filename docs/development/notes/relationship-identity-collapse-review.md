@@ -1,6 +1,6 @@
 ---
 title: "Note: relationship identity and the multigraph-collapse question"
-description: Review-squad findings on whether the DRG's multigraph pairs can collapse to one unidirectional relationship, feeding a future identity ADR.
+description: Review-squad findings on whether the CRG's multigraph pairs can collapse to one unidirectional relationship, feeding a future identity ADR.
 doc_status: draft
 updated: 2026-10-25T00:00:00Z
 type: Guide
@@ -13,7 +13,7 @@ audience:
   - profile: charter-service-contributor
     guidance_text: Read this before the identity ADR that follows — what the collapse can and cannot claim, and the conditions it must carry.
   - profile: core-maintainer
-    guidance_text: Read this for how the charter intends to treat multigraph DRG pairs and where the discovery/activation behavior would live.
+    guidance_text: Read this for how the charter intends to treat multigraph CRG pairs and where the discovery/activation behavior would live.
 ---
 
 # Note: relationship identity and the multigraph-collapse question

@@ -20,6 +20,18 @@ forbidden:
     pattern: '\bstatus-writing\b'
     prefer: status commit
     reason: retired term, gated in core by test_no_legacy_terminology
+  - term: retired-doctrine-noun
+    pattern: '\bDoctrine (?:Domain|Reference Graph|Relationship Graph|Pack|Catalog|Artifact)\b'
+    prefer: the Charter equivalent (Charter Domain, Charter Reference Graph, Charter Pack, charter catalog, charter artifact)
+    reason: '"doctrine" retired as a Spec Kitty term here (core #3664 retire-doctrine-term; charter cutover 2026-10-27); use charter'
+  - term: retired-doctrine-concept
+    pattern: '\bdoctrine (?:artifact|kind|pack|catalog)s?\b'
+    prefer: charter artifact / kind / pack / catalog
+    reason: '"doctrine" retired as a Spec Kitty term here (core #3664; charter cutover 2026-10-27); use charter'
+  - term: retired-drg-acronym
+    pattern: '\bDRG\b'
+    prefer: CRG (Charter Reference Graph)
+    reason: the graph is the Charter Reference Graph (CRG); the doctrine-era DRG acronym is retired (charter cutover 2026-10-27)
 
 avoid:
   - term: active-bundle
@@ -48,3 +60,21 @@ allow:
   - path: docs/conformance/divergence-register.md
     term: in_tension_with
     reason: DIV-018 records the schema's Relation enum as it stands, which still carries core's legacy in_tension_with value
+  - path: docs/conformance/divergence-register.md
+    term: retired-drg-acronym
+    reason: the register documents core's doctrine-era code paths and naming verbatim (offering/drg/*, drg/fragment.yaml, drg_dir) — core still ships DRG; our side says CRG
+  - path: docs/context/domain.md
+    term: retired-doctrine-noun
+    reason: the "Words to avoid" note names "Doctrine" and "Doctrine pack" precisely to record that they are retired here
+  - path: docs/context/domain.md
+    term: retired-doctrine-concept
+    reason: the "Words to avoid" note names the retired doctrine terms deliberately
+  - path: docs/changelog/2026-10-27-retire-doctrine-term.md
+    term: retired-doctrine-noun
+    reason: the changelog entry records the retirement and must name the retired terms
+  - path: docs/changelog/2026-10-27-retire-doctrine-term.md
+    term: retired-doctrine-concept
+    reason: the changelog entry records the retirement and must name the retired terms
+  - path: docs/changelog/2026-10-27-retire-doctrine-term.md
+    term: retired-drg-acronym
+    reason: the changelog entry records the DRG→CRG rename and must name the retired acronym

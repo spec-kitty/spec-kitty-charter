@@ -55,7 +55,7 @@ once an implementation exists.
 
 | Phase | Focus | Outcome |
 |---|---|---|
-| **P0 — Governance and seed** *(done)* | Register (vendor) the authoring doctrine; seed the behavior contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
+| **P0 — Governance and seed** *(done)* | Register (vendor) the authoring packs; seed the behavior contract. | The `internal` and `qa` org packs are registered and healthy; the charter-offering acceptance scenarios are copied into `tests/scenarios/charter/`. |
 | **P1 — Scenarios and boundary** | Define the offering's role and boundary as promise-first scenarios. | The suite covers the offering's guarantees and edges; each promise is traced to an authority; the set is presented in the docsite. |
 | **P2 — API specification** | Turn the described boundary into a published contract. | An OpenAPI 3.1 YAML contract under `contracts/charter/`, versioned as the external contract and rendered in the docsite (see [ADR-0002](/adr/0002-contract-source-of-record/)). |
 | **P3 — Low-level design** *(next focus)* | The artifact structure and storage model, behind a repository layer. | A design that decouples infrastructure from logic: a repository layer agnostic of whether charter content is file-based or database-provided. |

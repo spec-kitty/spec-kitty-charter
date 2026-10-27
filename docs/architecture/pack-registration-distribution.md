@@ -37,7 +37,7 @@ This page is the **canonical design**. It realizes [ADR-0005](/adr/0005-service-
 The architecture is organized on two orthogonal axes (ledger decision 1):
 
 - **Onion layers (dependency direction, inward only).** `entry-point infra → application → domain ← storage infra`. The domain is the innermost ring and depends on nothing outward; both infra rings depend inward on the domain.
-- **Vertical concern slices (subdomain partition), top-level.** Each slice owns a cohesive piece of the charter offering and cuts through every layer. The slices are **pack registration & validation**, **mission types**, **profiles**, and **other charter artifacts**, over a cross-cutting **shared kernel** slice that carries the pack-and-DRG primitives every slice reads.
+- **Vertical concern slices (subdomain partition), top-level.** Each slice owns a cohesive piece of the charter offering and cuts through every layer. The slices are **pack registration & validation**, **mission types**, **profiles**, and **other charter artifacts**, over a cross-cutting **shared kernel** slice that carries the pack-and-CRG primitives every slice reads.
 
 **Read/write is a sub-split inside each slice's application ring**, not a top-level module boundary (ledger decision 1 — this supersedes the horizontal read/write top-level shape in [Hexagonal service](/architecture/hexagonal-service/) and [Overview](/architecture/overview/)). The two axes compose: a slice holds both its read and its write use-case orchestration as packages within its application ring.
 
@@ -63,7 +63,7 @@ flowchart TB
     dmt["mission-types"]
     dprof["profiles"]
     dart["other charter artifacts"]
-    dker["shared kernel: Pack, DRG, PackSource, refusal codes"]
+    dker["shared kernel: Pack, CRG, PackSource, refusal codes"]
   end
 
   subgraph ST["Storage infra ring (storage-agnostic, returns domain models)"]
@@ -129,7 +129,7 @@ be.sddevelopment.charter
 
 - **Hybrid domain-service placement** (ledger decision 5): pure domain services hold domain logic and live in `*.domain` (plain Java, no annotations); the application ring handles read/write use-case orchestration plus port and transaction wiring.
 - **No infra annotations in any `*.domain` package** — hard rule, ArchUnit-enforced (§6).
-- `kernel.domain` holds the shared vocabulary of the logical model (`Pack`, `DrgNode/Edge`, `Urn`, `ArtifactKind`, refusal codes) so slices agree on one `Pack`/`DRG` shape rather than each minting their own.
+- `kernel.domain` holds the shared vocabulary of the logical model (`Pack`, `DrgNode/Edge`, `Urn`, `ArtifactKind`, refusal codes) so slices agree on one `Pack`/`CRG` shape rather than each minting their own.
 - `*.infra.api.rest` is the v1 surface; `*.infra.api.graphql` is a reserved package for the planned-later adapter — kept adapter-ready over the same use cases, not implemented in v1 (§4).
 - `*.infra.storage` holds the storage port implementations (§5). The **pack-source resolver** (fetch, cache, integrity verify) is a storage-ring concern: the domain never sees a URL, only a `PackSource` value and a verified local materialization.
 

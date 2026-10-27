@@ -40,8 +40,8 @@ covers what the charter is and where it sits among the product lines.
 ## Centrally governed, distributed execution
 
 Agent behavior is **configuration**, not code: the rules an organization wants its agents to
-follow are authored once, as doctrine, and distributed to every project that adopts them. The
-offering is what makes that authored doctrine *in force* at the point of work:
+follow are authored once, as governance, and distributed to every project that adopts them. The
+offering is what makes that authored governance *in force* at the point of work:
 
 - **One authored source.** Directives, tactics, styleguides, procedures, profiles and glossary
   live in Charter Packs — built-in, organization and project — authored in
@@ -49,7 +49,7 @@ offering is what makes that authored doctrine *in force* at the point of work:
 - **Governed from the center.** An organization ships its standards in an org pack; every
   repository that registers it inherits them. Changing the standard in one place changes what
   governs every adopting repository, without editing each one.
-- **Executed at the edge.** The offering resolves that doctrine locally, per worktree, into the
+- **Executed at the edge.** The offering resolves that governance locally, per worktree, into the
   guidance for the step an agent is actually doing. Central authority, local execution, with no
   round-trip to a server the work depends on.
 
@@ -60,7 +60,7 @@ from one source, and a failure to produce it is reported rather than swallowed.
 ## Independent of the agent harness
 
 The guidance the offering returns is **harness-independent**. The same resolved charter feeds
-Claude Code, Codex and any other agent harness, because what it returns is doctrine, not
+Claude Code, Codex and any other agent harness, because what it returns is governance, not
 tool-specific wiring. An organization's behavior configuration is therefore not locked to one
 vendor's agent: the charter is the stable surface, and the harness is swappable beneath it. This
 is the reason the offering is being extracted behind a contract — so that every caller, whatever
@@ -75,13 +75,13 @@ Charter Packs are **layered** — built-in, then organization, then project — 
 - A repository takes the built-in base, adds the org packs its team mandates, and activates
   per-entry what applies to its work (`spec-kitty charter activate`), leaving the rest inert.
 - A monorepo and a single-service repository in the same organization can draw on the same org
-  doctrine yet put different subsets in force.
+  governance yet put different subsets in force.
 - An org pack can **require** a rule for every adopter while still letting a project add or
   override with its own, and unsound compositions are refused with a reason rather than quietly
   accepted.
 
 The result is governance that is consistent where it must be and tailored where it should be —
-the same doctrine, composed to each project's and repository's needs.
+the same governance, composed to each project's and repository's needs.
 
 ## Why this matters
 
@@ -94,7 +94,7 @@ the same doctrine, composed to each project's and repository's needs.
 
 ## The boundary this repository owns
 
-The offering models the offer side and resolves it; it does not author the doctrine (that is
+The offering models the offer side and resolves it; it does not author the governance (that is
 `spec-kitty-open-packs`) and it does not write events (that is the core CLI's one canonical event
 writer — see [Events and the ledger](/architecture/events-and-ledger/)). One edge is still being
 settled: whether the activation side (`charter.activation`) that governance resolution also needs

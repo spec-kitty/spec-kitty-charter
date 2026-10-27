@@ -52,7 +52,7 @@ and `artifacts` are designed, not built.
 
 | Module | Role | Holds |
 |---|---|---|
-| `kernel` | Shared kernel, pure | `kernel.domain` (the cross-slice Pack and DRG vocabulary) and `kernel.validation` (a `java`- and `jspecify`-only guard library) |
+| `kernel` | Shared kernel, pure | `kernel.domain` (the cross-slice Pack and CRG vocabulary) and `kernel.validation` (a `java`- and `jspecify`-only guard library) |
 | `packs` | The first concern slice | The layer packages `domain`, `application`, `infra.storage` and `infra.api` |
 | `deployable` | Composition root | The `@SpringBootApplication` and an aggregate `DeployableConfiguration`; renamed from `bootstrap`; the only module that knows every slice |
 | `charter-api` | Generated contract | OpenAPI server interfaces and transport DTOs, referenced only from each slice's `infra.api` |

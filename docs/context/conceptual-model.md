@@ -198,9 +198,9 @@ one situation, with entry and exit conditions.
 
 ## Relationships
 
-- **[Supports](/glossary/charter/#supports-supports-drg-relation)**: a resource helps check a rule
+- **[Supports](/glossary/charter/#supports-supports-crg-relation)**: a resource helps check a rule
   (an asset supports a directive). It is distinct from *suggests*, which is a soft recommendation.
-- **[Tension](/glossary/charter/#tension-tension-drg-relation)**: two rules pull against each
+- **[Tension](/glossary/charter/#tension-tension-crg-relation)**: two rules pull against each
   other. Tension is an authored relationship between two artifacts, never derived from their value
   impacts. Two rules may require each other **and** be in tension; tension may sit beside one
   structural relationship on the same pair. It replaces the earlier relationship name, and the
@@ -221,7 +221,7 @@ is on the plate, Missions of that type can be run.
   between mission types and profiles.
 - **Both an activated artifact and its own concept.** A mission type is offered and activated
   through the same lever as any other artifact: shipped in a pack, activated by a project. It is
-  also its own concept, with its own domain model, separate from the doctrine kinds and from
+  also its own concept, with its own domain model, separate from the charter kinds and from
   profiles. It refers to other artifacts by role or by id, never by embedding them.
 - **[Recipe ingredients](/glossary/charter/#recipe-ingredients).** A mission type names the guidance
   it calls for, by id. That guidance is added to the plate while a mission of that type runs.
@@ -437,8 +437,8 @@ Current packs and core compared with the model (open-packs and core, 2026-10-26)
 | Paradigm principles | [Paradigm principles](/glossary/charter/#paradigm-principles) |
 | Paradigm test | [Paradigm test](/glossary/charter/#paradigm-test) |
 | Procedure | [Procedure](/glossary/charter/#procedure) |
-| Supports | [Supports](/glossary/charter/#supports-supports-drg-relation) |
-| Tension | [Tension](/glossary/charter/#tension-tension-drg-relation) |
+| Supports | [Supports](/glossary/charter/#supports-supports-crg-relation) |
+| Tension | [Tension](/glossary/charter/#tension-tension-crg-relation) |
 | Mission type | [Mission type](/glossary/charter/#mission-type) |
 | Mission step | [Mission step](/glossary/charter/#mission-step) |
 | Step contract | [Step contract](/glossary/charter/#step-contract) |

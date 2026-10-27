@@ -157,7 +157,7 @@ client of that contract** — it does not re-implement resolution or vendor pack
 
 ### Risks
 
-- **Supply chain:** fetching doctrine over git is an execution-of-third-party-content surface. The v1 floor is
+- **Supply chain:** fetching governance content over git is an execution-of-third-party-content surface. The v1 floor is
   **tamper-evidence** (content hash) plus an **allowlist**, not tamper-proof signing; signing is a reserved
   higher tier. Contained by pin-to-rev + integrity verify + allowlist + fail-closed (decision 8).
 - **Version/engine skew:** a fetched pack may not match the engine — gated at resolve time (decision 9).

@@ -70,8 +70,8 @@ The DSO is a record, so `equals` is field-wise by construction. The round-trip t
 
 ## A storage structure is not a domain concept
 
-Model the meaning, derive the structure. The doctrine graph is how the packs are *stored and
-resolved*; it is not what a pack *is*. A relationship between two doctrine artifacts is a domain
+Model the meaning, derive the structure. The charter graph is how the packs are *stored and
+resolved*; it is not what a pack *is*. A relationship between two charter artifacts is a domain
 meaning. The edges list of a graph is how one storage format spells it. If the domain types are
 shaped like the file (nodes, edges, shards), every change to the file format ripples into the
 core, and the language of the domain gets replaced by the language of the storage.

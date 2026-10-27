@@ -7,13 +7,13 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-26T21:16:31Z"
-  content_hash: "sha256:e1183cd9535e"
+  at: "2026-10-27T09:25:39Z"
+  content_hash: "sha256:7d71082dcf2f"
 ---
 
 # Charter
 
-The governing term `charter` and the doctrine domain model: Charter Packs, artifact kinds, activation, selection and the DRG relations.
+The governing term `charter` and the charter domain model: Charter Packs, artifact kinds, activation, selection and the CRG relations.
 
 {#all-declaration-convention}
 
@@ -25,7 +25,7 @@ The project convention that every Python module with a public API must declare a
 
 ## `activated_<kind>`
 
-The `.kittify/config.yaml`-resolved, three-state per-kind activation authority for a doctrine artifact kind (`activated_paradigms`, `activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`, `activated_procedures`, `activated_agent_profiles`, `activated_mission_step_contracts`, `activated_glossary_packs`). Resolved via `PackContext.from_config`'s INV-2 two-file pointer chase: read `.kittify/config.yaml` directly, unless it carries a string `charter:` pointer, in which case follow it to the pointed `.kittify/charter/charter.yaml` and read the keys there instead. Three states per kind, applied independently: an ABSENT key resolves to `None` ("all built-ins available"); an explicit empty list (`[]`) is an explicit opt-out (nothing of that kind activated); a non-empty list is the explicit activated set. This is the field the compiler (`compile_charter`) and — after mission `spdd-reasons-activation-split-brain-01M1K6VN` — `is_spdd_reasons_active`, `_load_action_doctrine_bundle`, and `resolve_project_governance` all resolve activation from: the actual mechanism behind Charter-Mediated Selection, distinct from the charter-authored selected_&lt;kind&gt; / required_&lt;kind&gt; declaration surface.
+The `.kittify/config.yaml`-resolved, three-state per-kind activation authority for a charter artifact kind (`activated_paradigms`, `activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`, `activated_procedures`, `activated_agent_profiles`, `activated_mission_step_contracts`, `activated_glossary_packs`). Resolved via `PackContext.from_config`'s INV-2 two-file pointer chase: read `.kittify/config.yaml` directly, unless it carries a string `charter:` pointer, in which case follow it to the pointed `.kittify/charter/charter.yaml` and read the keys there instead. Three states per kind, applied independently: an ABSENT key resolves to `None` ("all built-ins available"); an explicit empty list (`[]`) is an explicit opt-out (nothing of that kind activated); a non-empty list is the explicit activated set. This is the field the compiler (`compile_charter`) and — after mission `spdd-reasons-activation-split-brain-01M1K6VN` — `is_spdd_reasons_active`, `_load_action_doctrine_bundle`, and `resolve_project_governance` all resolve activation from: the actual mechanism behind Charter-Mediated Selection, distinct from the charter-authored selected_&lt;kind&gt; / required_&lt;kind&gt; declaration surface.
 
 {#activation-context}
 
@@ -73,7 +73,7 @@ A dead-module or dead-symbol violation that has been explicitly classified as ca
 
 ## Catalog Miss
 
-A doctrine artifact ID referenced by a charter selection (e.g. `selected_directives: [foo]`) that does not resolve to any known artifact in the shipped pack, any configured org pack, or the project-layer doctrine tree. Catalog misses are reported as errors by `spec-kitty doctor charter-packs` and by the `test_no_dead_symbols.py` gate when the referencing code reaches into the doctrine catalog.
+A charter artifact ID referenced by a charter selection (e.g. `selected_directives: [foo]`) that does not resolve to any known artifact in the shipped pack, any configured org pack, or the project-layer charter tree. Catalog misses are reported as errors by `spec-kitty doctor charter-packs` and by the `test_no_dead_symbols.py` gate when the referencing code reaches into the charter catalog.
 
 {#charter}
 
@@ -85,13 +85,13 @@ The governance document synthesizing a project's purpose, constraints, team norm
 
 ## Charter Bundle
 
-The materialized `.kittify/charter/` tree as a unit: `charter.md`, the synthesis manifest, the DRG cache and provenance. Produced by `spec-kitty charter generate` and `spec-kitty charter synthesize`; validated by `spec-kitty charter bundle validate`.
+The materialized `.kittify/charter/` tree as a unit: `charter.md`, the synthesis manifest, the CRG cache and provenance. Produced by `spec-kitty charter generate` and `spec-kitty charter synthesize`; validated by `spec-kitty charter bundle validate`.
 
 {#charter-facade}
 
 ## Charter Facade
 
-A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a doctrine surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from doctrine.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → doctrine boundary's public surface.
+A `src/charter/<facade>.py` module that re-exports (or thinly wraps) a charter surface so runtime callers can consume it as `from charter.<facade> import X` instead of `from doctrine.<x> import X`. Examples: `charter.profiles`, `charter.mission_steps`, `charter.drg`, `charter.primitives`, `charter.resolution`, `charter.versioning`. The set of facades is the runtime → charter → offering boundary's public surface.
 
 {#charter-offering}
 
@@ -107,13 +107,13 @@ Everything a project could adopt: the buffet. It is made of Charter Packs, mostl
 
 ## Charter Pack
 
-A distributable bundle of charter components (artifacts and their DRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`.
+A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`.
 
 {#charter-mediated-selection}
 
 ## Charter-Mediated Selection
 
-Architectural pattern in which the project / org charter is the sole authority that decides which doctrine artifacts apply to a given mission run. Doctrine is the knowledge store; charter is the selector; runtime asks charter for the activated set rather than reaching into doctrine directly. Enforced via the runtime → charter → doctrine boundary. This framing is correct at the architectural level; the MECHANISM by which the charter's activation decision is actually resolved today is activated_&lt;kind&gt; — not `selected_<kind>` alone. `selected_<kind>` is the authoring record of what an interview/pack once selected; `activated_<kind>` is what `PackContext.from_config` resolves via the INV-2 two-file pointer chase.
+Architectural pattern in which the project / org charter is the sole authority that decides which charter artifacts apply to a given mission run. The offering is the knowledge store; charter is the selector; runtime asks charter for the activated set rather than reaching into the offering directly. Enforced via the runtime → charter → offering boundary. This framing is correct at the architectural level; the MECHANISM by which the charter's activation decision is actually resolved today is activated_&lt;kind&gt; — not `selected_<kind>` alone. `selected_<kind>` is the authoring record of what an interview/pack once selected; `activated_<kind>` is what `PackContext.from_config` resolves via the INV-2 two-file pointer chase.
 
 {#charterscope}
 
@@ -141,11 +141,11 @@ A per-project choice to leave an artifact off the project's active charter. It p
 
 - **status:** `canonical`
 
-{#delegation-delegates-to-drg-relation}
+{#delegation-delegates-to-crg-relation}
 
-## Delegation — `delegates_to` (DRG Relation)
+## Delegation — `delegates_to` (CRG Relation)
 
-A directional Three-layer DRG relation expressing a *runtime* handoff: one agent profile hands work to another at execution time. It is kept deliberately separate from Lineage so a static "derives from" relationship never gets conflated with a live work handoff. No built-in artifact emits a `delegates_to` edge today — delegation is currently expressed in profile `collaboration.handoff_to` prose rather than as a graph edge, so treat this relation as intended-but-dormant. Canonical source: `RELATION_DESCRIPTIONS[Relation.DELEGATES_TO]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation expressing a *runtime* handoff: one agent profile hands work to another at execution time. It is kept deliberately separate from Lineage so a static "derives from" relationship never gets conflated with a live work handoff. No built-in artifact emits a `delegates_to` edge today — delegation is currently expressed in profile `collaboration.handoff_to` prose rather than as a graph edge, so treat this relation as intended-but-dormant. Canonical source: `RELATION_DESCRIPTIONS[Relation.DELEGATES_TO]` in `src/charter/offering/drg/models.py`.
 
 {#derived-pack}
 
@@ -163,9 +163,9 @@ A Charter Pack that builds on a broader one (an org pack on built-in) and custom
 
 A constraint-oriented governance rule that applies across flows or phases. Directives encode required or advisory expectations and can reference lower-level tactics for execution.
 
-{#doctrine-domain}
+{#charter-domain}
 
-## Doctrine Domain
+## Charter Domain
 
 The domain model that structures reusable governance knowledge in Spec Kitty. It organizes behavior and constraints into composable artifacts (paradigms, directives, tactics, templates, styleguides, and toolguides).
 
@@ -185,35 +185,35 @@ Selection mode in which an artifact is in force for every step of every mission,
 
 - **status:** `canonical`
 
-{#glossary-vocabulary-vocabulary-drg-relation}
+{#glossary-vocabulary-vocabulary-crg-relation}
 
-## Glossary Vocabulary — `vocabulary` (DRG Relation)
+## Glossary Vocabulary — `vocabulary` (CRG Relation)
 
-A directional Three-layer DRG relation from a resolved doctrine artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`.
 
-{#governance-scope-scope-drg-relation}
+{#governance-scope-scope-crg-relation}
 
-## Governance Scope — `scope` (DRG Relation)
+## Governance Scope — `scope` (CRG Relation)
 
-A directional Three-layer DRG relation from a mission-step action node to the directives and tactics that govern performing that action. It is the entry point of governance-context resolution: the resolver first walks `scope` edges from the action node, then expands through Hard Dependency and Soft Recommendation edges from what it found. It is one of the most heavily emitted relations tied to action nodes in the built-in graph. Distinct from Workflow Application — see that entry for the contrast. Canonical source: `RELATION_DESCRIPTIONS[Relation.SCOPE]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation from a mission-step action node to the directives and tactics that govern performing that action. It is the entry point of governance-context resolution: the resolver first walks `scope` edges from the action node, then expands through Hard Dependency and Soft Recommendation edges from what it found. It is one of the most heavily emitted relations tied to action nodes in the built-in graph. Distinct from Workflow Application — see that entry for the contrast. Canonical source: `RELATION_DESCRIPTIONS[Relation.SCOPE]` in `src/charter/offering/drg/models.py`.
 
 {#guideline}
 
 ## Guideline
 
-A high-level doctrine rule expressing non-negotiable or strongly preferred governance behavior. Guidelines sit at the highest precedence and bound what project-level charter may customize.
+A high-level charter rule expressing non-negotiable or strongly preferred governance behavior. Guidelines sit at the highest precedence and bound what project-level charter may customize.
 
-{#hard-dependency-requires-drg-relation}
+{#hard-dependency-requires-crg-relation}
 
-## Hard Dependency — `requires` (DRG Relation)
+## Hard Dependency — `requires` (CRG Relation)
 
-A directional Three-layer DRG relation marking a mandatory prerequisite: the source artifact cannot be meaningfully resolved without the target also being present and considered. Governance-context resolution for a mission-step action walks `requires` edges transitively (no hop limit) once it has collected the action's scoped artifacts, and the charter activation cascade follows the same edge to pull in artifacts that must also be active. It is the most heavily used relation in the built-in graph. Canonical source: `RELATION_DESCRIPTIONS[Relation.REQUIRES]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation marking a mandatory prerequisite: the source artifact cannot be meaningfully resolved without the target also being present and considered. Governance-context resolution for a mission-step action walks `requires` edges transitively (no hop limit) once it has collected the action's scoped artifacts, and the charter activation cascade follows the same edge to pull in artifacts that must also be active. It is the most heavily used relation in the built-in graph. Canonical source: `RELATION_DESCRIPTIONS[Relation.REQUIRES]` in `src/charter/offering/drg/models.py`.
 
 {#import-candidate}
 
 ## Import Candidate
 
-A pull-based curation record for an external doctrine idea. Captures source provenance, target classification, adaptation notes, and adoption status before canonization.
+A pull-based curation record for an external governance idea. Captures source provenance, target classification, adaptation notes, and adoption status before canonization.
 
 {#integrity-level}
 
@@ -225,11 +225,11 @@ How much an artifact may be altered after it is introduced: `open`, `extendable`
 
 - **status:** `canonical`
 
-{#lineage-specializes-from-drg-relation}
+{#lineage-specializes-from-crg-relation}
 
-## Lineage — `specializes_from` (DRG Relation)
+## Lineage — `specializes_from` (CRG Relation)
 
-A directional, static Three-layer DRG relation: a profile or artifact derives from a parent, narrowing or extending it. In the built-in graph this appears only between `agent_profile` nodes (e.g. a language-specialist implementer profile specializing from the generic implementer profile), and is resolved through `AgentProfileRepository.resolve_profile` graph traversal at composition time. Deliberately distinct from Delegation so inheritance never leaks into runtime handoff traversal. Canonical source: `RELATION_DESCRIPTIONS[Relation.SPECIALIZES_FROM]` in `src/charter/offering/drg/models.py`.
+A directional, static Three-layer CRG relation: a profile or artifact derives from a parent, narrowing or extending it. In the built-in graph this appears only between `agent_profile` nodes (e.g. a language-specialist implementer profile specializing from the generic implementer profile), and is resolved through `AgentProfileRepository.resolve_profile` graph traversal at composition time. Deliberately distinct from Delegation so inheritance never leaks into runtime handoff traversal. Canonical source: `RELATION_DESCRIPTIONS[Relation.SPECIALIZES_FROM]` in `src/charter/offering/drg/models.py`.
 
 {#living-documentation-sync-directive}
 
@@ -271,17 +271,17 @@ Superseded by the recipe's ingredients of a Mission type. Today's shipped `gover
 
 ## Organization Tier
 
-The middle layer of the three-layer DRG model, contributed by one or more org Charter Packs configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Each pack ships an `org-charter.yaml` (governance policies and required artifact selections) and an optional `drg/fragment.yaml` (DRG extension nodes and edges). Organization-tier content propagates to all consumer projects via `apply_org_charter_to_interview` and the standard charter pre-fill path.
+The middle layer of the three-layer CRG model, contributed by one or more org Charter Packs configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Each pack ships an `org-charter.yaml` (governance policies and required artifact selections) and an optional `drg/fragment.yaml` (CRG extension nodes and edges). Organization-tier content propagates to all consumer projects via `apply_org_charter_to_interview` and the standard charter pre-fill path.
 
-{#overlay-enhancement-enhances-drg-relation}
+{#overlay-enhancement-enhances-crg-relation}
 
-## Overlay Enhancement — `enhances` (DRG Relation)
+## Overlay Enhancement — `enhances` (CRG Relation)
 
 A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
 
-{#overlay-override-overrides-drg-relation}
+{#overlay-override-overrides-crg-relation}
 
-## Overlay Override — `overrides` (DRG Relation)
+## Overlay Override — `overrides` (CRG Relation)
 
 A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`.
 
@@ -347,23 +347,23 @@ The guidance a mission type names by id (today in `governance-profile.yaml`). Wh
 
 - **status:** `canonical`
 
-{#reconciliation-reconciles-tension-drg-relation}
+{#reconciliation-reconciles-tension-crg-relation}
 
-## Reconciliation — `reconciles_tension` (DRG Relation)
+## Reconciliation — `reconciles_tension` (CRG Relation)
 
-A directional Three-layer DRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from an `in_tension_with` edge. Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/doctrine-relationships.md` ("Tension vocabulary").
+A directional Three-layer CRG relation linking an active reconciliation artifact to one side of a declared Tension pair. A tension pair is treated as resolved only when an active artifact carries this edge to both sides of the pair — an edge to just one side leaves the pair half-reconciled and still flagged. It is authored explicitly and is never inferred from an `in_tension_with` edge. Canonical source: `RELATION_DESCRIPTIONS[Relation.RECONCILES_TENSION]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
 
-{#refinement-refines-drg-relation}
+{#refinement-refines-crg-relation}
 
-## Refinement — `refines` (DRG Relation)
+## Refinement — `refines` (CRG Relation)
 
-A directional Three-layer DRG relation: an artifact narrows or sharpens the applicability or meaning of a parent or built-in target without replacing it. It is a first-class, traversable relation in its own right — never a stand-in for Workflow Application or Lineage. No built-in artifact currently emits a `refines` edge, so treat it as intended-but-dormant; an earlier version of the org-to-DRG bridge silently downgraded authored `refines` edges to `applies`, but that lossy downgrade has since been removed. Canonical source: `RELATION_DESCRIPTIONS[Relation.REFINES]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation: an artifact narrows or sharpens the applicability or meaning of a parent or built-in target without replacing it. It is a first-class, traversable relation in its own right — never a stand-in for Workflow Application or Lineage. No built-in artifact currently emits a `refines` edge, so treat it as intended-but-dormant; an earlier version of the org-to-CRG bridge silently downgraded authored `refines` edges to `applies`, but that lossy downgrade has since been removed. Canonical source: `RELATION_DESCRIPTIONS[Relation.REFINES]` in `src/charter/offering/drg/models.py`.
 
-{#rejection-rejects-drg-relation}
+{#rejection-rejects-crg-relation}
 
-## Rejection — `rejects` (DRG Relation)
+## Rejection — `rejects` (CRG Relation)
 
-A directional Three-layer DRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/doctrine-relationships.md` ("Tension vocabulary").
+A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
 
 {#removal}
 
@@ -395,11 +395,11 @@ Two families of charter artifacts. Rules are followed (directive, tactic, styleg
 
 - **status:** `canonical`
 
-{#schema-doctrine-artifact}
+{#schema-charter-artifact}
 
-## Schema (Doctrine Artifact)
+## Schema (Charter Artifact)
 
-A machine-validated contract that defines allowed structure and fields for doctrine artifacts. Used in CI/tests to fail fast when invalid doctrine files are introduced.
+A machine-validated contract that defines allowed structure and fields for charter artifacts. Used in CI/tests to fail fast when invalid charter files are introduced.
 
 {#selected-kind-required-kind}
 
@@ -411,11 +411,11 @@ Superseded. In the new model a mission type's guidance is named by id as its rec
 
 - **status:** `deprecated`
 
-{#soft-recommendation-suggests-drg-relation}
+{#soft-recommendation-suggests-crg-relation}
 
-## Soft Recommendation — `suggests` (DRG Relation)
+## Soft Recommendation — `suggests` (CRG Relation)
 
-A directional Three-layer DRG relation pointing at content that is relevant but optional. Unlike Hard Dependency, which is walked transitively with no depth limit, governance-context resolution only follows `suggests` edges a bounded number of hops, and the charter activation cascade treats a `suggests` target as something an operator may accept or decline. It is emitted more often than any other relation in the built-in graph, but that volume is incidental — the depth-bounded walk, not the count, is what separates it from `requires`. Canonical source: `RELATION_DESCRIPTIONS[Relation.SUGGESTS]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation pointing at content that is relevant but optional. Unlike Hard Dependency, which is walked transitively with no depth limit, governance-context resolution only follows `suggests` edges a bounded number of hops, and the charter activation cascade treats a `suggests` target as something an operator may accept or decline. It is emitted more often than any other relation in the built-in graph, but that volume is incidental — the depth-bounded walk, not the count, is what separates it from `requires`. Canonical source: `RELATION_DESCRIPTIONS[Relation.SUGGESTS]` in `src/charter/offering/drg/models.py`.
 
 {#specification-by-example-paradigm}
 
@@ -447,17 +447,17 @@ The prompt fed to the agent when a mission step runs.
 
 ## Styleguide
 
-A doctrine artifact defining cross-cutting quality and consistency conventions (for example coding, documentation, or testing style) that apply across missions and templates.
+A charter artifact defining cross-cutting quality and consistency conventions (for example coding, documentation, or testing style) that apply across missions and templates.
 
-{#supersession-replaces-drg-relation}
+{#supersession-replaces-crg-relation}
 
-## Supersession — `replaces` (DRG Relation)
+## Supersession — `replaces` (CRG Relation)
 
-A directional Three-layer DRG relation asserting that the source artifact fully supersedes the target, which stops applying once the source is active. It is retained for backward compatibility with older, hand-authored fragments; no built-in artifact emits it today, since current practice either deactivates the superseded artifact directly or, for pack overlays, expresses supersession through Overlay Override. Distinct from Tension, which never implies either side is deprecated or wrong. Canonical source: `RELATION_DESCRIPTIONS[Relation.REPLACES]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation asserting that the source artifact fully supersedes the target, which stops applying once the source is active. It is retained for backward compatibility with older, hand-authored fragments; no built-in artifact emits it today, since current practice either deactivates the superseded artifact directly or, for pack overlays, expresses supersession through Overlay Override. Distinct from Tension, which never implies either side is deprecated or wrong. Canonical source: `RELATION_DESCRIPTIONS[Relation.REPLACES]` in `src/charter/offering/drg/models.py`.
 
-{#supports-supports-drg-relation}
+{#supports-supports-crg-relation}
 
-## Supports — `supports` (DRG Relation)
+## Supports — `supports` (CRG Relation)
 
 A relationship from a resource to a rule it helps check, for example a companion asset that lets an agent verify its own compliance with a directive deterministically. Distinct from `suggests`, which points at optional relevant content.
 
@@ -477,31 +477,31 @@ A public symbol (function, class, constant) exported by a module but not referen
 
 A reusable behavioral execution pattern that defines how work is performed. Tactics are operational and agent-consumable, and can be selected by directives and mission context.
 
-{#template-instantiation-instantiates-drg-relation}
+{#template-instantiation-instantiates-crg-relation}
 
-## Template Instantiation — `instantiates` (DRG Relation)
+## Template Instantiation — `instantiates` (CRG Relation)
 
-A directional Three-layer DRG relation from a mission-step action node to the template it produces as its concrete output. It appears only between `action` and `template` nodes in the built-in graph, in modest numbers, and is distinct from Governance Scope: `scope` links an action to content it must follow, `instantiates` links it to content it produces. Canonical source: `RELATION_DESCRIPTIONS[Relation.INSTANTIATES]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation from a mission-step action node to the template it produces as its concrete output. It appears only between `action` and `template` nodes in the built-in graph, in modest numbers, and is distinct from Governance Scope: `scope` links an action to content it must follow, `instantiates` links it to content it produces. Canonical source: `RELATION_DESCRIPTIONS[Relation.INSTANTIATES]` in `src/charter/offering/drg/models.py`.
 
 {#template-set}
 
 ## Template Set
 
-A structured set of doctrine templates that shape output artifacts and interaction contracts for mission actions and procedures. Template sets allow consistent behavior across mission types while remaining configurable through charter selections.
+A structured set of charter templates that shape output artifacts and interaction contracts for mission actions and procedures. Template sets allow consistent behavior across mission types while remaining configurable through charter selections.
 
-{#tension-in-tension-with-drg-relation}
+{#tension-in-tension-with-crg-relation}
 
-## Tension — `in_tension_with` (DRG Relation)
+## Tension — `in_tension_with` (CRG Relation)
 
-Superseded by Tension — `tension` (DRG Relation) (ADR-0028). The former name of the authored relationship between two co-valid rules that compete on the same decision; core's DRG still uses it. In this repository the relationship is named `tension`, and `impacts` now names an artifact's per-value list (value impact), not a relation. Former definition, kept for history: A symmetric, non-transitive Three-layer DRG relation marking two co-valid, co-activatable artifacts that compete on the same decision. Stored as a single canonical edge (lexicographically-smaller URN as source) and queryable from either endpoint; it does not imply that either side is deprecated, superseded, or wrong — both remain valid rules until an operator deactivates one side or activates a reconciler (Reconciliation). Canonical source: `RELATION_DESCRIPTIONS[Relation.IN_TENSION_WITH]` in `src/charter/offering/drg/models.py`; human-readable mirror and worked examples in `docs/architecture/doctrine-relationships.md` ("Tension vocabulary").
+Superseded by Tension — `tension` (CRG Relation) (ADR-0028). The former name of the authored relationship between two co-valid rules that compete on the same decision; core's CRG still uses it. In this repository the relationship is named `tension`, and `impacts` now names an artifact's per-value list (value impact), not a relation. Former definition, kept for history: A symmetric, non-transitive Three-layer CRG relation marking two co-valid, co-activatable artifacts that compete on the same decision. Stored as a single canonical edge (lexicographically-smaller URN as source) and queryable from either endpoint; it does not imply that either side is deprecated, superseded, or wrong — both remain valid rules until an operator deactivates one side or activates a reconciler (Reconciliation). Canonical source: `RELATION_DESCRIPTIONS[Relation.IN_TENSION_WITH]` in `src/charter/offering/drg/models.py`; human-readable mirror and worked examples in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
 
 **Meta:**
 
 - **status:** `deprecated`
 
-{#tension-tension-drg-relation}
+{#tension-tension-crg-relation}
 
-## Tension — `tension` (DRG Relation)
+## Tension — `tension` (CRG Relation)
 
 An authored relationship between two rules that compete on the same decision; both stay valid. It is never derived from value impacts, and it may sit beside one structural relationship on the same pair (two rules can require each other and still be in tension). Replaces `in_tension_with` (ADR-0028).
 
@@ -511,23 +511,23 @@ An authored relationship between two rules that compete on the same decision; bo
 
 - **status:** `canonical`
 
-{#three-layer-drg}
+{#three-layer-crg}
 
-## Three-layer DRG
+## Three-layer CRG
 
-The three-tier Doctrine Relationship Graph composed of: (1) the shipped built-in layer (the per-kind `*.graph.yaml` fragments under `packs/built-in/`), (2) zero or more org-tier extension fragments (`drg/fragment.yaml` inside each configured org pack), and (3) optional project-tier annotations declared in the project charter. Each tier is additive; org and project tiers may only extend or annotate shipped nodes — they cannot remove or reclassify them. Resolved at runtime by `charter.drg.merge_three_layers`.
+The three-tier Charter Reference Graph composed of: (1) the shipped built-in layer (the per-kind `*.graph.yaml` fragments under `packs/built-in/`), (2) zero or more org-tier extension fragments (`drg/fragment.yaml` inside each configured org pack), and (3) optional project-tier annotations declared in the project charter. Each tier is additive; org and project tiers may only extend or annotate shipped nodes — they cannot remove or reclassify them. Resolved at runtime by `charter.drg.merge_three_layers`.
 
 {#toolguide}
 
 ## Toolguide
 
-A doctrine artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution.
+A charter artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution.
 
 {#trigger-registry}
 
 ## Trigger Registry
 
-Canonical frozenset of agent-action tokens (e.g. `write_comment`, `write_docstring`, `rename_identifier`, `add_dependency`) the prompt builder knows how to emit "when you <token>, …" stanzas for. Any `triggers:` value declared on a shipped doctrine artifact must be a member of this set; the architectural test `test_trigger_registry_coverage.py` enforces no dead triggers. Mission B's WP05 populates the initial set.
+Canonical frozenset of agent-action tokens (e.g. `write_comment`, `write_docstring`, `rename_identifier`, `add_dependency`) the prompt builder knows how to emit "when you <token>, …" stanzas for. Any `triggers:` value declared on a shipped charter artifact must be a member of this set; the architectural test `test_trigger_registry_coverage.py` enforces no dead triggers. Mission B's WP05 populates the initial set.
 
 {#usage-examples-sync-tactic}
 
@@ -555,11 +555,11 @@ An artifact's `impacts` list: one entry per value, `{value, strength, rationale}
 
 - **status:** `canonical`
 
-{#workflow-application-applies-drg-relation}
+{#workflow-application-applies-crg-relation}
 
-## Workflow Application — `applies` (DRG Relation)
+## Workflow Application — `applies` (CRG Relation)
 
-A directional Three-layer DRG relation from an agent profile to the concrete procedure or tactic it executes as its operating workflow. The built-in graph contains zero `applies` edges and authoring one into the shipped tree is refused by `tests/architectural/test_no_authored_applies_edge.py`: nothing traverses `applies` — not governance-context resolution, not the charter cascade, not the reference walk — so an authored edge names a relationship no reader follows. Use `requires` when the profile must actually reach the artifact. The relation itself is not retired: project-tier charter synthesis still emits it. Distinct from Governance Scope: `applies` names what a profile *does*, `scope` names what an action is *governed by*; the two edge-roles are never interchangeable even though both link an actor-adjacent node to guidance content. Canonical source: `RELATION_DESCRIPTIONS[Relation.APPLIES]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation from an agent profile to the concrete procedure or tactic it executes as its operating workflow. The built-in graph contains zero `applies` edges and authoring one into the shipped tree is refused by `tests/architectural/test_no_authored_applies_edge.py`: nothing traverses `applies` — not governance-context resolution, not the charter cascade, not the reference walk — so an authored edge names a relationship no reader follows. Use `requires` when the profile must actually reach the artifact. The relation itself is not retired: project-tier charter synthesis still emits it. Distinct from Governance Scope: `applies` names what a profile *does*, `scope` names what an action is *governed by*; the two edge-roles are never interchangeable even though both link an actor-adjacent node to guidance content. Canonical source: `RELATION_DESCRIPTIONS[Relation.APPLIES]` in `src/charter/offering/drg/models.py`.
 
 {#workflow-id}
 

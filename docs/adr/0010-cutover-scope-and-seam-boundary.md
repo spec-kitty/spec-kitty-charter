@@ -48,7 +48,7 @@ Four facts shape what that means:
   profile resolution live in `charter.activation`, which stays in core until its post-GA
   rework (`2026-10-16-1` D-2, lines 82-87). About 59 activation files import
   `charter.offering`.
-- **Core's Python writers read the offering in-process.** Compile loads the DRG and presets
+- **Core's Python writers read the offering in-process.** Compile loads the CRG and presets
   (`src/charter/activation/compiler.py`, lines 54-56 and 1758-1761), and `pack_manager`
   reads the mission repositories (`src/charter/activation/pack_manager.py`, lines 95-102).
 - **The import move is done.** Core issue #6188 is closed, so stage 1 of the

@@ -1,6 +1,6 @@
 ---
 title: Logical model
-description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the DRG, activation, mission types, profiles and deployment.
+description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
 updated: 2026-10-26T00:00:00Z
 type: Architecture
@@ -106,8 +106,8 @@ classDiagram
 ```
 
 Read it left to right: a project draws on a **charter offering** made of Charter Packs. Each
-pack contributes **artifacts**, which appear as **nodes** of the Doctrine Reference Graph
-(DRG) and are linked by typed **edges**. The pack layers merge into one graph; the project's
+pack contributes **artifacts**, which appear as **nodes** of the Charter Reference Graph
+(CRG) and are linked by typed **edges**. The pack layers merge into one graph; the project's
 **active charter** (plus any org requirements) decides which artifacts are in force. The
 result is the **active graph** that every read answers from. The diagram shows the target
 placement of `impacts` on the artifact ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/));
@@ -138,7 +138,7 @@ answers computed from the choice).
 
 **What this means:** [Packs and derivation](/context/conceptual-model/#packs-and-derivation).
 
-A **Charter Pack** is a distributable bundle of artifacts and their DRG edges, optionally with
+A **Charter Pack** is a distributable bundle of artifacts and their CRG edges, optionally with
 **activation presets**. Every pack declares its level in `pack.yaml` (core ADR
 `2026-10-11-2`):
 
@@ -150,7 +150,7 @@ level is configured, the shape of its files and its directory layout are tabulat
 
 A pack may name a `parent_pack`; a pack without one is a root pack. A pack has a *level*; the
 merged graph has *layers*, one per level. The layers merge built-in, then org, then project,
-under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how doctrine layers merge). Implementations read the configured inputs and never infer a
+under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
 ### Mutability levels (integrity)
@@ -230,11 +230,11 @@ facts; it does not restate them.
   mission-type path. Target: a mission type is activated through the same lever as the kinds
   above, and keeps its own domain model ([Mission types](#mission-types-actions-and-step-contracts)).
 
-## The Doctrine Reference Graph (DRG)
+## The Charter Reference Graph (CRG)
 
 **What this means:** [Relationships](/context/conceptual-model/#relationships).
 
-The DRG is a typed graph. Every node has a URN `<kind>:<id>`; every edge has a source URN, a
+The CRG is a typed graph. Every node has a URN `<kind>:<id>`; every edge has a source URN, a
 target URN, a relation and optional `when` and `reason` fields; in current state an `impacts` edge also
 carries its signed `impacts` strength (see the note under [Relations](#relations)). A graph document carries
 `schema_version: "1.0"` and `generated_at`, and refuses unknown keys
@@ -242,7 +242,7 @@ carries its signed `impacts` strength (see the note under [Relations](#relations
 
 ### Node kinds
 
-The DRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it has:
+The CRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it has:
 
 | Node kind | URN example | Role |
 |---|---|---|
@@ -303,8 +303,8 @@ narrower than the glossary's broader "charter component". A charter
 component exposes `relationships()`: the relationships for which it is the effective origin (its
 `from` matches, or a bidirectional relationship names it as `to`). A repository returns a component
 with its relationships already populated; the graph is walked **on demand**, resolving each
-neighbor through its own kind's repository rather than loading the whole Doctrine Reference Graph
-(DRG) into memory. `DrgEdge`
+neighbor through its own kind's repository rather than loading the whole Charter Reference Graph
+(CRG) into memory. `DrgEdge`
 is the storage-side serialization object for a relationship, not the domain concept. The identity is
 a bounded, conditional unidirectional collapse with a revisit trigger when a symmetric relation is
 minted; see
@@ -374,7 +374,7 @@ An **agent profile** is an artifact of kind `agent_profile` that gives an agent 
 a specialization, collaboration rules and references to directives, tactics, styleguides
 and toolguides.
 
-- **Lineage** is a `specializes_from` edge in the DRG, not a field on the profile. A
+- **Lineage** is a `specializes_from` edge in the CRG, not a field on the profile. A
   per-profile lineage field is refused at load time.
 - **Augmentation** by another pack uses `enhances` (field-merge) or `overrides` (full
   replacement).
@@ -415,7 +415,7 @@ this mission type in this project".
   Current state: steps carry an `agent_profile:` field, and some packs pin a profile id per step.
 - **Activated and its own concept** (target). A mission type is offered and activated like any
   artifact (today through `mission_type_activations`, not an `ArtifactKind`), and it has its own
-  domain model, separate from the doctrine kinds and from profiles, matching the mission-types
+  domain model, separate from the charter kinds and from profiles, matching the mission-types
   and profiles slices of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
 - **Recipe ingredients.** Current state: a pack's `governance-profile.yaml` (core
   `MissionTypeProfile`) lists the artifacts in scope while a mission of the type runs.
