@@ -24,8 +24,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator).
-This decision is provisional: it is revisited as the system evolves, and a later record
+**Accepted** — 2026-10-27 (provisional since 2026-10-19). Decider: Stijn Dejongh (operator).
+This decision is ratified as of 2026-10-27; it is still revisited as the system evolves, and a later record
 supersedes it rather than editing it.
 
 ## Context

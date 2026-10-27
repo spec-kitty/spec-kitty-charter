@@ -23,8 +23,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator). Like every
-decision taken on 2026-10-19, this one is provisional: it is revisited as the system evolves,
+**Accepted** — 2026-10-27 (provisional since 2026-10-19). Decider: Stijn Dejongh (operator). Taken on
+2026-10-19 and ratified on 2026-10-27, this decision is still revisited as the system evolves,
 on the triggers under [Revisit when](#revisit-when).
 
 This record supersedes, for D-1 to D-5, the open-decisions table (§13) of core's design

@@ -1,7 +1,7 @@
 ---
 title: "ADR-0039: A kind binding can carry companion files"
 description: An artifact may name text files beside its own, like a skill's body; the store reads, writes and fingerprints them with it under one path rule.
-doc_status: draft
+doc_status: active
 updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
@@ -25,7 +25,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-27. Decider: Stijn Dejongh (operator), who confirmed on
+**Accepted** — 2026-10-27. Decider: Stijn Dejongh (operator), who confirmed on
 [#192](https://github.com/spec-kitty/spec-kitty-charter/issues/192) that a skill's body is in scope
 and kept as a pair with its skill. Amends [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)
 decision 4 (Accepted), which left non-YAML content to the kind missions, and supersedes in part

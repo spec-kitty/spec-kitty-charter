@@ -1,7 +1,7 @@
 ---
 title: "ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer"
 description: The service registers and distributes packs of every level through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
-doc_status: draft
+doc_status: active
 updated: 2026-10-19T00:00:00Z
 type: ADR
 kind: ADR
@@ -25,7 +25,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-18. Decider: Stijn Dejongh (operator). This record sets the pack sourcing and
+**Accepted** — 2026-10-27 (proposed 2026-10-18). Decider: Stijn Dejongh (operator). This record sets the pack sourcing and
 distribution model for the charter offering service and supersedes vendoring as this repository's
 end-state. It builds on [ADR-0001](/adr/0001-java-service-with-openapi-contract/) (the charter is a Java
 service behind an OpenAPI contract) and [ADR-0004](/adr/0004-public-api-returns-generated-dtos/) (the

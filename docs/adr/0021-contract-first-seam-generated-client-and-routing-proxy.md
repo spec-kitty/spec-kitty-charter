@@ -30,8 +30,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decisions marked **(ruled)** are
-the operator's; **(default)** decisions stand as decided until revisited. It is provisional.
+**Accepted** — 2026-10-27 (provisional since 2026-10-24), proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). Decisions marked **(ruled)** are
+the operator's; **(default)** decisions stand as decided until revisited. It is ratified as of 2026-10-27.
 
 This record amends:
 

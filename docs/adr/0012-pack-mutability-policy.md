@@ -24,8 +24,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-19. Decider: Stijn Dejongh (operator). Like every
-decision taken on 2026-10-19, this one is provisional: it is revisited as the system evolves,
+**Accepted** — 2026-10-27 (provisional since 2026-10-19). Decider: Stijn Dejongh (operator). Taken on
+2026-10-19 and ratified on 2026-10-27, this decision is still revisited as the system evolves,
 on the triggers under [Revisit when](#revisit-when). Tracked by epic
 [#55](https://github.com/spec-kitty/spec-kitty-charter/issues/55) and its steps #57 to #61.
 

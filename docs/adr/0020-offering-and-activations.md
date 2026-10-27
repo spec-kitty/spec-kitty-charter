@@ -33,8 +33,8 @@ audience:
 
 ## Status
 
-**Accepted (provisional)** — 2026-10-24, proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). It is provisional, and
-it is revisited on the triggers under [Revisit when](#revisit-when). The design is in
+**Accepted** — 2026-10-27 (provisional since 2026-10-24), proposed 2026-10-20 and merged with #123. Decider: Stijn Dejongh (operator). It is ratified as of 2026-10-27, and
+it is still revisited on the triggers under [Revisit when](#revisit-when). The design is in
 [Offering and activation](/architecture/offering-and-activation/).
 
 Operator rulings of 2026-10-19 and 2026-10-20 are marked **(ruled)** below. Decisions marked
