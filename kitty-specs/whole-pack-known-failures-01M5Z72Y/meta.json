@@ -15,5 +15,7 @@
   "purpose_tldr": "Let the whole-pack round-trip gate carry pack files that fail because of an open-packs defect awaiting an upstream fix, without going red, and fail as soon as the fix lands.",
   "slug": "whole-pack-known-failures-01M5Z72Y",
   "target_branch": "feat/whole-pack-known-failures",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-27T18:12:56.490775+00:00"
 }

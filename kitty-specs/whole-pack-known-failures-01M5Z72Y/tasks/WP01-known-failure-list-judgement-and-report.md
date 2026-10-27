@@ -23,6 +23,9 @@ requirement_refs:
 planning_base_branch: feat/whole-pack-known-failures
 merge_target_branch: feat/whole-pack-known-failures
 branch_strategy: Planning artifacts for this mission were generated on feat/whole-pack-known-failures. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/whole-pack-known-failures unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-whole-pack-known-failures-01M5Z72Y
+base_commit: 352c5f56dc4f401d89c7f6c53f63010a3acb5b45
+created_at: '2026-10-27T18:12:57.657120+00:00'
 subtasks:
 - T001
 - T002
