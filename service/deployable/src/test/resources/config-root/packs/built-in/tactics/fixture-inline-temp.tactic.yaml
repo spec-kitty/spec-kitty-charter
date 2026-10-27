@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: fixture-inline-temp
+name: Fixture Inline Temp
+purpose: A tactic the test configuration root ships, so a wired read has something to find.
+steps:
+  - title: Inline the expression
+    description: Replace the temp usage with the underlying expression.

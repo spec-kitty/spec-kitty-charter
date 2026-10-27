@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * The worktree the service serves. Where the packs are is the storage layer's own configuration,
- * {@code charter.storage.root} ({@code StorageProperties}).
+ * {@code charter.config-root} ({@code StorageProperties}).
  *
  * @param worktreeId the opaque id of the worktree the service serves, {@code charter.worktree-id}, which the launcher
  *     sets; {@code null} when none is configured, and the wiring then derives one from where the packs are

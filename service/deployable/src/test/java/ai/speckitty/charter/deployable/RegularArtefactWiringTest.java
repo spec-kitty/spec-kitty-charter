@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.CompositeComponentResolver;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -56,7 +57,8 @@ class RegularArtefactWiringTest {
 
     @DynamicPropertySource
     static void configuredPacks(DynamicPropertyRegistry registry) throws IOException {
-        packs = Files.createTempDirectory("charter-regular-artefact-wiring");
+        packs = Files.createDirectories(
+                Files.createTempDirectory("charter-regular-artefact-wiring").resolve(ConfigRoot.PACKS));
         write("qa/pack.yaml", """
                 pack_id: qa
                 pack_version: 1.0.0
@@ -65,7 +67,7 @@ class RegularArtefactWiringTest {
                 pack_level: org
                 """);
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.storage.root", () -> packs.toString());
+        registry.add("charter.config-root", () -> packs.getParent().toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
@@ -76,7 +78,7 @@ class RegularArtefactWiringTest {
 
     @AfterAll
     static void deletePacks() throws IOException {
-        try (Stream<Path> walk = Files.walk(packs)) {
+        try (Stream<Path> walk = Files.walk(packs.getParent())) {
             for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
                 Files.delete(path);
             }

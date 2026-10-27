@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackValidation;
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackInspector;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
@@ -15,6 +16,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -51,7 +54,7 @@ public class CharterWiring {
 
     /**
      * The packs the read path fingerprints and validates: the same ones the storage layer reads and writes, from its
-     * {@code charter.storage.root}, so the two can never disagree.
+     * {@code <config-root>/packs}, so the two can never disagree.
      */
     @Bean
     PackLocations packLocations(DomainRepositoryService.Locations storage) {
@@ -85,25 +88,25 @@ public class CharterWiring {
     }
 
     @Bean
-    ServiceInfoQuery serviceInfoQuery(CharterProperties properties, PackLocations packs, ConsistentRead read) {
+    ServiceInfoQuery serviceInfoQuery(
+            CharterProperties properties, ObjectProvider<ConfigRoot> root, ConsistentRead read) {
         String configured = properties.worktreeId();
         return new ServiceInfoQuery(
-                configured == null || configured.isBlank() ? derivedWorktreeId(packs.get()) : configured, read);
+                configured == null || configured.isBlank() ? derivedWorktreeId(root.getIfAvailable()) : configured,
+                read);
     }
 
     /**
      * The worktree id of a service started without {@code charter.worktree-id}: the first 16 hex digits of a digest
-     * of the pack directories at startup, resolved to their real paths where they exist. It is stable for one
-     * configuration and names no host path.
+     * of the configuration root, resolved to its real path where it exists. It depends on the configuration only, not
+     * on which packs the root holds at startup, and names no host path.
      *
-     * @param packs the packs at startup
+     * @param root the configuration root, or null when none is configured
      * @return 16 lower-case hex digits
      */
-    static String derivedWorktreeId(List<PackLocation> packs) {
+    static String derivedWorktreeId(@Nullable ConfigRoot root) {
         Fingerprint fingerprint = Fingerprint.sha256();
-        for (PackLocation pack : packs) {
-            fingerprint.add(realPath(pack.root()).toString());
-        }
+        fingerprint.add(root == null ? "" : realPath(root.root()).toString());
         String digest = fingerprint.value();
         return digest.substring(digest.indexOf(':') + 1, digest.indexOf(':') + 1 + 16);
     }

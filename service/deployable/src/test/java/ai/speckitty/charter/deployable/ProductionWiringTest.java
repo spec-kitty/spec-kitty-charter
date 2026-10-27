@@ -2,6 +2,7 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,7 +22,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The service as it ships: a real server on a free loopback port, the packs under {@code charter.storage.root}
+ * The service as it ships: a real server on a free loopback port, the packs under {@code charter.config-root}
  * through Spring configuration and nothing overridden. A wiring that drops a configured pack fails it.
  */
 @SpringBootTest(classes = CharterServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -36,7 +37,8 @@ class ProductionWiringTest {
 
     @DynamicPropertySource
     static void configuredPacks(DynamicPropertyRegistry registry) throws IOException {
-        packs = Files.createTempDirectory("charter-wiring");
+        packs = Files.createDirectories(
+                Files.createTempDirectory("charter-wiring").resolve(ConfigRoot.PACKS));
         write("built-in/pack.yaml", """
                 pack_id: 01ARWG13C000000000000000FG
                 pack_version: 1.0.0
@@ -64,7 +66,7 @@ class ProductionWiringTest {
         // The token is configured as the launcher does, not with the development flag: the production wiring is
         // guarded.
         registry.add("charter.worktree-token", () -> TOKEN);
-        registry.add("charter.storage.root", () -> packs.toString());
+        registry.add("charter.config-root", () -> packs.getParent().toString());
     }
 
     private static void write(String relativePath, String content) throws IOException {
@@ -75,7 +77,7 @@ class ProductionWiringTest {
 
     @AfterAll
     static void deletePacks() throws IOException {
-        try (Stream<Path> walk = Files.walk(packs)) {
+        try (Stream<Path> walk = Files.walk(packs.getParent())) {
             for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
                 Files.delete(path);
             }

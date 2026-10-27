@@ -3,10 +3,10 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackValidation;
+import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import ai.speckitty.charter.packs.infra.storage.config.StorageConfiguration;
@@ -22,7 +22,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-/** How {@link CharterWiring} takes its pack locations from the storage layer's {@code charter.storage.root}. */
+/** How {@link CharterWiring} takes its pack locations from the storage layer's {@code charter.config-root}. */
 class CharterWiringTest {
 
     @Configuration(proxyBeanMethods = false)
@@ -32,27 +32,36 @@ class CharterWiringTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner().withUserConfiguration(Wiring.class);
 
-    @Test
-    void eachPackUnderTheStorageRootIsALocationTheBuiltInPackFirst(@TempDir Path root) throws IOException {
-        Files.createDirectories(root.resolve("qa"));
-        Files.createDirectories(root.resolve("built-in"));
+    private static void pack(Path root, String name, String level) throws IOException {
+        Path dir = Files.createDirectories(root.resolve(ConfigRoot.PACKS).resolve(name));
+        Files.writeString(
+                dir.resolve("pack.yaml"),
+                "pack_id: " + name + "\npack_version: 1.0.0\nname: " + name + "\npack_level: " + level + "\n");
+    }
 
-        runner.withPropertyValues("charter.storage.root=" + root)
+    @Test
+    void eachPackOfThePackDomainIsALocationAtItsDeclaredLevel(@TempDir Path root) throws IOException {
+        pack(root, "qa", "org");
+        pack(root, "built-in", "built-in");
+        pack(root, "my-project", "project");
+
+        runner.withPropertyValues("charter.config-root=" + root)
                 .run(context -> assertThat(context.getBean(CharterWiring.PackLocations.class)
                                 .get())
                         .containsExactly(
-                                new PackLocation("built-in", PackLevel.BUILT_IN, root.resolve("built-in")),
-                                new PackLocation("qa", PackLevel.ORG, root.resolve("qa"))));
+                                new PackLocation("built-in", PackLevel.BUILT_IN, root.resolve("packs/built-in")),
+                                new PackLocation("my-project", PackLevel.PROJECT, root.resolve("packs/my-project")),
+                                new PackLocation("qa", PackLevel.ORG, root.resolve("packs/qa"))));
     }
 
     @Test
     void theReadPathAndTheStoreShareOneSourceOfLocations(@TempDir Path root) throws IOException {
-        Files.createDirectories(root.resolve("qa"));
+        pack(root, "qa", "org");
 
-        runner.withPropertyValues("charter.storage.root=" + root).run(context -> {
+        runner.withPropertyValues("charter.config-root=" + root).run(context -> {
             List<PackLocation> before =
                     context.getBean(CharterWiring.PackLocations.class).get();
-            Files.createDirectories(root.resolve("audit"));
+            pack(root, "audit", "org");
             assertThat(context.getBean(CharterWiring.PackLocations.class).get())
                     .hasSize(before.size() + 1)
                     .isEqualTo(context.getBean(DomainRepositoryService.Locations.class)
@@ -61,62 +70,82 @@ class CharterWiringTest {
     }
 
     @Test
-    void oneConsistentReadOverTheProjectConfigSourcesServesEveryRead() {
-        runner.run(context -> {
-            assertThat(context.getBeansOfType(ConsistentRead.class)).hasSize(1);
-            assertThat(context.getBean(ConsistentRead.class)).isNotNull();
+    void aRelativeRootIsFixedAgainstTheWorkingDirectory() {
+        runner.withPropertyValues("charter.config-root=relative/root")
+                .run(context -> assertThat(context.getBean(ConfigRoot.class).root())
+                        .isEqualTo(Path.of("relative/root").toAbsolutePath().normalize()));
+    }
+
+    @Test
+    void aRootThatDoesNotExistYetServesNoPacksAndIsNotCreated(@TempDir Path directory) {
+        Path missing = directory.resolve("not-yet");
+
+        runner.withPropertyValues("charter.config-root=" + missing).run(context -> {
+            assertThat(context.getBean(CharterWiring.PackLocations.class).get()).isEmpty();
+            assertThat(missing).doesNotExist();
         });
     }
 
     @Test
-    void aStorageRootThatIsNotADirectoryFailsTheStartNamingTheProperty(@TempDir Path directory) throws IOException {
-        Path missing = directory.resolve("no-such-dir");
+    void aRootThatIsAFileOrEmptyFailsTheStartNamingTheProperty(@TempDir Path directory) throws IOException {
         Path file = Files.writeString(directory.resolve("a-file"), "x");
 
-        for (Path configured : List.of(missing, file)) {
-            runner.withPropertyValues("charter.storage.root=" + configured)
+        for (String configured : List.of(file.toString(), "")) {
+            runner.withPropertyValues("charter.config-root=" + configured)
                     .run(context -> assertThat(context)
                             .hasFailed()
                             .getFailure()
                             .rootCause()
                             .isInstanceOf(IllegalStateException.class)
-                            .hasMessageContaining("charter.storage.root")
-                            .hasMessageNotContaining(configured.toString()));
+                            .hasMessageContaining("charter.config-root")
+                            .hasMessageNotContaining(file.toString()));
         }
     }
 
     @Test
-    void noStorageRootMeansNoPacks() {
+    void noConfiguredRootMeansNoPacks() {
         runner.run(context -> assertThat(
                         context.getBean(CharterWiring.PackLocations.class).get())
                 .isEmpty());
-        runner.withPropertyValues("charter.storage.root=")
-                .run(context -> assertThat(context.getBean(CharterWiring.PackLocations.class)
-                                .get())
-                        .isEmpty());
     }
 
     @Test
-    void theWorktreeIdIsTheConfiguredOneOrAStableIdDerivedFromThePackDirectories(@TempDir Path root)
-            throws IOException {
+    void aRetiredPackPropertyFailsTheStartInsteadOfServingNothing(@TempDir Path root) {
+        for (String retired : List.of("charter.packs[0].path=/packs/qa", "charter.storage.root=/packs")) {
+            runner.withPropertyValues("charter.config-root=" + root, retired)
+                    .run(context -> assertThat(context)
+                            .hasFailed()
+                            .getFailure()
+                            .rootCause()
+                            .isInstanceOf(IllegalStateException.class)
+                            .hasMessageContaining("no longer read")
+                            .hasMessageContaining("--configRootLocation"));
+        }
+    }
+
+    @Test
+    void theWorktreeIdIsTheConfiguredOneOrAStableIdDerivedFromTheConfigRoot(@TempDir Path root) throws IOException {
         runner.withPropertyValues("charter.worktree-id=wt-7")
                 .run(context -> assertThat(
                                 context.getBean(ServiceInfoQuery.class).worktree())
                         .isEqualTo("wt-7"));
-        List<PackLocation> packs = List.of(new PackLocation("qa", PackLevel.ORG, Path.of("/packs/qa")));
-        String derived = CharterWiring.derivedWorktreeId(packs);
-        assertThat(derived).matches("[0-9a-f]{16}").doesNotContain("packs");
-        assertThat(CharterWiring.derivedWorktreeId(packs)).isEqualTo(derived);
-        assertThat(CharterWiring.derivedWorktreeId(
-                        List.of(new PackLocation("qa", PackLevel.ORG, Path.of("/other/qa")))))
+        String derived = CharterWiring.derivedWorktreeId(new ConfigRoot(Path.of("/srv/charter")));
+        assertThat(derived).matches("[0-9a-f]{16}").doesNotContain("srv");
+        assertThat(CharterWiring.derivedWorktreeId(new ConfigRoot(Path.of("/srv/charter"))))
+                .isEqualTo(derived);
+        assertThat(CharterWiring.derivedWorktreeId(new ConfigRoot(Path.of("/srv/other"))))
                 .isNotEqualTo(derived);
-        Files.createDirectories(root.resolve("qa"));
-        String fromRoot =
-                CharterWiring.derivedWorktreeId(List.of(new PackLocation("qa", PackLevel.ORG, root.resolve("qa"))));
-        runner.withPropertyValues("charter.storage.root=" + root)
+
+        pack(root, "qa", "org");
+        String before = CharterWiring.derivedWorktreeId(new ConfigRoot(root));
+        pack(root, "audit", "org");
+        assertThat(CharterWiring.derivedWorktreeId(new ConfigRoot(root)))
+                .as("adding a pack does not change the id")
+                .isEqualTo(before);
+        runner.withPropertyValues("charter.config-root=" + root)
                 .run(context -> assertThat(
                                 context.getBean(ServiceInfoQuery.class).worktree())
-                        .isEqualTo(fromRoot));
+                        .isEqualTo(before));
     }
 
     @Test
