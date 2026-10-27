@@ -87,6 +87,7 @@ class CompanionFilesTest {
         artifact("linkdir.tactic.yaml", "linkdir", "linked/note.md");
         artifact("binary.tactic.yaml", "binary", "binary.md");
         Files.write(pack.resolve("binary.md"), new byte[] {(byte) 0xC3, (byte) 0x28});
+        artifact("backslash.tactic.yaml", "backslash", "a\\..\\x.md");
         artifact("first.tactic.yaml", "first", "shared.md");
         artifact("second.tactic.yaml", "second", "sub/../shared.md"); // the same file, named again: one owner
         Files.writeString(pack.resolve("shared.md"), "x");
@@ -99,6 +100,7 @@ class CompanionFilesTest {
                 .extracting(violation -> violation.file() + ": " + violation.reason())
                 .containsExactlyInAnyOrder(
                         "absolute.tactic.yaml: /etc/hostname: leaves the pack",
+                        "backslash.tactic.yaml: a\\..\\x.md: is not a valid path",
                         "binary.tactic.yaml: binary.md: cannot be read as UTF-8 text",
                         "dot.tactic.yaml: escape.tactic.yaml/.: is a YAML file",
                         "escape.tactic.yaml: ../outside.md: leaves the pack",
@@ -172,6 +174,33 @@ class CompanionFilesTest {
         assertThat(Files.readString(pack.resolve("README.md"))).isEqualTo("the pack's own");
         assertThat(Files.readString(pack.resolve("pack.yaml"))).isEqualTo(PACK_YAML);
         assertThat(Files.readString(pack.resolve("a.md"))).isEqualTo("mine");
+    }
+
+    @Test
+    @DisplayName("an upsert never names a companion another artifact owns, case ignored, as the read would refuse it")
+    void upsertRefusesAnotherArtifactsCompanion() throws IOException {
+        artifact("a.tactic.yaml", "a", "body.md");
+        Files.writeString(pack.resolve("body.md"), "a's");
+
+        assertThatThrownBy(() -> store.write(
+                        PACK, Fixture.INSTANCE, new FixtureDso("b", Optional.of("Body.md"), Optional.of("b's"))))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("companion Body.md is named by another artifact");
+        assertThat(pack.resolve("Body.md")).doesNotExist();
+        assertThat(pack.resolve("b.tactic.yaml")).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("a companion renamed only in case is refused: it would orphan the old file or replace the new one")
+    void upsertRefusesACaseOnlyRename() throws IOException {
+        artifact("a.tactic.yaml", "a", "body.md");
+        Files.writeString(pack.resolve("body.md"), "before");
+
+        assertThatThrownBy(() -> store.write(
+                        PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("Body.md"), Optional.of("after"))))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("companion Body.md differs only in case from body.md");
+        assertThat(Files.readString(pack.resolve("body.md"))).isEqualTo("before");
     }
 
     @Test

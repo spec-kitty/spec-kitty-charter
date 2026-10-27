@@ -104,13 +104,18 @@ final class Companions {
         if (declared.isBlank()) {
             return new Refused("is empty");
         }
+        // A backslash is a separator on one file system and a name character on another; refused, a pack reads alike
+        // everywhere.
+        if (declared.indexOf('\\') >= 0) {
+            return new Refused("is not a valid path");
+        }
         Path relative;
         try {
             relative = Path.of(declared);
         } catch (InvalidPathException invalid) {
             return new Refused("is not a valid path");
         }
-        if (relative.isAbsolute() || declared.startsWith("/") || declared.startsWith("\\")) {
+        if (relative.isAbsolute() || declared.startsWith("/")) {
             return new Refused("leaves the pack");
         }
         Path base = Objects.requireNonNullElse(packDir.resolve(artifactFile).getParent(), packDir);

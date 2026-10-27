@@ -99,8 +99,9 @@ final class WholePackExpectation {
      *
      * @param files every census file, once, sorted by path
      * @param problems every reason the run fails; empty when it passes
+     * @param emptyKinds the listed modelled kinds the pack has no file of, which the run cannot prove
      */
-    record Evaluation(List<FileResult> files, List<String> problems) {
+    record Evaluation(List<FileResult> files, List<String> problems, List<EmptyKindEntry> emptyKinds) {
 
         /**
          * The count of each status per kind.
@@ -281,7 +282,10 @@ final class WholePackExpectation {
                 problems.add("EMPTY_MODELLED_KIND " + kind + ": the pack has no file of this modelled kind");
             }
         }
-        return new Evaluation(List.copyOf(results), List.copyOf(problems));
+        List<EmptyKindEntry> unproved = emptyKinds.stream()
+                .filter(entry -> modelledKinds.contains(entry.kind()) && !census.containsValue(entry.kind()))
+                .toList();
+        return new Evaluation(List.copyOf(results), List.copyOf(problems), unproved);
     }
 
     /** Where a red detail says the file first differs: the text before its first {@code ": "}. */

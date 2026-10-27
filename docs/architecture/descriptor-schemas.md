@@ -89,8 +89,9 @@ Source: `src/charter/offering/schemas/agent-profile.schema.yaml` (schema-version
 
 Sources: `src/charter/offering/missions/step_contracts.py`,
 `src/charter/offering/schemas/skill.schema.yaml` with `src/charter/offering/pack_skills/models.py`,
-`src/charter/offering/glossary_packs/models.py`. The mission-step contract and the glossary
-pack have no JSON Schema file; their Pydantic models are the schema.
+`src/charter/offering/glossary_packs/models.py`. In core, the mission-step contract and the
+glossary pack have no JSON Schema file; their Pydantic models are the schema. This repository
+holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 
 ## Pack, CRG and charter configuration
 

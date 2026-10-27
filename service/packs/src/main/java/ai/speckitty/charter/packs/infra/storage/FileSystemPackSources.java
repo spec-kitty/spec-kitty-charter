@@ -14,8 +14,8 @@ import java.util.function.Supplier;
 
 /**
  * The packs' source files as one fingerprint. The list of files per pack is {@link PackFileSet}'s: {@code pack.yaml},
- * every file the pack load reads (tactic, directive, styleguide and paradigm files) and the declared graph inputs (the
- * root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), and nothing else. Every call reads the files again.
+ * every file of a registered kind with its companion files, and the declared graph inputs (the root
+ * {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), and nothing else. Every call reads the files again.
  */
 public final class FileSystemPackSources implements PackSources {
 

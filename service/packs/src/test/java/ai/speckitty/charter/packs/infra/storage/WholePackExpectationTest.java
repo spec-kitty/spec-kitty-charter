@@ -348,6 +348,29 @@ class WholePackExpectationTest {
         }
 
         @Test
+        void aListedEmptyKindIsReportedAsNotProved() {
+            Evaluation evaluation = WholePackExpectation.load(MATCHING_RED + EMPTY_DIRECTIVE, MATCHING_EXCLUSIONS)
+                    .evaluate(PACK, Set.of("tactic", "pack-descriptor", "directive"), ALL_GREEN);
+
+            assertThat(evaluation.emptyKinds())
+                    .extracting(WholePackExpectation.EmptyKindEntry::kind)
+                    .containsExactly("directive");
+            assertThat(WholePackReport.render(evaluation, "p", "pin", Map.of()))
+                    .contains("## Modelled kinds with no file")
+                    .contains("- directive: not proved here. The pack has no directive. (#192)");
+        }
+
+        @Test
+        void anEmptyKindEntryWithoutAReasonIsRefused() {
+            assertThatThrownBy(() -> WholePackExpectation.load(
+                            MATCHING_RED + EMPTY_DIRECTIVE.replace("    reason: The pack has no directive.\n", ""),
+                            MATCHING_EXCLUSIONS))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("empty_kinds entry")
+                    .hasMessageContaining("has no reason");
+        }
+
+        @Test
         void anEmptyKindEntryWithoutAnIssueIsRefused() {
             assertThatThrownBy(() -> WholePackExpectation.load(
                             MATCHING_RED + EMPTY_DIRECTIVE.replace("    issue: \"#192\"\n", ""), MATCHING_EXCLUSIONS))

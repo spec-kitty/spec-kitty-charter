@@ -34,6 +34,20 @@ final class WholePackReport {
             out.append(", ").append(label(status)).append(' ').append(count(evaluation, status));
         }
         out.append("\n\n## By kind\n\n").append(kindTable(evaluation));
+        out.append("\n## Modelled kinds with no file\n\n");
+        if (evaluation.emptyKinds().isEmpty()) {
+            out.append("None: every modelled kind has a file in the pack.\n");
+        } else {
+            evaluation
+                    .emptyKinds()
+                    .forEach(entry -> out.append("- ")
+                            .append(entry.kind())
+                            .append(": not proved here. ")
+                            .append(entry.reason())
+                            .append(" (")
+                            .append(entry.issue())
+                            .append(")\n"));
+        }
         out.append("\n## Problems\n\n");
         if (evaluation.problems().isEmpty()) {
             out.append("None: the observed result matches the expectation.\n");

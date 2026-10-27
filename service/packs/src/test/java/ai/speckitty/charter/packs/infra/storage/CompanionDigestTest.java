@@ -106,18 +106,23 @@ class CompanionDigestTest {
     }
 
     @Test
-    @DisplayName("a pack without companions digests exactly the files it digested before companions existed")
+    @DisplayName("binding skills adds nothing to the digest of a pack with no skill, and no Markdown is digested")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
-        Path pack = PackFixtures.copyOf("pack-a", host.resolve("rich"));
+        // The vendored qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
+        // styleguides, ...) and Markdown beside them, and no skill.
+        Path qa = Path.of(System.getProperty("charter.repositoryRoot", "../..")).resolve("packs/qa");
         Set<ArtifactKind> withoutSkills = EnumSet.copyOf(KindBindings.kinds());
         withoutSkills.remove(ArtifactKind.SKILL);
 
-        List<String> digested = PackFileSet.digested(pack);
+        List<String> digested = PackFileSet.digested(qa);
 
-        assertThat(digested).isNotEmpty().allSatisfy(file -> assertThat(file).endsWith(".yaml"));
+        assertThat(digested)
+                .hasSizeGreaterThan(10)
+                .allSatisfy(file -> assertThat(file).endsWith(".yaml"));
+        assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
-                .containsExactlyElementsOf(PackFileSet.digested(pack, withoutSkills));
+                .containsExactlyElementsOf(PackFileSet.digested(qa, withoutSkills));
     }
 
     private static void write(Path pack, String relative, String text) throws IOException {
