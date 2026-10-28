@@ -219,6 +219,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-28T06:02:15.803751Z",
+      "decision_id": "01M60HM8BV7CE17HYE1QS829K4",
+      "final_answer": "No: pack.md consumes #194's markdown content form (supersedes the specify decision pack_md_form). The pack.md work package is sequenced last, depends on #194 PR-A merging, and rebases onto it; until then other:pack.md stays expected-red and only tests may stub the form. ADR number for this mission is 0043 (0041 #227, 0042 #194).",
+      "input_key": "pack_md_form_coordination",
+      "mission_id": "01M60H1AK29G4N229BXHYJBH4H",
+      "mission_slug": "pack-level-files-round-trip-01M60H1A",
+      "opened_by": "cli",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Parent-session coordination (2026-10-28): sibling #194 builds ADR-0040's markdown content form in its PR-A. Does pack.md stay a bytes payload?",
+      "rationale": "Parent-session coordination message; one owner per content form (#194 builds markdown); avoids a second pack-level bytes kind.",
+      "resolved_at": "2026-10-28T06:02:18.755970Z",
+      "resolved_by": "parent session coordination",
+      "slot_key": "plan.pack_md_form_coordination",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M60H1AK29G4N229BXHYJBH4H",
