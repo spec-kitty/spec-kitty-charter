@@ -107,8 +107,9 @@ Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/
 
 Three schemas cover the files that describe a pack as a whole. All three are closed
 (`additionalProperties: false` at every level), so an unknown key is refused
-([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). They
-were designed here, not imported: core's preset and manifest files have other shapes, and the
+([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). The
+`preset` and `pack-manifest` schemas were designed here, not imported (the descriptor schema was
+imported from core, ADR-0017): core's preset and manifest files have other shapes, and the
 pinned built-in ones are refused until `spec-kitty-open-packs` adopts these.
 
 **`pack-descriptor`** (`pack.yaml`). The fields are unchanged. The schema is closed now: a key it

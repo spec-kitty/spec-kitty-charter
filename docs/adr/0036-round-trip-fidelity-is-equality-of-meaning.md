@@ -89,7 +89,7 @@ under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
 - `DM-01M60H7T0354AW8X9AYT3K91NN`: decision 3's follow-up is done. `pack-descriptor.schema.json`
   is closed, `undeclaredKeys()` and the `PACK_UNKNOWN_KEY` finding are removed, and
   `pack_unknown_key` stays in the contract as a retired value, never raised. DIV-005 and DIV-006
-  are closed;
+  are retired;
 - `DM-01M60H7EWVN7T6V0GAJACX9NSP`: a preset refuses an empty activation list, so decision 2's
   "absent equals empty" rule needs no exception for presets.
 

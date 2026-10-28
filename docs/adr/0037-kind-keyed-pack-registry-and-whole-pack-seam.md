@@ -89,7 +89,8 @@ Extended in part by
 under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. It changes decisions 4, 5 and 7 and
 no other decision:
 
-- **Decision 4, "pack-level files (#195)", is built.** The `Pack` aggregate holds its activation
+- **Decision 4, "pack-level files (#195)", is built for presets and the manifest; `pack.md` is
+  pending (WP08, #194).** The `Pack` aggregate holds its activation
   presets in a slot of its own, `presets()`, keyed by id, beside the kind map. A preset is a
   pack-level value, not an artifact: core gives it no URN. The store pairs each preset with its file
   stem. With ADR-0040's asset files, this is the second pack-level slot, and the pack document is
@@ -159,8 +160,9 @@ nothing about how a new kind is shaped.
    - kinds that are not files of their own (anti-patterns are nodes in a graph shard): a binding
      would write standalone files that must not exist;
    - pack-level files (#195).
-     *(Built by #195, 2026-10-28, ADR-0043: presets in a `Pack` slot of their own, the manifest
-     beside the aggregate. See the amendment under Status.)*
+     *(Built by #195, 2026-10-28, ADR-0043, for presets and the manifest: presets in a `Pack` slot
+     of their own, the manifest beside the aggregate. `pack.md` is pending (WP08, #194). See the
+     amendment under Status.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
    reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:
    - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is

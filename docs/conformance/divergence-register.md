@@ -36,11 +36,12 @@ Entries are grouped by block, one block per mission, so that two missions never 
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
+- **Pack-level files (DIV-301..399, ADR-0043)** is last.
 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
-is for programs: it holds every entry of all three blocks (pack schemas, context read, and the
-proposed activation block) and documents its own schema at the top. The proposed activation
+is for programs: it holds every entry of all four blocks (pack schemas, context read, the
+proposed activation block and pack-level files) and documents its own schema at the top. The proposed activation
 entries carry status `proposed`, so the gate does not enforce them until their operations are
 built. Each entry has a status:
 
@@ -410,17 +411,6 @@ ruling, its status and the evidence.
   - Core: `offering/packs/pack_validator.py:288` and `:301` (`_yaml_parser().load(path)`, no explicit encoding)
   - Charter: `service/packs/src/test/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
 
-### DIV-026: Validate mode, presets and the pack manifest
-
-- **Core:** Checks each `presets/<name>.yaml` in its own format, keyed by `name`, with `mission_type_activations` and bare-string lists. It reports `preset_format`, `preset_unresolved_id` (an id that resolves neither in the built-in pack nor in this pack) and `preset_kind_gate`. It does not schema-check `pack-manifest.yaml` (offering/packs/pack_validator.py:592-593, 662-690).
-- **Service:** Holds presets and the manifest to the closed, sanitized schemas of ADR-0043. A preset or manifest in core's shape, or a preset whose `id` is not its file stem, is an `artifact_schema_error` on its file. It does not resolve preset ids against the offering or check the kind gate against the listed kinds. A preset that breaks only a domain rule (an item id listed twice) passes validate mode and is refused by the load.
-- **Rationale:** Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need the activation model, which this service does not build yet.
-- **Ruling:** operator requirement on #195 (2026-10-28): sanitized shapes, no tolerance logic
-- **Status:** open, since 2026-10-28
-- **Evidence:**
-  - Core: `offering/packs/pack_validator.py:592-593` and `:662-690` (`_validate_presets`); no manifest check
-  - Charter: `FileSystemPackInspectorTest` (the built-in validate pin, 283 manifest and 14 preset findings; a preset whose id is not its stem is refused in validate mode and by the load)
-
 ## Adding an entry
 
 Give it the next free id in its block, state both answers, name the corpus case, and cite the ruling. Link the
@@ -448,3 +438,21 @@ Not divergences, because the contract matches core:
 
 Unknown and stale deny entries are refused by the contract and dropped by core's seam at export.
 That is an export rule, not a divergence.
+
+## Pack-level files (DIV-301..399, ADR-0043)
+
+The block of mission `pack-level-files-round-trip-01M60H1A`
+([#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195),
+[ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/)).
+
+### DIV-301: Validate mode, presets and the pack manifest
+
+- **Core:** Checks each `presets/<name>.yaml` in its own format, keyed by `name`, with `mission_type_activations` and bare-string lists. It reports `preset_format`, `preset_unresolved_id` (an id that resolves neither in the built-in pack nor in this pack) and `preset_kind_gate`. It does not schema-check `pack-manifest.yaml` (offering/packs/pack_validator.py:592-593, 662-690).
+- **Service:** Holds presets and the manifest to the closed, sanitized schemas of ADR-0043. A preset or manifest in core's shape, or a preset whose `id` is not its file stem, is an `artifact_schema_error` on its file. It does not resolve preset ids against the offering or check the kind gate against the listed kinds. A preset that breaks only a domain rule (an item id listed twice) passes validate mode and is refused by the load.
+- **Rationale:** Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need the activation model, which this service does not build yet.
+- **Ruling:** operator requirement on #195 (2026-10-28)
+- **Status:** open, since 2026-10-28
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:592-593` and `:662-690` (`_validate_presets`); no manifest check
+  - Charter: corpus case: the pinned open-packs `built-in` pack (`openPacksRef`), whose two presets and manifest validate mode refuses: 283 manifest and 14 preset findings, pinned in `FileSystemPackInspectorTest`
+  - Charter: `FileSystemPackInspectorTest`, a preset whose id is not its stem, refused in validate mode and by the load

@@ -21,7 +21,7 @@ audience:
 
 **A `pack.yaml` key the schema does not declare now makes the pack unreadable.** It is refused as
 `pack_unreadable`, naming the key, where it loaded with the `pack_unknown_key` warning. That value
-is retired and never raised (DIV-005 and DIV-006 closed).
+is retired and never raised (DIV-005 and DIV-006 retired).
 
 **A preset can mark an item must-have.** A preset is read and written in one closed shape, with
 `must_have: true` per item. A preset with a must-have item governs; one without is a convenience

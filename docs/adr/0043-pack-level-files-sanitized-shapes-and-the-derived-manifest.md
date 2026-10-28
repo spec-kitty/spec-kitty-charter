@@ -44,7 +44,8 @@ It supersedes in part [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-me
 per-kind table gains its `preset` and `pack-manifest` rows.
 
 It extends [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Accepted):
-decision 4's "pack-level files (#195)" is built, decision 5's load returns the manifest, and the
+decision 4's "pack-level files (#195)" is built for presets and the manifest (`pack.md` is pending,
+WP08 and #194), decision 5's load returns the manifest, and the
 write's undeclared-keys refusal is gone.
 
 It extends [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed): decision 9's
@@ -158,9 +159,9 @@ lists, in authored order. It derives three things:
   not an `ArtifactKind`;
 - `governing()`: true when either is not empty.
 
-Its invariants refuse an id twice in one list, a kind twice in the gate, an empty list, a blank
-description, and a list of a kind presets do not govern. Each message names the preset and the
-offending value.
+Its invariants refuse an id outside the grammar, an id twice in one list, a kind twice in the gate,
+an empty list, a blank description, and a list of a kind presets do not govern. Each message names
+the preset, and, where there is one, the offending kind or id.
 
 The store checks that a preset's `id` is its file stem through one helper,
 `PresetFiles.stemMismatch`. The load records `preset id '<id>' is not its file stem '<stem>'`
@@ -186,7 +187,7 @@ pack is refused as `pack_unreadable`, `pack.yaml of <pack>: unknown key '<name>'
 whole-pack write's undeclared-keys refusal are removed. `pack_unknown_key` stays in the contract's
 `DiagnosticCode` enum as a retired value, never raised. Its description says so, with a contract
 `CHANGELOG` line and no shape change (operator approval on #195, 2026-10-28). DIV-005 and DIV-006
-are closed. No ULID pattern is added to `pack_id`: the contract scenarios use `pack_id: qa`.
+are retired. No ULID pattern is added to `pack_id`: the contract scenarios use `pack_id: qa`.
 
 ### 5. The manifest: the authored-pack variant, with derived hashes
 
@@ -277,7 +278,7 @@ mode does not build the domain value. This record covers schema breaks and the s
 
 **A divergence from core.** Core's `validate_pack` checks presets in its own shape, resolves their
 ids and checks their kind gate, and does not check the manifest. The service holds both to these
-shapes and does neither of core's preset checks. The divergence is DIV-026 in the
+shapes and does neither of core's preset checks. The divergence is DIV-301, in a block of its own for #195, in the
 [divergence register](/conformance/divergence-register/).
 
 ### 8. `pack.md` uses #194's `markdown` content form (pending)
@@ -410,8 +411,9 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 - Validate mode passes a preset that breaks only a domain invariant, such as a duplicated item id
   (decision 7).
 - `Pack` has two pack-level slots now, and a third is coming, before the extraction.
-- Reading the built-in manifest costs little. The whole-pack load of the internal pack took 43 ms
-  before and 45 ms after, against a budget of 0.5 s (NFR-004).
+- The load's cost was measured on the internal pack only, which holds no manifest: its whole-pack
+  load took 43 ms before and 45 ms after, against a budget of 0.5 s. The built-in pack's load with
+  its manifest was not timed separately, so NFR-004 stays open.
 
 ### Risks
 

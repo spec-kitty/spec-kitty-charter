@@ -1,6 +1,6 @@
 ---
 title: "ADR-0031: Requirement is authored as a preset, and the required set is derived from it"
-description: An org states what must be on the plate through a preset's must-have items; the service derives the required set; two open questions stay recorded.
+description: An org states what must be on the plate through a preset's must-have items; the service derives the required set; ADR-0043 answers its two open questions.
 doc_status: active
 updated: 2026-10-28T00:00:00Z
 type: ADR
