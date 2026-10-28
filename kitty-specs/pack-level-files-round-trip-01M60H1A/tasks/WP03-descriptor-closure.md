@@ -1,6 +1,6 @@
 ---
 work_package_id: WP03
-title: "Close pack.yaml: refuse unknown keys, retire undeclaredKeys"
+title: 'Close pack.yaml: refuse unknown keys, retire undeclaredKeys'
 dependencies: []
 requirement_refs:
 - FR-011
@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: feat/195-pack-level-round-trip
 merge_target_branch: feat/195-pack-level-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/195-pack-level-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/195-pack-level-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-level-files-round-trip-01M60H1A
+base_commit: 5dee7caf9d64e665e556889b812ecb98fc23cef1
+created_at: '2026-10-28T06:18:34.255744+00:00'
 subtasks:
 - T007
 - T008
