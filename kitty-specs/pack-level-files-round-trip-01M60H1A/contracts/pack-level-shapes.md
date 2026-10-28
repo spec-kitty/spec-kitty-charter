@@ -12,13 +12,12 @@ files:
     schema: preset
   - match: "*/pack-manifest.yaml"
     schema: pack-manifest
-payloads:
-  - match: "*/pack.md"
-    kind: pack-document
-    content_form: bytes
 ```
 
-The `exclusions` entries `**/presets/*.yaml` and `*/pack-manifest.yaml` are retired.
+`pack.md` gets its rule from #194's `markdown` content form, added after #194's PR-A merges.
+
+Not appended: the `exclusions` entries `**/presets/*.yaml` and `*/pack-manifest.yaml` are retired, and `**/presets/*.yaml` is narrowed to `*/presets/*.yaml`. No pinned
+file is nested deeper.
 
 ## `preset.schema.json`
 
@@ -29,7 +28,8 @@ The schema is closed. Required: `schema_version` (`const "1.0"`), `id`, `descrip
 - `activated_kinds`: array, `minItems` 1, `uniqueItems`, items from the enum of 13 kind plurals.
 - `activated_{directives,tactics,styleguides,toolguides,paradigms,procedures,agent_profiles,mission_step_contracts,anti_patterns,mission_types}`:
   array of `$defs/item`, `minItems` 1.
-- `$defs/item`: closed. Required `id` (string, `minLength` 1). Optional `must_have` (boolean, default `false`).
+- `$defs/item`: closed. Required `id` (string, `minLength` 1). Optional `must_have` (`const: true`): present means
+  must-have, and there is no `false` spelling.
 
 ## `pack-manifest.schema.json`
 
@@ -37,7 +37,7 @@ The schema is closed. Required: `schema_version` (`const "1.0"`), `manifest_hash
 
 - `manifest_hash`, `content_hash`: pattern `^[0-9a-f]{64}$`.
 - `constituents[]`: closed `{kind (enum: artifact kinds), id, path, content_hash}`, all required.
-- `presets[]`: closed `{id, path, content_hash}`, all required.
+- `presets[]`: `minItems` 1; closed `{id, path, content_hash}`, all required; `path` is `presets/<id>.yaml`.
 
 ## Derived fields
 

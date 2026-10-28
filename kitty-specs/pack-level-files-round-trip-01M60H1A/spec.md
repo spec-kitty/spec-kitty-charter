@@ -19,7 +19,8 @@ describe the pack as a whole are read into the domain through closed, deliberate
 written back without loss of meaning:
 
 - **activation presets** (`presets/<id>.yaml`), each list item able to carry a must-have mark;
-- **the pack document** (`pack.md`), held as bytes;
+- **the pack document** (`pack.md`), held in the `markdown` content form that sibling #194 builds (its PR-A). This
+  part lands after PR-A;
 - **the pack descriptor** (`pack.yaml`), whose schema is closed, so an unknown key is refused instead of being
   remembered by name and dropped;
 - **the pack manifest** (`pack-manifest.yaml`), whose hashes are derived. The writer recomputes them from the
@@ -37,7 +38,7 @@ logic. The file goes on the gate's known-failure list, keyed by a drafted upstre
 | Must-have mark | The per-item flag (`must_have: true`) that makes an item part of the preset's required set (ADR-0031, ruling on #195). | "required" (collides with the legacy `required_<plural>` lists and with JSON Schema's `required`) |
 | Governing preset | A preset with at least one must-have item. A preset with none is a convenience preset. Derived, never declared. | "policy preset" |
 | Kind gate | A preset's `activated_kinds`: the kinds the preset activates; a kind left out is switched off. | |
-| Pack document | The pack's free-form Markdown description, `pack.md`. Held as bytes. | "README" |
+| Pack document | The pack's free-form Markdown description, `pack.md`. Held in #194's `markdown` content form. | "README" |
 | Pack manifest | The machine-written inventory of a pack's constituent artifacts and presets, with a content hash for each and a hash over the whole. | "lock file" |
 | Derived field | A field computed from other content (a manifest hash). The writer recomputes it and the gate verifies it. It is never carried as read. | |
 | Sanitized shape | The deliberately designed, closed shape of a storage object, following the rules S1–S8 of [research/grounding-squad.md §3](research/grounding-squad.md#3-sanitized-shape-rules-applied). | "mirror of the files" |
@@ -93,16 +94,17 @@ and its follow-up has been open since #188.
 
 ### User Story 3 - The pack document round-trips byte for byte (Priority: P2)
 
-A pack author ships `pack.md` beside `pack.yaml`. Loading the pack holds it, and writing it back reproduces its exact
-bytes.
+A pack author ships `pack.md` beside `pack.yaml`. Loading the pack holds it in the `markdown` content form (#194), and
+writing it back keeps its meaning: frontmatter (if any) as YAML, body as text. This story depends on #194's PR-A and
+lands after it merges; until then `other:pack.md` stays expected-red.
 
-**Independent Test**: Load and write a pack with a `pack.md` that has CRLF line endings and no final newline. The
-bytes are equal.
+**Independent Test**: Load and write a pack with `pack.md`; it compares equal under the markdown form's rule, and a
+lossy writer is caught.
 
 **Acceptance Scenarios**:
 
 1. **Given** the pinned built-in `pack.md`, **When** the gate runs, **Then** it round-trips green.
-2. **Given** a deliberately lossy write (one byte flipped), **When** the gate runs, **Then** it fails at `pack.md`.
+2. **Given** a deliberately lossy write of the body, **When** the gate runs, **Then** it fails at `pack.md`.
 3. **Given** a pack without `pack.md`, **When** it is written, **Then** no `pack.md` appears.
 
 ### User Story 4 - The manifest is regenerated on write and verified (Priority: P1)
@@ -160,7 +162,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
   the round trip's job, and core checks it in `validate_pack`.
 - A manifest with no constituents (`constituents: []`): valid. It writes `manifest_hash` over the empty list.
 - A manifest whose constituent `kind` is not an artifact kind token: refused by the schema.
-- `pack.md` that is not valid UTF-8: held and written as bytes. It is never decoded.
+- `pack.md` that is not valid UTF-8: handled as #194's markdown form decides (refused, not decoded lossily).
 - A comment-only preset or manifest (a YAML `null` document): refused, because the schema requires a mapping.
 
 ## Requirements *(mandatory)*
@@ -173,7 +175,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | FR-002 | Preset in the domain | As a pack author, I want each `presets/*.yaml` loaded into the pack as a preset (its id, description, kind gate and items with their must-have marks), with the required set derived from the marks, so that a governing preset is known without a second declaration. | High | Open | [build] | no |
 | FR-003 | Preset invariants | As a maintainer, I want a preset refused when its `id` is not its file stem, or when one list names an id twice, each refusal naming the preset file. | High | Open | [build] | no — paired with a valid preset in the same fixture |
 | FR-004 | Preset written back | As a pack author, I want each preset written to `presets/<id>.yaml` equal by meaning to its source, must-have marks included, and no preset file written for a pack that holds none. | High | Open | [build] | no — a dropped must-have mark fails the comparison |
-| FR-005 | Pack document as bytes | As a pack author, I want `pack.md` held as a pack-level bytes payload and written back byte-identical. | Medium | Open | [build] | no — paired with a one-byte lossy-write control |
+| FR-005 | Pack document in the markdown form | As a pack author, I want `pack.md` held through #194's `markdown` content form and written back equal under that form's rule, once #194's PR-A has merged. | Medium | Open | [build] | no — paired with a lossy-body control |
 | FR-006 | Manifest schema | As a maintainer, I want `contracts/packs/schemas/pack-manifest.schema.json` to define the sanitized authored-pack manifest (`schema_version`, `manifest_hash`, `constituents[{kind, id, path, content_hash}]`, `presets[{id, path, content_hash}]`), closed, with 64-hex hashes, so that the variant fields of fetched packs and charter bundles are refused. | High | Open | [build] | no — paired with a clean manifest |
 | FR-007 | Manifest read | As a maintainer, I want `pack-manifest.yaml` read beside the pack aggregate: membership as written, hashes as written, and no freshness check on load (core's behaviour). | High | Open | [build] | no |
 | FR-008 | Derived hashes declared | As a maintainer, I want `content_hash` defined as SHA-256 of the file's bytes after CRLF/CR → LF, and `manifest_hash` as SHA-256 of the UTF-8 RFC 8785 canonical JSON of the manifest without `manifest_hash`, so that both are reproducible in any language. | High | Open | [build] | no — a parity test reproduces both from fixed bytes |
@@ -182,16 +184,17 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | FR-011 | Descriptor closed | As a maintainer, I want `pack-descriptor.schema.json` closed (`additionalProperties: false`), with its description text consistent (`pack_level` optional, `pack_version` required at every level). An unknown or retired `pack.yaml` key makes the pack unreadable, naming the key, and is never carried by name. | High | Open | [build] | no — paired with a clean pack loading in the same run |
 | FR-012 | Undeclared keys retired in code | As a maintainer, I want `PackDescriptor.undeclaredKeys`, the `PACK_UNKNOWN_KEY` finding and the write-side undeclared-key refusal removed, and their tests moved to the refusal, leaving `contracts/charter/**` unchanged. | High | Open | [build] | no |
 | FR-013 | Pack-level files fingerprinted | As an operator, I want a change to a preset, `pack.md` or `pack-manifest.yaml` to change the pack's source fingerprint, and a pack without them to keep its fingerprint. | High | Open | [build] | no — a one-byte edit of each changes the fingerprint |
-| FR-014 | Gate flips exactly these files | As a maintainer, I want the gate's expected-red list to lose the `other:presets`, `other:pack.md` and `other:pack-manifest.yaml` kinds. The known-failure list gains exactly `presets/default.yaml` and `presets/minimal.yaml` (keyed `#TBD-preset-shape`) and `pack-manifest.yaml` (keyed `#TBD-manifest-shape`), each pinned to its exact refusal. The loader admits the `#TBD-<slug>` key form. | High | Open | [build] | no — the two-way ratchet fails on an extra or stale entry |
+| FR-014 | Gate flips exactly these files | As a maintainer, I want the gate to model the kinds `preset` and `pack-manifest` (and `pack-document` with FR-005), with `REQUIRED_KINDS` gaining exactly those. The expected-red list loses `other:presets` and `other:pack-manifest.yaml` (and `other:pack.md` with FR-005). The known-failure list gains exactly `presets/default.yaml` and `presets/minimal.yaml` (keyed `#TBD-preset-shape`) and `pack-manifest.yaml` (keyed `#TBD-manifest-shape`), each pinned to its exact refusal, which is the same text the seam test reports. The loader admits only those two placeholder keys. | High | Open | [build] | no — the two-way ratchet fails on an extra or stale entry |
 | FR-015 | Gate verifies derived fields | As a maintainer, I want the gate to compare a manifest's non-derived fields by meaning and to verify each derived field against its own side's bytes, so that a stale source manifest is reported, not silently restamped. | High | Open | [build] | no — paired with a stale-hash control |
 | FR-016 | Upstream issues drafted | As the parent session, I want one draft issue per divergence family (file, required change, rationale) and a core-first issue in `research/draft-upstream-issues.md`, so that the placeholders can be filed and replaced. | Medium | Open | [build] | no |
-| FR-017 | Decisions recorded | As a maintainer, I want a new ADR to record the sanitized-shape rules for the pack-level storage objects, the preset shape and the per-item mark (superseding ADR-0031's open questions), the manifest's derived fields, the rule for kinds without a schema (closing ADR-0036 open question 3 and decision 6), and `pack.md` as bytes. ADR-0031, 0036, 0037 and 0040 get amendment notes. | High | Open | [build] | no |
+| FR-017 | Decisions recorded | As a maintainer, I want ADR-0043 to record the sanitized-shape rules for the pack-level storage objects, the preset shape and the per-item mark (superseding ADR-0031's open questions), the manifest's derived fields, the rule for kinds without a schema (closing ADR-0036 open question 3 and decision 6), and `pack.md` as bytes. ADR-0031, 0036, 0037 and 0040 get amendment notes. | High | Open | [build] | no |
+| FR-018 | Validate mode agrees with load | As a maintainer, I want validate mode to report a preset or manifest that breaks its schema, or a preset whose id is not its file stem, as `ARTIFACT_SCHEMA_ERROR` (ADR-0036 decision 3's code for every other schema-mapped file), so that validate and load refuse the same files. Presets are not counted as artifacts. | High | Open | [build] | no — the built-in validate test pins exactly the three new findings |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Hash parity | The Java `content_hash` reproduces all 274 pinned built-in hashes (272 constituents and 2 presets) from the pinned bytes: 100% equal. | Compatibility | High | Open |
+| NFR-001 | Hash parity | The Java `content_hash` reproduces all 274 pinned built-in hashes (272 constituents and 2 presets), read from the pinned manifest with the raw YAML loader: 100% equal. Fixed vectors with CRLF, lone CR and mixed line endings, plus RFC 8785 vectors (escapes, non-ASCII, an empty `constituents`), pass 100%. | Compatibility | High | Open |
 | NFR-002 | Fingerprint stability | Packs without presets, `pack.md` or a manifest keep their source fingerprint: 0 changed values across the existing fingerprint tests. | Compatibility | High | Open |
 | NFR-003 | Build gates | `./gradlew verifyAll` passes on Java 25 with zero new style, Error Prone, NullAway, doclint or ArchUnit findings; the docs checks (`check_docs.py all`, markdownlint-cli2, cspell) pass. | Quality | High | Open |
 | NFR-004 | Load cost | Reading the pinned built-in manifest (1388 lines) adds under 0.5 s to the built-in pack's whole-pack load on the CI runner. | Performance | Low | Open |
@@ -212,7 +215,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 - **Preset**: id (the file stem), description, optional kind gate, an ordered list of items per activation key. Its
   required set is derived.
 - **Preset item**: an id and the must-have mark.
-- **Pack document**: the bytes of `pack.md`.
+- **Pack document**: `pack.md` in #194's markdown form.
 - **Pack manifest**: schema version, ordered constituents (kind, id, path, content hash), ordered preset entries
   (id, path, content hash), and the manifest hash. It is held beside the aggregate, because `Pack` holds no paths.
 - **Pack descriptor**: as today, without undeclared keys.
@@ -221,15 +224,19 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 
 ### Measurable Outcomes
 
-- **SC-001**: At the pinned open-packs commit, the gate passes with `pack.yaml` (2 files) and `pack.md` (1) green and
-  exactly 3 new known failures, and the 3 `other:` pack-level kinds are gone from the expected-red list. — [build] ·
-  no-op passable: no
+- **SC-001**: At the pinned open-packs commit, the gate passes with exactly 3 new known failures (2 presets, 1 manifest).
+  `other:presets` and `other:pack-manifest.yaml` are gone from the expected-red list. — [build] · no-op passable: no
+- **SC-001a**: Built-in `pack.yaml` stays green in the gate, and internal `pack.yaml` in the seam test, while the paired
+  descriptor refusals (`surprise`, `accompanies_doctrine_pack`) refuse. — [ratchet] · no-op passable: yes — paired with
+  the refusals, which a no-op fails
+- **SC-001b**: Once #194's PR-A has merged, built-in `pack.md` is green and `other:pack.md` is gone from the expected-red
+  list. — [build] · no-op passable: no
 - **SC-002**: The fixture pack's presets round-trip equal by meaning, must-have marks included, and every refusal
   control (unknown key, id ≠ stem, duplicate id, empty list) is refused while its paired clean file loads. — [build] ·
   no-op passable: no
 - **SC-003**: On a written pack, 100% of the manifest's derived fields verify against the written bytes, and a
   one-byte lossy write of any listed file is caught. — [build] · no-op passable: no
-- **SC-004**: All 274 pinned built-in `content_hash` values are reproduced by the service. — [ratchet] · no-op passable:
+- **SC-004**: All 274 pinned built-in `content_hash` values, and the line-ending vectors, are reproduced by the service. — [ratchet] · no-op passable:
   no — needs the new hash code
 - **SC-005**: Zero changes under `contracts/charter/**` and to already-merged pack schemas other than
   `pack-descriptor`. — [ratchet] · no-op passable: yes — paired with SC-001, which a no-op fails
@@ -241,7 +248,10 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 - Core keeps reading presets in its current shape until then. The service's preset shape is ahead of core by
   design (the operator's sanitized-shape requirement). No service operation serves presets today.
 - The parent session files the drafted issues and replaces the `#TBD-<slug>` placeholders before merge.
-- Sibling #194 may take ADR-0042. Whichever merges first keeps it, and the other renumbers on rebase.
+- ADR numbers are allocated by the parent session: 0041 is #227's, 0042 is #194's, and this mission records its
+  decisions in **ADR-0043**.
+- #194's PR-A (the `markdown` content form) merges before the `pack.md` work package; if it has not merged by
+  hand-off, `pack.md` stays expected-red and the hand-off says so.
 
 ## Out of Scope
 
@@ -251,6 +261,6 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 - Restamping the manifest after a single-artifact registration, and regenerating manifest membership (which files
   are constituents). Both need core's enumeration rules (#110).
 - A ULID pattern on `pack_id`: the contract scenarios use `pack_id: qa`.
-- The `markdown` and `text` content forms. A frontmatter schema for `pack.md`.
+- Building the `markdown` or `text` content form (#194 builds `markdown`). A frontmatter schema for `pack.md`.
 - The fetched-pack and charter-bundle manifest variants.
 - Changing already-merged storage objects (listed for epic #186: grounding-squad §6).

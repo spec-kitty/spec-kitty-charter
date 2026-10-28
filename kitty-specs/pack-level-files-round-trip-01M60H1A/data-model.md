@@ -24,16 +24,16 @@ Equality is by value.
 | Field | Type | Rule |
 |---|---|---|
 | `id` | `String` | not blank |
-| `mustHave` | `boolean` | defaults to false |
+| `mustHave` | `boolean` | written as `must_have: true` only; the schema has no `false` spelling |
 
 ### `Pack` (aggregate, extended)
 
 - `presets()`: `List<Preset>`, sorted by id. Two presets with one id breach an invariant.
-- `document()`: `Optional<Payload>`, the bytes of `pack.md`.
-- `toBuilder()` and `with(...)` keep both.
+- `toBuilder()` and `with(...)` keep the presets.
+- The pack document's domain slot comes with #194's `markdown` form (IC-08).
 
-The class doc records the pack-level slots as asset files, presets and the document (ADR-0042). By the rule of three,
-a fourth slot extracts a `PackLevelContent` value.
+The class doc records the pack-level slots (ADR-0043). The rule of three has fired, and extracting a
+`PackLevelContent` value is a follow-up on epic #186 (research P8).
 
 ## Kernel
 
@@ -61,21 +61,21 @@ emits keys in schema order, writes `must_have: true` only when true, and leaves 
 
 | Operation | What it does |
 |---|---|
-| `contentHash(byte[])` | SHA-256 hex of the bytes after CRLF/CR → LF |
+| `contentHash(byte[])` | `Payload.of(lf(bytes)).sha256()`: SHA-256 hex of the bytes after CRLF/CR → LF |
 | `manifestHash(PackManifestDso)` | SHA-256 hex of the UTF-8 JCS of `{schema_version, constituents:[{kind,id,path,content_hash}], presets:[{id,path,content_hash}]}`. `presets` is omitted when empty, as the YAML omits it. |
-| `restamp(PackManifestDso, Function<String, Optional<byte[]>> bytesAt)` | Recomputes every derived field. A path with no bytes refuses (`CharterRefusal PACK_UNREADABLE`, naming the path). |
-| `stale(PackManifestDso, Function<String, Optional<byte[]>> bytesAt)` | Lists each derived field that does not verify, as `constituents{<path>}.content_hash`, `presets{<path>}.content_hash`, `manifest_hash`, or a missing path. Used by the gate. |
+| `recompute(PackManifestDso, Function<String, Optional<byte[]>> bytesAt)` | Returns the manifest with every derived field recomputed, plus the listed paths that have no bytes. The writer refuses when any path is missing (`CharterRefusal PACK_UNREADABLE`, naming it). The gate diffs the recomputed fields against the read ones (`constituents{<path>}.content_hash`, `presets{<path>}.content_hash`, `manifest_hash`) and reports the missing paths. |
 
 ### `WholePackStore.LoadedPack`
 
-Gains `Optional<PackManifestDso> manifest`. An unreadable manifest is a violation on the pack (`pack-manifest.yaml`),
-so the write refuses, as for any unreadable file.
+Gains `Optional<PackManifestDso> manifest`; a 4-argument constructor keeps the old signature. `WholePackStore` is the
+manifest's only owner: its load reads the file and records an unreadable one as a violation on the aggregate, so the
+write refuses. `FilesystemPackStore` and `DomainRepositoryService` never parse it.
 
 ### `PackFileSet`
 
-- `Listing` gains `presets` (files of schema `preset`) and `documents` (bytes kind `pack-document`).
+- `Listing` gains `presets` (files of schema `preset`). The pack document arrives with #194's form.
 - `digested` appends presets, then `pack.md`, then `pack-manifest.yaml`.
-- Constants: `PRESETS = "presets/"`, `PACK_DOCUMENT = "pack.md"`, `PACK_MANIFEST = "pack-manifest.yaml"`.
+- Constants: `PRESETS = "presets/"`, `PACK_MANIFEST = "pack-manifest.yaml"`.
 
 ## State and lifecycle
 

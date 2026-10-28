@@ -93,16 +93,16 @@ built-in seeding rule (`packs/built-in.source.yaml:8-10`), the gate census (`Who
 
 | # | Sev | Lens | Finding | Disposition |
 |---|---|---|---|---|
-| F1 | HIGH | Architect | The comparator treats `[]` as absent (ADR-0036 E2), but a preset's `[]` means "activate none". The meaning would change silently, and the gate would call it equal. | **changed**: the sanitized preset shape refuses an empty activation list (`minItems: 1`). A kind is switched off one way only, by leaving it out of `activated_kinds`. There is no comparator exception (spec C-005, ADR-0042). |
+| F1 | HIGH | Architect | The comparator treats `[]` as absent (ADR-0036 E2), but a preset's `[]` means "activate none". The meaning would change silently, and the gate would call it equal. | **changed**: the sanitized preset shape refuses an empty activation list (`minItems: 1`). A kind is switched off one way only, by leaving it out of `activated_kinds`. There is no comparator exception (spec C-005, ADR-0043). |
 | F2 | HIGH | Architect | `DomainRoundTrip` writes artefacts at `<id>.<token>.yaml`, so a recomputed manifest finds no file at its listed paths. | **changed**: at the pin the manifest is refused on read (sanitized-shape divergence, D-M1..M5). The derived-hash path is proven on a layout-preserving fixture through `WholePackStore` (spec FR-010). The gate seam switch stays deferred, as in ADR-0040. |
-| F3 | HIGH | Architect | Carrying hashes as read leaves a manifest describing bytes that no longer exist. | **accepted**: hashes are derived and recomputed on every write (spec FR-009, ADR-0042). |
+| F3 | HIGH | Architect | Carrying hashes as read leaves a manifest describing bytes that no longer exist. | **accepted**: hashes are derived and recomputed on every write (spec FR-009, ADR-0043). |
 | F4 | HIGH | Analyst | `minimal.yaml` lists file stems where directive ids belong. | **accepted**: divergence D-P5, drafted upstream, file on the known-failure list. |
 | F5 | HIGH | Analyst | The as-written preset shape cannot carry the ruled per-item mark, so #206 would break the same files twice. | **accepted**: the sanitized preset shape carries `must_have` per item (spec FR-002). |
 | F6 | HIGH | Planner | The known-failure loader accepts only numeric open-packs issue numbers. The `#TBD-<slug>` placeholder would not load. | **accepted**: the loader admits `spec-kitty/spec-kitty-open-packs#TBD-<slug>`, tested. The parent session replaces the placeholders before merge (spec FR-014). |
 | F7 | HIGH | Planner | Closing `pack.yaml` was left undone by #189 and touches a contract description. | **changed**: close the schema and remove `undeclaredKeys`/`PACK_UNKNOWN_KEY` in code (ADR-0036 ruling 1, already accepted). Leave `contracts/charter/**` untouched and ask the operator on #195 about the description (spec C-001, FR-012). |
 | F8 | MED | Architect | Registrations rewrite constituents without restamping the manifest. | **deferred_with_rationale**: restamping on the commit path and regenerating membership need core's enumeration rules, which belong to #110. Recorded as a known gap (spec Out of scope). |
-| F9 | MED | Architect | Recomputing `manifest_hash` with core's recipe needs a byte-exact Java port of ruamel's emitter. | **changed**: the sanitized manifest defines `manifest_hash` over RFC 8785 canonical JSON, which is language-neutral (ADR-0042). Core adopts it with the shape change (draft core issue). |
-| F10 | MED | Architect | `Pack` gains pack-level slots beyond its one recorded exception. | **accepted**: recorded in ADR-0042, class doc updated. |
+| F9 | MED | Architect | Recomputing `manifest_hash` with core's recipe needs a byte-exact Java port of ruamel's emitter. | **changed**: the sanitized manifest defines `manifest_hash` over RFC 8785 canonical JSON, which is language-neutral (ADR-0043). Core adopts it with the shape change (draft core issue). |
+| F10 | MED | Architect | `Pack` gains pack-level slots beyond its one recorded exception. | **accepted**: recorded in ADR-0043, class doc updated. |
 | F11 | MED | Analyst | The built-in pack is seeded from core, and core's loaders refuse the sanitized shapes. Every built-in fix is core-first, then a re-seed. | **accepted**: the draft issues say so, and the spec records the long-lived known-failures (spec Assumptions). |
 | F12 | MED | Architect, Planner | Shared files with #194 (`file-kinds.yaml`, `expected-red.yaml`, `PackFileSet`, `WholePackStore`, `DomainRoundTrip`, `PackFileKind`). | **accepted**: append-only edits, and a reconcile task after #194 merges (spec C-002). |
 | F13 | MED | Architect | ADR number: 0041 is reserved for #227, so 0042 is the next free one, but #194 may take it too. | **accepted**: first to merge keeps 0042, the other renumbers on rebase (plan). |
@@ -113,7 +113,7 @@ built-in seeding rule (`packs/built-in.source.yaml:8-10`), the gate census (`Who
 ## 3. Sanitized-shape rules applied
 
 These rules are applied to the four pack-level storage objects (DSOs). They follow the operator's binding
-requirement of 2026-10-28 and ADR-0036. They are recorded in ADR-0042.
+requirement of 2026-10-28 and ADR-0036. They are recorded in ADR-0043.
 
 - **S1. One identity name.** An object's identity field is `id` (the majority convention). It is never
   `name` and never a kebab-case variant. Where an object has a file of its own, the `id` equals the file stem.
