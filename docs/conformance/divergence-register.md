@@ -41,9 +41,9 @@ Entries are grouped by block, one block per mission, so that two missions never 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 is for programs: it holds every entry of all four blocks (pack schemas, context read, the
-proposed activation block and pack-level files) and documents its own schema at the top. The proposed activation
-entries carry status `proposed`, so the gate does not enforce them until their operations are
-built. Each entry has a status:
+proposed activation block and pack-level files) and documents its own schema at the top. The
+proposed activation entries carry status `proposed`, so the gate does not enforce them until their
+operations are built. Each entry has a status:
 
 - `open`: the difference stands.
 - `aligned`: core now agrees, so the difference is gone.

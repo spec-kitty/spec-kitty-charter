@@ -4,8 +4,9 @@
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
 # (DIV-201..202, ADR-0020, proposed) and pack-level files (DIV-301..399, ADR-0043). Consumers: the
-# conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from core that is not listed here with status
-# `open` fails them, so a `proposed` entry is not yet enforced.
+# conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
+# core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
+# enforced.
 #
 # Schema, one list item per divergence:
 #   id         DIV-NNN, unique, never reused
