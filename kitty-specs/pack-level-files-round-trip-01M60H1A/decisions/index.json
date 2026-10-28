@@ -239,6 +239,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-28T06:36:55.888343Z",
+      "decision_id": "01M60KKQPGDQ5FSE2AAWN9Y3R7",
+      "final_answer": "Q1 yes: designed preset shape with must_have now; built-in presets on the known-failure list. Q2 yes: edit DiagnosticCode.yaml so pack_unknown_key reads retired, never raised, plus a contract CHANGELOG line (no shape change). Q3 confirmed: authored-pack manifest, derived hashes on write, RFC 8785 manifest_hash; core first (C-1). Q4 agreed: restamp/membership stay with #110; no ULID pack_id pattern.",
+      "input_key": "operator_answers_195",
+      "mission_id": "01M60H1AK29G4N229BXHYJBH4H",
+      "mission_slug": "pack-level-files-round-trip-01M60H1A",
+      "opened_by": "cli",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Operator answers on #195 (comment 6462447705, 2026-10-28) to the four questions of comment 6461881659",
+      "rationale": "Operator rulings on #195.",
+      "resolved_at": "2026-10-28T06:36:58.734953Z",
+      "resolved_by": "operator (stijn-dejongh) on #195",
+      "slot_key": "plan.operator_answers_195",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M60H1AK29G4N229BXHYJBH4H",

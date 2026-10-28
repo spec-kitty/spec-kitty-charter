@@ -207,7 +207,8 @@ docs/changelog/2026-10-28-pack-level-files-round-trip.md, docs/glossary/…, doc
 8. **Descriptor closure.**
    - `surprise` and `accompanies_doctrine_pack` give `PACK_UNREADABLE` with the exact text, beside a clean pack.
    - No `undeclaredKeys` or `PACK_UNKNOWN_KEY` is left in Java.
-   - `git diff origin/main -- contracts/charter` is empty.
+   - `git diff origin/main -- contracts/charter` holds only the `DiagnosticCode` description and the contract
+     CHANGELOG line approved on #195.
    - `VocabularyEqualityTest` is green.
 9. **Fingerprint.** A one-byte edit to a preset or to the manifest changes the fingerprint. The literal digest lists
    of packs without them are unchanged.
