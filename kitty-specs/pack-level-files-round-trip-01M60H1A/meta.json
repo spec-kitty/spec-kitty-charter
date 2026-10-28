@@ -1,0 +1,17 @@
+{
+  "coordination_branch": "kitty/mission-pack-level-files-round-trip-01M60H1A",
+  "created_at": "2026-10-28T05:51:56.449395+00:00",
+  "flattened": false,
+  "friendly_name": "Pack-level files round trip",
+  "mid8": "01M60H1A",
+  "mission_id": "01M60H1AK29G4N229BXHYJBH4H",
+  "mission_number": null,
+  "mission_slug": "pack-level-files-round-trip-01M60H1A",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Part of the whole-pack round trip (epic #186, issue #195). The files that describe a pack as a whole - its activation presets, its Markdown description, its authored descriptor and its generated manifest - are loaded into the charter domain through deliberately designed, closed storage shapes and written back, so the whole-pack round-trip gate covers them and pack authors can rely on the service not to lose, invent or silently tolerate content at the pack level.",
+  "purpose_tldr": "Read every pack-level file of a Charter Pack (presets, pack.md, pack.yaml, pack-manifest.yaml) into the domain in a sanitized shape and write it back without loss of meaning.",
+  "slug": "pack-level-files-round-trip-01M60H1A",
+  "target_branch": "feat/195-pack-level-round-trip",
+  "topology": "coord"
+}
