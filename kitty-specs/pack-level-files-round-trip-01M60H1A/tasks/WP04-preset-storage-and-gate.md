@@ -86,7 +86,7 @@ to its guidance before parsing the rest of this prompt.
 Presets are read into the `Pack`, written back, fingerprinted and checked in validate mode by the same rules, and the
 gate models the `preset` kind (spec FR-002–FR-004, FR-013, FR-014, FR-018).
 
-## Subtask T011 — The rule
+## Subtask T011 — The rule (done in WP01, see its scope note; here only the README wording if needed)
 
 `contracts/packs/file-kinds.yaml`:
 

@@ -64,7 +64,7 @@ made after WP04 has merged into the lane (the dependency is declared).
 
 ## Subtask T021 — Rule and seam
 
-- `file-kinds.yaml`: add the `files` rule `*/pack-manifest.yaml → pack-manifest`, and retire its exclusion.
+- `file-kinds.yaml`: done in WP01 (the rule and the retired exclusion).
 - `SerializationStrategy` gains `readManifest` and `writeManifest`, built on `readValidated`.
 - `WholePackStore`:
   - `LoadedPack` gains `Optional<PackManifestDso> manifest`; a 4-argument constructor defaults it to empty.

@@ -52,6 +52,20 @@ Write the two closed JSON Schemas of the sanitized pack-level shapes (spec FR-00
 that put them to use come later (WP04, WP06), so this WP changes no classification and leaves every existing test as
 it is.
 
+## Scope change during implementation (2026-10-28, recorded)
+
+`PackSchemasTest.everySchemaFileOfTheRepositoryIsListedInFileKinds` requires every schema file to have a
+`file-kinds.yaml` rule, so the schemas cannot land alone. WP01 therefore also:
+
+- adds both `files` rules and retires the two exclusions (moved here from WP04 T011 and WP06 T021);
+- updates the vocabulary tests (`PackFileKindTest`, `PackSchemasTest`, `VocabularyEqualityTest`);
+- leaves `preset` out of the inspector's `ArtifactKinds` (moved here from WP04 T015);
+- re-pins the built-in validate test to the new findings;
+- renames the expected-red kinds `other:presets` and `other:pack-manifest.yaml` to `preset` and `pack-manifest`
+  (still #195).
+
+These are out-of-map edits of files WP04 owns, made first in dependency order.
+
 ## Subtask T001 — `preset.schema.json`
 
 Draft 2020-12, `$id` `https://schemas.spec-kitty.ai/charter/packs/preset.schema.json`, `additionalProperties: false`
