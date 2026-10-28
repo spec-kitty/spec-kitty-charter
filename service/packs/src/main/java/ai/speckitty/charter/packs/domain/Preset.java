@@ -63,7 +63,8 @@ public record Preset(
 
     /**
      * Checks every invariant, failing fast on the first breach with a message that names the preset and what breaks
-     * it, so two bad presets in one load are told apart.
+     * it, so two bad presets in one load are told apart. The ruleset is built per preset because each message names
+     * the preset and the offending value, which a static constraint message cannot.
      */
     private static void guard(
             String id,

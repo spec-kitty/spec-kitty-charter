@@ -4,14 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
+import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Refused;
@@ -155,6 +160,44 @@ class PackManifestRoundTripTest {
         });
     }
 
+    @Test
+    @DisplayName("a registration leaves the manifest byte-identical: membership is carried until #110 restamps it")
+    void aRegistrationLeavesTheManifestAsItWas(@TempDir Path host) throws IOException, URISyntaxException {
+        Path pack = fixture(host);
+        byte[] before = Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST));
+        DomainRepositoryService.Locations locations = () -> List.of(new PackLocation(FIXTURE, PackLevel.PROJECT, pack));
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        DomainRepositoryService service = new DomainRepositoryService(locations, strategy);
+        CommitStorePackWriteStore writeStore =
+                new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
+        PackIdentifier id = new PackIdentifier(FIXTURE);
+
+        new ToolguideRegistrationService(service, writeStore, new PermissiveWritePolicyGate())
+                .registerToolguide(
+                        id,
+                        Toolguide.builder()
+                                .id(new ToolguideIdentifier("ripgrep"))
+                                .packId(id)
+                                .schemaVersion("1.0")
+                                .tool("ripgrep")
+                                .title("Use ripgrep")
+                                .guidePath("guides/ripgrep.md")
+                                .summary("How to search.")
+                                .build(),
+                        true,
+                        null);
+
+        assertThat(service.load(id).toolguides())
+                .extracting(t -> t.id().value())
+                .containsExactly("ripgrep");
+        assertThat(Files.readAllBytes(pack.resolve(PackFileSet.MANIFEST)))
+                .as("the known gap: the new toolguide is not listed until #110")
+                .isEqualTo(before);
+        assertThat(store.load(pack).manifest().orElseThrow().constituents())
+                .extracting(PackManifestDso.Constituent::id)
+                .doesNotContain("ripgrep");
+    }
+
     // ---- the gate ------------------------------------------------------------------------------------------------
 
     @Test
@@ -222,6 +265,14 @@ class PackManifestRoundTripTest {
         Map<String, Outcome> refusedUnwritten = gate(
                 new YamlSerializationStrategy(), unwritten, host.resolve("out2").resolve(FIXTURE));
 
+        Path binary = fixture(host.resolve("binary"));
+        Files.write(binary.resolve(PackFileSet.MANIFEST), new byte[] {(byte) 0xff, (byte) 0xfe, 'x', '\n'});
+        assertThat(gate(
+                                new YamlSerializationStrategy(),
+                                binary,
+                                host.resolve("out3").resolve(FIXTURE))
+                        .get(PackFileSet.MANIFEST))
+                .isEqualTo(new Refused("the file cannot be read as UTF-8 text"));
         assertThat(refusedUnreadable.get(PackFileSet.MANIFEST))
                 .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'charter'; "
                         + "additionalProperties violated at the document: undeclared key 'generated_by'"));
@@ -231,10 +282,13 @@ class PackManifestRoundTripTest {
     }
 
     @Test
-    @DisplayName("the gate pairs a constituent by its kind token and id, underscores included, and a preset by path")
+    @DisplayName(
+            "the gate pairs a constituent by kind token and id, underscores included; a template and a preset by path")
     void theGatePairsByKindTokenAndIdAndPresetsByPath(@TempDir Path target) throws IOException {
         Files.createDirectories(target.resolve("presets"));
         Files.writeString(target.resolve("presets/p.yaml"), "x");
+        Files.createDirectories(target.resolve("templates"));
+        Files.writeString(target.resolve("templates/t.md"), "x");
         PackManifestDso manifest = new PackManifestDso(
                 "1.0",
                 "0".repeat(64),
@@ -244,6 +298,8 @@ class PackManifestRoundTripTest {
                         new PackManifestDso.Constituent(
                                 "mission_step_contract", "m", "m/m.step-contract.yaml", "0".repeat(64)),
                         new PackManifestDso.Constituent("procedure", "p", "p.procedure.yaml", "0".repeat(64)),
+                        new PackManifestDso.Constituent("template", "t.md", "templates/t.md", "0".repeat(64)),
+                        new PackManifestDso.Constituent("template", "gone.md", "templates/gone.md", "0".repeat(64)),
                         new PackManifestDso.Constituent("tactic", "unwritten", "u.tactic.yaml", "0".repeat(64))),
                 List.of(
                         new PackManifestDso.PresetEntry("p", "presets/p.yaml", "0".repeat(64)),
@@ -258,6 +314,7 @@ class PackManifestRoundTripTest {
                         "agents/a.agent.yaml", "a.agent.yaml",
                         "g/g.glossary.yaml", "g.glossary.yaml",
                         "m/m.step-contract.yaml", "m.step-contract.yaml",
+                        "templates/t.md", "templates/t.md",
                         "presets/p.yaml", "presets/p.yaml"));
     }
 

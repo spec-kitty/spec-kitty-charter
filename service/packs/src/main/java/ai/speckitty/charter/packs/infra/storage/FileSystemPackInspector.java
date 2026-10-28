@@ -75,7 +75,7 @@ public final class FileSystemPackInspector implements PackInspector {
      */
     private static final class ArtifactKinds {
         /** File kinds with an {@code id} that are pack-level files, not artifacts; declared first, as derive reads it. */
-        private static final Set<String> PACK_LEVEL = Set.of("preset");
+        private static final Set<String> PACK_LEVEL = Set.of(PresetYaml.SCHEMA);
 
         static final Set<String> KINDS = derive();
 
@@ -260,7 +260,7 @@ public final class FileSystemPackInspector implements PackInspector {
         if (!violations.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, violations);
         }
-        if (PresetFiles.KIND.equals(kind)
+        if (PresetYaml.SCHEMA.equals(kind)
                 && document instanceof Map<?, ?> preset
                 && preset.get("id") instanceof String id
                 && PresetFiles.stemMismatch(file, id).isPresent()) {

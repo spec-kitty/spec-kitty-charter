@@ -230,7 +230,8 @@ so canonical number output is never needed.
 - **Write.** The write stages every other file first. It then recomputes every derived field from
   the staged bytes and writes the manifest last. A listed path that the write did not stage
   refuses the write, before anything reaches the target: `pack-manifest.yaml of <pack> lists
-  <path>, which the write does not hold`.
+  <path>, which the write does not hold`. The code is `pack_unreadable`, as for the write's other
+  path refusals.
 - **Verify.** The gate verifies the derived fields on both sides. Its comparator compares the rest
   by meaning and skips only `manifest_hash` and each entry's `content_hash`.
 
@@ -342,8 +343,10 @@ The whole-pack gate models the kinds `preset` and `pack-manifest`. Its `REQUIRED
 exactly those two, and its expected-red list loses `other:presets` and `other:pack-manifest.yaml`.
 The gate adapter writes presets in place. It restamps the manifest over a pairing: each constituent
 `(kind, id)` is paired with the file the adapter wrote for that artifact, and each preset path with
-itself. A listed file the adapter did not write, such as a constituent of a kind the registry does
-not bind, refuses the manifest: `pack-manifest.yaml lists <path>, which the round trip did not
+itself. A template constituent pairs by its own path, as the adapter writes templates in place. The store
+pairs every entry by path; the adapter's flat layout cannot, so a constituent with a stale path but
+a written id pairs in the gate while the store's write refuses it. A listed file the adapter did not
+write, such as a constituent of a kind the registry does not bind, refuses the manifest: `pack-manifest.yaml lists <path>, which the round trip did not
 write`.
 
 The pinned built-in presets and manifest are not in the sanitized shapes, so they are refused on
@@ -416,9 +419,10 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 - Validate mode passes a preset that breaks only a domain invariant, such as a duplicated item id
   (decision 7).
 - `Pack` has two pack-level slots now, and a third is coming, before the extraction.
-- The load's cost was measured on the internal pack only, which holds no manifest: its whole-pack
-  load took 43 ms before and 45 ms after, against a budget of 0.5 s. The built-in pack's load with
-  its manifest was not timed separately, so NFR-004 stays open.
+- The whole-pack load of the corrected built-in pack, presets and manifest included, takes 420 ms
+  in the seam test, against a budget of 0.5 s (NFR-004). It is close to the budget; no figure before
+  #195 was taken for the built-in pack. The internal pack, which holds no manifest, took 43 ms
+  before and 45 ms after.
 
 ### Risks
 

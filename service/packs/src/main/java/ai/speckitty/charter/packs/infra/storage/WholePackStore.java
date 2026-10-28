@@ -68,7 +68,8 @@ public final class WholePackStore {
      * @param unmodelled the pack-relative paths of every other file of the pack, sorted: what the write will not
      *     reproduce
      * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
-     *     none or it is unreadable (then a violation on the aggregate). This store is its only owner (ADR-0043).
+     *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
+     *     violation on the aggregate). This store is its only owner (ADR-0043).
      */
     public record LoadedPack(
             Pack pack,

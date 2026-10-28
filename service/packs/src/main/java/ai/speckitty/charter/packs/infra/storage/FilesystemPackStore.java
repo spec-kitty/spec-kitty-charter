@@ -136,24 +136,6 @@ final class FilesystemPackStore {
         }
 
         /**
-         * A read that holds no preset.
-         *
-         * @param descriptor the descriptor
-         * @param elements the readable files of each kind
-         * @param violations the unreadable files
-         * @param assetFiles the asset files, in path order
-         * @param templates the templates, in path order
-         */
-        PackRead(
-                PackDescriptorDso descriptor,
-                Map<ArtifactKind, List<Stored<?>>> elements,
-                List<PackElementViolation> violations,
-                List<AssetFile> assetFiles,
-                List<TemplateFile> templates) {
-            this(descriptor, elements, violations, assetFiles, templates, List.of());
-        }
-
-        /**
          * A read that holds no asset file, no template and no preset.
          *
          * @param descriptor the descriptor

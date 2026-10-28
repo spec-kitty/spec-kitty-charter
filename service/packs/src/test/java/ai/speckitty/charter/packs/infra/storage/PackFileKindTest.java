@@ -316,4 +316,20 @@ class PackFileKindTest {
                 .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.YAML));
         assertThat(table.payloadRules()).isEmpty();
     }
+
+    /**
+     * #195: a kind file under {@code presets/} matches both its kind's rule and the preset rule. The kind's rule comes
+     * first in the table, and the first match wins, so it stays a file of its kind; a plain preset stays a preset.
+     */
+    @Test
+    void aKindFileUnderPresetsStaysAFileOfItsKind() {
+        assertThat(KINDS.classify("core/presets/a.tactic.yaml"))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Mapped.class,
+                        mapped -> assertThat(mapped.kind()).isEqualTo("tactic"));
+        assertThat(KINDS.classify("core/presets/a.yaml"))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Mapped.class,
+                        mapped -> assertThat(mapped.kind()).isEqualTo("preset"));
+    }
 }

@@ -57,7 +57,7 @@ final class MeaningComparator {
     record Difference(String path, String source, String written) {}
 
     /** The gate kind of {@code pack-manifest.yaml}. */
-    static final String MANIFEST = "pack-manifest";
+    static final String MANIFEST = PackManifestYaml.SCHEMA;
 
     /** ADR-0036's open maps per gate kind: top-level keys whose content is data, not fields. */
     private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
