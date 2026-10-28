@@ -17,7 +17,7 @@ Derived:
 - `required()`: the must-have item ids per artifact kind (a kind with none is absent).
 - `requiredMissionTypes()`: the must-have mission-type ids. Mission types are not an `ArtifactKind`, so they are kept
   apart rather than keyed into the same map (WP02 review 1).
-- `governing()`: true when `required()` is not empty.
+- `governing()`: true when `required()` or `requiredMissionTypes()` is not empty.
 
 Equality is by value.
 
