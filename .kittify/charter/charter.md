@@ -11,7 +11,7 @@ it. Keep it in step with charter.yaml's governance and activation sections.
 
 Interviewed with the operator on 2026-10-18. Amended 2026-10-27 (operator): the round-trip
 rule of PROJECT_002 reads as equality of meaning (ADR-0036). Amended 2026-10-28: rules for
-orchestrating cloud sessions.
+orchestrating cloud sessions, and the rewrite is designed without regard to core.
 
 ## What this repository is for
 
@@ -40,6 +40,15 @@ two.
 - Contract, architecture and domain changes get an **adversarial review squad** at the
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
+
+## Designing during the rewrite
+
+While the charter service is rewritten, work is designed against this repository's own model,
+contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
+
+- No compatibility with core's current formats or behaviour, and no "core first" ordering.
+- No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
+- Core changes when the service is incorporated into core; that work is planned then.
 
 ## Orchestrating cloud sessions
 
