@@ -159,7 +159,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
   files, and no preset rule claims it.
 - A nested directory under `presets/`: not a preset, because the rule matches `*/presets/*.yaml` only.
 - A preset whose items reference artifacts the pack does not hold: loads. Resolving ids against the offering is not
-  the round trip's job, and core checks it in `validate_pack`.
+  the round trip's job.
 - A manifest with no constituents (`constituents: []`): valid. It writes `manifest_hash` over the empty list.
 - A manifest whose constituent `kind` is not an artifact kind token: refused by the schema.
 - `pack.md` that is not valid UTF-8: handled as #194's markdown form decides (refused, not decoded lossily).
@@ -208,7 +208,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | C-003 | No tolerance logic | A pinned file in another shape is refused and filed upstream (ADR-0036 decision 5). No reader rule, rename or default keeps it. | Process | High | Open |
 | C-004 | Merged storage objects untouched | Sanitized-shape violations in already-merged schemas are listed for an epic #186 follow-up and not changed here. | Process | High | Open |
 | C-005 | No comparator exception | The preset's empty-versus-absent clash is resolved in the schema (empty lists refused), not by a per-kind rule in the gate's comparator. | Technical | Medium | Open |
-| C-006 | Built-in is core-first | Every built-in divergence is drafted as core-first (core seeds `packs/built-in/`). No edit is proposed to open-packs `packs/built-in/` directly. | Process | Medium | Open |
+| C-006 | No core sequencing | Pack divergences are open-packs issues only; no core issue, "core first" step or compatibility with core's current formats is part of this mission (operator ruling on #186, 2026-10-28). That `packs/built-in/` is seeded from core today is open-packs' concern. | Process | Medium | Open |
 
 ### Key Entities
 
@@ -244,9 +244,10 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 ## Assumptions
 
 - `openPacksRef` stays at `01edb4eb` for this mission. The built-in presets and manifest stay on the known-failure list
-  until core adopts the shapes and open-packs re-seeds (C-006). This may take longer than this epic.
-- Core keeps reading presets in its current shape until then. The service's preset shape is ahead of core by
-  design (the operator's sanitized-shape requirement). No service operation serves presets today.
+  until open-packs adopts the shapes (OP-1, OP-2) and the pin moves.
+- The shapes and the hash recipes are designed on their own merits, with no compatibility with core's current formats:
+  during the rewrite the service operates as if core does not exist (operator ruling on #186, 2026-10-28). Core
+  changes when the service is incorporated into core. No service operation serves presets today.
 - The parent session files the drafted issues and replaces the `#TBD-<slug>` placeholders before merge.
 - ADR numbers are allocated by the parent session: 0041 is #227's, 0042 is #194's, and this mission records its
   decisions in **ADR-0043**.

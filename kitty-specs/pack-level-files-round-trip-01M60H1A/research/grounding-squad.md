@@ -103,7 +103,7 @@ built-in seeding rule (`packs/built-in.source.yaml:8-10`), the gate census (`Who
 | F8 | MED | Architect | Registrations rewrite constituents without restamping the manifest. | **deferred_with_rationale**: restamping on the commit path and regenerating membership need core's enumeration rules, which belong to #110. Recorded as a known gap (spec Out of scope). |
 | F9 | MED | Architect | Recomputing `manifest_hash` with core's recipe needs a byte-exact Java port of ruamel's emitter. | **changed**: the sanitized manifest defines `manifest_hash` over RFC 8785 canonical JSON, which is language-neutral (ADR-0043). Core adopts it with the shape change (draft core issue). |
 | F10 | MED | Architect | `Pack` gains pack-level slots beyond its one recorded exception. | **accepted**: recorded in ADR-0043, class doc updated. |
-| F11 | MED | Analyst | The built-in pack is seeded from core, and core's loaders refuse the sanitized shapes. Every built-in fix is core-first, then a re-seed. | **accepted**: the draft issues say so, and the spec records the long-lived known-failures (spec Assumptions). |
+| F11 | MED | Analyst | The built-in pack is seeded from core, and core's loaders refuse the sanitized shapes. Every built-in fix is core-first, then a re-seed. | **changed** (operator ruling on #186, 2026-10-28): the rewrite operates as if core does not exist, so the fixes are open-packs issues only and no core issue is drafted; seeding is open-packs' concern (spec C-006). |
 | F12 | MED | Architect, Planner | Shared files with #194 (`file-kinds.yaml`, `expected-red.yaml`, `PackFileSet`, `WholePackStore`, `DomainRoundTrip`, `PackFileKind`). | **accepted**: append-only edits, and a reconcile task after #194 merges (spec C-002). |
 | F13 | MED | Architect | ADR number: 0041 is reserved for #227, so 0042 is the next free one, but #194 may take it too. | **accepted**: first to merge keeps 0042, the other renumbers on rebase (plan). |
 | F14 | LOW | Architect | The issue body says "keep the values of undeclared keys", which ADR-0036 ruling 1 supersedes. | **accepted**: the spec states that "lossless" is met by refusal (spec FR-011). |
@@ -212,9 +212,9 @@ fields.
 No divergence was found in `built-in/pack.yaml`, `internal/pack.yaml` (both fit the closed schema) or
 `built-in/pack.md` (bytes). List style, comments and folded scalars carry no meaning (ADR-0036).
 
-All built-in fixes are **core-first**. `packs/built-in/` is seeded byte-identical from core
-(`built-in.source.yaml:8-10`), and core's preset loader and `PackManifest` refuse the sanitized shapes.
-The draft issues are in [`draft-upstream-issues.md`](draft-upstream-issues.md).
+Every divergence is an open-packs issue only. The operator's ruling on #186 (2026-10-28) has the rewrite operate as if
+core does not exist: no core issue or "core first" step is drafted, and that `packs/built-in/` is seeded from core today
+is open-packs' concern. The draft issues are in [`draft-upstream-issues.md`](draft-upstream-issues.md).
 
 ## 6. Already-merged DSOs that break the sanitized-shape rule (epic #186 follow-up, not changed here)
 

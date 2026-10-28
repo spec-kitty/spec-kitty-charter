@@ -45,8 +45,8 @@ canonical JSON is hand-written over strings, lists and maps only. No dependency 
 **Performance Goals**: reading the 1388-line built-in manifest adds under 0.5 s to the built-in load (NFR-004).
 
 **Constraints**: C-001 to C-006 of the spec. The HTTP contract is frozen, shared files are edited append-only, no
-tolerance logic is added, merged schemas stay untouched, the comparator gets no exception, and built-in fixes go to
-core first.
+tolerance logic is added, merged schemas stay untouched, the comparator gets no exception, and pack divergences are
+open-packs issues only, with no core sequencing (operator ruling on #186).
 
 **Scale/Scope**: open-packs holds 3 presets (2 of them in the gate), 1 `pack.md`, 2 `pack.yaml` and 1 manifest (272
 constituents and 2 presets).
@@ -60,7 +60,7 @@ the JDK.
 
 | Charter rule | How this plan meets it |
 |---|---|
-| Divergence from the oracle must not break core | No service operation serves presets or the manifest. Core keeps reading the open-packs files in its own shapes until it adopts the sanitized ones (C-006, draft C-1). The descriptor is closed, as core's `PackDescriptor` already is (`extra="forbid"`). |
+| Divergence from the oracle must not break core | During the rewrite the service operates as if core does not exist (operator ruling on #186, 2026-10-28): the shapes are designed on their own merits and core changes when the service is incorporated. No service operation serves presets or the manifest, and validate mode's new findings are recorded in the conformance register. |
 | No incompatible OpenAPI change | No file under `contracts/charter/**` changes (C-001). Three behaviour changes, none served on the wire: (1) a pack whose `pack.yaml` has an unknown key becomes `pack_unreadable` instead of loading with a warning (ADR-0036 ruling 1; the `DiagnosticCode` description question is on #195); (2) validate mode reports the pinned built-in presets and manifest as `ARTIFACT_SCHEMA_ERROR`, so built-in validate goes from 0 to 3 findings and the load-path violations of the seam test from 6 to 9 (`PackValidation` has no controller); (3) `Charter-Source-Fingerprint` changes once for packs that hold presets or a manifest. |
 | Open-packs YAML round-trips without loss of meaning | Presets and the manifest compare by meaning. The manifest's derived fields are verified rather than compared, and are declared in ADR-0043. `pack.md` compares by bytes. A pinned file in another shape is refused, pinned and filed upstream (ADR-0036 decision 5). |
 | No unverified dependency | None is added. |
