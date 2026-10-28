@@ -112,23 +112,34 @@ cat > ~/.gradle/init.d/central-mirror.gradle <<'EOF'
 // The build's strict SHA-256 dependency verification still checks every artifact.
 def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
 def centralHosts = ['repo.maven.apache.org', 'repo1.maven.org']
-def redirect = { RepositoryHandler repos ->
+// Central's own URL becomes the mirror; the mirror also goes first, ahead of the plugin portal, which redirects its
+// Central artifacts to Central server-side.
+def useMirror = { RepositoryHandler repos ->
     repos.withType(MavenArtifactRepository).configureEach { r ->
         if (r.url?.host in centralHosts) { r.url = mirror }
     }
+    if (repos.findByName('CentralMirror') == null) {
+        def m = repos.maven { url = mirror; name = 'CentralMirror' }
+        repos.remove(m)
+        repos.addFirst(m)
+    }
 }
 beforeSettings { settings ->
-    // Ahead of the plugin portal, whose Central artifacts redirect to Central; the portal must be re-added explicitly.
-    settings.pluginManagement.repositories.maven { url = mirror; name = 'CentralMirrorForPlugins' }
+    useMirror(settings.pluginManagement.repositories)
+    // Declaring a plugin repository drops the implicit portal, so it is added back after the mirror.
     settings.pluginManagement.repositories.gradlePluginPortal()
 }
 settingsEvaluated { settings ->
-    redirect(settings.pluginManagement.repositories)
-    redirect(settings.dependencyResolutionManagement.repositories)
+    useMirror(settings.pluginManagement.repositories)
+    if (!settings.dependencyResolutionManagement.repositories.isEmpty()) {
+        useMirror(settings.dependencyResolutionManagement.repositories)
+    }
 }
 allprojects {
-    redirect(buildscript.repositories)
-    redirect(repositories)
+    afterEvaluate {
+        if (!buildscript.repositories.isEmpty()) { useMirror(buildscript.repositories) }
+        if (!repositories.isEmpty()) { useMirror(repositories) }
+    }
 }
 EOF
 # Warm the Gradle cache (build-logic, Spotless and Checkstyle tooling included) so worktrees start warm.
@@ -136,10 +147,13 @@ cd spec-kitty-charter && JAVA_HOME=/usr/lib/jvm/temurin-25 ./gradlew --no-daemon
   build spotlessCheck checkstyleMain checkstyleTest -x test || true
 ```
 
+- The mirror goes **first** in every repository list. Rewriting Central's URL alone is not enough:
+  `build-logic` resolves through `gradlePluginPortal()`, which redirects Central artifacts to
+  `repo.maven.apache.org` on its own server, out of reach of a URL rewrite.
 - The `pluginManagement` block must re-add `gradlePluginPortal()`: declaring any plugin repository
   drops the implicit one, and plugin resolution then fails.
 - Allow `maven-central.storage-download.googleapis.com` (Step 1).
-- Run in a #195 session on 2026-10-28: `:packs:check` finished in about 2 minutes with no 429. It is
+- Run in a #195 session on 2026-10-28: `./gradlew verifyAll` passed on Java 25 with no 429. It is
   not yet known whether the environment caches the setup script's result between sessions; if it
   does not, the warm-up runs once per session, before work starts.
 
