@@ -4,15 +4,15 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-level-files-round-trip-01M60H1A
 mission_id: 01M60H1AK29G4N229BXHYJBH4H
-generated_at: '2026-10-28T06:12:50.624050+00:00'
+generated_at: '2026-10-28T07:41:59.114532+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
     path: kitty-specs/pack-level-files-round-trip-01M60H1A/spec.md
-    sha256: 75ed6f72a7bd335e3d7cafc3fc05b3db6678ad2471e2d2091b9aba9931c5a5e2
+    sha256: 1211bd16a6069b15a3e116525bfcc9f20f56a9d2603109147f37a85bfbec8af2
   plan.md:
     path: kitty-specs/pack-level-files-round-trip-01M60H1A/plan.md
-    sha256: ac9648422ba5b96fd42cb6eb0efe4fbe55ae564832b6e8445d01cd7e239b0fc4
+    sha256: de67e7cc6e7fb716a957a5020535b64817ac76f84d28b4955629c19e249aed3d
   tasks.md:
     path: kitty-specs/pack-level-files-round-trip-01M60H1A/tasks.md
     sha256: 1f672c10414c071a7a5ecafe39671f2f48347a0ef231efd73a663769846a335a
@@ -22,17 +22,17 @@ input_artifacts:
 verdict: unknown
 issue_counts:
   medium:
-  info:
-  critical:
-  low:
   high:
+  info:
+  low:
+  critical:
 findings: []
 ---
 
 ## Specification Analysis Report
 
 Mission: `pack-level-files-round-trip-01M60H1A`. Inputs: spec.md, plan.md, tasks.md, WP01–WP08, research.md,
-data-model.md and contracts/pack-level-shapes.md. Analyzer: claude, a read-only pass.
+data-model.md and contracts/pack-level-shapes.md. Analyzer: claude, a read-only pass. This second recording covers the spec and plan amendments of 2026-10-28: the operator answers on #195, the ruling on #186, and WP01's widened scope.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
@@ -42,7 +42,9 @@ data-model.md and contracts/pack-level-shapes.md. Analyzer: claude, a read-only 
 | A4 | Coverage | LOW | spec FR-013 | The fingerprint requirement covers presets (WP04), the manifest (WP06) and `pack.md` (WP08). The `pack.md` part is blocked on #194's PR-A. | Covered by the WP08 dependency. The hand-off states any open remainder. |
 | A5 | Underspecification | MEDIUM | WP03 T008, WP04, WP06 | Out-of-map edits are recorded in the WP prompts (`WholePackStore` and `WholePackStoreTest` in WP03; files owned by WP04 in WP06), but they cross lanes. | Implement WP03, WP04 and WP06 in dependency order and rebase each lane on the previous merge. |
 | A6 | Charter alignment | MEDIUM | plan Charter Check, FR-018 | Validate mode now reports the pinned built-in presets and manifest (a new divergence from core's `validate_pack`). Not served over HTTP. | Record it in ADR-0043 and the conformance register (WP07 T029). |
-| A7 | Ambiguity | LOW | spec Assumptions; FR-011 | The `pack_unknown_key` contract description is waiting on an operator answer (#195). | Leave the contract untouched until the operator answers (C-001). |
+| A7 | Ambiguity | resolved | spec C-001, FR-012 | The operator approved the `pack_unknown_key` description edit and its contract CHANGELOG line on #195 (2026-10-28). C-001 and FR-012 now say so. | None. |
+| A8 | Inconsistency | resolved | spec C-006, Assumptions; research drafts | The operator ruled on #186 that this rewrite operates as if core does not exist. The core-first sequencing and draft core issue C-1 are removed. | None. |
+| A9 | Coverage | LOW | WP01, WP04, WP06 | A repository-wide test requires every schema to have a file-kind rule, so WP01 also lands the two `files` rules and their knock-on edits, which WP04 and WP06 had held. This is recorded in each WP prompt. | Keep the dependency order. |
 
 **Coverage summary**
 
@@ -74,7 +76,7 @@ data-model.md and contracts/pack-level-shapes.md. Analyzer: claude, a read-only 
 
 - Total requirements: 18 FR, 4 NFR, 6 C, 7 SC.
 - Coverage: 100% of FR and NFR have at least one task.
-- Ambiguity count: 1.
+- Ambiguity count: 0 (A7 resolved).
 - Duplication count: 0.
 - Critical issues count: 0.
 
