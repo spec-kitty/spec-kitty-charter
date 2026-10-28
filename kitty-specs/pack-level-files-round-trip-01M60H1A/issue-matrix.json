@@ -1,0 +1,125 @@
+{
+  "rows": {
+    "#110": {
+      "evidence_ref": "Follow-up: #110 owns restamping the manifest after a single-artifact registration and regenerating manifest membership (spec Out of Scope; operator answer Q4 on #195)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#186": {
+      "evidence_ref": "Parent epic, cited for context; the no-core ruling (comment 6462455631) is recorded in decisions/",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#188": {
+      "evidence_ref": "Cited for context only: the ADR-0036 rulings this mission applies; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#193": {
+      "evidence_ref": "Cited for context only: the merged asset/template mission whose content-form decisions (ADR-0040) this mission follows; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#194": {
+      "evidence_ref": "Sibling Wave 2 mission; pack.md consumes its markdown content form (WP08 depends on its PR-A); no work owed to #194",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#195": {
+      "evidence_ref": "WP01-WP07 approved (presets, closed pack.yaml, derived manifest, ADR-0043); pack.md split off to #260 by the operator",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    },
+    "#206": {
+      "evidence_ref": "Follow-up: #206 migrates org-charter required_<plural> lists into presets and refuses them (operator ruling on #195); this mission's preset schema already refuses required_* in presets",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#227": {
+      "evidence_ref": "Cited for context only: ADR-0041 number earmark; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#247": {
+      "evidence_ref": "Cited for context only: the self-expiring known-failure list this mission adds entries to; no work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#260": {
+      "evidence_ref": "pack.md split off to #260 by the operator on #195 (2026-10-28); blocked on #194",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": "WP08"
+    }
+  },
+  "schema_version": 1
+}
