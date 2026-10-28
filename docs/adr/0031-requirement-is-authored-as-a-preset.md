@@ -2,13 +2,14 @@
 title: "ADR-0031: Requirement is authored as a preset, and the required set is derived from it"
 description: An org states what must be on the plate through a preset's must-have items; the service derives the required set; two open questions stay recorded.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
   - adr/0012-pack-mutability-policy
   - adr/0013-persistent-deactivation
   - adr/0020-offering-and-activations
+  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - context/conceptual-model
 audience:
   - profile: governance-lead
@@ -32,6 +33,26 @@ longer the authoring form of a requirement. What "required" means (presence only
 refused) is unchanged.
 
 Two questions are **open** (see [Open questions](#open-questions)).
+*(Answered by ADR-0043, 2026-10-28, proposed: see the amendment below.)*
+
+### Amendment 2026-10-28 (#195): the open questions are answered
+
+Answered by [ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/)
+(Proposed, 2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
+[#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) and the mission's decisions
+under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
+
+- `DM-01M60H6Y9SG0B1J1D0F82CJ9GE`: a preset has a closed, sanitized shape, and each of its items
+  may carry a must-have mark;
+- `DM-01M60H7469CBSGA1YSYQN4K8CE`: a preset with at least one must-have item governs, and one with
+  none is a convenience preset. Nothing else says so;
+- `DM-01M60H79MAHAVFSPCBHDXFXW3Y`: a preset has no `required_<plural>` lists. Migrating
+  `org-charter.yaml`'s lists, then refusing them, is #206.
+
+The decision text below is unchanged. The points this note answers are annotated where they stand:
+decision 6 and the two open questions. The answers are in force for the code #195 ships, which
+implements them. ADR-0043 itself is Proposed, pending the operator's acceptance, which the pull
+request for #195 asks for.
 
 ## Context
 
@@ -65,15 +86,23 @@ selections, written one way.
    commercial package.
 6. **Representation is a candidate only.** How a must-have item is marked in a preset file is
    left to a later record. No contract path changes (C-003).
+   *(Answered by ADR-0043, 2026-10-28: an item is marked must-have with `must_have: true`, per
+   item. There is no `false` spelling. The required set is derived from the marks. See the
+   amendment under Status.)*
 
 ## Open questions
 
 - **Compatibility reading of `required_*`.** Whether the service keeps reading existing
   `required_<plural>` lists (for example as a preset it derives from them), for how long, and
   how a pack that has both is treated. Not decided.
+  *(Answered by ADR-0043, 2026-10-28: a preset carries no `required_*` key; its closed schema
+  refuses one. Migrating `org-charter.yaml`'s `required_<plural>` lists into presets, and then
+  refusing them, is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206).)*
 - **Telling a governing preset from a convenience preset.** How the service, a project and a
   reader tell a preset that governs (must-have items) from one that only offers defaults: a
   marker on the preset, on each item, or the presence of any must-have item. Not decided.
+  *(Answered by ADR-0043, 2026-10-28: a marker on each item. A preset with at least one must-have
+  item governs; one with none is a convenience preset. "Governing" is derived, never declared.)*
 
 ## Consequences
 
@@ -108,4 +137,6 @@ Not chosen: it adds a third place an org's intent lives.
 - [Conceptual model working notes](/context/conceptual-model/)
 - [ADR-0012](/adr/0012-pack-mutability-policy/), [ADR-0013](/adr/0013-persistent-deactivation/),
   [ADR-0020](/adr/0020-offering-and-activations/)
+- [ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/): the answers to
+  the open questions (amendment 2026-10-28)
 - Core ADR [`4.x/2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md)

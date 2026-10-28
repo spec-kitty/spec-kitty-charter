@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: Hub
 audience:
@@ -59,16 +59,17 @@ stands.
 | [0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) | ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules | Accepted | 2026-10-26 |
 | [0029](/adr/0029-charter-glossary-is-owned-here/) | ADR-0029: This repository owns the charter glossary | Accepted | 2026-10-26 |
 | [0030](/adr/0030-removal-is-distinct-from-deactivation/) | ADR-0030: Removal by a derived pack is distinct from deactivation by a project | Accepted | 2026-10-26 |
-| [0031](/adr/0031-requirement-is-authored-as-a-preset/) | ADR-0031: Requirement is authored as a preset, and the required set is derived from it | Accepted | 2026-10-26 |
+| [0031](/adr/0031-requirement-is-authored-as-a-preset/) | ADR-0031: Requirement is authored as a preset, and the required set is derived from it | Accepted, with Amendment 2026-10-28; open questions answered by ADR-0043 (2026-10-28, proposed) | 2026-10-26 |
 | [0032](/adr/0032-steps-name-roles-and-profile-selection-order/) | ADR-0032: Steps name roles, and a profile is selected by role fit, then specialization, then fallback | Accepted | 2026-10-26 |
 | [0033](/adr/0033-local-active-charter-is-source-of-truth/) | ADR-0033: The project's local activation file is the source of truth for its active charter | Accepted | 2026-10-26 |
 | [0034](/adr/0034-local-and-hosted-deployment-options/) | ADR-0034: The charter service has a local and a hosted deployment option | Accepted | 2026-10-26 |
 | [0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) | ADR-0035: The shared artifact interface lives in the kernel | Accepted | 2026-10-27 |
-| [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) | 2026-10-27 |
-| [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) | 2026-10-27 |
+| [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0043 (2026-10-28, proposed) | 2026-10-27 |
+| [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0043 (2026-10-28, proposed) | 2026-10-27 |
 | [0038](/adr/0038-one-configuration-root-a-directory-per-domain/) | ADR-0038: The service keeps its files under one configuration root, a directory per domain | Accepted | 2026-10-27 |
 | [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Accepted, with Amendment 2026-10-27 | 2026-10-27 |
-| [0040](/adr/0040-content-form-and-payload-kinds/) | ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content | Proposed | 2026-10-27 |
+| [0040](/adr/0040-content-form-and-payload-kinds/) | ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content | Proposed, with Amendment 2026-10-28; extended in part by ADR-0043 (2026-10-28, proposed) | 2026-10-27 |
+| [0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) | ADR-0043: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest | Proposed | 2026-10-28 |
 
 ## Core decisions this repository builds on
 

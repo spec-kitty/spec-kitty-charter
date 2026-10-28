@@ -410,6 +410,17 @@ ruling, its status and the evidence.
   - Core: `offering/packs/pack_validator.py:288` and `:301` (`_yaml_parser().load(path)`, no explicit encoding)
   - Charter: `service/packs/src/test/resources/planted/artifact-utf16-with-a-byte-order-mark` (core verdict in planted/core-verdicts.json: ok, no findings)
 
+### DIV-026: Validate mode, presets and the pack manifest
+
+- **Core:** Checks each `presets/<name>.yaml` in its own format, keyed by `name`, with `mission_type_activations` and bare-string lists. It reports `preset_format`, `preset_unresolved_id` (an id that resolves neither in the built-in pack nor in this pack) and `preset_kind_gate`. It does not schema-check `pack-manifest.yaml` (offering/packs/pack_validator.py:592-593, 662-690).
+- **Service:** Holds presets and the manifest to the closed, sanitized schemas of ADR-0043. A preset or manifest in core's shape, or a preset whose `id` is not its file stem, is an `artifact_schema_error` on its file. It does not resolve preset ids against the offering or check the kind gate against the listed kinds. A preset that breaks only a domain rule (an item id listed twice) passes validate mode and is refused by the load.
+- **Rationale:** Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need the activation model, which this service does not build yet.
+- **Ruling:** operator requirement on #195 (2026-10-28): sanitized shapes, no tolerance logic
+- **Status:** open, since 2026-10-28
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:592-593` and `:662-690` (`_validate_presets`); no manifest check
+  - Charter: `FileSystemPackInspectorTest` (the built-in validate pin, 283 manifest and 14 preset findings; a preset whose id is not its stem is refused in validate mode and by the load)
+
 ## Adding an entry
 
 Give it the next free id in its block, state both answers, name the corpus case, and cite the ruling. Link the

@@ -420,6 +420,27 @@
     - "core: offering/packs/pack_validator.py:288 and 301 (_yaml_parser().load(path), no explicit encoding)"
     - "charter: planted plant artifact-utf16-with-a-byte-order-mark (core verdict in planted/core-verdicts.json: ok, no findings)"
 
+- id: DIV-026
+  surface: Validate mode, presets and the pack manifest
+  core: >-
+    Checks each presets/<name>.yaml in its own format (name, mission_type_activations, bare-string
+    lists): preset_format, preset_unresolved_id and preset_kind_gate. Does not schema-check
+    pack-manifest.yaml (offering/packs/pack_validator.py:592-593, 662-690).
+  service: >-
+    Holds presets and the manifest to the closed, sanitized schemas of ADR-0043: core's shape, or a
+    preset whose id is not its file stem, is an artifact_schema_error on its file. Does not resolve
+    preset ids or check the kind gate; a domain-only break (an item id listed twice) passes validate
+    mode and is refused by the load.
+  rationale: >-
+    Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need
+    the activation model, which this service does not build yet.
+  ruling: operator requirement on #195 (2026-10-28)
+  status: open
+  since: 2026-10-28
+  evidence:
+    - "core: offering/packs/pack_validator.py:592-593 and 662-690 (_validate_presets); no manifest check"
+    - "charter: FileSystemPackInspectorTest (built-in validate pin; a preset whose id is not its stem is refused in validate mode and by the load)"
+
 # Context read (DIV-101..110), decided in ADR-0018 and moved into this single register by operator
 # ruling R10 (2026-10-19). Derived from the context-read table of divergence-register.md; the evidence
 # names the conformance corpus case that pins each entry.
