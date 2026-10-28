@@ -46,7 +46,7 @@ two.
 While the charter service is rewritten, work is designed against this repository's own model,
 contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
 
-- No compatibility with core's current formats or behaviour, and no "core first" ordering.
+- No compatibility with core's current formats or behavior, and no "core first" ordering.
 - No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
 - Core changes when the service is incorporated into core; that work is planned then.
 
