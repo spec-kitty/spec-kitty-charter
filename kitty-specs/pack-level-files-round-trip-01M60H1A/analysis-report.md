@@ -4,6 +4,37 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: pack-level-files-round-trip-01M60H1A
 mission_id: 01M60H1AK29G4N229BXHYJBH4H
+generated_at: '2026-10-28T10:01:24.802380+00:00'
+analyzer_agent: claude
+input_artifacts:
+  spec.md:
+    path: kitty-specs/pack-level-files-round-trip-01M60H1A/spec.md
+    sha256: aef9859c0cd2769c6b833eff6c48d154c8984c595520ce3c557712df338d8cc3
+  plan.md:
+    path: kitty-specs/pack-level-files-round-trip-01M60H1A/plan.md
+    sha256: de67e7cc6e7fb716a957a5020535b64817ac76f84d28b4955629c19e249aed3d
+  tasks.md:
+    path: kitty-specs/pack-level-files-round-trip-01M60H1A/tasks.md
+    sha256: 1f672c10414c071a7a5ecafe39671f2f48347a0ef231efd73a663769846a335a
+  charter:
+    path: .kittify/charter/charter.yaml
+    sha256: dd742ab182b61a760929320c028e6174ee7c7f4ffcf5a8d749b94a42847fd9ab
+verdict: unknown
+issue_counts:
+  critical:
+  medium:
+  low:
+  info:
+  high:
+findings: []
+---
+
+---
+schema_version: 1
+artifact_type: spec-kitty.analysis-report
+command: /spec-kitty.analyze
+mission_slug: pack-level-files-round-trip-01M60H1A
+mission_id: 01M60H1AK29G4N229BXHYJBH4H
 generated_at: '2026-10-28T07:41:59.114532+00:00'
 analyzer_agent: unknown
 input_artifacts:
@@ -85,3 +116,12 @@ data-model.md and contracts/pack-level-shapes.md. Analyzer: claude, a read-only 
 - No CRITICAL or HIGH issues. Proceed to implementation in dependency order: WP01, WP02 and WP03, then WP04, WP05,
   WP06 and WP07. WP08 waits for #194's PR-A.
 - Fold A1–A3 into the plan at the next touch. They do not change any task.
+
+## Re-analysis, 2026-10-28 (operator rulings on #195)
+
+- **FR-005 and SC-001b (`pack.md`, WP08)** are deferred to #260. The operator split the work off because #194's PR-A
+  has not opened. WP08 is canceled. Every other FR and SC keeps its task. Coverage of the delivered scope stays 100%.
+- **Research R14 (the preset entry's path is `presets/<id>.yaml`)** is built in WP06, as the operator ruled. No
+  requirement changes.
+- **The 24 KB known-failure `at` for the manifest** stays as it is, as the operator ruled.
+- Critical issues: 0. No new ambiguity.
