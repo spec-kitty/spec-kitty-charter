@@ -396,7 +396,10 @@ class WholePackOpenPacksRoundTripTest {
         }
         Path manifest = corrected.resolve(PackFileSet.MANIFEST);
         Files.writeString(manifest, sanitizedManifest(Files.readString(manifest), corrected));
+        long start = System.nanoTime();
         WholePackStore.LoadedPack loaded = store.load(corrected);
+        System.out.println("NFR-004 whole-pack load of the corrected built-in pack, presets and manifest included: "
+                + (System.nanoTime() - start) / 1_000_000 + " ms");
 
         assertThat(fixed).isEqualTo(6);
         assertThat(loaded.pack().violations()).isEmpty();

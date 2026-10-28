@@ -1,6 +1,6 @@
 # Mission Specification: Pack-level files round trip
 
-**Mission Branch**: `feat/195-pack-level-round-trip`
+**Mission Branch**: `feat/195-pack-level-round-trip` (pull request from `feat/195-pack-level-files`)
 **Created**: 2026-10-28
 **Status**: Draft
 **Input**: Issue #195 (epic #186, Wave 2), "Round-trip pack-level files": `presets/` and `pack.md`, read and
@@ -92,7 +92,9 @@ and its follow-up has been open since #188.
 3. **Given** the two pinned `pack.yaml` files (built-in, internal), **When** the gate runs, **Then** both round-trip
    green.
 
-### User Story 3 - The pack document round-trips byte for byte (Priority: P2)
+### User Story 3 - The pack document round-trips byte for byte (Priority: P2), split off to #260
+
+> Split off to #260 by the operator on 2026-10-28: #194's PR-A had not opened. This story is not delivered here.
 
 A pack author ships `pack.md` beside `pack.yaml`. Loading the pack holds it in the `markdown` content form (#194), and
 writing it back keeps its meaning: frontmatter (if any) as YAML, body as text. This story depends on #194's PR-A and
@@ -137,12 +139,12 @@ equals the hash of the written manifest. Constituents and presets are equal by m
 The maintainer runs the whole-pack round-trip gate at the pinned open-packs commit.
 
 - The pack-level kinds are modelled.
-- `pack.yaml` and `pack.md` are green.
+- `pack.yaml` is green (`pack.md` is split off to #260 and stays expected-red).
 - The built-in presets and manifest are the only red pack-level files. Each is pinned on the known-failure list to
   its exact refusal and keyed by a drafted upstream issue.
 
-**Independent Test**: Run the gate. The `other:presets`, `other:pack.md` and `other:pack-manifest.yaml` expected-red
-entries are gone, and the known-failure list gains exactly three built-in entries.
+**Independent Test**: Run the gate. The `other:presets` and `other:pack-manifest.yaml` expected-red entries are gone
+(`other:pack.md` stays, keyed to #260), and the known-failure list gains exactly three built-in entries.
 
 **Acceptance Scenarios**:
 
@@ -186,8 +188,8 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | FR-013 | Pack-level files fingerprinted | As an operator, I want a change to a preset, `pack.md` or `pack-manifest.yaml` to change the pack's source fingerprint, and a pack without them to keep its fingerprint. | High | Open | [build] | no — a one-byte edit of each changes the fingerprint |
 | FR-014 | Gate flips exactly these files | As a maintainer, I want the gate to model the kinds `preset` and `pack-manifest` (and `pack-document` with FR-005), with `REQUIRED_KINDS` gaining exactly those. The expected-red list loses `other:presets` and `other:pack-manifest.yaml` (and `other:pack.md` with FR-005). The known-failure list gains exactly `presets/default.yaml` and `presets/minimal.yaml` (keyed `#TBD-preset-shape`) and `pack-manifest.yaml` (keyed `#TBD-manifest-shape`), each pinned to its exact refusal, which is the same text the seam test reports. The loader admits only those two placeholder keys. | High | Open | [build] | no — the two-way ratchet fails on an extra or stale entry |
 | FR-015 | Gate verifies derived fields | As a maintainer, I want the gate to compare a manifest's non-derived fields by meaning and to verify each derived field against its own side's bytes, so that a stale source manifest is reported, not silently restamped. | High | Open | [build] | no — paired with a stale-hash control |
-| FR-016 | Upstream issues drafted | As the parent session, I want one draft issue per divergence family (file, required change, rationale) and a core-first issue in `research/draft-upstream-issues.md`, so that the placeholders can be filed and replaced. | Medium | Open | [build] | no |
-| FR-017 | Decisions recorded | As a maintainer, I want ADR-0043 to record the sanitized-shape rules for the pack-level storage objects, the preset shape and the per-item mark (superseding ADR-0031's open questions), the manifest's derived fields, the rule for kinds without a schema (closing ADR-0036 open question 3 and decision 6), and `pack.md` as bytes. ADR-0031, 0036, 0037 and 0040 get amendment notes. | High | Open | [build] | no |
+| FR-016 | Upstream issues drafted | As the parent session, I want one draft issue per divergence family (file, required change, rationale) in `research/draft-upstream-issues.md` (no core issue: C-006), so that the placeholders can be filed and replaced. | Medium | Open | [build] | no |
+| FR-017 | Decisions recorded | As a maintainer, I want ADR-0043 to record the sanitized-shape rules for the pack-level storage objects, the preset shape and the per-item mark (superseding ADR-0031's open questions), the manifest's derived fields, the rule for kinds without a schema (closing ADR-0036 open question 3 and decision 6), and `pack.md` through #194's `markdown` form (decision 8, split off to #260). ADR-0031, 0036, 0037 and 0040 get amendment notes. | High | Open | [build] | no |
 | FR-018 | Validate mode agrees with load | As a maintainer, I want validate mode to report a preset or manifest that breaks its schema, or a preset whose id is not its file stem, as `ARTIFACT_SCHEMA_ERROR` (ADR-0036 decision 3's code for every other schema-mapped file), so that validate and load refuse the same files. Presets are not counted as artifacts. | High | Open | [build] | no — the built-in validate test pins exactly the three new findings |
 
 ### Non-Functional Requirements
@@ -197,7 +199,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | NFR-001 | Hash parity | The Java `content_hash` reproduces all 274 pinned built-in hashes (272 constituents and 2 presets), read from the pinned manifest with the raw YAML loader: 100% equal. Fixed vectors with CRLF, lone CR and mixed line endings, plus RFC 8785 vectors (escapes, non-ASCII, an empty `constituents`), pass 100%. | Compatibility | High | Open |
 | NFR-002 | Fingerprint stability | Packs without presets, `pack.md` or a manifest keep their source fingerprint: 0 changed values across the existing fingerprint tests. | Compatibility | High | Open |
 | NFR-003 | Build gates | `./gradlew verifyAll` passes on Java 25 with zero new style, Error Prone, NullAway, doclint or ArchUnit findings; the docs checks (`check_docs.py all`, markdownlint-cli2, cspell) pass. | Quality | High | Open |
-| NFR-004 | Load cost | Reading the pinned built-in manifest (1388 lines) adds under 0.5 s to the built-in pack's whole-pack load on the CI runner. | Performance | Low | Open |
+| NFR-004 | Load cost | Reading the pinned built-in manifest (1388 lines) adds under 0.5 s to the built-in pack's whole-pack load on the CI runner. | Performance | Low | Met: the corrected built-in pack, presets and manifest included, loads in 420 ms in the seam test (2026-10-28) |
 
 ### Constraints
 

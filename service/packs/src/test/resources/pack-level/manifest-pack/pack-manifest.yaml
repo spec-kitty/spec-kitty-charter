@@ -1,4 +1,9 @@
 # Generated over the source bytes; every hash is fresh (computed with Python, independently of the Java recipe).
+# To restamp after editing a listed file, from this directory:
+#   content_hash: python3 -c "import hashlib,sys;b=open(sys.argv[1],'rb').read().replace(b'\r\n',b'\n')
+#                   .replace(b'\r',b'\n');print(hashlib.sha256(b).hexdigest())" <path>
+#   manifest_hash: sha256 of json.dumps({"schema_version","constituents","presets"}, sort_keys=True,
+#                   separators=(',',':'), ensure_ascii=False).encode() over the entries below (RFC 8785).
 schema_version: '1.0'
 manifest_hash: c1b93b60510573c8a2b7b34e2ee54be81d8d25d4a1449ee51a94a0a168203851
 constituents:

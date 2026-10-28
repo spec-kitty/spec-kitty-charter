@@ -362,7 +362,11 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     // ---- the manifest (#195) -------------------------------------------------------------------
 
     private Outcome manifest(Path source, Path target, String path, Map<String, String> written) {
-        FileRead<PackManifestDso> read = strategy.readManifest(read(source.resolve(path)), path);
+        Optional<String> text = FilesystemPackStore.readText(source.resolve(path));
+        if (text.isEmpty()) {
+            return new Refused("the file cannot be read as UTF-8 text");
+        }
+        FileRead<PackManifestDso> read = strategy.readManifest(text.get(), path);
         if (read instanceof FileRead.Unreadable<PackManifestDso> bad) {
             return new Refused(FilesystemPackStore.violationsOf(bad).stream()
                     .map(PackElementViolation::reason)
@@ -391,12 +395,20 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     /**
      * Each listed path of the manifest with the written file it pairs with: a constituent with the written artefact of
-     * its kind token and id, a preset entry with the file written at its own path. A path with no written file is left
-     * out.
+     * its kind token and id, a template constituent and a preset entry with the file written at its own path. A path
+     * with no written file is left out. The store pairs every entry by path; the gate's flat layout cannot, so a
+     * constituent whose path is stale but whose id is written pairs here while the store's write refuses it.
      */
     static Map<String, String> pairing(PackManifestDso manifest, Path target, Map<String, String> written) {
         Map<String, String> out = new HashMap<>();
         for (PackManifestDso.Constituent constituent : manifest.constituents()) {
+            // A template has no binding: the gate writes it in place, at its own path, so it pairs by path.
+            if (ArtifactKind.TEMPLATE.token().equals(constituent.kind())) {
+                if (Files.isRegularFile(target.resolve(constituent.path()))) {
+                    out.put(constituent.path(), constituent.path());
+                }
+                continue;
+            }
             ArtifactKind.fromToken(constituent.kind())
                     .flatMap(KindBindings::of)
                     .map(binding -> written.get(binding.schemaName() + "/" + constituent.id()))

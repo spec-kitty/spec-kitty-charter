@@ -94,7 +94,7 @@ class PresetRoundTripTest {
     }
 
     @Test
-    @DisplayName("a pack without presets is written without a presets directory")
+    @DisplayName("a pack without presets or a manifest is written without a presets directory or a manifest")
     void aPackWithoutPresetsHasNoPresetsDirectory(@TempDir Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("bare"));
         Files.writeString(pack.resolve(PackFileSet.PACK_YAML), PACK_YAML);
@@ -103,6 +103,7 @@ class PresetRoundTripTest {
         store.write(store.load(pack), target);
 
         assertThat(target.resolve("presets")).doesNotExist();
+        assertThat(target.resolve(PackFileSet.MANIFEST)).doesNotExist();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -140,7 +141,7 @@ class PresetRoundTripTest {
     }
 
     @Test
-    @DisplayName("a registration through the real service leaves every preset file byte-identical")
+    @DisplayName("a registration through the real service leaves every preset file byte-identical (regression guard)")
     void aRegistrationLeavesThePresetsByteIdentical(@TempDir Path host) throws IOException, URISyntaxException {
         Path pack = fixture(host);
         Map<String, byte[]> before = presetBytes(pack);

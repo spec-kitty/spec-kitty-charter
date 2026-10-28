@@ -44,7 +44,8 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>root {@code pack-manifest.yaml} (#195)</td><td>manifest: digested, not loaded by the store</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
- * <tr><td>{@code presets/<stem>.<kind>.yaml} (a files rule wins over the presets exclusion)</td><td>loaded</td></tr>
+ * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
+ *     {@code PackFileKindTest} pins it)</td><td>loaded</td></tr>
  * <tr><td>{@code <stem>.config.<kind>.yaml}</td><td>loaded</td></tr>
  * <tr><td>a file symlink inside the pack to an external valid tactic</td><td>loaded</td></tr>
  * <tr><td>root {@code a.graph.yaml}, hidden root {@code .b.graph.yaml}, {@code drg/fragment.yaml}</td>
