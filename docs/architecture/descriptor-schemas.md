@@ -136,7 +136,8 @@ every level.
 - `+ constituents`: a list, possibly empty, of `{+ kind, + id, + path, + content_hash}`; `kind` is
   an artifact kind token, `content_hash` is 64 lowercase hex characters, derived
 - `- presets`: `[1..]` of `{+ id, + path, + content_hash}`; `path` matches `presets/<id>.yaml`
-  for an id of the preset grammar
+  for an id of the preset grammar, and a storage rule beyond the schema requires it to be the
+  entry's own `presets/<id>.yaml`
 
 A derived field is not authored: the service recomputes it on every whole-pack write.
 `content_hash` is SHA-256 of the file's bytes with CRLF and lone CR replaced by LF; `manifest_hash`

@@ -90,7 +90,7 @@ under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. It changes 
 no other decision:
 
 - **Decision 4, "pack-level files (#195)", is built for presets and the manifest; `pack.md` is
-  pending (WP08, #194).** The `Pack` aggregate holds its activation
+  split off to #260 (blocked on #194).** The `Pack` aggregate holds its activation
   presets in a slot of its own, `presets()`, keyed by id, beside the kind map. A preset is a
   pack-level value, not an artifact: core gives it no URN. The store pairs each preset with its file
   stem. With ADR-0040's asset files, this is the second pack-level slot, and the pack document is
@@ -161,7 +161,7 @@ nothing about how a new kind is shaped.
      would write standalone files that must not exist;
    - pack-level files (#195).
      *(Built by #195, 2026-10-28, ADR-0043, for presets and the manifest: presets in a `Pack` slot
-     of their own, the manifest beside the aggregate. `pack.md` is pending (WP08, #194). See the
+     of their own, the manifest beside the aggregate. `pack.md` is split off to #260 (blocked on #194). See the
      amendment under Status.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
    reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:

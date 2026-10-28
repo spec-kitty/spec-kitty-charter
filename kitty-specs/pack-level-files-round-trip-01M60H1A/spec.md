@@ -175,7 +175,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 | FR-002 | Preset in the domain | As a pack author, I want each `presets/*.yaml` loaded into the pack as a preset (its id, description, kind gate and items with their must-have marks), with the required set derived from the marks, so that a governing preset is known without a second declaration. | High | Open | [build] | no |
 | FR-003 | Preset invariants | As a maintainer, I want a preset refused when its `id` is not its file stem, or when one list names an id twice, each refusal naming the preset file. | High | Open | [build] | no — paired with a valid preset in the same fixture |
 | FR-004 | Preset written back | As a pack author, I want each preset written to `presets/<id>.yaml` equal by meaning to its source, must-have marks included, and no preset file written for a pack that holds none. | High | Open | [build] | no — a dropped must-have mark fails the comparison |
-| FR-005 | Pack document in the markdown form | As a pack author, I want `pack.md` held through #194's `markdown` content form and written back equal under that form's rule, once #194's PR-A has merged. | Medium | Open | [build] | no — paired with a lossy-body control |
+| FR-005 | Pack document in the markdown form | As a pack author, I want `pack.md` held through #194's `markdown` content form and written back equal under that form's rule, once #194's PR-A has merged. | Medium | Deferred to #260 (operator, 2026-10-28) | [build] | no — paired with a lossy-body control |
 | FR-006 | Manifest schema | As a maintainer, I want `contracts/packs/schemas/pack-manifest.schema.json` to define the sanitized authored-pack manifest (`schema_version`, `manifest_hash`, `constituents[{kind, id, path, content_hash}]`, `presets[{id, path, content_hash}]`), closed, with 64-hex hashes, so that the variant fields of fetched packs and charter bundles are refused. | High | Open | [build] | no — paired with a clean manifest |
 | FR-007 | Manifest read | As a maintainer, I want `pack-manifest.yaml` read beside the pack aggregate: membership as written, hashes as written, and no freshness check on load (core's behaviour). | High | Open | [build] | no |
 | FR-008 | Derived hashes declared | As a maintainer, I want `content_hash` defined as SHA-256 of the file's bytes after CRLF/CR → LF, and `manifest_hash` as SHA-256 of the UTF-8 RFC 8785 canonical JSON of the manifest without `manifest_hash`, so that both are reproducible in any language. | High | Open | [build] | no — a parity test reproduces both from fixed bytes |
@@ -229,7 +229,7 @@ entries are gone, and the known-failure list gains exactly three built-in entrie
 - **SC-001a**: Built-in `pack.yaml` stays green in the gate, and internal `pack.yaml` in the seam test, while the paired
   descriptor refusals (`surprise`, `accompanies_doctrine_pack`) refuse. — [ratchet] · no-op passable: yes — paired with
   the refusals, which a no-op fails
-- **SC-001b**: Once #194's PR-A has merged, built-in `pack.md` is green and `other:pack.md` is gone from the expected-red
+- **SC-001b** (deferred to #260, operator ruling of 2026-10-28): Once #194's PR-A has merged, built-in `pack.md` is green and `other:pack.md` is gone from the expected-red
   list. — [build] · no-op passable: no
 - **SC-002**: The fixture pack's presets round-trip equal by meaning, must-have marks included, and every refusal
   control (unknown key, id ≠ stem, duplicate id, empty list) is refused while its paired clean file loads. — [build] ·

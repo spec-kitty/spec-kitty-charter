@@ -44,8 +44,8 @@ It supersedes in part [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-me
 per-kind table gains its `preset` and `pack-manifest` rows.
 
 It extends [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Accepted):
-decision 4's "pack-level files (#195)" is built for presets and the manifest (`pack.md` is pending,
-WP08 and #194), decision 5's load returns the manifest, and the
+decision 4's "pack-level files (#195)" is built for presets and the manifest (`pack.md` is split off to
+[#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260), blocked on #194), decision 5's load returns the manifest, and the
 write's undeclared-keys refusal is gone.
 
 It extends [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed): decision 9's
@@ -199,8 +199,12 @@ are retired. No ULID pattern is added to `pack_id`: the contract scenarios use `
 - `constituents`: required, possibly empty. Each entry is `{kind, id, path, content_hash}`, all
   required, `kind` an artifact kind token, `content_hash` derived;
 - `presets`: optional, at least one entry. Each entry is `{id, path, content_hash}`, all required.
-  The schema holds `path` to the pattern `presets/<id grammar>.yaml`. Nothing checks yet that it
-  names the entry's own `id`.
+  The schema holds `path` to the pattern `presets/<id grammar>.yaml`; the pattern cannot tie it to
+  the entry's own `id`, so one storage rule, `PresetFiles.entryPathMismatch`, requires
+  `presets/<id>.yaml`. The whole-pack load records a miss as a violation on the manifest
+  (`preset entry '<id>' names <path>, not presets/<id>.yaml`), validate mode as
+  `artifact_schema_error` at `/presets/<i>/path`, and the gate refuses it (operator ruling on #195,
+  2026-10-28).
 
 The fetched-pack and charter-bundle fields are not in it: `charter`, `fetched_at`, `source_url`,
 `source_type`, `generated_at`, `generated_by` and each constituent's `provenance_path` (S5).
@@ -281,14 +285,15 @@ ids and checks their kind gate, and does not check the manifest. The service hol
 shapes and does neither of core's preset checks. The divergence is DIV-301, in a block of its own for #195, in the
 [divergence register](/conformance/divergence-register/).
 
-### 8. `pack.md` uses #194's `markdown` content form (pending)
+### 8. `pack.md` uses #194's `markdown` content form (split off to #260)
 
 `pack.md` is held through the `markdown` content form that sibling
 [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) builds in its first pull
 request (`DM-01M60HM8BV7CE17HYE1QS829K4`, which supersedes this mission's earlier `bytes` choice).
-This mission builds no form of its own. Its `pack.md` work package (WP08) comes last and is not
-built yet: #194's pull request has not opened. Until it lands, `other:pack.md` stays on the gate's
-expected-red list.
+This mission builds no form of its own. The `pack.md` work is not built here: #194's pull request
+had not opened, so the operator split it off to
+[#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) on 2026-10-28, and #195 closes
+on the scope it delivered. Until #260 lands, `other:pack.md` stays on the gate's expected-red list.
 
 ### 9. The fingerprint order
 
@@ -427,7 +432,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 ### Follow-up work
 
 - File OP-1 and OP-2, replace the placeholder keys, and remove the two slugs from the loader.
-- WP08: `pack.md` through #194's `markdown` form, once #194's first pull request merges.
+- [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260): `pack.md` through #194's
+  `markdown` form, once #194's first pull request merges.
 - #206: migrate `org-charter.yaml`'s `required_<plural>` lists into presets, then refuse them.
 - #110: manifest membership and restamping after a registration.
 - Epic #186: extract `PackLevelContent` (decision 10).

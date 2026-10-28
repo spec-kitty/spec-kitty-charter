@@ -34,7 +34,7 @@ verifies both.
 The built-in presets and manifest are not in these shapes. They are refused and pinned as known
 failures until open-packs fixes them. Validate mode reports them too.
 [ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (proposed)
-records the decisions, with amendments to ADR-0031, 0036, 0037 and 0040. `pack.md` waits for #194.
+records the decisions, with amendments to ADR-0031, 0036, 0037 and 0040. `pack.md` is split off to #260, which waits for #194.
 
 **What changes for an operator:** fingerprints and ETags of packs holding presets or a manifest
 change once. **What does not change:** the shape of the HTTP contract.
