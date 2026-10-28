@@ -150,6 +150,9 @@ paths:
                                 x-source:
                                   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
                                   symbol: Diagnostic.detail
+        '304':
+          description: The client holds the current listing; no body.
+          headers: *charter-headers
         default:
           description: The read failed.
           headers: *charter-headers

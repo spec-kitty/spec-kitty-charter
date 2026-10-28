@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: HTTP status codes
 description: Which HTTP status the charter API answers with, what each one means here, the body it carries and whether a client may retry.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -62,7 +62,7 @@ except the servlet container's own 400s
 
 | Code | Meaning | Used here | Body |
 |---|---|---|---|
-| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | Not used yet. An activation's `ETag`, `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if conditional reads are added | None |
+| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | `getOpenApiDocument` (`GET /openapi.yaml`): an `If-None-Match` that is `*` or matches the bundle's `ETag`. Proposed: an activation's `ETag`, `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if more conditional reads are added | None |
 
 ## 4xx: the request is wrong
 
@@ -73,7 +73,7 @@ except the servlet container's own 400s
 | 403 Forbidden | The request is refused whatever its credentials | A browser request: an `Origin`, `Sec-Fetch-Site` or `Sec-Fetch-Mode` header, or a `Host` other than `localhost`, `127.0.0.1` or `[::1]`. Checked before the token. Proposed: this guard moves to a local deployment profile (ADR-0020 D12); a token lacking a scope is a 403 | `Problem`, no code | No |
 | 404 Not Found | The resource does not exist | A path the contract does not define (no code); a mission type or action that is not a graph node (`mission_type_not_found`, `action_not_found`). Proposed: `activation_not_found` (also for an activation the token may not see), `artifact_not_found`, `preset_not_found` | `Problem`, or `CharterRefusal` | No |
 | 405 Method Not Allowed | The path exists, the method does not | A method a path does not have; carries `Allow`. Service behavior: the contract does not declare it per path | `Problem`, no code | No |
-| 406 Not Acceptable | No representation the client accepts | `Accept` excludes `application/json` | `Problem`, no code | No |
+| 406 Not Acceptable | No representation the client accepts | `Accept` excludes the operation's media type: `application/json`, or `application/yaml` for `getOpenApiDocument` | `Problem`, no code | No |
 | 409 Conflict | The request conflicts with current state | Proposed: `artifact_required`, `artifact_locked`: a deactivation the pack policy forbids, by a deactivate call or a registered document with a deny entry on a required or locked id; `requiredBy` names every requiring pack. Also register when the pack id is taken | `CharterRefusal` | No |
 | 410 Gone | The resource existed and was removed for good | Not used. Only if registered packs can be revoked and their ids are not reused | — | — |
 | 412 Precondition Failed | `If-Match` or `If-None-Match` failed | Proposed: a write against a stale activation revision, or a create-only `PUT` on an existing activation | `Problem`, no code | After a re-read |
@@ -87,7 +87,7 @@ except the servlet container's own 400s
 | Code | Meaning | Used here | Body | Retry |
 |---|---|---|---|---|
 | 500 Internal Server Error | The service cannot answer | Every offering refusal: `pack_level_mismatch`, `pack_unreadable`, `drg_schema_error`, `unresolved_edge_endpoint` (not retryable); `internal_error` and `stale_input` (retryable). `governance_policy_violation` is reserved (500, not raised yet) | `CharterRefusal` | Only for `internal_error` and `stale_input` |
-| 501 Not Implemented | The operation is declared but not built | Proposed: every operation marked `x-reserved` (ADR-0020 D8). Never a 405: the contract declares the method | `Problem`, no code | No |
+| 501 Not Implemented | The operation is declared but not built | `getOpenApiDocument` until the service serves the bundle (#209). Proposed: every operation marked `x-reserved` (ADR-0020 D8). Never a 405: the contract declares the method | `Problem`, no code | No |
 | 503 Service Unavailable | Temporarily unable to serve; may carry `Retry-After` | Not used. See the open questions | — | — |
 
 `internal_error` is the only code for a failure no other code names. Its `detail` is a generic
