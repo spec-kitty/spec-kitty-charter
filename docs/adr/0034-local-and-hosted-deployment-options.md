@@ -34,7 +34,7 @@ Supersedes in part [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-fres
 Records the amendment of core ADR `4.x/2026-10-03-1` that core owes. This record does not change
 core.
 
-Decision 5 resolved in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28, proposed): the configuration keys of the containerized service. The login flow and the token format stay open.
+Clarification 2026-10-28: decision 5 is resolved in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (Proposed, 2026-10-28) for the configuration keys of the containerized service. The login flow and the token format stay open.
 
 ## Context
 
@@ -66,7 +66,7 @@ A team lead wants to host the charter service centrally instead of each member r
    repository; this record does not.
 5. **Representation is a candidate only.** Configuration keys, the login flow and the token format
    are left to later records. No contract path changes (C-003).
-   *Configuration keys: see ADR-0041.*
+   *(Clarification 2026-10-28: the configuration keys are proposed in ADR-0041.)*
 
 ## Consequences
 
