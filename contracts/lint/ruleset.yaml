@@ -49,7 +49,7 @@ rules:
   # A read answers 200, a registration answers 200 (replace) or 201 (create) with the resource and an ETag
   # (ADR-0018 D10 as amended 2026-10-25, reconciling with ADR-0026's write surface); every non-success answer
   # (every 4xx/5xx and the shared default) is a problem. A 304 Not Modified has no body (RFC 9110, section
-  # 15.4.5), so it is not a problem either; not-modified-has-no-body holds it to that.
+  # 15.4.5), so it is not a problem either (ADR-0018 D10 amendment 2026-10-28); not-modified-has-no-body holds it to that.
   error-responses-are-problems:
     description: Every response other than the 200/201 successes and a 304 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
     severity: error
@@ -86,7 +86,8 @@ rules:
                               properties:
                                 title: { const: Problem }
 
-  # A conditional read's 304 (getOpenApiDocument, #208) carries headers only: RFC 9110 forbids it a body.
+  # A conditional read's 304 (getOpenApiDocument, #208) carries headers only: RFC 9110 forbids it a body
+  # (ADR-0018 D10 amendment 2026-10-28).
   not-modified-has-no-body:
     description: A 304 Not Modified response declares no content.
     severity: error
