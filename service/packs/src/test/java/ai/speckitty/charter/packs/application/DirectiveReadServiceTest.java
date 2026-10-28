@@ -132,7 +132,7 @@ class DirectiveReadServiceTest {
 
     private static PackDescriptor descriptor(PackIdentifier pack) {
         return new PackDescriptor(
-                pack.value(), "1.0.0", Optional.empty(), pack.value(), Optional.empty(), Optional.empty(), List.of());
+                pack.value(), "1.0.0", Optional.empty(), pack.value(), Optional.empty(), Optional.empty());
     }
 
     private static Directive directive(PackIdentifier pack, String id) {

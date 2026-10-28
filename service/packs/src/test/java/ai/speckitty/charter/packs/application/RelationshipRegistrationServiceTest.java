@@ -341,7 +341,7 @@ class RelationshipRegistrationServiceTest {
 
     private static PackDescriptor descriptor() {
         return new PackDescriptor(
-                PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty(), List.of());
+                PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty());
     }
 
     private static Directive directive(String id) {

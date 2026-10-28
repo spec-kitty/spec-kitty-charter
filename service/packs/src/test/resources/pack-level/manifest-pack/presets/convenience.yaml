@@ -1,0 +1,5 @@
+schema_version: '1.0'
+id: convenience
+description: A tactic, nothing required.
+activated_tactics:
+  - id: refactoring-inline-temp

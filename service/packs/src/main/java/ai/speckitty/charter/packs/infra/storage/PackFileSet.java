@@ -27,28 +27,31 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The single declaration of which files of a pack the service loads and which it digests. The store reads the files
- * of each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests
+ * The single declaration of which files of a pack the service loads and which it digests. The store reads the files of
+ * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests
  * {@code pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared
  * graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates. Both take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind
- * is all it takes for the digest to cover it. The asset files and templates come last, so a pack that holds none keeps
- * its exact digest list.
+ * templates, then the presets and the manifest (the pack-level tail, ADR-0043). Both take their list from here, so a
+ * file the service loads cannot escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The
+ * asset files, templates and presets come last, so a pack that holds none keeps its exact digest list.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}:
  * the rule's content form decides the store. A file of the {@code bytes} form is held by its rule's kind: an
  * {@value #ASSET_PAYLOAD} file is an asset file (under {@code assets/}), a {@code template} file a template (under the
  * top-level {@code templates/}); the table admits no {@code bytes} rule of another kind ({@link PackFileKind}). A file
- * of the {@code yaml} form, which every {@code files} rule declares, is a file of its schema's bound kind. The walk is the store's: {@link Files#walkFileTree}
- * (hidden directories are entered, a directory link is not followed, an entry that vanishes mid-walk is not listed),
- * every regular file ({@link Files#isRegularFile} follows a file link) classified once, in {@link String} order. Every
- * entry point normalizes the directory first, so a configured root such as {@code packs/foo/.} classifies like the
- * store's own normalized directory.
+ * of the {@code yaml} form, which every {@code files} rule declares, is a file of its schema's bound kind. The walk is
+ * the store's: {@link Files#walkFileTree} (hidden directories are entered, a directory link is not followed, an entry
+ * that vanishes mid-walk is not listed), every regular file ({@link Files#isRegularFile} follows a file link)
+ * classified once, in {@link String} order. Every entry point normalizes the directory first, so a configured root such
+ * as {@code packs/foo/.} classifies like the store's own normalized directory.
  */
 final class PackFileSet {
 
     /** The pack descriptor's file name. */
     static final String PACK_YAML = "pack.yaml";
+
+    /** The pack manifest's pack-relative path (ADR-0043). */
+    static final String MANIFEST = "pack-manifest.yaml";
 
     /** The DRG fragment's pack-relative path. */
     static final String FRAGMENT = "drg/fragment.yaml";
@@ -72,14 +75,20 @@ final class PackFileSet {
      * @param byKind the files of each bound kind; a kind with none may be absent
      * @param assetFiles the asset files, pack-relative (they start with {@code assets/})
      * @param templates the templates, pack-relative (they start with {@code templates/})
+     * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
      */
-    record Listing(Map<ArtifactKind, List<String>> byKind, List<String> assetFiles, List<String> templates) {
+    record Listing(
+            Map<ArtifactKind, List<String>> byKind,
+            List<String> assetFiles,
+            List<String> templates,
+            List<String> presets) {
         /**
          * Copies the collections.
          *
          * @param byKind the files of each bound kind
          * @param assetFiles the asset files
          * @param templates the templates
+         * @param presets the presets
          */
         Listing {
             Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
@@ -87,6 +96,7 @@ final class PackFileSet {
             byKind = Collections.unmodifiableMap(copy);
             assetFiles = List.copyOf(assetFiles);
             templates = List.copyOf(templates);
+            presets = List.copyOf(presets);
         }
 
         /**
@@ -164,7 +174,7 @@ final class PackFileSet {
 
     /**
      * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every bound kind, the
-     * root graph shards, {@code drg/fragment.yaml}, the asset files and the templates.
+     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets and the manifest.
      *
      * @param packDir the pack directory
      * @return the pack-relative paths, in digest order
@@ -180,7 +190,8 @@ final class PackFileSet {
      * @param kinds the loaded kinds to include
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file;
-     *     the asset files; the templates. The asset files and templates are not a bound kind and are always included.
+     *     the asset files; the templates; the presets; {@code pack-manifest.yaml} when a regular file. None of those is
+     *     a bound kind, and they are always included.
      */
     static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
         return digested(packDir, kinds, nameOf(normalized(packDir)));
@@ -231,6 +242,20 @@ final class PackFileSet {
         // companion is one of them (the companion rule refuses it, Companions.resolve), so each is listed once.
         out.addAll(loaded.assetFiles());
         out.addAll(loaded.templates());
+        out.addAll(packLevelTail(directory, loaded));
+        return out;
+    }
+
+    /**
+     * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
+     * order, then {@code pack-manifest.yaml} when it is a regular file. A pack without them keeps its digest list
+     * (NFR-002).
+     */
+    private static List<String> packLevelTail(Path directory, Listing loaded) {
+        List<String> out = new ArrayList<>(loaded.presets());
+        if (Files.isRegularFile(directory.resolve(MANIFEST))) {
+            out.add(MANIFEST);
+        }
         return out;
     }
 
@@ -271,13 +296,17 @@ final class PackFileSet {
         }
     }
 
-    /** One walk of the pack, each file classified once: every bound kind's files grouped, the payload files apart. */
+    /**
+     * One walk of the pack, each file classified once: every bound kind's files grouped, the payload files and the
+     * presets apart.
+     */
     private static Listing loaded(Path directory, String packName, PackFileKind table) {
         // The classification globs are relative to the directory that holds the pack directories.
         String prefix = nameOf(directory) + "/";
         Map<ArtifactKind, List<String>> byKind = new EnumMap<>(ArtifactKind.class);
         List<String> assetFiles = new ArrayList<>();
         List<String> templates = new ArrayList<>();
+        List<String> presets = new ArrayList<>();
         for (String file : regularFiles(directory, packName)) {
             if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)) {
                 continue;
@@ -285,13 +314,16 @@ final class PackFileSet {
             // The rule's content form decides the store, never the path: a bytes file is held by its rule's kind.
             if (mapped.contentForm() == ContentForm.BYTES) {
                 bytesHolder(mapped.kind(), assetFiles, templates).add(file);
+            } else if (PresetFiles.KIND.equals(mapped.kind())) {
+                // A pack-level file, not a bound kind: the pack holds its presets in their own slot (ADR-0043).
+                presets.add(file);
             } else if (mapped.schema().isPresent()) {
                 KindBindings.bySchema(mapped.kind())
                         .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
                                 .add(file));
             }
         }
-        return new Listing(byKind, assetFiles, templates);
+        return new Listing(byKind, assetFiles, templates, presets);
     }
 
     /**

@@ -1424,8 +1424,7 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "control-retired-pack-key-is-a-warning",
-    "register_id": "DIV-006"
+    "plant": "control-retired-pack-key-is-a-warning"
   },
   {
     "core": {
@@ -1463,8 +1462,7 @@
       "sha": "9554e7b26afe7a61519f7744d0147346ab36f197",
       "version": "4.0.0rc8"
     },
-    "plant": "control-unknown-pack-key-is-a-warning",
-    "register_id": "DIV-005"
+    "plant": "control-unknown-pack-key-is-a-warning"
   },
   {
     "core": {

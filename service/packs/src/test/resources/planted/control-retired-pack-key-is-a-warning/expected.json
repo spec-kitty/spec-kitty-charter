@@ -5,18 +5,14 @@
   "configuredLevel": "org",
   "findings": [
     {
-      "code": "pack_unknown_key",
-      "severity": "warning",
+      "code": "pack_unreadable",
+      "severity": "blocking",
       "file": "pack.yaml",
-      "place": [
-        "accompanies_doctrine_pack"
-      ]
+      "place": []
     }
   ],
   "load": {
     "level": "org",
-    "diagnostics": [
-      "pack_unknown_key"
-    ]
+    "refusal": "pack_unreadable"
   }
 }

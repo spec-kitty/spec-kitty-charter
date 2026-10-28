@@ -1,0 +1,33 @@
+schema_version: '1.0'
+id: governing
+description: A governing preset that holds every activation list and marks some items must-have.
+activated_kinds:
+  - directives
+  - tactics
+  - styleguides
+activated_directives:
+  - id: DIRECTIVE_001
+    must_have: true
+  - id: DIRECTIVE_010
+activated_tactics:
+  - id: acceptance-test-first
+    must_have: true
+activated_styleguides:
+  - id: python-style
+activated_toolguides:
+  - id: ripgrep
+activated_paradigms:
+  - id: domain-driven-design
+activated_procedures:
+  - id: release-checklist
+activated_agent_profiles:
+  - id: implementer
+    must_have: true
+activated_mission_step_contracts:
+  - id: specify
+activated_anti_patterns:
+  - id: big-ball-of-mud
+activated_mission_types:
+  - id: software-dev
+    must_have: true
+  - id: research

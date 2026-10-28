@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -292,7 +293,8 @@ final class PackSchemas {
             pointer.add(String.valueOf(location.getElement(i)));
         }
         Map<String, String> args = new LinkedHashMap<>();
-        Object[] arguments = error.getArguments();
+        // A keyword may report no arguments at all (uniqueItems does): then the violation has none.
+        Object[] arguments = Objects.requireNonNullElse(error.getArguments(), new Object[0]);
         for (int i = 0; i < arguments.length; i++) {
             args.put(Integer.toString(i), String.valueOf(arguments[i]));
         }

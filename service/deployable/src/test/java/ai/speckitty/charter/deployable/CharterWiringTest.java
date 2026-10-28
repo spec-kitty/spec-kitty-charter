@@ -200,6 +200,6 @@ class CharterWiringTest {
                         .validate(new PackRoot("qa", Optional.of(PackLevel.ORG), dir.toString()))
                         .findings())
                 .extracting(f -> f.code().name())
-                .containsExactly("PACK_UNKNOWN_KEY"));
+                .containsExactly("PACK_UNREADABLE"));
     }
 }

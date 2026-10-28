@@ -336,4 +336,63 @@ class MeaningComparatorTest {
                     .isEmpty();
         }
     }
+
+    /** #195, ADR-0043: a manifest's derived fields are verified against the bytes, not compared; the rest counts. */
+    @Nested
+    class TheManifest {
+
+        private static final String KIND = MeaningComparator.MANIFEST;
+        private static final String A = "a".repeat(64);
+        private static final String B = "b".repeat(64);
+
+        private static String manifest(String hash) {
+            return """
+                    schema_version: '1.0'
+                    manifest_hash: %s
+                    constituents:
+                    - kind: tactic
+                      id: t
+                      path: tactics/t.tactic.yaml
+                      content_hash: %s
+                    - kind: directive
+                      id: D
+                      path: d.directive.yaml
+                      content_hash: %s
+                    presets:
+                    - id: p
+                      path: presets/p.yaml
+                      content_hash: %s
+                    """.formatted(hash, hash, hash, hash);
+        }
+
+        @Test
+        void everyDerivedFieldIsSkipped() {
+            assertThat(compare(KIND, manifest(A), manifest(B))).isEmpty();
+            assertThat(compare(ARTEFACT, manifest(A), manifest(B)))
+                    .as("another kind compares them")
+                    .isPresent();
+        }
+
+        @Test
+        void aChangedPathOrIdCounts() {
+            assertThat(compare(KIND, manifest(A), manifest(B).replace("tactics/t.tactic.yaml", "t.tactic.yaml")))
+                    .contains(new Difference("constituents[0].path", "tactics/t.tactic.yaml", "t.tactic.yaml"));
+            assertThat(compare(KIND, manifest(A), manifest(B).replace("id: p\n", "id: q\n")))
+                    .contains(new Difference("presets[0].id", "p", "q"));
+        }
+
+        @Test
+        void aDroppedConstituentCounts() {
+            String dropped = manifest(B)
+                    .replace("- kind: directive\n  id: D\n  path: d.directive.yaml\n  content_hash: " + B + "\n", "");
+
+            assertThat(compare(KIND, manifest(A), dropped)).isPresent();
+        }
+
+        @Test
+        void aChangedSchemaVersionCounts() {
+            assertThat(compare(KIND, manifest(A), manifest(A).replace("'1.0'", "'2.0'")))
+                    .contains(new Difference("schema_version", "1.0", "2.0"));
+        }
+    }
 }

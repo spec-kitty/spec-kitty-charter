@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
@@ -17,9 +18,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -67,7 +70,9 @@ class WholePackRoundTripTest {
             "mission-step-contract",
             "asset",
             "asset-payload",
-            "template"); // #193
+            "template", // #193
+            "preset", // #195
+            "pack-manifest"); // #195
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -99,12 +104,14 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
-        // The two pack documents, #193's two payload kinds (bytes, no binding) and every bound kind.
+        // The two pack documents, #193's two payload kinds (bytes, no binding), #195's presets and every bound kind.
         Set<String> bound = new TreeSet<>(Set.of(
                 DomainRoundTrip.DESCRIPTOR,
                 DomainRoundTrip.GRAPH_SHARD,
                 DomainRoundTrip.ASSET_PAYLOAD,
-                DomainRoundTrip.TEMPLATE));
+                DomainRoundTrip.TEMPLATE,
+                DomainRoundTrip.PRESET,
+                DomainRoundTrip.MANIFEST));
         KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
@@ -297,7 +304,10 @@ class WholePackRoundTripTest {
         assertThat(information).isEmpty();
     }
 
-    /** The loaded pack with every asset file's and template's bytes changed by {@code change}; nothing else moves. */
+    /**
+     * The loaded pack with every asset file's and template's bytes changed by {@code change}; nothing else moves, the
+     * presets included.
+     */
     private static Pack withPayloads(Pack pack, UnaryOperator<byte[]> change) {
         Pack.Builder builder = Pack.builder().id(pack.id()).descriptor(pack.descriptor());
         for (CharterArtifact artifact : pack.artifacts()) {
@@ -315,6 +325,7 @@ class WholePackRoundTripTest {
         pack.assetFiles()
                 .forEach(file -> builder.assetFile(new AssetFile(
                         file.path(), Payload.of(change.apply(file.payload().bytes())))));
+        pack.presets().forEach(builder::preset);
         return builder.build();
     }
 
@@ -397,6 +408,52 @@ class WholePackRoundTripTest {
         return out.toString().stripTrailing() + "\n";
     }
 
+    /**
+     * #195: the gate driver verifies the manifest's derived fields on both sides, which the comparator skips. A writer
+     * that keeps the source's hashes is red at {@code written stale}, an edited source at {@code source stale}; the
+     * faithful run over the fresh fixture is green.
+     */
+    @Test
+    void theManifestsDerivedFieldsAreVerifiedOnBothSides(@TempDir Path temp) throws IOException, URISyntaxException {
+        Path fresh = PackManifestRoundTripTest.fixture(temp.resolve("fresh"));
+        Path edited = PackManifestRoundTripTest.fixture(temp.resolve("edited"));
+        Path tactic = edited.resolve(PackManifestRoundTripTest.TACTIC);
+        Files.writeString(tactic, Files.readString(tactic) + "# edited\n");
+        SerializationStrategy yaml = new YamlSerializationStrategy();
+
+        Map<String, Optional<String>> clean = observe(
+                new DomainRoundTrip(yaml),
+                fresh,
+                temp.resolve("out/clean"),
+                WholePackCensus.of(fresh),
+                new TreeMap<>(),
+                new TreeSet<>());
+        Map<String, Optional<String>> copied = observe(
+                new DomainRoundTrip(new PackManifestRoundTripTest.StaleManifestWriter(yaml, fresh)),
+                fresh,
+                temp.resolve("out/copied"),
+                WholePackCensus.of(fresh),
+                new TreeMap<>(),
+                new TreeSet<>());
+        Map<String, Optional<String>> sourceStale = observe(
+                new DomainRoundTrip(yaml),
+                edited,
+                temp.resolve("out/edited"),
+                WholePackCensus.of(edited),
+                new TreeMap<>(),
+                new TreeSet<>());
+
+        assertThat(clean).allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
+        assertThat(copied.get(PackFileSet.MANIFEST))
+                .contains(
+                        "written stale: constituents{directives/018-doctrine-versioning.directive.yaml}.content_hash, "
+                                + "constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash, "
+                                + "presets{presets/convenience.yaml}.content_hash, "
+                                + "presets{presets/governing.yaml}.content_hash");
+        assertThat(sourceStale.get(PackFileSet.MANIFEST))
+                .contains("source stale: constituents{" + PackManifestRoundTripTest.TACTIC + "}.content_hash");
+    }
+
     /** Runs the round trip and compares every modelled file with its source; empty is green, else the red detail. */
     private static Map<String, Optional<String>> observe(
             WholePackRoundTrip roundTrip,
@@ -432,8 +489,11 @@ class WholePackRoundTripTest {
                     switch (entry.getValue()) {
                         case Written w -> {
                             paired.add(w.writtenPath());
-                            yield red(comparator.differencesOfTexts(
-                                    kind, source, read(written.resolve(w.writtenPath()))));
+                            String writtenText = read(written.resolve(w.writtenPath()));
+                            Optional<String> red = red(comparator.differencesOfTexts(kind, source, writtenText));
+                            yield DomainRoundTrip.MANIFEST.equals(kind)
+                                    ? withStale(red, pack, written, outcomes, source, writtenText)
+                                    : red;
                         }
                         case Refused r -> Optional.of("refused: " + r.reason());
                     });
@@ -447,6 +507,44 @@ class WholePackRoundTripTest {
             }
         }
         return observed;
+    }
+
+    /**
+     * #195: the manifest's derived fields, which the comparator skips (ADR-0043), are verified on both sides: the
+     * source against the source bytes, the written manifest against the written file each listed path paired with. A
+     * stale field joins the red detail as {@code source stale: <fields>} or {@code written stale: <fields>}.
+     */
+    private static Optional<String> withStale(
+            Optional<String> red,
+            Path pack,
+            Path written,
+            Map<String, Outcome> outcomes,
+            String sourceText,
+            String writtenText) {
+        YamlSerializationStrategy yaml = new YamlSerializationStrategy();
+        List<String> parts = new ArrayList<>();
+        red.ifPresent(parts::add);
+        if (yaml.readManifest(sourceText, PackFileSet.MANIFEST) instanceof FileRead.Read<PackManifestDso> source) {
+            List<String> stale = PackManifests.stale(source.value(), path -> optionalBytes(pack.resolve(path)));
+            if (!stale.isEmpty()) {
+                parts.add("source stale: " + String.join(", ", stale));
+            }
+        }
+        if (yaml.readManifest(writtenText, PackFileSet.MANIFEST) instanceof FileRead.Read<PackManifestDso> stamped) {
+            List<String> stale = PackManifests.stale(
+                    stamped.value(),
+                    path -> outcomes.get(path) instanceof Written w
+                            ? optionalBytes(written.resolve(w.writtenPath()))
+                            : Optional.empty());
+            if (!stale.isEmpty()) {
+                parts.add("written stale: " + String.join(", ", stale));
+            }
+        }
+        return parts.isEmpty() ? Optional.empty() : Optional.of(String.join(" ; ", parts));
+    }
+
+    private static Optional<byte[]> optionalBytes(Path file) {
+        return Files.isRegularFile(file) ? FilesystemPackStore.readBytes(file) : Optional.empty();
     }
 
     /**

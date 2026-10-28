@@ -119,6 +119,11 @@ files:
     schema: glossary-pack
   - match: "**/*.skill.yaml"
     schema: skill
+  # Pack-level files (#195, ADR-0043): activation presets and the pack manifest, in their sanitized shapes.
+  - match: "*/presets/*.yaml"
+    schema: preset
+  - match: "*/pack-manifest.yaml"
+    schema: pack-manifest
   # A project file. It is not expected inside a pack; the rule exists so that a stray one is
   # validated, not silently ignored.
   - match: "**/charter.yaml"
@@ -150,13 +155,6 @@ exclusions:
   - match: "**/mission_types/*.yaml"
     reason: >-
       Mission-type definitions. No model in core at 9554e7b2 is exported as a pack schema.
-  - match: "**/presets/*.yaml"
-    reason: >-
-      Activation presets. Core resolves them by name and has no pack-schema model at 9554e7b2.
-  - match: "*/pack-manifest.yaml"
-    reason: >-
-      The generated manifest of a pack (constituents and hashes), machine-written and never
-      authored. No model in core at 9554e7b2 is exported as a pack schema.
   - match: "built-in.source.yaml"
     reason: >-
       The source declaration of the built-in pack. No model in core at 9554e7b2.

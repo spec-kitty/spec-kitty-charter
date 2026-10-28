@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 class PackKindMapTest {
 
     private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
-            "01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty(), List.of());
+    private static final PackDescriptor DESCRIPTOR =
+            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     /** A kind the aggregate does not name anywhere: it must be held all the same. */
     private record Procedure(PackIdentifier packId, String localId) implements CharterArtifact {

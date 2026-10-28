@@ -72,7 +72,6 @@ class PackDescriptorReaderTest {
         assertThat(descriptor.requiresCore()).contains(">=4.0,<5");
         assertThat(descriptor.paths().activeCharter()).contains("org-charter.yaml");
         assertThat(descriptor.paths().packDrg()).contains("drg/fragment.yaml");
-        assertThat(descriptor.undeclaredKeys()).isEmpty();
     }
 
     @Test
@@ -100,15 +99,22 @@ class PackDescriptorReaderTest {
         assertThat(read(VALID + "requires_core: banana\n").requiresCore()).contains("banana");
     }
 
-    @Test
-    void everyKeyTheSchemaDoesNotDeclareIsUndeclaredAndSortedRetiredFieldsIncluded() {
-        PackDescriptor descriptor = read(VALID + "zeta: 1\naccompanies_doctrine_pack: x\nmiddle: [a]\n");
+    @ParameterizedTest
+    @ValueSource(strings = {"surprise", "accompanies_doctrine_pack"})
+    void aKeyTheSchemaDoesNotDeclareMakesTheDescriptorUnreadableNamingTheKey(String key) {
+        read(VALID);
 
-        assertThat(descriptor.undeclaredKeys()).containsExactly("accompanies_doctrine_pack", "middle", "zeta");
+        assertThat(unreadable(VALID + key + ": x\n").violations())
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.keyword()).isEqualTo("additionalProperties");
+                    assertThat(v.pointer()).isEmpty();
+                });
+        assertThat(details(VALID + key + ": x\n")).containsExactly("pack.yaml of qa: unknown key '" + key + "'");
     }
 
     @Test
-    void theUndeclaredKeysComeFromTheSchemaNotFromAListInTheReader() {
+    void theDeclaredKeysAreTheSchemasNotAListInTheReader() {
         List<String> declared = PackSchemas.bundled().declaredProperties("pack-descriptor");
 
         assertThat(declared)
@@ -194,8 +200,8 @@ class PackDescriptorReaderTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"extra: .nan\n", "extra: {a: .inf}\n", "extra: [null, .nan]\n", "extra: [-.inf, 1e400]\n"})
-    void aNonFiniteNumberInAnUndeclaredKeyIsAcceptedLikeAnyOtherValue(String extra) {
-        assertThat(read(VALID + extra).undeclaredKeys()).containsExactly("extra");
+    void anUndeclaredKeyIsRefusedWhateverItsValue(String extra) {
+        assertThat(details(VALID + extra)).containsExactly("pack.yaml of qa: unknown key 'extra'");
     }
 
     @Test

@@ -15,6 +15,14 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Pack-level files round trip (issue #195)
+
+- Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036
+  decision 3). A `pack.yaml` key the pack descriptor schema does not declare, a retired field such
+  as `accompanies_doctrine_pack` included, no longer loads with this warning: the schema is closed,
+  and the pack is refused as `pack_unreadable`. The value stays in the enum, so no shape changes; no
+  operation references `DiagnosticCode`. Operator approval: #195, 2026-10-28.
+
 ### The contract document (issue #208)
 
 - Added: `getOpenApiDocument` (`GET /openapi.yaml`, Service tag) answers the bundled contract the

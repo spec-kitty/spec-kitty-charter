@@ -137,7 +137,6 @@ class DomainRepositoryServiceTest {
                 before.name(),
                 java.util.Optional.of(PackLevel.PROJECT),
                 before.requiresCore(),
-                before.undeclaredKeys(),
                 before.paths());
         service.save(BY_ID, changed);
 
@@ -219,6 +218,26 @@ class DomainRepositoryServiceTest {
             @Override
             public FileRead<GraphDocument> readGraph(String text, GraphDocumentReader.Shape shape, String file) {
                 return yaml.readGraph(text, shape, file);
+            }
+
+            @Override
+            public String writePreset(PresetDso preset) {
+                return yaml.writePreset(preset);
+            }
+
+            @Override
+            public FileRead<PresetDso> readPreset(String text, String file) {
+                return yaml.readPreset(text, file);
+            }
+
+            @Override
+            public String writeManifest(PackManifestDso manifest) {
+                return yaml.writeManifest(manifest);
+            }
+
+            @Override
+            public FileRead<PackManifestDso> readManifest(String text, String file) {
+                return yaml.readManifest(text, file);
             }
         };
         DomainRepositoryService counted = new DomainRepositoryService(

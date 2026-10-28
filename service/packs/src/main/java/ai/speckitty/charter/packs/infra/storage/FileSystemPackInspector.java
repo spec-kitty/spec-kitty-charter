@@ -69,10 +69,14 @@ public final class FileSystemPackInspector implements PackInspector {
 
     /**
      * The schema kinds a {@code files} rule of {@code file-kinds.yaml} maps whose schema declares an {@code id} (an
-     * agent profile declares {@code profile-id}, so it is not one). Derived from the table and the schemas, so a kind
-     * added to either is one here too, and built on first use: it needs the schemas, which are built lazily.
+     * agent profile declares {@code profile-id}, so it is not one), less the pack-level {@code preset}: a preset
+     * declares an id but is no artifact (#195, ADR-0043). Derived from the table and the schemas, so a kind added to
+     * either is one here too, and built on first use: it needs the schemas, which are built lazily.
      */
     private static final class ArtifactKinds {
+        /** File kinds with an {@code id} that are pack-level files, not artifacts; declared first, as derive reads it. */
+        private static final Set<String> PACK_LEVEL = Set.of("preset");
+
         static final Set<String> KINDS = derive();
 
         private static Set<String> derive() {
@@ -80,6 +84,7 @@ public final class FileSystemPackInspector implements PackInspector {
             return PackFileKind.bundled().fileRules().stream()
                     .map(PackFileKind.FileRule::schema)
                     .distinct()
+                    .filter(kind -> !PACK_LEVEL.contains(kind))
                     .filter(kind -> schemas.declaredProperties(kind).contains("id"))
                     .collect(Collectors.toUnmodifiableSet());
         }
@@ -255,8 +260,52 @@ public final class FileSystemPackInspector implements PackInspector {
         if (!violations.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, violations);
         }
+        if (PresetFiles.KIND.equals(kind)
+                && document instanceof Map<?, ?> preset
+                && preset.get("id") instanceof String id
+                && PresetFiles.stemMismatch(file, id).isPresent()) {
+            // The store's stem rule, checked here too so validate mode and the load refuse the same files (ADR-0043):
+            // the id must equal one value, the file stem, so it reads as a const violation at /id.
+            return new FileRead.Unreadable<>(
+                    file,
+                    null,
+                    List.of(new SchemaViolation(
+                            file, List.of("id"), "const", Optional.empty(), Optional.of(id), Map.of())));
+        }
+        if (PackManifestYaml.SCHEMA.equals(kind) && document instanceof Map<?, ?> manifest) {
+            List<SchemaViolation> misplaced = misplacedPresetEntries(file, manifest);
+            if (!misplaced.isEmpty()) {
+                return new FileRead.Unreadable<>(file, null, misplaced);
+            }
+        }
         // An empty document passes no schema that asks for an object, so a document that passed is a value.
         return new FileRead.Read<>(file, Objects.requireNonNullElse(document, Map.of()));
+    }
+
+    /**
+     * The store's rule that a manifest's preset entry names {@code presets/<id>.yaml} ({@link
+     * PresetFiles#entryPathMismatch}), checked here too so validate mode and the load refuse the same files: the path
+     * must equal one value, so each miss reads as a const violation at {@code /presets/<i>/path}.
+     */
+    private static List<SchemaViolation> misplacedPresetEntries(String file, Map<?, ?> manifest) {
+        List<SchemaViolation> out = new ArrayList<>();
+        if (manifest.get("presets") instanceof List<?> entries) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i) instanceof Map<?, ?> entry
+                        && entry.get("id") instanceof String id
+                        && entry.get("path") instanceof String path
+                        && PresetFiles.entryPathMismatch(id, path).isPresent()) {
+                    out.add(new SchemaViolation(
+                            file,
+                            List.of("presets", String.valueOf(i), "path"),
+                            "const",
+                            Optional.empty(),
+                            Optional.of(path),
+                            Map.of()));
+                }
+            }
+        }
+        return out;
     }
 
     /**

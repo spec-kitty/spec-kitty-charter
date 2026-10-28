@@ -153,7 +153,7 @@ class StyleguideControllerTest {
         private Pack pack = Pack.builder()
                 .id(PACK)
                 .descriptor(new PackDescriptor(
-                        "pack-a", "1.0.0", Optional.empty(), "pack-a", Optional.empty(), Optional.empty(), List.of()))
+                        "pack-a", "1.0.0", Optional.empty(), "pack-a", Optional.empty(), Optional.empty()))
                 .build();
         private int commits;
 

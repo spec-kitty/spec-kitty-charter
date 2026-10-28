@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Revalidation is whole-aggregate, but persistence is a <em>delta</em>: a commit carries the one artefact the
  * registration added or replaced (a {@link Change}), and the store writes only that artefact and, when it changed, the
  * relationship shard. The descriptor and every sibling artefact stay byte-identical, so authored comments, quoting,
- * key order and undeclared keys survive a registration.
+ * and key order survive a registration.
  */
 public interface PackWriteStore extends PackRevisions {
 

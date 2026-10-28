@@ -58,8 +58,6 @@ REGISTER_IDS: dict[str, str] = {
     "c12-edge-impacts-valid": "DIV-018",
     "c12-impacts-edge-without-impacts": "DIV-018",
     "c16-shard-edge-provenance": "DIV-019",
-    "control-retired-pack-key-is-a-warning": "DIV-006",
-    "control-unknown-pack-key-is-a-warning": "DIV-005",
     # Proposed, not in the register yet; PlantedFilesTest names them (PROPOSED) until the orchestrator registers them.
     "c5-fragment-node-id-unsafe": "DIV-020",
     "charter-invalid": "DIV-021",

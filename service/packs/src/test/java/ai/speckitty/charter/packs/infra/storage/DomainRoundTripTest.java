@@ -260,7 +260,8 @@ class DomainRoundTripTest {
 
     @Test
     void theAdapterModelsEveryBoundKindAndTheTwoPackDocuments() {
-        Set<String> expected = new HashSet<>(Set.of("pack-descriptor", "graph-shard", "asset-payload", "template"));
+        Set<String> expected = new HashSet<>(
+                Set.of("pack-descriptor", "graph-shard", "asset-payload", "template", "preset", "pack-manifest"));
         KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
                 .containsAll(Set.of(
@@ -275,7 +276,9 @@ class DomainRoundTripTest {
                         "graph-shard",
                         "asset",
                         "asset-payload",
-                        "template"))
+                        "template",
+                        "preset",
+                        "pack-manifest"))
                 .isEqualTo(expected);
     }
 
@@ -330,6 +333,51 @@ class DomainRoundTripTest {
         assertThat(outcomes.get("assets/logo.png")).isEqualTo(new Written("assets/logo.png"));
         assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
                 .isInstanceOf(Written.class);
+    }
+
+    // ---- presets (#195) ------------------------------------------------------------------------
+
+    private static final String PRESET = """
+            schema_version: '1.0'
+            id: p
+            description: d
+            activated_tactics:
+              - id: t
+                must_have: true
+            """;
+
+    @Test
+    void aPresetIsWrittenInPlaceAndABrokenOneIsRefusedWithTheStoresExactReasons() throws IOException {
+        put("presets/p.yaml", "preset", PRESET);
+        put(
+                "presets/q.yaml",
+                "preset",
+                "name: q\nschema_version: '1.0'\nid: q\ndescription: d\nmission_type_activations:\n  - plan\n");
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get("presets/p.yaml")).isEqualTo(new Written("presets/p.yaml"));
+        assertThat(MeaningComparator.adr0036().compareTexts("preset", PRESET, written(outcomes.get("presets/p.yaml"))))
+                .isEmpty();
+        assertThat(outcomes.get("presets/q.yaml"))
+                .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'name'; "
+                        + "additionalProperties violated at the document: undeclared key 'mission_type_activations'"));
+        assertThat(outcomes.get("tactics/refactoring/refactoring-inline-temp.tactic.yaml"))
+                .isInstanceOf(Written.class);
+    }
+
+    @Test
+    void aPresetTheWriterBreaksIsRefusedOnReadBack() throws IOException {
+        put("presets/p.yaml", "preset", PRESET);
+
+        Map<String, Outcome> faithful = roundTrip(new YamlSerializationStrategy());
+        Map<String, Outcome> broken = new DomainRoundTrip(new PresetBreakingWriter(new YamlSerializationStrategy()))
+                .roundTrip(source, temp.resolve("broken/built-in"), kinds);
+
+        assertThat(faithful.get("presets/p.yaml")).isEqualTo(new Written("presets/p.yaml"));
+        assertThat(broken.get("presets/p.yaml"))
+                .isEqualTo(new Refused(
+                        "read-back: additionalProperties violated at the document: undeclared key 'surplus'"));
     }
 
     /** The save hook of the gate's byte controls: what is written is the hook's pack, not the loaded one. */
@@ -406,6 +454,80 @@ class DomainRoundTripTest {
         @Override
         public FileRead<GraphDocument> readGraph(String text, GraphDocumentReader.Shape shape, String file) {
             return delegate.readGraph(text, shape, file);
+        }
+
+        @Override
+        public String writePreset(PresetDso preset) {
+            return delegate.writePreset(preset);
+        }
+
+        @Override
+        public FileRead<PresetDso> readPreset(String text, String file) {
+            return delegate.readPreset(text, file);
+        }
+
+        @Override
+        public String writeManifest(PackManifestDso manifest) {
+            return delegate.writeManifest(manifest);
+        }
+
+        @Override
+        public FileRead<PackManifestDso> readManifest(String text, String file) {
+            return delegate.readManifest(text, file);
+        }
+    }
+
+    /** A writer that adds a key the preset schema does not declare: the read-back control of the preset branch. */
+    private record PresetBreakingWriter(SerializationStrategy delegate) implements SerializationStrategy {
+
+        @Override
+        public <D> String write(KindBinding<D, ?> kind, D dso) {
+            return delegate.write(kind, dso);
+        }
+
+        @Override
+        public <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file) {
+            return delegate.read(kind, text, file);
+        }
+
+        @Override
+        public String writeDescriptor(PackDescriptorDso descriptor) {
+            return delegate.writeDescriptor(descriptor);
+        }
+
+        @Override
+        public FileRead<PackDescriptorDso> readDescriptor(String text) {
+            return delegate.readDescriptor(text);
+        }
+
+        @Override
+        public String writeGraph(GraphDocument document) {
+            return delegate.writeGraph(document);
+        }
+
+        @Override
+        public FileRead<GraphDocument> readGraph(String text, GraphDocumentReader.Shape shape, String file) {
+            return delegate.readGraph(text, shape, file);
+        }
+
+        @Override
+        public String writePreset(PresetDso preset) {
+            return delegate.writePreset(preset) + "surplus: 1\n";
+        }
+
+        @Override
+        public FileRead<PresetDso> readPreset(String text, String file) {
+            return delegate.readPreset(text, file);
+        }
+
+        @Override
+        public String writeManifest(PackManifestDso manifest) {
+            return delegate.writeManifest(manifest);
+        }
+
+        @Override
+        public FileRead<PackManifestDso> readManifest(String text, String file) {
+            return delegate.readManifest(text, file);
         }
     }
 }

@@ -13,9 +13,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Reads {@code pack.yaml} as facts, through the bundled {@code pack-descriptor} schema. A file that is not YAML or
  * breaks the schema is {@link FileRead.Unreadable}; any other is a {@link PackDescriptor} of what the file states,
- * with nothing defaulted: the declared {@code pack_level} is as written or empty, {@code requires_core} is the raw
- * text, and the undeclared keys are those the schema's {@code properties} do not list, retired fields included.
- * {@code PackPolicy} decides what any of it means.
+ * with nothing defaulted: the declared {@code pack_level} is as written or empty and {@code requires_core} is the raw
+ * text. The schema is closed, so a key it does not declare, a retired field included, makes the file unreadable
+ * (ADR-0036 decision 3). {@code PackPolicy} decides what any of it means.
  */
 final class PackDescriptorReader {
 
@@ -37,12 +37,6 @@ final class PackDescriptorReader {
         if (!(document instanceof Map<?, ?> root)) {
             throw new IllegalStateException("a pack descriptor passed the schema but is no mapping");
         }
-        List<String> declared = PackSchemas.bundled().declaredProperties(KIND);
-        List<String> undeclared = root.keySet().stream()
-                .map(String::valueOf)
-                .filter(key -> !declared.contains(key))
-                .sorted()
-                .toList();
         Optional<PackLevel> level = optional(root, "pack_level")
                 .map(token -> PackLevel.fromToken(token)
                         .orElseThrow(() -> new IllegalStateException(
@@ -56,7 +50,6 @@ final class PackDescriptorReader {
                         required(root, "name"),
                         level,
                         optional(root, "requires_core"),
-                        undeclared,
                         new PackPaths(optional(root, "active_charter"), optional(root, "pack_drg"))));
     }
 

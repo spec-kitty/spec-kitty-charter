@@ -215,7 +215,10 @@ public final class PackPolicy {
 
     private static final String REQUIRES_CORE = "requires_core";
 
-    /** {@code requires_core} must be a PEP 440 specifier set; every undeclared key is a warning (R3, R5, R13). */
+    /**
+     * {@code requires_core} must be a PEP 440 specifier set (R3). An undeclared key never reaches here: the closed schema
+     * makes its file unreadable (ADR-0036 decision 3).
+     */
     private static List<PackFinding> descriptorRules(String name, PackDescriptor descriptor) {
         List<PackFinding> findings = new ArrayList<>();
         Optional<String> requiresCore = descriptor.requiresCore();
@@ -227,13 +230,6 @@ public final class PackPolicy {
                     "pack.yaml of " + name + ": requires_core '" + requiresCore.get()
                             + "' is not a PEP 440 version specifier"));
         }
-        descriptor.undeclaredKeys().stream()
-                .sorted()
-                .forEach(key -> findings.add(new PackFinding(
-                        PackFindingCode.PACK_UNKNOWN_KEY,
-                        PACK_YAML,
-                        List.of(key),
-                        "pack.yaml of " + name + " declares unknown key '" + key + "'; it is ignored")));
         return findings;
     }
 

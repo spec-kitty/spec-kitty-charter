@@ -108,7 +108,7 @@ class RelationshipControllerTest {
         private final Pack pack = Pack.builder()
                 .id(PACK)
                 .descriptor(new PackDescriptor(
-                        "pack-a", "1.0.0", Optional.empty(), "pack-a", Optional.empty(), Optional.empty(), List.of()))
+                        "pack-a", "1.0.0", Optional.empty(), "pack-a", Optional.empty(), Optional.empty()))
                 .directive(Directive.builder()
                         .id(new DirectiveIdentifier("DIR_A"))
                         .packId(PACK)

@@ -414,5 +414,25 @@ class CompanionFilesTest {
         public FileRead<GraphDocument> readGraph(String text, Shape shape, String file) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public String writePreset(PresetDso preset) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FileRead<PresetDso> readPreset(String text, String file) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String writeManifest(PackManifestDso manifest) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FileRead<PackManifestDso> readManifest(String text, String file) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

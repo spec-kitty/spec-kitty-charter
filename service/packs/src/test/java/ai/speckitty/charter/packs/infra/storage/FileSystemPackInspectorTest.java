@@ -10,10 +10,13 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.PackVerdict;
+import ai.speckitty.charter.packs.domain.Preset;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -154,11 +157,14 @@ class FileSystemPackInspectorTest {
     }
 
     /**
-     * A {@code pack.yaml} with 217 unknown keys, {@code N} and {@code Nx} mixed, made the old segment order a cycle, and
-     * both the load and the judge threw TimSort's "Comparison method violates its general contract!".
+     * A {@code pack.yaml} with 217 unknown keys, {@code N} and {@code Nx} mixed, once made the segment order a cycle, and
+     * both the load and the judge threw TimSort's "Comparison method violates its general contract!". Each key is now a
+     * schema refusal at the root (ADR-0036 decision 3), so every finding has the same place and this fixture no longer
+     * exercises the segment order: {@code PackPolicyOrderTest} guards the comparator. This test keeps the fixture as a
+     * load-and-judge smoke test: the pack loads, and each key is refused once.
      */
     @Test
-    void aPackYamlWithManyUnknownKeysOfMixedIndexOrderIsLoadedAndJudgedInATotalOrder(@TempDir Path dir)
+    void aPackYamlWithManyUnknownKeysIsLoadedAndEachKeyIsRefusedOnce(@TempDir Path dir)
             throws IOException, URISyntaxException {
         Files.copy(
                 Path.of(FileSystemPackInspectorTest.class
@@ -169,12 +175,13 @@ class FileSystemPackInspectorTest {
 
         for (Scope scope : Scope.values()) {
             PackContents contents = INSPECTOR.inspect(project, scope);
+            // The closed descriptor schema (ADR-0036 decision 3) refuses each key at the root, naming it in the detail.
             assertThat(PackPolicy.judge(contents).findings())
-                    .extracting(f -> f.place().get(0))
-                    .as("every unknown key once, indexes by value first")
+                    .extracting(f -> f.detail()
+                            .substring(f.detail().indexOf('\'') + 1, f.detail().lastIndexOf('\'')))
+                    .as("every unknown key refused once")
                     .hasSize(217)
-                    .startsWith("16", "20", "21")
-                    .endsWith("967x");
+                    .doesNotHaveDuplicates();
         }
     }
 
@@ -406,7 +413,62 @@ class FileSystemPackInspectorTest {
 
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
-        assertThat(verdict.findings()).as("the findings of main at 90de8f9").isEqualTo(List.of());
+        // #195: main at 90de8f9 found nothing. The pinned presets and manifest are now schema-mapped, and their shape
+        // is not the sanitized one (ADR-0043): each is reported, as an artifact schema error (ADR-0036 decision 3),
+        // until
+        // open-packs fixes them (OP-1, OP-2). Every other file still has no finding.
+        assertThat(verdict.findings())
+                .allSatisfy(f -> assertThat(f.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR))
+                .extracting(PackFinding::file)
+                .containsOnly("pack-manifest.yaml", "presets/default.yaml", "presets/minimal.yaml");
+        assertThat(verdict.findings())
+                .filteredOn(f -> f.place().isEmpty() && !f.detail().contains("provenance_path"))
+                .extracting(PackFinding::detail)
+                .containsExactlyInAnyOrder(
+                        "built-in/pack-manifest.yaml: unknown key 'charter'",
+                        "built-in/pack-manifest.yaml: unknown key 'fetched_at'",
+                        "built-in/pack-manifest.yaml: unknown key 'generated_at'",
+                        "built-in/pack-manifest.yaml: unknown key 'generated_by'",
+                        "built-in/pack-manifest.yaml: unknown key 'source_type'",
+                        "built-in/pack-manifest.yaml: unknown key 'source_url'",
+                        "built-in/presets/default.yaml: missing 'id'",
+                        "built-in/presets/default.yaml: missing 'schema_version'",
+                        "built-in/presets/default.yaml: unknown key 'mission_type_activations'",
+                        "built-in/presets/default.yaml: unknown key 'name'",
+                        "built-in/presets/minimal.yaml: missing 'id'",
+                        "built-in/presets/minimal.yaml: missing 'schema_version'",
+                        "built-in/presets/minimal.yaml: unknown key 'mission_type_activations'",
+                        "built-in/presets/minimal.yaml: unknown key 'name'");
+        assertThat(verdict.findings())
+                .filteredOn(
+                        f -> f.file().equals("pack-manifest.yaml") && !f.place().isEmpty())
+                .as("schema_version '1', provenance_path on every constituent, and name on every preset entry")
+                .extracting(PackFinding::detail)
+                .containsOnly(
+                        "built-in/pack-manifest.yaml: 'schema_version' has an unsupported value '1'",
+                        "built-in/pack-manifest.yaml: unknown key 'provenance_path'",
+                        "built-in/pack-manifest.yaml: unknown key 'name'",
+                        "built-in/pack-manifest.yaml: missing 'id'");
+        assertThat(verdict.findings())
+                .filteredOn(f ->
+                        f.file().equals("presets/minimal.yaml") && !f.place().isEmpty())
+                .as("minimal.yaml's items are bare strings, not {id} objects")
+                .extracting(PackFinding::detail)
+                .containsExactlyInAnyOrder(
+                        "built-in/presets/minimal.yaml: '/activated_directives/0' breaks schema keyword 'type'",
+                        "built-in/presets/minimal.yaml: '/activated_directives/1' breaks schema keyword 'type'",
+                        "built-in/presets/minimal.yaml: '/activated_directives/2' breaks schema keyword 'type'",
+                        "built-in/presets/minimal.yaml: '/activated_directives/3' breaks schema keyword 'type'",
+                        "built-in/presets/minimal.yaml: '/activated_directives/4' breaks schema keyword 'type'",
+                        "built-in/presets/minimal.yaml: '/activated_tactics/0' breaks schema keyword 'type'");
+        assertThat(verdict.findings())
+                .filteredOn(f -> f.detail().endsWith("unknown key 'provenance_path'"))
+                .as("one per constituent of the pinned manifest")
+                .hasSize(272);
+        assertThat(verdict.findings())
+                .as("283 for the manifest (272 provenance_path, six root keys, schema_version, two preset entries keyed"
+                        + " name without id), 10 for minimal.yaml, 4 for default.yaml")
+                .hasSize(297);
         assertThat(verdict.files()).hasSize(386);
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
@@ -559,5 +621,37 @@ class FileSystemPackInspectorTest {
         assertThatThrownBy(() -> INSPECTOR.inspect(root(file), Scope.LOAD_PATH))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.getMessage()).isEqualTo("pack qa is not a directory"));
+    }
+
+    /**
+     * #195 (ADR-0043): a preset in the sanitized shape whose id is not its file stem is refused in validate mode, as
+     * {@code artifact_schema_error} on its file, and by the load, on the same fixture; its sibling, whose id is its
+     * stem, passes both.
+     */
+    @Test
+    void aPresetWhoseIdIsNotItsStemIsRefusedInValidateModeAndByTheLoad(@TempDir Path dir) throws IOException {
+        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        String preset = "schema_version: '1.0'\nid: minimal\ndescription: d\n";
+        write(dir, "presets/minimal.yaml", preset);
+        write(dir, "presets/other.yaml", preset);
+
+        List<PackFinding> findings = PackPolicy.judge(full(dir)).findings();
+        WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(dir);
+
+        // The org-level root also finds its missing fragment; only the preset findings are this test's.
+        assertThat(findings)
+                .filteredOn(finding -> finding.file().startsWith(PresetFiles.PRESETS))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.file()).isEqualTo("presets/other.yaml");
+                    assertThat(finding.detail())
+                            .endsWith("presets/other.yaml: 'id' has an unsupported value 'minimal'");
+                });
+        assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo("presets/other.yaml");
+            assertThat(violation.reason()).isEqualTo("preset id 'minimal' is not its file stem 'other'");
+        });
+        assertThat(loaded.pack().presets()).extracting(Preset::id).containsExactly("minimal");
     }
 }
