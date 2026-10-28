@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-charter repository and its documentation.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Changelog
 kind: Hub
 audience:
@@ -17,6 +17,7 @@ Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
 - [2026-10-28 — The contract declares GET /openapi.yaml, the document a client fetches from the service](/changelog/2026-10-28-contract-serves-itself/)
+- [2026-10-28 — Running parallel cloud sessions — charter rules and guide caveats](/changelog/2026-10-28-parallel-cloud-sessions/)
 - [2026-10-27 — Assets and templates round-trip through the domain, byte for byte](/changelog/2026-10-27-asset-and-template-round-trip/)
 - [2026-10-27 — The whole-pack gate carries known pack failures until the pin moves](/changelog/2026-10-27-whole-pack-known-failures/)
 - [2026-10-27 — The decision log is ratified](/changelog/2026-10-27-adrs-ratified/)

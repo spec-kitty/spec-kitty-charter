@@ -1,8 +1,8 @@
 ---
 title: Set up a Claude Code cloud session
-description: Prepare a Claude Code cloud environment for this repository, with Java 25, the domains to allow and the per-session steps before a Mission or an Op.
+description: Prepare a Claude Code cloud environment for this repository — Java 25, allowed domains, per-session steps — and run several cloud sessions in parallel.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -148,6 +148,85 @@ python3 scripts/docs/check_docs.py all     # the docs checks
 - **PlantUML diagrams render differently from CI.** Even with the pinned jar, the fonts in a cloud
   container differ from CI's, so a locally re-rendered SVG fails the "PlantUML diagrams are
   current" check. Re-render diagrams in CI's environment.
+
+## Running several cloud sessions (cloud runners)
+
+An orchestrating session can hand Missions to several child cloud sessions ("cloud runners") at
+once. These lessons come from parallel runs on 2026-10-27 and 2026-10-28.
+
+### What can go wrong
+
+- **The permission classifier can refuse a setup step the operator approved.** In auto mode, a
+  child session's classifier refused, even after the operator approved the step in that session's
+  chat:
+  - `add_repo` of `spec-kitty-open-packs` with `push` access;
+  - `uv tool install --force -e ../spec-kitty` (installing the CLI from a core checkout), refused
+    as code from an external source.
+- **The refusals are inconsistent.** In the same environment, one sibling session installed and
+  ran the CLI while another was blocked.
+- **A blocked session does not recover.** It does not pick up later changes to the environment.
+  Replace it with a new session; do not keep retrying in the old one.
+
+### Mitigations
+
+- **Install the tooling in the setup script, not per session.** The Spec Kitty CLI and CodeGraph
+  go in the environment setup script (Step 2), so no child session has to install anything.
+- **Clone sibling repositories read-only.** A plain `git clone` of a public repository is enough
+  for `spec-kitty-open-packs` and core; do not ask for push access to them.
+- **Route writes to sibling repositories through the orchestrator.** A child session that cannot
+  write to a sibling repository (for example, to file an open-packs issue for a pack divergence,
+  ADR-0036 decision 5):
+  1. writes each issue as a draft in its Mission's research directory and lists the drafts in the
+     PR hand-off;
+  2. keys any known-failure entry with a placeholder, `open-packs#TBD-<slug>`.
+
+  The orchestrating session, which has the sibling repository attached, files the issues and
+  replaces the placeholders before the PR merges.
+- **Run a missing review skill by hand.** If a skill the brief names (for example
+  `adversarial-squad`) is not installed, run the squad as parallel subagents, one per lens, each
+  with its profile loaded by `spec-kitty agent profile show <id>`.
+
+### Setup-script addition for the CLI
+
+Add this to the setup script after the `uv` line. It is **untested** as a setup script; the
+PyPI install itself is the fallback the sessions above used.
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v spec-kitty >/dev/null; then
+  # Option A: from a core checkout (untested in a setup script)
+  #   git clone --depth 1 https://github.com/spec-kitty/spec-kitty.git /opt/spec-kitty
+  #   uv tool install --force -e /opt/spec-kitty
+  # Option B: the PyPI release
+  uv tool install --prerelease allow spec-kitty-cli
+fi
+spec-kitty --version
+```
+
+### Brief checklist for orchestrators
+
+- [ ] Tell the session to run `command -v spec-kitty` first; if it is missing, install the PyPI
+      release (`uv tool install --prerelease allow spec-kitty-cli`), and if that fails, **report**
+      rather than try other install routes.
+- [ ] Name the sibling repositories to clone read-only; grant no push access to them.
+- [ ] Say where draft issues go (the Mission's research directory) and the placeholder form
+      `open-packs#TBD-<slug>`.
+- [ ] Pick the ADR number when the ADR is written, not when the session is dispatched (see below).
+- [ ] Name the fallback for any skill the brief relies on.
+
+### Troubleshooting parallel runs
+
+- **ADR numbers collide.** Parallel sessions pick the same next ADR number. Check `main` *and* the
+  open PRs for the next free number at writing time.
+- **The docsite build fails on `related:`.** The CI site build is stricter than
+  `scripts/docs/check_docs.py`: every `related:` entry must be the slug of a real page.
+  `adr/README` is not one (PR #246 failed on it). Run the site build, or check that each slug maps
+  to a file under `docs/`.
+- **A sibling checkout is dirty with mode-only changes.** A local tool can make scripts
+  executable, which the build reads as a dirty `spec-kitty-open-packs` checkout. Restore the modes
+  (`git diff --summary` lists them; `git checkout -- <path>` restores them); do not commit them.
+- **Maven Central answers HTTP 429.** Several sessions in one environment share an address. Wait
+  and retry.
 
 ## See also
 
