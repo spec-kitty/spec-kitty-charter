@@ -50,6 +50,7 @@ session picks them up.
 | `plugins-artifacts.gradle.org` | Gradle plugin artifacts |
 | `repo.maven.apache.org` | Maven Central (`mavenCentral()`) |
 | `repo1.maven.org` | Maven Central |
+| `maven-central.storage-download.googleapis.com` | Google's Maven Central mirror, used by the optional mirror below to avoid HTTP 429 |
 | `spec-kitty.github.io` | The Spec Kitty org docsites (this repository's docsite and the others) |
 
 The npm and PyPI registries the docs checks use (`npx cspell`, `npx markdownlint-cli2`, `pip`) are
@@ -94,6 +95,53 @@ again: it does nothing when the JDK is already there.
 
 The script was run end to end in a cloud session on 2026-10-27 with the domains above allowed
 (Temurin 25.0.5+8). If it fails, see [Troubleshooting](#troubleshooting).
+
+### Optional: resolve Maven Central through a mirror
+
+Maven Central rate-limits by address (HTTP 429), and the sessions of one environment share an
+address. Every fresh checkout (a lane worktree included) downloads the build-logic, Spotless and
+Checkstyle tooling again, so builds stall. Add this to the setup script to resolve Maven Central
+through Google's mirror, which serves the same artifacts. The build's strict SHA-256 dependency
+verification still checks every artifact. The init script lives in `~/.gradle/init.d/`, outside the
+repository, and changes no repository file.
+
+```bash
+mkdir -p ~/.gradle/init.d
+cat > ~/.gradle/init.d/central-mirror.gradle <<'EOF'
+// Resolve Maven Central through Google's mirror (same artifacts) to avoid Central's per-address HTTP 429.
+// The build's strict SHA-256 dependency verification still checks every artifact.
+def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+def centralHosts = ['repo.maven.apache.org', 'repo1.maven.org']
+def redirect = { RepositoryHandler repos ->
+    repos.withType(MavenArtifactRepository).configureEach { r ->
+        if (r.url?.host in centralHosts) { r.url = mirror }
+    }
+}
+beforeSettings { settings ->
+    // Ahead of the plugin portal, whose Central artifacts redirect to Central; the portal must be re-added explicitly.
+    settings.pluginManagement.repositories.maven { url = mirror; name = 'CentralMirrorForPlugins' }
+    settings.pluginManagement.repositories.gradlePluginPortal()
+}
+settingsEvaluated { settings ->
+    redirect(settings.pluginManagement.repositories)
+    redirect(settings.dependencyResolutionManagement.repositories)
+}
+allprojects {
+    redirect(buildscript.repositories)
+    redirect(repositories)
+}
+EOF
+# Warm the Gradle cache (build-logic, Spotless and Checkstyle tooling included) so worktrees start warm.
+cd spec-kitty-charter && JAVA_HOME=/usr/lib/jvm/temurin-25 ./gradlew --no-daemon -PopenPacksDir=../spec-kitty-open-packs \
+  build spotlessCheck checkstyleMain checkstyleTest -x test || true
+```
+
+- The `pluginManagement` block must re-add `gradlePluginPortal()`: declaring any plugin repository
+  drops the implicit one, and plugin resolution then fails.
+- Allow `maven-central.storage-download.googleapis.com` (Step 1).
+- Run in a #195 session on 2026-10-28: `:packs:check` finished in about 2 minutes with no 429. It is
+  not yet known whether the environment caches the setup script's result between sessions; if it
+  does not, the warm-up runs once per session, before work starts.
 
 ### Optional: environment variables
 
@@ -143,8 +191,9 @@ python3 scripts/docs/check_docs.py all     # the docs checks
   install the JDK. Check its output in the environment build log, or run it by hand in the session.
   Until Java 25 is there, `./gradlew -Pcharter.javaVersion=21 …` builds and tests on the container's
   Java 21; CI always builds on 25.
-- **Maven Central answers HTTP 429.** It rate-limits by address; wait and retry. Gradle's cache
-  keeps what it already downloaded.
+- **Maven Central answers HTTP 429.** It rate-limits by address. Use the
+  [Maven Central mirror](#optional-resolve-maven-central-through-a-mirror); otherwise wait and
+  retry. Gradle's cache keeps what it already downloaded.
 - **PlantUML diagrams render differently from CI.** Even with the pinned jar, the fonts in a cloud
   container differ from CI's, so a locally re-rendered SVG fails the "PlantUML diagrams are
   current" check. Re-render diagrams in CI's environment.
@@ -225,8 +274,8 @@ spec-kitty --version
 - **A sibling checkout is dirty with mode-only changes.** A local tool can make scripts
   executable, which the build reads as a dirty `spec-kitty-open-packs` checkout. Restore the modes
   (`git diff --summary` lists them; `git checkout -- <path>` restores them); do not commit them.
-- **Maven Central answers HTTP 429.** Several sessions in one environment share an address. Wait
-  and retry.
+- **Maven Central answers HTTP 429.** Several sessions in one environment share an address. Use
+  the [Maven Central mirror](#optional-resolve-maven-central-through-a-mirror) in the setup script.
 
 ## See also
 
