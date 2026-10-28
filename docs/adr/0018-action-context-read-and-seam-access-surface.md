@@ -55,6 +55,14 @@ The contract lint rule `error-responses-are-problems` is amended to exempt the 2
 accordingly; the "every response declares the three Charter headers" rule (D11, ADR-0011) is
 unchanged and now holds on the write responses too. D10 is annotated below.
 
+**Amendment 2026-10-28** (#208, the contract serves itself): D10's "every non-success answer is a
+`Problem`" gains an explicit `304 Not Modified` carve-out. A conditional read that matches the
+client's `If-None-Match` answers `304` with the validator and Charter headers and **no body** (RFC
+9110 §15.4.5), so it is neither a success resource nor a `Problem`. The `error-responses-are-problems`
+lint rule exempts `304` alongside the 200/201 successes, and a new rule `not-modified-has-no-body`
+holds every `304` to that bodyless shape; both are fixture-proven non-vacuous. First realized by
+`getOpenApiDocument` (#208) and the pattern for any later conditional read.
+
 This record supersedes, point by point:
 
 - [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) decision 3,
