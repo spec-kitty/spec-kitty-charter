@@ -10,7 +10,8 @@ it. Keep it in step with charter.yaml's governance and activation sections.
 -->
 
 Interviewed with the operator on 2026-10-18. Amended 2026-10-27 (operator): the round-trip
-rule of PROJECT_002 reads as equality of meaning (ADR-0036).
+rule of PROJECT_002 reads as equality of meaning (ADR-0036). Amended 2026-10-28: rules for
+orchestrating cloud sessions.
 
 ## What this repository is for
 
@@ -39,6 +40,20 @@ two.
 - Contract, architecture and domain changes get an **adversarial review squad** at the
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
+
+## Orchestrating cloud sessions
+
+When a session hands Missions to child cloud sessions, it follows these rules. The detail is in
+`docs/development/cloud-session-setup.md` ("Running several cloud sessions").
+
+- Session tooling (the Spec Kitty CLI, CodeGraph) is installed by the environment setup script,
+  never per session.
+- Sibling repositories are cloned read-only; child sessions are not given push access to them.
+- A child session that needs to write to a sibling repository writes draft issues into its Mission
+  research directory, with `open-packs#TBD-<slug>` placeholders; the orchestrator files them and
+  replaces the placeholders before merge.
+- An ADR number is chosen when the ADR is written, against `main` and the open PRs.
+- A session the permission classifier blocks is replaced, not retried.
 
 ## Gates before merge
 
