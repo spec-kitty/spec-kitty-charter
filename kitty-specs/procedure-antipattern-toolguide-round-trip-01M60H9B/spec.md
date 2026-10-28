@@ -19,8 +19,9 @@ spec-kitty-open-packs and recorded on the gate's known-failure list; the service
 Operator decisions that shape this mission (2026-10-28, recorded on #194):
 
 - The sanitized-shape requirement wins over #194's "round-trip as-is" wording.
-- `procedure.schema.json` is sanitized in place (it is canonical in this repository); a core issue covers the matching
-  change in core.
+- `procedure.schema.json` is sanitized in place (it is canonical in this repository). Superseded in part by the
+  operator ruling on epic #186 (2026-10-28): missions operate as if core does not exist, so no core issue is drafted;
+  pack divergences go to spec-kitty-open-packs only.
 - Anti-pattern graph-node tags stay under #236.
 - #194 may remove its own exclusion entries from `contracts/packs/file-kinds.yaml`; it absorbs procedure and the
   toolguide Markdown guides from #168.
@@ -132,7 +133,7 @@ owners closes #194's anti-pattern item apart from the graph-node tags.
 | C-001 | No HTTP contract change | The charter HTTP contract does not change. | Technical | High | Open |
 | C-002 | Shared files append-only | Edits to shared files (registry wiring, file kinds, gate baseline, known-failure list, CHANGELOG, glossary definitions, ADR index) are append-only, except removing this mission's own exclusions and its own baseline entries. | Process | High | Open |
 | C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0042 (reserved for #194). | Process | High | Open |
-| C-004 | Core follows | A draft core issue for the matching change to core's procedure model is written to this mission's research directory; the parent session files it (this session has no core write access). | Process | Medium | Open |
+| C-004 | Design against the charter, not core | Shapes follow the charter's own model, contract and packs; no compatibility with core's current formats and no core issue (operator ruling of 2026-10-28 on epic #186: core changes when the service is incorporated into core). | Process | High | Open |
 | C-005 | No tolerance logic | No reader, writer or binding accepts a retired or variant field to make pinned content pass (ADR-0036 decision 5). | Technical | High | Open |
 | C-006 | Land early | This PR stays scoped to procedure, inline anti-patterns, toolguide guides and the Markdown content form so that #195 can rebase on it. | Process | Medium | Open |
 

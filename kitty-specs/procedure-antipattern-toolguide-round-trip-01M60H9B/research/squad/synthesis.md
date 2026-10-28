@@ -34,3 +34,6 @@ Operator ruling (2026-10-28): the sanitized-shape requirement wins over #194's "
 - Q-core-schema (D1): sanitize procedure.schema.json in place + file a core issue for the Pydantic change; diverging pack files on the known-failure list. → D1 accepted.
 - Q-anti_pattern (C2): leave graph-node tags to #236; prove inline anti-patterns round-trip; graph file stays expected-red under #236. → C2 deferred_with_rationale (#236).
 - Q-shared (D4): #194 may remove its OWN exclusion entries in file-kinds.yaml; "absorb #168" INCLUDES the toolguide Markdown guides. → D4 accepted; scope widened.
+
+## Operator ruling on epic #186 (2026-10-28)
+Operate as if core does not exist: no core issue (C-004 rewritten), no core-compatibility shaping; retirements follow the charter's own model; pack divergences → open-packs issues only. Verified on #186 (comment 6462455631).
