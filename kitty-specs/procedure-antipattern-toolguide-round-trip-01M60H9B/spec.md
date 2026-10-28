@@ -27,6 +27,27 @@ Operator decisions that shape this mission (2026-10-28, recorded on #194):
   toolguide Markdown guides from #168.
 - This mission builds ADR-0040's `markdown` content form; sibling #195 consumes it (coordinated with the parent
   session), so this PR lands early.
+- Plan-time decisions (2026-10-28, content squad in `research/content-squad/`): the guide is structured (fixed blocks
+  plus freeform sections of `title` and `content`) and stored as a Markdown companion parsed by the `markdown` form;
+  the pinned packs are migrated with this service's own writer and re-pinned rather than listed as known failures; a
+  toolguide registration carries the guide's content or a URI the service fetches, never a bare path.
+
+### User Story 4 - Register a toolguide with its guide over HTTP (Priority: P2)
+
+An API client registers a toolguide and supplies its guide either as content or as a URI. The service stores the
+guide with the toolguide; it never expects the client and the service to share a filesystem.
+
+**Acceptance Scenarios**:
+
+1. **Given** a registration carrying the guide's content, **When** it is accepted, **Then** reading the toolguide's
+   pack back yields the same structured guide.
+2. **Given** a registration carrying an allowlisted HTTPS URI, **When** it is accepted, **Then** the fetched guide is
+   stored as if it had been sent as content.
+3. **Given** a URI that is not HTTPS, not allowlisted, resolves to a private or loopback address, redirects too often,
+   is too slow or too large, **When** it is registered, **Then** it is refused with a typed refusal and nothing is
+   stored.
+4. **Given** guide content that does not parse into the structured guide (for example no `overview`), **When** it is
+   registered, **Then** it is refused naming the structural problem.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -110,10 +131,11 @@ owners closes #194's anti-pattern item apart from the graph-node tags.
 |----|-------|------------|----------|--------|----------|-----------------|
 | FR-001 | Sanitized procedure shape | As a maintainer, I want the procedure storage shape and its schema to follow the cross-kind sanitized-shape rules (required string `schema_version` "1.0", `id` equal to the file stem, `title`, `description`, steps naming a `role`, one shared anti-pattern entry shape, one shared reference shape, closed objects) so that procedures are stored consistently with the other kinds. | High | Open | [build] | no |
 | FR-002 | Procedure round trip | As a maintainer, I want procedures read into a domain procedure and written back with equal meaning so that the procedure kind leaves the gate's red baseline. | High | Open | [build] | no |
-| FR-003 | Inline anti-patterns in both owners | As a maintainer, I want inline anti-pattern entries in styleguides and procedures to share one entry shape (name and description required, bad and good examples optional) and round-trip with their owner so that no anti-pattern is lost. | High | Open | [build] | no |
-| FR-004 | Toolguide guides as Markdown companions | As a maintainer, I want the Markdown guide a toolguide names read and written as Markdown content of that toolguide so that `other:toolguides` leaves the gate's red baseline. | High | Open | [build] | no |
-| FR-005 | Markdown content form | As a maintainer, I want ADR-0040's declared `markdown` content form built so that Markdown files are read and written as Markdown content, for this mission's guides and for sibling #195. | High | Open | [build] | no |
-| FR-006 | Divergence reported, not tolerated | As a maintainer, I want every pinned file that diverges from a designed shape refused on read and listed on the known-failure list, each entry keyed to a filed spec-kitty-open-packs issue naming the file and the required change, so that the gate stays exact and the pack is fixed upstream. | High | Open | [build] | no |
+| FR-003 | Inline anti-patterns in both owners | As a maintainer, I want procedure anti-pattern entries stored in the new entry shape (`title`, `content`, optional bad and good examples) and styleguide anti-patterns kept in their merged shape, each round-tripping with its owner, so that no anti-pattern is lost. | High | Open | [build] | no |
+| FR-004 | Structured toolguide guide | As a maintainer, I want the guide a toolguide names read as a structured guide (fixed blocks `overview` (required), `when_to_use`, `setup`, `usage`, `cautions`, `known_limitations`, `references`, plus freeform `sections` of `title` and `content`) and written back with equal meaning, so that `other:toolguides` leaves the gate's red baseline. | High | Open | [build] | no |
+| FR-005 | Markdown content form | As a maintainer, I want ADR-0040's declared `markdown` content form built (a document of optional frontmatter, title, preamble and H2 sections, compared by that structure) so that guides, sibling #195's pack.md and later mission step prompts share one Markdown model. | High | Open | [build] | no |
+| FR-006 | Divergence fixed upstream, not tolerated | As a maintainer, I want the pinned packs migrated to the sanitized shapes by this service's own writer (a throwaway harness), the result landed in spec-kitty-open-packs with an issue naming each required change, and `openPacksRef` moved to it, so that the gate is exact without tolerance logic. | High | Open | [build] | no |
+| FR-010 | Guide over HTTP without shared files | As an API client, I want a toolguide registration to carry either the guide's full content or a URI the service fetches it from, never a bare path, so that the API assumes no shared filesystem. | High | Open | [build] | no |
 | FR-007 | Anti-pattern graph unchanged | As a maintainer, I want `anti_pattern.graph.yaml` to stay expected-red for its node tags only, under #236, so that this mission neither hides nor claims that defect. | Medium | Open | [ratchet] | yes — paired with FR-003's positive round trip on the same pinned pack |
 | FR-008 | Procedure references kept, not minted | As a maintainer, I want procedure references stored in the shared reference shape but not turned into relationships until #189 rules on edge authority, so that the relationship graph does not gain conflicting duplicate edges. | Medium | Open | [build] | no |
 | FR-009 | Own exclusions removed | As a maintainer, I want the file-kind exclusions this mission makes obsolete removed from `contracts/packs/file-kinds.yaml` so that the files are classified by their new rules. | Medium | Open | [build] | no |
@@ -125,12 +147,13 @@ owners closes #194's anti-pattern item apart from the graph-node tags.
 | NFR-001 | Corpus coverage | 100% of `*.procedure.yaml` files and 100% of toolguide guides in the built-in, internal and qa packs at the pinned commit are exercised by a corpus round-trip test; each either round-trips or matches a known-failure entry. | Reliability | High | Open |
 | NFR-002 | Gate exactness | The whole-pack gate passes with zero unlisted reds and zero listed items that round-trip, at the pinned commit. | Reliability | High | Open |
 | NFR-003 | Build | `./gradlew verifyAll` passes on Java 25 in CI, including the Java style check, and the docs checks pass. | Maintainability | High | Open |
+| NFR-004 | Safe guide fetch | A guide URI is fetched only over HTTPS from an allowlisted host, refusing private, loopback and link-local addresses (also after redirects), with at most 3 redirects, a 10-second total timeout and a 1 MiB size limit; every refusal is a typed refusal naming the cause. | Security | High | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | No HTTP contract change | The charter HTTP contract does not change. | Technical | High | Open |
+| C-001 | Only the authorized HTTP change | The charter HTTP contract changes only in the toolguide registration's guide transport (operator decision 2026-10-28, recorded on #194); the change follows the contract's own versioning and changelog rules. | Technical | High | Open |
 | C-002 | Shared files append-only | Edits to shared files (registry wiring, file kinds, gate baseline, known-failure list, CHANGELOG, glossary definitions, ADR index) are append-only, except removing this mission's own exclusions and its own baseline entries. | Process | High | Open |
 | C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0042 (reserved for #194). | Process | High | Open |
 | C-004 | Design against the charter, not core | Shapes follow the charter's own model, contract and packs; no compatibility with core's current formats and no core issue (operator ruling of 2026-10-28 on epic #186: core changes when the service is incorporated into core). | Process | High | Open |
@@ -162,7 +185,10 @@ owners closes #194's anti-pattern item apart from the graph-node tags.
 - The internal and qa packs are not covered by the gate; they are proven by corpus tests only.
 - Linking inline anti-pattern entries to the anti-pattern graph nodes is out of scope (#154).
 - The 14 sanitized-shape violations found in already-merged schemas are listed on epic #186 as follow-ups and are not
-  changed here.
+  changed here; so is renaming the body field to `content` in merged kinds (styleguide anti-patterns, templates,
+  assets).
+- The migration harness is throwaway: it produces the migrated open-packs content once and is not kept as production
+  code or tolerance logic.
 
 ## Out of Scope
 
