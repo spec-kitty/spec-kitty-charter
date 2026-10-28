@@ -1,0 +1,8 @@
+description: >-
+  A strong entity tag of the bundled contract the service serves: the SHA-256 digest of its bytes,
+  sha256: followed by 64 lower-case hex digits, in double quotes. The same bytes always give the same
+  tag. Opaque to consumers, who compare it and never parse it.
+required: true
+schema:
+  type: string
+  pattern: '^"sha256:[0-9a-f]{64}"$'

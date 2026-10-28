@@ -1,0 +1,63 @@
+get:
+  operationId: getOpenApiDocument
+  summary: Read the contract the service was built against.
+  description: >-
+    The bundled charter contract the service was built from, byte for byte: this OpenAPI document with
+    every reference inlined, the file a contract release publishes as charter-openapi.yaml. A client
+    fetches it to read or try the contract the running service answers to, without a separate download.
+    The answer carries a strong ETag, the SHA-256 digest of the bytes it serves; a request whose
+    If-None-Match matches it is answered 304 without a body. The document is fixed when the service is
+    built, so the ETag changes only with a new build of a different contract. It reads no pack file and
+    never carries Charter-Source-Fingerprint. Like every operation it needs the worktree token.
+  tags:
+    - Service
+  parameters:
+    - name: If-None-Match
+      in: header
+      required: false
+      description: >-
+        One or more entity tags of a document the client holds, or *. Compared weakly (RFC 9110,
+        section 13.1.2): when * is sent or any listed tag matches the current ETag, the answer is 304.
+        A value that is not an entity-tag list matches nothing, so the answer is 200. It is read only
+        after the request passed the browser and token checks: a refused request is a 403 or 401
+        whatever it carries.
+      schema:
+        type: string
+  responses:
+    '200':
+      description: The bundled contract.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/ContractETag.yaml
+      content:
+        application/yaml:
+          schema:
+            description: >-
+              The bundled OpenAPI document as YAML text (RFC 9512), the bytes the ETag digests. Its
+              info.version is the Charter-Contract-Version of the answer.
+            type: string
+    '304':
+      description: >-
+        The If-None-Match was * or matched the current ETag: the client already holds this document.
+        There is no body. The answer carries the ETag again.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/ContractETag.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -30,6 +30,8 @@ tags:
 paths:
   /info:
     $ref: paths/info.yaml
+  /openapi.yaml:
+    $ref: paths/openapi.yaml
   /packs/{packId}/tactics:
     $ref: paths/packs_packId_tactics.yaml
   /packs/{packId}/tactics/{tacticId}:
