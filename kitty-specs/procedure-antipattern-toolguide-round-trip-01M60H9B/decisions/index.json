@@ -23,6 +23,55 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-28T06:38:46.742273Z",
+      "decision_id": "01M60KQ3YPJ6Y8RX1J0MEVVMYW",
+      "final_answer": "Build the pack-level markdown content form in PR-A for #195.",
+      "input_key": "markdown_form_owner",
+      "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+      "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+      "opened_by": "cli",
+      "options": [
+        "Build it in PR-A for #195",
+        "Leave it to #195",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Toolguide guides are ADR-0039 text companions and do not need the markdown content form. Should PR-A still build the pack-level markdown form for #195?",
+      "rationale": null,
+      "resolved_at": "2026-10-28T06:51:55.319953Z",
+      "resolved_by": null,
+      "slot_key": "plan.content-form.markdown-owner",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-28T06:51:57.923116Z",
+      "decision_id": "01M60MF8K36ZCRV04HPV3Z5TSR",
+      "final_answer": "Structured: a combination of fixed sections/blocks plus a freeform sections list; a content research squad derives the generic fixed forms from the pinned guides.",
+      "input_key": "toolguide_guide_shape",
+      "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+      "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+      "opened_by": "cli",
+      "options": [
+        "Text companion",
+        "Inline single block",
+        "Structured sections",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "How is a toolguide's guide stored in the sanitized shape?",
+      "rationale": null,
+      "resolved_at": "2026-10-28T06:52:06.332013Z",
+      "resolved_by": null,
+      "slot_key": "plan.toolguide.guide-shape",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
