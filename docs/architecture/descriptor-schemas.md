@@ -2,13 +2,14 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Architecture
 kind: Reference
 related:
   - architecture/overview
   - architecture/contract-and-dtos
   - architecture/resolution-model
+  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: pack-author
     guidance_text: Read this for entity diagrams of the descriptor schemas and their edges.
@@ -18,7 +19,7 @@ audience:
 
 The structural authority for every descriptor file is the set of JSON Schemas in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas)
-(14 schemas), canonical here and edited in place under
+(18 schemas), canonical here and edited in place under
 [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and
 [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) (first imported from core's models;
 the import's changes are tabled in the
@@ -50,8 +51,10 @@ multiplicities, drawn from the schemas and the domain records. Source:
 `diagrams/pack-write-model.puml`. A node of a fragment names its kind with one canonical
 plural (`mission_step_contracts`, not `mission_steps`); see [Domain](/context/domain/). An artifact
 file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may carry an optional
-`provenance`; an edge may not. Of the 14 schemas, `charter.schema.json` is not drawn: it validates
-the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`).
+`provenance`; an edge may not. `charter.schema.json` is not drawn: it validates
+the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level
+`preset` and `pack-manifest` schemas are not drawn yet; they are described in
+[Pack-level schemas](#pack-level-schemas).
 
 ## Kinds, containment and edges
 
@@ -99,6 +102,48 @@ holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 
 Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
 `src/charter/activation/org_charter.py`, `src/charter/activation/schemas.py`.
+
+## Pack-level schemas
+
+Three schemas cover the files that describe a pack as a whole. All three are closed
+(`additionalProperties: false` at every level), so an unknown key is refused
+([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). The
+`preset` and `pack-manifest` schemas were designed here, not imported (the descriptor schema was
+imported from core, ADR-0017): core's preset and manifest files have other shapes, and the
+pinned built-in ones are refused until `spec-kitty-open-packs` adopts these.
+
+**`pack-descriptor`** (`pack.yaml`). The fields are unchanged. The schema is closed now: a key it
+does not declare, a retired one such as `accompanies_doctrine_pack` included, makes `pack.yaml`
+unreadable. Its description says that `pack_level` is optional and `pack_version` is required at
+every level.
+
+**`preset`** (`presets/<id>.yaml`):
+
+- `+ schema_version`: `"1.0"`
+- `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, equal to the file stem
+- `+ description`: not empty
+- `- activated_kinds`: `[1..]` unique kind plurals, from the 13 kinds
+- `- activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`,
+  `activated_paradigms`, `activated_procedures`, `activated_agent_profiles`,
+  `activated_mission_step_contracts`, `activated_anti_patterns`, `activated_mission_types`: each
+  `[1..]` items
+- an item: `+ id` (not empty), `- must_have` (only `true`: present means must-have)
+
+**`pack-manifest`** (`pack-manifest.yaml`):
+
+- `+ schema_version`: `"1.0"`
+- `+ manifest_hash`: `~ ^[0-9a-f]{64}$`, derived
+- `+ constituents`: a list, possibly empty, of `{+ kind, + id, + path, + content_hash}`; `kind` is
+  an artifact kind token, `content_hash` is 64 lowercase hex characters, derived
+- `- presets`: `[1..]` of `{+ id, + path, + content_hash}`; `path` matches `presets/<id>.yaml`
+  for an id of the preset grammar, and a storage rule beyond the schema requires it to be the
+  entry's own `presets/<id>.yaml`
+
+A derived field is not authored: the service recomputes it on every whole-pack write.
+`content_hash` is SHA-256 of the file's bytes with CRLF and lone CR replaced by LF; `manifest_hash`
+is SHA-256 of the RFC 8785 canonical JSON of the manifest without `manifest_hash`. The fetched-pack
+and charter-bundle fields of core's manifest (`charter`, `fetched_at`, `source_url`, `source_type`,
+`generated_at`, `generated_by`, `provenance_path`) are not in the schema.
 
 ## Regenerating the diagrams
 

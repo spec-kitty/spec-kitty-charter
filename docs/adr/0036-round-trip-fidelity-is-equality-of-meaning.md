@@ -2,7 +2,7 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -12,6 +12,7 @@ related:
   - adr/0027-drg-relationship-identity-bounded-unidirectional-collapse
   - adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
+  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - architecture/descriptors
   - architecture/logical-model
   - conformance/divergence-register
@@ -70,6 +71,35 @@ introduction, and its `**/*.asset.yaml`, `**/*.config.yaml`, `*.md` and "Any oth
 amended points are in force for the code #193 ships, which implements them; the original text
 still governs everything else. ADR-0040 itself is Proposed, pending the operator's acceptance,
 which the pull request for #193 asks for.
+
+### Amendment 2026-10-28 (#195): pack-level files, the closed descriptor and derived fields
+
+Superseded in part by
+[ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
+2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
+[#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) and the mission's decisions
+under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
+
+- `DM-01M60H8A6NGJK8HW57CN8CTC8S`: decision 6 is answered. Every file the round trip covers is a
+  `files` rule with a closed schema, a `payloads` rule of a built form other than `yaml`, or an
+  exclusion with a reason. A YAML file is never held without a schema;
+- `DM-01M60H84Y9NBXS396KMM2KBY55`: open question 3 is answered. The manifest's `content_hash` and
+  `manifest_hash` are derived fields: recomputed on write from the written bytes, never checked on
+  read, and verified by the gate on each side instead of compared;
+- `DM-01M60H7T0354AW8X9AYT3K91NN`: decision 3's follow-up is done. `pack-descriptor.schema.json`
+  is closed, `undeclaredKeys()` and the `PACK_UNKNOWN_KEY` finding are removed, and
+  `pack_unknown_key` stays in the contract as a retired value, never raised. DIV-005 and DIV-006
+  are retired;
+- `DM-01M60H7EWVN7T6V0GAJACX9NSP`: a preset refuses an empty activation list, so decision 2's
+  "absent equals empty" rule needs no exception for presets.
+
+The decision text below is unchanged. The points this note changes are annotated where they stand:
+decision 3's "Nothing is carried through", decision 6, the per-kind table's `*/pack.yaml`,
+`**/presets/*.yaml` and `*/pack-manifest.yaml` rows, open question 3, and the first follow-up item.
+ADR-0043 restates the new rows with a "Derived fields" column: none for `preset`; `manifest_hash`
+and each entry's `content_hash` for `pack-manifest`.
+The amended points are in force for the code #195 ships, which implements them. ADR-0043 itself is
+Proposed, pending the operator's acceptance, which the pull request for #195 asks for.
 
 ## Context
 
@@ -190,6 +220,9 @@ Status.)*
   *Reading:* `pack_unknown_key` stays in the `DiagnosticCode` enum but is never raised, as ADR-0009
   retires a value. That is a contract change: a description change, a `CHANGELOG` entry and a minor
   version under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/).
+  *(Done by #195, 2026-10-28, ADR-0043 decision 4: `undeclaredKeys()` and the warning are gone, and
+  the contract describes `pack_unknown_key` as retired, never raised. See the amendment under
+  Status.)*
 
 ### 4. The canonical CRG edge
 
@@ -262,6 +295,13 @@ left to #195 (open question 3, answered: decided there).
 `*/assets/**/README.md` is a new exclusion (R4). A payload has no schema, so unknown-field refusal
 does not apply to it.)*
 
+*(Superseded in part by ADR-0043, 2026-10-28: answered. Every covered file is a `files` rule with a
+closed schema, a `payloads` rule of a built form other than `yaml`, or an exclusion with a reason;
+a YAML file is never held without a schema. The `**/presets/*.yaml` and `*/pack-manifest.yaml`
+exclusions are retired, for the `files` rules `*/presets/*.yaml` (`preset`) and
+`*/pack-manifest.yaml` (`pack-manifest`). The manifest's hashes are derived fields, recomputed on
+write (open question 3).)*
+
 ### 7. The charter's round-trip promise
 
 The charter companion said "open-packs YAML always round-trips exactly", and `charter.yaml`
@@ -285,6 +325,7 @@ below.)*
 | Files (`match`) | Schema | Compared as | Sets (member identity) | Unknown fields refused |
 |---|---|---|---|---|
 | `*/pack.yaml` | pack-descriptor | YAML | none | yes, once the schema is closed (Decision 3) |
+| *(Superseded in part by ADR-0043, 2026-10-28, on the row above: the schema is closed, so unknown fields are refused.)* | | | | |
 | `**/*.graph.yaml` | graph-shard | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`urn`) | yes |
 | `*/drg/fragment.yaml` | org-fragment | YAML | `edges` (`source`, `target`, `relation`); `nodes` (`kind`, `id`) | yes |
 | `*/org-charter.yaml` | org-charter | YAML; open maps such as `interview_defaults`, `activation_context` | none | yes |
@@ -302,10 +343,12 @@ below.)*
 | `**/mission-steps/**/step.yaml`, `**/actions/*/index.yaml`, `**/missions/*/mission.yaml`, `**/missions/*/mission-runtime.yaml`, `**/missions/*/expected-artifacts.yaml`, `**/governance-profile.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/mission_types/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/presets/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#195; the per-item must-have mark, and `required_<plural>` migrated then refused in #206) |
+| *(Superseded by ADR-0043, 2026-10-28, on the row above: the exclusion is retired. `*/presets/*.yaml` is validated by the closed schema `preset`, compared as YAML, with no sets and no derived fields; an empty activation list is refused. Unknown fields are refused.)* | | | | |
 | `**/*.skill.yaml`, `**/*.glossary-pack.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#192) |
 | `**/*.config.yaml` | none (excluded) | YAML, all open: free-form tool configuration | none | never: it has no fields, only data |
 | *(Superseded by ADR-0040, 2026-10-27, on the row above: the exclusion is retired. Its only match, `built-in/assets/docs_structural_lint.config.yaml`, is an asset payload compared by bytes (R1).)* | | | | |
 | `*/pack-manifest.yaml` | none (excluded) | YAML; the treatment of `content_hash` is decided in #195 (open question 3) | none until a schema names one | when a schema lands (#195) |
+| *(Superseded by ADR-0043, 2026-10-28, on the row above: the exclusion is retired. `*/pack-manifest.yaml` is validated by the closed schema `pack-manifest` and compared as YAML, with no sets. Its derived fields, `manifest_hash` and each entry's `content_hash`, are not compared: the writer recomputes them, and the gate verifies them against each side's bytes. Unknown fields are refused.)* | | | | |
 | `built-in.source.yaml`, `**/templates/plan-field-declaration.yaml` | none (excluded) | YAML | none | when a schema lands |
 | `*.md` (`pack.md`, `*.skill.md`, mission-step `prompt.md` and `guidelines.md`, `PROVENANCE.md`, `README.md`) | none | frontmatter, if any, as YAML; body as text (LF, one final newline) | none | frontmatter: when a schema lands |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the extension no longer chooses the form (R8). A Markdown file under `assets/` or a top-level `templates/` compares by bytes, frontmatter included (R9); `assets/**/README.md` stays excluded (R4). A Markdown kind declares `markdown` on its own rule when that form is built.)* | | | | |
@@ -347,6 +390,10 @@ Asked on #188 and answered by the operator on 2026-10-27:
 3. **Kinds without a schema, and `pack-manifest.yaml`: Decision 6 stands.** Whether the manifest's
    `content_hash` is recomputed on write, or its constituents compare by bytes, is decided in #195,
    where the manifest is modelled.
+   *(Answered by ADR-0043, 2026-10-28: recomputed on write. `content_hash` is SHA-256 of the
+   file's bytes with line endings normalized to LF, and `manifest_hash` is SHA-256 of the RFC 8785
+   canonical JSON of the manifest without it. The reader does not check them; the gate verifies
+   them.)*
 
 ## Consequences
 
@@ -378,6 +425,7 @@ Asked on #188 and answered by the operator on 2026-10-27:
   ("A pack descriptor with an undeclared key loads") and a `CHANGELOG` entry. Close DIV-005 and
   DIV-006 in the divergence register when the code lands. The operator places this in #189 or in its
   own issue.
+  *(Done by #195, 2026-10-28: see ADR-0043 decision 4. The contract scenario was already removed.)*
 - Readers keep every declared field: CRG node `provenance` and `tags`, fragment `body_path`, and the
   shard header fields the writer hard-codes today (#187 finds them; #189 or the kind missions fix
   them).

@@ -2,10 +2,11 @@
 # divergence-register.md, the human-readable page, which presents them (the pack-schema entries
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
-# schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018) and activation
-# (DIV-201..202, ADR-0020, proposed). Consumers: the conformance gate (#72) and the pack doctor
-# parity test (#115) read this file; a difference from core that is not listed here with status
-# `open` fails them, so a `proposed` entry is not yet enforced.
+# schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
+# (DIV-201..202, ADR-0020, proposed) and pack-level files (DIV-301..399, ADR-0043). Consumers: the
+# conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
+# core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
+# enforced.
 #
 # Schema, one list item per divergence:
 #   id         DIV-NNN, unique, never reused
@@ -95,9 +96,12 @@
   rationale: >-
     A newer pack should still register on an older service, and the author is told about the key.
     The operator chose tolerance with a warning.
-  ruling: R5 (2026-10-19); plan call P1
-  status: open
+  ruling: R5 (2026-10-19); plan call P1; superseded by ADR-0036 ruling 1 (2026-10-27)
+  status: retired
   since: 2026-10-19
+  note: >-
+    Retired 2026-10-28 (#195, ADR-0036 decision 3): the schema is closed and an unknown key makes
+    pack.yaml unreadable, as in core; the pack_unknown_key warning is no longer raised.
   evidence:
     - "core: offering/packs/pack_descriptor.py:88 (extra=\"forbid\")"
     - "core: offering/drg/org_pack_loader.py:547-560 (the second report, when drg/fragment.yaml exists)"
@@ -109,9 +113,12 @@
   service: Warned like any unknown key (pack_unknown_key).
   rationale: >-
     One rule for every key the schema does not declare. This is laxer than core and is accepted.
-  ruling: R13 (2026-10-19)
-  status: open
+  ruling: R13 (2026-10-19); superseded by ADR-0036 ruling 1 (2026-10-27)
+  status: retired
   since: 2026-10-19
+  note: >-
+    Retired 2026-10-28 (#195, ADR-0036 decision 3): a retired field is an unknown key of the closed
+    schema, refused as unreadable like core's blocking finding.
   evidence:
     - "core: offering/packs/retired_fields.py:84-91"
     - "charter: contracts/packs/schemas/pack-descriptor.schema.json: the top level stays open and pack_level is optional, so a retired key is reported by the adapter (import change C9; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)"
@@ -585,3 +592,26 @@
     list the same ids. Not enforced by the gate while the status is proposed.
   evidence:
     - "corpus case: required-promoted-at-write"
+
+# Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0043).
+- id: DIV-301
+  surface: Validate mode, presets and the pack manifest
+  core: >-
+    Checks each presets/<name>.yaml in its own format (name, mission_type_activations, bare-string
+    lists): preset_format, preset_unresolved_id and preset_kind_gate. Does not schema-check
+    pack-manifest.yaml (offering/packs/pack_validator.py:592-593, 662-690).
+  service: >-
+    Holds presets and the manifest to the closed, sanitized schemas of ADR-0043: core's shape, or a
+    preset whose id is not its file stem, is an artifact_schema_error on its file. Does not resolve
+    preset ids or check the kind gate; a domain-only break (an item id listed twice) passes validate
+    mode and is refused by the load.
+  rationale: >-
+    Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need
+    the activation model, which this service does not build yet.
+  ruling: operator requirement on #195 (2026-10-28)
+  status: open
+  since: 2026-10-28
+  evidence:
+    - "core: offering/packs/pack_validator.py:592-593 and 662-690 (_validate_presets); no manifest check"
+    - "corpus case: the pinned open-packs built-in pack (openPacksRef): 283 manifest and 14 preset findings, pinned in FileSystemPackInspectorTest"
+    - "charter: FileSystemPackInspectorTest, a preset whose id is not its stem, refused in validate mode and by the load"

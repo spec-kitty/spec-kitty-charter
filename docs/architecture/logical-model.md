@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -21,6 +21,7 @@ related:
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
   - adr/0040-content-form-and-payload-kinds
+  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -63,10 +64,11 @@ classDiagram
     parent_pack
   }
   class ActivationPreset {
-    name
-    activated_~kind~ lists
+    id = file stem
+    activated_~kind~ item lists
+    must_have per item
     activated_kinds
-    mission_type_activations
+    activated_mission_types
   }
   class OrgCharterPolicy {
     required_~kind~ lists
@@ -115,6 +117,9 @@ placement of `impacts` on the artifact ([ADR-0028](/adr/0028-impacts-is-a-value-
 core today carries a signed `impacts` strength on an edge (see [Relations](#relations)). The
 org policy's `required_<kind>` lists are likewise the current-state authoring form; the target
 authors a requirement as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)).
+The preset fields shown are the sanitized shape this service holds
+([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/)); core's
+preset files still write `name`, bare strings and `mission_type_activations`.
 
 ## Charter and active charter
 
@@ -153,6 +158,33 @@ A pack may name a `parent_pack`; a pack without one is a root pack. A pack has a
 merged graph has *layers*, one per level. The layers merge built-in, then org, then project,
 under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
+
+### Pack-level files
+
+Four files describe a pack as a whole rather than one artifact. This service reads each into the
+domain and writes it back in one closed, sanitized shape
+([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). A
+pinned file in another shape is refused, never tolerated, and fixed in the pack.
+
+| File | Schema | How the service holds it |
+|---|---|---|
+| `pack.yaml` | `pack-descriptor`, closed | The pack's descriptor. An unknown key, a retired one included, makes the pack unreadable (`pack_unreadable`). |
+| `presets/<id>.yaml` | `preset`, closed | A `Preset` value in the pack's `presets()` slot, sorted by id. Not an artifact: it has no URN. Its `id` is its file stem. |
+| `pack-manifest.yaml` | `pack-manifest`, closed | Beside the aggregate, on the whole-pack load (`LoadedPack.manifest`), because it holds paths and hashes. |
+| `pack.md` | none | Planned: held through the `markdown` content form that #194 builds. Not modelled yet. |
+
+- **Presets.** A preset holds a description, an optional kind gate (`activated_kinds`) and up to
+  ten `activated_<plural>` lists of preset items, `activated_mission_types` included. An item is
+  `{id}` or `{id, must_have: true}`. A list holds at least one item, so a kind is switched off only
+  by leaving it out of the gate. The preset's required set is derived from the marks, and a preset
+  with at least one must-have item is a governing preset.
+- **The manifest.** It lists the pack's constituents (`kind`, `id`, `path`, `content_hash`) and
+  presets (`id`, `path`, `content_hash`), and carries a `manifest_hash`. The hashes are derived
+  fields: a whole-pack write recomputes them from the bytes it writes, the reader takes them as
+  written, and the round-trip gate verifies them. Membership is kept as read; which files belong in
+  it is [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110)'s to decide.
+- **The fingerprint** covers them after every other file: the presets in path order, then the
+  manifest. A pack without them keeps its fingerprint.
 
 ### Mutability levels (integrity)
 
@@ -335,8 +367,11 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   preset whose must-have items are the required set, and the service derives the required set
   from it. Either way, required means always active: deactivating a required artifact is refused,
   naming the requiring pack. Its content stays as open as its mutability level allows.
-  Candidate, undecided: how a must-have item is marked in a preset file; open questions: whether
-  `required_<plural>` keeps being read, and how a governing preset is told from a convenience one.
+  Target ([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
+  proposed): a preset item is marked `must_have: true`; a preset with any must-have item is a
+  governing preset; a preset carries no `required_*` key, and migrating `org-charter.yaml`'s lists
+  is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). Enforcing the required
+  set on activation is not built yet.
 - **Plan, then commit.** `plan_activation()` validates without writing; `commit_plan()`
   writes only after a successful plan. A failed plan never mutates configuration.
 - **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges, skips
