@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -44,6 +44,8 @@ on #120 is replaced. The decision text of D8 and D11 is unchanged. The points ar
 they stand.
 
 Superseded in part by [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) (2026-10-27): D11 as amended 2026-10-24 refuses every read when a configured pack's directory is missing; packs are now discovered under one configuration root, so a missing pack is simply not served (decision 4).
+
+Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (Proposed, 2026-10-28), under the container profile only: the `Host` check compares against a configured list, and `GET /actuator/health` needs no token (D9).
 
 **Amendment 2026-10-25** (regular-artefact read + registration mission, WP10): D10's "200 is the
 only success" is reconciled with [ADR-0026](/adr/0026-write-surface-is-functional-registration/),
@@ -246,6 +248,9 @@ a read refuses it with `stale_input` although its answer could not have changed.
 - **A token is required.** The service refuses to start without a token of at least 32
   characters, unless `charter.insecure-no-token=true` is set (a development flag that logs a
   warning at every start). The browser checks are always on.
+- *(Superseded in part by ADR-0041, Proposed, 2026-10-28, under the container profile only: the
+  `Host` name is checked against `charter.container.allowed-hosts`, `GET /actuator/health` needs no
+  token, and `charter.insecure-no-token` fails the start.)*
 - **The token comes from the environment** (`CHARTER_WORKTREE_TOKEN`, or `SPRING_APPLICATION_JSON`
   in the environment). Startup is refused when it comes from argv or a system property, including
   through `spring.application.json` given on argv or with `-D`.

@@ -22,7 +22,8 @@ audience:
 [#227](https://github.com/spec-kitty/spec-kitty-charter/issues/227)) records how the charter
 service is configured when it runs in a container. It resolves the configuration-key part of
 [ADR-0034](/adr/0034-local-and-hosted-deployment-options/) decision 5; the login flow and token
-format stay open.
+format stay open. Under the container profile only, it supersedes in part ADR-0011 decision 2,
+ADR-0018 D9 and ADR-0038 decision 4.
 
 The local daemon does not change. A `container` profile, never the default, holds non-secret
 defaults; a validated `charter.container.*` record fails the start on a missing or invalid value;

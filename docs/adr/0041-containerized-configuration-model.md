@@ -34,7 +34,17 @@ rulings of 2026-10-27 on #226.
 Resolves in part [ADR-0034](/adr/0034-local-and-hosted-deployment-options/) decision 5: the
 configuration keys of the containerized service. The login flow and the token format stay open.
 Builds on [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) (one configuration
-root) and tightens its decision 4 under the container profile only (decision 5 below).
+root).
+
+Supersedes in part, under the container profile only (the local option is unchanged):
+
+- [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/) decision 9: the `Host` check
+  compares against a configured list instead of the loopback names, and `GET /actuator/health`
+  needs no token (decisions 6 and 7 below).
+- [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) decision 2, "every request
+  carries a per-worktree token": the health path is the one exception (decision 7).
+- [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) decision 4: a configuration
+  root that does not exist fails the start instead of serving no packs (decision 5).
 
 ## Context
 
@@ -79,7 +89,11 @@ it: a developer can run the same container on their own machine.
    `@ConfigurationProperties` record bound at `charter.container.*`, annotated `@Validated`, in the
    deployable module, beside `CharterProperties`. The packs module does not learn the profile. A
    missing or invalid value fails the start with a message that names the property and never a
-   secret value. This adds `spring-boot-starter-validation` to the build; `spring-boot-configuration-processor`
+   secret value. The profile's rules on keys outside that namespace (`server.*`,
+   `charter.config-root`, `charter.worktree-token`, `charter.insecure-no-token`,
+   `charter.project-config-dir`; decisions 4 to 6) are checked by a start-up validator in the
+   deployable, and the guard receives its allowed hosts through its constructor from
+   `GuardWiring`. This adds `spring-boot-starter-validation` to the build; `spring-boot-configuration-processor`
    generates the property metadata that the docsite reference table is checked against
    ([#230](https://github.com/spec-kitty/spec-kitty-charter/issues/230)). Both enter the build under
    strict SHA-256 dependency verification.
@@ -89,7 +103,9 @@ it: a developer can run the same container on their own machine.
      directory is valid when every secret comes from env vars.
    - A secret file is named after its property in dot form, for example
      `/run/secrets/charter.worktree-token`. The env-var form of the same property
-     (`CHARTER_WORKTREE_TOKEN`) is the alternative. Upper-case file names are not mapped.
+     (`CHARTER_WORKTREE_TOKEN`) is the alternative. A file named in the env-var style, with
+     underscores, is not mapped to the property. The token refusal message, which names only the
+     env var today, names both forms under the container profile.
    - docker compose reads an env file. Only `.env.example`, with names and no values, is committed;
      `.env` is ignored by git.
    - No committed YAML file holds a secret value. The existing refusal of the command line and of
@@ -98,21 +114,29 @@ it: a developer can run the same container on their own machine.
 4. **The bind address follows the profile.**
    - Without the container profile, `server.address` must be a loopback address. A non-loopback
      bind without the container profile fails the start.
-   - The container profile binds all interfaces (`0.0.0.0`) on a fixed port, 8080 by default. Port 0
+   - The container profile binds all interfaces (`server.address` unset, or `0.0.0.0`; IPv6 is
+     not excluded) on a fixed port, 8080 by default. Port 0
      fails the start under the container profile, because a random port cannot be published.
      Binding loopback inside a container stays allowed (a sidecar, a test).
 5. **The configuration root is required and must exist under the container profile.** ADR-0038
    decision 4 lets a missing root serve no packs. Inside a container the local default
    (`${user.home}/.spec-kitty/charter`) is the image user's home, not a volume, so a forgotten
    mount would give a running, empty service. Under the container profile `charter.config-root`
-   defaults to `/var/lib/spec-kitty-charter`, must be absolute, and must name an existing
-   directory; otherwise the start fails. The local behavior of ADR-0038 is unchanged.
+   must be absolute and must name an existing directory; otherwise the start fails. Its default
+   there is the path where the image mounts its volume, which #234 fixes;
+   `--configRootLocation` and any other property source still override it (ADR-0038 decision 1).
+   The local behavior of ADR-0038 is unchanged.
 6. **The request guard has a container form.** `WorktreeGuard`'s loopback `Host` check would refuse
    every request that reaches a container by a real host name.
    - Under the container profile the `Host` check compares against
      `charter.container.allowed-hosts`, a required, non-empty list. It still stops DNS rebinding.
-   - The browser-header refusal (`Origin`, `Sec-Fetch-Site`, `Sec-Fetch-Mode`) stays. CORS for a
-     browser-facing client is not part of this record.
+   - The browser-header refusal (`Origin`, `Sec-Fetch-Site`, `Sec-Fetch-Mode`) stays as an
+     interim. ADR-0020 D12 moves this guard into the local profile and gives a hosted deployment a
+     CORS policy; that reshape is not part of this record.
+   - The contract describes the 403 for a `Host` that is not a loopback name
+     (`contracts/charter/openapi.yaml`, `responses/Forbidden.yaml`). This record does not change the
+     contract. The change that builds the container guard owes a contract description that covers
+     the configured list, as a 0.x minor (ADR-0022), or lands with the ADR-0020 D12 reshape.
    - Until the login flow is decided (ADR-0034 decision 5, ADR-0020 D12), the container profile
      uses the existing static bearer: `charter.worktree-token`, delivered as a mounted secret or an
      env var, with the same length rule. `charter.insecure-no-token` fails the start under the
@@ -123,8 +147,10 @@ it: a developer can run the same container on their own machine.
 7. **Minimal actuator exposure.** When actuator is added
    ([#232](https://github.com/spec-kitty/spec-kitty-charter/issues/232)), only `health` is exposed
    over HTTP, with `show-details` and `show-components` set to `never`, so it reports up or down
-   and nothing else. It is the one path the token guard lets through, so a compose health check
-   needs no secret; every other path stays behind the guard. `env`, `configprops`, `beans`,
+   and nothing else. The guard will exempt `GET /actuator/health` from the token check, and from
+   nothing else: the `Host` and browser-header checks still apply. A compose health check then
+   needs no secret. Every other path, an unknown one included, stays behind the token.
+   `/actuator/health` is not a contract operation. `env`, `configprops`, `beans`,
    `loggers`, `heapdump` and `threaddump` are not exposed, and `show-values` stays `never`.
 8. **Secrets are redacted by construction.** Spring Boot sanitizes actuator output but does not mask
    log lines. So a secret is held in a type whose `toString` does not reveal it (as `WorktreeToken`
@@ -138,7 +164,8 @@ it: a developer can run the same container on their own machine.
 
 ### Positive
 
-- The local daemon is unchanged: same file, same bind, same launcher.
+- The local daemon is unchanged in its default configuration: same file, same bind, same
+  launcher. The one new local failure is a non-loopback bind without the container profile.
 - A misconfigured container fails at the start with the property named, instead of serving
   nothing or serving to anyone.
 - One image runs under docker compose, Kubernetes or a PaaS: each of them can set env vars and
