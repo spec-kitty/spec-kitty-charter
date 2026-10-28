@@ -60,7 +60,7 @@ unchanged and now holds on the write responses too. D10 is annotated below.
 client's `If-None-Match` answers `304` with the validator and Charter headers and **no body** (RFC
 9110 §15.4.5), so it is neither a success resource nor a `Problem`. The `error-responses-are-problems`
 lint rule exempts `304` alongside the 200/201 successes, and a new rule `not-modified-has-no-body`
-holds every `304` to that bodyless shape; both are fixture-proven non-vacuous. First realized by
+holds every `304` to that no-body shape; both are fixture-proven non-vacuous. First realized by
 `getOpenApiDocument` (#208) and the pattern for any later conditional read.
 
 This record supersedes, point by point:
