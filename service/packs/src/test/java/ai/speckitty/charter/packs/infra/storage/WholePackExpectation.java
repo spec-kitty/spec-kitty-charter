@@ -40,6 +40,14 @@ final class WholePackExpectation {
     /** The only form of issue a known failure may name: an issue of spec-kitty-open-packs. */
     private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
+    /**
+     * The two placeholders #195 may name while its upstream drafts are not yet filed (ADR-0043): the preset shape and
+     * the manifest shape. Exactly these are admitted; any other {@code #TBD-} key is refused. The hand-off replaces
+     * each with the filed issue's number and removes this set.
+     */
+    static final Set<String> PENDING_DRAFTS = Set.of(
+            "spec-kitty/spec-kitty-open-packs#TBD-preset-shape", "spec-kitty/spec-kitty-open-packs#TBD-manifest-shape");
+
     /** The status of one file in a gate run. */
     enum Status {
         /** Written, read back, and its meaning is unchanged. */
@@ -184,7 +192,8 @@ final class WholePackExpectation {
      * @param knownFailuresYaml the text of {@code known-failures.yaml}
      * @return the expectation
      * @throws IllegalArgumentException when an entry lacks a field, carries an unknown key, or repeats, or when a known
-     *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue
+     *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue or one of the
+     *     {@link #PENDING_DRAFTS}
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
         Map<String, Object> red =
@@ -214,7 +223,7 @@ final class WholePackExpectation {
                 entries(known.get("known_failures"), "known_failures", List.of("path", "at", "reason", "issue"))) {
             String path = entry.get("path");
             String issue = entry.get("issue");
-            if (!OPEN_PACKS_ISSUE.matcher(issue).matches()) {
+            if (!OPEN_PACKS_ISSUE.matcher(issue).matches() && !PENDING_DRAFTS.contains(issue)) {
                 throw new IllegalArgumentException("known_failures entry " + path + " has issue '" + issue
                         + "'; expected spec-kitty/spec-kitty-open-packs#<number> (ADR-0036 decision 5)");
             }

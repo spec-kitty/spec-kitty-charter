@@ -1,0 +1,7 @@
+# A commented preset.
+schema_version: "1.0"
+id: governing
+description: The directive is required.
+activated_directives:
+  - id: DIRECTIVE_018
+    must_have: true

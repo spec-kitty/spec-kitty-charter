@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,11 +27,20 @@ import org.jspecify.annotations.Nullable;
  * {@link CharterArtifact}, with no field, accessor or builder slot of its own. The typed views
  * ({@link #tactics()}, …) are conveniences over the same map. It holds no doctrine graph.
  *
- * <p>The one recorded exception is the pack's {@linkplain #assetFiles() asset files}: the one pack-level collection
- * beside the kind map, with a field, accessor and builder slot of its own (operator ruling R1: an asset payload may
- * have no sidecar and no id, so it cannot be an artifact). By design they hold payload paths, relative to the pack's
- * {@code assets/} directory; no other part of the aggregate holds file paths. Every {@link Asset} names a held asset
- * file by its path, and no two assets name the same one.
+ * <p>The recorded exceptions are the pack-level collections beside the kind map, each with a field, accessor and
+ * builder slot of its own:
+ *
+ * <ul>
+ *   <li>the pack's {@linkplain #assetFiles() asset files} (operator ruling R1: an asset payload may have no sidecar and
+ *       no id, so it cannot be an artifact). By design they hold payload paths, relative to the pack's {@code assets/}
+ *       directory; no other part of the aggregate holds file paths. Every {@link Asset} names a held asset file by its
+ *       path, and no two assets name the same one;
+ *   <li>the pack's {@linkplain #presets() activation presets} (#195, ADR-0043): core gives a preset no URN, so it is a
+ *       pack-level value, not an artifact. No two share an id.
+ * </ul>
+ *
+ * <p>The rule of three has fired for these slots (the pack document, held in #194's {@code markdown} content form, is
+ * the third to come); extracting them into one {@code PackLevelContent} value is a follow-up on epic #186.
  *
  * <p>Build one with {@link #builder()}, or derive one with {@link #with(CharterArtifact)}.
  */
@@ -41,6 +51,7 @@ public final class Pack {
     private final Map<ArtifactKind, List<CharterArtifact>> artifacts;
     private final List<PackElementViolation> violations;
     private final Map<String, AssetFile> assetFiles;
+    private final Map<String, Preset> presets;
 
     /**
      * Reconstructs a pack from its parts; reachable only inside the domain package.
@@ -50,6 +61,7 @@ public final class Pack {
      * @param artifacts the readable artifacts of each kind, each list in a stable order
      * @param violations the files that could not be read or validated
      * @param assetFiles the payload files under {@code assets/}, in any order; at most one per path
+     * @param presets the activation presets, in any order; at most one per id
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Pack(
@@ -57,7 +69,8 @@ public final class Pack {
             PackDescriptor descriptor,
             Map<ArtifactKind, List<CharterArtifact>> artifacts,
             List<PackElementViolation> violations,
-            List<AssetFile> assetFiles) {
+            List<AssetFile> assetFiles,
+            List<Preset> presets) {
         this.id = Objects.requireNonNull(id, "id");
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
         Map<ArtifactKind, List<CharterArtifact>> copy = new EnumMap<>(ArtifactKind.class);
@@ -71,22 +84,26 @@ public final class Pack {
         for (Map.Entry<ArtifactKind, List<CharterArtifact>> entry : copy.entrySet()) {
             guardKind(entry.getKey(), entry.getValue());
         }
-        this.assetFiles = sortedByPath(assetFiles);
+        this.assetFiles = sortedBy(assetFiles, AssetFile::path, "asset files with the path");
         guardAssets();
+        this.presets = sortedBy(presets, Preset::id, "presets with the id");
     }
 
-    /** The asset files keyed by path, in path order; a path held twice breaches. */
-    private static Map<String, AssetFile> sortedByPath(List<AssetFile> files) {
-        Map<String, AssetFile> byPath = new TreeMap<>();
-        for (AssetFile file : files) {
-            ModularRuleset.<AssetFile>emptyRules()
+    /**
+     * The values keyed by {@code key}, in key order; a key held twice breaches, naming the clash as
+     * {@code A pack must not hold two <what> '<key>'.}
+     */
+    private static <T> Map<String, T> sortedBy(List<T> values, Function<T, String> key, String what) {
+        Map<String, T> byKey = new TreeMap<>();
+        for (T value : values) {
+            String k = key.apply(value);
+            ModularRuleset.<T>emptyRules()
                     .must(Constraints.of(
-                            "A pack must not hold two asset files with the path '" + file.path() + "'.",
-                            candidate -> !byPath.containsKey(candidate.path())))
-                    .guard(file);
-            byPath.put(file.path(), file);
+                            "A pack must not hold two " + what + " '" + k + "'.", candidate -> !byKey.containsKey(k)))
+                    .guard(value);
+            byKey.put(k, value);
         }
-        return byPath;
+        return byKey;
     }
 
     /** The asset-to-file link: every asset names a held asset file, and no two assets name the same one. */
@@ -141,20 +158,21 @@ public final class Pack {
     /**
      * Starts a builder that holds everything this pack holds.
      *
-     * @return a builder seeded with this pack's identity, descriptor, artifacts, violations and asset files
+     * @return a builder seeded with this pack's identity, descriptor, artifacts, violations, asset files and presets
      */
     public Builder toBuilder() {
         Builder builder = builder().id(id).descriptor(descriptor);
         artifacts().forEach(builder::artifact);
         violations.forEach(builder::violation);
         assetFiles.values().forEach(builder::assetFile);
+        presets.values().forEach(builder::preset);
         return builder;
     }
 
     /**
      * This pack with {@code artifact} added, or replacing the artifact of the same kind and local id, revalidated.
-     * Every other artifact, every violation and every asset file is kept; a replaced artifact moves to the end of its
-     * kind.
+     * Every other artifact, every violation, every asset file and every preset is kept; a replaced artifact moves to
+     * the end of its kind.
      *
      * @param artifact the artifact to add or replace
      * @return the revalidated pack
@@ -290,6 +308,15 @@ public final class Pack {
     }
 
     /**
+     * The pack's activation presets.
+     *
+     * @return an immutable list sorted by id, at most one per id
+     */
+    public List<Preset> presets() {
+        return List.copyOf(presets.values());
+    }
+
+    /**
      * The files that could not be read or validated while loading. This is the single, canonical owner of
      * read-time violations; no other surface may report them.
      *
@@ -322,6 +349,7 @@ public final class Pack {
         private final Map<ArtifactKind, List<CharterArtifact>> artifacts = new EnumMap<>(ArtifactKind.class);
         private final List<PackElementViolation> violations = new ArrayList<>();
         private final List<AssetFile> assetFiles = new ArrayList<>();
+        private final List<Preset> presets = new ArrayList<>();
 
         private Builder() {}
 
@@ -431,6 +459,17 @@ public final class Pack {
         }
 
         /**
+         * Adds an activation preset; {@link #build()} breaches when two share an id.
+         *
+         * @param value the preset
+         * @return this builder
+         */
+        public Builder preset(Preset value) {
+            this.presets.add(Objects.requireNonNull(value, "value"));
+            return this;
+        }
+
+        /**
          * Appends a read violation.
          *
          * @param violation the violation
@@ -454,7 +493,8 @@ public final class Pack {
                     Objects.requireNonNull(descriptor, "descriptor"),
                     artifacts,
                     violations,
-                    assetFiles);
+                    assetFiles,
+                    presets);
         }
     }
 }

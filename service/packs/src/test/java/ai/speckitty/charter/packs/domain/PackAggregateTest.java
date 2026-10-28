@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 class PackAggregateTest {
 
     private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
-            "01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty(), List.of());
+    private static final PackDescriptor DESCRIPTOR =
+            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     private static Tactic tactic(String id, PackIdentifier owner) {
         return Tactic.builder()

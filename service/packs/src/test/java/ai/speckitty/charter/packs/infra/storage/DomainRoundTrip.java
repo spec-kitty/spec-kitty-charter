@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -42,6 +44,16 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>#193: an asset sidecar is saved like an artefact; asset files and templates are written in place, byte for byte,
  * and paired by path. A sidecar the store refused for a missing payload is refused with the store's exact reason.
+ *
+ * <p>#195: a preset is written in place at {@code presets/<id>.yaml}, which by the stem rule is its source path, so
+ * source and written presets are paired by path. A preset the store refused is refused with the store's exact reasons,
+ * joined by {@code "; "}: no kind prefix and no unknown-field suffix, so the known-failure list and the seam test pin
+ * one text (research R5).
+ *
+ * <p>#195: the source {@code pack-manifest.yaml} is read through the format; an unreadable one is refused with the
+ * store's exact reasons. A readable one is restamped (ADR-0043) over the written files it pairs with: a constituent
+ * with the written artefact of its kind and id, a preset entry with the preset written at its path. A listed file the
+ * round trip did not write refuses it; otherwise the stamped manifest is written at its own path.
  */
 final class DomainRoundTrip implements WholePackRoundTrip {
 
@@ -55,12 +67,19 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     static final String ASSET_PAYLOAD = PackFileSet.ASSET_PAYLOAD;
     static final String TEMPLATE = "template";
 
+    /** #195: a preset is a pack-level file, not an artefact: written in place, paired by path. */
+    static final String PRESET = PresetFiles.KIND;
+
+    /** #195: the pack manifest, owned by the whole-pack seam: restamped over the written files, paired by path. */
+    static final String MANIFEST = PackManifestYaml.SCHEMA;
+
     /** The gate kinds of the bound artefact kinds: each binding's schema name, as the census names its files. */
     static final Set<String> ARTEFACT_KINDS =
             KindBindings.all().stream().map(KindBinding::schemaName).collect(Collectors.toUnmodifiableSet());
 
     private static final Set<String> MODELLED = Stream.concat(
-                    ARTEFACT_KINDS.stream(), Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE))
+                    ARTEFACT_KINDS.stream(),
+                    Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
@@ -130,6 +149,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 outcomes.put(path, shard(name, source, target, path));
             } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
                 outcomes.put(path, payload(path, kind, pack, assemblyFailure, reloaded));
+            } else if (MANIFEST.equals(kind)) {
+                outcomes.put(path, manifest(source, target, path, written));
+            } else if (PRESET.equals(kind)) {
+                outcomes.put(path, preset(path, pack, assemblyFailure, reloaded));
             }
         });
         return outcomes;
@@ -152,6 +175,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             // #193: asset files byte for byte, in place; sidecars and templates are artefacts like any other.
             pack.assetFiles().forEach(file -> to.writeAssetFile(id, file));
             pack.artifacts().forEach(to::saveArtifact);
+            // #195: presets in place, at presets/<id>.yaml.
+            pack.presets().forEach(preset -> to.writePreset(id, preset));
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
@@ -332,6 +357,99 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         return pack.assetFiles().stream().anyMatch(file -> path.equals(PackFileSet.ASSETS + file.path()))
                 || pack.templates().stream()
                         .anyMatch(template -> path.equals(PackFileSet.TEMPLATES + template.localId()));
+    }
+
+    // ---- the manifest (#195) -------------------------------------------------------------------
+
+    private Outcome manifest(Path source, Path target, String path, Map<String, String> written) {
+        FileRead<PackManifestDso> read = strategy.readManifest(read(source.resolve(path)), path);
+        if (read instanceof FileRead.Unreadable<PackManifestDso> bad) {
+            return new Refused(FilesystemPackStore.violationsOf(bad).stream()
+                    .map(PackElementViolation::reason)
+                    .collect(Collectors.joining("; ")));
+        }
+        if (!(read instanceof FileRead.Read<PackManifestDso> good)) {
+            return new Refused("the manifest does not read");
+        }
+        List<String> misplaced = WholePackStore.misplacedPresetEntries(good.value());
+        if (!misplaced.isEmpty()) {
+            return new Refused(String.join("; ", misplaced));
+        }
+        Map<String, String> pairing = pairing(good.value(), target, written);
+        PackManifests.Recomputed recomputed = PackManifests.recompute(
+                good.value(),
+                listed -> pairing.containsKey(listed)
+                        ? FilesystemPackStore.readBytes(target.resolve(pairing.get(listed)))
+                        : Optional.empty());
+        if (!recomputed.missing().isEmpty()) {
+            return new Refused(
+                    path + " lists " + recomputed.missing().getFirst() + ", which the round trip did not write");
+        }
+        write(target.resolve(path), strategy.writeManifest(recomputed.stamped()));
+        return new Written(path);
+    }
+
+    /**
+     * Each listed path of the manifest with the written file it pairs with: a constituent with the written artefact of
+     * its kind token and id, a preset entry with the file written at its own path. A path with no written file is left
+     * out.
+     */
+    static Map<String, String> pairing(PackManifestDso manifest, Path target, Map<String, String> written) {
+        Map<String, String> out = new HashMap<>();
+        for (PackManifestDso.Constituent constituent : manifest.constituents()) {
+            ArtifactKind.fromToken(constituent.kind())
+                    .flatMap(KindBindings::of)
+                    .map(binding -> written.get(binding.schemaName() + "/" + constituent.id()))
+                    .ifPresent(file -> out.put(constituent.path(), file));
+        }
+        for (PackManifestDso.PresetEntry preset : manifest.presets()) {
+            if (Files.isRegularFile(target.resolve(preset.path()))) {
+                out.put(preset.path(), preset.path());
+            }
+        }
+        return out;
+    }
+
+    // ---- presets (#195) ------------------------------------------------------------------------
+
+    /**
+     * A preset is written in place: {@link Written} at its own path when the loaded pack held it and the read-back pack
+     * holds it again with no violation on that path, else {@link Refused} with the store's exact reasons.
+     */
+    private static Outcome preset(String path, @Nullable Pack pack, @Nullable String assemblyFailure, Loaded reloaded) {
+        if (pack == null) {
+            return new Refused("the pack does not assemble: " + assemblyFailure);
+        }
+        List<String> refused = reasonsAt(pack, path);
+        if (!refused.isEmpty()) {
+            return new Refused(String.join("; ", refused));
+        }
+        if (!holdsPreset(pack, path)) {
+            return new Refused("not read: the loaded pack holds no preset at " + path);
+        }
+        @Nullable Pack readBack = reloaded.pack();
+        if (readBack == null) {
+            return new Refused("read-back: the written pack does not load: " + reloaded.failure());
+        }
+        List<String> readBackRefused = reasonsAt(readBack, path);
+        if (!readBackRefused.isEmpty()) {
+            return new Refused("read-back: " + String.join("; ", readBackRefused));
+        }
+        return holdsPreset(readBack, path)
+                ? new Written(path)
+                : new Refused("read-back: the written pack holds no preset at " + path);
+    }
+
+    /** The reasons of every violation on {@code path}, as the store gave them. */
+    private static List<String> reasonsAt(Pack pack, String path) {
+        return pack.violations().stream()
+                .filter(violation -> path.equals(violation.file()))
+                .map(PackElementViolation::reason)
+                .toList();
+    }
+
+    private static boolean holdsPreset(Pack pack, String path) {
+        return pack.presets().stream().anyMatch(preset -> path.equals(PresetFiles.pathOf(preset.id())));
     }
 
     // ---- graph shards --------------------------------------------------------------------------

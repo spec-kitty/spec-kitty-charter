@@ -8,6 +8,7 @@ import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,6 +22,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -31,15 +33,18 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack and every pack of
- * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it as known
- * failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack that
- * loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files, the
- * templates and every DRG document. The files are compared too: asset sidecars by meaning (ADR-0036), asset files and
- * templates by SHA-256.
+ * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it as
+ * known failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack
+ * that loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files,
+ * the templates and every DRG document. The files are compared too: asset sidecars by meaning (ADR-0036), asset files
+ * and templates by SHA-256.
  *
- * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused; a temporary copy with the
- * six paths corrected (the open-packs fix, applied here to a test fixture only) round-trips whole, so built-in stays
- * covered.
+ * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused, and its two presets and its
+ * manifest are not in the sanitized shapes and are refused too (#195, ADR-0043); a temporary copy with the six paths,
+ * the two presets and the manifest corrected (the open-packs fixes, applied here to a test fixture only) round-trips
+ * whole, so built-in stays covered. The manifest's derived fields are verified on both sides
+ * ({@link PackManifests#stale}) and the rest of it compared by meaning. A pinned refusal is one per file: the file's
+ * reasons in the store's order, joined by {@code "; "}, as the gate pins them.
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout.
  */
@@ -91,6 +96,7 @@ class WholePackOpenPacksRoundTripTest {
                         .map(template ->
                                 template.id().value() + "=" + template.content().sha256())
                         .toList());
+        out.put("presets", loaded.pack().presets());
         out.put("graphs", loaded.graphs());
         out.put("layout", loaded.layout().paths());
         return out;
@@ -132,9 +138,7 @@ class WholePackOpenPacksRoundTripTest {
     private List<String> unpinned(Path pack, WholePackStore.LoadedPack loaded) {
         Set<String> pinned =
                 pack.equals(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN)) ? pinnedRefusals() : Set.of();
-        Set<String> actual = loaded.pack().violations().stream()
-                .map(violation -> violation.file() + ": " + REFUSED + violation.reason())
-                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> actual = refusalsByFile(loaded);
         List<String> out = new ArrayList<>();
         actual.stream()
                 .filter(v -> !pinned.contains(v))
@@ -143,7 +147,18 @@ class WholePackOpenPacksRoundTripTest {
         return out;
     }
 
-    /** The built-in pack's pinned refusals, each as {@code <file>: refused: <reason>}. */
+    /** A pack's violations, one per file: {@code <file>: refused: <reasons>}, the reasons joined by {@code "; "}. */
+    private static Set<String> refusalsByFile(WholePackStore.LoadedPack loaded) {
+        Map<String, List<String>> byFile = new LinkedHashMap<>();
+        for (PackElementViolation violation : loaded.pack().violations()) {
+            byFile.computeIfAbsent(violation.file(), file -> new ArrayList<>()).add(violation.reason());
+        }
+        Set<String> out = new TreeSet<>();
+        byFile.forEach((file, reasons) -> out.add(file + ": " + REFUSED + String.join("; ", reasons)));
+        return out;
+    }
+
+    /** The built-in pack's pinned refusals, each as {@code <file>: refused: <reasons>}. */
     private Set<String> pinnedRefusals() {
         return expectation.knownFailures().stream()
                 .filter(failure -> failure.at().startsWith(REFUSED))
@@ -189,7 +204,45 @@ class WholePackOpenPacksRoundTripTest {
         for (Template template : loaded.pack().templates()) {
             out.addAll(bytesDiffer(pack, target, loaded.layout().pathOf(template)));
         }
+        if (loaded.manifest().isPresent()) {
+            out.addAll(manifestProblems(pack, target, loaded, reloaded));
+        }
+        for (Preset preset : loaded.pack().presets()) {
+            String file = PresetFiles.pathOf(preset.id());
+            MeaningComparator.adr0036()
+                    .compareTexts(
+                            PresetFiles.KIND,
+                            Files.readString(pack.resolve(file)),
+                            Files.readString(target.resolve(file)))
+                    .ifPresent(difference -> out.add(pack + "/" + file + " differs: " + difference));
+        }
         return out;
+    }
+
+    /** The manifest of a clean round trip: fresh on both sides, and the same by meaning. */
+    private static List<String> manifestProblems(
+            Path pack, Path target, WholePackStore.LoadedPack loaded, WholePackStore.LoadedPack reloaded)
+            throws IOException {
+        List<String> out = new ArrayList<>();
+        PackManifests.stale(loaded.manifest().orElseThrow(), path -> bytesOf(pack.resolve(path)))
+                .forEach(field -> out.add(pack + "/" + PackFileSet.MANIFEST + " is stale at " + field));
+        if (reloaded.manifest().isEmpty()) {
+            out.add(target + " reloads without its manifest");
+            return out;
+        }
+        PackManifests.stale(reloaded.manifest().get(), path -> bytesOf(target.resolve(path)))
+                .forEach(field -> out.add(target + "/" + PackFileSet.MANIFEST + " is written stale at " + field));
+        MeaningComparator.adr0036()
+                .compareTexts(
+                        MeaningComparator.MANIFEST,
+                        Files.readString(pack.resolve(PackFileSet.MANIFEST)),
+                        Files.readString(target.resolve(PackFileSet.MANIFEST)))
+                .ifPresent(difference -> out.add(pack + "/" + PackFileSet.MANIFEST + " differs: " + difference));
+        return out;
+    }
+
+    private static Optional<byte[]> bytesOf(Path file) {
+        return Files.isRegularFile(file) ? FilesystemPackStore.readBytes(file) : Optional.empty();
     }
 
     private static List<String> bytesDiffer(Path pack, Path target, String file) throws IOException {
@@ -307,19 +360,24 @@ class WholePackOpenPacksRoundTripTest {
     // ---- built-in, as pinned and as corrected --------------------------------------------------------------------
 
     /**
-     * Acceptance check 2: the built-in pack refuses exactly its six pinned sidecars; a copy with the six {@code path}
-     * values corrected (the open-packs fix, applied to a test fixture only) loads clean and round-trips whole.
+     * Acceptance checks 2 and 3: the built-in pack refuses exactly its six pinned sidecars, its two pinned presets and
+     * its pinned manifest; a copy with the six {@code path} values corrected, the two presets rewritten in the
+     * sanitized shape and the manifest rewritten in the sanitized shape (the open-packs fixes, applied to a test
+     * fixture only) loads clean and round-trips whole, its manifest fresh on both sides.
      */
     @Test
-    void aCorrectedCopyOfBuiltInRoundTripsWholeWhileTheOriginalRefusesExactlyThePinnedSix(@TempDir Path host)
+    void aCorrectedCopyOfBuiltInRoundTripsWholeWhileTheOriginalRefusesExactlyThePinnedNine(@TempDir Path host)
             throws IOException {
         Path builtIn = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
         WholePackStore.LoadedPack original = store.load(builtIn);
 
-        assertThat(pinnedRefusals()).hasSize(6);
+        assertThat(pinnedRefusals()).hasSize(9);
+        assertThat(refusalsByFile(original)).hasSize(9);
         assertThat(original.pack().violations())
-                .hasSize(6)
-                .allSatisfy(v -> assertThat(v.kind()).isEqualTo("asset"));
+                .allSatisfy(v -> assertThat(v.kind()).isIn("asset", "schema"))
+                .filteredOn(v -> v.kind().equals("schema"))
+                .extracting(PackElementViolation::file)
+                .containsOnly("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
         assertThat(unpinned(builtIn, original)).isEmpty();
 
         Path corrected = copyTree(builtIn, host.resolve("corrected").resolve(BUILT_IN));
@@ -332,10 +390,23 @@ class WholePackOpenPacksRoundTripTest {
                 Files.writeString(sidecar, fixedText);
             }
         }
+        for (String preset : List.of("default", "minimal")) {
+            Path file = corrected.resolve(PresetFiles.pathOf(preset));
+            Files.writeString(file, sanitizedPreset(Files.readString(file)));
+        }
+        Path manifest = corrected.resolve(PackFileSet.MANIFEST);
+        Files.writeString(manifest, sanitizedManifest(Files.readString(manifest), corrected));
         WholePackStore.LoadedPack loaded = store.load(corrected);
 
         assertThat(fixed).isEqualTo(6);
         assertThat(loaded.pack().violations()).isEmpty();
+        assertThat(loaded.pack().presets()).extracting(Preset::id).containsExactly("default", "minimal");
+        assertThat(loaded.unmodelled())
+                .doesNotContain("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
+        assertThat(loaded.manifest()).isPresent();
+        assertThat(loaded.manifest().orElseThrow().constituents())
+                .as("the modelled constituents only, until #194 binds procedures")
+                .hasSize(272 - 23);
         assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 2));
         assertThat(loaded.pack().templates())
                 .extracting(template -> template.id().value())
@@ -344,9 +415,78 @@ class WholePackOpenPacksRoundTripTest {
                 .isEmpty();
         assertThat(payloadsLeftUnmodelled(corrected, loaded)).isEmpty();
         assertThat(original.pack().violations())
+                .filteredOn(v -> v.kind().equals("asset"))
+                .hasSize(6)
                 .extracting(PackElementViolation::file)
                 .allSatisfy(
                         file -> assertThat(file).startsWith(PackFileSet.ASSETS).endsWith(SIDECAR_SUFFIX));
+    }
+
+    /**
+     * A built-in preset rewritten in the sanitized shape that spec-kitty/spec-kitty-open-packs#TBD-preset-shape asks
+     * for (OP-1): {@code name} becomes {@code id}, {@code schema_version} is added, {@code mission_type_activations}
+     * becomes {@code activated_mission_types}, every item becomes {@code {id}}, and a directive named by its file stem
+     * ({@code 001-...}) is named by its id ({@code DIRECTIVE_001}). No item is marked must-have.
+     */
+    private static String sanitizedPreset(String text) {
+        Map<?, ?> raw = (Map<?, ?>) Yaml.load(text);
+        YamlDumpEmitter out = new YamlDumpEmitter()
+                .scalar("schema_version", "1.0")
+                .scalar("id", String.valueOf(raw.get("name")))
+                .scalar("description", String.valueOf(raw.get("description")));
+        for (Map.Entry<?, ?> entry : raw.entrySet()) {
+            String key = String.valueOf(entry.getKey());
+            if (key.startsWith("activated_")) {
+                out.mappings(key, items(entry.getValue(), "activated_directives".equals(key)));
+            }
+        }
+        out.mappings("activated_mission_types", items(raw.get("mission_type_activations"), false));
+        return out.dump();
+    }
+
+    /**
+     * The built-in manifest rewritten in the sanitized shape that spec-kitty/spec-kitty-open-packs#TBD-manifest-shape
+     * asks for (OP-2): only {@code schema_version}, {@code manifest_hash}, the constituents (each {@code kind},
+     * {@code id}, {@code path}, {@code content_hash}) and the presets (keyed by {@code id}), every derived field
+     * recomputed over {@code pack}. Until #194 binds procedures, a constituent of a kind no binding models is left
+     * out, as the round trip cannot write it.
+     */
+    private static String sanitizedManifest(String text, Path pack) {
+        Map<?, ?> raw = (Map<?, ?>) Yaml.load(text);
+        List<PackManifestDso.Constituent> constituents = new ArrayList<>();
+        for (Object item : (List<?>) raw.get("constituents")) {
+            Map<?, ?> entry = (Map<?, ?>) item;
+            String kind = String.valueOf(entry.get("kind"));
+            if (ArtifactKind.fromToken(kind).flatMap(KindBindings::of).isPresent()) {
+                constituents.add(new PackManifestDso.Constituent(
+                        kind,
+                        String.valueOf(entry.get("id")),
+                        String.valueOf(entry.get("path")),
+                        String.valueOf(entry.get("content_hash"))));
+            }
+        }
+        List<PackManifestDso.PresetEntry> presets = new ArrayList<>();
+        for (Object item : (List<?>) raw.get("presets")) {
+            Map<?, ?> entry = (Map<?, ?>) item;
+            presets.add(new PackManifestDso.PresetEntry(
+                    String.valueOf(entry.get("name")),
+                    String.valueOf(entry.get("path")),
+                    String.valueOf(entry.get("content_hash"))));
+        }
+        PackManifestDso sanitized = new PackManifestDso("1.0", "0".repeat(64), constituents, presets);
+        return PackManifestYaml.write(PackManifests.recompute(sanitized, path -> bytesOf(pack.resolve(path)))
+                .stamped());
+    }
+
+    private static List<Map<String, Object>> items(Object list, boolean directives) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object item : (List<?>) list) {
+            String id = String.valueOf(item);
+            Map<String, Object> entry = YamlDumpEmitter.mapping();
+            entry.put("id", directives && id.matches("\\d{3}-.*") ? "DIRECTIVE_" + id.substring(0, 3) : id);
+            out.add(entry);
+        }
+        return out;
     }
 
     private static Path copyTree(Path source, Path target) throws IOException {

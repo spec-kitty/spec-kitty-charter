@@ -410,22 +410,21 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("a descriptor with undeclared keys is refused, since their values are not kept")
-    void undeclaredDescriptorKeysAreRefused(@TempDir Path host) throws IOException {
+    @DisplayName("a descriptor with an undeclared key does not load, so its value can never be dropped on write")
+    void undeclaredDescriptorKeysAreRefusedOnLoad(@TempDir Path host) throws IOException {
+        Path clean = richPack(host.resolve("clean"));
         Path source = richPack(host.resolve("source"));
         Files.writeString(
                 source.resolve(PackFileSet.PACK_YAML),
                 "surprise: kept-nowhere\n",
                 java.nio.file.StandardOpenOption.APPEND);
-        WholePackStore.LoadedPack loaded = store.load(source);
-        Path target = host.resolve("out");
 
-        assertThat(loaded.pack().descriptor().undeclaredKeys()).contains("surprise");
-        assertThatThrownBy(() -> store.write(loaded, target))
-                .isInstanceOf(CharterRefusal.class)
-                .hasMessageContaining("undeclared keys");
-        assertThat(target).doesNotExist();
-        assertThat(stagingLeftovers(host)).isEmpty();
+        assertThat(store.load(clean).pack().violations()).isEmpty();
+        assertThatThrownBy(() -> store.load(source))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage("pack.yaml of pack-a cannot be read");
     }
 
     @Test

@@ -67,4 +67,40 @@ public interface SerializationStrategy {
      * @return the document, or why the text is unreadable
      */
     FileRead<GraphDocument> readGraph(String text, Shape shape, String file);
+
+    /**
+     * Serializes an activation preset from scratch (ADR-0043).
+     *
+     * @param preset the preset to write
+     * @return the file text
+     */
+    String writePreset(PresetDso preset);
+
+    /**
+     * Reads a {@code presets/<id>.yaml} against the bundled {@code preset} schema. Whether the id is the file stem is
+     * the store's rule ({@link PresetFiles#stemMismatch}), not the format's.
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the preset, or why the text is unreadable
+     */
+    FileRead<PresetDso> readPreset(String text, String file);
+
+    /**
+     * Serializes a pack manifest from scratch (ADR-0043), its derived fields as given: the caller stamps them.
+     *
+     * @param manifest the manifest to write
+     * @return the file text
+     */
+    String writeManifest(PackManifestDso manifest);
+
+    /**
+     * Reads a {@code pack-manifest.yaml} against the bundled {@code pack-manifest} schema. Its derived fields are taken
+     * as written and not checked ({@link PackManifests#stale} is the check).
+     *
+     * @param text the file text
+     * @param file the pack-relative file name, named in a failure
+     * @return the manifest, or why the text is unreadable
+     */
+    FileRead<PackManifestDso> readManifest(String text, String file);
 }

@@ -1,0 +1,6 @@
+# A commented directive.
+schema_version: "1.0"
+id: DIRECTIVE_018
+title: Doctrine Versioning Requirement
+intent: Doctrine artifacts must be versioned with traceable change rationale.
+enforcement: required

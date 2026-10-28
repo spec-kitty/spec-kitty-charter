@@ -23,8 +23,8 @@ class PackValidationTest {
     private static final FileRead<RawGraph> EMPTY_FRAGMENT = new FileRead.Read<>(
             "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
 
-    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
-            "01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), Optional.empty(), List.of());
+    private static final PackDescriptor DESCRIPTOR =
+            new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), Optional.empty());
 
     /** An inspector that records the root and scope it was asked for and answers with fixed facts. */
     private static final class FakeInspector implements PackInspector {

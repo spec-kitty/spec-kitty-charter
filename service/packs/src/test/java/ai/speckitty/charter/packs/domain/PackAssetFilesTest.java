@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,8 +19,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class PackAssetFilesTest {
 
     private static final PackIdentifier ID = new PackIdentifier("01PACK");
-    private static final PackDescriptor DESCRIPTOR = new PackDescriptor(
-            "01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty(), List.of());
+    private static final PackDescriptor DESCRIPTOR =
+            new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     private static final AssetFile LOGO = new AssetFile("debrief/logo.png", Payload.of(new byte[] {0, 1, 2}));
     private static final AssetFile CONFIG = new AssetFile("tooling/lint.config.yaml", Payload.of(new byte[] {'a'}));

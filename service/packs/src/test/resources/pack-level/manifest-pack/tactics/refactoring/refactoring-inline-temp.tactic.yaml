@@ -1,0 +1,10 @@
+# A commented tactic: the writer drops the comments, so its written content_hash differs.
+schema_version: "1.0"
+id: refactoring-inline-temp
+name: Refactoring Inline Temp   # the display name
+purpose: Remove temporary variables that only alias simple expressions.
+steps:
+  - title: Identify trivial temporary aliases
+    description: Find temp variables that store pure expressions.
+  - title: Inline the expression
+    description: Replace the temp usage with the underlying expression.

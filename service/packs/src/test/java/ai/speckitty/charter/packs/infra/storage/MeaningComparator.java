@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +55,9 @@ final class MeaningComparator {
      * @param written the written value, rendered, or {@code <absent>}
      */
     record Difference(String path, String source, String written) {}
+
+    /** The gate kind of {@code pack-manifest.yaml}. */
+    static final String MANIFEST = "pack-manifest";
 
     /** ADR-0036's open maps per gate kind: top-level keys whose content is data, not fields. */
     private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
@@ -115,6 +119,12 @@ final class MeaningComparator {
         List<Difference> out = new ArrayList<>();
         if (GRAPH_SHARD.equals(kind) && source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
             compareShard(s, w, out);
+        } else if (MANIFEST.equals(kind) && source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
+            Map<?, ?> s2 = withoutDerived(s);
+            Map<?, ?> w2 = withoutDerived(w);
+            for (String key : keys(s2, w2)) {
+                entry(ROOT, key, s2, w2, false, false, out);
+            }
         } else if (source instanceof Map<?, ?> s && written instanceof Map<?, ?> w) {
             Set<String> open = OPEN_MAPS.getOrDefault(kind, Set.of());
             for (String key : keys(s, w)) {
@@ -125,6 +135,35 @@ final class MeaningComparator {
             value(ROOT, source, written, false, out);
         }
         return List.copyOf(out);
+    }
+
+    // ---- the pack manifest (ADR-0043) ----------------------------------------------------------
+
+    /**
+     * A manifest without its derived fields, {@code manifest_hash} and every entry's {@code content_hash}: ADR-0043
+     * recomputes them on write, so they are verified against the bytes ({@code PackManifests.stale}), not compared.
+     * Everything else (each entry's {@code kind}, {@code id} and {@code path}, the lists' order, {@code schema_version})
+     * still counts.
+     */
+    private static Map<?, ?> withoutDerived(Map<?, ?> manifest) {
+        Map<Object, Object> out = new LinkedHashMap<>(manifest);
+        out.remove("manifest_hash");
+        for (String list : List.of("constituents", "presets")) {
+            if (out.get(list) instanceof List<?> entries) {
+                List<Object> stripped = new ArrayList<>();
+                for (Object entry : entries) {
+                    if (entry instanceof Map<?, ?> map) {
+                        Map<Object, Object> copy = new LinkedHashMap<>(map);
+                        copy.remove("content_hash");
+                        stripped.add(copy);
+                    } else {
+                        stripped.add(entry);
+                    }
+                }
+                out.put(list, stripped);
+            }
+        }
+        return out;
     }
 
     /**

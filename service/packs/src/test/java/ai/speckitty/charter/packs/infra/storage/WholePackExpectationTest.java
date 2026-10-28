@@ -306,7 +306,10 @@ class WholePackExpectationTest {
                     "TODO",
                     "spec-kitty/spec-kitty-charter#12",
                     "spec-kitty/spec-kitty-open-packs#0",
-                    "spec-kitty/spec-kitty-open-packs#12 and more"
+                    "spec-kitty/spec-kitty-open-packs#12 and more",
+                    "spec-kitty/spec-kitty-open-packs#TBD-other-shape",
+                    "spec-kitty/spec-kitty-open-packs#TBD-",
+                    "spec-kitty/spec-kitty-charter#TBD-preset-shape"
                 })
         void anEntryWithoutAnOpenPacksIssueFailsToLoad(String issue) {
             String yaml = known(A, "steps[2].title", issue);
@@ -315,6 +318,20 @@ class WholePackExpectationTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("has issue '" + issue + "'")
                     .hasMessageContaining("expected spec-kitty/spec-kitty-open-packs#<number>");
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "spec-kitty/spec-kitty-open-packs#12",
+                    "spec-kitty/spec-kitty-open-packs#TBD-preset-shape",
+                    "spec-kitty/spec-kitty-open-packs#TBD-manifest-shape"
+                })
+        void anOpenPacksIssueOrOneOfThePendingDraftsLoads(String issue) {
+            String yaml = known(A, "steps[2].title", issue);
+
+            assertThatCode(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
+                    .doesNotThrowAnyException();
         }
 
         @Test
@@ -778,10 +795,11 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void theBundledListPinsExactlyTheSixBuiltInSidecarsAsKnownFailures() {
+        void theBundledListPinsExactlyTheSixBuiltInSidecarsTheTwoBuiltInPresetsAndTheManifestAsKnownFailures() {
             WholePackExpectation bundled = WholePackExpectation.fromClasspath();
 
             assertThat(bundled.knownFailures())
+                    .filteredOn(failure -> failure.path().startsWith("assets/"))
                     .extracting(WholePackExpectation.KnownFailure::path, WholePackExpectation.KnownFailure::at)
                     .containsExactlyInAnyOrder(
                             sidecar("assets/docs_structural_lint.py"),
@@ -789,10 +807,31 @@ class WholePackExpectationTest {
                             sidecar("assets/audiences/automation_agent.md"),
                             sidecar("assets/audiences/line_manager.md"),
                             sidecar("assets/audiences/nontech_educator.md"),
-                            sidecar("assets/audiences/software_engineer.md"));
+                            sidecar("assets/audiences/software_engineer.md"))
+                    .hasSize(6);
             assertThat(bundled.knownFailures())
+                    .filteredOn(failure -> failure.path().startsWith("assets/"))
                     .allSatisfy(
                             failure -> assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75"));
+            // #195: the two built-in presets and the manifest are not in the sanitized shapes until the pending
+            // upstream drafts land.
+            assertThat(bundled.knownFailures())
+                    .filteredOn(failure -> failure.path().startsWith("presets/"))
+                    .allSatisfy(failure -> {
+                        assertThat(failure.at()).startsWith("refused: ");
+                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#TBD-preset-shape");
+                    })
+                    .extracting(WholePackExpectation.KnownFailure::path)
+                    .containsExactly("presets/default.yaml", "presets/minimal.yaml");
+            assertThat(bundled.knownFailures())
+                    .filteredOn(failure -> !failure.path().startsWith("assets/")
+                            && !failure.path().startsWith("presets/"))
+                    .singleElement()
+                    .satisfies(failure -> {
+                        assertThat(failure.path()).isEqualTo("pack-manifest.yaml");
+                        assertThat(failure.at()).startsWith("refused: const violated at /schema_version; ");
+                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#TBD-manifest-shape");
+                    });
         }
 
         private static org.assertj.core.groups.Tuple sidecar(String payload) {
