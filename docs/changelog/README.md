@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-28 — The containerized service's configuration model is proposed](/changelog/2026-10-28-containerized-configuration-adr/)
 - [2026-10-28 — The contract declares GET /openapi.yaml, the document a client fetches from the service](/changelog/2026-10-28-contract-serves-itself/)
 - [2026-10-28 — Running parallel cloud sessions — charter rules and guide caveats](/changelog/2026-10-28-parallel-cloud-sessions/)
 - [2026-10-27 — Assets and templates round-trip through the domain, byte for byte](/changelog/2026-10-27-asset-and-template-round-trip/)
