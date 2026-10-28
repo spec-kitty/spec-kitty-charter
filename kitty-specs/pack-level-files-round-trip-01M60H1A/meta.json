@@ -13,5 +13,7 @@
   "purpose_tldr": "Read every pack-level file of a Charter Pack (presets, pack.md, pack.yaml, pack-manifest.yaml) into the domain in a sanitized shape and write it back without loss of meaning.",
   "slug": "pack-level-files-round-trip-01M60H1A",
   "target_branch": "feat/195-pack-level-round-trip",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-28T06:13:23.513885+00:00"
 }
