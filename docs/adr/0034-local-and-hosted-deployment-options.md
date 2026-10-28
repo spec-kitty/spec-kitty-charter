@@ -2,13 +2,14 @@
 title: "ADR-0034: The charter service has a local and a hosted deployment option"
 description: Local is spawned by the CLI and works offline; hosted uses a configured endpoint and a standard login token and fails closed; records the open-core boundary.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0020-offering-and-activations
   - adr/0033-local-active-charter-is-source-of-truth
+  - adr/0041-containerized-configuration-model
   - context/conceptual-model
 audience:
   - profile: governance-lead
@@ -32,6 +33,8 @@ Supersedes in part [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-fres
 
 Records the amendment of core ADR `4.x/2026-10-03-1` that core owes. This record does not change
 core.
+
+Decision 5 resolved in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28, proposed): the configuration keys of the containerized service. The login flow and the token format stay open.
 
 ## Context
 
@@ -63,6 +66,7 @@ A team lead wants to host the charter service centrally instead of each member r
    repository; this record does not.
 5. **Representation is a candidate only.** Configuration keys, the login flow and the token format
    are left to later records. No contract path changes (C-003).
+   *Configuration keys: see ADR-0041.*
 
 ## Consequences
 

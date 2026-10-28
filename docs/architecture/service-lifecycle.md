@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -10,6 +10,7 @@ related:
   - architecture/overview
   - architecture/strangler-transition
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
+  - adr/0041-containerized-configuration-model
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -25,7 +26,9 @@ How the service runs: in the local deployment option, one instance per worktree,
 
 This page describes the **local** deployment option. [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)
 adds a **hosted** option: the CLI calls a configured endpoint with a standard login token and fails
-closed when it is unreachable; its configuration and login flow are not yet decided.
+closed when it is unreachable. Its container configuration is proposed in
+[ADR-0041](/adr/0041-containerized-configuration-model/) (the `container` profile); its login flow
+is not yet decided.
 
 ## One service per worktree
 
