@@ -1,6 +1,6 @@
 ---
 work_package_id: WP05
-title: "Manifest storage object, YAML format and hash recipes"
+title: Manifest storage object, YAML format and hash recipes
 dependencies:
 - WP01
 requirement_refs:
@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/195-pack-level-round-trip
 merge_target_branch: feat/195-pack-level-round-trip
 branch_strategy: Planning artifacts for this mission were generated on feat/195-pack-level-round-trip. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/195-pack-level-round-trip unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-pack-level-files-round-trip-01M60H1A
+base_commit: 46f789256456b9244f662104a8417b740699d7b2
+created_at: '2026-10-28T07:56:45.447432+00:00'
 subtasks:
 - T018
 - T019
