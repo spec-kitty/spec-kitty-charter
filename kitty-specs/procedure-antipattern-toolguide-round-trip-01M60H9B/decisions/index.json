@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-28T05:56:59.067765Z",
+      "decision_id": "01M60HAK1VSN8Y5QHAZAHT0SHF",
+      "final_answer": null,
+      "input_key": "intent_summary_confirmed",
+      "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+      "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+      "opened_by": "cli",
+      "options": [
+        "Confirm",
+        "Adjust",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Does the extracted Intent Summary and requirement set for PR-A (procedure, inline anti-patterns, toolguide guides) match what you want built?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirm-summary",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+  "version": 1
+}
