@@ -4,8 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.intent.confirm-summary`
 - **Input key:** `intent_summary_confirmed`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-10-28T05:56:59.067765+00:00`
+- **Resolved:** `2026-10-28T06:36:13.785583+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ Does the extracted Intent Summary and requirement set for PR-A (procedure, inlin
 
 ## Final answer
 
-_(none)_
+Confirm
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-10-28T05:56:59.067765+00:00` — opened
+- `2026-10-28T06:36:13.785583+00:00` — resolved (final_answer="Confirm")
