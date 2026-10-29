@@ -20,9 +20,10 @@ import org.junit.jupiter.api.Test;
  * A bean-validation constraint the contract generator puts on a model getter must fit the getter's type (#194, S3).
  * The generator turns a schema {@code pattern} into {@code @Pattern} and a {@code minLength}/{@code maxLength} or
  * {@code minItems}/{@code maxItems} into {@code @Size}, whatever Java type it chose for the field: a {@code pattern}
- * on a {@code format: uri} field yields {@code @Pattern} on a {@link java.net.URI} getter. No validator is on the
- * classpath today, so the constraints are inert; once one is, Hibernate Validator throws
- * {@code UnexpectedTypeException} for such a pair, a server error on every request that carries the body.
+ * on a {@code format: uri} field yields {@code @Pattern} on a {@link java.net.URI} getter, and a {@code minLength} on
+ * one yields {@code @Size} there. Bean validation runs on the generated DTOs (ADR-0041 decision 2), so Hibernate
+ * Validator throws {@code UnexpectedTypeException} for such a pair, a server error on every request that carries the
+ * body.
  */
 class GeneratedConstraintTypesTest {
 

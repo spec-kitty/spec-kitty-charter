@@ -28,11 +28,15 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   generator types `URI` would be a server error once bean validation is on the classpath). A registration carries
   exactly one of them; the schema says so with a `oneOf` of two `required` branches. The generator this repository
   builds with ignores that `oneOf` (it emits two optional fields), so the service enforces the rule itself: both,
-  neither, an empty value or an explicit `null` (also beside a valid other field) is refused 422
-  `validation_failed`, whatever a generated client lets through. A `guideUri` that is not a URI at all fails to
+  neither, an empty `guideUri` or an explicit `null` (also beside a valid other field) is refused 422
+  `validation_failed`, whatever a generated client lets through. `guide` declares `minLength: 1`: an empty `guide`
+  breaks a constraint the schema declares and is refused 400 Bad Request (the contract's `default` problem,
+  `{"title":"Bad Request","status":400}`) before the controller runs, since bean validation runs on the generated
+  DTOs (ADR-0041 decision 2). `guideUri` declares no `minLength`, since the generator types it `URI` and a `@Size`
+  on a `URI` would be a server error; its empty value stays a 422. A `guideUri` that is not a URI at all fails to
   deserialize and is a 400 plain `Problem`, like any unreadable body.
 - Added: `maxItems: 256` on `ToolguideRegistration.commands`, `appliesToLanguages` and `references`; a longer list
-  is refused 422 `validation_failed`.
+  breaks a constraint the schema declares and is refused 400 Bad Request before the controller (ADR-0041 decision 2).
 - Added: `Toolguide.guide` (required): the stored guide's Markdown, its H1 written from `title`. An incoming guide
   may omit the H1; one that has an H1 must have the title as it, or it is refused.
 - Added refusals, all with existing codes (no new refusal code): 422 `validation_failed` for the exactly-one rule
@@ -64,8 +68,8 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   `<id>.guide.md` beside its toolguide.
 - Scenarios: `toolguides.feature` registers with `guide` content instead of `guidePath` and reads the guide back
   (H1 added from the title, or kept when it equals the title); new scenarios cover an H1 that differs from the
-  title, a guide without an overview, both, neither, null (alone or beside the other field) and empty values (an
-  outline), an inline guide over 1 MiB
+  title, a guide without an overview, both, neither, null (alone or beside the other field) and an empty `guideUri`
+  (an outline, 422), an empty `guide` (400 Bad Request, ADR-0041 decision 2), an inline guide over 1 MiB
   against one of exactly 1 MiB, a `guideUri` fetched, stored and fetched again on a later PUT, and a `guideUri`
   whose host is not allowlisted. `journeys/journey-05-remove-python.feature` registers its toolguide with `guide`
   content. Three steps are new (scenario README): `When I PUT "<path>" with the body, its "<field>" padded to <n>
