@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":kernel"))
     implementation(project(":packs"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
+    implementation(catalog.lib("spring-boot-starter-validation"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
     testImplementation(catalog.lib("spring-boot-webmvc-test"))
