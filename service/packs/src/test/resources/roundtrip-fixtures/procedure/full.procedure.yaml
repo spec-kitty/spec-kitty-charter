@@ -1,0 +1,40 @@
+schema_version: "1.0"
+id: full-procedure
+title: Full procedure
+description: A sanitized procedure carrying every field, each optional one stated.
+entry_condition: A change is ready to land.
+exit_condition: The change has landed.
+steps:
+  - title: Ask the operator
+    description: The operator confirms the landing.
+    role: operator
+    on_success: Continue.
+    on_failure: Stop.
+  - title: Land the change
+anti_patterns:
+  - title: Bare avoid entry
+  - title: Landing unreviewed work
+    content: Work lands only after review.
+  - title: Force pushing
+    bad_example: git push --force
+  - title: Skipping the merge tool
+    content: Use the merge tool.
+    bad_example: git merge --no-verify
+    good_example: spec-kitty merge
+references:
+  - type: tactic
+    id: review-first
+    when: Before landing.
+    reason: Reviews catch defects.
+  - type: directive
+    id: REVIEW_FIRST
+  - type: tactic
+    id: review-first
+    when: On a second look.
+  - type: styleguide
+    id: commit-style
+    reason: Commit messages follow the style.
+notes: A note.
+applies_to_languages:
+  - java
+  - python

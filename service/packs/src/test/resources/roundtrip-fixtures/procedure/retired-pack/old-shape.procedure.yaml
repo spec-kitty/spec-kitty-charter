@@ -1,0 +1,9 @@
+schema_version: "1.0"
+id: old-shape
+name: Old shape
+purpose: The retired shape.
+entry_condition: A change is ready to land.
+exit_condition: The change has landed.
+steps:
+  - title: Ask the operator
+    actor: human

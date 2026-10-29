@@ -44,15 +44,31 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the asset sidecar is appended last, after the kinds bound before it, so packs keep their digest")
+    @DisplayName("the asset sidecar is appended after the kinds bound before it, so packs keep their digest")
     void theAssetIsAppendedAfterTheSiblings() {
         List<ArtifactKind> kinds = KindBindings.kinds();
         // Digest stability needs append-only: a new kind goes at the end, never before one already bound.
-        assertThat(kinds.get(kinds.size() - 1)).isEqualTo(ArtifactKind.ASSET);
         assertThat(kinds.indexOf(ArtifactKind.ASSET)).isGreaterThan(kinds.indexOf(ArtifactKind.SKILL));
         assertThat(KindBindings.of(ArtifactKind.ASSET)).containsSame(AssetBinding.INSTANCE);
         assertThat(AssetBinding.INSTANCE.fileName("logo")).isEqualTo("logo.asset.yaml");
         assertThat(YamlFormats.of(AssetBinding.INSTANCE)).isSameAs(AssetYaml.INSTANCE);
+    }
+
+    @Test
+    @DisplayName("the procedure is appended last, after the asset, with its format and the default spellings (#194)")
+    void theProcedureIsAppendedLast() {
+        List<ArtifactKind> kinds = KindBindings.kinds();
+        // Append-only: the ten kinds bound before it keep their positions, so a pack without procedures keeps its
+        // digest.
+        assertThat(kinds).hasSize(11);
+        assertThat(kinds.get(kinds.size() - 1)).isEqualTo(ArtifactKind.PROCEDURE);
+        assertThat(kinds.get(kinds.size() - 2)).isEqualTo(ArtifactKind.ASSET);
+        assertThat(YamlFormats.all()).hasSize(11).last().isSameAs(ProcedureYaml.INSTANCE);
+        assertThat(KindBindings.of(ArtifactKind.PROCEDURE)).containsSame(ProcedureBinding.INSTANCE);
+        assertThat(YamlFormats.of(ProcedureBinding.INSTANCE)).isSameAs(ProcedureYaml.INSTANCE);
+        assertThat(ProcedureBinding.INSTANCE.fileName("land-a-change")).isEqualTo("land-a-change.procedure.yaml");
+        assertThat(ProcedureBinding.INSTANCE.schemaName()).isEqualTo("procedure");
+        assertThat(ProcedureBinding.INSTANCE.idKey()).isEqualTo("id");
     }
 
     @Test

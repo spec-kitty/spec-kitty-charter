@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  * <caption>Name shapes and their verdicts</caption>
  * <tr><th>Shape</th><th>Verdict</th></tr>
  * <tr><td>{@code <stem>.<kind>.yaml}, depth 0-3, kind in tactic, directive, styleguide, toolguide, paradigm,
- *     agent, step-contract, glossary-pack, skill, asset</td><td>loaded</td></tr>
+ *     agent, step-contract, glossary-pack, skill, procedure, asset</td><td>loaded</td></tr>
  * <tr><td>an asset sidecar of a loaded shape names a payload {@code assets/<dirs><stem>.bin}, planted with it</td>
  *     <td>payload</td></tr>
  * <tr><td>{@code assets/<dirs><stem>.bin.asset.yaml} beside its payload {@code assets/<dirs><stem>.bin}</td>
@@ -53,7 +53,6 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>{@code x.tactic.yml}, {@code x.tactic.YAML}, {@code x.TACTIC.yaml}, {@code x.tactic.yaml.bak},
  *     {@code x.tactic.config.yaml}</td><td>decoy</td></tr>
  * <tr><td>{@code notes.yaml}, {@code sub/r.yaml}</td><td>decoy</td></tr>
- * <tr><td>procedure files</td><td>decoy</td></tr>
  * <tr><td>{@code assets/<dirs>README.md}; a mission template {@code missions/m/templates/<stem>.md}; a
  *     payload-like {@code <dirs><stem>.png} outside {@code assets/}</td><td>decoy</td></tr>
  * <tr><td>root {@code org-charter.yaml}, {@code sub/charter.yaml}, nested {@code sub/pack.yaml}</td>
@@ -94,6 +93,8 @@ final class GeneratedPackTree {
         MISSION_STEP_CONTRACT("step-contract"),
         GLOSSARY_PACK("glossary-pack"),
         SKILL("skill"),
+        PROCEDURE("procedure"),
+        // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset");
 
         private final String token;
@@ -132,7 +133,6 @@ final class GeneratedPackTree {
         DECOY_KIND_THEN_CONFIG(Verdict.DECOY),
         DECOY_NOTES(Verdict.DECOY),
         DECOY_SUB_R(Verdict.DECOY),
-        DECOY_PROCEDURE(Verdict.DECOY),
         DECOY_ASSETS_README(Verdict.DECOY),
         DECOY_ASSETS_HIDDEN(Verdict.DECOY),
         DECOY_TEMPLATES_HIDDEN(Verdict.DECOY),
@@ -169,7 +169,6 @@ final class GeneratedPackTree {
             Shape.DECOY_UPPER_KIND,
             Shape.DECOY_BAK,
             Shape.DECOY_KIND_THEN_CONFIG,
-            Shape.DECOY_PROCEDURE,
             Shape.ASSET_WITHOUT_PAYLOAD,
             Shape.PAYLOAD_UNNAMED,
             Shape.PAYLOAD_NESTED,
@@ -597,7 +596,6 @@ final class GeneratedPackTree {
             case DECOY_KIND_THEN_CONFIG -> directories(2) + stem + ".tactic.config.yaml";
             case DECOY_NOTES -> "notes.yaml";
             case DECOY_SUB_R -> "sub/r.yaml";
-            case DECOY_PROCEDURE -> directories(2) + stem + ".procedure.yaml";
             case PAYLOAD_UNNAMED -> PackFileSet.ASSETS + directories(2) + stem + ".config.yaml";
             case PAYLOAD_NESTED -> PackFileSet.ASSETS + "a/b/" + stem + ".png";
             case TEMPLATE_TOP -> PackFileSet.TEMPLATES + directories(2) + stem + ".md";
@@ -657,6 +655,7 @@ final class GeneratedPackTree {
             case MISSION_STEP_CONTRACT -> "msc-" + n;
             case GLOSSARY_PACK -> "gp-" + n;
             case SKILL -> "sk-" + n;
+            case PROCEDURE -> "pr-" + n;
             case ASSET -> "a-" + n;
         };
     }
@@ -680,6 +679,9 @@ final class GeneratedPackTree {
             case SKILL ->
                 "id: " + id
                         + "\nschema_version: '1.0'\ntitle: T\ndescription: D\nform: wrapper\nexpands_to:\n  target: builtin:x\n";
+            case PROCEDURE ->
+                "schema_version: '1.0'\nid: " + id
+                        + "\ntitle: T\ndescription: D\nentry_condition: E\nexit_condition: X\nsteps:\n  - title: S\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

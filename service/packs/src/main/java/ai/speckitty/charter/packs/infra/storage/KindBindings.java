@@ -24,7 +24,8 @@ final class KindBindings {
             MissionStepContractBinding.INSTANCE,
             GlossaryPackBinding.INSTANCE,
             SkillBinding.INSTANCE,
-            AssetBinding.INSTANCE);
+            AssetBinding.INSTANCE,
+            ProcedureBinding.INSTANCE);
 
     private KindBindings() {}
 

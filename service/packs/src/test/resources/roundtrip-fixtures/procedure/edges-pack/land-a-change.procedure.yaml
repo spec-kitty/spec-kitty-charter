@@ -1,0 +1,12 @@
+schema_version: "1.0"
+id: land-a-change
+title: Land a change
+description: Lands a reviewed change.
+entry_condition: A change is ready to land.
+exit_condition: The change has landed.
+steps:
+  - title: Ask for review
+references:
+  - type: directive
+    id: REVIEW_FIRST
+    when: Before landing.

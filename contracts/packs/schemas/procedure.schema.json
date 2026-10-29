@@ -2,18 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/procedure.schema.json",
   "$defs": {
-    "ActorRole": {
-      "description": "Who performs a procedure step.",
-      "enum": [
-        "human",
-        "agent",
-        "system"
-      ],
-      "title": "ActorRole",
-      "type": "string"
-    },
     "ArtifactKind": {
-      "description": "All doctrine artifact types.\n\nString values are the canonical singular form stored in YAML ``type`` fields.\nUse :attr:`plural` for directory names and :attr:`glob_pattern` for file discovery.",
+      "description": "The kernel artifact-kind tokens a reference may name.",
       "enum": [
         "directive",
         "tactic",
@@ -32,106 +22,60 @@
       "title": "ArtifactKind",
       "type": "string"
     },
-    "ProcedureAntiPattern": {
+    "AntiPatternEntry": {
       "additionalProperties": false,
-      "description": "A named anti-pattern to avoid when following a procedure.",
+      "description": "Something to avoid when following the procedure; a value of its procedure, with no identity.",
       "properties": {
-        "name": {
+        "title": {
           "minLength": 1,
-          "title": "Name",
+          "title": "Title",
           "type": "string"
         },
-        "description": {
-          "minLength": 1,
-          "title": "Description",
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "bad_example": {
+          "title": "Bad Example",
+          "type": "string"
+        },
+        "good_example": {
+          "title": "Good Example",
           "type": "string"
         }
       },
       "required": [
-        "name",
-        "description"
+        "title"
       ],
-      "title": "ProcedureAntiPattern",
-      "type": "object"
-    },
-    "ProcedureReference": {
-      "additionalProperties": false,
-      "description": "Cross-artifact reference within a procedure.",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/ArtifactKind"
-        },
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Reason"
-        }
-      },
-      "required": [
-        "type",
-        "id"
-      ],
-      "title": "ProcedureReference",
+      "title": "AntiPatternEntry",
       "type": "object"
     },
     "ProcedureStep": {
       "additionalProperties": false,
-      "description": "A single step within a procedure.\n\nPer-step tactic relationships are expressed as typed edges in\n``packs/built-in/*.graph.yaml`` (Phase 1 excision — mission\n``excise-doctrine-curation-and-inline-references-01KP54J6`` WP02). The\nformer inline ``tactic_refs`` field has been removed; with\n``extra=\"forbid\"`` a procedure YAML that still declares step-level\n``tactic_refs`` will now fail Pydantic validation with ``extra_forbidden``.\nWP03 adds a pre-Pydantic scan that raises the structured\n``InlineReferenceRejectedError`` with a migration hint.",
+      "description": "A single step within a procedure. A step names the role that acts (ADR-0032), never an agent profile.",
       "properties": {
         "title": {
+          "minLength": 1,
           "title": "Title",
           "type": "string"
         },
         "description": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Description"
+          "title": "Description",
+          "type": "string"
         },
-        "actor": {
-          "$ref": "#/$defs/ActorRole",
-          "default": "agent"
+        "role": {
+          "description": "An open role token, for example operator; absent when any role may act.",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "title": "Role",
+          "type": "string"
         },
         "on_success": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "On Success"
+          "title": "On Success",
+          "type": "string"
         },
         "on_failure": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "On Failure"
+          "title": "On Failure",
+          "type": "string"
         }
       },
       "required": [
@@ -139,34 +83,66 @@
       ],
       "title": "ProcedureStep",
       "type": "object"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "description": "A cross-artifact reference, stored verbatim; a procedure's references are never minted as relationships.",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ArtifactKind"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "title": "When",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "Reference",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "A reusable orchestrated workflow with entry/exit conditions.\n\nProcedures describe multi-step flows that can be paused, resumed,\nand validated. They coordinate actors (human, agent, system) and\nreference tactics for individual steps.",
+  "description": "A reusable orchestrated workflow with entry and exit conditions: ordered steps, each naming the role that acts.",
   "properties": {
     "schema_version": {
-      "pattern": "^1\\.0$",
+      "const": "1.0",
       "title": "Schema Version",
       "type": "string"
     },
     "id": {
-      "pattern": "^[a-z][a-z0-9-]*$",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
       "title": "Id",
       "type": "string"
     },
-    "name": {
-      "title": "Name",
+    "title": {
+      "minLength": 1,
+      "title": "Title",
       "type": "string"
     },
-    "purpose": {
-      "title": "Purpose",
+    "description": {
+      "minLength": 1,
+      "title": "Description",
       "type": "string"
     },
     "entry_condition": {
+      "minLength": 1,
       "title": "Entry Condition",
       "type": "string"
     },
     "exit_condition": {
+      "minLength": 1,
       "title": "Exit Condition",
       "type": "string"
     },
@@ -180,10 +156,22 @@
     },
     "anti_patterns": {
       "items": {
-        "$ref": "#/$defs/ProcedureAntiPattern"
+        "$ref": "#/$defs/AntiPatternEntry"
       },
       "title": "Anti Patterns",
       "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "notes": {
+      "minLength": 1,
+      "title": "Notes",
+      "type": "string"
     },
     "applies_to_languages": {
       "items": {
@@ -191,32 +179,13 @@
       },
       "title": "Applies To Languages",
       "type": "array"
-    },
-    "notes": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Notes"
-    },
-    "references": {
-      "items": {
-        "$ref": "#/$defs/ProcedureReference"
-      },
-      "title": "References",
-      "type": "array"
     }
   },
   "required": [
     "schema_version",
     "id",
-    "name",
-    "purpose",
+    "title",
+    "description",
     "entry_condition",
     "exit_condition",
     "steps"

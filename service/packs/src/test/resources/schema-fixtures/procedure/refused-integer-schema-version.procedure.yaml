@@ -1,0 +1,26 @@
+schema_version: 1
+id: demo-procedure
+title: Demo procedure
+description: A sanitized procedure carrying every field.
+entry_condition: A change is ready to land.
+exit_condition: The change has landed.
+steps:
+- title: Ask the operator
+  description: The operator confirms the landing.
+  role: operator
+  on_success: Continue.
+  on_failure: Stop.
+- title: Land the change
+anti_patterns:
+- title: Landing unreviewed work
+  content: Work lands only after review.
+  bad_example: git push --force
+  good_example: spec-kitty merge
+references:
+- type: tactic
+  id: review-first
+  when: Before landing.
+  reason: Reviews catch defects.
+notes: A note.
+applies_to_languages:
+- java
