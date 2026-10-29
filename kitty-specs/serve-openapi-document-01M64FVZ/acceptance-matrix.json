@@ -1,0 +1,79 @@
+{
+  "mission_slug": "serve-openapi-document-01M64FVZ",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "lane-a 065703f contractBundle variant (contracts/build.gradle.kts) + processResources (service/deployable/build.gradle.kts); service/deployable/src/test/java/ai/speckitty/charter/deployable/ContractDocumentWiringTest.java#theWiringLoadsTheBundleTheContractBuildWrote",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:27.979236+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java#aClientWithTheTokenGetsTheBundleByteForByteWithItsChecksumAsETag; service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentEncodingTest.java",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:33.959503+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java (ETag equals the build's .sha256); service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ContractDocumentTest.java#theEntityTagIsTheQuotedSha256OfTheBytes",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:39.943635+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java#aMatchingIfNoneMatchIsAnswered304WithoutABodyAndWithTheETag, #aValueThatIsNotAnEntityTagListOrDoesNotMatchGetsTheDocument (mutation-checked), ContractDocumentTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:45.917438+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java#withoutTheTokenItIsA401ProblemThatDoesNotShowTheETag, #aBrowserRequestIsA403ProblemEvenWithTheTokenAndAMatchingTag (same request builder as the 200)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:51.655924+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContractDocumentWiringTest.java#aMissingBundleRefusesTheStart, #aBundleThatIsNotUtf8RefusesTheStart",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:23:57.517375+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "lane-b 8d868bd docs + contract CHANGELOG; check_docs all green; reviewed WP02",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:24:03.467036+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

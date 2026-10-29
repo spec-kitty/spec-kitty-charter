@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "mission_slug": "serve-openapi-document-01M64FVZ",
+  "mission_id": "01M64FVZCACNAB0NFNGD2BKQDC",
+  "mission_branch": "kitty/mission-serve-openapi-document-01M64FVZ",
+  "target_branch": "feat/209-serve-openapi-document",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/build.gradle.kts",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContractDocumentWiring.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/DeployableConfiguration.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContractDocumentWiringTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ContractDocument.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ContractDocumentETag.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/InfoController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/config/ApiConfiguration.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ContractDocumentTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/CHANGELOG.md",
+        "docs/adr/0007-rest-hateoas-contract-of-record.md",
+        "docs/changelog/2026-10-29-the-service-serves-its-contract.md",
+        "docs/changelog/README.md",
+        "docs/development/http-status-codes.md"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-10-29T19:00:19.807500+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "4e38d7f9594509d88f9773c46b100c2df0adad2c"
+}
