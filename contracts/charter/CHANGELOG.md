@@ -35,8 +35,11 @@ was cut under either label. `Added` lists what this version holds that the first
   to #126, which sets how the contract expresses links.
 - Lint: `error-responses-are-problems` exempts a `304`, which RFC 9110 forbids a body, and the new
   rule `not-modified-has-no-body` holds every `304` to no content, with a planted fixture.
-- The service answers the operation with the shared `Problem` of `501` until #209 serves the bundle.
-  No scenario calls it yet; its scenarios are #210.
+- The service serves it (#209): the deployable packages the `bundleContract` output, so the answer
+  is the bundle a release publishes, and the `ETag` equals its `.sha256` checksum. A value of
+  `If-None-Match` that is not an entity-tag list matches nothing and is answered `200`. (Between
+  #208 and #209 the service answered a `501` `Problem`.) No scenario calls it yet; its scenarios
+  are #210.
 
 ### Contract tooling (issues #119 and #45)
 

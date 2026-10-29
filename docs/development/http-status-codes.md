@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: HTTP status codes
 description: Which HTTP status the charter API answers with, what each one means here, the body it carries and whether a client may retry.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -87,7 +87,7 @@ except the servlet container's own 400s
 | Code | Meaning | Used here | Body | Retry |
 |---|---|---|---|---|
 | 500 Internal Server Error | The service cannot answer | Every offering refusal: `pack_level_mismatch`, `pack_unreadable`, `drg_schema_error`, `unresolved_edge_endpoint` (not retryable); `internal_error` and `stale_input` (retryable). `governance_policy_violation` is reserved (500, not raised yet) | `CharterRefusal` | Only for `internal_error` and `stale_input` |
-| 501 Not Implemented | The operation is declared but not built | `getOpenApiDocument` until the service serves the bundle (#209) — an **interim**: the operation's shape is final (200/304/refusals all declared), only the body-serving is deferred, and the 501 is answered through `default`, not marked `x-reserved`. Distinct from the Proposed case: an operation marked `x-reserved` (ADR-0020 D8) whose shape is not yet finalized. Never a 405: the contract declares the method | `Problem`, no code | No |
+| 501 Not Implemented | The operation is declared but not built | An operation marked `x-reserved` (ADR-0020 D8) whose shape is not yet finalized. Never a 405: the contract declares the method. (`getOpenApiDocument` answered a 501 through `default` from #208 until #209 served the bundle.) | `Problem`, no code | No |
 | 503 Service Unavailable | Temporarily unable to serve; may carry `Retry-After` | Not used. See the open questions | — | — |
 
 `internal_error` is the only code for a failure no other code names. Its `detail` is a generic
