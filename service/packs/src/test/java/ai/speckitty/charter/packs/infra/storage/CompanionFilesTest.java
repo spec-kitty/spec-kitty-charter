@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * The companion-file seam of {@link FilesystemPackStore} (ADR-0039), proved with a test-only binding before any real
  * kind uses it. The fixture stores a {@code *.tactic.yaml} file that may name one companion note; a stub strategy
- * reads and writes its two lines, so neither the bundled schemas nor the YAML formats are involved.
+ * reads and writes its two lines, so neither the bundled schemas nor the YAML formats are involved. A companion
+ * conflict (taken, named by another artifact, differs only in case) is a {@code registration_conflict} and a path the
+ * rule refuses a {@code validation_failed}: client errors the API answers 409 and 422, never {@code pack_unreadable}.
  */
 @DisplayName("Companion files are read, contained and upserted with their artifact (ADR-0039)")
 class CompanionFilesTest {
@@ -148,7 +151,9 @@ class CompanionFilesTest {
 
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("taken.md"), Optional.of("mine"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessageContaining("companion taken.md is taken");
         assertThat(Files.readString(pack.resolve("taken.md"))).isEqualTo("someone else's");
         assertThat(pack.resolve("n.tactic.yaml")).doesNotExist();
@@ -164,11 +169,15 @@ class CompanionFilesTest {
 
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("README.md"), Optional.of("x"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessageContaining("companion README.md is taken");
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("pack.yaml/"), Optional.of("x"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion pack.yaml/ is a YAML file");
 
         assertThat(Files.readString(pack.resolve("README.md"))).isEqualTo("the pack's own");
@@ -184,7 +193,9 @@ class CompanionFilesTest {
 
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("b", Optional.of("Body.md"), Optional.of("b's"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessageContaining("companion Body.md is named by another artifact");
         assertThat(pack.resolve("Body.md")).doesNotExist();
         assertThat(pack.resolve("b.tactic.yaml")).doesNotExist();
@@ -198,7 +209,9 @@ class CompanionFilesTest {
 
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("a", Optional.of("Body.md"), Optional.of("after"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
                 .hasMessageContaining("companion Body.md differs only in case from body.md");
         assertThat(Files.readString(pack.resolve("body.md"))).isEqualTo("before");
     }
@@ -234,7 +247,9 @@ class CompanionFilesTest {
                         PACK,
                         Fixture.INSTANCE,
                         new FixtureDso("n", Optional.of("first.md,second.md/.."), Optional.of("x"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion second.md/.. leaves the pack");
         assertThat(pack.resolve("first.md"))
                 .as("the valid first companion is not written")
@@ -247,11 +262,15 @@ class CompanionFilesTest {
                 .hasMessageContaining("companion n.md has no content");
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("../n.md"), Optional.of("x"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion ../n.md leaves the pack");
         assertThatThrownBy(() -> store.write(
                         PACK, Fixture.INSTANCE, new FixtureDso("n", Optional.of("x.tactic.yaml"), Optional.of("x"))))
-                .isInstanceOf(CharterRefusal.class)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED))
                 .hasMessageContaining("companion x.tactic.yaml is a YAML file");
         assertThat(pack.resolve("n.tactic.yaml")).doesNotExist();
         assertThat(root.resolve("n.md")).doesNotExist();

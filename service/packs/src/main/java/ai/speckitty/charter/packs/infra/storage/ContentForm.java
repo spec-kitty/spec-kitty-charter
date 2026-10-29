@@ -18,8 +18,9 @@ enum ContentForm {
      */
     MARKDOWN("markdown"),
     /**
-     * Plain text. Declared but not built yet: no mission has built it (#192 shipped text companions under ADR-0039,
-     * not this form); the mission that first needs it builds and admits it.
+     * Plain text. Not built for {@code files} rules, so the table refuses it there; the mission that first needs a
+     * text {@code files} rule builds and admits it. A companion declares it (ADR-0039, #194): the text companion,
+     * read and written byte for byte ({@link KindBinding.Companion}).
      */
     TEXT("text"),
     /** Opaque bytes, written and compared byte for byte. */

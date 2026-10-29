@@ -519,22 +519,15 @@ class WholePackRoundTripTest {
             SortedMap<String, String> census,
             Map<String, List<String>> information,
             Set<String> paired) {
-        String packName = String.valueOf(pack.getFileName());
-        return observe(
-                roundTrip,
-                pack,
-                written,
-                census,
-                information,
-                paired,
-                path -> WholePackCensus.contentFormOf(packName, path));
+        return observe(roundTrip, pack, written, census, information, paired, WholePackCensus.formsOf(pack));
     }
 
     /**
      * Runs the round trip and compares every modelled file with its source by the content form {@code formOf} gives
-     * its path; the gate passes the bundled table's form ({@link WholePackCensus#contentFormOf}), a test a fixture's.
+     * its path; the gate passes the bundled table's form with each companion's declared form
+     * ({@link WholePackCensus#formsOf}), a test a fixture's.
      */
-    private static Map<String, Optional<String>> observe(
+    static Map<String, Optional<String>> observe(
             WholePackRoundTrip roundTrip,
             Path pack,
             Path written,
@@ -571,9 +564,15 @@ class WholePackRoundTripTest {
                         case Refused r -> Optional.of("refused: " + r.reason());
                     };
                 case YAML -> yamlRed(comparator, kind, pack, path, written, outcome, outcomes, information, paired);
+                // ADR-0039: a text companion, compared exactly. No files rule is text (the table refuses the form).
                 case TEXT ->
-                    throw new IllegalStateException(
-                            path + ": content form 'text' is not built; the gate has no comparison for it");
+                    switch (outcome) {
+                        case Written w -> {
+                            paired.add(w.writtenPath());
+                            yield textRed(read(pack.resolve(path)), read(written.resolve(w.writtenPath())));
+                        }
+                        case Refused r -> Optional.of("refused: " + r.reason());
+                    };
             };
             observed.put(path, red);
         }
@@ -685,11 +684,27 @@ class WholePackRoundTripTest {
     }
 
     /**
+     * The red detail of a text companion: where the texts first differ, {@code text[<offset>]: source '..', written
+     * '..'}, or, when one is a prefix of the other, {@code length: source N, written M}.
+     */
+    private static Optional<String> textRed(String source, String written) {
+        int offset = Arrays.mismatch(source.toCharArray(), written.toCharArray());
+        if (offset < 0) {
+            return Optional.empty();
+        }
+        if (offset == source.length() || offset == written.length()) {
+            return Optional.of("length: source " + source.length() + ", written " + written.length());
+        }
+        return Optional.of("text[" + offset + "]: source '" + source.charAt(offset) + "', written '"
+                + written.charAt(offset) + "'");
+    }
+
+    /**
      * The written files no source file paired with. Pairing is by kind and id, not by path: the store writes a new
      * artefact at the pack root ({@code <id>.<kind>.yaml}) whatever its source path, a known divergence from ADR-0036's
      * "path for path" until the whole-pack seam (#189) writes artefacts in place.
      */
-    private static List<String> unpaired(Path written, Set<String> paired) {
+    static List<String> unpaired(Path written, Set<String> paired) {
         try (Stream<Path> files = Files.walk(written)) {
             return files.filter(Files::isRegularFile)
                     .map(file -> written.relativize(file)

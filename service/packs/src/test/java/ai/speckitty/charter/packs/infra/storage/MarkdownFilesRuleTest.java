@@ -35,6 +35,7 @@ class MarkdownFilesRuleTest {
     private static final PackFileKind TABLE = new PackFileKind(withTestRule(resource(PackFileKind.RESOURCE)), FIXTURES);
 
     private static final PackSchemas SCHEMAS = new PackSchemas(FIXTURES, List.of("notes"));
+    private static final String DIRECTIVE = "directives/x.directive.yaml";
     private static final MeaningComparator COMPARATOR = MeaningComparator.adr0036();
 
     @Test
@@ -121,9 +122,13 @@ class MarkdownFilesRuleTest {
     void aCompanionPathOntoAMarkdownFileIsRefusedAsOwnedByItsRule(@TempDir Path host) {
         Path pack = host.resolve("built-in").toAbsolutePath().normalize();
 
-        assertThat(Companions.resolve(pack, "directives/x.directive.yaml", "../notes/valid.md", TABLE))
-                .isEqualTo(new Companions.Refused("is a pack file of kind notes, not a companion"));
-        assertThat(Companions.resolve(pack, "directives/x.directive.yaml", "../notes/valid.md"))
+        KindBinding.Companion text =
+                new KindBinding.Companion("../notes/valid.md", Optional.empty(), ContentForm.TEXT, Optional.empty());
+
+        assertThat(Companions.resolve(new Companions.Rules(TABLE, () -> SCHEMAS), pack, DIRECTIVE, text))
+                .isEqualTo(new Companions.Refused(
+                        "is a pack file of kind notes (file-kinds rule '*/notes/*.md'), not a companion"));
+        assertThat(Companions.resolve(Companions.Rules.bundled(), pack, DIRECTIVE, text))
                 .as("unclassified under the bundled table, the same path is a companion")
                 .isInstanceOf(Companions.Inside.class);
     }

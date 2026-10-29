@@ -224,7 +224,7 @@ final class PackFileSet {
                 out.add(file);
                 listed.add(file);
                 if (binding.hasCompanions()) {
-                    for (String companion : companions(directory, file, binding)) {
+                    for (String companion : companions(directory, file, binding, Companions.Rules.bundled())) {
                         if (listed.add(companion)) {
                             out.add(companion);
                         }
@@ -264,16 +264,24 @@ final class PackFileSet {
      * relative. The names come from the binding itself ({@link KindBinding#companions}) on the store's own
      * schema-valid read of the file, so the digest and the load agree on them. The read is static, as the
      * classification and the store's id lookup already parse YAML statically: YAML is the store's one format, and the
-     * digest's callers need no strategy. A file that does not read names none; the load reports it.
+     * digest's callers need no strategy. A file that does not read names none; the load reports it. A companion is
+     * found by its text whatever its form ({@link Companions#locate}), so a Markdown companion whose structure the load
+     * refuses is still digested and a change to it moves the fingerprint (#194).
+     *
+     * @param directory the pack directory, absolute and normalized
+     * @param file the artifact's file, pack relative
+     * @param binding the artifact's binding
+     * @param rules the table that classifies companion paths; the bundled one for the fingerprint, a test's own
+     * @return the companions' pack-relative paths, in the order the artifact names them
      */
-    private static <D> List<String> companions(Path directory, String file, KindBinding<D, ?> binding) {
+    static <D> List<String> companions(Path directory, String file, KindBinding<D, ?> binding, Companions.Rules rules) {
         Optional<String> text = FilesystemPackStore.readText(directory.resolve(file));
         if (text.isEmpty() || !(COMPANION_READER.read(binding, text.get(), file) instanceof FileRead.Read<D> read)) {
             return List.of();
         }
         List<String> out = new ArrayList<>();
         for (KindBinding.Companion companion : binding.companions(read.value())) {
-            if (Companions.read(directory, file, companion.path()) instanceof Companions.Found found) {
+            if (Companions.locate(rules, directory, file, companion) instanceof Companions.Found found) {
                 out.add(found.at().packRelative());
             }
         }

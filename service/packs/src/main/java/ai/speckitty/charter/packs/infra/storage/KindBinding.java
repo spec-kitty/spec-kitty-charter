@@ -22,19 +22,64 @@ interface KindBinding<D, E extends CharterArtifact> {
     /**
      * A file an artifact names, read and written with it (ADR-0039): a skill's prompt body is one.
      *
+     * <p>The companion declares its content form (#194): {@link ContentForm#TEXT}, read and written byte for byte as
+     * today, or {@link ContentForm#MARKDOWN}, read into its model, validated against the structure schema it names
+     * and written in the canonical form ({@link Companions}). The form reuses {@link ContentForm} rather than a
+     * dedicated companion-form enum: that is the smaller change, since the gate and the store already dispatch
+     * exhaustively over {@code ContentForm}, and a companion's form then means exactly what a {@code files} rule's
+     * does. A companion admits only {@code TEXT} and {@code MARKDOWN}; declaring {@code TEXT} here does not build that
+     * form for {@code files} rules, which the table still refuses ({@link PackFileKind}).
+     *
      * @param path the path relative to the artifact's file, exactly as the artifact declares it
      * @param content what the file holds; empty until the store has read it
+     * @param form how the file is read, held, written and compared: {@code TEXT} or {@code MARKDOWN}
+     * @param structureSchema the schema a Markdown companion's model is validated with, as {@link PackSchemas} names
+     *     it; present exactly when the form is {@code MARKDOWN}
      */
-    record Companion(String path, Optional<CompanionContent> content) {
+    record Companion(
+            String path, Optional<CompanionContent> content, ContentForm form, Optional<String> structureSchema) {
         /**
-         * Checks the fields.
+         * Checks the fields: the form is one a companion admits, the structure schema is present exactly for Markdown,
+         * and content, when present, has the declared form.
          *
          * @param path the relative path
          * @param content the content, possibly empty
+         * @param form the declared form
+         * @param structureSchema the structure schema, for Markdown
+         * @throws IllegalArgumentException when the form is not {@code TEXT} or {@code MARKDOWN}, the structure schema
+         *     does not match the form, or the content has another form
          */
         public Companion {
             Objects.requireNonNull(path, "path");
             Objects.requireNonNull(content, "content");
+            Objects.requireNonNull(form, "form");
+            Objects.requireNonNull(structureSchema, "structureSchema");
+            boolean admitted = switch (form) {
+                case TEXT -> structureSchema.isEmpty();
+                case MARKDOWN -> structureSchema.isPresent();
+                case YAML, BYTES -> false;
+            };
+            if (!admitted) {
+                throw new IllegalArgumentException("companion " + path + " is declared " + form.token()
+                        + structureSchema
+                                .map(schema -> " with structure schema " + schema)
+                                .orElse("")
+                        + ": a companion is text with no structure schema, or markdown with one");
+            }
+            content.filter(held -> held.form() != form).ifPresent(held -> {
+                throw new IllegalArgumentException("companion " + path + " is declared " + form.token() + " but holds "
+                        + held.form().token());
+            });
+        }
+
+        /**
+         * A text companion, the form every companion had before #194.
+         *
+         * @param path the relative path
+         * @param content the text, possibly empty
+         */
+        Companion(String path, Optional<CompanionContent> content) {
+            this(path, content, ContentForm.TEXT, Optional.empty());
         }
     }
 
