@@ -104,7 +104,7 @@ class PackAssetFilesTest {
 
         assertThatThrownBy(builder::build)
                 .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining(LOGO.path());
+                .hasMessageContaining("A pack must not hold two asset files with the path '" + LOGO.path() + "'.");
     }
 
     @Test

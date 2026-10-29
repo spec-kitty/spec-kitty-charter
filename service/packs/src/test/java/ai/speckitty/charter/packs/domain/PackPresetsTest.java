@@ -84,14 +84,4 @@ class PackPresetsTest {
         assertThat(replaced.presets()).isEqualTo(pack.presets());
         assertThat(replaced.directives()).extracting(d -> d.localId()).containsExactly("D2", "D1");
     }
-
-    @Test
-    @DisplayName("the asset-file clash keeps its message after the keyed-sort helper is shared")
-    void theAssetFileClashMessageIsUnchanged() {
-        AssetFile file = new AssetFile("x.md", Payload.of(new byte[] {1}));
-
-        assertThatThrownBy(() -> bare().assetFile(file).assetFile(file).build())
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("A pack must not hold two asset files with the path 'x.md'.");
-    }
 }
