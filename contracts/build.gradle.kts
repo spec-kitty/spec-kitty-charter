@@ -693,6 +693,19 @@ val bundleContract = tasks.register<BundleContract>("bundleContract") {
     checksum = layout.buildDirectory.file("contract/charter-openapi.yaml.sha256")
 }
 
+/** The variant attribute value of the bundled contract, which no Java variant carries. */
+val contractBundleCategory: Category = objects.named("charter-contract-bundle")
+
+// The bundle `bundleContract` writes (and validates with oasdiff), published as a variant: :deployable packages it
+// and serves it as GET /openapi.yaml (#209), so the service serves the build output, never a copy. The checksum
+// travels with it for the deployable's tests. Consumers reach it through the variant, never through the task, which
+// keeps the configuration cache valid.
+configurations.consumable("contractBundle") {
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, contractBundleCategory) }
+    outgoing.artifact(bundleContract.flatMap { it.bundle })
+    outgoing.artifact(bundleContract.flatMap { it.checksum })
+}
+
 val lintContract = tasks.register<LintContract>("lintContract") {
     group = "verification"
     description = "Lints the bundled charter contract with the charter's ruleset (contracts/lint/ruleset.yaml)."
