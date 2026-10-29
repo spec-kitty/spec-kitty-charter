@@ -217,6 +217,7 @@ final class FilesystemPackStore {
     private final Path root;
     private final SerializationStrategy strategy;
     private final Rename rename;
+    private final Companions.Rules companionRules;
 
     /**
      * A store that renames atomically.
@@ -236,9 +237,27 @@ final class FilesystemPackStore {
      * @param rename the move step
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy, Rename rename) {
+        this(root, strategy, rename, Companions.Rules.bundled());
+    }
+
+    /**
+     * A store whose companions are held to the given table and schemas: the seam a test uses to give a companion a
+     * structure schema of its own (#194).
+     *
+     * @param root the directory that holds the pack directories
+     * @param strategy the format
+     * @param companionRules the table that classifies companion paths and the schemas of Markdown companions
+     */
+    FilesystemPackStore(Path root, SerializationStrategy strategy, Companions.Rules companionRules) {
+        this(root, strategy, ATOMIC, companionRules);
+    }
+
+    private FilesystemPackStore(
+            Path root, SerializationStrategy strategy, Rename rename, Companions.Rules companionRules) {
         this.root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.rename = Objects.requireNonNull(rename, "rename");
+        this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
     }
 
     /**
@@ -433,7 +452,8 @@ final class FilesystemPackStore {
                     .replace(file.getFileSystem().getSeparator(), "/");
             return switch (readFile(file, name, text -> strategy.read(kind, text, name))) {
                 case FileRead.Read<D> good ->
-                    withCompanions(directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
+                    withCompanions(
+                            companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
                 case FileRead.Unreadable<D> bad -> Optional.empty();
                 case FileRead.Absent<D> absent -> Optional.empty();
             };
@@ -494,7 +514,7 @@ final class FilesystemPackStore {
         for (String file : files) {
             switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
                 case FileRead.Read<D> good ->
-                    withCompanions(directory, file, kind, good.value(), violations, claimed)
+                    withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
                             .ifPresent(dso -> into.add(new Stored<>(file, dso)));
                 case FileRead.Unreadable<D> bad -> violations.addAll(violationsOf(bad));
                 case FileRead.Absent<D> absent -> {}
@@ -504,12 +524,14 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The shape with its companions read in (ADR-0039), or empty when one cannot be read: the artifact is then left
-     * out and the reason recorded as a {@code companion} violation of its file, so a whole-pack write refuses the pack
-     * rather than drop the companion. A companion another artifact of this read already named, case ignored, is
+     * The shape with its companions read in (ADR-0039), each in its declared form (#194), or empty when one cannot be
+     * read: the artifact is then left out and the reason recorded as a {@code companion} violation of its file, naming
+     * the companion path and why (a Markdown refusal names its line, a structure breach its keyword), so a whole-pack
+     * write refuses the pack rather than drop the companion. A companion another artifact of this read already named, case ignored, is
      * refused for the second artifact: one file has one owner. {@code claimed} collects the companions read so far.
      */
     private static <D> Optional<D> withCompanions(
+            Companions.Rules rules,
             Path directory,
             String file,
             KindBinding<D, ?> kind,
@@ -524,7 +546,7 @@ final class FilesystemPackStore {
         Set<String> claims = new HashSet<>();
         for (KindBinding.Companion companion : companions) {
             @Nullable String refusal = null;
-            switch (Companions.read(directory, file, companion.path())) {
+            switch (Companions.read(rules, directory, file, companion)) {
                 case Companions.Refused refused -> refusal = refused.reason();
                 case Companions.Found found -> {
                     String claim = found.at().claim();
@@ -585,10 +607,13 @@ final class FilesystemPackStore {
      * @param kind the kind's binding
      * @param dso what to write
      * @param <D> the kind's persistence shape
-     * @throws CharterRefusal when the file resolves outside the pack, a new element's file name is taken by something
-     *     that is not an element of the kind with that id, or a companion has no content, breaks the companion path
-     *     rule, is named twice, is named by another artifact, differs only in case from the companion it replaces, or
-     *     would replace an existing file the element does not own
+     * @throws CharterRefusal when the file resolves outside the pack or a new element's file name is taken by
+     *     something that is not an element of the kind with that id ({@code PACK_UNREADABLE}); when a companion has no
+     *     content ({@code PACK_UNREADABLE}); when a companion breaks the companion path rule (leaves the pack, is YAML,
+     *     is classified by a rule of {@code file-kinds.yaml}) or its structure schema ({@code VALIDATION_FAILED}, a
+     *     client error); when a companion is named twice, is named by another artifact, differs only in case from the
+     *     companion it replaces, or would replace an existing file the element does not own
+     *     ({@code REGISTRATION_CONFLICT}, a client error)
      */
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
@@ -599,7 +624,8 @@ final class FilesystemPackStore {
         List<Companions.Inside> owned =
                 existing.isPresent() ? companionsOf(directory, file, kind) : List.<Companions.Inside>of();
         Set<String> others = kind.hasCompanions() ? claimsOfOthers(directory, file, kind) : Set.of();
-        Map<Companions.Inside, String> planned = planCompanions(directory, file, kind, dso, owned, others);
+        Map<Companions.Inside, String> planned =
+                planCompanions(companionRules, directory, file, kind, dso, owned, others);
         // writeAtomically creates each companion's directories and refuses, as "cannot write <path> in pack", one it
         // cannot write.
         for (Map.Entry<Companions.Inside, String> companion : planned.entrySet()) {
@@ -619,6 +645,7 @@ final class FilesystemPackStore {
      * @return each companion's place and text, in the order the element names them
      */
     private static <D> Map<Companions.Inside, String> planCompanions(
+            Companions.Rules rules,
             Path directory,
             String file,
             KindBinding<D, ?> kind,
@@ -635,31 +662,41 @@ final class FilesystemPackStore {
             CompanionContent content = companion
                     .content()
                     .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " has no content"));
-            Companions.Inside at = switch (Companions.resolve(directory, file, companion.path())) {
+            Companions.Inside at = switch (Companions.resolve(rules, directory, file, companion)) {
                 case Companions.Inside inside -> inside;
                 case Companions.Refused refused ->
-                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " " + refused.reason());
+                    throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, named + " " + refused.reason());
             };
+            Companions.breach(rules, companion, at.packRelative(), content).ifPresent(breach -> {
+                throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, named + " breaks its " + breach);
+            });
             if (!claims.add(at.claim())) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named twice");
+                throw new CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, named + " is named twice");
             }
             // One file has one owner, case ignored, as the read decides it.
             if (others.contains(at.claim())) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is named by another artifact");
+                throw new CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, named + " is named by another artifact");
             }
             @Nullable String replaced = ownedPaths.get(at.claim());
             if (replaced != null && !replaced.equals(at.packRelative())) {
                 // A case-only rename would orphan the old file, or replace the new one on a case-insensitive file
                 // system.
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " differs only in case from " + replaced);
+                throw new CharterRefusal(
+                        RefusalCode.REGISTRATION_CONFLICT, named + " differs only in case from " + replaced);
             }
             if (Files.exists(at.file(), LinkOption.NOFOLLOW_LINKS) && replaced == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " is taken");
+                throw new CharterRefusal(RefusalCode.REGISTRATION_CONFLICT, named + " is taken");
             }
             if (!realPathContained(directory, at.file())) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " leaves the pack");
+                throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, named + " leaves the pack");
             }
-            planned.put(at, Companions.text(content));
+            try {
+                planned.put(at, Companions.text(content));
+            } catch (IllegalStateException inexpressible) {
+                // A Markdown model the canonical form cannot express (#194): the caller's content, refused.
+                throw new CharterRefusal(
+                        RefusalCode.VALIDATION_FAILED, named + " " + inexpressible.getMessage(), inexpressible);
+            }
         }
         return planned;
     }
@@ -699,7 +736,7 @@ final class FilesystemPackStore {
         }
         List<Companions.Inside> out = new ArrayList<>();
         for (KindBinding.Companion companion : kind.companions(read.value())) {
-            if (Companions.resolve(directory, file, companion.path()) instanceof Companions.Inside at) {
+            if (Companions.resolve(companionRules, directory, file, companion) instanceof Companions.Inside at) {
                 out.add(at);
             }
         }
@@ -861,14 +898,25 @@ final class FilesystemPackStore {
         }
         List<PackElementViolation> out = new ArrayList<>();
         for (SchemaViolation v : bad.violations()) {
-            String where = v.pointer().isEmpty() ? "the document" : "/" + String.join("/", v.pointer());
-            // An undeclared key is named, so the refusal says which field the schema does not declare (FR-006).
-            String key = "additionalProperties".equals(v.keyword())
-                    ? v.property().map(p -> ": undeclared key '" + p + "'").orElse("")
-                    : "";
-            out.add(new PackElementViolation(bad.file(), "schema", v.keyword() + " violated at " + where + key));
+            out.add(new PackElementViolation(bad.file(), "schema", schemaReason(v)));
         }
         return out;
+    }
+
+    /**
+     * A schema violation as a store violation states it: {@code <keyword> violated at <where>}, with an undeclared key
+     * named, so the refusal says which field the schema does not declare (FR-006). A Markdown companion's structure
+     * breach is stated the same way ({@link Companions#breach}).
+     *
+     * @param v the violation
+     * @return the reason
+     */
+    static String schemaReason(SchemaViolation v) {
+        String where = v.pointer().isEmpty() ? "the document" : "/" + String.join("/", v.pointer());
+        String key = "additionalProperties".equals(v.keyword())
+                ? v.property().map(p -> ": undeclared key '" + p + "'").orElse("")
+                : "";
+        return v.keyword() + " violated at " + where + key;
     }
 
     // ---- writing -------------------------------------------------------------------------------------------------

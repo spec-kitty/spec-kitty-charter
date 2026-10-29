@@ -1,21 +1,33 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
- * The one rule for where a companion file may be (ADR-0039), shared by the store's read and upsert and by the source
- * fingerprint, so the three cannot disagree on which files a companion may name.
+ * The one rule for where a companion file may be and how it is held (ADR-0039, #194), shared by the store's read and
+ * upsert, the whole-pack store and the source fingerprint, so they cannot disagree on which files a companion may name.
  *
  * <p>A companion path is relative to its artifact's file and resolves, normalized, to a file inside the pack
- * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file,
- * and it is never a file a {@code payloads} rule of {@code file-kinds.yaml} classifies (an asset file, a template):
- * one file has one owner (ADR-0039 decision 3), so writing a companion can never replace another part of the pack.
+ * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file.
+ * One file has one owner (ADR-0039 decision 3), so writing a companion can never replace another part of the pack: a
+ * path that any {@code files} rule, {@code exclusions} rule or {@code payloads} rule of {@code file-kinds.yaml}
+ * classifies is refused, naming the rule, except at the companion's own rule, a {@code files} rule whose schema is the
+ * companion's declared structure schema in the companion's declared form (a guide classified by its own rule, #195).
+ *
+ * <p>The content is held in the {@linkplain KindBinding.Companion#form() form the companion declares}: text exactly
+ * as read, or Markdown parsed with {@link MarkdownCodec} and validated against the declared structure schema, and
+ * written in the canonical form. Markdown never reaches the YAML reader.
  *
  * <p>The containment half of the rule ({@link #inPack}) is also the one every other pack-relative path the store writes
  * passes: an asset file at {@code assets/<path>} and a template at {@code templates/<id>} (#193, ADR-0040), and every
@@ -27,6 +39,38 @@ final class Companions {
     private static final String YAML = ".yaml";
 
     private Companions() {}
+
+    /**
+     * What a companion is held to: the table that classifies pack paths, and the schemas a Markdown companion's
+     * structure is validated with. Production uses {@link #bundled()}; a test passes a table and schemas of its own.
+     *
+     * @param table the {@code file-kinds.yaml} table
+     * @param schemas the schemas, looked up only when a Markdown companion is validated
+     */
+    record Rules(PackFileKind table, Supplier<PackSchemas> schemas) {
+
+        private static final Rules BUNDLED = new Rules(PackFileKind.bundled(), PackSchemas::bundled);
+
+        /**
+         * Checks the fields.
+         *
+         * @param table the table
+         * @param schemas the schemas
+         */
+        Rules {
+            Objects.requireNonNull(table, "table");
+            Objects.requireNonNull(schemas, "schemas");
+        }
+
+        /**
+         * The bundled table and schemas.
+         *
+         * @return the rules every production store uses
+         */
+        static Rules bundled() {
+            return BUNDLED;
+        }
+    }
 
     /** Where a declared companion path leads. */
     sealed interface Resolution {}
@@ -101,53 +145,48 @@ final class Companions {
     /**
      * Resolves a declared companion path against its artifact's file, without touching the file system.
      *
+     * @param rules the table and schemas
      * @param packDir the pack directory, absolute and normalized
      * @param artifactFile the artifact's file, relative to the pack directory
-     * @param declared the companion path as the artifact declares it
+     * @param companion the companion as the artifact declares it
      * @return where it leads, or why the rule refuses it
      */
-    static Resolution resolve(Path packDir, String artifactFile, String declared) {
-        return resolve(packDir, artifactFile, declared, PackFileKind.bundled());
-    }
-
-    /**
-     * Resolves a declared companion path against a classification table; {@link #resolve(Path, String, String)} with
-     * the bundled table.
-     *
-     * @param packDir the pack directory, absolute and normalized
-     * @param artifactFile the artifact's file, relative to the pack directory
-     * @param declared the companion path as the artifact declares it
-     * @param table the classification table
-     * @return where it leads, or why the rule refuses it
-     */
-    static Resolution resolve(Path packDir, String artifactFile, String declared, PackFileKind table) {
+    static Resolution resolve(Rules rules, Path packDir, String artifactFile, KindBinding.Companion companion) {
         Path base = Objects.requireNonNullElse(packDir.resolve(artifactFile).getParent(), packDir);
-        Resolution resolution = contained(packDir, base, declared);
+        Resolution resolution = contained(packDir, base, companion.path());
+        if (!(resolution instanceof Inside at)) {
+            return resolution;
+        }
         // The resolved name, not the declared text: "pack.yaml/" and "x.tactic.yaml/." both normalize to a YAML file.
-        if (resolution instanceof Inside at
-                && String.valueOf(at.file().getFileName())
-                        .toLowerCase(Locale.ROOT)
-                        .endsWith(YAML)) {
+        if (String.valueOf(at.file().getFileName()).toLowerCase(Locale.ROOT).endsWith(YAML)) {
             return new Refused("is a YAML file");
         }
-        // A pack-level file (#193, ADR-0040) belongs to the rule that classifies it; claiming it too is a pack
-        // inconsistency, refused rather than resolved by precedence.
-        if (resolution instanceof Inside at
-                && table.classify(packDir.getFileName() + "/" + at.packRelative()) instanceof PackFileKind.Mapped mapped
-                && heldInItsOwnRight(mapped)) {
-            return new Refused("is a pack file of kind " + mapped.kind() + ", not a companion");
-        }
-        return resolution;
+        return claimedByRule(rules.table(), packDir.getFileName() + "/" + at.packRelative(), companion)
+                .<Resolution>map(Refused::new)
+                .orElse(at);
     }
 
     /**
-     * Whether a mapped file belongs to its rule rather than to a companion claim: a {@code bytes} payload or a
-     * {@code markdown} file. A {@code yaml} file is refused by name before this ({@code .yaml}) and otherwise resolves.
+     * Why a rule of the table owns the path rather than the companion, or empty when no rule does or the rule is the
+     * companion's own. A claimed file is a pack inconsistency, refused rather than resolved by precedence.
      */
-    private static boolean heldInItsOwnRight(PackFileKind.Mapped mapped) {
-        return switch (mapped.contentForm()) {
-            case BYTES, MARKDOWN, TEXT -> true;
-            case YAML -> false;
+    private static Optional<String> claimedByRule(PackFileKind table, String path, KindBinding.Companion companion) {
+        return switch (table.classify(path)) {
+            case PackFileKind.Unclassified unclassified -> Optional.empty();
+            case PackFileKind.Excluded excluded ->
+                Optional.of("is excluded by file-kinds rule '" + excluded.exclusionClass() + "', not a companion");
+            case PackFileKind.Mapped mapped
+            when mapped.schema().isEmpty() ->
+                // A pack-level file (#193, ADR-0040): an asset file or a template.
+                Optional.of("is a pack file of kind " + mapped.kind() + ", not a companion");
+            case PackFileKind.Mapped mapped -> {
+                boolean own = companion.structureSchema().equals(Optional.of(mapped.kind()))
+                        && companion.form() == mapped.contentForm();
+                yield own
+                        ? Optional.empty()
+                        : Optional.of("is a pack file of kind " + mapped.kind() + " (file-kinds rule '"
+                                + String.join("', '", table.matchingRules(path)) + "'), not a companion");
+            }
         };
     }
 
@@ -192,16 +231,18 @@ final class Companions {
     }
 
     /**
-     * Resolves and reads a companion: it must be a regular file, not reached through a link, whose real location is in
-     * the pack, holding UTF-8 text.
+     * Resolves and reads a companion's text, whatever its form: it must be a regular file, not reached through a link,
+     * whose real location is in the pack, holding UTF-8 text. The source fingerprint digests exactly the companions
+     * this finds, so a change to a Markdown companion moves the fingerprint even while its structure is refused.
      *
+     * @param rules the table and schemas
      * @param packDir the pack directory, absolute and normalized
      * @param artifactFile the artifact's file, relative to the pack directory
-     * @param declared the companion path as the artifact declares it
-     * @return the content, or why it cannot be read
+     * @param companion the companion as the artifact declares it
+     * @return the text, as {@link CompanionContent.Text}, or why it cannot be read
      */
-    static Read read(Path packDir, String artifactFile, String declared) {
-        Resolution resolution = resolve(packDir, artifactFile, declared);
+    static Read locate(Rules rules, Path packDir, String artifactFile, KindBinding.Companion companion) {
+        Resolution resolution = resolve(rules, packDir, artifactFile, companion);
         if (!(resolution instanceof Inside at)) {
             return (Refused) resolution;
         }
@@ -222,14 +263,79 @@ final class Companions {
     }
 
     /**
-     * The text a companion's content is written as.
+     * Resolves and reads a companion in its declared form: {@link #locate} the text, then, for Markdown, parse it and
+     * validate the model against the declared structure schema. A Markdown refusal names its line; a structure breach
+     * names each failed keyword and where.
+     *
+     * @param rules the table and schemas
+     * @param packDir the pack directory, absolute and normalized
+     * @param artifactFile the artifact's file, relative to the pack directory
+     * @param companion the companion as the artifact declares it
+     * @return the content in the declared form, or why it cannot be read
+     */
+    static Read read(Rules rules, Path packDir, String artifactFile, KindBinding.Companion companion) {
+        Read located = locate(rules, packDir, artifactFile, companion);
+        if (!(located instanceof Found found)) {
+            return located;
+        }
+        String text = Companions.text(found.content());
+        return switch (companion.form()) {
+            case TEXT -> found;
+            case MARKDOWN ->
+                switch (MarkdownCodec.parse(text)) {
+                    case MarkdownRefusal refusal -> new Refused(refusal.message());
+                    case MarkdownCodec.Parsed parsed -> {
+                        CompanionContent content = new CompanionContent.Markdown(parsed.document());
+                        yield breach(rules, companion, found.at().packRelative(), content)
+                                .<Read>map(Refused::new)
+                                .orElse(new Found(found.at(), content));
+                    }
+                };
+            case YAML, BYTES ->
+                throw new IllegalStateException(
+                        "a companion is never " + companion.form().token());
+        };
+    }
+
+    /**
+     * Why a companion's content breaks the structure its companion declares, or empty: text has no structure; a
+     * Markdown model is validated against the declared structure schema.
+     *
+     * @param rules the table and schemas
+     * @param companion the companion, with its structure schema
+     * @param packRelative where the companion is, named in the schema violations
+     * @param content the content
+     * @return the breach, each violation as {@code structure: <keyword> violated at <where>}, joined by {@code ; }
+     * @throws IllegalArgumentException when the declared structure schema is not loaded: a binding's error
+     */
+    static Optional<String> breach(
+            Rules rules, KindBinding.Companion companion, String packRelative, CompanionContent content) {
+        return switch (content) {
+            case CompanionContent.Text text -> Optional.empty();
+            case CompanionContent.Markdown markdown -> {
+                List<SchemaViolation> violations = rules.schemas()
+                        .get()
+                        .validateMarkdown(companion.structureSchema().orElseThrow(), packRelative, markdown.document());
+                yield violations.isEmpty()
+                        ? Optional.empty()
+                        : Optional.of(violations.stream()
+                                .map(violation -> "structure: " + FilesystemPackStore.schemaReason(violation))
+                                .collect(Collectors.joining("; ")));
+            }
+        };
+    }
+
+    /**
+     * The text a companion's content is written as: text as it is, Markdown in its canonical form.
      *
      * @param content the content
      * @return its text
+     * @throws IllegalStateException when a Markdown model has no canonical form that reads back as itself
      */
     static String text(CompanionContent content) {
         return switch (content) {
             case CompanionContent.Text text -> text.value();
+            case CompanionContent.Markdown markdown -> MarkdownCodec.write(markdown.document());
         };
     }
 }

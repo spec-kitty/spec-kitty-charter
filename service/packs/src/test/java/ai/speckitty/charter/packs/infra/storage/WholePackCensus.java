@@ -1,13 +1,19 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Every file of a pack with its gate kind: the universe the whole-pack gate accounts for.
@@ -16,6 +22,10 @@ import java.util.stream.Stream;
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
  * {@code other:<top-level directory>}, or {@code other:<file name>} at the pack root, so files without a schema are
  * grouped where they live ({@code other:missions}, {@code other:pack.md}).
+ *
+ * <p>A companion file (ADR-0039, #194) that no rule maps takes its owning artifact's gate kind, so it is modelled with
+ * that artifact: the gate pairs it with the owner's written companion at the same relative path and compares it in the
+ * companion's declared form ({@link #companionsOf}, {@link #formsOf}), never as YAML.
  */
 final class WholePackCensus {
 
@@ -28,6 +38,31 @@ final class WholePackCensus {
     private WholePackCensus() {}
 
     /**
+     * A companion file of the pack and the artifact that names it.
+     *
+     * @param owner the owning artifact's file, pack relative
+     * @param ownerKind the owner's gate kind, its binding's schema name
+     * @param declared the companion path exactly as the owner declares it, relative to the owner's file
+     * @param form the companion's declared content form
+     */
+    record CompanionFile(String owner, String ownerKind, String declared, ContentForm form) {
+        /**
+         * Checks the fields.
+         *
+         * @param owner the owner's file
+         * @param ownerKind the owner's gate kind
+         * @param declared the declared path
+         * @param form the declared form
+         */
+        CompanionFile {
+            Objects.requireNonNull(owner, "owner");
+            Objects.requireNonNull(ownerKind, "ownerKind");
+            Objects.requireNonNull(declared, "declared");
+            Objects.requireNonNull(form, "form");
+        }
+    }
+
+    /**
      * Lists every regular file under {@code pack}, and every symbolic link as kind {@link #SYMLINK}, never followed.
      *
      * @param pack the pack directory
@@ -35,6 +70,7 @@ final class WholePackCensus {
      */
     static SortedMap<String, String> of(Path pack) {
         String packName = String.valueOf(pack.getFileName());
+        SortedMap<String, CompanionFile> companions = companionsOf(pack);
         SortedMap<String, String> census = new TreeMap<>();
         try (Stream<Path> walk = Files.walk(pack)) {
             walk.filter(file -> Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(file))
@@ -42,7 +78,7 @@ final class WholePackCensus {
                         String path = pack.relativize(file)
                                 .toString()
                                 .replace(file.getFileSystem().getSeparator(), "/");
-                        census.put(path, Files.isSymbolicLink(file) ? SYMLINK : kindOf(packName, path));
+                        census.put(path, Files.isSymbolicLink(file) ? SYMLINK : kindOf(packName, path, companions));
                     });
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -58,11 +94,101 @@ final class WholePackCensus {
      * @return the schema name, or {@code other:<first path segment>}
      */
     static String kindOf(String packName, String path) {
+        return kindOf(packName, path, new TreeMap<>());
+    }
+
+    /** The schema name, else the owning artifact's gate kind for a companion, else {@code other:<first segment>}. */
+    private static String kindOf(String packName, String path, SortedMap<String, CompanionFile> companions) {
         if (PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped) {
             return mapped.kind();
         }
+        @Nullable CompanionFile companion = companions.get(path);
+        if (companion != null) {
+            return companion.ownerKind();
+        }
         int slash = path.indexOf('/');
         return OTHER + (slash < 0 ? path : path.substring(0, slash));
+    }
+
+    /**
+     * The companion files the readable artifacts of the pack name, under the registry's bindings and the bundled rules.
+     *
+     * @param pack the pack directory
+     * @return pack-relative companion path to its owner, sorted by path
+     */
+    static SortedMap<String, CompanionFile> companionsOf(Path pack) {
+        return companionsOf(pack, KindBindings.all(), Companions.Rules.bundled());
+    }
+
+    /**
+     * The companion files the readable artifacts of the pack name, as the companion rule resolves them (whether the
+     * file exists is the round trip's to report). Each artifact file is read as YAML through its binding, as the
+     * source fingerprint reads it; a companion itself is never read here.
+     *
+     * @param pack the pack directory
+     * @param bindings the bindings whose companions to list; a test passes one of its own
+     * @param rules the table that classifies companion paths
+     * @return pack-relative companion path to its owner, sorted by path
+     */
+    static SortedMap<String, CompanionFile> companionsOf(
+            Path pack, List<KindBinding<?, ?>> bindings, Companions.Rules rules) {
+        Path packDir = pack.toAbsolutePath().normalize();
+        SortedMap<String, CompanionFile> out = new TreeMap<>();
+        for (KindBinding<?, ?> binding : bindings) {
+            if (binding.hasCompanions()) {
+                for (String file : PackFileSet.files(packDir, binding.kind())) {
+                    companionsOf(packDir, file, binding, rules, out);
+                }
+            }
+        }
+        return out;
+    }
+
+    private static <D> void companionsOf(
+            Path packDir,
+            String file,
+            KindBinding<D, ?> binding,
+            Companions.Rules rules,
+            SortedMap<String, CompanionFile> out) {
+        Optional<String> text = FilesystemPackStore.readText(packDir.resolve(file));
+        if (text.isEmpty()
+                || !(new YamlSerializationStrategy().read(binding, text.get(), file)
+                        instanceof FileRead.Read<D> read)) {
+            return;
+        }
+        for (KindBinding.Companion companion : binding.companions(read.value())) {
+            if (Companions.resolve(rules, packDir, file, companion) instanceof Companions.Inside at) {
+                out.putIfAbsent(
+                        at.packRelative(),
+                        new CompanionFile(file, binding.schemaName(), companion.path(), companion.form()));
+            }
+        }
+    }
+
+    /**
+     * How the gate compares each file of a pack: a companion in its declared form, any other file as
+     * {@link #contentFormOf} gives it.
+     *
+     * @param pack the pack directory
+     * @return the form of a pack-relative path
+     */
+    static Function<String, ContentForm> formsOf(Path pack) {
+        return formsOf(pack, companionsOf(pack));
+    }
+
+    /**
+     * How the gate compares each file of a pack, given its companions.
+     *
+     * @param pack the pack directory
+     * @param companions the pack's companions, as {@link #companionsOf} lists them
+     * @return the form of a pack-relative path
+     */
+    static Function<String, ContentForm> formsOf(Path pack, SortedMap<String, CompanionFile> companions) {
+        String packName = String.valueOf(pack.getFileName());
+        return path -> {
+            @Nullable CompanionFile companion = companions.get(path);
+            return companion != null ? companion.form() : contentFormOf(packName, path);
+        };
     }
 
     /**

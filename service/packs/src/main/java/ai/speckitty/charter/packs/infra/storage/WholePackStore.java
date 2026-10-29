@@ -108,6 +108,8 @@ public final class WholePackStore {
     }
 
     private final SerializationStrategy strategy;
+    private final List<KindBinding<?, ?>> bindings;
+    private final Companions.Rules companionRules;
 
     /**
      * A store over a format.
@@ -115,7 +117,21 @@ public final class WholePackStore {
      * @param strategy the serialization format
      */
     public WholePackStore(SerializationStrategy strategy) {
+        this(strategy, KindBindings.all(), Companions.Rules.bundled());
+    }
+
+    /**
+     * A store with its own bindings and companion rules: the seam a test uses to carry a binding of its own, such as
+     * one whose companion is Markdown with a test structure schema (#194), through the whole-pack load and write.
+     *
+     * @param strategy the serialization format
+     * @param bindings the bindings to read and write with, in place of the registry; at most one per kind
+     * @param companionRules the table that classifies companion paths and the schemas of Markdown companions
+     */
+    WholePackStore(SerializationStrategy strategy, List<KindBinding<?, ?>> bindings, Companions.Rules companionRules) {
         this.strategy = Objects.requireNonNull(strategy, "strategy");
+        this.bindings = List.copyOf(bindings);
+        this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
     }
 
     /**
@@ -134,9 +150,9 @@ public final class WholePackStore {
         if (parent == null || packDir.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
         }
-        FilesystemPackStore store = new FilesystemPackStore(parent, strategy);
+        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
         PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
-        FilesystemPackStore.PackRead read = store.read(key);
+        FilesystemPackStore.PackRead read = store.read(key, bindings);
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
         Map<Urn, String> places = new HashMap<>();
         Pack.Builder builder = DomainRepositoryService.assembly(id, read, places);
@@ -212,9 +228,9 @@ public final class WholePackStore {
      * The pack-relative paths of the companions every readable artifact names (ADR-0039), as the companion rule resolves
      * them: they are modelled with their artifact, so none is listed as unmodelled.
      */
-    private static Set<String> companionFiles(Path packDir, FilesystemPackStore.PackRead read) {
+    private Set<String> companionFiles(Path packDir, FilesystemPackStore.PackRead read) {
         Set<String> out = new HashSet<>();
-        for (KindBinding<?, ?> kind : KindBindings.all()) {
+        for (KindBinding<?, ?> kind : bindings) {
             if (kind.hasCompanions()) {
                 out.addAll(companionFiles(packDir, kind, read));
             }
@@ -222,12 +238,12 @@ public final class WholePackStore {
         return out;
     }
 
-    private static <D> List<String> companionFiles(
-            Path packDir, KindBinding<D, ?> kind, FilesystemPackStore.PackRead read) {
+    private <D> List<String> companionFiles(Path packDir, KindBinding<D, ?> kind, FilesystemPackStore.PackRead read) {
         List<String> out = new ArrayList<>();
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             for (KindBinding.Companion companion : kind.companions(stored.dso())) {
-                if (Companions.resolve(packDir, stored.file(), companion.path()) instanceof Companions.Inside at) {
+                if (Companions.resolve(companionRules, packDir, stored.file(), companion)
+                        instanceof Companions.Inside at) {
                     out.add(at.packRelative());
                 }
             }
@@ -398,14 +414,18 @@ public final class WholePackStore {
                     written);
             return;
         }
-        KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
+        KindBinding<?, ?> kind = bindings.stream()
+                .filter(binding -> binding.kind() == artifact.kind())
+                .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"));
         putArtifact(staging, path, kind, artifact, written);
     }
 
     /**
-     * Writes an artifact's file and then each of its companions beside it (ADR-0039). A companion without content, or
-     * one the companion rule refuses, refuses the write: after a load neither can happen, so it is a caller's error.
+     * Writes an artifact's file and then each of its companions beside it (ADR-0039), each in its declared form: text
+     * as it is, Markdown in its canonical form (#194). A companion without content, one the companion rule refuses, or
+     * a Markdown companion that breaks its structure schema refuses the write: after a load none can happen, so it is
+     * a caller's error.
      */
     private <D> void putArtifact(
             Path staging, String path, KindBinding<D, ?> kind, CharterArtifact artifact, Set<String> written)
@@ -417,11 +437,15 @@ public final class WholePackStore {
             CompanionContent content = companion
                     .content()
                     .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " has no content"));
-            Companions.Inside at = switch (Companions.resolve(staging, path, companion.path())) {
+            Companions.Inside at = switch (Companions.resolve(companionRules, staging, path, companion)) {
                 case Companions.Inside inside -> inside;
                 case Companions.Refused refused ->
                     throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, named + " " + refused.reason());
             };
+            Companions.breach(companionRules, companion, at.packRelative(), content)
+                    .ifPresent(breach -> {
+                        throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, named + " breaks its " + breach);
+                    });
             put(staging, at.packRelative(), utf8(Companions.text(content)), written);
         }
     }

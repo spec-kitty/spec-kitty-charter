@@ -54,6 +54,12 @@ import org.jspecify.annotations.Nullable;
  * store's exact reasons. A readable one is restamped (ADR-0042) over the written files it pairs with: a constituent
  * with the written artefact of its kind and id, a preset entry with the preset written at its path. A listed file the
  * round trip did not write refuses it; otherwise the stamped manifest is written at its own path.
+ *
+ * <p>ADR-0039, #194: a companion file is modelled with the artefact that names it ({@link WholePackCensus#companionsOf}).
+ * It is paired with the companion the owner's written file names at the same relative path, and the gate compares the
+ * two in the companion's declared form ({@link WholePackCensus#formsOf}). A source companion the written owner does
+ * not name is refused as unpaired; a written companion no source companion pairs with is an extra written file. A
+ * companion's text is never read here, so Markdown never reaches the YAML reader.
  */
 final class DomainRoundTrip implements WholePackRoundTrip {
 
@@ -130,9 +136,13 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 ? Map.of(READ_BACK_FAILED, List.of("read-back: the written pack does not load: " + reloaded.failure()))
                 : byFile(reloaded.pack().violations(), "read-back: ");
         Map<String, String> written = writtenByKindAndId(target);
-        Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf);
+        SortedMap<String, WholePackCensus.CompanionFile> companions = WholePackCensus.companionsOf(source);
+        Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf, companions.keySet());
         Map<String, List<String>> missingPayloads = pack == null ? Map.of() : missingPayloads(pack);
         kindOf.forEach((path, kind) -> {
+            if (companions.containsKey(path)) {
+                return; // paired below, once its owner's outcome is known
+            }
             if (DESCRIPTOR.equals(kind)) {
                 outcomes.put(
                         path,
@@ -155,7 +165,47 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 outcomes.put(path, preset(path, pack, assemblyFailure, reloaded));
             }
         });
+        SortedMap<String, WholePackCensus.CompanionFile> writtenCompanions = WholePackCensus.companionsOf(target);
+        companions.forEach((path, companion) -> {
+            if (kindOf.containsKey(path)) {
+                outcomes.put(path, companion(target, companion, outcomes, writtenCompanions));
+            }
+        });
         return outcomes;
+    }
+
+    // ---- companions (ADR-0039, #194) ------------------------------------------------------------
+
+    /**
+     * A source companion's outcome: refused with its owner, else {@link Written} at the companion the written owner
+     * names at the same relative path, else refused as unpaired. Only paths are compared here; the gate reads both files
+     * in the companion's declared form.
+     */
+    private static Outcome companion(
+            Path target,
+            WholePackCensus.CompanionFile companion,
+            Map<String, Outcome> outcomes,
+            SortedMap<String, WholePackCensus.CompanionFile> writtenCompanions) {
+        String owner = companion.ownerKind() + " " + companion.owner();
+        @Nullable Outcome ownerOutcome = outcomes.get(companion.owner());
+        if (ownerOutcome instanceof Refused refused) {
+            return new Refused("its " + owner + " is refused: " + refused.reason());
+        }
+        if (!(ownerOutcome instanceof Written writtenOwner)) {
+            return new Refused("its " + owner + " has no outcome");
+        }
+        for (Map.Entry<String, WholePackCensus.CompanionFile> entry : writtenCompanions.entrySet()) {
+            WholePackCensus.CompanionFile candidate = entry.getValue();
+            if (candidate.owner().equals(writtenOwner.writtenPath())
+                    && candidate.declared().equals(companion.declared())) {
+                return Files.isRegularFile(target.resolve(entry.getKey()))
+                        ? new Written(entry.getKey())
+                        : new Refused("not written: the written " + companion.ownerKind() + " "
+                                + writtenOwner.writtenPath() + " names " + companion.declared() + ", which is missing");
+            }
+        }
+        return new Refused("unpaired: the written " + companion.ownerKind() + " " + writtenOwner.writtenPath()
+                + " names no companion " + companion.declared());
     }
 
     /**
@@ -257,11 +307,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         return unknown.isEmpty() ? "" : " (unknown field: " + String.join(", ", unknown) + ")";
     }
 
-    /** The declared id of every source artefact file, read once. */
-    private static Map<String, @Nullable String> sourceIds(Path source, Map<String, String> kindOf) {
+    /** The declared id of every source artefact file, read once; a companion is no artefact file and is not read. */
+    private static Map<String, @Nullable String> sourceIds(
+            Path source, Map<String, String> kindOf, Set<String> companions) {
         Map<String, @Nullable String> ids = new HashMap<>();
         kindOf.forEach((path, kind) -> {
-            if (ARTEFACT_KINDS.contains(kind)) {
+            if (ARTEFACT_KINDS.contains(kind) && !companions.contains(path)) {
                 ids.put(path, idOf(read(source.resolve(path)), bindingOf(kind).idKey()));
             }
         });

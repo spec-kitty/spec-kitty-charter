@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.SkillInvocation;
 import ai.speckitty.charter.packs.domain.SkillParameter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The {@link KindBinding} of the pack skill: {@link SkillDso} to {@link Skill} and back. Its files are
@@ -45,11 +46,12 @@ enum SkillBinding implements KindBinding<SkillDso, Skill> {
         return true;
     }
 
-    /** The prompt body, when the skill names one. */
+    /** The prompt body, when the skill names one: a text companion, read and written byte for byte. */
     @Override
     public List<Companion> companions(SkillDso dso) {
         return dso.bodyPath()
-                .map(path -> List.of(new Companion(path, dso.body().map(CompanionContent.Text::new))))
+                .map(path -> List.of(new Companion(
+                        path, dso.body().map(CompanionContent.Text::new), ContentForm.TEXT, Optional.empty())))
                 .orElse(List.of());
     }
 
