@@ -7,6 +7,9 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.Guide;
+import ai.speckitty.charter.packs.domain.GuideBlock;
+import ai.speckitty.charter.packs.domain.GuideSection;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
@@ -68,7 +71,9 @@ class ToolguideReadServiceTest {
         // Value-equality beyond identity: the round trip preserves every field, including the present optional.
         assertThat(read.tool()).isEqualTo(git.tool());
         assertThat(read.title()).isEqualTo(git.title());
-        assertThat(read.guidePath()).isEqualTo(git.guidePath());
+        assertThat(read.guide()).isEqualTo(git.guide());
+        assertThat(read.guide().block(GuideBlock.USAGE)).contains("Run `git`.");
+        assertThat(read.guide().sections()).containsExactly(new GuideSection("Signing", "Sign every git change."));
         assertThat(read.summary()).isEqualTo(git.summary());
         assertThat(read.commands()).isEqualTo(git.commands());
         assertThat(read.appliesToLanguages()).isEqualTo(git.appliesToLanguages());
@@ -155,7 +160,9 @@ class ToolguideReadServiceTest {
                 .schemaVersion("1.0")
                 .tool(id)
                 .title("How to use " + id)
-                .guidePath(id + ".md")
+                .guide(new Guide(
+                        Map.of(GuideBlock.OVERVIEW, "How to use " + id + ".", GuideBlock.USAGE, "Run `" + id + "`."),
+                        List.of(new GuideSection("Signing", "Sign every " + id + " change."))))
                 .summary("Using " + id + " under governance.")
                 .command(id + " status")
                 .appliesToLanguage("java")

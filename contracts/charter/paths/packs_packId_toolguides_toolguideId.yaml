@@ -2,7 +2,8 @@ get:
   operationId: getPackToolguide
   summary: Get one toolguide of a Charter Pack by identity.
   description: >-
-    One toolguide of one pack (FR-015); a toolguide mints no relationships. An identifier that matches no
+    One toolguide of one pack (FR-015), with its guide's Markdown as content, its H1 written from the title; a
+    toolguide mints no relationships. An identifier that matches no
     configured pack is a 404 pack_not_found; a pack without that toolguide is a 404 toolguide_not_found.
     A pack whose files cannot be read is a 500 pack_unreadable. The answer is verified against the source
     fingerprint and carries it.
@@ -52,7 +53,9 @@ put:
     Idempotent create-or-replace of a toolguide by id (functional registration, ADR-0026): the whole pack
     aggregate is revalidated and committed atomically. Answers 201 when it created the toolguide, 200 when it
     replaced one, each with an ETag revision. If-Match carries optimistic concurrency: a stale precondition is
-    a 412 (a plain Problem, not a refusal code). A malformed body is a 422 validation_failed, and the pack is
+    a 412 (a plain Problem, not a refusal code). The body carries exactly one of guide (the Markdown) or
+    guideUri, which every PUT fetches again before it takes the pack's write lock; the answer carries the stored
+    guide. A malformed body, an invalid guide or a refused fetch is a 422 validation_failed, and the pack is
     left unchanged.
   tags:
     - Toolguides
@@ -119,7 +122,10 @@ put:
     '404':
       $ref: ../responses/ToolguideNotFound.yaml
     '409':
-      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      description: >-
+        The registration conflicts with the pack's current state (registration_conflict: a duplicate id on POST, or
+        the guide's file <id>.guide.md already claimed by another artifact of the pack; or
+        governance_policy_violation).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -134,7 +140,11 @@ put:
     '412':
       $ref: ../../_shared/responses/Problem.yaml
     '422':
-      description: The registration is well-formed but breaks a pack invariant or schema.
+      description: >-
+        The registration is well-formed but breaks a pack invariant or schema (validation_failed): among others, it
+        carries both or neither of guide and guideUri, or an empty one; its guide is over 1 MiB of UTF-8 or is not a
+        valid guide (the detail names the rule); or the service refused to fetch its guideUri (the detail names the
+        reason and the host).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

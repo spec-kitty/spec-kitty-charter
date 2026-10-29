@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
  * path; it adds no method to the persistence service), while the single read is a point read through
  * {@link ToolguideRepository}. A pack the load cannot resolve is refused {@link RefusalCode#PACK_NOT_FOUND}; an absent
  * toolguide is refused {@link RefusalCode#TOOLGUIDE_NOT_FOUND}, exactly as the paradigm reads refuse their absences.
+ *
+ * <p>A toolguide read carries its {@link ai.speckitty.charter.packs.domain.Guide} as content, never a path to it
+ * (FR-010): the store reads the guide with the toolguide, so a client needs no filesystem shared with the service.
  */
 @Service
 public final class ToolguideReadService {

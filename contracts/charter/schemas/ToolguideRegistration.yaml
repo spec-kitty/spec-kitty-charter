@@ -2,15 +2,22 @@ title: ToolguideRegistration
 description: >-
   The registration body of a toolguide: its fields only. A toolguide mints no relationships (its references are bare
   citation strings, not typed edges), so this body carries no relationships array. On POST to the collection the id is
-  optional (the server answers with Location); on PUT the id is taken from the path.
+  optional (the server answers with Location); on PUT the id is taken from the path. The guide travels in the body,
+  never as a path: the body carries exactly one of guide (the Markdown content) or guideUri (a URI the service fetches
+  once, at registration), so the service assumes no filesystem shared with its client. Both, neither, a null or an
+  empty value is refused 422 validation_failed, whatever a generated client enforces of the oneOf below.
 type: object
 additionalProperties: false
 required:
   - schemaVersion
   - tool
   - title
-  - guidePath
   - summary
+oneOf:
+  - required:
+      - guide
+  - required:
+      - guideUri
 properties:
   id:
     type: string
@@ -36,12 +43,33 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
       symbol: Toolguide.title
-  guidePath:
+  guide:
     type: string
-    description: The relative *.md path of the guide body.
+    minLength: 1
+    description: >-
+      The guide's Markdown in the structured guide form: no frontmatter, an optional H1 that must equal the title, no
+      text before the first H2, a non-blank ## Overview, then the fixed blocks (## When to use, ## Setup, ## Usage,
+      ## Cautions, ## Known limitations, ## References) in that order, with freeform H2 sections between ## Usage and
+      ## Cautions. At most 1 MiB of UTF-8; a larger guide is refused 422 validation_failed before it is parsed.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
-      symbol: Toolguide.guidePath
+      symbol: Toolguide.guide
+  guideUri:
+    type: string
+    format: uri
+    pattern: '^https://'
+    description: >-
+      An HTTPS URI the service fetches the guide from, once per registration (a PUT with the same URI fetches it
+      again), before it takes the pack's write lock. The fetched text is read exactly like an inline guide. The fetch
+      is direct (no proxy), over HTTPS only, to a host exactly on the service's allowlist (empty by default, so every
+      URI is refused until an operator allowlists a host), to global unicast addresses only (checked at resolution and
+      on every redirect), with at most 3 redirects, a 10-second deadline over the whole exchange, a 1 MiB streamed
+      cap, identity encoding and UTF-8 only, and no credentials forwarded. A refused fetch is 422 validation_failed
+      naming the reason and the host, never the path or query. A deployment that reaches the guide host only through
+      a proxy sends the content as guide instead.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/GuideFetcher.java
+      symbol: GuideFetcher.fetch
   summary:
     type: string
     description: The toolguide's summary.

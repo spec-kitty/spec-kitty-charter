@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
+import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
@@ -71,7 +72,7 @@ class PackCommitStoreTest {
                 .schemaVersion("1.0")
                 .tool("ripgrep")
                 .title("Use ripgrep")
-                .guidePath("guides/" + toolguideId + ".md")
+                .guide(Guide.of("How to use the tool."))
                 .summary("How to search.")
                 .build();
     }
@@ -106,7 +107,7 @@ class PackCommitStoreTest {
         assertThat(after.keySet())
                 .containsExactlyInAnyOrderElementsOf(Stream.concat(
                                 before.keySet().stream(),
-                                Stream.of("ripgrep.toolguide.yaml", RelationshipShard.SHARD_PATH))
+                                Stream.of("ripgrep.toolguide.yaml", "ripgrep.guide.md", RelationshipShard.SHARD_PATH))
                         .toList());
         before.forEach((file, content) ->
                 assertThat(after.get(file)).as("%s is byte-unchanged", file).isEqualTo(content));
@@ -259,13 +260,27 @@ class PackCommitStoreTest {
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
                 locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
         ToolguideRegistrationService registrations = new ToolguideRegistrationService(
-                new DomainRepositoryService(locations(packDir), strategy), writeStore, new PermissiveWritePolicyGate());
+                new DomainRepositoryService(locations(packDir), strategy),
+                writeStore,
+                new PermissiveWritePolicyGate(),
+                uri -> {
+                    throw new AssertionError("no guide is fetched: the guide is sent as content");
+                },
+                new MarkdownGuideFormat());
+        ToolguideRegistrationService.GuideSource guide =
+                new ToolguideRegistrationService.GuideSource.Content("## Overview\n\nHow to search.");
 
-        assertThatThrownBy(() -> registrations.registerToolguide(PACK, toolguide("ripgrep"), true, null))
+        assertThatThrownBy(() -> registrations.registerToolguide(
+                        PACK, "Use ripgrep", guide, resolved -> toolguide("ripgrep"), true, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
-        assertThatThrownBy(() ->
-                        registrations.registerToolguide(new PackIdentifier("ghost"), toolguide("ripgrep"), true, null))
+        assertThatThrownBy(() -> registrations.registerToolguide(
+                        new PackIdentifier("ghost"),
+                        "Use ripgrep",
+                        guide,
+                        resolved -> toolguide("ripgrep"),
+                        true,
+                        null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }

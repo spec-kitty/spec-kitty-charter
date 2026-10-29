@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
+import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Preset;
@@ -152,8 +153,21 @@ class PresetRoundTripTest {
                 new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
         PackIdentifier id = new PackIdentifier(FIXTURE);
 
-        new ToolguideRegistrationService(service, writeStore, new PermissiveWritePolicyGate())
-                .registerToolguide(id, toolguide(id), true, null);
+        new ToolguideRegistrationService(
+                        service,
+                        writeStore,
+                        new PermissiveWritePolicyGate(),
+                        uri -> {
+                            throw new AssertionError("no guide is fetched: the guide is sent as content");
+                        },
+                        new MarkdownGuideFormat())
+                .registerToolguide(
+                        id,
+                        "Use ripgrep",
+                        new ToolguideRegistrationService.GuideSource.Content("## Overview\n\nHow to search."),
+                        guide -> toolguide(id, guide),
+                        true,
+                        null);
 
         assertThat(service.load(id).toolguides())
                 .extracting(t -> t.id().value())
@@ -247,14 +261,14 @@ class PresetRoundTripTest {
         return out;
     }
 
-    private static Toolguide toolguide(PackIdentifier pack) {
+    private static Toolguide toolguide(PackIdentifier pack, Guide guide) {
         return Toolguide.builder()
                 .id(new ToolguideIdentifier("ripgrep"))
                 .packId(pack)
                 .schemaVersion("1.0")
                 .tool("ripgrep")
                 .title("Use ripgrep")
-                .guidePath("guides/ripgrep.md")
+                .guide(guide)
                 .summary("How to search.")
                 .build();
     }

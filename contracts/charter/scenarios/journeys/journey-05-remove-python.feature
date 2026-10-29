@@ -21,12 +21,13 @@ Feature: Journey 05 — We Hate Snakes LLC removes the Python artifacts
   Scenario: The team finds a language-specific toolguide by reading the pack
     When I PUT "/packs/qa/toolguides/pytest" with the body:
       """
-      {"schemaVersion": "1.0", "tool": "pytest", "title": "How to use pytest", "guidePath": "pytest.md", "summary": "Using pytest under governance."}
+      {"schemaVersion": "1.0", "tool": "pytest", "title": "How to use pytest", "guide": "## Overview\n\nUse pytest under governance.", "summary": "Using pytest under governance."}
       """
     Then the response status is 201
     When I GET "/packs/qa/toolguides/pytest"
     Then the response status is 200
     And the field "tool" of the response body is "pytest"
+    And the field "guide" of the response body starts with "# How to use pytest"
 
   @WIP
   Scenario: Removing one Python toolguide leaves the rest of the pack in the offering
