@@ -13,5 +13,7 @@
   "purpose_tldr": "The running service answers GET /openapi.yaml with the exact contract bundle it was built from, guarded like every operation and cacheable by ETag.",
   "slug": "serve-openapi-document-01M64FVZ",
   "target_branch": "feat/209-serve-openapi-document",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "The operation is already declared in contracts/charter (#208); this mission implements it with no contract change."
 }
