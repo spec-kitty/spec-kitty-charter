@@ -94,6 +94,42 @@ This file consolidates the resulting decisions.
   address; at most 3 redirects; 10 s total; 1 MiB streamed cap; no cookies or credentials forwarded; typed refusals.
 - **Alternatives**: store the URI only (declined); keep `guidePath` (no content to store).
 
+## D8a — Guide over HTTP, revised after the post-plan squad
+
+- **Decision**: the toolguide response carries `guide` (the Markdown) and drops `guidePath` (operator, 2026-10-29).
+  The fetch is direct: `HttpClient` with `proxy(NO_PROXY)` (this container sets `https.proxyHost` through
+  `JAVA_TOOL_OPTIONS`, which would otherwise tunnel and void the address checks) and a JEP 418
+  `InetAddressResolverProvider` that, for allowlisted hosts only, refuses any non-global-unicast answer — closing DNS
+  rebinding, which `HttpClient` cannot pin otherwise (`Host` is a restricted header; no socket factory). Redirects
+  are followed manually (`Redirect.NEVER`) with per-hop checks. `HttpRequest.timeout` bounds only the wait for
+  headers, so one deadline covers DNS, every hop and the body (`sendAsync`, counting subscriber, `orTimeout`,
+  cancel). Allowlist match is exact after lower-casing and trailing-dot strip; null hosts (IDN, underscores),
+  userinfo and IP literals are refused. `Content-Encoding` other than identity and non-UTF-8 charsets are refused.
+- **Consequence**: deployments whose only egress is a proxy cannot use `guideUri` (operator accepted).
+- **Alternatives**: residual rebinding risk (declined); configured proxy (declined).
+
+## D10 — Guide file name and companion ownership
+
+- **Decision**: a guide is `<id>.guide.md` beside its toolguide; a companion is refused any path that a `files` or
+  exclusions rule classifies (not only schema-less payloads).
+- **Rationale**: adversary finding: a toolguide with id `pack` would claim `pack.md` (#195's `files` rule), and 4
+  pinned guides differ from `<id>.md` only in case.
+
+## D11 — Procedure roles and guide H1
+
+- **Decision**: pinned `actor: human` becomes `role: operator`; `agent` and `system` steps carry no role (operator,
+  2026-10-29). An incoming guide may omit its H1; a present H1 must equal the toolguide title; the server always
+  writes it.
+
+## D12 — The Markdown scanner follows CommonMark fence rules
+
+- **Decision**: backtick and tilde fences; a closing fence uses the opener's character and is at least as long;
+  fences at any indentation hide headings; thematic breaks are not setext underlines; the indented-heading refusal
+  applies to H1 and H2 only; empty files are valid documents; the model enforces its invariants at construction.
+- **Rationale**: MERMAID_DIAGRAMMING.md:212-217 nests 3-backtick lines in a 4-backtick fence; tasks/prompt.md:127 has
+  an indented H3 in a list; 26 thematic-break lines in 5 guides; two empty prompts. D6's claim "all 72 canonical"
+  holds for H1/H2 only.
+
 ## D9 — Delivery in two PRs
 
 - **Decision**: PR-A1 = the `markdown` form and the ADR-0040 amendment; PR-A2 = the rest.
@@ -105,3 +141,33 @@ No dependency is added, upgraded or removed: the Markdown scanner is purpose-bui
 HTTP client. The `supply-chain-install-safety` controls therefore have no artifact to apply to; result recorded as
 "no dependency change". Gradle resolution in this session goes through a Maven Central mirror (session init script
 outside the repo, documented in PR #259); strict SHA-256 verification is unchanged.
+
+## Post-plan squad dispositions
+
+Squad: reviewer-renata (fidelity), qa-strategist-quinn (test strategy), debugger-debbie (failure modes); reports in
+`research/post-plan-squad/`. Verdicts: revise before tasks / conditional go / conditional pass. All findings are
+dispositioned; none was dropped.
+
+| Finding (lens) | Disposition | Where |
+|---|---|---|
+| Spec still encodes known-failure listing instead of migrate-and-re-pin (R) | accepted | spec.md SC-002, NFR-001, US3, edge cases |
+| SC-005, FR-008, FR-009 no-op passable (R) | accepted | spec.md FR-008 positive control, SC-005 scan + fixtures, FR-009 restated |
+| HTTP read side undecided; scenario blast radius understated (R) | changed (operator: expose `guide`) | spec FR-010, plan IC-05, D8a |
+| US4 misplaced, C-006 incomplete, C-002 too narrow, orphan scenario undefined, preamble/H1/role rules missing (R) | accepted | spec rewritten: US5, C-002, C-006, C-007, FR-011, US2-AS2 |
+| FR-003 half ratchet (R) | accepted | FR-003 / FR-003a split |
+| PR-A1 not usable by #195 without schema application; A1/A2 gate-class split (R) | accepted | plan IC-01 (A1 owns files-rule schema + gate dispatch), IC-02 companions |
+| Vendored internal/qa packs and `VendoredPacksTest` ignored (Q) | accepted | plan IC-06 re-vendor + `LOCAL_DELTA` |
+| Gate cannot classify/pair/compare a Markdown companion (Q) | accepted | plan IC-02 |
+| No migration-fidelity check (Q) | accepted | FR-006, IC-06 mapping verifier, counts, idempotence |
+| Quickstart commands wrong (Q) | accepted | quickstart.md |
+| Hard-coded counts and `guidePath` tests (Q) | accepted | IC-04, IC-05 surfaces |
+| Address pinning impossible with HttpClient (A) | changed (operator: resolver guard) | D8a |
+| JVM proxy voids checks (A) | accepted | D8a `NO_PROXY` |
+| 10 s not total (A) | accepted | D8a single deadline |
+| Companion can claim `pack.md`; case-only guide names (A) | accepted | D10 |
+| Address classes, allowlist matching, redirects (A) | accepted | NFR-004, D8a |
+| Fence closing, indented-heading scope, model invariants, thematic breaks, empty files (A) | accepted | D12, IC-01 |
+| Companion conflicts as 500 (A) | accepted | IC-02 (client errors) |
+| `oneOf` unverified in generator (A) | accepted | IC-05 spike + controller check |
+| No inline size cap; fetch inside write lock (A) | accepted | NFR-005 |
+| HTML-comment heading divergence (A, low) | deferred_with_rationale | none at the pin; documented in ADR-0042 as a known CommonMark divergence |

@@ -19,3 +19,13 @@ properties:
     description: >-
       An HTTPS URI the service fetches the guide from, once, at registration. Only allowlisted hosts are fetched;
       private and loopback addresses are refused, also after redirects; size and time are bounded.
+
+# Delta to contracts/charter/schemas/Toolguide.yaml (response, PR-A2). Breaking on 0.x: guidePath leaves the response.
+# Toolguide:
+#   required: [..., guide]          # guidePath removed
+#   properties:
+#     guide:
+#       type: string
+#       description: The guide's Markdown in the structured guide form, H1 written from the title.
+# The controller enforces exactly one of guide / guideUri (null, empty string and both-present are refused) whatever
+# the generator emits for oneOf; an inline guide over 1 MiB is refused.

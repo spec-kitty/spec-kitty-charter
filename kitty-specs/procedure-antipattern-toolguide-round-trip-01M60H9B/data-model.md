@@ -33,7 +33,7 @@ Invariants: `id` matches the file stem; step titles non-blank; unknown fields re
 
 | Field | Change |
 |---|---|
-| `guide_path` | relative to the toolguide's file (was repo- or pack-rooted); names the guide companion |
+| `guide_path` | `<id>.guide.md`, relative to the toolguide's file (was repo- or pack-rooted, `UPPER_CASE.md`); names the guide companion |
 | (domain) `guide` | new `Guide` value, filled from the companion; not a YAML field |
 
 All other fields unchanged (renames of merged fields are #186 follow-ups).
@@ -42,7 +42,7 @@ All other fields unchanged (renames of merged fields are #186 follow-ups).
 
 | Block | Markdown heading | Required | Content |
 |---|---|---|---|
-| title | `# <toolguide title>` | written | from `Toolguide.title`; an H1 that differs is refused |
+| title | `# <toolguide title>` | written | from `Toolguide.title`; an incoming guide may omit it; a present H1 that differs is refused |
 | `overview` | `## Overview` | yes | Markdown |
 | `when_to_use` | `## When to use` | no | Markdown |
 | `setup` | `## Setup` | no | Markdown |
@@ -53,19 +53,25 @@ All other fields unchanged (renames of merged fields are #186 follow-ups).
 | `references` | `## References` | no | Markdown list of external links |
 
 Order on write: title, overview, when_to_use, setup, usage, sections…, cautions, known_limitations, references.
-A guide whose fixed blocks are out of this order, duplicated, or missing `overview` is refused; a preamble (text
-between the H1 and the first H2) is refused for guides (its text belongs in `overview`); H3+ stays inside content.
+A guide whose fixed blocks are out of this order, duplicated, or missing `overview`, that has a reserved heading in
+another letter case, a freeform section after `cautions`, a preamble (text between the H1 and the first H2; it
+belongs in `overview`) or frontmatter is refused; H3+ stays inside content.
+
+Pinned actor mapping (migration only): `human` → `role: operator`; `agent`, `system` → no `role`.
 
 ## MarkdownDocument (content-form model, `infra/storage`)
 
 `{frontmatter?: YAML mapping, title?: string, preamble: string, sections: [{title, content}]}`.
 Equality: frontmatter by YAML meaning, all strings exactly; blank lines between blocks and the final newline are not
 part of the model. A kind-specific structure (the Guide) is a schema over this model.
+Construction invariants: titles single-line and non-blank; content has no leading or trailing blank line and no
+column-0 H1/H2 outside a fence; an empty document is valid.
 
-## ToolguideRegistration (HTTP, see `contracts/`)
+## Toolguide over HTTP (see `contracts/`)
 
-Exactly one of `guide` (Markdown text) or `guideUri` (HTTPS URI); `guidePath` removed from the request. The stored
-`guide_path` is `<id>.md`, beside the toolguide file.
+Registration: exactly one of `guide` (Markdown, ≤ 1 MiB) or `guideUri` (HTTPS, allowlisted); `guidePath` removed.
+Response: `guide` (the stored Markdown, H1 written from the title); `guidePath` removed. The stored `guide_path` is
+`<id>.guide.md`, beside the toolguide file.
 
 ## Known-failure entry (existing)
 

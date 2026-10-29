@@ -1,127 +1,144 @@
 # Mission Specification: Procedure, anti-pattern and toolguide guide round trip
 
 **Mission Branch**: `feat/194a-procedure-antipattern-toolguide`
-**Created**: 2026-10-28
+**Created**: 2026-10-28 (revised 2026-10-29 after the post-plan review squad)
 **Status**: Draft
 **Input**: Charter #194 PR-A (part of epic #186; absorbs #168): round-trip the procedure kind with a sanitized storage
-shape, prove inline anti-pattern entries round-trip with their owners (graph-node tags stay under #236), and
-round-trip the toolguide Markdown guides. Grounding: the pre-spec squad (`research.md`).
+shape, carry inline anti-patterns with their owners (graph-node tags stay under #236), and round-trip the toolguide
+guides in a structured shape. Grounding: `research.md` and the squad reports under `research/`.
 
 ## Intent Summary (confirmed 2026-10-28)
 
 A charter maintainer runs the whole-pack round trip against the pinned Charter Pack content. Procedures are read
 into the charter domain and written back with equal meaning (ADR-0036), in a deliberately designed storage shape;
-the anti-patterns that styleguides and procedures carry inline ride inside their owner; and the Markdown guide each
-toolguide points to is read and written together with its toolguide. The rule that must always hold: storage shapes
-are designed, not mirrored from the pack. Pack content that diverges from a designed shape is reported to
-spec-kitty-open-packs and recorded on the gate's known-failure list; the service never adds logic to tolerate it.
+the anti-patterns that procedures and styleguides carry inline ride inside their owner; and the guide each toolguide
+points to is read and written together with its toolguide, in a structured shape. The rule that must always hold:
+storage shapes are designed, not mirrored from the pack, and no reader tolerates a retired or variant field.
 
-Operator decisions that shape this mission (2026-10-28, recorded on #194):
+Operator decisions shaping this mission (2026-10-28/29, recorded on #194 and under `decisions/`):
 
 - The sanitized-shape requirement wins over #194's "round-trip as-is" wording.
-- `procedure.schema.json` is sanitized in place (it is canonical in this repository). Superseded in part by the
-  operator ruling on epic #186 (2026-10-28): missions operate as if core does not exist, so no core issue is drafted;
-  pack divergences go to spec-kitty-open-packs only.
+- Operate as if core does not exist (epic #186): no core issue, no compatibility with core's current formats.
+- `procedure.schema.json` is sanitized in place. Pinned actors map to roles: `human` becomes `operator`; `agent` and
+  `system` steps carry no role.
 - Anti-pattern graph-node tags stay under #236.
-- #194 may remove its own exclusion entries from `contracts/packs/file-kinds.yaml`; it absorbs procedure and the
-  toolguide Markdown guides from #168.
-- This mission builds ADR-0040's `markdown` content form; sibling #195 consumes it (coordinated with the parent
-  session), so this PR lands early.
-- Plan-time decisions (2026-10-28, content squad in `research/content-squad/`): the guide is structured (fixed blocks
-  plus freeform sections of `title` and `content`) and stored as a Markdown companion parsed by the `markdown` form;
-  the pinned packs are migrated with this service's own writer and re-pinned rather than listed as known failures; a
-  toolguide registration carries the guide's content or a URI the service fetches, never a bare path.
-
-### User Story 4 - Register a toolguide with its guide over HTTP (Priority: P2)
-
-An API client registers a toolguide and supplies its guide either as content or as a URI. The service stores the
-guide with the toolguide; it never expects the client and the service to share a filesystem.
-
-**Acceptance Scenarios**:
-
-1. **Given** a registration carrying the guide's content, **When** it is accepted, **Then** reading the toolguide's
-   pack back yields the same structured guide.
-2. **Given** a registration carrying an allowlisted HTTPS URI, **When** it is accepted, **Then** the fetched guide is
-   stored as if it had been sent as content.
-3. **Given** a URI that is not HTTPS, not allowlisted, resolves to a private or loopback address, redirects too often,
-   is too slow or too large, **When** it is registered, **Then** it is refused with a typed refusal and nothing is
-   stored.
-4. **Given** guide content that does not parse into the structured guide (for example no `overview`), **When** it is
-   registered, **Then** it is refused naming the structural problem.
+- The toolguide guide is structured (fixed blocks plus freeform sections of `title` and `content`), stored as a
+  Markdown companion and parsed by ADR-0040's `markdown` content form, which this mission builds for #195 too.
+- `content` names a body field in new shapes; renaming merged kinds is a follow-up on #186.
+- The pinned packs are migrated to the new shapes with this service's own writer and re-pinned; the known-failure
+  list holds residual divergences only.
+- The HTTP toolguide registration and response carry the guide's content (registration may instead send a URI the
+  service fetches, directly and never through a proxy); the API never assumes a shared filesystem.
+- Delivery is two PRs: PR-A1 (the `markdown` form) lands first so #195 can rebase; PR-A2 carries the rest.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Toolguide guides travel with their toolguide (Priority: P1)
+### User Story 1 - Markdown documents compare by structure (Priority: P1, PR-A1)
 
-A maintainer loads a pack whose toolguides name a Markdown guide. The guide is read as Markdown content belonging
-to its toolguide and is written back with the same meaning, so a pack round trip no longer leaves the guides behind.
+A maintainer's pack holds Markdown files governed by a `markdown` file-kind rule. Each is read as a structured
+document (frontmatter, title, preamble, sections) and written back so that it compares equal by that structure.
 
-**Why this priority**: It builds the Markdown content form that sibling mission #195 needs, so it lands first.
+**Why this priority**: sibling #195 needs it for `pack.md`; the toolguide guide builds on it.
 
-**Independent Test**: Round-trip every toolguide in the built-in pack and compare each guide's Markdown before and
-after; the gate no longer reports `other:toolguides`.
-
-**Acceptance Scenarios**:
-
-1. **Given** a toolguide that names a guide, **When** the pack is read and written back, **Then** the guide is present
-   at its path with equal content and the toolguide still names it.
-2. **Given** a toolguide that names a guide which does not exist, **When** the pack is read, **Then** the read is
-   refused with a refusal that names the toolguide and the missing guide.
-3. **Given** a Markdown file under `toolguides/` that no toolguide names, **When** the pack is read, **Then** it is
-   classified and reported, not silently dropped.
-
-### User Story 2 - Procedures round-trip in a sanitized shape (Priority: P1)
-
-A maintainer loads a pack with procedures. Each procedure is read into a domain procedure and written back in the
-designed storage shape: a stable identity, a title, a description, ordered steps that name the role performing
-them, inline anti-patterns in the shared entry shape, and references in the shared reference shape.
-
-**Why this priority**: Procedures are the kind #194 and #168 exist for; the gate lists them as wholly red.
-
-**Independent Test**: Round-trip a sanitized procedure fixture and every procedure in the built-in, internal and qa
-packs; sanitized files compare equal, diverging files appear exactly as their known-failure entries say.
+**Independent Test**: a fixture pack with a `markdown` rule round-trips through the whole-pack store; every pinned
+Markdown file (72 at the current pin) parses and writes back byte for byte.
 
 **Acceptance Scenarios**:
 
-1. **Given** a procedure in the sanitized shape, **When** it is read and written back, **Then** the written file is
-   equal in meaning to the original.
-2. **Given** a procedure using a retired or unknown field (for example `actor`, or `name` in place of `title`),
-   **When** it is read, **Then** it is refused (ADR-0036: unknown fields are refused), and the pinned pack file that
-   does so is listed on the known-failure list with its open-packs issue.
-3. **Given** a procedure step naming a role, **When** it round-trips, **Then** the role is kept; no step names an
-   agent profile (ADR-0032).
-4. **Given** a procedure with references, **When** it is read, **Then** the references are kept on the procedure but
-   no relationship is created from them in the charter's relationship graph (pending #189).
+1. **Given** a Markdown file under a `markdown` rule, **When** the pack round-trips, **Then** it compares equal.
+2. **Given** the same file with one character changed inside a section, **When** compared, **Then** the gate reports
+   a difference at that section (positive control).
+3. **Given** a line that looks like a heading inside a code fence, **When** parsed, **Then** it does not start a
+   section; the same line outside a fence does.
+4. **Given** a change of blank lines between blocks only, **When** compared, **Then** the files compare equal.
+5. **Given** an unclosed fence, a CR or BOM, an H1 that is not the first block, an H1 or H2 indented by 1–3 spaces,
+   or a setext underline, **When** read, **Then** the read is refused naming the line; each refusal has an accepted
+   neighbour fixture.
 
-### User Story 3 - Inline anti-patterns ride with their owner (Priority: P2)
+### User Story 2 - Toolguide guides travel with their toolguide (Priority: P1, PR-A2)
 
-A maintainer's styleguides and procedures list anti-patterns inline. Those entries share one shape and travel with
-their owner; nothing is lost and nothing becomes a standalone file.
+A maintainer loads a pack whose toolguides name a guide. Each guide is read as a structured guide belonging to its
+toolguide and written back with equal meaning.
 
-**Why this priority**: Anti-patterns have no file of their own (ADR-0037 decision 4); proving they survive in both
-owners closes #194's anti-pattern item apart from the graph-node tags.
-
-**Independent Test**: Round-trip styleguides and procedures carrying inline anti-patterns, with and without examples.
+**Independent Test**: all 24 toolguides of the built-in, internal and qa packs at the new pin round-trip with their
+guides; the gate no longer reports `other:toolguides`.
 
 **Acceptance Scenarios**:
 
-1. **Given** an inline anti-pattern with a name and description only, **When** its owner round-trips, **Then** the
-   entry is equal.
-2. **Given** an inline anti-pattern that also has bad and good examples, **When** its owner round-trips, **Then**
-   both examples are kept.
-3. **Given** the pinned `anti_pattern.graph.yaml`, **When** the gate runs, **Then** it is still reported red for the
-   node tags only, exactly as its expected-red entry under #236 says.
+1. **Given** a toolguide naming `<id>.guide.md` beside it, **When** the pack round-trips, **Then** the guide compares
+   equal block by block and section by section.
+2. **Given** a guide missing `overview`, with fixed blocks out of order or duplicated, with a preamble, with
+   frontmatter, or with an H1 that differs from the toolguide title, **When** read, **Then** it is refused naming
+   the problem; the corrected guide is accepted.
+3. **Given** a toolguide naming a guide that does not exist, that leaves the pack, that differs from another file
+   only by letter case, or that another rule already classifies (such as `pack.md`), **When** the pack is read,
+   **Then** the read is refused naming the toolguide and the path.
+4. **Given** a guide whose prose links to a styleguide or tactic, **When** read, **Then** the link stays content and
+   no relationship is created.
+
+### User Story 3 - Procedures round-trip in a sanitized shape (Priority: P1, PR-A2)
+
+A maintainer loads a pack with procedures. Each is read into a domain procedure and written back in the designed
+shape: identity, title, description, entry and exit conditions, ordered steps that may name a role, anti-pattern
+entries, and references.
+
+**Independent Test**: all 41 procedure files of the three packs at the new pin round-trip; a legacy-shaped fixture is
+refused while its sanitized twin is accepted.
+
+**Acceptance Scenarios**:
+
+1. **Given** a sanitized procedure, **When** it round-trips, **Then** it is equal in meaning.
+2. **Given** the same procedure using a retired field (`name`, `purpose`, step `actor`, anti-pattern `name` or
+   `description`), **When** read, **Then** it is refused (ADR-0036); its sanitized twin is accepted.
+3. **Given** a step naming a role, **When** it round-trips, **Then** the role is kept; a step without a role stays
+   without one.
+4. **Given** a procedure with references whose targets exist, **When** the pack is loaded, **Then** the references
+   are kept on the procedure and no relationship is created from them, while a tactic carrying the same reference
+   shape in the same fixture does create its relationship (positive control).
+
+### User Story 4 - Inline anti-patterns ride with their owner (Priority: P2, PR-A2)
+
+**Acceptance Scenarios**:
+
+1. **Given** a procedure anti-pattern with only a title, with a title and content, or with one or both examples,
+   **When** the procedure round-trips, **Then** the entry is equal.
+2. **Given** the pinned styleguides with inline anti-patterns, **When** they round-trip, **Then** they stay equal
+   (ratchet: already green).
+3. **Given** the pinned `anti_pattern.graph.yaml`, **When** the gate runs, **Then** it is red for node tags only,
+   exactly as its expected-red entry under #236 says.
+
+### User Story 5 - Register and read a toolguide with its guide over HTTP (Priority: P2, PR-A2)
+
+An API client registers a toolguide and supplies its guide either as content or as a URI, and reads it back with the
+guide's content. The service never expects a shared filesystem.
+
+**Independent Test**: contract scenarios for registration with content, with a URI (stub fetcher), and the refusals;
+a fetcher test matrix runs offline.
+
+**Acceptance Scenarios**:
+
+1. **Given** a registration carrying `guide` content, **When** it is accepted and the toolguide is read, **Then** the
+   response carries the same structured guide (an H1 added from the title when the content had none).
+2. **Given** a registration carrying an allowlisted HTTPS `guideUri`, **When** it is accepted, **Then** the fetched
+   guide is stored and read back as if sent as content; a later PUT with the same URI fetches again.
+3. **Given** both `guide` and `guideUri`, neither, or an empty value, **When** registered, **Then** it is refused.
+4. **Given** guide content over 1 MiB, or content that is not a valid guide, **When** registered, **Then** it is
+   refused naming the problem and nothing is stored.
+5. **Given** a URI that is not HTTPS, whose host is not on the allowlist (the allowlist is empty by default), carries
+   user information or is an IP literal, resolves to a non-global address (directly or after a redirect), redirects
+   more than 3 times or to a non-HTTPS or non-allowlisted target, takes longer than 10 s in total, exceeds 1 MiB, is
+   encoded or not UTF-8, **When** registered, **Then** it is refused with a typed refusal and nothing is stored;
+   each limit has an accepted value just inside it.
 
 ### Edge Cases
 
-- A pinned file diverges from the designed shape: it is refused on read and must match a known-failure entry keyed to
-  an open-packs issue; an unlisted divergence fails the gate, and a listed file that starts round-tripping fails the
-  gate with "remove it" (#247).
-- A guide path that leaves the pack root, or that differs from an existing path only by letter case, is refused
-  (ADR-0039, ADR-0040).
-- Two toolguides naming the same guide: refused with a refusal naming both.
-- Packs other than built-in (internal, qa) use the same shapes; they are proven by corpus tests, since the gate covers
-  the built-in pack only.
+- A guide or procedure in a retired shape is refused, never coerced (C-005).
+- Two toolguides naming the same guide, or a guide differing from another file only by case: refused, as a client
+  error (409/422) over HTTP, never a server error.
+- An empty Markdown file is a valid document; a document that is only frontmatter is valid.
+- A guide that leaves the pack root or names a YAML file is refused (ADR-0039).
+- The internal and qa packs are vendored in this repository and must equal the pinned open-packs content (except the
+  listed local delta); they are migrated and re-vendored with the re-pin.
 
 ## Requirements *(mandatory)*
 
@@ -129,70 +146,72 @@ owners closes #194's anti-pattern item apart from the graph-node tags.
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Sanitized procedure shape | As a maintainer, I want the procedure storage shape and its schema to follow the cross-kind sanitized-shape rules (required string `schema_version` "1.0", `id` equal to the file stem, `title`, `description`, steps naming a `role`, one shared anti-pattern entry shape, one shared reference shape, closed objects) so that procedures are stored consistently with the other kinds. | High | Open | [build] | no |
-| FR-002 | Procedure round trip | As a maintainer, I want procedures read into a domain procedure and written back with equal meaning so that the procedure kind leaves the gate's red baseline. | High | Open | [build] | no |
-| FR-003 | Inline anti-patterns in both owners | As a maintainer, I want procedure anti-pattern entries stored in the new entry shape (`title`, `content`, optional bad and good examples) and styleguide anti-patterns kept in their merged shape, each round-tripping with its owner, so that no anti-pattern is lost. | High | Open | [build] | no |
-| FR-004 | Structured toolguide guide | As a maintainer, I want the guide a toolguide names read as a structured guide (fixed blocks `overview` (required), `when_to_use`, `setup`, `usage`, `cautions`, `known_limitations`, `references`, plus freeform `sections` of `title` and `content`) and written back with equal meaning, so that `other:toolguides` leaves the gate's red baseline. | High | Open | [build] | no |
-| FR-005 | Markdown content form | As a maintainer, I want ADR-0040's declared `markdown` content form built (a document of optional frontmatter, title, preamble and H2 sections, compared by that structure) so that guides, sibling #195's pack.md and later mission step prompts share one Markdown model. | High | Open | [build] | no |
-| FR-006 | Divergence fixed upstream, not tolerated | As a maintainer, I want the pinned packs migrated to the sanitized shapes by this service's own writer (a throwaway harness), the result landed in spec-kitty-open-packs with an issue naming each required change, and `openPacksRef` moved to it, so that the gate is exact without tolerance logic. | High | Open | [build] | no |
-| FR-010 | Guide over HTTP without shared files | As an API client, I want a toolguide registration to carry either the guide's full content or a URI the service fetches it from, never a bare path, so that the API assumes no shared filesystem. | High | Open | [build] | no |
-| FR-007 | Anti-pattern graph unchanged | As a maintainer, I want `anti_pattern.graph.yaml` to stay expected-red for its node tags only, under #236, so that this mission neither hides nor claims that defect. | Medium | Open | [ratchet] | yes — paired with FR-003's positive round trip on the same pinned pack |
-| FR-008 | Procedure references kept, not minted | As a maintainer, I want procedure references stored in the shared reference shape but not turned into relationships until #189 rules on edge authority, so that the relationship graph does not gain conflicting duplicate edges. | Medium | Open | [build] | no |
-| FR-009 | Own exclusions removed | As a maintainer, I want the file-kind exclusions this mission makes obsolete removed from `contracts/packs/file-kinds.yaml` so that the files are classified by their new rules. | Medium | Open | [build] | no |
+| FR-001 | Sanitized procedure shape | As a maintainer, I want the procedure schema and storage shape to follow the cross-kind sanitized-shape rules (required string `schema_version` "1.0", `id` equal to the file stem, `title`, `description`, steps with an optional `role`, anti-pattern entries `{title, content?, bad_example?, good_example?}`, one shared `Reference` shape, closed objects) so that procedures are stored consistently with the other kinds. | High | Open | [build] | no |
+| FR-002 | Procedure round trip | As a maintainer, I want procedures read into a domain procedure and written back with equal meaning so that the `procedure` kind leaves the gate's red baseline. | High | Open | [build] | no |
+| FR-003 | Procedure anti-patterns | As a maintainer, I want procedure anti-pattern entries to round-trip in the new entry shape with their procedure so that no anti-pattern is lost. | High | Open | [build] | no |
+| FR-003a | Styleguide anti-patterns unchanged | As a maintainer, I want styleguide anti-patterns to keep round-tripping in their merged shape so that this mission does not regress them. | Medium | Open | [ratchet] | yes — paired with FR-003's new entries on the same pinned pack |
+| FR-004 | Structured toolguide guide | As a maintainer, I want the guide a toolguide names read as a structured guide (fixed blocks `overview` (required), `when_to_use`, `setup`, `usage`, `cautions`, `known_limitations`, `references`, plus freeform `sections` of `title` and `content`) at `<id>.guide.md` beside the toolguide and written back with equal meaning so that `other:toolguides` leaves the gate's red baseline. | High | Open | [build] | no |
+| FR-005 | Markdown content form | As a maintainer, I want ADR-0040's `markdown` content form built (a document of optional frontmatter, optional title, preamble and H2 sections, compared by that structure) for `files` rules, including applying a rule's structure schema, so that #195's pack.md, the guides and later mission step prompts share one Markdown model. | High | Open | [build] | no |
+| FR-005a | Markdown companions | As a maintainer, I want a companion to declare a content form (`text` as today, or `markdown` with a structure schema) and the gate to classify, pair and compare companions by their form so that a guide is never compared as YAML. | High | Open | [build] | no |
+| FR-006 | Divergence fixed upstream | As a maintainer, I want the pinned packs (and the vendored internal and qa packs) migrated to the new shapes by this service's own writer through a throwaway harness, verified by an old-to-new field mapping that fails on any unmapped key, landed in spec-kitty-open-packs with an issue per class of change, and `openPacksRef` moved to the merged commit, so that the gate is exact without tolerance logic. | High | Open | [build] | no |
+| FR-007 | Anti-pattern graph unchanged | As a maintainer, I want `anti_pattern.graph.yaml` to stay expected-red for its node tags only, under #236. | Medium | Open | [ratchet] | yes — paired with FR-003's positive round trip on the same pinned pack |
+| FR-008 | Procedure references kept, not minted | As a maintainer, I want procedure references stored but never turned into relationships until #189 rules, proven against a tactic that does create its relationship from the same reference shape in the same fixture. | Medium | Open | [build] | no |
+| FR-009 | Baseline and file kinds updated | As a maintainer, I want the `procedure` and `other:toolguides` entries removed from the gate's expected-red baseline and a `markdown` file-kind rule for guides added, so that the files are classified by their new rules. | Medium | Open | [build] | no |
+| FR-010 | Guide over HTTP without shared files | As an API client, I want a toolguide registration to carry exactly one of the guide's content or a URI the service fetches, and the toolguide response to carry the guide's content instead of a path, so that the API assumes no shared filesystem. | High | Open | [build] | no |
+| FR-011 | Guide H1 | As a maintainer, I want the guide's H1 written from the toolguide title, an incoming guide allowed to omit it, and an incoming H1 that differs from the title refused, so that the title has one home. | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Corpus coverage | 100% of `*.procedure.yaml` files and 100% of toolguide guides in the built-in, internal and qa packs at the pinned commit are exercised by a corpus round-trip test; each either round-trips or matches a known-failure entry. | Reliability | High | Open |
-| NFR-002 | Gate exactness | The whole-pack gate passes with zero unlisted reds and zero listed items that round-trip, at the pinned commit. | Reliability | High | Open |
-| NFR-003 | Build | `./gradlew verifyAll` passes on Java 25 in CI, including the Java style check, and the docs checks pass. | Maintainability | High | Open |
-| NFR-004 | Safe guide fetch | A guide URI is fetched only over HTTPS from an allowlisted host, refusing private, loopback and link-local addresses (also after redirects), with at most 3 redirects, a 10-second total timeout and a 1 MiB size limit; every refusal is a typed refusal naming the cause. | Security | High | Open |
+| NFR-001 | Corpus coverage | 41 of 41 procedure files and 24 of 24 toolguides with their guides in the built-in, internal and qa packs at the new pin round-trip; the known-failure list holds no procedure or guide entry unless a residual divergence is named with its open-packs issue. | Reliability | High | Open |
+| NFR-002 | Gate exactness | The whole-pack gate passes with zero unlisted reds and zero listed items that round-trip, at the new pin; lossy-writer positive controls (YAML, Markdown, procedure) turn it red. | Reliability | High | Open |
+| NFR-003 | Build | `./gradlew verifyAll` passes on Java 25 in CI, including the Java style check, the ArchUnit gate and the contract suite, and the docs checks pass. | Maintainability | High | Open |
+| NFR-004 | Safe guide fetch | A guide URI is fetched directly (no proxy), only over HTTPS, only from an exactly matched allowlisted host (empty by default), only to global unicast addresses checked at resolution and on every redirect (DNS rebinding closed by a resolver guard), with at most 3 redirects, a 10-second deadline over the whole exchange, a 1 MiB streamed cap, identity encoding and UTF-8 only, and no credentials forwarded; every refusal is typed. | Security | High | Open |
+| NFR-005 | Request bounds | An inline `guide` over 1 MiB is refused; the fetch runs before the pack's write lock is taken. | Performance | Medium | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Only the authorized HTTP change | The charter HTTP contract changes only in the toolguide registration's guide transport (operator decision 2026-10-28, recorded on #194); the change follows the contract's own versioning and changelog rules. | Technical | High | Open |
-| C-002 | Shared files append-only | Edits to shared files (registry wiring, file kinds, gate baseline, known-failure list, CHANGELOG, glossary definitions, ADR index) are append-only, except removing this mission's own exclusions and its own baseline entries. | Process | High | Open |
-| C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0042 (reserved for #194). | Process | High | Open |
-| C-004 | Design against the charter, not core | Shapes follow the charter's own model, contract and packs; no compatibility with core's current formats and no core issue (operator ruling of 2026-10-28 on epic #186: core changes when the service is incorporated into core). | Process | High | Open |
-| C-005 | No tolerance logic | No reader, writer or binding accepts a retired or variant field to make pinned content pass (ADR-0036 decision 5). | Technical | High | Open |
-| C-006 | Land early | This PR stays scoped to procedure, inline anti-patterns, toolguide guides and the Markdown content form so that #195 can rebase on it. | Process | Medium | Open |
+| C-001 | Only the authorized HTTP change | The charter HTTP contract changes only in the toolguide registration and response (guide content or URI in, guide content out, `guidePath` removed), under the 0.x rules (ADR-0022) with a `### Breaking` CHANGELOG entry and scenarios. | Technical | High | Open |
+| C-002 | Shared files append-only | Edits to shared files are append-only, except removing this mission's own baseline entries, moving `openPacksRef`, re-vendoring the internal and qa packs, and refreshing other entries whose recorded text the re-pin changes. | Process | High | Open |
+| C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0042; ADR-0039 and ADR-0040 are amended. | Process | High | Open |
+| C-004 | Design against the charter, not core | Shapes follow the charter's own model; no compatibility with core's current formats and no core issue (operator ruling on epic #186, 2026-10-28). | Process | High | Open |
+| C-005 | No tolerance logic | No reader, writer or binding accepts a retired or variant field; a test scans the main sources for retired field names. | Technical | High | Open |
+| C-006 | Two PRs | PR-A1 carries only the `markdown` form, its `files`-rule schema application and the ADR-0040 amendment, and lands first; PR-A2 carries the rest. | Process | Medium | Open |
+| C-007 | Harness is throwaway | The migration harness lives in the test sources only, never runs in the default build, and is deleted before PR-A2 is reviewed. | Process | High | Open |
 
 ### Key Entities
 
-- **Procedure**: a reusable, ordered way of working; identity, title, description, entry and exit conditions, ordered
-  steps (each naming the role that performs it), inline anti-patterns, references.
-- **Anti-pattern entry**: a value carried inside a styleguide or procedure: name, description, optional bad and good
-  examples. Not an artifact; no identity of its own.
-- **Toolguide guide**: Markdown content that belongs to one toolguide, located by that toolguide's guide path.
-- **Known-failure entry**: one pinned pack file expected to differ, with where it differs, why, and the open-packs issue
-  that fixes it.
+- **Procedure**: identity, title, description, entry and exit conditions, ordered steps (each optionally naming a
+  role), anti-pattern entries, references.
+- **Anti-pattern entry**: a value inside its owner: title, optional content, optional bad and good examples.
+- **Guide**: a value of its toolguide: fixed blocks and freeform sections, stored as Markdown beside the toolguide.
+- **Markdown document**: optional frontmatter, optional title, preamble, sections of title and content.
+- **Known-failure entry**: one pinned pack file expected to differ, with where, why and its open-packs issue.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: The gate's red baseline loses the `procedure` and `other:toolguides` entries, and the gate passes at the pinned commit. — [build] · no-op passable: no
-- **SC-002**: 41 of 41 procedure files across the three packs are accounted for: each round-trips or matches a known-failure entry keyed to an open-packs issue. — [build] · no-op passable: no
-- **SC-003**: Every toolguide guide in the built-in pack round-trips with equal content. — [build] · no-op passable: no
-- **SC-004**: Every inline anti-pattern entry in the built-in pack's styleguides and procedures survives the round trip. — [build] · no-op passable: no
-- **SC-005**: Zero tolerance code paths: no retired or variant field name is accepted anywhere in the procedure reader, writer or schema. — [build] · no-op passable: no
+- **SC-001**: At the new pin the gate passes with the `procedure` and `other:toolguides` entries removed from its red baseline. — [build] · no-op passable: no
+- **SC-002**: 41 of 41 procedure files round-trip at the new pin, and a legacy-shaped procedure is refused while its sanitized twin is accepted. — [build] · no-op passable: no
+- **SC-003**: 24 of 24 toolguides round-trip with their guides at the new pin; a one-character change inside a guide section is reported by the gate. — [build] · no-op passable: no
+- **SC-004**: Every procedure anti-pattern entry at the new pin survives the round trip. — [build] · no-op passable: no
+- **SC-005**: No main source accepts a retired field name, proven by a source scan and by retired-shape fixtures that are refused. — [build] · no-op passable: no
+- **SC-006**: 72 of 72 Markdown files at the current pin parse and write back byte for byte (PR-A1). — [build] · no-op passable: no
 
 ## Assumptions
 
-- The internal and qa packs are not covered by the gate; they are proven by corpus tests only.
-- Linking inline anti-pattern entries to the anti-pattern graph nodes is out of scope (#154).
-- The 14 sanitized-shape violations found in already-merged schemas are listed on epic #186 as follow-ups and are not
-  changed here; so is renaming the body field to `content` in merged kinds (styleguide anti-patterns, templates,
-  assets).
-- The migration harness is throwaway: it produces the migrated open-packs content once and is not kept as production
-  code or tolerance logic.
+- The gate covers the built-in pack; internal and qa are covered by corpus tests and the vendored-pack check.
+- Linking inline anti-patterns to graph nodes is out of scope (#154).
+- The 14 sanitized-shape violations in merged schemas, and renaming body fields to `content` in merged kinds
+  (styleguide anti-patterns, templates, assets), are listed on epic #186 and not changed here.
+- Deployments whose only egress is a proxy cannot use `guideUri` (operator decision); they send content.
 
 ## Out of Scope
 
 - Mission types, mission steps and mission templates (PR-B of #194).
-- Graph-node tags (#236); edge authority for references (#189); the fate of the standalone procedure kind (#150) beyond
-  round-tripping it.
-- Any change to core or to open-packs content in this repository.
+- Graph-node tags (#236); edge authority for references (#189); the fate of the standalone procedure kind (#150).
+- Any change to core.

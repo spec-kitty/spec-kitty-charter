@@ -3,20 +3,26 @@
 Prerequisites: Java 25 (`JAVA_HOME=/usr/lib/jvm/temurin-25`), `../spec-kitty-open-packs` clean at `openPacksRef`.
 
 ```bash
-# Markdown form (PR-A1): unit tests and the gate
-./gradlew :packs:test --tests '*Markdown*'
-./gradlew :packs:test --tests '*WholePack*'
+# Unit tests of the packs module (Markdown form, bindings, fetcher matrix): fast, no open-packs checkout needed
+./gradlew :packs:test
 
-# Procedures and toolguide guides (PR-A2): corpus round trips over built-in, internal and qa
-./gradlew :packs:test --tests '*Procedure*' --tests '*Toolguide*'
+# Corpus tests (tagged open-packs, part of check; run against ../spec-kitty-open-packs at openPacksRef)
+./gradlew :packs:openPacksRoundTrip
 
-# Registration over HTTP: contract scenarios
+# The whole-pack round-trip gate (#187; tagged whole-pack, NOT part of check — run it explicitly)
+./gradlew :packs:wholePackRoundTrip
+
+# Contract checks (lint, breaking-change report, generation)
 ./gradlew :contracts:check
 
-# Everything CI runs
+# Contract scenarios (Cucumber, CharterContractSuite)
+./gradlew :deployable:test
+
+# Everything CI runs, once before review
 ./gradlew verifyAll
 python3 scripts/docs/check_docs.py all
 ```
 
-Expected: the gate passes with `procedure` and `other:toolguides` gone from
-`service/packs/src/test/resources/whole-pack/expected-red.yaml`; `anti_pattern.graph.yaml` still listed under #236.
+Expected after PR-A2 at the new pin: the gate passes with `procedure` and `other:toolguides` gone from
+`service/packs/src/test/resources/whole-pack/expected-red.yaml`; `anti_pattern.graph.yaml` still listed under #236;
+`VendoredPacksTest` green.
