@@ -67,16 +67,25 @@ final class WholePackCensus {
 
     /**
      * How the gate reads and compares one file (#193): the content form its {@code file-kinds.yaml} rule declares, so a
-     * {@link ContentForm#BYTES} file is compared byte for byte and never read as text. A file no rule maps keeps
-     * today's treatment, {@link ContentForm#YAML}.
+     * {@link ContentForm#BYTES} file is compared byte for byte and never read as text, and a
+     * {@link ContentForm#MARKDOWN} file is compared by its Markdown model and never read as YAML (#194). A file no rule
+     * maps keeps today's treatment, {@link ContentForm#YAML}.
      *
      * @param packName the pack directory's name
      * @param path the pack-relative path
      * @return the file's content form
+     * @throws IllegalStateException for a form the gate does not compare yet ({@link ContentForm#TEXT}), which the table
+     *     refuses anyway: the dispatch is exhaustive, so a newly built form must be decided here
      */
     static ContentForm contentFormOf(String packName, String path) {
-        return PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped
-                ? mapped.contentForm()
-                : ContentForm.YAML;
+        if (!(PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped)) {
+            return ContentForm.YAML;
+        }
+        return switch (mapped.contentForm()) {
+            case YAML, MARKDOWN, BYTES -> mapped.contentForm();
+            case TEXT ->
+                throw new IllegalStateException(packName + "/" + path + ": content form '" + ContentForm.TEXT.token()
+                        + "' is not built; the gate has no comparison for it");
+        };
     }
 }

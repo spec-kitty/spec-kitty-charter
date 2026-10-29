@@ -11,11 +11,15 @@ enum ContentForm {
     /** A YAML document, compared by meaning; the default of a {@code files} rule. */
     YAML("yaml"),
     /**
-     * A Markdown document. Declared but not built yet: no mission has built it (#192 shipped text companions under
-     * ADR-0039, not this form); the mission that first needs it builds and admits it.
+     * A Markdown document, read into a {@link ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument} and
+     * compared by that model (#194, ADR-0040 as amended): a {@code files} rule may declare it, and its schema then
+     * validates the parsed model ({@link PackSchemas#validateMarkdown}).
      */
     MARKDOWN("markdown"),
-    /** Plain text. Declared but not built yet, like {@link #MARKDOWN}. */
+    /**
+     * Plain text. Declared but not built yet: no mission has built it (#192 shipped text companions under ADR-0039,
+     * not this form); the mission that first needs it builds and admits it.
+     */
     TEXT("text"),
     /** Opaque bytes, written and compared byte for byte. */
     BYTES("bytes");

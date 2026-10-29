@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/notes.schema.json",
+  "title": "Notes (test structure schema)",
+  "description": "A test-only structure schema over the parsed Markdown model: an id in the frontmatter, a title, and a Summary section.",
+  "type": "object",
+  "required": ["frontmatter", "title", "preamble", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "frontmatter": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" }
+      }
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "preamble": { "type": "string" },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "content"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "content": { "type": "string" }
+        }
+      },
+      "contains": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "const": "Summary" }
+        }
+      }
+    }
+  }
+}
