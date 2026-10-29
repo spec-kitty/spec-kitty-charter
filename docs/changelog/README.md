@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-29 — Procedures and toolguide guides round-trip, and a toolguide registration carries its guide](/changelog/2026-10-29-procedures-and-toolguide-guides-round-trip/)
 - [2026-10-29 — The service serves GET /openapi.yaml, the contract it was built from](/changelog/2026-10-29-the-service-serves-its-contract/)
 - [2026-10-29 — The container profile's properties are validated at the start](/changelog/2026-10-29-container-properties-record/)
 - [2026-10-29 — The markdown content form is built for file-kind rules](/changelog/2026-10-29-markdown-content-form/)

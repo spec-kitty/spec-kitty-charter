@@ -228,7 +228,19 @@ contexts:
         meta:
           status: "canonical"
       - name: "Content form"
-        definition: "What a pack file-kind rule declares about how its files are read, held, written and compared: `yaml` (the default), `markdown`, `text` or `bytes` (`content_form` in `contracts/packs/file-kinds.yaml`). Never chosen by a file's extension or an asset's `mime`. Distinct from `YamlFormat`, the codec of one YAML kind, from `mime`, an asset's declared media type, and from `SerializationStrategy`, the store's YAML read and write. Only `yaml` and `bytes` are built so far (ADR-0040)."
+        definition: "What a pack file-kind rule declares about how its files are read, held, written and compared: `yaml` (the default), `markdown`, `text` or `bytes` (`content_form` in `contracts/packs/file-kinds.yaml`). Never chosen by a file's extension or an asset's `mime`. Distinct from `YamlFormat`, the codec of one YAML kind, from `mime`, an asset's declared media type, and from `SerializationStrategy`, the store's YAML read and write. `yaml`, `markdown` and `bytes` are built; `text` is declared and not built (ADR-0040)."
+        meta:
+          status: "canonical"
+      - name: "Markdown content form"
+        definition: "The `markdown` content form: a file read into a model of optional frontmatter, an optional H1 title, a preamble and the H2 sections in order, each a title and its content. Two files mean the same when their models are equal; a file is written back in one canonical form, and ambiguous Markdown (an unclosed fence, a carriage return, an indented or underlined heading) is refused naming the line. A `files` rule or a companion that declares it names a structure schema that validates the model (ADR-0040, ADR-0039)."
+        meta:
+          status: "canonical"
+      - name: "Guide (toolguide)"
+        definition: "A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary, commands and references, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043)."
+        meta:
+          status: "canonical"
+      - name: "Sanitized shape"
+        definition: "The deliberately designed storage shape of a pack object, as opposed to one mirrored from the files a pack happens to hold. It follows the sanitized-shape rules: S1 to S8 for every storage object (ADR-0042) and S9 to S16 for artifact kinds (ADR-0043), such as `title` for the label, `description` for the summary, `content` for a body and `role` for who acts. Pack content in another shape is fixed in the pack, never tolerated by the service."
         meta:
           status: "canonical"
       - name: "Template (pack)"

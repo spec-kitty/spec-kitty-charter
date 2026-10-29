@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Decision Records
 description: The immutable log of decisions taken in the spec-kitty-charter repository, and the core Spec Kitty ADRs they build on.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: ADR
 kind: Hub
 audience:
@@ -67,10 +67,11 @@ stands.
 | [0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) | ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused | Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28) | 2026-10-27 |
 | [0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) | ADR-0037: A kind-keyed pack registry and the whole-pack seam | Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28) | 2026-10-27 |
 | [0038](/adr/0038-one-configuration-root-a-directory-per-domain/) | ADR-0038: The service keeps its files under one configuration root, a directory per domain | Accepted; superseded in part by ADR-0041 (2026-10-28) | 2026-10-27 |
-| [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Accepted, with Amendment 2026-10-27 | 2026-10-27 |
+| [0039](/adr/0039-a-kind-binding-can-carry-companion-files/) | ADR-0039: A kind binding can carry companion files | Accepted, with Amendments 2026-10-27 and 2026-10-29 | 2026-10-27 |
 | [0040](/adr/0040-content-form-and-payload-kinds/) | ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content | Proposed, with Amendment 2026-10-28; extended in part by ADR-0042 (2026-10-28) | 2026-10-27 |
 | [0041](/adr/0041-containerized-configuration-model/) | ADR-0041: The containerized service is configured through a container profile, validated properties and mounted secrets | Accepted | 2026-10-28 |
 | [0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) | ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest | Accepted | 2026-10-28 |
+| [0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) | ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store | Proposed | 2026-10-29 |
 
 ## Core decisions this repository builds on
 
