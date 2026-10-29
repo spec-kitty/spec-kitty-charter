@@ -10,7 +10,7 @@ related:
   - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
   - adr/0039-a-kind-binding-can-carry-companion-files
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - architecture/logical-model
 audience:
   - profile: charter-service-contributor
@@ -53,7 +53,7 @@ amendment in that record).
 ### Amendment 2026-10-28 (#195): the fingerprint gains a pack-level tail
 
 Extended in part by
-[ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
 2026-10-28) for [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195), on the
 mission's decision `DM-01M60H8FP4AJ8TJWH670JT4WAV` under
 `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`: every file the store reads is in
@@ -67,7 +67,7 @@ It changes decision 9 only:
   new `Charter-Source-Fingerprint` and ETag once.
 
 Decision 1's table still admits `yaml` and `bytes` only. The `markdown` form is #194's to build,
-and `pack.md` uses it when built (ADR-0043 decision 8). The decision text below is unchanged, and
+and `pack.md` uses it when built (ADR-0042 decision 8). The decision text below is unchanged, and
 decision 9 is annotated where it stands. The amended point is in force for the code #195 ships,
 which implements it. Both records are Proposed, pending the operator's acceptance, which the pull
 requests for #193 and #195 ask for.
@@ -232,7 +232,7 @@ Four facts force a decision:
    (`PackRevision.computeOverBytes`); the text form is the same computation over UTF-8, so every
    revision of a text-only pack keeps its value, and a pack with a binary payload commits and
    answers `If-Match`.
-   *(Extended by ADR-0043, 2026-10-28: after the templates come the presets, in path order, then
+   *(Extended by ADR-0042, 2026-10-28: after the templates come the presets, in path order, then
    `pack-manifest.yaml`; `pack.md` joins between them with #194's form. See the amendment under
    Status.)*
 

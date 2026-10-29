@@ -337,7 +337,7 @@ class MeaningComparatorTest {
         }
     }
 
-    /** #195, ADR-0043: a manifest's derived fields are verified against the bytes, not compared; the rest counts. */
+    /** #195, ADR-0042: a manifest's derived fields are verified against the bytes, not compared; the rest counts. */
     @Nested
     class TheManifest {
 

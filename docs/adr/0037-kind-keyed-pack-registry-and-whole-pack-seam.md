@@ -11,7 +11,7 @@ related:
   - adr/0026-write-surface-is-functional-registration
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - context/conceptual-model
   - architecture/logical-model
 audience:
@@ -83,7 +83,7 @@ first kind that needs both. It changes decisions 4 and 6 and no other decision.
 ### Amendment 2026-10-28 (#195): pack-level files, the manifest beside the aggregate
 
 Extended in part by
-[ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
 2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
 [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) and the mission's decisions
 under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. It changes decisions 4, 5 and 7 and
@@ -108,7 +108,7 @@ no other decision:
   The write no longer needs its own refusal.
 
 The decision text below is unchanged. Each point this note changes is annotated where it stands.
-The amended points are in force for the code #195 ships, which implements them. ADR-0043 itself is
+The amended points are in force for the code #195 ships, which implements them. ADR-0042 itself is
 Proposed, pending the operator's acceptance, which the pull request for #195 asks for.
 
 ## Context
@@ -160,7 +160,7 @@ nothing about how a new kind is shaped.
    - kinds that are not files of their own (anti-patterns are nodes in a graph shard): a binding
      would write standalone files that must not exist;
    - pack-level files (#195).
-     *(Built by #195, 2026-10-28, ADR-0043, for presets and the manifest: presets in a `Pack` slot
+     *(Built by #195, 2026-10-28, ADR-0042, for presets and the manifest: presets in a `Pack` slot
      of their own, the manifest beside the aggregate. `pack.md` is split off to #260 (blocked on #194). See the
      amendment under Status.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
@@ -175,7 +175,7 @@ nothing about how a new kind is shaped.
    - the **unmodelled files**: every other file of the pack, listed so a caller sees exactly what
      the write will not reproduce.
 
-   *(Extended by ADR-0043, 2026-10-28: the load also returns the **manifest**, as read, with its
+   *(Extended by ADR-0042, 2026-10-28: the load also returns the **manifest**, as read, with its
    derived fields unchecked. The write recomputes them from the staged bytes and writes it last.)*
 
    The write puts the descriptor, each artifact at its layout path and each CRG document into a
@@ -185,7 +185,7 @@ nothing about how a new kind is shaped.
    ADR-0026 decision 3), a pack with read violations, and a descriptor with undeclared keys, whose
    values are not kept: each would drop content without a word. Unmodelled files are listed, not
    passed through.
-   *(Amended by ADR-0043, 2026-10-28: the descriptor refusal is gone, since an undeclared key makes
+   *(Amended by ADR-0042, 2026-10-28: the descriptor refusal is gone, since an undeclared key makes
    `pack.yaml` unreadable on read. A manifest that lists a path the write does not hold refuses the
    write.)*
 6. **Kinds owned by another slice are out of this registry.** Agent profiles and mission types may
@@ -206,7 +206,7 @@ nothing about how a new kind is shaped.
    - Until `pack-descriptor.schema.json` is closed and `undeclaredKeys()` goes (its follow-up
      work, not done here), the write refuses a descriptor with undeclared keys rather than drop
      them.
-     *(Done by #195, 2026-10-28, ADR-0043 decision 4: the schema is closed and the refusal is
+     *(Done by #195, 2026-10-28, ADR-0042 decision 4: the schema is closed and the refusal is
      gone.)*
    - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
@@ -319,4 +319,4 @@ Which copy is authoritative is for the operator to settle.
 - [ADR-0024: Charter artifact family contract](/adr/0024-doctrine-artifact-family-contract/)
 - [ADR-0026: The write surface is functional registration](/adr/0026-write-surface-is-functional-registration/)
 - [ADR-0035: The shared artifact interface lives in the kernel](/adr/0035-charter-artifact-interface-lives-in-the-kernel/)
-- [ADR-0043: Pack-level files](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/)
+- [ADR-0042: Pack-level files](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)

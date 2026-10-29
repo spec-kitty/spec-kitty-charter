@@ -7,7 +7,7 @@ updated: 2026-10-28T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - adr/0031-requirement-is-authored-as-a-preset
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
 audience:
@@ -33,7 +33,7 @@ verifies both.
 
 The built-in presets and manifest are not in these shapes. They are refused and pinned as known
 failures until open-packs fixes them. Validate mode reports them too.
-[ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (proposed)
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (proposed)
 records the decisions, with amendments to ADR-0031, 0036, 0037 and 0040. `pack.md` is split off to #260, which waits for #194.
 
 **What changes for an operator:** fingerprints and ETags of packs holding presets or a manifest

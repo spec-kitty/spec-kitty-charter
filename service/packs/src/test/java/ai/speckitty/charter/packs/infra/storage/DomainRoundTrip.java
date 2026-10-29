@@ -51,7 +51,7 @@ import org.jspecify.annotations.Nullable;
  * one text (research R5).
  *
  * <p>#195: the source {@code pack-manifest.yaml} is read through the format; an unreadable one is refused with the
- * store's exact reasons. A readable one is restamped (ADR-0043) over the written files it pairs with: a constituent
+ * store's exact reasons. A readable one is restamped (ADR-0042) over the written files it pairs with: a constituent
  * with the written artefact of its kind and id, a preset entry with the preset written at its path. A listed file the
  * round trip did not write refuses it; otherwise the stamped manifest is written at its own path.
  */

@@ -40,7 +40,7 @@ import org.junit.jupiter.api.io.TempDir;
  * and templates by SHA-256.
  *
  * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused, and its two presets and its
- * manifest are not in the sanitized shapes and are refused too (#195, ADR-0043); a temporary copy with the six paths,
+ * manifest are not in the sanitized shapes and are refused too (#195, ADR-0042); a temporary copy with the six paths,
  * the two presets and the manifest corrected (the open-packs fixes, applied here to a test fixture only) round-trips
  * whole, so built-in stays covered. The manifest's derived fields are verified on both sides
  * ({@link PackManifests#stale}) and the rest of it compared by meaning. A pinned refusal is one per file: the file's

@@ -414,7 +414,7 @@ class FileSystemPackInspectorTest {
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
         // #195: main at 90de8f9 found nothing. The pinned presets and manifest are now schema-mapped, and their shape
-        // is not the sanitized one (ADR-0043): each is reported, as an artifact schema error (ADR-0036 decision 3),
+        // is not the sanitized one (ADR-0042): each is reported, as an artifact schema error (ADR-0036 decision 3),
         // until
         // open-packs fixes them (OP-1, OP-2). Every other file still has no finding.
         assertThat(verdict.findings())
@@ -624,7 +624,7 @@ class FileSystemPackInspectorTest {
     }
 
     /**
-     * #195 (ADR-0043): a preset in the sanitized shape whose id is not its file stem is refused in validate mode, as
+     * #195 (ADR-0042): a preset in the sanitized shape whose id is not its file stem is refused in validate mode, as
      * {@code artifact_schema_error} on its file, and by the load, on the same fixture; its sibling, whose id is its
      * stem, passes both.
      */

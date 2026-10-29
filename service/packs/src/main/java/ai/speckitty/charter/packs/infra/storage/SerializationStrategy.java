@@ -69,7 +69,7 @@ public interface SerializationStrategy {
     FileRead<GraphDocument> readGraph(String text, Shape shape, String file);
 
     /**
-     * Serializes an activation preset from scratch (ADR-0043).
+     * Serializes an activation preset from scratch (ADR-0042).
      *
      * @param preset the preset to write
      * @return the file text
@@ -87,7 +87,7 @@ public interface SerializationStrategy {
     FileRead<PresetDso> readPreset(String text, String file);
 
     /**
-     * Serializes a pack manifest from scratch (ADR-0043), its derived fields as given: the caller stamps them.
+     * Serializes a pack manifest from scratch (ADR-0042), its derived fields as given: the caller stamps them.
      *
      * @param manifest the manifest to write
      * @return the file text

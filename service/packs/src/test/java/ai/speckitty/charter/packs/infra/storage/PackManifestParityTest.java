@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * NFR-001: the {@code content_hash} recipe reproduces every hash the pinned built-in manifest lists. That manifest is
- * not in the sanitized shape (ADR-0043, OP-2), so it is read here with the raw YAML loader, never through
+ * not in the sanitized shape (ADR-0042, OP-2), so it is read here with the raw YAML loader, never through
  * {@link PackManifestYaml}; its hashes are data, checked against the pinned bytes.
  */
 @Tag("open-packs")

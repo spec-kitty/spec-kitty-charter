@@ -137,10 +137,10 @@ final class MeaningComparator {
         return List.copyOf(out);
     }
 
-    // ---- the pack manifest (ADR-0043) ----------------------------------------------------------
+    // ---- the pack manifest (ADR-0042) ----------------------------------------------------------
 
     /**
-     * A manifest without its derived fields, {@code manifest_hash} and every entry's {@code content_hash}: ADR-0043
+     * A manifest without its derived fields, {@code manifest_hash} and every entry's {@code content_hash}: ADR-0042
      * recomputes them on write, so they are verified against the bytes ({@code PackManifests.stale}), not compared.
      * Everything else (each entry's {@code kind}, {@code id} and {@code path}, the lists' order, {@code schema_version})
      * still counts.

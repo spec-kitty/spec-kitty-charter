@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The persistence shape of {@code presets/<id>.yaml}, in the sanitized shape of ADR-0043: a flat mirror of the
+ * The persistence shape of {@code presets/<id>.yaml}, in the sanitized shape of ADR-0042: a flat mirror of the
  * {@code preset} schema, not the domain {@link ai.speckitty.charter.packs.domain.Preset}.
  *
  * @param schemaVersion the {@code schema_version}, {@code "1.0"}

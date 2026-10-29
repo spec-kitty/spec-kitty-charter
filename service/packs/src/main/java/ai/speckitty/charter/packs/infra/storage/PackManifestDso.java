@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The persistence shape of {@code pack-manifest.yaml}, in the sanitized authored-pack shape of ADR-0043: a flat mirror
+ * The persistence shape of {@code pack-manifest.yaml}, in the sanitized authored-pack shape of ADR-0042: a flat mirror
  * of the {@code pack-manifest} schema. {@link #manifestHash()} and every {@code contentHash} are derived fields: a
  * whole-pack write recomputes them ({@link PackManifests#recompute}), the reader takes them as written, and the gate
  * verifies them. Membership (which constituents and presets are listed, and where) is carried as written.

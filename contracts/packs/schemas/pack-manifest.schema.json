@@ -88,7 +88,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The generated manifest of an authored Charter Pack (pack-manifest.yaml), in the sanitized shape of ADR-0043.\n\nIt lists the pack's constituent artifact files and presets with a content hash each, and a hash over the whole. The hashes are derived fields: a whole-pack write recomputes them from the bytes it writes, the reader does not check them, and the round-trip gate verifies them. Membership is carried as written. The fetched-pack and charter-bundle variants are not this shape.",
+  "description": "The generated manifest of an authored Charter Pack (pack-manifest.yaml), in the sanitized shape of ADR-0042.\n\nIt lists the pack's constituent artifact files and presets with a content hash each, and a hash over the whole. The hashes are derived fields: a whole-pack write recomputes them from the bytes it writes, the reader does not check them, and the round-trip gate verifies them. Membership is carried as written. The fetched-pack and charter-bundle variants are not this shape.",
   "properties": {
     "schema_version": {
       "const": "1.0",

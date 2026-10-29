@@ -510,7 +510,7 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * #195: the manifest's derived fields, which the comparator skips (ADR-0043), are verified on both sides: the
+     * #195: the manifest's derived fields, which the comparator skips (ADR-0042), are verified on both sides: the
      * source against the source bytes, the written manifest against the written file each listed path paired with. A
      * stale field joins the red detail as {@code source stale: <fields>} or {@code written stale: <fields>}.
      */

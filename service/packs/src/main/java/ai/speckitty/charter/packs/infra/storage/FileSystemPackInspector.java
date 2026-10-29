@@ -70,7 +70,7 @@ public final class FileSystemPackInspector implements PackInspector {
     /**
      * The schema kinds a {@code files} rule of {@code file-kinds.yaml} maps whose schema declares an {@code id} (an
      * agent profile declares {@code profile-id}, so it is not one), less the pack-level {@code preset}: a preset
-     * declares an id but is no artifact (#195, ADR-0043). Derived from the table and the schemas, so a kind added to
+     * declares an id but is no artifact (#195, ADR-0042). Derived from the table and the schemas, so a kind added to
      * either is one here too, and built on first use: it needs the schemas, which are built lazily.
      */
     private static final class ArtifactKinds {
@@ -264,7 +264,7 @@ public final class FileSystemPackInspector implements PackInspector {
                 && document instanceof Map<?, ?> preset
                 && preset.get("id") instanceof String id
                 && PresetFiles.stemMismatch(file, id).isPresent()) {
-            // The store's stem rule, checked here too so validate mode and the load refuse the same files (ADR-0043):
+            // The store's stem rule, checked here too so validate mode and the load refuse the same files (ADR-0042):
             // the id must equal one value, the file stem, so it reads as a const violation at /id.
             return new FileRead.Unreadable<>(
                     file,

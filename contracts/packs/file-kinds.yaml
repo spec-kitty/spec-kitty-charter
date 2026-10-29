@@ -119,7 +119,7 @@ files:
     schema: glossary-pack
   - match: "**/*.skill.yaml"
     schema: skill
-  # Pack-level files (#195, ADR-0043): activation presets and the pack manifest, in their sanitized shapes.
+  # Pack-level files (#195, ADR-0042): activation presets and the pack manifest, in their sanitized shapes.
   - match: "*/presets/*.yaml"
     schema: preset
   - match: "*/pack-manifest.yaml"

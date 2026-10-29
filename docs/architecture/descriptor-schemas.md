@@ -9,7 +9,7 @@ related:
   - architecture/overview
   - architecture/contract-and-dtos
   - architecture/resolution-model
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: pack-author
     guidance_text: Read this for entity diagrams of the descriptor schemas and their edges.
@@ -107,7 +107,7 @@ Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/
 
 Three schemas cover the files that describe a pack as a whole. All three are closed
 (`additionalProperties: false` at every level), so an unknown key is refused
-([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). The
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). The
 `preset` and `pack-manifest` schemas were designed here, not imported (the descriptor schema was
 imported from core, ADR-0017): core's preset and manifest files have other shapes, and the
 pinned built-in ones are refused until `spec-kitty-open-packs` adopts these.

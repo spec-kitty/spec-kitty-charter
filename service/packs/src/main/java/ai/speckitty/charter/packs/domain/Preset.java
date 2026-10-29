@@ -18,14 +18,14 @@ import java.util.regex.Pattern;
 
 /**
  * An activation preset of a pack ({@code presets/<id>.yaml}): a named selection of artifacts and mission types to
- * activate, in the sanitized shape of ADR-0043. A preset is a pack-level value, not an artifact: core gives it no URN,
+ * activate, in the sanitized shape of ADR-0042. A preset is a pack-level value, not an artifact: core gives it no URN,
  * and the pack holds it beside its artifacts ({@link Pack#presets()}).
  *
  * <p>Each item may be must-have. The must-have items are the preset's {@linkplain #required() required set}, derived and
  * never declared a second time (ADR-0031 decisions 1 and 2), and a preset with any must-have item is
  * {@linkplain #governing() governing}; one without is a convenience preset. The kind gate {@link #activatedKinds()}
  * names the kinds the preset activates; empty means the preset gates no kind. A kind the preset selects nothing of has
- * no list: an empty list is not a value (one spelling per meaning, ADR-0043). Equal by value.
+ * no list: an empty list is not a value (one spelling per meaning, ADR-0042). Equal by value.
  *
  * @param id the preset's identity: lowercase words joined by single hyphens, at most 64 characters; its file stem
  * @param description what applying the preset puts in force; not blank

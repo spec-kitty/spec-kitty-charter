@@ -15,7 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The sanitized pack-level shapes (#195, ADR-0043): {@code preset.schema.json} and {@code pack-manifest.schema.json} are
+ * The sanitized pack-level shapes (#195, ADR-0042): {@code preset.schema.json} and {@code pack-manifest.schema.json} are
  * closed, accept the designed shape and refuse every other spelling. Each refusal is paired with the clean document it
  * departs from, so a schema that accepted everything, or refused everything, fails here.
  */

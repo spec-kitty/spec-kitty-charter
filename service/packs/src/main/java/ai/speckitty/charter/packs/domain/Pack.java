@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  *       no id, so it cannot be an artifact). By design they hold payload paths, relative to the pack's {@code assets/}
  *       directory; no other part of the aggregate holds file paths. Every {@link Asset} names a held asset file by its
  *       path, and no two assets name the same one;
- *   <li>the pack's {@linkplain #presets() activation presets} (#195, ADR-0043): core gives a preset no URN, so it is a
+ *   <li>the pack's {@linkplain #presets() activation presets} (#195, ADR-0042): core gives a preset no URN, so it is a
  *       pack-level value, not an artifact. No two share an id.
  * </ul>
  *

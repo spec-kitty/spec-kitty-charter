@@ -12,12 +12,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The derived fields of a pack manifest (ADR-0043). Every expected hash below was computed outside this code, with
+ * The derived fields of a pack manifest (ADR-0042). Every expected hash below was computed outside this code, with
  * Python: {@code hashlib.sha256} over the LF-normalised bytes, and over
  * {@code json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False)}, which is RFC 8785 for data made
  * of strings, lists and objects only.
  */
-@DisplayName("Pack manifest derived fields (#195, ADR-0043)")
+@DisplayName("Pack manifest derived fields (#195, ADR-0042)")
 class PackManifestsTest {
 
     private static final String A = "a".repeat(64);
