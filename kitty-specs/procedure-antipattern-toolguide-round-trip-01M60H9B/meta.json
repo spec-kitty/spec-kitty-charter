@@ -26,6 +26,7 @@
   "purpose_context": "Part of the 4.0 GA whole-pack round trip (epic #186, issue #194, absorbing #168). Procedures, the anti-patterns they and styleguides carry inline, and the Markdown guides that toolguides point to must be read into the charter domain and written back with equal meaning, using deliberately designed, consistent storage shapes. Pack content that diverges from those shapes is reported upstream rather than tolerated.",
   "purpose_tldr": "Bring procedures, inline anti-patterns and toolguide Markdown guides into the whole-pack round trip with a sanitized storage shape.",
   "slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "status_phase": "1",
   "target_branch": "feat/194a-procedure-antipattern-toolguide",
   "topology": "coord",
   "vcs": "git",
