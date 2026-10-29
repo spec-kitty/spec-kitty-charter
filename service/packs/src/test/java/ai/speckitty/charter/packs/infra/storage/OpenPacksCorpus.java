@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * ({@code openPacksRef} in gradle.properties) is the single source of truth; Gradle passes it as the
  * {@code charter.openPacksRef} system property. Nothing here skips: a missing, moved or dirty checkout fails.
  */
-final class OpenPacksCorpus {
+public final class OpenPacksCorpus {
 
     /** Every {@code *.yaml} file under {@code packs/} at the pinned head (re-counted at 01edb4e). */
     static final int YAML_FILE_COUNT = 516;
@@ -46,7 +46,7 @@ final class OpenPacksCorpus {
     }
 
     /** The checkout root; requires the current layout, {@code <root>/packs/built-in}. */
-    static Path root() {
+    public static Path root() {
         String dir = System.getProperty("charter.openPacksDir");
         if (dir == null || !Files.isDirectory(Path.of(dir, "packs", "built-in"))) {
             throw new IllegalStateException(
@@ -57,7 +57,7 @@ final class OpenPacksCorpus {
     }
 
     /** Fails unless the checkout is at the pinned commit with a clean tree. */
-    static void assertPinned() {
+    public static void assertPinned() {
         Path root = root();
         String pin = System.getProperty("charter.openPacksRef");
         if (pin == null || !SHA.matcher(pin).matches()) {
