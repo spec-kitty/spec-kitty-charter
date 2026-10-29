@@ -1,7 +1,7 @@
 ---
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
-doc_status: draft
+doc_status: active
 updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
@@ -28,13 +28,13 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-28. Decider: Stijn Dejongh (operator). Records the operator rulings of
+**Accepted** — 2026-10-29 (proposed 2026-10-28). Decider: Stijn Dejongh (operator). Records the operator rulings of
 2026-10-27 and 2026-10-28 on [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195)
 (part of epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), and the
 operator's ruling of 2026-10-28 on #186 that the rewrite operates as if core does not exist. The
 mission's choices are held under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. The
 code #195 ships implements this record, so the points it amends are in force for that code. The
-record stays Proposed pending the operator's acceptance, which the pull request for #195 asks for.
+operator accepted this record on 2026-10-29, the acceptance the pull request for #195 asked for.
 
 It answers [ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)'s two open questions and its
 decision 6 (Accepted).

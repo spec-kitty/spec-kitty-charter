@@ -32,7 +32,7 @@ supersedes in part [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-fres
 decision 11 as amended 2026-10-24, where they refuse every read for a configured pack whose directory is
 missing (decision 4 below).
 
-Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (Proposed, 2026-10-28), under the container profile only: a configuration root that does not exist fails the start (decision 4).
+Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28), under the container profile only: a configuration root that does not exist fails the start (decision 4).
 
 ## Context
 
@@ -72,7 +72,7 @@ a local directory, a shared drive or, later, a database behind the same ports.
    or an empty value, fails the start, naming the property. The fail-closed rule of ADR-0011 and
    ADR-0018 decision 11 (2026-10-24 amendment) for a *configured* pack whose directory is missing no
    longer has a case: packs are discovered, not configured.
-   *(Superseded in part by ADR-0041, Proposed, 2026-10-28, under the container profile only: the root
+   *(Superseded in part by ADR-0041, 2026-10-28, under the container profile only: the root
    must be absolute and exist, or the start fails.)*
 5. **Provisioning.** Packs arrive through the registration of new packs once it is served. Until
    then a pack is provisioned by copying it into `<root>/packs/`.

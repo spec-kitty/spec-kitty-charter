@@ -26,7 +26,7 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-28, for [#227](https://github.com/spec-kitty/spec-kitty-charter/issues/227)
+**Accepted** — 2026-10-29 (proposed 2026-10-28), for [#227](https://github.com/spec-kitty/spec-kitty-charter/issues/227)
 under epic [#226](https://github.com/spec-kitty/spec-kitty-charter/issues/226). Decider: Stijn
 Dejongh (operator). Written from the epic's accepted architect assessment and the operator
 rulings of 2026-10-27 on #226.
