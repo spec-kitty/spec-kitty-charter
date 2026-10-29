@@ -2,7 +2,7 @@
 title: "ADR-0007: REST-HATEOAS is the v1 contract of record; GraphQL is planned-later, MCP deferred"
 description: REST with OpenAPI-HATEOAS ships as the sole v1 contract of record via a reusable Links component; GraphQL is derived from OpenAPI and planned-later; the MCP adapter is deferred.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -40,6 +40,10 @@ a strong `ETag` validator and `If-None-Match` → `304 Not Modified`, weakly com
 change. The service answers `501` as a `default` Problem until #209 serves the bundle, and the RFC
 8631 `service-desc` link is deferred to #126. The `304`-has-no-body invariant is recorded in
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)'s amendment of the same day.
+
+*Note 2026-10-29 (#209):* the service now serves the bundle: the deployable packages the
+`bundleContract` output and answers it byte for byte, so the interim `501` above is retired. No
+decision of this record changes.
 
 ## Context
 

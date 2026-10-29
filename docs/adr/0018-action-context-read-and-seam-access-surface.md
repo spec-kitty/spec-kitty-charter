@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -64,6 +64,13 @@ client's `If-None-Match` answers `304` with the validator and Charter headers an
 lint rule exempts `304` alongside the 200/201 successes, and a new rule `not-modified-has-no-body`
 holds every `304` to that no-body shape; both are fixture-proven non-vacuous. First realized by
 `getOpenApiDocument` (#208) and the pattern for any later conditional read.
+
+*Note 2026-10-29 (#209):* the service evaluates `If-None-Match` itself, by the contract's rule, and is
+the only evaluator. Spring's built-in check (`checkNotModified`, run on every GET/HEAD `200` whose
+entity carries an `ETag`) does not match `*` on a GET and skips what it cannot parse, so it would
+answer `304` to a value the contract answers `200`. The `200` entity therefore carries no `ETag`; a
+`ResponseBodyAdvice` (`ContractDocumentETag`) adds it as the body is written, after that check. A
+later conditional read follows the same shape. No decision of this record changes.
 
 This record supersedes, point by point:
 
