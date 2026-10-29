@@ -1,0 +1,17 @@
+{
+  "coordination_branch": "kitty/mission-serve-openapi-document-01M64FVZ",
+  "created_at": "2026-10-29T18:48:30.390874+00:00",
+  "flattened": false,
+  "friendly_name": "Serve the contract document",
+  "mid8": "01M64FVZ",
+  "mission_id": "01M64FVZCACNAB0NFNGD2BKQDC",
+  "mission_number": null,
+  "mission_slug": "serve-openapi-document-01M64FVZ",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #207 lets users fetch the latest charter OpenAPI document from the service itself, locally and hosted, instead of downloading a release. #208 declared the operation in the contract and left a 501 stub; #209 packages the validated bundle build output into the deployable and serves it byte for byte, with application/yaml, a strong SHA-256 ETag computed once at startup and 304 on a matching If-None-Match, while the token and browser guards, the Charter headers and the Problem error handling still apply.",
+  "purpose_tldr": "The running service answers GET /openapi.yaml with the exact contract bundle it was built from, guarded like every operation and cacheable by ETag.",
+  "slug": "serve-openapi-document-01M64FVZ",
+  "target_branch": "feat/209-serve-openapi-document",
+  "topology": "coord"
+}
