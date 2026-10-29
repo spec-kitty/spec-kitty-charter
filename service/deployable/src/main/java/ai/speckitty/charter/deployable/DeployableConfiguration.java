@@ -10,10 +10,10 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>This aggregates only the layers' own beans, including the storage layer's {@code DomainRepositoryService.Locations}
  * bound from {@code charter.config-root}. The remaining property-bound composition-root beans (for example
- * {@code PackLocations}, the guard, {@code FileSystemPackSources}) are supplied by the {@code deployable} wiring classes
- * ({@code CharterWiring}, {@code GuardWiring}) through {@code CharterServiceApplication}'s own scan — so this class
- * alone does not boot the full application context; a full-context test goes through
- * {@code CharterServiceApplication}.
+ * {@code PackLocations}, the guard, {@code FileSystemPackSources}, the {@code ContractDocument}) are supplied by the
+ * {@code deployable} wiring classes ({@code CharterWiring}, {@code GuardWiring}, {@code ContractDocumentWiring})
+ * through {@code CharterServiceApplication}'s own scan — so this class alone does not boot the full application
+ * context; a full-context test goes through {@code CharterServiceApplication}.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan({

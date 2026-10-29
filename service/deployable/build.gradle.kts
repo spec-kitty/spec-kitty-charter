@@ -20,6 +20,44 @@ dependencies {
     testImplementation(catalog.lib("snakeyaml-engine"))
 }
 
+// The bundled contract the service serves as GET /openapi.yaml (#209): the `contractBundle` variant :contracts
+// publishes, which is the bundleContract output and its checksum. The bundle is packaged beside
+// ContractDocumentWiring, which loads it; the tests receive both files of the build output, so they compare the
+// answer with what the contract build wrote rather than with the packaged copy.
+val contractBundle = configurations.dependencyScope("contractBundle")
+val contractBundleFiles = configurations.resolvable("contractBundleFiles") {
+    extendsFrom(contractBundle.get())
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named("charter-contract-bundle")) }
+}
+dependencies {
+    "contractBundle"(project(":contracts"))
+}
+
+tasks.processResources {
+    from(contractBundleFiles) {
+        include("charter-openapi.yaml")
+        into("ai/speckitty/charter/deployable")
+    }
+}
+
+/** Hands the bundle and its checksum, as the contract build wrote them, to the test JVM. */
+abstract class ContractBundleArguments : CommandLineArgumentProvider {
+    @get:InputFiles @get:PathSensitive(PathSensitivity.NAME_ONLY) abstract val files: ConfigurableFileCollection
+
+    override fun asArguments(): List<String> {
+        val byName = files.files.associateBy { it.name }
+        fun path(name: String) = checkNotNull(byName[name]) { "the contractBundle variant has no $name" }.absolutePath
+        return listOf(
+            "-Dcharter.test.contract-bundle=${path("charter-openapi.yaml")}",
+            "-Dcharter.test.contract-bundle-checksum=${path("charter-openapi.yaml.sha256")}",
+        )
+    }
+}
+
+tasks.test {
+    jvmArgumentProviders.add(objects.newInstance<ContractBundleArguments>().apply { files.from(contractBundleFiles) })
+}
+
 // The BDD scenarios are part of the contract, so they live beside the OpenAPI document and are put on the
 // test classpath from there, under the resource name `scenarios` the suite selects. The OpenAPI document,
 // its definitions and the vendored shared components go under `contract/`, where the suite checks every
