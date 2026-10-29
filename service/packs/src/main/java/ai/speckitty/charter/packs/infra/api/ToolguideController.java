@@ -14,12 +14,18 @@ import ai.speckitty.charter.packs.application.ToolguideRegistrationService.Guide
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import java.net.URI;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -36,21 +42,29 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  *
  * <p>The guide travels as content, never as a path (FR-010): a registration carries exactly one of {@code guide} (its
  * Markdown) or {@code guideUri} (fetched by the service), and the response carries the stored guide's Markdown with its
- * H1 written from the title (FR-011). The service assumes no filesystem shared with its client.
+ * H1 written from the title (FR-011). The service assumes no filesystem shared with its client. An inline guide is
+ * capped at {@code charter.guide-fetch.max-size} (1 MiB by default), the cap a fetched guide is held to, so the two
+ * sources of a guide obey one limit.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class ToolguideController implements ToolguidesApi {
 
-    /** The largest inline guide, in bytes of UTF-8 (1 MiB, NFR-005); the fetcher caps a fetched guide alike. */
+    /** The default cap on a guide, in bytes of UTF-8 (1 MiB, NFR-005): {@code charter.guide-fetch.max-size}. */
     static final int MAX_GUIDE_BYTES = 1024 * 1024;
+
+    private static final int MIB = 1024 * 1024;
+
+    /** The most items a registration's {@code commands}, {@code appliesToLanguages} or {@code references} holds. */
+    static final int MAX_LIST_ITEMS = 256;
 
     private final ToolguideReadService reads;
     private final ToolguideRegistrationService registrations;
     private final GuideFormat guides;
+    private final long maxGuideBytes;
 
     /**
-     * A controller over the toolguide read and registration use cases.
+     * A controller over the toolguide read and registration use cases, with the default guide cap.
      *
      * @param reads the read use case
      * @param registrations the registration use case
@@ -58,9 +72,31 @@ public class ToolguideController implements ToolguidesApi {
      */
     public ToolguideController(
             ToolguideReadService reads, ToolguideRegistrationService registrations, GuideFormat guides) {
+        this(reads, registrations, guides, DataSize.ofBytes(MAX_GUIDE_BYTES));
+    }
+
+    /**
+     * A controller over the toolguide read and registration use cases.
+     *
+     * @param reads the read use case
+     * @param registrations the registration use case
+     * @param guides the guide's Markdown form, in which a guide is answered
+     * @param maxGuideSize the largest inline guide, {@code charter.guide-fetch.max-size}: the cap the fetcher holds a
+     *     fetched guide to
+     */
+    @Autowired
+    public ToolguideController(
+            ToolguideReadService reads,
+            ToolguideRegistrationService registrations,
+            GuideFormat guides,
+            @Value("${charter.guide-fetch.max-size:1MB}") DataSize maxGuideSize) {
         this.reads = reads;
         this.registrations = registrations;
         this.guides = guides;
+        this.maxGuideBytes = maxGuideSize.toBytes();
+        if (maxGuideBytes <= 0 || maxGuideBytes > Integer.MAX_VALUE - 8) {
+            throw new IllegalArgumentException("the guide size cap must be positive and below 2 GiB");
+        }
     }
 
     @Override
@@ -109,7 +145,21 @@ public class ToolguideController implements ToolguidesApi {
             PackIdentifier pack, String id, ToolguideRegistration body, boolean replace, @Nullable String ifMatch) {
         GuideSource guide = guideSource(body.getGuide(), body.getGuideUri());
         return registrations.registerToolguide(
-                pack, body.getTitle(), guide, resolved -> assemble(pack, id, body, resolved), replace, ifMatch);
+                pack,
+                identifier(id),
+                body.getTitle(),
+                guide,
+                resolved -> assemble(pack, id, body, resolved),
+                replace,
+                ifMatch);
+    }
+
+    private static ToolguideIdentifier identifier(String id) {
+        try {
+            return new ToolguideIdentifier(id);
+        } catch (ConstraintBreachException invalid) {
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
+        }
     }
 
     private static String requireId(@Nullable String id) {
@@ -122,10 +172,12 @@ public class ToolguideController implements ToolguidesApi {
 
     /**
      * Where the registration's guide comes from: exactly one of {@code guide} or {@code guideUri}, whatever the
-     * generated DTO enforces of the contract's {@code oneOf} (FR-010). Both, neither, a null or an empty value is
-     * refused, and so is an inline guide over {@link #MAX_GUIDE_BYTES} of UTF-8, before it is parsed (NFR-005).
+     * generated DTO enforces of the contract's {@code oneOf} (FR-010). Both, neither or an empty value is refused (an
+     * explicit {@code null} is refused before the body is read, by {@link ToolguideRegistrationBodyAdvice}), and so is an
+     * inline guide over the cap of UTF-8 or one that is not Unicode text (an unpaired surrogate), before it is
+     * parsed (NFR-005).
      */
-    private static GuideSource guideSource(@Nullable String guide, @Nullable URI guideUri) {
+    private GuideSource guideSource(@Nullable String guide, @Nullable URI guideUri) {
         if ((guide == null) == (guideUri == null)) {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
@@ -137,10 +189,10 @@ public class ToolguideController implements ToolguidesApi {
                 throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "The guide is empty.");
             }
             // A char is at least one UTF-8 byte: the length bounds the encoding before it is computed.
-            if (guide.length() > MAX_GUIDE_BYTES || guide.getBytes(StandardCharsets.UTF_8).length > MAX_GUIDE_BYTES) {
+            if (guide.length() > maxGuideBytes || utf8Length(guide) > maxGuideBytes) {
                 throw new CharterRefusal(
                         RefusalCode.VALIDATION_FAILED,
-                        "The guide is larger than " + MAX_GUIDE_BYTES + " bytes of UTF-8 (1 MiB).");
+                        "The guide is larger than " + maxGuideBytes + " bytes of UTF-8" + mebibytes() + ".");
             }
             return new GuideSource.Content(guide);
         }
@@ -151,9 +203,35 @@ public class ToolguideController implements ToolguidesApi {
         return new GuideSource.Location(uri);
     }
 
+    /** The cap in MiB, in parentheses, when it is a whole number of them; nothing otherwise. */
+    private String mebibytes() {
+        return maxGuideBytes % MIB == 0 ? " (" + maxGuideBytes / MIB + " MiB)" : "";
+    }
+
+    /**
+     * The length of the guide in UTF-8, encoded strictly: a lone surrogate (which a JSON escape can spell) has no
+     * UTF-8 form and is refused, rather than stored as {@code ?}, which a fetched guide, decoded strictly, never is.
+     */
+    private static int utf8Length(String guide) {
+        try {
+            return StandardCharsets.UTF_8
+                    .newEncoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .encode(CharBuffer.wrap(guide))
+                    .remaining();
+        } catch (CharacterCodingException unpaired) {
+            throw new CharterRefusal(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The guide is not Unicode text: it holds an unpaired surrogate, which has no UTF-8 form.");
+        }
+    }
+
     /**
      * The domain toolguide a registration describes, around the guide the service resolved. The guide must also be
-     * writable under the title (its H1), so a title that cannot be an H1 is refused here, not when it is stored.
+     * writable under the title (its H1), so a title that cannot be an H1 is refused here, not when it is stored: one
+     * that is blank or more than one line, or one the Markdown reader would not read back as itself (a title ending in
+     * a closing {@code #} sequence, such as {@code "Search for #"}).
      */
     private ai.speckitty.charter.packs.domain.Toolguide assemble(
             PackIdentifier pack, String id, ToolguideRegistration body, Guide guide) {
@@ -167,15 +245,24 @@ public class ToolguideController implements ToolguidesApi {
                     .summary(body.getSummary())
                     .guide(guide)
                     .lastUpdated(body.getLastUpdated());
-            body.getCommands().forEach(builder::command);
-            body.getAppliesToLanguages().forEach(builder::appliesToLanguage);
-            body.getReferences().forEach(builder::reference);
+            bounded("commands", body.getCommands()).forEach(builder::command);
+            bounded("appliesToLanguages", body.getAppliesToLanguages()).forEach(builder::appliesToLanguage);
+            bounded("references", body.getReferences()).forEach(builder::reference);
             ai.speckitty.charter.packs.domain.Toolguide toolguide = builder.build();
             guides.write(toolguide.title(), guide);
             return toolguide;
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
         }
+    }
+
+    /** The list, or a refusal when it holds more than {@link #MAX_LIST_ITEMS} (the contract's {@code maxItems}). */
+    private static List<String> bounded(String field, List<String> items) {
+        if (items.size() > MAX_LIST_ITEMS) {
+            throw new IllegalArgumentException("The " + field + " list holds " + items.size() + " items; at most "
+                    + MAX_LIST_ITEMS + " are accepted.");
+        }
+        return items;
     }
 
     // ---- domain -> DTO -------------------------------------------------------------------------------------------

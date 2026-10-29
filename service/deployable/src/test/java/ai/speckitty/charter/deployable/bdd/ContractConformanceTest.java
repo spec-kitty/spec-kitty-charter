@@ -255,4 +255,25 @@ class ContractConformanceTest {
         assertThat(fixtureContract.violations("get", "/x", 200, "application/json", json("{\"next\":7}")))
                 .containsExactly("$.next matches 0 of the oneOf branches, not exactly one");
     }
+
+    @Test
+    void maxItemsIsChecked() throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n  /x:\n    $ref: paths/x.yaml\n");
+        write("charter/paths/x.yaml", """
+                get:
+                  responses:
+                    '200':
+                      description: d
+                      content:
+                        application/json:
+                          schema: {$ref: ../schemas/List.yaml}
+                """);
+        write("charter/schemas/List.yaml", "type: array\nmaxItems: 2\nitems: {type: string}\n");
+        ContractConformance fixtureContract = new ContractConformance(fixture);
+
+        assertThat(fixtureContract.violations("get", "/x", 200, "application/json", json("[\"a\",\"b\"]")))
+                .isEmpty();
+        assertThat(fixtureContract.violations("get", "/x", 200, "application/json", json("[\"a\",\"b\",\"c\"]")))
+                .containsExactly("$ holds more than 2 items");
+    }
 }

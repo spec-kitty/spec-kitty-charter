@@ -1,6 +1,8 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -9,6 +11,7 @@ import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.net.URI;
 import java.util.Objects;
@@ -35,6 +38,11 @@ import org.springframework.stereotype.Service;
  * registration that names it (a PUT with the same URI fetches again). Fetched text and inline content are read by the
  * one {@link GuideFormat}, so both obey the same rules (FR-011); a refused fetch or an invalid guide is a client error
  * ({@link RefusalCode#VALIDATION_FAILED}) and nothing is stored.
+ *
+ * <p>The refusals that need no guide come first, before anything is fetched: an unknown pack, a stale
+ * {@code If-Match}, a POST that names an existing id and a write the policy refuses never cost an outbound fetch.
+ * That check takes the pack's write lock only for itself and lets it go before the fetch; the same checks run again
+ * under the lock of the commit, where they are authoritative, since the pack may change during the fetch.
  */
 @Service
 public final class ToolguideRegistrationService {
@@ -116,11 +124,13 @@ public final class ToolguideRegistrationService {
     public record Registered(PackRevision revision, boolean created, Urn target, Toolguide toolguide) {}
 
     /**
-     * Registers a toolguide into the pack (POST create or PUT create-or-replace). The guide is resolved first, outside
-     * the pack's write lock: a {@link GuideSource.Location} is fetched, and the content is read against
-     * {@code title}. Only then is the toolguide assembled and the lock taken.
+     * Registers a toolguide into the pack (POST create or PUT create-or-replace). The refusals that need no guide are
+     * checked first, without the lock. The guide is then resolved, outside the pack's write lock: a
+     * {@link GuideSource.Location} is fetched, and the content is read against {@code title}. Only then is the
+     * toolguide assembled and the lock taken, under which every check runs again.
      *
      * @param pack the pack to register into
+     * @param id the toolguide's id, which the assembled toolguide must carry
      * @param title the toolguide's title, which a guide's H1, when present, must equal
      * @param guide where the guide comes from
      * @param toolguide assembles the toolguide around the resolved guide; it refuses a breach of a toolguide invariant
@@ -139,17 +149,26 @@ public final class ToolguideRegistrationService {
      */
     public Registered registerToolguide(
             PackIdentifier pack,
+            ToolguideIdentifier id,
             String title,
             GuideSource guide,
             Function<Guide, Toolguide> toolguide,
             boolean replace,
             @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(id, "id");
         Objects.requireNonNull(title, "title");
         Objects.requireNonNull(guide, "guide");
         Objects.requireNonNull(toolguide, "toolguide");
+        // The cheap refusals first (S4): a fetch is an outbound call, never spent on a write that is refused anyway.
+        // They run under the lock, which answers an unknown pack as not found, but the lock is let go before the fetch.
+        writeStore.exclusively(pack, () -> admitted(pack, id, replace, ifMatch));
         // Resolved before the lock (NFR-005): a slow or hostile guide host never holds a pack's writers up.
         Toolguide assembled = Objects.requireNonNull(toolguide.apply(read(title, markdownOf(guide))), "toolguide");
+        if (!assembled.id().equals(id)) {
+            throw new IllegalArgumentException(
+                    "the assembled toolguide " + assembled.id().value() + " is not " + id.value());
+        }
         return commit(pack, assembled, replace, ifMatch);
     }
 
@@ -157,19 +176,8 @@ public final class ToolguideRegistrationService {
         // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
         // state: a concurrent writer cannot slip between them (a lost update).
         return writeStore.exclusively(pack, () -> {
-            Pack current = packs.load(pack);
-            precondition(pack, ifMatch);
-            boolean exists = current.toolguides().stream().anyMatch(t -> t.id().equals(toolguide.id()));
-            if (!replace && exists) {
-                throw new CharterRefusal(
-                        RefusalCode.REGISTRATION_CONFLICT,
-                        "Pack " + pack.value() + " already has a toolguide "
-                                + toolguide.id().value() + ".");
-            }
-            policy.authorize(
-                    current,
-                    exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
-                    toolguide.urn());
+            Pack current = admitted(pack, toolguide.id(), replace, ifMatch);
+            boolean exists = exists(current, toolguide.id());
             Pack mutated = revalidated(current, toolguide);
             PackRevision revision =
                     writeStore.commit(pack, ifMatch, PackWriteStore.Change.artifact(mutated, toolguide));
@@ -178,6 +186,32 @@ public final class ToolguideRegistrationService {
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------
+
+    /**
+     * The checks that need no guide: the pack exists, the {@code If-Match} is current, a POST names a new id, and the
+     * policy allows the write. Run once before the fetch and again under the lock.
+     *
+     * @return the pack as loaded
+     */
+    private Pack admitted(PackIdentifier pack, ToolguideIdentifier id, boolean replace, @Nullable String ifMatch) {
+        Pack current = packs.load(pack);
+        precondition(pack, ifMatch);
+        boolean exists = exists(current, id);
+        if (!replace && exists) {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT,
+                    "Pack " + pack.value() + " already has a toolguide " + id.value() + ".");
+        }
+        policy.authorize(
+                current,
+                exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
+                new Urn(NodeKind.of(ArtifactKind.TOOLGUIDE), id.value()));
+        return current;
+    }
+
+    private static boolean exists(Pack pack, ToolguideIdentifier id) {
+        return pack.toolguides().stream().anyMatch(t -> t.id().equals(id));
+    }
 
     /** The guide's Markdown: the content as sent, or the text the URI answers (fetched here, never under the lock). */
     private String markdownOf(GuideSource guide) {

@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.unit.DataSize;
 
 /**
  * The HTTP contract of the toolguide routes: status, headers and body shape, the exactly-one rule of {@code guide} and
@@ -66,7 +67,7 @@ class ToolguideControllerTest {
                     new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
                     new ToolguideRegistrationService(store, store, new PermissiveWritePolicyGate(), fetcher, format),
                     format))
-            .setControllerAdvice(new RefusalHandler())
+            .setControllerAdvice(new RefusalHandler(), new ToolguideRegistrationBodyAdvice())
             .build();
 
     ToolguideControllerTest() {
@@ -232,6 +233,60 @@ class ToolguideControllerTest {
         assertThat(store.commits).isZero();
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"Search for #", "C #", "#", "Title ##"})
+    void aTitleThatMarkdownWouldNotReadBackAsTheH1IsA422NotAServerError(String title) throws Exception {
+        String body = "{\"schemaVersion\":\"1.0\",\"tool\":\"make\",\"title\":\"" + title + "\","
+                + "\"summary\":\"Using make.\"," + guideField(GUIDE) + "}";
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("H1")));
+        assertThat(store.commits).isZero();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    void aListOfMoreThan256ItemsIsA422(String field) throws Exception {
+        String items = "[" + String.join(",", java.util.Collections.nCopies(257, "\"x\"")) + "]";
+        String within = "[" + String.join(",", java.util.Collections.nCopies(256, "\"x\"")) + "]";
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE) + ",\"" + field + "\":" + items)))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("at most 256")));
+        assertThat(store.commits).isZero();
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE) + ",\"" + field + "\":" + within)))
+                .andExpect(status().isCreated());
+    }
+
+    // ---- the toolguide id names a guide file the schema accepts ---------------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"a-", "a--b", "-a", "A"})
+    void anIdWhoseGuideFileTheSchemaWouldRefuseIsA422(String id) throws Exception {
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(id)))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body(id)))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.commits).isZero();
+
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/a-b")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("a-b")))
+                .andExpect(status().isCreated());
+    }
+
     // ---- FR-010: exactly one of guide and guideUri ----------------------------------------------------------------
 
     @ParameterizedTest(name = "{0}")
@@ -245,7 +300,9 @@ class ToolguideControllerTest {
                 "\"guideUri\":\"\"",
                 "\"guide\":\"" + GUIDE + "\",\"guideUri\":\"" + SERVED_URI + "\"",
                 "\"guide\":\"" + GUIDE + "\",\"guideUri\":\"\"",
-                "\"guide\":\"\",\"guideUri\":\"" + SERVED_URI + "\""
+                "\"guide\":\"\",\"guideUri\":\"" + SERVED_URI + "\"",
+                "\"guide\":null,\"guideUri\":\"" + SERVED_URI + "\"",
+                "\"guide\":\"" + GUIDE + "\",\"guideUri\":null"
             })
     void aRegistrationWithoutExactlyOneNonEmptyGuideOrGuideUriIsA422(String guideFields) throws Exception {
         mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
@@ -295,7 +352,83 @@ class ToolguideControllerTest {
         assertThat(store.commits).isZero();
     }
 
+    // ---- S4: the refusals that need no guide are answered before anything is fetched ------------------------------
+
+    @Test
+    void aRegistrationToAMissingPackFetchesNothing() throws Exception {
+        mvc.perform(post("/api/v1/packs/ghost/toolguides")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("pack_not_found"));
+        assertThat(fetcher.fetched)
+                .as("no fetch for a pack that does not exist")
+                .isEmpty();
+        assertThat(store.commits).isZero();
+    }
+
+    @Test
+    void aDuplicatePostOrAStaleIfMatchFetchesNothing() throws Exception {
+        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("git", "\"guideUri\":\"" + SERVED_URI + "\"")))
+                .andExpect(status().isConflict());
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"sha256:" + "0".repeat(64) + "\"")
+                        .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
+                .andExpect(status().isPreconditionFailed());
+        assertThat(fetcher.fetched).isEmpty();
+        assertThat(store.commits).isZero();
+
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
+                .andExpect(status().isCreated());
+        assertThat(fetcher.fetched).containsExactly(URI.create(SERVED_URI));
+    }
+
     // ---- NFR-005: the inline guide is capped at 1 MiB of UTF-8 ----------------------------------------------------
+
+    @Test
+    void anUnpairedSurrogateIsA422NotAQuestionMark() throws Exception {
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE + " \\ud800 alone"))))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("unpaired surrogate")));
+        assertThat(store.commits).isZero();
+
+        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE + " \\ud83d\\ude00 paired"))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void theInlineCapIsTheConfiguredGuideSize() throws Exception {
+        MockMvc halfMib = MockMvcBuilders.standaloneSetup(new ToolguideController(
+                        new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
+                        new ToolguideRegistrationService(
+                                store, store, new PermissiveWritePolicyGate(), fetcher, format),
+                        format,
+                        DataSize.ofKilobytes(512)))
+                .setControllerAdvice(new RefusalHandler(), new ToolguideRegistrationBodyAdvice())
+                .build();
+        String prefix = "## Overview\n\n";
+        String exact = prefix + "a".repeat(MIB / 2 - prefix.length());
+
+        halfMib.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(escaped(exact + "a")))))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.detail").value("The guide is larger than 524288 bytes of UTF-8."));
+        halfMib.perform(put("/api/v1/packs/pack-a/toolguides/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(escaped(exact)))))
+                .andExpect(status().isCreated());
+    }
 
     @Test
     void anInlineGuideOfExactly1MibIsAcceptedWhileOneByteMoreIsRefused() throws Exception {
@@ -393,7 +526,8 @@ class ToolguideControllerTest {
         @Override
         public Pack load(PackIdentifier id) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                // As the production repository answers a pack it does not know.
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "no pack " + id.value());
             }
             return pack;
         }
