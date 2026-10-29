@@ -4,8 +4,9 @@ description: >-
   citation strings, not typed edges), so this body carries no relationships array. On POST to the collection the id is
   optional (the server answers with Location); on PUT the id is taken from the path. The guide travels in the body,
   never as a path: the body carries exactly one of guide (the Markdown content) or guideUri (a URI the service fetches
-  once, at registration), so the service assumes no filesystem shared with its client. Both, neither, a null or an
-  empty value is refused 422 validation_failed, whatever a generated client enforces of the oneOf below.
+  once, at registration), so the service assumes no filesystem shared with its client. Both, neither, a null (also
+  beside the other field) or an empty value is refused 422 validation_failed, whatever a generated client enforces of
+  the oneOf below.
 type: object
 additionalProperties: false
 required:
@@ -50,23 +51,30 @@ properties:
       The guide's Markdown in the structured guide form: no frontmatter, an optional H1 that must equal the title, no
       text before the first H2, a non-blank ## Overview, then the fixed blocks (## When to use, ## Setup, ## Usage,
       ## Cautions, ## Known limitations, ## References) in that order, with freeform H2 sections between ## Usage and
-      ## Cautions. At most 1 MiB of UTF-8; a larger guide is refused 422 validation_failed before it is parsed.
+      ## Cautions. At most 1 MiB of UTF-8 by default (configurable via charter.guide-fetch.max-size, the cap a
+      fetched guide is held to); a larger guide is refused 422 validation_failed before it is parsed, and so is one
+      holding an unpaired surrogate, which has no UTF-8 form. A registration body larger than six times the cap plus
+      1 MiB (7 MiB by default) is refused 422 validation_failed before it is read.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
       symbol: Toolguide.guide
   guideUri:
     type: string
     format: uri
-    pattern: '^https://'
     description: >-
-      An HTTPS URI the service fetches the guide from, once per registration (a PUT with the same URI fetches it
-      again), before it takes the pack's write lock. The fetched text is read exactly like an inline guide. The fetch
-      is direct (no proxy), over HTTPS only, to a host exactly on the service's allowlist (empty by default, so every
-      URI is refused until an operator allowlists a host), to global unicast addresses only (checked at resolution and
-      on every redirect), with at most 3 redirects, a 10-second deadline over the whole exchange, a 1 MiB streamed
-      cap, identity encoding and UTF-8 only, and no credentials forwarded. A refused fetch is 422 validation_failed
-      naming the reason and the host, never the path or query. A deployment that reaches the guide host only through
-      a proxy sends the content as guide instead.
+      An https URI the service fetches the guide from, once per registration (a PUT with the same URI fetches it
+      again), after the checks that need no guide (the pack exists, the If-Match, a POST's new id, the write policy)
+      and before it takes the pack's write lock. The https scheme is enforced by the service, not by this schema: any
+      other scheme is a refused fetch. The fetched text is read exactly like an inline guide. The fetch is direct (no
+      proxy), over HTTPS only, on port 443 only, to a host exactly on the service's allowlist (empty by default, so
+      every URI is refused until an operator allowlists a host), to global unicast addresses only (checked at
+      resolution and on every redirect). By default (configurable via charter.guide-fetch.*) it follows at most 3
+      redirects, has a 10-second deadline over the whole exchange and a 1 MiB cap; the cap is streamed, and a body
+      whose Content-Length already passes it is refused unread. The response must be text/markdown, text/x-markdown
+      or text/plain (parameters such as charset allowed; an absent Content-Type is refused), with identity encoding
+      and UTF-8 only; no credentials are forwarded. A refused fetch is 422 validation_failed naming the reason and the
+      host, never the path or query. A deployment that reaches the guide host only through a proxy sends the content
+      as guide instead.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/application/GuideFetcher.java
       symbol: GuideFetcher.fetch
@@ -78,7 +86,10 @@ properties:
       symbol: Toolguide.summary
   commands:
     type: array
-    description: The commands the toolguide lists, in authored order.
+    maxItems: 256
+    description: >-
+      The commands the toolguide lists, in authored order;
+      at most 256, a longer list is refused 422 validation_failed.
     items:
       type: string
     x-source:
@@ -86,7 +97,10 @@ properties:
       symbol: Toolguide.commands
   appliesToLanguages:
     type: array
-    description: The languages the toolguide applies to, in authored order.
+    maxItems: 256
+    description: >-
+      The languages the toolguide applies to, in authored order;
+      at most 256, a longer list is refused 422 validation_failed.
     items:
       type: string
     x-source:
@@ -100,7 +114,10 @@ properties:
       symbol: Toolguide.lastUpdated
   references:
     type: array
-    description: The bare citation strings the toolguide points at, in authored order.
+    maxItems: 256
+    description: >-
+      The bare citation strings the toolguide points at, in authored order;
+      at most 256, a longer list is refused 422 validation_failed.
     items:
       type: string
     x-source:

@@ -66,13 +66,17 @@ class PackCommitStoreTest {
     }
 
     private static Toolguide toolguide(String toolguideId) {
+        return toolguide(toolguideId, Guide.of("How to use the tool."));
+    }
+
+    private static Toolguide toolguide(String toolguideId, Guide guide) {
         return Toolguide.builder()
                 .id(new ToolguideIdentifier(toolguideId))
                 .packId(PACK)
                 .schemaVersion("1.0")
                 .tool("ripgrep")
                 .title("Use ripgrep")
-                .guide(Guide.of("How to use the tool."))
+                .guide(guide)
                 .summary("How to search.")
                 .build();
     }
@@ -255,6 +259,7 @@ class PackCommitStoreTest {
     @DisplayName("a write to a configured but broken pack is pack_unreadable, while an unconfigured pack is not found")
     void aBrokenConfiguredPackIsUnreadableNotNotFoundOnAWrite(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);
+        String descriptor = Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8);
         Files.writeString(packDir.resolve(PackFileSet.PACK_YAML), "pack_id: [\n", StandardCharsets.UTF_8);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
@@ -271,11 +276,18 @@ class PackCommitStoreTest {
                 new ToolguideRegistrationService.GuideSource.Content("## Overview\n\nHow to search.");
 
         assertThatThrownBy(() -> registrations.registerToolguide(
-                        PACK, "Use ripgrep", guide, resolved -> toolguide("ripgrep"), true, null))
+                        PACK,
+                        new ToolguideIdentifier("ripgrep"),
+                        "Use ripgrep",
+                        guide,
+                        resolved -> toolguide("ripgrep"),
+                        true,
+                        null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThatThrownBy(() -> registrations.registerToolguide(
                         new PackIdentifier("ghost"),
+                        new ToolguideIdentifier("ripgrep"),
                         "Use ripgrep",
                         guide,
                         resolved -> toolguide("ripgrep"),
@@ -283,6 +295,24 @@ class PackCommitStoreTest {
                         null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+
+        // Positive control: the pack repaired, the same registration lands, and the stored guide is the one sent.
+        Files.writeString(packDir.resolve(PackFileSet.PACK_YAML), descriptor, StandardCharsets.UTF_8);
+        registrations.registerToolguide(
+                PACK,
+                new ToolguideIdentifier("ripgrep"),
+                "Use ripgrep",
+                guide,
+                resolved -> toolguide("ripgrep", resolved),
+                true,
+                null);
+        assertThat(new DomainRepositoryService(locations(packDir), strategy)
+                        .load(PACK).toolguides().stream()
+                                .filter(t -> t.id().value().equals("ripgrep"))
+                                .findFirst()
+                                .orElseThrow()
+                                .guide())
+                .isEqualTo(Guide.of("How to search."));
     }
 
     /**

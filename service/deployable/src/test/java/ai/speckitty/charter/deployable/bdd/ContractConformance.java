@@ -33,7 +33,7 @@ import tools.jackson.databind.JsonNode;
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
  * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
  * {@code additionalProperties: false}, {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength},
- * {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
+ * {@code maxItems}, {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
  * never ignored in silence: the check walks every schema of the contract once when it is built, not only the
  * ones a body reaches. The contract tree is a constructor argument, so the fail-closed branches are tested over
  * fixtures.
@@ -48,7 +48,7 @@ final class ContractConformance {
     private static final String OPENAPI = "charter/openapi.yaml";
     private static final String SHARED_PROBLEM = "_shared/responses/Problem.yaml";
     private static final Set<String> CONSTRAINTS =
-            Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "minimum", "maximum");
+            Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "maxItems", "minimum", "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
 
     private final Path root;
@@ -361,6 +361,11 @@ final class ContractConformance {
                                             .codePointCount(0, value.asString().length())
                                     > ((Number) argument).intValue()) {
                         violations.add(at + " is longer than " + argument);
+                    }
+                }
+                case "maxItems" -> {
+                    if (value.isArray() && value.size() > ((Number) argument).intValue()) {
+                        violations.add(at + " holds more than " + argument + " items");
                     }
                 }
                 case "minimum" -> {

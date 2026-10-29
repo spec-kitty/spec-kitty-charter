@@ -24,35 +24,55 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   and from `Toolguide` (the response of `listPackToolguides`, `getPackToolguide` and both registrations). The API
   no longer assumes a filesystem shared between client and service.
 - Added: `ToolguideRegistration.guide` (the guide's Markdown) and `ToolguideRegistration.guideUri` (a string,
-  `format: uri`, `pattern: '^https://'`). A registration carries exactly one of them; the schema says so with a
-  `oneOf` of two `required` branches. The generator this repository builds with ignores that `oneOf` (it emits two
-  optional fields), so the service enforces the rule itself: both, neither, a null or an empty value is refused 422
+  `format: uri`; the schema carries no pattern, and the service enforces `https`, since a `pattern` on a field the
+  generator types `URI` would be a server error once bean validation is on the classpath). A registration carries
+  exactly one of them; the schema says so with a `oneOf` of two `required` branches. The generator this repository
+  builds with ignores that `oneOf` (it emits two optional fields), so the service enforces the rule itself: both,
+  neither, an empty value or an explicit `null` (also beside a valid other field) is refused 422
   `validation_failed`, whatever a generated client lets through. A `guideUri` that is not a URI at all fails to
   deserialize and is a 400 plain `Problem`, like any unreadable body.
+- Added: `maxItems: 256` on `ToolguideRegistration.commands`, `appliesToLanguages` and `references`; a longer list
+  is refused 422 `validation_failed`.
 - Added: `Toolguide.guide` (required): the stored guide's Markdown, its H1 written from `title`. An incoming guide
   may omit the H1; one that has an H1 must have the title as it, or it is refused.
 - Added refusals, all with existing codes (no new refusal code): 422 `validation_failed` for the exactly-one rule
-  above, for an inline guide over 1 MiB of UTF-8 (refused before it is parsed), for a guide that is not a valid
+  above, for an inline guide over the guide cap of UTF-8 (1 MiB by default, configurable via
+  `charter.guide-fetch.max-size`; refused before it is parsed), for an inline guide holding an unpaired surrogate
+  (refused, never stored as `?`), for a registration body over six times the guide cap plus 1 MiB (7 MiB by
+  default; refused before it is read), for a toolguide id with a trailing or doubled hyphen (`a-`, `a--b`: the
+  id is `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, the grammar of its guide file `<id>.guide.md`), for a title that cannot
+  be written as the guide's H1 (for example one ending in a closing `#`), for a guide that is not a valid
   guide (frontmatter, text before the first H2, no `## Overview`, fixed blocks out of order, an H1 that differs from
   the title; the detail names the rule), and for a refused fetch of `guideUri` (the detail names the typed reason,
   for example `HOST_NOT_ALLOWED` or `TOO_LARGE`, and the host, never the URI's path or query); 409
   `registration_conflict` when the guide's file `<id>.guide.md` is already claimed by another artifact of the pack.
   The 409 and 422 response descriptions of both registration paths name them.
 - Fetch posture of `guideUri`: the service fetches the guide once per registration (a PUT with the same URI fetches
-  again), before it takes the pack's write lock, and reads the fetched text exactly like an inline guide. The fetch
-  is direct, never through a proxy; HTTPS only; the host must be exactly on the service's allowlist, which is empty
-  by default, so every `guideUri` is refused until an operator allowlists its host; only global unicast addresses,
-  checked at resolution and after every redirect; at most 3 redirects; a 10-second deadline over the whole
-  exchange; a 1 MiB streamed cap; identity encoding and UTF-8 only; no credentials forwarded. A deployment whose
-  service reaches the guide host only through a proxy must send the guide as content.
+  again), after the refusals that need no guide (an unknown pack, a stale `If-Match`, a POST naming an existing id,
+  a write the policy refuses; none of them costs a fetch) and before it takes the pack's write lock, and reads the
+  fetched text exactly like an inline guide. The fetch is direct, never through a proxy; HTTPS on port 443 only;
+  the host must be exactly on the service's allowlist, which is empty by default, so every `guideUri` is refused
+  until an operator allowlists its host; only global unicast addresses, checked at resolution and after every
+  redirect. By default (configurable via `charter.guide-fetch.*`): at most 3 redirects, a 10-second deadline over
+  the whole exchange and a 1 MiB cap, streamed, with a body whose `Content-Length` passes it refused unread. The
+  answer must be `text/markdown`, `text/x-markdown` or `text/plain` (parameters such as `charset` allowed; an
+  absent `Content-Type` is refused), with identity encoding and UTF-8 only; no credentials are forwarded. A
+  deployment whose service reaches the guide host only through a proxy must send the guide as content.
+- Migrating a client: stop sending `guidePath`. Send the guide file's Markdown as `guide`, or host it on an
+  allowlisted HTTPS host and send `guideUri`; leave out the field you do not send. Read the guide from the
+  response's `guide`, whose H1 is the title, instead of resolving `guidePath`. A pack renames each guide file to
+  `<id>.guide.md` beside its toolguide.
 - Scenarios: `toolguides.feature` registers with `guide` content instead of `guidePath` and reads the guide back
   (H1 added from the title, or kept when it equals the title); new scenarios cover an H1 that differs from the
-  title, a guide without an overview, both, neither, null and empty values (an outline), an inline guide over 1 MiB
+  title, a guide without an overview, both, neither, null (alone or beside the other field) and empty values (an
+  outline), an inline guide over 1 MiB
   against one of exactly 1 MiB, a `guideUri` fetched, stored and fetched again on a later PUT, and a `guideUri`
   whose host is not allowlisted. `journeys/journey-05-remove-python.feature` registers its toolguide with `guide`
   content. Three steps are new (scenario README): `When I PUT "<path>" with the body, its "<field>" padded to <n>
   bytes:`, `Then the field "<field>" of the response body is the lines:` and `Given the guide host serves "<uri>"
-  with:`; a binding answers the guide host itself and opens no socket.
+  with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
+  `maxItems`.
+
 ### Pack-level files round trip (issue #195)
 
 - Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036

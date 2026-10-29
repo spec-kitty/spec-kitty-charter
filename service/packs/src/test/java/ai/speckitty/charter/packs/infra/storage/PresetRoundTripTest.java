@@ -163,6 +163,7 @@ class PresetRoundTripTest {
                         new MarkdownGuideFormat())
                 .registerToolguide(
                         id,
+                        new ToolguideIdentifier("ripgrep"),
                         "Use ripgrep",
                         new ToolguideRegistrationService.GuideSource.Content("## Overview\n\nHow to search."),
                         guide -> toolguide(id, guide),

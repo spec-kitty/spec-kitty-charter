@@ -105,9 +105,11 @@ post:
     '422':
       description: >-
         The registration is well-formed but breaks a pack invariant or schema (validation_failed): among others, it
-        carries both or neither of guide and guideUri, or an empty one; its guide is over 1 MiB of UTF-8 or is not a
-        valid guide (the detail names the rule); or the service refused to fetch its guideUri (the detail names the
-        reason and the host).
+        carries both or neither of guide and guideUri, or an empty or null one; its body is over the body limit (7 MiB
+        by default); its guide is over the guide cap of UTF-8 (1 MiB by default, configurable via
+        charter.guide-fetch.max-size), holds an unpaired surrogate or is not a valid guide (the detail names the
+        rule); its id, title or a list breaks a toolguide rule; or the service refused to fetch its guideUri (the
+        detail names the reason and the host).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

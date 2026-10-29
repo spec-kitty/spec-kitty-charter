@@ -140,6 +140,27 @@ class ToolguideRegistrationServiceTest {
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
 
+    @Test
+    void aRegistrationRefusedWithoutItsGuideFetchesNothing() {
+        fetcher.serve(GUIDE_URI, OVERVIEW);
+        GuideSource byUri = new GuideSource.Location(GUIDE_URI);
+
+        assertThatThrownBy(() -> register(new PackIdentifier("ghost"), "git", null, byUri, false, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        register(PACK, "git", null, true, null);
+        assertThatThrownBy(() -> register(PACK, "git", null, byUri, false, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
+        assertThatThrownBy(() -> register(PACK, "git", null, byUri, true, "\"sha256:" + "0".repeat(64) + "\""))
+                .isInstanceOf(PreconditionException.class);
+
+        assertThat(fetcher.fetched)
+                .as("no refused registration fetched its guide")
+                .isEmpty();
+        assertThat(store.commits).isEqualTo(1);
+    }
+
     // ---- FR-010 / NFR-005: the guide by URI, fetched before the write lock -------------------------------------
 
     @Test
@@ -153,7 +174,9 @@ class ToolguideRegistrationServiceTest {
                 .as("no fetch ran under the write lock")
                 .isEmpty();
         assertThat(fetcher.fetched).containsExactly(GUIDE_URI);
-        assertThat(store.locks).as("the registration took the write lock").isEqualTo(1);
+        assertThat(store.locks)
+                .as("the registration took the write lock for its checks before the fetch and for its commit after")
+                .isEqualTo(2);
         assertThat(toolguideIn(PACK, "git").guide()).isEqualTo(Guide.of("Fetched overview."));
         assertThat(result.toolguide().guide()).isEqualTo(Guide.of("Fetched overview."));
     }
@@ -182,8 +205,8 @@ class ToolguideRegistrationServiceTest {
                 });
         assertThat(store.commits).as("the refused fetch committed nothing").isZero();
         assertThat(store.locks)
-                .as("the refused fetch never took the write lock")
-                .isZero();
+                .as("only the checks before the fetch took the write lock; the refused fetch never reached the commit")
+                .isEqualTo(1);
 
         // Same fixture, the host served: accepted.
         fetcher.serve(GUIDE_URI, OVERVIEW);
@@ -231,7 +254,13 @@ class ToolguideRegistrationServiceTest {
             boolean replace,
             @Nullable String ifMatch) {
         return service.registerToolguide(
-                pack, "How to use " + id, guide, resolved -> toolguide(id, lastUpdated, resolved), replace, ifMatch);
+                pack,
+                new ToolguideIdentifier(id),
+                "How to use " + id,
+                guide,
+                resolved -> toolguide(id, lastUpdated, resolved),
+                replace,
+                ifMatch);
     }
 
     private static Toolguide toolguide(String id, @Nullable String lastUpdated, Guide guide) {

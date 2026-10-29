@@ -102,12 +102,14 @@ Feature: Toolguides are read and registered functionally
     Then the response status is 404
 
     Examples:
-      | case              | fields                                                                                  |
-      | neither           |                                                                                         |
-      | a null guide      | , "guide": null                                                                         |
-      | an empty guide    | , "guide": ""                                                                           |
-      | an empty guideUri | , "guideUri": ""                                                                        |
-      | both              | , "guide": "## Overview", "guideUri": "https://guides.example.org/git.guide.md"         |
+      | case              | fields                                                                          |
+      | neither           |                                                                                 |
+      | a null guide      | , "guide": null                                                                 |
+      | an empty guide    | , "guide": ""                                                                   |
+      | an empty guideUri | , "guideUri": ""                                                                |
+      | both              | , "guide": "## Overview", "guideUri": "https://guides.example.org/git.guide.md" |
+      | a null beside URI | , "guide": null, "guideUri": "https://guides.example.org/git.guide.md"          |
+      | a null beside it  | , "guide": "## Overview", "guideUri": null                                      |
 
   Scenario: An inline guide over 1 MiB is refused while one of exactly 1 MiB is accepted (NFR-005, US5 AS4)
     When I PUT "/packs/qa/toolguides/git" with the body, its "guide" padded to 1048577 bytes:
