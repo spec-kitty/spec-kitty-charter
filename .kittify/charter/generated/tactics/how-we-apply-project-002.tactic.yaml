@@ -1,19 +1,24 @@
 id: how-we-apply-project-002
 schema_version: '1.0'
 name: How We Apply PROJECT_002 (Risk Appetite and Non-Negotiable Failures)
-purpose: Never trade oracle fidelity, contract compatibility, the open-packs round
-  trip or dependency verification for speed, and give every other risk exception
-  an owner and an end date.
+purpose: Never trade fidelity to the charter's own model, contract and packs, the
+  contract's versioning rules, the open-packs round trip or dependency verification
+  for speed, and give every other risk exception an owner and an end date.
 steps:
-- title: Pin governance content to the oracle
-  description: Contract scenarios are taken from core's Python charter behavior. A
-    divergence is checked against the oracle before it is accepted, and a
-    deliberately stricter Java answer is recorded as an operator ruling, not a
-    silent divergence.
+- title: Pin governance content to the charter's own model
+  description: >-
+    Contract scenarios are taken from the charter's own model, contract
+    and packs, not from core's current behavior (epic #186 ruling, 2026-10-28). A
+    deliberate divergence from them is recorded as an operator ruling, not a
+    silent divergence. Pinning against core's Python charter oracle returns when
+    the service is incorporated into core.
 - title: Treat contracts/charter/ as public
-  description: Every edit runs the contract validation in ./gradlew verifyAll, adds
-    a line to contracts/charter/CHANGELOG.md (scenario changes included), and stays
-    backward compatible for core's vendored DTOs.
+  description: >-
+    Every edit runs the contract validation in ./gradlew verifyAll, adds
+    a line to contracts/charter/CHANGELOG.md (scenario changes included), and
+    follows the contract's versioning rules (ADR-0022): a break lands only on a 0.x
+    minor with a `### Breaking` CHANGELOG entry, and no released contract is broken
+    incompatibly.
 - title: Keep the round trip green
   description: openPacksRoundTrip runs on every build and is never skipped; every
     open-packs YAML file round-trips by meaning (ADR-0036). A file waiting on an
@@ -27,8 +32,8 @@ steps:
     approver and a sunset or review date in the pull request, and in
     docs/plans/open-questions.md when it outlives the change.
 failure_modes:
-- An exception, waiver, skip or deferral against oracle fidelity or contract
-  compatibility.
+- An exception, waiver, skip or deferral against fidelity to the charter's own
+  model, contract and packs, or against the contract's versioning rules.
 - Skipping or quarantining the round trip, or disabling dependency verification,
   to reach green.
 - An exception without scope, reason, approver and sunset or review date.
