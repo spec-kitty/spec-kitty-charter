@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.Toolguide;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -294,6 +295,39 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(listed(repositoryQa)).as("packs/qa").isEqualTo(qaOnDisk);
     }
 
+    /**
+     * #194: what the whole packs hold of procedures and toolguides at the pin, each toolguide with its guide. Built-in
+     * and internal are the open-packs packs with a {@code pack.yaml}; {@code qa} has none and is counted file by file by
+     * {@code ProcedureAndGuideCorpusTest}. This repository's {@code packs/internal} holds the same as the pin.
+     */
+    @Test
+    void theProcedureAndToolguideCountsOfEveryWholePackArePinned() {
+        Path openPacks = OpenPacksCorpus.packsDirectory();
+        Map<String, Path> packs = new LinkedHashMap<>();
+        packs.put(BUILT_IN, openPacks.resolve(BUILT_IN));
+        packs.put("internal", openPacks.resolve("internal"));
+        packs.put("repository internal", repositoryPacks().resolve("internal"));
+        Map<String, List<Integer>> counts = new LinkedHashMap<>();
+        packs.forEach((name, pack) -> {
+            WholePackStore.LoadedPack loaded = store.load(pack);
+            List<Toolguide> toolguides = loaded.pack().artifacts(ArtifactKind.TOOLGUIDE).stream()
+                    .map(Toolguide.class::cast)
+                    .toList();
+            assertThat(toolguides)
+                    .as("%s: every toolguide carries its guide", name)
+                    .allSatisfy(toolguide -> assertThat(toolguide.guide()).isNotNull());
+            counts.put(
+                    name,
+                    List.of(loaded.pack().artifacts(ArtifactKind.PROCEDURE).size(), toolguides.size()));
+        });
+
+        assertThat(counts)
+                .containsExactly(
+                        Map.entry(BUILT_IN, List.of(22, 18)),
+                        Map.entry("internal", List.of(12, 3)),
+                        Map.entry("repository internal", List.of(12, 3)));
+    }
+
     /** The counts as {@link PackFileSet} lists the files, for a pack no store loads (it has no {@code pack.yaml}). */
     private static Counts listed(Path pack) throws IOException {
         List<String> files = PackFileSet.assetFiles(pack);
@@ -408,8 +442,8 @@ class WholePackOpenPacksRoundTripTest {
                 .doesNotContain("presets/default.yaml", "presets/minimal.yaml", PackFileSet.MANIFEST);
         assertThat(loaded.manifest()).isPresent();
         assertThat(loaded.manifest().orElseThrow().constituents())
-                .as("the modelled constituents only, until #194 binds procedures")
-                .hasSize(272 - 23);
+                .as("every constituent: #194 binds procedures, so every listed kind is modelled")
+                .hasSize(272);
         assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 2));
         assertThat(loaded.pack().templates())
                 .extracting(template -> template.id().value())
@@ -451,8 +485,8 @@ class WholePackOpenPacksRoundTripTest {
      * The built-in manifest rewritten in the sanitized shape that spec-kitty/spec-kitty-open-packs#TBD-manifest-shape
      * asks for (OP-2): only {@code schema_version}, {@code manifest_hash}, the constituents (each {@code kind},
      * {@code id}, {@code path}, {@code content_hash}) and the presets (keyed by {@code id}), every derived field
-     * recomputed over {@code pack}. Until #194 binds procedures, a constituent of a kind no binding models is left
-     * out, as the round trip cannot write it.
+     * recomputed over {@code pack}. A constituent of a kind no binding models is left out, as the round trip cannot
+     * write it; since #194 binds procedures, the pinned manifest lists none.
      */
     private static String sanitizedManifest(String text, Path pack) {
         Map<?, ?> raw = (Map<?, ?>) Yaml.load(text);

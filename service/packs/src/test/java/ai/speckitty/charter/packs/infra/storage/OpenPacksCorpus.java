@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  */
 public final class OpenPacksCorpus {
 
-    /** Every {@code *.yaml} file under {@code packs/} at the pinned head (re-counted at 01edb4e). */
+    /** Every {@code *.yaml} file under {@code packs/} at the pinned head (re-counted at 5df92a5). */
     static final int YAML_FILE_COUNT = 516;
 
     /**

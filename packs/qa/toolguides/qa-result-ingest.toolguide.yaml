@@ -1,36 +1,12 @@
-schema_version: "1.0"
 id: qa-result-ingest-guide
+schema_version: '1.0'
 tool: qa-result-ingest
 title: QA Result Ingestion (JUnit-XML Producer)
-guide_path: toolguides/QA-RESULT-INGEST.md
-summary: >
-  Resolve the script via `spec-kitty charter pack asset path qa-result-ingest` —
-  the asset sidecar's own id, distinct from this toolguide's own id
-  (qa-result-ingest-guide) — then invoke it with `--results PATH [--results
-  PATH ...] --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir
-  PATH [--json]`, or `--self-test` to run its built-in fixture/assertion
-  suite instead (the tool prints its own derived pair count). The tool reads
-  spec.md's Requirement Register, every tasks/WP*.md's frontmatter
-  (including automation_ref), and JUnit-XML result file(s), and writes or
-  refreshes qa-traceability.yaml in the exact qa-traceability/v1 schema
-  qa_carrier_lint.py already validates. Not ingested in v1, named explicitly
-  rather than left as a vague "other formats": TAP, TRX (MSTest/VSTest's
-  own native XML schema), Cucumber JSON, Robot Framework's native XML, and
-  CTRF. Within JUnit-XML itself, only the outcome-as-child-element dialect
-  (<failure>/<error>/<skipped/>) is supported — the outcome-as-status-attribute
-  dialect some emitters use (e.g. <testcase status="failed"> with no
-  <failure> child) is explicitly unsupported and is detected and refused,
-  never silently mis-read as passing. Exit code communicates status: 0
-  (ingested), 1 (blocked — a named guard fired on well-formed input), 2
-  (error — unusable input, or a refused unsupported dialect). No runtime
-  hook compels running this ingester or blocks on a blocked/error exit
-  today: GateBinding.handler_kind: "asset" remains inert pending upstream
-  issue #2599 (open), and expected-artifacts.yaml's blocking: flag is
-  likewise not enforced by accept — the same gap this pack's own
-  qa-carrier-lint toolguide already discloses for its sibling validator
-  applies here too.
+guide_path: qa-result-ingest-guide.guide.md
+summary: |
+  Resolve the script via `spec-kitty charter pack asset path qa-result-ingest` — the asset sidecar's own id, distinct from this toolguide's own id (qa-result-ingest-guide) — then invoke it with `--results PATH [--results PATH ...] --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir PATH [--json]`, or `--self-test` to run its built-in fixture/assertion suite instead (the tool prints its own derived pair count). The tool reads spec.md's Requirement Register, every tasks/WP*.md's frontmatter (including automation_ref), and JUnit-XML result file(s), and writes or refreshes qa-traceability.yaml in the exact qa-traceability/v1 schema qa_carrier_lint.py already validates. Not ingested in v1, named explicitly rather than left as a vague "other formats": TAP, TRX (MSTest/VSTest's own native XML schema), Cucumber JSON, Robot Framework's native XML, and CTRF. Within JUnit-XML itself, only the outcome-as-child-element dialect (<failure>/<error>/<skipped/>) is supported — the outcome-as-status-attribute dialect some emitters use (e.g. <testcase status="failed"> with no <failure> child) is explicitly unsupported and is detected and refused, never silently mis-read as passing. Exit code communicates status: 0 (ingested), 1 (blocked — a named guard fired on well-formed input), 2 (error — unusable input, or a refused unsupported dialect). No runtime hook compels running this ingester or blocks on a blocked/error exit today: GateBinding.handler_kind: "asset" remains inert pending upstream issue #2599 (open), and expected-artifacts.yaml's blocking: flag is likewise not enforced by accept — the same gap this pack's own qa-carrier-lint toolguide already discloses for its sibling validator applies here too.
 commands:
-  - spec-kitty charter pack asset path qa-result-ingest
-  - python qa_result_ingest.py --results PATH --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir PATH
-  - python qa_result_ingest.py --results PATH --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir PATH --json
-  - python qa_result_ingest.py --self-test
+- spec-kitty charter pack asset path qa-result-ingest
+- python qa_result_ingest.py --results PATH --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir PATH
+- python qa_result_ingest.py --results PATH --strategy PATH --tasks-dir PATH --since TIMESTAMP --mission-dir PATH --json
+- python qa_result_ingest.py --self-test

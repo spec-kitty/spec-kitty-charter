@@ -29,18 +29,13 @@ class VendoredPacksTest {
     private static final Set<String> LOCAL_FILES = Set.of("PROVENANCE.md", "README.md");
 
     /**
-     * The local delta against the pin, as paths under {@code packs/}. Each edit was made on this repository's main
-     * (commit 19cc37f) and goes upstream in spec-kitty/spec-kitty-open-packs#59. When the pin moves past #59 the set
-     * empties and the test says which entries are stale.
+     * The local delta against the pin, as paths under {@code packs/}. The edit was made on this repository's main
+     * (commit dd86daa) and is not upstream at the pin; taking it upstream is spec-kitty/spec-kitty-open-packs#92. When
+     * the pin moves to a commit that has it the set empties and the test says which entries are stale.
      */
     private static final Set<String> LOCAL_DELTA = Set.of(
-            // The validate-pr-body asset and its manifest: spec-kitty/spec-kitty-open-packs#59.
-            "internal/assets/validate-pr-body.py",
-            "internal/assets/validate-pr-body.py.asset.yaml",
-            // The fragment title "advisory closes link": spec-kitty/spec-kitty-open-packs#59.
-            "internal/drg/fragment.yaml",
-            // The semi-auto-delivery procedure: spec-kitty/spec-kitty-open-packs#59.
-            "internal/procedures/semi-auto-delivery.procedure.yaml");
+            // The closing-link pattern accepts GitHub's colon form (`Closes: #5`): not upstream yet (open-packs#92).
+            "internal/assets/validate-pr-body.py");
 
     @ParameterizedTest
     @ValueSource(strings = {"internal", "qa"})

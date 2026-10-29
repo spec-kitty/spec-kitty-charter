@@ -26,13 +26,16 @@ patterns:
   - name: Native issue type carries the kind of work
     description: >
       The kind of work is expressed by the native GitHub issue type
-      (Bug / Feature / Task), not by a kind label. The `bug` kind-label has been
-      retired in favor of the native Bug type — a defect is typed Bug, an epic or
-      new capability is typed Feature, everything else is typed Task. Type is
+      (Bug / Feature / Task), not by a kind label. The `bug` and `enhancement`
+      labels and the whole `type:*` label family duplicated the native type and were
+      deleted from spec-kitty/spec-kitty on 2026-10-19; if one reappears, strip it
+      and set the native type. A defect is typed Bug, an epic or new capability is
+      typed Feature, everything else is typed Task. Type is
       derived objectively from the conventional-commit prefix
       (`fix:` -> Bug, `feat:`/epic -> Feature, else Task).
     bad_example: |
-      Defect left untyped, or its kind smuggled into a label; epic left untyped.
+      Defect left untyped, or its kind smuggled into a label (`bug`, `type:bug`,
+      `enhancement`); epic left untyped.
     good_example: |
       Defect typed Bug (no kind label); every epic typed Feature.
 
@@ -42,9 +45,13 @@ patterns:
       namespace rather than overloading priority. `triage:stale` (reproduce and
       close if no longer valid), `triage:needs-revision` (scope/spec needs
       rework), `triage:maybe-duplicate` (suspected duplicate pending
-      confirmation — distinct from the confirmed `duplicate` label). Use the
-      `usability` label for operator/UX-ergonomics concerns and `future` for
-      explicitly-deferred work.
+      confirmation — distinct from the confirmed `duplicate` label),
+      `triage:repro-needed` (may already be fixed; re-reproduce before
+      implementing), `triage:needs-investigation` (root cause not yet adjudicated)
+      and `triage:needs-decision` (a human must make a call before anyone
+      implements; the body states the options; formerly `type:decision`). Use the
+      `usability` label for operator/UX-ergonomics concerns and `deferred` for work
+      paused pending an activation trigger.
     good_example: |
       A suspected-but-unconfirmed dup: add `triage:maybe-duplicate`
       (NOT `duplicate`, which asserts a confirmed, closeable duplicate).
@@ -56,7 +63,7 @@ patterns:
       reconcile it into the canonical namespaces or explicitly bless it as an
       immutable audit snapshot. Migration map:
       `p1-decision:close-if-stale` → `triage:stale`;
-      `p1-decision:defer` → `future`;
+      `p1-decision:defer` → `deferred`;
       `p1:verified` → remove (disposition is captured by the canonical priority label).
       If the snapshot predates the current canonical scheme and the owning team
       treats it as an audit artefact, document the decision and leave it
@@ -72,19 +79,42 @@ patterns:
 
   - name: Secondary-label coexistence
     description: >
-      Secondary labels (`usability`, `future`, `bug`, `epic`, `enhancement`)
-      coexist with the `priority:Px` primary label and with `triage:*` disposition
-      labels. They are orthogonal dimensions: `bug` expresses kind, `priority:P1`
-      expresses urgency, `triage:stale` expresses triage state. No label from one
-      dimension replaces a label from another. A ticket may carry at most one
-      `priority:Px` label (the single-canonical-priority invariant), any number of
-      kind labels, and at most one `triage:*` label per triage cycle.
+      Secondary labels (`usability`, `workflow`, `deferred`, `epic`, `domain:*`)
+      coexist with the `priority:Px` primary label, with `triage:*` disposition
+      labels and with the native issue type. They are orthogonal dimensions: the
+      native type expresses kind, `priority:P1` expresses urgency, `triage:stale`
+      expresses triage state, `domain:*` expresses the owning subsystem. No label
+      from one dimension replaces a label from another, and no label expresses
+      kind. A ticket may carry at most one `priority:Px` label (the
+      single-canonical-priority invariant) and at most one `triage:*` label per
+      triage cycle.
     good_example: |
-      Labels: priority:P1, bug, triage:needs-revision
-      (one priority, one kind, one triage state — all orthogonal)
+      Native type Bug; labels: priority:P1, domain:consolidation, triage:needs-revision
+      (one priority, one triage state, kind on the native type — all orthogonal)
     bad_example: |
       Labels: P1-bug, triage:stale
       (conflated priority+kind; missing canonical priority:Px)
+
+  - name: Renamed and retired labels
+    description: >
+      The 2026-10-19 clean-up renamed or deleted labels; never re-create or apply
+      the old names. Renamed: `domain:merge` → `domain:consolidation`,
+      `domain:dashboard` → `domain:status-api`, `domain:hosted` → `legacy:hosted`,
+      `type:decision` → `triage:needs-decision`; `documentation` merged into
+      `domain:docs`. Deleted: the `squad:*`, `needs:*` and `ci:green`/`ci:red`
+      fleet PR-lane labels (recreated only if the SkyKitty fleet is reactivated),
+      the fleet's `from:*` labels other than the provenance set (`from:ci`,
+      `from:qa`, `from:dev`, `from:squad`), `launch-window`, and the stock
+      `question`, `help wanted`, `invalid` and `wontfix` (use the native close
+      reason "not planned", or a `triage:*` label). `legacy:sync` and
+      `legacy:hosted` mark closed issues for history only; re-home a live issue to
+      the `domain:*` label whose code the fix edits.
+    good_example: |
+      A live issue still labelled `legacy:hosted` that edits the consolidation
+      executor: replace it with `domain:consolidation`.
+    bad_example: |
+      Labels: domain:merge, question, wontfix
+      (renamed and retired labels re-applied by hand)
 
 quality_test: >
   For any open ticket on spec-kitty/spec-kitty, does it carry exactly one

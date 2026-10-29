@@ -1,59 +1,36 @@
-schema_version: "1.0"
+schema_version: '1.0'
 id: qa-go-no-go-readiness-review
-name: QA Go/No-Go Readiness Review
-purpose: >
-  An ISTQB-style go/no-go release-readiness review meeting, evaluating exit
-  criteria and outstanding defects before a release decision. This review
-  is cited as adjacent to, and distinct from, three related-but-different
-  built-ins, none of which is a duplicate: post-merge-arch-gate-adjudication
-  (post-merge architectural-gate regression classification, code-shaped —
-  not a release-readiness meeting), mission-wrap-up-sequence (spec-kitty
-  mission close-out — not QA release governance), and
-  red-main-release-discipline (mainline CI-signal integrity discipline,
-  keeping main green — not an ISTQB-style go/no-go review).
-entry_condition: >
-  Exit criteria and defect status are both available for review ahead of a
-  release decision.
-exit_condition: >
+title: QA Go/No-Go Readiness Review
+description: |
+  An ISTQB-style go/no-go release-readiness review meeting, evaluating exit criteria and outstanding defects before a release decision. This review is cited as adjacent to, and distinct from, three related-but-different built-ins, none of which is a duplicate: post-merge-arch-gate-adjudication (post-merge architectural-gate regression classification, code-shaped — not a release-readiness meeting), mission-wrap-up-sequence (spec-kitty mission close-out — not QA release governance), and the RED_MAIN_RELEASE_DISCIPLINE directive (mainline CI-signal integrity discipline, keeping the mainline CI signal honest — not an ISTQB-style go/no-go review).
+entry_condition: |
+  Exit criteria and defect status are both available for review ahead of a release decision.
+exit_condition: |
   A recorded go/no-go decision with its rationale.
 steps:
-  - title: Confirm the release's exit criteria — per the qa-glossary exit criteria term — were agreed before execution, not invented at review time
-    actor: agent
-    description: >
-      Check that the exit criteria under review were the ones agreed during
-      test planning, not criteria written retroactively to fit the current
-      results.
-  - title: Report actual status against each agreed exit criterion
-    actor: agent
-    description: >
-      For each exit criterion, report the actual measured status rather
-      than an assumption of completion.
-  - title: Summarize outstanding defects by their already-agreed severity and priority — per the qa-glossary severity and priority terms — without re-deriving either classification
-    actor: agent
-    description: >
-      List defects still open at review time along with the severity and
-      priority already agreed for each during defect triage, without
-      re-deriving either classification at this meeting.
-  - title: Weigh outstanding risk against the exit-criteria status
-    actor: human
-    description: >
-      Decide whether outstanding defects and any unmet exit criteria
-      represent acceptable residual risk for release.
-  - title: Record the go/no-go decision and its rationale
-    actor: human
-    description: >
-      Write down the decision and the specific reasoning behind it so a
-      later reader understands why the release proceeded or was held.
+- title: Confirm the release's exit criteria — per the qa-glossary exit criteria term — were agreed before execution, not invented at review time
+  description: |
+    Check that the exit criteria under review were the ones agreed during test planning, not criteria written retroactively to fit the current results.
+- title: Report actual status against each agreed exit criterion
+  description: |
+    For each exit criterion, report the actual measured status rather than an assumption of completion.
+- title: Summarize outstanding defects by their already-agreed severity and priority — per the qa-glossary severity and priority terms — without re-deriving either classification
+  description: |
+    List defects still open at review time along with the severity and priority already agreed for each during defect triage, without re-deriving either classification at this meeting.
+- title: Weigh outstanding risk against the exit-criteria status
+  description: |
+    Decide whether outstanding defects and any unmet exit criteria represent acceptable residual risk for release.
+  role: operator
+- title: Record the go/no-go decision and its rationale
+  description: |
+    Write down the decision and the specific reasoning behind it so a later reader understands why the release proceeded or was held.
+  role: operator
 anti_patterns:
-  - name: Rubber-stamp sign-off
-    description: >
-      Recording a go decision without reporting actual status against each
-      exit criterion turns the review into a formality rather than a real
-      readiness check.
+- title: Rubber-stamp sign-off
+  content: |
+    Recording a go decision without reporting actual status against each exit criterion turns the review into a formality rather than a real readiness check.
 references:
-  - type: directive
-    id: QA_004
-    reason: >
-      This review's exit-criteria status check operationalises the
-      requirement that exit criteria are agreed before, and evaluated
-      against, execution rather than invented at review time.
+- type: directive
+  id: QA_004
+  reason: |
+    This review's exit-criteria status check operationalises the requirement that exit criteria are agreed before, and evaluated against, execution rather than invented at review time.

@@ -1,100 +1,63 @@
-schema_version: "1.0"
+schema_version: '1.0'
 id: qa-description-to-acceptance-ci
-name: Description to Acceptance CI (promise -> scenario -> gating run)
-purpose: >
-  The standing loop that turns a human-readable product description into automated
-  acceptance checks that gate a release. Product describes what the product promises on
-  DocKitty promise pages; QA and subject-matter experts derive Given/When/Then scenarios
-  that cite those promises; engineers bind the scenarios to the project's own runner; CI
-  checks the chain and runs the scenarios; the release gate reads the result. Collaboration
-  happens in the repository through pages, scenario files and reviews, not extra meetings.
-entry_condition: >
-  The product has a DocKitty docs tree (or can add one), a test runner that can execute
-  Given/When/Then scenarios, a CI system, and a named product authority who may ratify
-  promises. The reproduction scope for QA_008 has been written down.
-exit_condition: >
-  Every ratified promise is checked by a scenario or carries a declared gap; the promise
-  trace lint and the gating scenario run both execute in CI on the commit a release is cut
-  from; the release gate reads their result; and a report shows, per promise, which checks
-  passed, failed, are manual, pending or missing.
+title: Description to Acceptance CI (promise -> scenario -> gating run)
+description: |
+  The standing loop that turns a human-readable product description into automated acceptance checks that gate a release. Product describes what the product promises on DocKitty promise pages; QA and subject-matter experts derive Given/When/Then scenarios that cite those promises; engineers bind the scenarios to the project's own runner; CI checks the chain and runs the scenarios; the release gate reads the result. Collaboration happens in the repository through pages, scenario files and reviews, not extra meetings.
+entry_condition: |
+  The product has a DocKitty docs tree (or can add one), a test runner that can execute Given/When/Then scenarios, a CI system, and a named product authority who may ratify promises. The reproduction scope for QA_008 has been written down.
+exit_condition: |
+  Every ratified promise is checked by a scenario or carries a declared gap; the promise trace lint and the gating scenario run both execute in CI on the commit a release is cut from; the release gate reads their result; and a report shows, per promise, which checks passed, failed, are manual, pending or missing.
 steps:
-  - title: Describe the promise on a DocKitty page
-    actor: human
-    description: >
-      Product (or QA seeding candidates per `qa-promise-elicitation`) writes one promise
-      page per observable outcome, following `qa-promise-page`. New pages start as
-      `candidate`. The pull request is the review.
-  - title: Ratify
-    actor: human
-    description: >
-      The named product authority sets `status: ratified` with `ratified_by` and
-      `ratified_at`, or rejects the candidate. Repository write access alone is not
-      ratification authority; protect the promise tree with code ownership.
-  - title: Derive scenarios
-    actor: agent
-    description: >
-      QA, with a subject-matter expert and optionally an agent, writes Given/When/Then
-      scenarios per the built-in `bdd-scenario-formulation` tactic and
-      `given-when-then-authoring` styleguide, tagged `@promise:<id>`. Behaviour that cannot
-      be automated yet is tagged `@manual` with its result tags. A confirmed defect in the
-      QA_008 scope becomes a failing `@defect:<issue>` scenario.
-  - title: Review scenarios and bindings separately
-    actor: human
-    description: >
-      QA and product own the wording of scenario files; engineers review only the new step
-      code that binds them to the runner. Record the split in code ownership so neither
-      side can merge the other's half alone.
-  - title: Bind scenarios to the project's runner
-    actor: agent
-    description: >
-      Engineers implement step definitions in the project's own test stack. Steps assert
-      observable outcomes, never internals (`function-over-form-testing`). A scenario with
-      no binding fails the run; it is never skipped into passing (QA_003).
-  - title: Check the chain in CI
-    actor: agent
-    description: >
-      Run `qa-promise-trace-lint` against the promise tree and the scenario tree on every
-      change that touches either, and in the gating run. Blocking findings fail the job
-      and list what to fix.
-  - title: Run the gating scenarios
-    actor: agent
-    description: >
-      Run every gating scenario where the team agreed (per change if cheap, nightly if
-      not). Publish machine-readable results (JUnit XML or the runner's report format)
-      and keep history, so flaky results stay visible (`qa-flaky-test-quarantine`).
-  - title: Gate the release candidate
-    actor: agent
-    description: >
-      Cut a release candidate only from a commit whose gating run and trace lint are both
-      green (QA_008). A waiver is logged and leaves the red visible. Promotion to a stable
-      release stays a human decision.
-  - title: Report per promise
-    actor: agent
-    description: >
-      Publish a report that groups results by promise: passed, failed, manual (with the
-      version last tested), pending and declared gaps. A leader reads which agreed
-      behaviours hold without reading test code.
-  - title: Review the suite on a cadence
-    actor: human
-    description: >
-      On a fixed cadence, QA reviews whether scenarios still earn their place, retires
-      ones whose promise was retired, and checks the gap list with the product authority.
+- title: Describe the promise on a DocKitty page
+  description: |
+    Product (or QA seeding candidates per `qa-promise-elicitation`) writes one promise page per observable outcome, following `qa-promise-page`. New pages start as `candidate`. The pull request is the review.
+  role: operator
+- title: Ratify
+  description: |
+    The named product authority sets `status: ratified` with `ratified_by` and `ratified_at`, or rejects the candidate. Repository write access alone is not ratification authority; protect the promise tree with code ownership.
+  role: operator
+- title: Derive scenarios
+  description: |
+    QA, with a subject-matter expert and optionally an agent, writes Given/When/Then scenarios per the built-in `bdd-scenario-formulation` tactic and `given-when-then-authoring` styleguide, tagged `@promise:<id>`. Behaviour that cannot be automated yet is tagged `@manual` with its result tags. A confirmed defect in the QA_008 scope becomes a failing `@defect:<issue>` scenario.
+- title: Review scenarios and bindings separately
+  description: |
+    QA and product own the wording of scenario files; engineers review only the new step code that binds them to the runner. Record the split in code ownership so neither side can merge the other's half alone.
+  role: operator
+- title: Bind scenarios to the project's runner
+  description: |
+    Engineers implement step definitions in the project's own test stack. Steps assert observable outcomes, never internals (`function-over-form-testing`). A scenario with no binding fails the run; it is never skipped into passing (QA_003).
+- title: Check the chain in CI
+  description: |
+    Run `qa-promise-trace-lint` against the promise tree and the scenario tree on every change that touches either, and in the gating run. Blocking findings fail the job and list what to fix.
+- title: Run the gating scenarios
+  description: |
+    Run every gating scenario where the team agreed (per change if cheap, nightly if not). Publish machine-readable results (JUnit XML or the runner's report format) and keep history, so flaky results stay visible (`qa-flaky-test-quarantine`).
+- title: Gate the release candidate
+  description: |
+    Cut a release candidate only from a commit whose gating run and trace lint are both green (QA_008). A waiver is logged and leaves the red visible. Promotion to a stable release stays a human decision.
+- title: Report per promise
+  description: |
+    Publish a report that groups results by promise: passed, failed, manual (with the version last tested), pending and declared gaps. A leader reads which agreed behaviours hold without reading test code.
+- title: Review the suite on a cadence
+  description: |
+    On a fixed cadence, QA reviews whether scenarios still earn their place, retires ones whose promise was retired, and checks the gap list with the product authority.
+  role: operator
 references:
-  - type: directive
-    id: QA_007
-    reason: The chain this procedure maintains and the lint that checks it.
-  - type: directive
-    id: QA_008
-    reason: The release gate this procedure feeds.
-  - type: directive
-    id: QA_003
-    reason: No result in the gating run may read greener than it was.
-  - type: tactic
-    id: qa-promise-elicitation
-    reason: How the first promise set is seeded and ratified.
-  - type: styleguide
-    id: qa-promise-page
-    reason: The shape of a promise page.
-  - type: toolguide
-    id: qa-promise-trace-lint-guide
-    reason: The CI check for the chain.
+- type: directive
+  id: QA_007
+  reason: The chain this procedure maintains and the lint that checks it.
+- type: directive
+  id: QA_008
+  reason: The release gate this procedure feeds.
+- type: directive
+  id: QA_003
+  reason: No result in the gating run may read greener than it was.
+- type: tactic
+  id: qa-promise-elicitation
+  reason: How the first promise set is seeded and ratified.
+- type: styleguide
+  id: qa-promise-page
+  reason: The shape of a promise page.
+- type: toolguide
+  id: qa-promise-trace-lint-guide
+  reason: The CI check for the chain.
