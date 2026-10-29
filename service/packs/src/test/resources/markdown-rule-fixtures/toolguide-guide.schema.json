@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/toolguide-guide.schema.json",
+  "title": "Toolguide guide",
+  "description": "The structure of a toolguide's guide (<id>.guide.md), over the parsed Markdown model: no frontmatter, an optional H1 (the toolguide title), an empty preamble, and H2 sections. The order of the fixed blocks, the reserved headings and the H1 rule are enforced by the service when it maps the model to the guide, not here.",
+  "type": "object",
+  "required": ["preamble", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "preamble": { "const": "" },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "content"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "content": { "type": "string" }
+        }
+      }
+    }
+  }
+}

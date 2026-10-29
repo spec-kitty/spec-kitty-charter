@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 class ToolguideEntityTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("01TOOLPACK");
+    private static final Guide GUIDE = Guide.of("ripgrep searches files by regular expression.");
 
     /** A fully valid builder; each invariant test mutates exactly one field, so the valid case is the positive control. */
     private static Toolguide.Builder valid() {
@@ -23,8 +25,8 @@ class ToolguideEntityTest {
                 .schemaVersion("1.0")
                 .tool("ripgrep")
                 .title("Use ripgrep for code search")
-                .guidePath("guides/ripgrep.md")
                 .summary("How to search the codebase with ripgrep.")
+                .guide(GUIDE)
                 .command("rg pattern")
                 .appliesToLanguage("java")
                 .lastUpdated("2026-10-25")
@@ -40,7 +42,10 @@ class ToolguideEntityTest {
         assertThat(toolguide.packId()).isEqualTo(PACK);
         assertThat(toolguide.tool()).isEqualTo("ripgrep");
         assertThat(toolguide.title()).isEqualTo("Use ripgrep for code search");
-        assertThat(toolguide.guidePath()).isEqualTo("guides/ripgrep.md");
+        assertThat(toolguide.guidePath())
+                .as("beside the toolguide, named by its id")
+                .isEqualTo("ripgrep.guide.md");
+        assertThat(toolguide.guide()).isEqualTo(GUIDE);
         assertThat(toolguide.summary()).isEqualTo("How to search the codebase with ripgrep.");
         assertThat(toolguide.commands()).containsExactly("rg pattern");
         assertThat(toolguide.appliesToLanguages()).containsExactly("java");
@@ -76,8 +81,8 @@ class ToolguideEntityTest {
                 .schemaVersion("1.0")
                 .tool("a")
                 .title("t")
-                .guidePath("a.md")
                 .summary("s")
+                .guide(Guide.of("o"))
                 .build();
 
         assertThat(minimal.lastUpdated()).isEmpty();
@@ -111,15 +116,38 @@ class ToolguideEntityTest {
     }
 
     @Test
-    @DisplayName("a non-relative or non-markdown guide path is rejected; a relative *.md path is accepted")
-    void guidePathPatternIsGuarded() {
-        assertThatCode(() -> valid().guidePath("guides/ripgrep.md").build()).doesNotThrowAnyException();
-        assertThatThrownBy(() -> valid().guidePath("/abs/ripgrep.md").build())
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("relative *.md path");
-        assertThatThrownBy(() -> valid().guidePath("ripgrep.txt").build())
-                .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("relative *.md path");
+    @DisplayName("the guide path is <id>.guide.md: that name is accepted, a repo-rooted, nested or other name is not")
+    void guidePathIsTheIdsGuideFile() {
+        assertThatCode(() -> valid().guidePath("ripgrep.guide.md").build()).doesNotThrowAnyException();
+        for (String other : List.of(
+                "guides/ripgrep.guide.md",
+                "packs/built-in/toolguides/RIPGREP.md",
+                "RIPGREP.md",
+                "ripgrep.md",
+                "other.guide.md",
+                "/ripgrep.guide.md")) {
+            assertThatThrownBy(() -> valid().guidePath(other).build())
+                    .as(other)
+                    .isInstanceOf(ConstraintBreachException.class)
+                    .hasMessageContaining("<id>.guide.md");
+        }
+    }
+
+    @Test
+    @DisplayName("a toolguide needs its guide; the guided control builds")
+    void aToolguideNeedsItsGuide() {
+        Toolguide.Builder unguided = Toolguide.builder()
+                .id(new ToolguideIdentifier("a"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .tool("a")
+                .title("t")
+                .summary("s");
+
+        assertThatThrownBy(unguided::build)
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("guide");
+        assertThatCode(() -> unguided.guide(Guide.of("o")).build()).doesNotThrowAnyException();
     }
 
     @Test

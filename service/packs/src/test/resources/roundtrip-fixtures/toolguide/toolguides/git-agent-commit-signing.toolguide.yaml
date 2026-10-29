@@ -1,0 +1,8 @@
+id: git-agent-commit-signing
+schema_version: '1.0'
+tool: git
+title: Git Agent Commit Signing
+guide_path: git-agent-commit-signing.guide.md
+summary: How an agent signs the commits it makes.
+commands:
+- git commit -S

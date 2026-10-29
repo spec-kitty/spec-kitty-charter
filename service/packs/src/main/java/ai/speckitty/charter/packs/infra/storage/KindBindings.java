@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The registry of stored kinds (ADR-0037): the one list of the kinds the store loads, writes and the source
@@ -26,6 +27,9 @@ final class KindBindings {
             SkillBinding.INSTANCE,
             AssetBinding.INSTANCE,
             ProcedureBinding.INSTANCE);
+
+    /** The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194). */
+    private static final Set<String> COMPANION_STRUCTURES = Set.of(ToolguideBinding.GUIDE_SCHEMA);
 
     private KindBindings() {}
 
@@ -67,5 +71,16 @@ final class KindBindings {
         return ALL.stream()
                 .filter(binding -> binding.schemaName().equals(schemaName))
                 .findFirst();
+    }
+
+    /**
+     * Whether a schema is the structure schema of a bound kind's Markdown companion: a file its rule maps is held by
+     * the artifact that names it, read and written with that artifact, never on its own.
+     *
+     * @param schemaName a schema name, as {@code file-kinds.yaml} maps a file to it
+     * @return whether a companion of a bound kind is validated with it
+     */
+    static boolean isCompanionStructure(String schemaName) {
+        return COMPANION_STRUCTURES.contains(schemaName);
     }
 }

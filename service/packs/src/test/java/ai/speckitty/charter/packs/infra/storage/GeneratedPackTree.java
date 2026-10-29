@@ -182,6 +182,8 @@ final class GeneratedPackTree {
     private static final List<String> DIRECTORIES = List.of("a", "b", "c", "sub", "d-1", "drg");
     private static final String DECOY_CONTENT = "a: 1\n";
     private static final String MALFORMED = "id: [\n";
+    /** The guide a valid toolguide names, titled as {@link #contentOf} titles the toolguide. */
+    private static final String TOOLGUIDE_GUIDE = "# T\n\n## Overview\n\nO\n";
     /** Payload bytes no text codec keeps: a PNG signature, a NUL, CR/LF pairs and no final newline. */
     private static final byte[] PAYLOAD_BYTES = {
         (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, (byte) 0xff, '\r', '\n', 'x'
@@ -460,6 +462,10 @@ final class GeneratedPackTree {
             content = contentOf(kind, id);
         }
         Path file = write(pack, path, content);
+        if (valid && kind == Kind.TOOLGUIDE) {
+            // A toolguide's guide companion (#194), beside it; part of the toolguide's row, not a shape of its own.
+            Files.writeString(file.resolveSibling(id + ".guide.md"), TOOLGUIDE_GUIDE, StandardCharsets.UTF_8);
+        }
         Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
         remember(pack, shape, planted);
         return planted;
@@ -666,7 +672,8 @@ final class GeneratedPackTree {
             case DIRECTIVE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nintent: I\nenforcement: advisory\n";
             case STYLEGUIDE -> "id: " + id + "\nschema_version: '1.0'\ntitle: T\nscope: code\nprinciples: [p]\n";
             case TOOLGUIDE ->
-                "id: " + id + "\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
+                "id: " + id + "\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: " + id
+                        + ".guide.md\nsummary: S\n";
             case PARADIGM -> "id: " + id + "\nschema_version: '1.0'\nname: N\nsummary: S\n";
             case AGENT_PROFILE ->
                 "profile-id: " + id + "\nname: N\nroles: [r]\npurpose: P\nspecialization:\n  primary-focus: F\n";

@@ -36,7 +36,7 @@ class PackAggregateTest {
                 .schemaVersion("1.0")
                 .tool("t")
                 .title("T")
-                .guidePath("g.md")
+                .guide(Guide.of("How to use the tool."))
                 .summary("s")
                 .build();
     }

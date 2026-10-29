@@ -71,7 +71,7 @@ class DomainRoundTripTest {
             id: powershell-syntax
             tool: powershell
             title: PowerShell Syntax Guide
-            guide_path: packs/built-in/toolguides/POWERSHELL_SYNTAX.md
+            guide_path: powershell-syntax.guide.md
             summary: PowerShell-specific command, parameter, and path conventions for agents.
             commands:
               - spec-kitty
@@ -139,6 +139,7 @@ class DomainRoundTripTest {
         put("directives/018-doctrine-versioning-requirement.directive.yaml", "directive", DIRECTIVE);
         put("styleguides/reasons-canvas-writing.styleguide.yaml", "styleguide", STYLEGUIDE);
         put("toolguides/powershell-syntax.toolguide.yaml", "toolguide", TOOLGUIDE);
+        put("toolguides/powershell-syntax.guide.md", "toolguide", "# PowerShell Syntax Guide\n\n## Overview\n\nO.\n");
         put("paradigms/atomic-design.paradigm.yaml", "paradigm", PARADIGM);
         put("tactic.graph.yaml", "graph-shard", SHARD);
         put("agent_profiles/a-file-named-otherwise.agent.yaml", "agent-profile", PROFILE);

@@ -323,7 +323,8 @@ final class PackFileSet {
             Optional<List<String>> holder = switch (mapped.contentForm()) {
                 case BYTES -> Optional.of(bytesHolder(mapped.kind(), assetFiles, templates));
                 case YAML -> yamlHolder(mapped, byKind, presets);
-                case MARKDOWN, TEXT -> throw notStored(file, mapped.contentForm());
+                case MARKDOWN -> markdownHolder(file, mapped);
+                case TEXT -> throw notStored(file, mapped.contentForm());
             };
             holder.ifPresent(files -> files.add(file));
         }
@@ -345,9 +346,20 @@ final class PackFileSet {
     }
 
     /**
+     * The list a {@code markdown} file joins: none when it is a bound kind's companion (a toolguide's guide, #194),
+     * which its artifact holds and reads; any other {@code markdown} file fails loudly ({@link #notStored}).
+     */
+    private static Optional<List<String>> markdownHolder(String file, PackFileKind.Mapped mapped) {
+        if (KindBindings.isCompanionStructure(mapped.kind())) {
+            return Optional.empty();
+        }
+        throw notStored(file, mapped.contentForm());
+    }
+
+    /**
      * The failure for a file whose rule declares a form no store path reads: {@code markdown} is classified (the table
-     * admits it, ADR-0040 as amended) but held nowhere yet, so a file of it must neither reach a YAML reader nor be
-     * skipped unseen. The first consumer wires the store path and replaces this.
+     * admits it, ADR-0040 as amended) but held only as a bound kind's companion (#194), so any other file of it must
+     * neither reach a YAML reader nor be skipped unseen. Its first consumer wires the store path and replaces this.
      *
      * @param file the file, pack-relative
      * @param form the rule's content form, not {@code yaml} or {@code bytes}

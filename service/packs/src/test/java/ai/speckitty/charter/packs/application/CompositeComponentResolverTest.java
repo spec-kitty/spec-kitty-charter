@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -76,7 +77,7 @@ class CompositeComponentResolverTest {
             .schemaVersion("1.0")
             .tool("t")
             .title("Toolguide one")
-            .guidePath("g.md")
+            .guide(Guide.of("How to use the tool."))
             .summary("summary")
             .build();
     private final Tactic tactic = Tactic.builder()

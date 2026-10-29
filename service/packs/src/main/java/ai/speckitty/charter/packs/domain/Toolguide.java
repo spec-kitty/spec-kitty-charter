@@ -19,12 +19,18 @@ import org.jspecify.annotations.Nullable;
  * hold; the fidelity of a round trip is asserted on the storage representation, not here.
  *
  * <p>A toolguide mints no relationships: its {@code references} are bare citation strings, not typed edges
- * (data-model). List order and duplicates are significant. Build one with {@link #builder()}.
+ * (data-model), and a link in its guide's prose is text. List order and duplicates are significant. Build one with
+ * {@link #builder()}.
+ *
+ * <p>Its {@link Guide} (#194) is stored as a Markdown companion beside the toolguide's file, at {@code guidePath}, which
+ * is always {@code <id>.guide.md}: relative to the toolguide's file, never repo- or pack-rooted. The guide's H1 is the
+ * toolguide's {@code title}, written from it and never held twice.
  */
 public final class Toolguide implements CharterArtifact {
 
     private static final Pattern SCHEMA_VERSION = Pattern.compile("^1\\.0$");
-    private static final Pattern GUIDE_PATH = Pattern.compile("^[^/].*\\.md$");
+    /** The suffix of a guide file name: {@code <id>.guide.md}. */
+    public static final String GUIDE_SUFFIX = ".guide.md";
 
     private static final ModularRuleset<Toolguide> RULES = ModularRuleset.<Toolguide>emptyRules()
             .must(Constraints.of(
@@ -36,8 +42,8 @@ public final class Toolguide implements CharterArtifact {
             .must(Constraints.of(
                     "A toolguide needs a summary that is not blank.", toolguide -> !toolguide.summary.isBlank()))
             .must(Constraints.of(
-                    "A toolguide needs a guide path that is a relative *.md path.",
-                    toolguide -> GUIDE_PATH.matcher(toolguide.guidePath).matches()));
+                    "A toolguide's guide path is <id>.guide.md, beside the toolguide's file.",
+                    toolguide -> toolguide.guidePath.equals(guideFileOf(toolguide.id))));
 
     private final ToolguideIdentifier id;
     private final PackIdentifier packId;
@@ -46,6 +52,7 @@ public final class Toolguide implements CharterArtifact {
     private final String title;
     private final String guidePath;
     private final String summary;
+    private final Guide guide;
     private final List<String> commands;
     private final List<String> appliesToLanguages;
     private final Optional<String> lastUpdated;
@@ -59,8 +66,9 @@ public final class Toolguide implements CharterArtifact {
      * @param schemaVersion the schema version text
      * @param tool the tool the guide is about
      * @param title the title
-     * @param guidePath the relative {@code *.md} path of the guide body
+     * @param guidePath the guide file's path relative to the toolguide's file, {@code <id>.guide.md}
      * @param summary the summary
+     * @param guide the guide
      * @param commands the commands, in authored order
      * @param appliesToLanguages the languages it applies to, in authored order
      * @param lastUpdated the last-updated text, possibly empty
@@ -75,6 +83,7 @@ public final class Toolguide implements CharterArtifact {
             String title,
             String guidePath,
             String summary,
+            Guide guide,
             List<String> commands,
             List<String> appliesToLanguages,
             Optional<String> lastUpdated,
@@ -86,6 +95,7 @@ public final class Toolguide implements CharterArtifact {
         this.title = Objects.requireNonNull(title, "title");
         this.guidePath = Objects.requireNonNull(guidePath, "guidePath");
         this.summary = Objects.requireNonNull(summary, "summary");
+        this.guide = Objects.requireNonNull(guide, "guide");
         this.commands = List.copyOf(commands);
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
         this.lastUpdated = Objects.requireNonNull(lastUpdated, "lastUpdated");
@@ -166,12 +176,31 @@ public final class Toolguide implements CharterArtifact {
     }
 
     /**
-     * The relative {@code *.md} path of the guide body.
+     * The guide file's path relative to the toolguide's file: always {@code <id>.guide.md}.
      *
      * @return the guide path
      */
     public String guidePath() {
         return guidePath;
+    }
+
+    /**
+     * The guide, stored at {@link #guidePath()} with its H1 written from {@link #title()}.
+     *
+     * @return the guide
+     */
+    public Guide guide() {
+        return guide;
+    }
+
+    /**
+     * The guide file name of a toolguide.
+     *
+     * @param id the toolguide's identity
+     * @return {@code <id>.guide.md}
+     */
+    public static String guideFileOf(ToolguideIdentifier id) {
+        return id.value() + GUIDE_SUFFIX;
     }
 
     /**
@@ -244,6 +273,7 @@ public final class Toolguide implements CharterArtifact {
         private @Nullable String title;
         private @Nullable String guidePath;
         private @Nullable String summary;
+        private @Nullable Guide guide;
         private final List<String> commands = new ArrayList<>();
         private final List<String> appliesToLanguages = new ArrayList<>();
         private Optional<String> lastUpdated = Optional.empty();
@@ -307,7 +337,8 @@ public final class Toolguide implements CharterArtifact {
         }
 
         /**
-         * Sets the relative {@code *.md} guide path.
+         * Sets the guide path as stored; when never set, it is {@code <id>.guide.md}, the only path the toolguide
+         * admits.
          *
          * @param value the guide path
          * @return this builder
@@ -325,6 +356,17 @@ public final class Toolguide implements CharterArtifact {
          */
         public Builder summary(String value) {
             this.summary = value;
+            return this;
+        }
+
+        /**
+         * Sets the guide.
+         *
+         * @param value the guide
+         * @return this builder
+         */
+        public Builder guide(Guide value) {
+            this.guide = value;
             return this;
         }
 
@@ -376,19 +418,21 @@ public final class Toolguide implements CharterArtifact {
          * Builds the toolguide.
          *
          * @return the validated toolguide
-         * @throws NullPointerException when identity, pack, schema version, tool, title, guide path or summary was
-         *     never set
+         * @throws NullPointerException when identity, pack, schema version, tool, title, summary or guide was never
+         *     set
          * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
          */
         public Toolguide build() {
+            ToolguideIdentifier identity = Objects.requireNonNull(id, "id");
             return new Toolguide(
-                    Objects.requireNonNull(id, "id"),
+                    identity,
                     Objects.requireNonNull(packId, "packId"),
                     Objects.requireNonNull(schemaVersion, "schemaVersion"),
                     Objects.requireNonNull(tool, "tool"),
                     Objects.requireNonNull(title, "title"),
-                    Objects.requireNonNull(guidePath, "guidePath"),
+                    Objects.requireNonNullElse(guidePath, guideFileOf(identity)),
                     Objects.requireNonNull(summary, "summary"),
+                    Objects.requireNonNull(guide, "guide"),
                     commands,
                     appliesToLanguages,
                     lastUpdated,

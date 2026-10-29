@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
 /**
  * The fidelity bar of the toolguide kind is DSO-record equality: {@code readToolguide(writeToolguide(dso))} equals
  * {@code dso} (NFR-003). The present/empty/absent cases of the optionals and lists stay distinct through the round
- * trip.
+ * trip. The guide is not a YAML field: the YAML form reads no guide, and the store fills it from the companion
+ * ({@link ToolguideGuideTest}).
  */
 @DisplayName("ToolguideDso round trip")
 class ToolguideDsoRoundTripTest {
@@ -35,12 +36,13 @@ class ToolguideDsoRoundTripTest {
                 "1.0",
                 "ripgrep",
                 "Use ripgrep",
-                "guides/ripgrep.md",
+                "ripgrep.guide.md",
                 "How to search with ripgrep.",
                 List.of("rg a", "rg b", "rg a"),
                 List.of("java", "python"),
                 Optional.of("2026-07-29"),
-                List.of("docs/a.md", "docs/a.md"));
+                List.of("docs/a.md", "docs/a.md"),
+                Optional.empty());
 
         String written = yaml.write(ToolguideBinding.INSTANCE, dso);
 
@@ -53,8 +55,18 @@ class ToolguideDsoRoundTripTest {
     @Test
     @DisplayName("a minimal toolguide normalizes absent lists to empty and keeps last_updated absent")
     void aMinimalToolguideNormalizesAbsentListsToEmpty() {
-        ToolguideDso dso =
-                new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
+        ToolguideDso dso = new ToolguideDso(
+                "a",
+                "1.0",
+                "a",
+                "T",
+                "a.guide.md",
+                "S",
+                List.of(),
+                List.of(),
+                Optional.empty(),
+                List.of(),
+                Optional.empty());
 
         assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, dso), FILE)))
                 .isEqualTo(dso);
@@ -64,9 +76,29 @@ class ToolguideDsoRoundTripTest {
     @DisplayName("a present last_updated and an absent one stay distinct through the round trip")
     void presentAndAbsentLastUpdatedStayDistinct() {
         ToolguideDso present = new ToolguideDso(
-                "a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.of("2026-01-01"), List.of());
-        ToolguideDso absent =
-                new ToolguideDso("a", "1.0", "a", "T", "a.md", "S", List.of(), List.of(), Optional.empty(), List.of());
+                "a",
+                "1.0",
+                "a",
+                "T",
+                "a.guide.md",
+                "S",
+                List.of(),
+                List.of(),
+                Optional.of("2026-01-01"),
+                List.of(),
+                Optional.empty());
+        ToolguideDso absent = new ToolguideDso(
+                "a",
+                "1.0",
+                "a",
+                "T",
+                "a.guide.md",
+                "S",
+                List.of(),
+                List.of(),
+                Optional.empty(),
+                List.of(),
+                Optional.empty());
 
         assertThat(read(yaml.read(ToolguideBinding.INSTANCE, yaml.write(ToolguideBinding.INSTANCE, present), FILE)))
                 .isEqualTo(present);
@@ -78,7 +110,7 @@ class ToolguideDsoRoundTripTest {
     @Test
     @DisplayName("an unknown top-level key is unreadable while the same fixture without it reads clean (FR-016)")
     void anUnknownTopLevelKeyIsUnreadableWhileTheKnownKeyControlReadsClean() {
-        String clean = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
+        String clean = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: a.guide.md\nsummary: S\n";
 
         assertThat(yaml.read(ToolguideBinding.INSTANCE, clean, FILE)).isInstanceOf(FileRead.Read.class);
         assertThat(yaml.read(ToolguideBinding.INSTANCE, clean + "surprise: 1\n", FILE))
@@ -86,12 +118,24 @@ class ToolguideDsoRoundTripTest {
     }
 
     @Test
-    @DisplayName("a guide_path that breaks the schema pattern is unreadable while a relative *.md reads clean")
+    @DisplayName("guide_path is <id>.guide.md beside the toolguide: a repo-rooted, nested, absolute or UPPER_CASE.md"
+            + " path is unreadable while the sanitized name reads clean")
     void aGuidePathPatternViolationIsUnreadable() {
-        String relative = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: g.md\nsummary: S\n";
-        String absolute = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nguide_path: /g.md\nsummary: S\n";
+        String prefix = "id: a\nschema_version: '1.0'\ntool: T\ntitle: T\nsummary: S\nguide_path: ";
 
-        assertThat(yaml.read(ToolguideBinding.INSTANCE, relative, FILE)).isInstanceOf(FileRead.Read.class);
-        assertThat(yaml.read(ToolguideBinding.INSTANCE, absolute, FILE)).isInstanceOf(FileRead.Unreadable.class);
+        assertThat(yaml.read(ToolguideBinding.INSTANCE, prefix + "a-b.guide.md\n", FILE))
+                .isInstanceOf(FileRead.Read.class);
+        for (String refused : List.of(
+                "/a.guide.md",
+                "toolguides/a.guide.md",
+                "packs/internal/toolguides/TERMINOLOGY_GUARD.md",
+                "TERMINOLOGY_GUARD.md",
+                "a.md",
+                "A.guide.md",
+                "a-.guide.md")) {
+            assertThat(yaml.read(ToolguideBinding.INSTANCE, prefix + refused + "\n", FILE))
+                    .as(refused)
+                    .isInstanceOf(FileRead.Unreadable.class);
+        }
     }
 }
