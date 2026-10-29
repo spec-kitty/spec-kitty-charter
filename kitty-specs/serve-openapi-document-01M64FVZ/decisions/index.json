@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-29T18:48:50.735114Z",
+      "decision_id": "01M64FWM9F2AGBZK6XV1W3R1FC",
+      "final_answer": "Deployable integration tests (JUnit/MockMvc) now; Cucumber scenarios stay in #210 (orchestrator brief: write scenarios only if #208 left @WIP ones; it left none)",
+      "input_key": "acceptance_evidence",
+      "mission_id": "01M64FVZCACNAB0NFNGD2BKQDC",
+      "mission_slug": "serve-openapi-document-01M64FVZ",
+      "opened_by": "cli",
+      "options": [
+        "Deployable integration tests (JUnit/MockMvc) now; Cucumber scenarios stay in #210",
+        "Write the Cucumber scenarios here",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "No contract scenarios exist for getOpenApiDocument (they are #210). How does #209 prove its acceptance criteria?",
+      "rationale": null,
+      "resolved_at": "2026-10-29T18:48:55.734813Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.acceptance-evidence",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M64FVZCACNAB0NFNGD2BKQDC",
+  "version": 1
+}
