@@ -51,8 +51,8 @@ under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
 
 The decision text below is unchanged. The points this note answers are annotated where they stand:
 decision 6 and the two open questions. The answers are in force for the code #195 ships, which
-implements them. ADR-0042 itself is Accepted (2026-10-29), the acceptance the pull request for
-#195 asked for.
+implements them. ADR-0042 itself is Accepted (2026-10-29), the acceptance the pull request
+for #195 asked for.
 
 ## Context
 
