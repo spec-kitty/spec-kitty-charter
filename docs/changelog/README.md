@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-29 — The container profile's properties are validated at the start](/changelog/2026-10-29-container-properties-record/)
 - [2026-10-29 — The markdown content form is built for file-kind rules](/changelog/2026-10-29-markdown-content-form/)
 - [2026-10-29 — ADR-0041 and ADR-0042 are accepted](/changelog/2026-10-29-adrs-0041-0042-accepted/)
 - [2026-10-28 — The containerized service's configuration model is proposed](/changelog/2026-10-28-containerized-configuration-adr/)
