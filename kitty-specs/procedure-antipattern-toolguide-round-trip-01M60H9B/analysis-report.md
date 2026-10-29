@@ -4,33 +4,33 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: procedure-antipattern-toolguide-round-trip-01M60H9B
 mission_id: 01M60H9B96RVV0JBDF4CHB5VS6
-generated_at: '2026-10-29T05:27:15.682727+00:00'
+generated_at: '2026-10-29T06:32:58.253403+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
     path: kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/spec.md
-    sha256: 0f7747fbbfa52ffd90b6096956f50ebdc2c4c7b932f8ab1f6d208e52fb79a7b4
+    sha256: d1a41a891e8d91c8e33558105e980d56419ceac0397a91ec1b49d6571e9c1688
   plan.md:
     path: kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/plan.md
-    sha256: 47f699bae23cd8f77da9c7ae0a141b2256ac328a4ea43432fd92e08dd3ca2434
+    sha256: 6f920c5fd0972c4f436cc949f8312177ae647d605da1a495d47a8969f9e2ce3e
   tasks.md:
     path: kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks.md
-    sha256: 492dce83f57f3c4f684699142cb00e996c3a1acdfd454a6f3284af50ec91499c
+    sha256: 2011e5a1957dc456c04ba3f934e2a6a9684584a9f63c6a466d89a29729e6f890
   charter:
     path: .kittify/charter/charter.yaml
     sha256: dd742ab182b61a760929320c028e6174ee7c7f4ffcf5a8d749b94a42847fd9ab
 verdict: blocked
 issue_counts:
   critical: 1
-  low: 2
   medium: 3
+  low: 2
   high: 0
   info: 0
 findings:
 - id: C1
   severity: critical
   category: charter
-  summary: "Charter 'What must never go wrong' 1–2 (no divergence from the oracle, no incompatible contract change reaching core; 'no exception is granted') conflict with the #186 operate-as-if-core-does-not-exist ruling the spec and plan apply; charter.md has not been amended."
+  summary: 'Charter PROJECT_002 (charter.yaml) still grants no exception for core-oracle divergence and incompatible contract changes reaching core, conflicting with the #186 ruling the spec and plan apply; the amendment is PR #262 (green, awaiting operator merge).'
 - id: R1
   severity: medium
   category: underspecification
@@ -38,7 +38,7 @@ findings:
 - id: R2
   severity: medium
   category: inconsistency
-  summary: WP04–WP09 leave :packs:openPacksRoundTrip (part of check, so verifyAll) red at the old pin by design; charter gate 'verifyAll before merge' holds only at PR level — lane merges into the mission branch run red.
+  summary: From WP03 (sanitized procedure schema; validate-mode corpus test) through WP09, :packs:openPacksRoundTrip (part of check) is red at the old pin by design (operator-accepted red window); charter gate 'verifyAll before merge' holds at PR level, closed by WP10.
 - id: U1
   severity: medium
   category: ambiguity
@@ -57,9 +57,9 @@ findings:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Charter | CRITICAL | .kittify/charter/charter.md:24-31; plan.md Charter Check, Complexity Tracking; spec.md C-001, C-004 | Charter invariants 1–2 grant no exception; the mission relies on the #186 ruling, which the charter does not yet carry. | Explicit charter update recording the rewrite-period ruling (operator decision), outside or alongside this mission, before implementation. |
+| C1 | Charter | CRITICAL | .kittify/charter/charter.yaml PROJECT_002; plan.md Charter Check; spec.md C-001, C-004 | PROJECT_002 grants no exception; the mission relies on the #186 ruling. | Merge PR #262 (operator-approved amendment), then re-run analyze. PR-A1 proceeds meanwhile (touches neither invariant). |
 | R1 | Underspecification | MEDIUM | tasks/WP10, plan IC-06 | Open-packs merge gates WP10 with no fallback. | Escalate at WP09 completion; options: wait, pin to the PR head temporarily, or known-failure fallback. |
-| R2 | Inconsistency | MEDIUM | tasks.md header, WP04/WP06 | Red window on `check` inside the mission branch. | Accept explicitly (PR opens only after WP10) or reorder so the migration lands before registration. |
+| R2 | Inconsistency | MEDIUM | tasks.md header, WP03/WP04/WP06 | Red window on `check` inside the mission branch (operator accepted 2026-10-29). | Closed by WP10; PR-A2 opens only after it. |
 | U1 | Ambiguity | MEDIUM | tasks/WP05 T021, tasks/WP03 T014 | Implementer choices left open / contradictory text. | Implementer decides and records; reviewer checks. |
 | O1 | Ownership | LOW | tasks.md "Shared files" | Out-of-map edits declared. | None; reviewers verify they stay small. |
 | G1 | Coverage | LOW | spec.md Edge Cases; tasks/WP06 T031 | Duplicate-guide naming not named in tests. | Add to WP06 T031 during implementation. |
@@ -99,5 +99,6 @@ findings:
 
 ### Next Actions
 
-- Resolve C1 before `/spec-kitty.implement` (operator: explicit charter amendment).
+- C1: charter amendment PR #262 awaits the operator merge; re-run analyze after it lands.
+- Planning edit since the last report: ADR renumbered to 0043 (#195 merged ADR-0042 with rules S1–S8).
 - R1, R2: accept or adjust before WP04/WP09 start; U1, G1 during implementation.
