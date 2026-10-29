@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "mission_slug": "container-properties-record-01M64FVJ",
+  "mission_id": "01M64FVJR35RFYP86Y2DPM6800",
+  "mission_branch": "feat/228-container-config-properties",
+  "target_branch": "feat/228-container-config-properties",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        "docs/changelog/2026-10-29-container-properties-record.md",
+        "docs/changelog/README.md",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerProperties.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerStartupCheck.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerWiring.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-29T19:56:15.607528+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP02"
+  ],
+  "planning_commit_sha": "bfe3d60834913a54d73945bdae833868a63a6b7f"
+}

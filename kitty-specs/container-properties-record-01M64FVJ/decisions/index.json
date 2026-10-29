@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-29T18:48:30.680110Z",
+      "decision_id": "01M64FW0PR3KV90HJ3S8K4201P",
+      "final_answer": "Record plus container-side validator rules (operator, #228 issuecomment-6506747587): port 0, config-root absolute+existing, insecure-no-token set, project-config-dir set fail the start under container; D4 local loopback to #231, D3 token message to #229, allowed-hosts to guard is a follow-up issue.",
+      "input_key": "startup_validator_scope",
+      "mission_id": "01M64FVJR35RFYP86Y2DPM6800",
+      "mission_slug": "container-properties-record-01M64FVJ",
+      "opened_by": "cli",
+      "options": [
+        "Record only; validator in a follow-up",
+        "Record plus container-side validator rules",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Does #228 also build ADR-0041 D2's start-up validator for keys outside charter.container.* (D4-D6: port 0, config-root, insecure-no-token, project-config-dir under container), or only the record?",
+      "rationale": null,
+      "resolved_at": "2026-10-29T19:54:58.925759Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.startup-validator",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M64FVJR35RFYP86Y2DPM6800",
+  "version": 1
+}
