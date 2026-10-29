@@ -18,7 +18,8 @@ final class YamlFormats {
             MissionStepContractYaml.INSTANCE,
             GlossaryPackYaml.INSTANCE,
             SkillYaml.INSTANCE,
-            AssetYaml.INSTANCE);
+            AssetYaml.INSTANCE,
+            ProcedureYaml.INSTANCE);
 
     private YamlFormats() {}
 

@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: minimal-procedure
+title: Minimal procedure
+description: Only the required fields.
+entry_condition: Something starts.
+exit_condition: Something ends.
+steps:
+  - title: The only step

@@ -100,6 +100,17 @@ class DomainRoundTripTest {
               relation: requires
             """;
 
+    private static final String PROCEDURE = """
+            schema_version: "1.0"
+            id: x
+            title: X
+            description: A procedure.
+            entry_condition: E
+            exit_condition: X
+            steps:
+              - title: S
+            """;
+
     private static final String PROFILE = """
             profile-id: java-jenny
             name: Java Jenny
@@ -131,7 +142,7 @@ class DomainRoundTripTest {
         put("paradigms/atomic-design.paradigm.yaml", "paradigm", PARADIGM);
         put("tactic.graph.yaml", "graph-shard", SHARD);
         put("agent_profiles/a-file-named-otherwise.agent.yaml", "agent-profile", PROFILE);
-        put("procedures/x.procedure.yaml", "procedure", "id: x\n");
+        put("procedures/x.procedure.yaml", "procedure", PROCEDURE);
     }
 
     private void put(String path, String kind, String text) throws IOException {
@@ -154,10 +165,7 @@ class DomainRoundTripTest {
     void everyModelledFileIsWrittenAndReadBack() {
         Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
 
-        assertThat(outcomes)
-                .containsOnlyKeys(kinds.keySet().stream()
-                        .filter(path -> !path.startsWith("procedures/"))
-                        .toList());
+        assertThat(outcomes).containsOnlyKeys(kinds.keySet());
         assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
     }
 

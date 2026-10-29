@@ -1,0 +1,5 @@
+id: REVIEW_FIRST
+schema_version: '1.0'
+title: Review first
+intent: Work lands only after review.
+enforcement: required
