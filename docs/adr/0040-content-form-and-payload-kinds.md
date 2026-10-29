@@ -93,7 +93,10 @@ The record stays Proposed.
   sections in order, each a title and its content. An H1 or H2 counts only at column 0 and outside a
   fence; a backtick or tilde fence at any indentation hides headings, and it closes only on a fence
   of its own character at least as long; H3 and deeper headings stay in their section's content.
-  Two documents are equal in meaning when their models are equal: the frontmatter by YAML meaning,
+  Two documents are equal in meaning when their models are equal: the frontmatter as loaded YAML
+  values (a `Map.equals` on the loaded mappings, lists and scalars, so quoting, comments and key
+  order do not count; full ADR-0036 numeric and empty-versus-absent equality of the frontmatter is
+  left to #260, where a non-canonical reader first compares two separately-authored documents),
   every string exactly; the blank lines between blocks and the final newline are not part of the
   model. A text is refused as ambiguous, naming the line, for an unclosed fence, a carriage return
   or a byte order mark, an H1 that is not the first block, an H1 or H2 indented by one to three
