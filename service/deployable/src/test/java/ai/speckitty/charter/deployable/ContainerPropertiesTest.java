@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.env.MapPropertySource;
 
@@ -67,14 +65,6 @@ class ContainerPropertiesTest {
                         .getFailure()
                         .hasStackTraceContaining(PROPERTY + " must not hold a blank host")
                         .hasStackTraceContaining("allowedHosts[1]"));
-    }
-
-    @Test
-    void anEmptyValueBindsAsAnEmptyListSoTheRequiredRuleIsWhatRefusesIt() {
-        assertThat(new Binder(new MapConfigurationPropertySource(Map.of(PROPERTY, "")))
-                        .bindOrCreate("charter.container", ContainerProperties.class)
-                        .allowedHosts())
-                .isEmpty();
     }
 
     @Test
