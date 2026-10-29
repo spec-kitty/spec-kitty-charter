@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -139,13 +140,27 @@ class CompanionDigestTest {
         assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
         assertThat(digested).hasSizeGreaterThan(10).endsWith(assetFiles.toArray(String[]::new));
         assertThat(guides).hasSize(3).allSatisfy(guide -> {
-            assertThat(guide).startsWith("toolguides/").endsWith(".guide.md");
-            assertThat(beforeAssets.get(beforeAssets.indexOf(guide) - 1)).endsWith(".toolguide.yaml");
+            String toolguide = beforeAssets.get(beforeAssets.indexOf(guide) - 1);
+            assertThat(toolguide).endsWith(".toolguide.yaml");
+            // The guide is the one the toolguide before it names, not merely some guide: read its id and guide_path
+            // (the file stem is no proxy, two qa toolguides' ids differ from their stems).
+            Map<?, ?> declared = yaml(qa, toolguide);
+            assertThat(guide)
+                    .as("the guide after %s", toolguide)
+                    .isEqualTo("toolguides/" + declared.get("id") + ".guide.md")
+                    .isEqualTo(toolguide.substring(0, toolguide.lastIndexOf('/') + 1) + declared.get("guide_path"));
         });
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
                 .containsExactlyElementsOf(PackFileSet.digested(qa, withoutSkills));
+    }
+
+    private static Map<?, ?> yaml(Path pack, String relative) throws IOException {
+        Object document = ParsedYaml.parse(Files.readString(pack.resolve(relative)), relative)
+                .document();
+        assertThat(document).as(relative).isInstanceOf(Map.class);
+        return (Map<?, ?>) document;
     }
 
     private static void write(Path pack, String relative, String text) throws IOException {

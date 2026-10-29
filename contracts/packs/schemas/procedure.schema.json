@@ -158,6 +158,7 @@
       "items": {
         "$ref": "#/$defs/AntiPatternEntry"
       },
+      "minItems": 1,
       "title": "Anti Patterns",
       "type": "array"
     },
@@ -165,6 +166,7 @@
       "items": {
         "$ref": "#/$defs/Reference"
       },
+      "minItems": 1,
       "title": "References",
       "type": "array"
     },
@@ -177,6 +179,7 @@
       "items": {
         "type": "string"
       },
+      "minItems": 1,
       "title": "Applies To Languages",
       "type": "array"
     }

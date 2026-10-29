@@ -36,6 +36,12 @@ enum ProcedureBinding implements KindBinding<ProcedureDso, Procedure> {
         return dso.id();
     }
 
+    /** A procedure's id is its file stem (ADR-0043 S1): {@code <id>.procedure.yaml}. */
+    @Override
+    public boolean idIsFileStem() {
+        return true;
+    }
+
     @Override
     public Procedure toEntity(PackIdentifier pack, ProcedureDso dso) {
         Procedure.Builder builder = Procedure.builder()

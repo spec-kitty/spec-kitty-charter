@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * A guide's Markdown by the rules the stored guide is read and written by (FR-010/011): the {@link MarkdownCodec} line
- * rules and canonical form, and {@link GuideMarkdown}'s structure rules.
+ * rules and canonical form, and {@link GuideMarkdown}'s structure rules. An incoming guide may leave its H1 out
+ * (FR-011); a stored one may not ({@link GuideMarkdown#fromStored}).
  */
 @Component
 public final class MarkdownGuideFormat implements GuideFormat {
@@ -27,6 +28,6 @@ public final class MarkdownGuideFormat implements GuideFormat {
 
     @Override
     public String write(String title, Guide guide) {
-        return MarkdownCodec.write(GuideMarkdown.toDocument(title, guide));
+        return GuideMarkdown.write(title, guide);
     }
 }

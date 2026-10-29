@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The registry of stored kinds (ADR-0037): the one list of the kinds the store loads, writes and the source
@@ -28,8 +29,13 @@ final class KindBindings {
             AssetBinding.INSTANCE,
             ProcedureBinding.INSTANCE);
 
-    /** The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194). */
-    private static final Set<String> COMPANION_STRUCTURES = Set.of(ToolguideBinding.GUIDE_SCHEMA);
+    /**
+     * The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194), derived
+     * from the bindings' own declarations, so a new Markdown companion is declared once.
+     */
+    private static final Set<String> COMPANION_STRUCTURES = ALL.stream()
+            .flatMap(binding -> binding.companionStructures().stream())
+            .collect(Collectors.toUnmodifiableSet());
 
     private KindBindings() {}
 
@@ -82,5 +88,17 @@ final class KindBindings {
      */
     static boolean isCompanionStructure(String schemaName) {
         return COMPANION_STRUCTURES.contains(schemaName);
+    }
+
+    /**
+     * The binding whose Markdown companion a structure schema validates.
+     *
+     * @param schemaName a structure schema name
+     * @return the binding; empty when no bound kind declares that companion structure
+     */
+    static Optional<KindBinding<?, ?>> byCompanionStructure(String schemaName) {
+        return ALL.stream()
+                .filter(binding -> binding.companionStructures().contains(schemaName))
+                .findFirst();
     }
 }

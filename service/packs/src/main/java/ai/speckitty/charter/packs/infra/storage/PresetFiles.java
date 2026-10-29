@@ -39,11 +39,7 @@ final class PresetFiles {
      * @return the reason, {@code preset id '<id>' is not its file stem '<stem>'}; empty when they agree
      */
     static Optional<String> stemMismatch(String file, String id) {
-        String name = file.substring(file.lastIndexOf('/') + 1);
-        String stem = name.endsWith(SUFFIX) ? name.substring(0, name.length() - SUFFIX.length()) : name;
-        return stem.equals(id)
-                ? Optional.empty()
-                : Optional.of("preset id '" + id + "' is not its file stem '" + stem + "'");
+        return FileStems.mismatch(KIND, file, SUFFIX, id);
     }
 
     /**

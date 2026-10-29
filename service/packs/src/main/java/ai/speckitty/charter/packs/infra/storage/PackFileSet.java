@@ -367,8 +367,7 @@ final class PackFileSet {
      */
     static IllegalStateException notStored(String file, ContentForm form) {
         String why = form == ContentForm.MARKDOWN
-                ? "the markdown form is classified but no store path reads it yet; the first consumer (#260 for"
-                        + " pack.md) wires it"
+                ? "Markdown is read only as a companion; this rule has no store path of its own yet (#260)"
                 : "the store does not build that form";
         return new IllegalStateException("'" + file + "' is classified as content_form " + form.token() + ": " + why);
     }

@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import static ai.speckitty.charter.packs.infra.storage.YamlFields.list;
+import static ai.speckitty.charter.packs.infra.storage.YamlFields.mappings;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.optional;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
@@ -31,32 +31,26 @@ enum ProcedureYaml implements YamlFormat<ProcedureDso> {
     @Override
     public ProcedureDso read(Map<?, ?> root) {
         List<ProcedureDso.Step> steps = new ArrayList<>();
-        for (Object entry : list(root, "steps")) {
-            if (entry instanceof Map<?, ?> s) {
-                steps.add(new ProcedureDso.Step(
-                        required(s, "title"),
-                        optional(s, "description"),
-                        optional(s, "role"),
-                        optional(s, "on_success"),
-                        optional(s, "on_failure")));
-            }
+        for (Map<?, ?> s : mappings(root, "steps")) {
+            steps.add(new ProcedureDso.Step(
+                    required(s, "title"),
+                    optional(s, "description"),
+                    optional(s, "role"),
+                    optional(s, "on_success"),
+                    optional(s, "on_failure")));
         }
         List<ProcedureDso.AntiPattern> antiPatterns = new ArrayList<>();
-        for (Object entry : list(root, "anti_patterns")) {
-            if (entry instanceof Map<?, ?> a) {
-                antiPatterns.add(new ProcedureDso.AntiPattern(
-                        required(a, "title"),
-                        optional(a, "content"),
-                        optional(a, "bad_example"),
-                        optional(a, "good_example")));
-            }
+        for (Map<?, ?> a : mappings(root, "anti_patterns")) {
+            antiPatterns.add(new ProcedureDso.AntiPattern(
+                    required(a, "title"),
+                    optional(a, "content"),
+                    optional(a, "bad_example"),
+                    optional(a, "good_example")));
         }
         List<ProcedureDso.Reference> references = new ArrayList<>();
-        for (Object entry : list(root, "references")) {
-            if (entry instanceof Map<?, ?> r) {
-                references.add(new ProcedureDso.Reference(
-                        required(r, "type"), required(r, "id"), optional(r, "when"), optional(r, "reason")));
-            }
+        for (Map<?, ?> r : mappings(root, "references")) {
+            references.add(new ProcedureDso.Reference(
+                    required(r, "type"), required(r, "id"), optional(r, "when"), optional(r, "reason")));
         }
         return new ProcedureDso(
                 required(root, "id"),

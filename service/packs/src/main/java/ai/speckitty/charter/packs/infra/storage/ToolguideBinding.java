@@ -8,6 +8,7 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The {@link KindBinding} of the toolguide: {@link ToolguideDso} to {@link Toolguide} and back. Its guide is its one
@@ -59,6 +60,17 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
     }
 
     @Override
+    public Set<String> companionStructures() {
+        return Set.of(GUIDE_SCHEMA);
+    }
+
+    /** A stored guide's own rules: {@link GuideMarkdown#checkStored}, its H1 included. */
+    @Override
+    public void checkCompanion(String structureSchema, MarkdownDocument document) {
+        GuideMarkdown.checkStored(document);
+    }
+
+    @Override
     public ToolguideDso withCompanions(ToolguideDso dso, Map<String, CompanionContent> contents) {
         return dso.withGuide(Optional.ofNullable(contents.get(dso.guidePath())).map(content -> switch (content) {
             case CompanionContent.Markdown markdown -> markdown.document();
@@ -70,8 +82,10 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException also when the shape holds no guide, or the guide breaks a rule of
-     *     {@link GuideMarkdown#fromDocument}
+     * @throws IllegalArgumentException also when the shape holds no guide, the guide breaks a rule of
+     *     {@link GuideMarkdown#fromStored} (a stored guide carries its H1), or the title cannot be written as the
+     *     guide's H1 ({@link GuideMarkdown#write}): such a toolguide is a read violation, never a failure when it is
+     *     answered
      */
     @Override
     public Toolguide toEntity(PackIdentifier pack, ToolguideDso dso) {
@@ -86,12 +100,15 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
                 .title(dso.title())
                 .guidePath(dso.guidePath())
                 .summary(dso.summary())
-                .guide(GuideMarkdown.fromDocument(dso.title(), guide))
+                .guide(GuideMarkdown.fromStored(dso.title(), guide))
                 .lastUpdated(dso.lastUpdated().orElse(null));
         dso.commands().forEach(builder::command);
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
         dso.references().forEach(builder::reference);
-        return builder.build();
+        Toolguide toolguide = builder.build();
+        // The guide is answered with its H1 written from the title: refuse at load a title that cannot be one.
+        GuideMarkdown.write(toolguide.title(), toolguide.guide());
+        return toolguide;
     }
 
     @Override

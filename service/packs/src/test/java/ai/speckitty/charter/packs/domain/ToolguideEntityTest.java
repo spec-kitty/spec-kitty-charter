@@ -156,7 +156,7 @@ class ToolguideEntityTest {
         assertThatCode(() -> new ToolguideIdentifier("ripgrep-2")).doesNotThrowAnyException();
         assertThatThrownBy(() -> new ToolguideIdentifier("Ripgrep"))
                 .isInstanceOf(ConstraintBreachException.class)
-                .hasMessageContaining("^[a-z][a-z0-9-]*$");
+                .hasMessageContaining("^[a-z][a-z0-9]*(-[a-z0-9]+)*$");
     }
 
     @Test

@@ -3,10 +3,12 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * How one artifact kind is stored (ADR-0037): its persistence shape and the mapping between that shape and the domain
@@ -214,5 +216,37 @@ interface KindBinding<D, E extends CharterArtifact> {
      */
     default D withCompanions(D dso, Map<String, CompanionContent> contents) {
         return dso;
+    }
+
+    /**
+     * The structure schemas this kind's Markdown companions are validated with, as {@link Companion#structureSchema()}
+     * names them: the one place a companion structure is declared, from which {@link KindBindings} derives the set
+     * the pack listing and validate mode consult. A kind that overrides it must return {@code true} from
+     * {@link #hasCompanions}.
+     *
+     * @return the structure schemas; none by default
+     */
+    default Set<String> companionStructures() {
+        return Set.of();
+    }
+
+    /**
+     * Checks a stored Markdown companion against the rules its structure schema cannot express, on the companion
+     * alone: validate mode reads a companion file without the artifact that names it (#194).
+     *
+     * @param structureSchema one of {@link #companionStructures()}
+     * @param document the parsed companion
+     * @throws IllegalArgumentException naming the first rule the companion breaks
+     */
+    default void checkCompanion(String structureSchema, MarkdownDocument document) {}
+
+    /**
+     * Whether an artifact's {@code id} must equal its file stem, the file name less {@code .<fileToken>.yaml}
+     * (ADR-0036 S1, ADR-0043). The store's load and validate mode apply it alike ({@link FileStems}).
+     *
+     * @return {@code false} by default
+     */
+    default boolean idIsFileStem() {
+        return false;
     }
 }

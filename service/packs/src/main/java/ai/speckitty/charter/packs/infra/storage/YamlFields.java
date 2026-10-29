@@ -26,6 +26,26 @@ final class YamlFields {
         return owner.get(key) instanceof List<?> l ? l : List.of();
     }
 
+    /**
+     * The entries of a list of mappings. The schema has refused any other entry, so one is a reader's error, thrown
+     * rather than skipped: no entry is ever dropped in silence.
+     *
+     * @param owner the mapping that holds the list
+     * @param key the list's key
+     * @return the entries, in order; empty when the key is absent
+     * @throws IllegalStateException when an entry is not a mapping
+     */
+    static List<Map<?, ?>> mappings(Map<?, ?> owner, String key) {
+        List<Map<?, ?>> out = new ArrayList<>();
+        for (Object entry : list(owner, key)) {
+            if (!(entry instanceof Map<?, ?> mapping)) {
+                throw new IllegalStateException("an entry of '" + key + "' passed the schema but is not a mapping");
+            }
+            out.add(mapping);
+        }
+        return out;
+    }
+
     static String required(Map<?, ?> owner, String key) {
         return optional(owner, key)
                 .orElseThrow(() -> new IllegalStateException("'" + key + "' passed the schema but is absent or null"));

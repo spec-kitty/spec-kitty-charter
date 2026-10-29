@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * One file has one owner (ADR-0039 decision 3), so writing a companion can never replace another part of the pack: a
  * path that any {@code files} rule, {@code exclusions} rule or {@code payloads} rule of {@code file-kinds.yaml}
  * classifies is refused, naming the rule, except at the companion's own rule, a {@code files} rule whose schema is the
- * companion's declared structure schema in the companion's declared form (a guide classified by its own rule, #195).
+ * companion's declared structure schema in the companion's declared form (a guide classified by its own rule, #194).
  *
  * <p>The content is held in the {@linkplain KindBinding.Companion#form() form the companion declares}: text exactly
  * as read, or Markdown parsed with {@link MarkdownCodec} and validated against the declared structure schema, and
