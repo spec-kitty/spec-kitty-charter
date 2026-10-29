@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+  "mission_branch": "kitty/mission-procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "target_branch": "feat/194a-procedure-antipattern-toolguide",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/markdown/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/markdown/**",
+        "service/packs/src/test/resources/markdown-fixtures/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/packs/README.md",
+        "contracts/packs/file-kinds.yaml",
+        "docs/adr/0040-content-form-and-payload-kinds.md",
+        "docs/changelog/2026-10-29-markdown-content-form.md",
+        "docs/changelog/README.md",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ContentForm.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileKind.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackSchemas.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MarkdownFilesRuleTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MeaningComparator.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileKindTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackSchemasTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackCensus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java",
+        "service/packs/src/test/resources/markdown-rule-fixtures/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/packs/schemas/procedure.schema.json",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/AntiPatternEntry.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Procedure.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureReference.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureStep.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ProcedureEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureSchemaTest.java",
+        "service/packs/src/test/resources/schema-fixtures/procedure/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/CompanionContent.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Companions.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/SkillBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/CompanionFilesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MarkdownCompanionTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/GuideFetchRefusal.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/GuideFetcher.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/**",
+        "service/packs/src/main/resources/META-INF/services/java.net.spi.InetAddressResolverProvider",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/NetworkCodeBoundaryTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/KindBindings.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProcedureYaml.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/YamlFormats.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/KindBindingsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureEdgesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureYamlTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/RetiredFieldNamesTest.java",
+        "service/packs/src/test/resources/roundtrip-fixtures/procedure/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "contracts/packs/schemas/toolguide-guide.schema.json",
+        "contracts/packs/schemas/toolguide.schema.json",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Guide.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuideBlock.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuideSection.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GuideMarkdown.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ToolguideBinding.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ToolguideDso.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ToolguideYaml.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/GuideTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/ToolguideEntityTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ToolguideDsoRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ToolguideGuideTest.java",
+        "service/packs/src/test/resources/roundtrip-fixtures/toolguide/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/paths/packs_packId_toolguides.yaml",
+        "contracts/charter/paths/packs_packId_toolguides_toolguideId.yaml",
+        "contracts/charter/scenarios/journeys/journey-05-remove-python.feature",
+        "contracts/charter/scenarios/toolguides.feature",
+        "contracts/charter/schemas/Toolguide.yaml",
+        "contracts/charter/schemas/ToolguideRegistration.yaml",
+        "service/deployable/src/test/**/StubGuideFetcher*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ToolguideReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ToolguideRegistrationService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ToolguideController.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositeComponentResolverTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ToolguideReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ToolguideRegistrationServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackAggregateTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ToolguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-f",
+        "lane-h"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "service/packs/build.gradle.kts",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/migration/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-f"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "gradle.properties",
+        "packs/internal/**",
+        "packs/qa/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/OpenPacksCorpus.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureAndGuideCorpusTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VendoredPacksTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackOpenPacksRoundTripTest.java",
+        "service/packs/src/test/resources/whole-pack/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-g",
+        "lane-i"
+      ],
+      "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-k",
+      "wp_ids": [
+        "WP11"
+      ],
+      "write_scope": [
+        "docs/adr/0039-a-kind-binding-can-carry-companion-files.md",
+        "docs/adr/0042-sanitized-pack-shapes-procedures-and-toolguide-guides.md",
+        "docs/adr/README.md",
+        "docs/changelog/2026-10-29-procedures-and-toolguide-guides-round-trip.md",
+        "docs/development/epic-186-sanitized-shape-follow-ups.md",
+        "docs/guides/service-build.md",
+        "site/.contextive/definitions.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-e",
+        "lane-f",
+        "lane-g",
+        "lane-h"
+      ],
+      "parallel_group": 5
+    }
+  ],
+  "computed_at": "2026-10-29T05:26:11.810685+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "0bdbc4630fac965f8e486cbedac78948e2819d09"
+}
