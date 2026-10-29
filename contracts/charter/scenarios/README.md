@@ -79,6 +79,18 @@ Keep it small; add a step only when a scenario cannot be written without it.
   these refusal codes are raised by an operation:` with a one-column table lists the codes whose `raised` is true.
   After every scenario, each refusal it observed must have the status and `raised: true` the map declares.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
+- `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
+  If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
+  body:` — a registration with a JSON doc string, and its `If-Match` precondition.
+- `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
+  top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
+  can spell out.
+- `Then the field "<field>" of the response body is the lines:` followed by a doc string — the field's text is the
+  doc string's lines, each ending in a newline; for a Markdown guide.
+- `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
+  fetches the doc string, for the rest of the scenario; a later step for the same URI replaces it. A URI no step names
+  is refused as a host off the allowlist (`HOST_NOT_ALLOWED`), as the service's empty-by-default allowlist refuses it.
+  A binding answers these fetches itself and opens no socket.
 - `Then following "via" from every guidance entry of "<path>" reaches the action in exactly "hops" edges`
   — the last response must be the answer to that path; walks the `via` chain of every entry back to
   the action node, through entries of the answer only, in exactly the entry's `hops` steps.
@@ -95,6 +107,8 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
 
 - `service.feature`, `errors.feature`, `security.feature`: the service info, the failures outside the refusals, and
   the worktree guard.
+- `toolguides.feature`: the toolguide reads and registrations, with the guide sent as content or fetched from a
+  `guideUri`, and their refusals.
 - `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
   `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.

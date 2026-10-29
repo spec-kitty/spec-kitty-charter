@@ -15,6 +15,44 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Breaking
+
+Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, issue #194; operator rulings of
+2026-10-28 and 2026-10-29). Breaking on the 0.x line, which ADR-0022 allows; no release carried the old shape.
+
+- Removed: `guidePath` from `ToolguideRegistration` (the request of `registerPackToolguide` and `putPackToolguide`)
+  and from `Toolguide` (the response of `listPackToolguides`, `getPackToolguide` and both registrations). The API
+  no longer assumes a filesystem shared between client and service.
+- Added: `ToolguideRegistration.guide` (the guide's Markdown) and `ToolguideRegistration.guideUri` (a string,
+  `format: uri`, `pattern: '^https://'`). A registration carries exactly one of them; the schema says so with a
+  `oneOf` of two `required` branches. The generator this repository builds with ignores that `oneOf` (it emits two
+  optional fields), so the service enforces the rule itself: both, neither, a null or an empty value is refused 422
+  `validation_failed`, whatever a generated client lets through. A `guideUri` that is not a URI at all fails to
+  deserialize and is a 400 plain `Problem`, like any unreadable body.
+- Added: `Toolguide.guide` (required): the stored guide's Markdown, its H1 written from `title`. An incoming guide
+  may omit the H1; one that has an H1 must have the title as it, or it is refused.
+- Added refusals, all with existing codes (no new refusal code): 422 `validation_failed` for the exactly-one rule
+  above, for an inline guide over 1 MiB of UTF-8 (refused before it is parsed), for a guide that is not a valid
+  guide (frontmatter, text before the first H2, no `## Overview`, fixed blocks out of order, an H1 that differs from
+  the title; the detail names the rule), and for a refused fetch of `guideUri` (the detail names the typed reason,
+  for example `HOST_NOT_ALLOWED` or `TOO_LARGE`, and the host, never the URI's path or query); 409
+  `registration_conflict` when the guide's file `<id>.guide.md` is already claimed by another artifact of the pack.
+  The 409 and 422 response descriptions of both registration paths name them.
+- Fetch posture of `guideUri`: the service fetches the guide once per registration (a PUT with the same URI fetches
+  again), before it takes the pack's write lock, and reads the fetched text exactly like an inline guide. The fetch
+  is direct, never through a proxy; HTTPS only; the host must be exactly on the service's allowlist, which is empty
+  by default, so every `guideUri` is refused until an operator allowlists its host; only global unicast addresses,
+  checked at resolution and after every redirect; at most 3 redirects; a 10-second deadline over the whole
+  exchange; a 1 MiB streamed cap; identity encoding and UTF-8 only; no credentials forwarded. A deployment whose
+  service reaches the guide host only through a proxy must send the guide as content.
+- Scenarios: `toolguides.feature` registers with `guide` content instead of `guidePath` and reads the guide back
+  (H1 added from the title, or kept when it equals the title); new scenarios cover an H1 that differs from the
+  title, a guide without an overview, both, neither, null and empty values (an outline), an inline guide over 1 MiB
+  against one of exactly 1 MiB, a `guideUri` fetched, stored and fetched again on a later PUT, and a `guideUri`
+  whose host is not allowlisted. `journeys/journey-05-remove-python.feature` registers its toolguide with `guide`
+  content. Three steps are new (scenario README): `When I PUT "<path>" with the body, its "<field>" padded to <n>
+  bytes:`, `Then the field "<field>" of the response body is the lines:` and `Given the guide host serves "<uri>"
+  with:`; a binding answers the guide host itself and opens no socket.
 ### Pack-level files round trip (issue #195)
 
 - Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036

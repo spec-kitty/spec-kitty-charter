@@ -51,6 +51,13 @@ public class CucumberSpringConfiguration {
             return new ConsistentRead(sources);
         }
 
+        /** The guide fetcher every registration goes through: armed per scenario, it opens no socket. */
+        @Bean
+        @Primary
+        StubGuideFetcher stubGuideFetcher() {
+            return new StubGuideFetcher();
+        }
+
         @Bean
         @Primary
         DomainRepositoryService.Locations scenarioPackLocations(ScenarioPacks packs) {

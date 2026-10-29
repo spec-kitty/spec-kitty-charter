@@ -52,6 +52,17 @@ class TacticReadWiredTest {
         ConsistentRead consistentRead(DomainRepositoryService.Locations locations) {
             return new ConsistentRead(sources(locations));
         }
+
+        /**
+         * The guide fetcher the toolguide registration needs: a deployment wires the guarded HTTPS adapter from its
+         * own configuration package, which this slice leaves out, so this one refuses every URI and opens no socket.
+         */
+        @Bean
+        GuideFetcher guideFetcher() {
+            return uri -> {
+                throw new GuideFetchRefusal(GuideFetchRefusal.Reason.HOST_NOT_ALLOWED, uri.getHost(), "not wired");
+            };
+        }
     }
 
     private static List<PackLocation> locations(Path pack) {

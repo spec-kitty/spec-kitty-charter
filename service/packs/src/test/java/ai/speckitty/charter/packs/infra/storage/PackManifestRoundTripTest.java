@@ -172,16 +172,25 @@ class PackManifestRoundTripTest {
                 new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
         PackIdentifier id = new PackIdentifier(FIXTURE);
 
-        new ToolguideRegistrationService(service, writeStore, new PermissiveWritePolicyGate())
+        new ToolguideRegistrationService(
+                        service,
+                        writeStore,
+                        new PermissiveWritePolicyGate(),
+                        uri -> {
+                            throw new AssertionError("no guide is fetched: the guide is sent as content");
+                        },
+                        new MarkdownGuideFormat())
                 .registerToolguide(
                         id,
-                        Toolguide.builder()
+                        "Use ripgrep",
+                        new ToolguideRegistrationService.GuideSource.Content("## Overview\n\nHow to search."),
+                        guide -> Toolguide.builder()
                                 .id(new ToolguideIdentifier("ripgrep"))
                                 .packId(id)
                                 .schemaVersion("1.0")
                                 .tool("ripgrep")
                                 .title("Use ripgrep")
-                                .guidePath("guides/ripgrep.md")
+                                .guide(guide)
                                 .summary("How to search.")
                                 .build(),
                         true,
