@@ -65,7 +65,8 @@ It changes decision 9 only:
   presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them gets a
   new `Charter-Source-Fingerprint` and ETag once.
 
-Decision 1's table still admits `yaml` and `bytes` only. The `markdown` form is #194's to build,
+Decision 1's table still admits `yaml` and `bytes` only (true on 2026-10-28; superseded by the
+2026-10-29 amendment below, which admits `markdown`). The `markdown` form is #194's to build,
 and `pack.md` uses it when built (ADR-0042 decision 8). The decision text below is unchanged, and
 decision 9 is annotated where it stands. The amended point is in force for the code #195 ships,
 which implements it. Both records are Proposed, pending the operator's acceptance, which the pull
@@ -105,8 +106,24 @@ The record stays Proposed.
   JSON tree `{frontmatter?, title?, preamble, sections: [{title, content}]}`, `frontmatter` and
   `title` left out when absent. The whole-pack gate compares a `markdown` file by its model and
   reports a difference at its model path (`sections[2].content`); a Markdown text never reaches the
-  YAML reader, only its frontmatter does. At the pin no bundled rule declares `markdown`, so no gate
-  outcome changes; #194's toolguide guides and `pack.md` (#260) are its first files.
+  YAML reader, only its frontmatter does. The frontmatter goes through the guards of every pack
+  YAML file (the nesting-depth cap, the node cap over aliases, string keys, and plain scalars only,
+  so `!!binary` is refused); a guard's failure is a refusal at the opening `---`. At the pin no
+  bundled rule declares `markdown`, so no gate outcome changes; #194's toolguide guides and
+  `pack.md` (#260) are its first files.
+- **Stricter than CommonMark, on purpose.** Each case is loud (a refusal) or keeps the round trip:
+  a fence closer followed by a tab is not a closer; a fence indented by four or more spaces still
+  opens (CommonMark reads an indented code block); a `---` line with a trailing space and a `...` closer
+  are not frontmatter delimiters, only an exact `---` line is; frontmatter holding only a comment is
+  refused as not a mapping, while blank frontmatter is the empty mapping; an HTML block is text.
+- **Admitted, not yet held.** No production store path reads a `files`-rule Markdown file yet. The
+  store's listing, validate mode and the companion rule each switch over the content form, and a
+  file classified `markdown` fails loudly there ("no store path reads it yet") instead of reaching
+  the YAML reader or being skipped. The first consumer (#260 for `pack.md`) wires the store read and
+  write, the digest and validate mode. Whoever adds a `markdown` rule also keeps it disjoint from
+  every exclusion and payload rule: a `files` rule outranks both, so an overlapping rule would take
+  an excluded README or a Markdown template. `PackFileKindTest` fails on such an overlap, over its
+  sample paths and the vendored packs.
 
 ## Context
 

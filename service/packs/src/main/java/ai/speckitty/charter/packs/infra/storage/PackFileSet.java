@@ -312,18 +312,45 @@ final class PackFileSet {
                 continue;
             }
             // The rule's content form decides the store, never the path: a bytes file is held by its rule's kind.
-            if (mapped.contentForm() == ContentForm.BYTES) {
-                bytesHolder(mapped.kind(), assetFiles, templates).add(file);
-            } else if (PresetFiles.KIND.equals(mapped.kind())) {
-                // A pack-level file, not a bound kind: the pack holds its presets in their own slot (ADR-0042).
-                presets.add(file);
-            } else if (mapped.schema().isPresent()) {
-                KindBindings.bySchema(mapped.kind())
-                        .ifPresent(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>())
-                                .add(file));
-            }
+            Optional<List<String>> holder = switch (mapped.contentForm()) {
+                case BYTES -> Optional.of(bytesHolder(mapped.kind(), assetFiles, templates));
+                case YAML -> yamlHolder(mapped, byKind, presets);
+                case MARKDOWN, TEXT -> throw notStored(file, mapped.contentForm());
+            };
+            holder.ifPresent(files -> files.add(file));
         }
         return new Listing(byKind, assetFiles, templates, presets);
+    }
+
+    /** The list a {@code yaml} file joins: the presets, its bound kind's files, or none for an unbound kind. */
+    private static Optional<List<String>> yamlHolder(
+            PackFileKind.Mapped mapped, Map<ArtifactKind, List<String>> byKind, List<String> presets) {
+        if (PresetFiles.KIND.equals(mapped.kind())) {
+            // A pack-level file, not a bound kind: the pack holds its presets in their own slot (ADR-0042).
+            return Optional.of(presets);
+        }
+        if (mapped.schema().isEmpty()) {
+            return Optional.empty();
+        }
+        return KindBindings.bySchema(mapped.kind())
+                .map(binding -> byKind.computeIfAbsent(binding.kind(), k -> new ArrayList<>()));
+    }
+
+    /**
+     * The failure for a file whose rule declares a form no store path reads: {@code markdown} is classified (the table
+     * admits it, ADR-0040 as amended) but held nowhere yet, so a file of it must neither reach a YAML reader nor be
+     * skipped unseen. The first consumer wires the store path and replaces this.
+     *
+     * @param file the file, pack-relative
+     * @param form the rule's content form, not {@code yaml} or {@code bytes}
+     * @return the failure to throw
+     */
+    static IllegalStateException notStored(String file, ContentForm form) {
+        String why = form == ContentForm.MARKDOWN
+                ? "the markdown form is classified but no store path reads it yet; the first consumer (#260 for"
+                        + " pack.md) wires it"
+                : "the store does not build that form";
+        return new IllegalStateException("'" + file + "' is classified as content_form " + form.token() + ": " + why);
     }
 
     /**

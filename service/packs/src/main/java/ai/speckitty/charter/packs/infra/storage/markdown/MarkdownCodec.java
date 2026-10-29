@@ -12,17 +12,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import org.snakeyaml.engine.v2.exceptions.MarkedYamlEngineException;
-import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
 
 /**
  * Reads Markdown text into a {@link MarkdownDocument} and writes a document back in its canonical form.
  *
  * <p><b>Reading</b> (research D6, D12). The text must not start with a byte order mark or contain a carriage return.
  * Frontmatter exists only when line 1 is exactly {@code ---}; it ends at the next line that is exactly {@code ---},
- * and its text must load as a YAML mapping with string keys (blank frontmatter is the empty mapping). The rest is
- * scanned by {@link MarkdownScanner}'s line rules (fences, H1 and H2 at column 0, the ambiguity refusals). An H1 must be
- * the first block after the frontmatter, and there is at most one. The preamble is the text after the H1 (or after the
+ * and its text must load as a YAML mapping with string keys (blank frontmatter is the empty mapping), through the
+ * guards every pack YAML file passes (nesting depth, alias expansion, string keys, plain scalars only), any of which
+ * is a refusal. The rest is scanned by {@link MarkdownScanner}'s line rules (fences, H1 and H2 at column 0, the
+ * ambiguity refusals). An H1 must be the first block after the frontmatter, and there is at most one. The preamble is the text after the H1 (or after the
  * frontmatter, or from the start) up to the first H2; a section's content is the text after its H2 up to the next H2
  * or the end. Leading and trailing blank lines of the preamble and of each content are dropped (that is the canonical
  * form, not a refusal). The empty text is the {@link MarkdownDocument#empty() empty document}.
@@ -36,7 +35,9 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * and fails unless it reads as the same document.
  *
  * <p>Deliberate divergences from CommonMark: an HTML block or comment is text, so a column-0 {@code ## } inside one is
- * read as a heading; a fence may open at any indentation; a tab is never indentation.
+ * read as a heading; a fence may open at any indentation; a tab is never indentation, and a fence closer followed by
+ * a tab is not a closer; only an exact {@code ---} line delimits frontmatter ({@code --- } with a trailing space and a
+ * {@code ...} closer do not); frontmatter holding only a comment is refused as not a mapping.
  */
 public final class MarkdownCodec {
 
@@ -161,25 +162,21 @@ public final class MarkdownCodec {
         if (yaml.isBlank()) {
             return Map.of();
         }
-        @Nullable Object loaded;
-        try {
-            loaded = FrontmatterYaml.load(yaml + "\n");
-        } catch (YamlEngineException e) {
-            int line = e instanceof MarkedYamlEngineException marked
-                    ? marked.getProblemMark().map(mark -> mark.getLine() + 2).orElse(1)
-                    : 1;
-            throw MarkdownScanner.refused(line, "frontmatter is not valid YAML: " + firstLine(e.getMessage()));
+        FrontmatterYaml.Loaded checked = FrontmatterYaml.load(yaml + "\n");
+        String problem = checked.problem();
+        if (problem != null) {
+            // The frontmatter's first line is the file's line 2; a guard names no line, so the opening --- is named.
+            throw checked.line() > 0
+                    ? MarkdownScanner.refused(checked.line() + 1, "frontmatter is not valid YAML: " + problem)
+                    : MarkdownScanner.refused(1, "frontmatter is refused: " + problem);
         }
+        @Nullable Object loaded = checked.document();
         if (!(loaded instanceof Map<?, ?> mapping)) {
             throw MarkdownScanner.refused(1, "frontmatter must be a YAML mapping");
         }
         Map<String, Object> result = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : mapping.entrySet()) {
-            if (!(entry.getKey() instanceof String key)) {
-                throw MarkdownScanner.refused(1, "frontmatter keys must be strings, but one is " + entry.getKey());
-            }
-            result.put(key, entry.getValue());
-        }
+        // The guards admit string keys only, so every key is a String here.
+        mapping.forEach((key, value) -> result.put((String) key, value));
         return result;
     }
 
@@ -242,13 +239,5 @@ public final class MarkdownCodec {
             }
         }
         return line;
-    }
-
-    private static String firstLine(@Nullable String message) {
-        if (message == null) {
-            return "unreadable";
-        }
-        int newline = message.indexOf('\n');
-        return newline < 0 ? message : message.substring(0, newline);
     }
 }

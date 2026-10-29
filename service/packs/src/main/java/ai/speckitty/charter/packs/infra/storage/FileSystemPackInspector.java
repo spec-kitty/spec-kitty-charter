@@ -155,6 +155,25 @@ public final class FileSystemPackInspector implements PackInspector {
 
     // ---- the full scope ------------------------------------------------------------------------------------------
 
+    /**
+     * Whether validate mode reads a mapped file as YAML: a {@code yaml} file with a schema. A payload (a
+     * {@code bytes} file, no schema) has nothing to validate: it is listed, not read. A {@code markdown} file is
+     * refused loudly, never read as YAML: no validate path reads that form yet. (The walk lists {@code *.yaml} files
+     * only, so validate mode does not see a {@code .md} file at all; the first consumer of the form adds that walk.)
+     *
+     * @param mapped the file's classification
+     * @param file the file, pack-relative, named in the failure
+     * @return whether the file is read and validated as YAML
+     * @throws IllegalStateException for a {@code markdown} file
+     */
+    static boolean readsAsYaml(PackFileKind.Mapped mapped, String file) {
+        return switch (mapped.contentForm()) {
+            case YAML -> mapped.schema().isPresent();
+            case BYTES -> false;
+            case MARKDOWN, TEXT -> throw PackFileSet.notStored(file, mapped.contentForm());
+        };
+    }
+
     /** The state of one full read: every YAML file of the pack, in path order, and what they yielded. */
     private static final class FullRead {
         private final Path directory;
@@ -186,8 +205,7 @@ public final class FileSystemPackInspector implements PackInspector {
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
                     case PackFileKind.Mapped mapped -> {
                         files.add(new ClassifiedFile(file, Optional.of(mapped.kind()), Optional.empty()));
-                        // A payload (a Mapped kind with no schema) has nothing to validate: it is listed, not read.
-                        if (mapped.schema().isPresent() && !loadPath.contains(file)) {
+                        if (readsAsYaml(mapped, file) && !loadPath.contains(file)) {
                             readMapped(path, file, mapped.kind());
                         }
                     }
