@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -197,5 +198,26 @@ class ProcedureYamlTest {
     private static Map<String, Object> map(Object value) {
         assertThat(value).isInstanceOf(Map.class);
         return (Map<String, Object>) value;
+    }
+
+    @Test
+    @DisplayName("a list entry that is not a mapping is a reader's error, thrown, never skipped (N6)")
+    void aListEntryThatIsNoMappingIsThrownNotSkipped() {
+        for (String key : List.of("steps", "anti_patterns", "references")) {
+            Map<String, Object> root = new java.util.LinkedHashMap<>(Map.of(
+                    "schema_version", "1.0",
+                    "id", "p",
+                    "title", "T",
+                    "description", "D",
+                    "entry_condition", "E",
+                    "exit_condition", "X",
+                    "steps", List.of(Map.of("title", "S"))));
+            root.put(key, List.of("not a mapping"));
+
+            assertThatIllegalStateException()
+                    .as(key)
+                    .isThrownBy(() -> ProcedureYaml.INSTANCE.read(root))
+                    .withMessageContaining(key);
+        }
     }
 }

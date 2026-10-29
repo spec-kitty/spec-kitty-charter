@@ -14,6 +14,8 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -37,6 +39,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Reads a pack directory as facts, in one of two scopes. It decides nothing: {@code PackPolicy} judges what it finds.
@@ -52,6 +55,12 @@ import java.util.stream.Stream;
  * be YAML) is listed with its kind and not read. The step ids, artifact ids and asset declarations of the files that passed their schema are the
  * facts the validate-only rules judge; a file that did not is {@link PackContents#unreadableFiles()}.
  *
+ * <p>{@link Scope#FULL} also reads every {@code *.md} file that a {@code files} rule maps to a bound kind's Markdown
+ * companion structure (a toolguide's guide, #194), as the store's load does: parsed with {@link MarkdownCodec},
+ * validated against the structure schema, then held to the rules the schema cannot express
+ * ({@link KindBinding#checkCompanion}). A guide that breaks one is {@link PackContents#unreadableFiles()}, so validate
+ * mode and the load refuse the same guide. Other Markdown files are not read, nor listed in the classification.
+ *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
  * so that a document nested too deeply or holding a scalar no validator can judge is a parse failure. A file whose
  * bytes are not UTF-8 is a parse failure too, and the code of its finding follows its kind like every other. The
@@ -63,6 +72,8 @@ public final class FileSystemPackInspector implements PackInspector {
             + " is reserved for registered relationships and cannot be a source graph shard; rename the shard";
 
     private static final String NOT_UTF8 = "the file is not valid UTF-8";
+
+    private static final String MARKDOWN = ".md";
 
     /** The fixed length of a chain of symlinks that is followed; as long as the kernel's, which refuses past 40. */
     private static final int MAX_LINKS = 40;
@@ -157,9 +168,9 @@ public final class FileSystemPackInspector implements PackInspector {
 
     /**
      * Whether validate mode reads a mapped file as YAML: a {@code yaml} file with a schema. A payload (a
-     * {@code bytes} file, no schema) has nothing to validate: it is listed, not read. A {@code markdown} file is
-     * refused loudly, never read as YAML: no validate path reads that form yet. (The walk lists {@code *.yaml} files
-     * only, so validate mode does not see a {@code .md} file at all; the first consumer of the form adds that walk.)
+     * {@code bytes} file, no schema) has nothing to validate: it is listed, not read. A {@code markdown} or
+     * {@code text} file is refused loudly, never read as YAML. (This walk lists {@code *.yaml} files only; a Markdown
+     * companion is read by its own walk, as Markdown.)
      *
      * @param mapped the file's classification
      * @param file the file, pack-relative, named in the failure
@@ -212,6 +223,21 @@ public final class FileSystemPackInspector implements PackInspector {
                     case PackFileKind.Unclassified unclassified -> {}
                 }
             }
+            for (Path path : packFiles(directory, name, MARKDOWN)) {
+                String file = slashed(directory.relativize(path));
+                if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped
+                        && mapped.contentForm() == ContentForm.MARKDOWN
+                        && KindBindings.isCompanionStructure(mapped.kind())) {
+                    readCompanion(path, file, mapped.kind());
+                }
+            }
+        }
+
+        private void readCompanion(Path path, String file, String structure) {
+            if (read(path, file, name, text -> companion(text, file, structure))
+                    instanceof FileRead.Unreadable<?> bad) {
+                unreadable.add(bad);
+            }
         }
 
         private void readMapped(Path path, String file, String kind) {
@@ -258,6 +284,34 @@ public final class FileSystemPackInspector implements PackInspector {
         }
     }
 
+    /**
+     * Reads a Markdown companion as the store's load does: parsed, validated against its structure schema, then held
+     * to its binding's own rules. A Markdown refusal and a broken rule are parse failures naming the line or the rule;
+     * a structure breach is a schema violation.
+     */
+    private static FileRead<Object> companion(String text, String file, String structure) {
+        return switch (MarkdownCodec.parse(text)) {
+            case MarkdownRefusal refusal ->
+                new FileRead.Unreadable<>(file, new ParseFailure(file, refusal.message()), List.of());
+            case MarkdownCodec.Parsed parsed -> {
+                List<SchemaViolation> violations =
+                        PackSchemas.bundled().validateMarkdown(structure, file, parsed.document());
+                if (!violations.isEmpty()) {
+                    yield new FileRead.Unreadable<>(file, null, violations);
+                }
+                try {
+                    KindBindings.byCompanionStructure(structure)
+                            .orElseThrow()
+                            .checkCompanion(structure, parsed.document());
+                } catch (IllegalArgumentException broken) {
+                    yield new FileRead.Unreadable<>(
+                            file, new ParseFailure(file, String.valueOf(broken.getMessage())), List.of());
+                }
+                yield new FileRead.Read<>(file, parsed.document());
+            }
+        };
+    }
+
     /** Parses and validates a mapped file that is not read for the load path. */
     private static FileRead<Object> parseAndValidate(String text, String file, String kind) {
         if ("graph-shard".equals(kind)) {
@@ -290,6 +344,10 @@ public final class FileSystemPackInspector implements PackInspector {
                     List.of(new SchemaViolation(
                             file, List.of("id"), "const", Optional.empty(), Optional.of(id), Map.of())));
         }
+        Optional<SchemaViolation> misnamed = misnamedArtifact(file, kind, document);
+        if (misnamed.isPresent()) {
+            return new FileRead.Unreadable<>(file, null, List.of(misnamed.get()));
+        }
         if (PackManifestYaml.SCHEMA.equals(kind) && document instanceof Map<?, ?> manifest) {
             List<SchemaViolation> misplaced = misplacedPresetEntries(file, manifest);
             if (!misplaced.isEmpty()) {
@@ -298,6 +356,23 @@ public final class FileSystemPackInspector implements PackInspector {
         }
         // An empty document passes no schema that asks for an object, so a document that passed is a value.
         return new FileRead.Read<>(file, Objects.requireNonNullElse(document, Map.of()));
+    }
+
+    /**
+     * The store's stem rule for an artifact whose binding declares it ({@link FileStems}, a procedure), checked here
+     * too so validate mode and the load refuse the same files: the id must equal one value, the file stem, so it reads
+     * as a const violation at the id.
+     */
+    private static Optional<SchemaViolation> misnamedArtifact(String file, String kind, @Nullable Object document) {
+        Optional<KindBinding<?, ?>> binding = KindBindings.bySchema(kind);
+        if (binding.isEmpty()
+                || !(document instanceof Map<?, ?> artifact)
+                || !(artifact.get(binding.get().idKey()) instanceof String id)
+                || FileStems.mismatch(binding.get(), file, id).isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new SchemaViolation(
+                file, List.of(binding.get().idKey()), "const", Optional.empty(), Optional.of(id), Map.of()));
     }
 
     /**
@@ -334,8 +409,13 @@ public final class FileSystemPackInspector implements PackInspector {
      * skips vanished entries; this validate-mode walk mirrors core's pathlib order (#115).
      */
     private static List<Path> yamlFiles(Path directory, String packName) {
+        return packFiles(directory, packName, ".yaml");
+    }
+
+    /** Every regular file under the pack directory whose name ends in {@code suffix}, in {@link #yamlFiles}' order. */
+    private static List<Path> packFiles(Path directory, String packName, String suffix) {
         try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(p -> p.getFileName().toString().endsWith(".yaml") && Files.isRegularFile(p))
+            return walk.filter(p -> p.getFileName().toString().endsWith(suffix) && Files.isRegularFile(p))
                     .sorted(Comparator.comparing(
                             (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))
                     .toList();

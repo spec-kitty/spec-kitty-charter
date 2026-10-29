@@ -10,6 +10,11 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackInspector.Scope;
+import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.ProcedureReference;
 import ai.speckitty.charter.packs.domain.Tactic;
@@ -68,5 +73,26 @@ class ProcedureEdgesTest {
                                 || relationship.to().equals(PROCEDURE)))
                 .as("no artifact of the pack holds a relationship of the procedure")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a procedure whose id is not its file stem is refused by the load and by validate mode alike")
+    void aProcedureWhoseIdIsNotItsFileStemIsRefused(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("procedure/misnamed-pack", host);
+        PackLocation location = new PackLocation("misnamed-pack", PackLevel.ORG, pack);
+
+        Pack loaded = new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy())
+                .load(new PackIdentifier("misnamed-pack"));
+
+        assertThat(loaded.artifacts(ArtifactKind.PROCEDURE, Procedure.class))
+                .extracting(procedure -> procedure.id().value())
+                .containsExactly("land-a-change");
+        assertThat(loaded.violations())
+                .containsExactly(new PackElementViolation(
+                        "ship-it.procedure.yaml", "schema", "procedure id 'land-it' is not its file stem 'ship-it'"));
+
+        PackContents validated = new FileSystemPackInspector()
+                .inspect(new PackRoot("misnamed-pack", Optional.of(PackLevel.ORG), pack.toString()), Scope.FULL);
+        assertThat(validated.unreadableFiles()).extracting(FileRead::file).containsExactly("ship-it.procedure.yaml");
     }
 }

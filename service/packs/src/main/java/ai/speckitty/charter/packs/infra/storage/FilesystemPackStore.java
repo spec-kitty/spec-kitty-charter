@@ -513,9 +513,16 @@ final class FilesystemPackStore {
         List<Stored<?>> into = new ArrayList<>();
         for (String file : files) {
             switch (readFile(directory.resolve(file), file, text -> strategy.read(kind, text, file))) {
-                case FileRead.Read<D> good ->
+                case FileRead.Read<D> good -> {
+                    // The stem rule validate mode applies too (FileStems): a misnamed file is refused, not loaded.
+                    Optional<String> misnamed = FileStems.mismatch(kind, file, kind.idOf(good.value()));
+                    if (misnamed.isPresent()) {
+                        violations.add(new PackElementViolation(file, "schema", misnamed.get()));
+                        continue;
+                    }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
                             .ifPresent(dso -> into.add(new Stored<>(file, dso)));
+                }
                 case FileRead.Unreadable<D> bad -> violations.addAll(violationsOf(bad));
                 case FileRead.Absent<D> absent -> {}
             }

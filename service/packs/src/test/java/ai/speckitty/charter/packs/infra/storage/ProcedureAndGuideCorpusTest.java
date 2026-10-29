@@ -78,10 +78,13 @@ class ProcedureAndGuideCorpusTest {
                 .isEmpty();
         assertThat(procedureFiles).as("%s procedures", pack).hasSize(procedures);
         assertThat(toolguideFiles).as("%s toolguides", pack).hasSize(toolguides);
+        Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
         assertThat(guideFiles)
-                .as("%s: one guide per toolguide, each <toolguide id>.guide.md", pack)
+                .as("%s: one guide per toolguide, each <toolguide id>.guide.md beside it", pack)
                 .hasSize(toolguides)
-                .allSatisfy(guide -> assertThat(guide).startsWith("toolguides/"));
+                .containsExactlyInAnyOrderElementsOf(toolguideFiles.stream()
+                        .map(toolguide -> guideOf(packDirectory, toolguide))
+                        .toList());
         assertThat(procedureFiles.size() + toolguideFiles.size() + guideFiles.size())
                 .as("%s: nothing else of the two kinds", pack)
                 .isEqualTo(observed.size());
@@ -90,6 +93,7 @@ class ProcedureAndGuideCorpusTest {
     @Test
     @DisplayName("the corpus holds 39 procedures, 24 toolguides and 24 guides")
     void theCorpusCountsArePinned() {
+        OpenPacksCorpus.assertPinned();
         int procedures = 0;
         int toolguides = 0;
         int guides = 0;
@@ -111,6 +115,20 @@ class ProcedureAndGuideCorpusTest {
         List<URL> found = Collections.list(getClass().getClassLoader().getResources(MIGRATION_PACKAGE));
 
         assertThat(found).as("package %s on the classpath", MIGRATION_PACKAGE).isEmpty();
+    }
+
+    /** The guide a toolguide file names: {@code <its id>.guide.md} in the toolguide's directory. */
+    private static String guideOf(Path pack, String toolguide) {
+        String text;
+        try {
+            text = Files.readString(pack.resolve(toolguide), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (!(ParsedYaml.parse(text, toolguide).document() instanceof Map<?, ?> declared)) {
+            throw new AssertionError(toolguide + " is not a mapping");
+        }
+        return toolguide.substring(0, toolguide.lastIndexOf('/') + 1) + declared.get("id") + GUIDE_SUFFIX;
     }
 
     /** The gate's observation of one pack, narrowed to its procedure and toolguide files (a guide is a toolguide's). */

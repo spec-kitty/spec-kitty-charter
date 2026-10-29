@@ -99,8 +99,8 @@ class MarkdownFilesRuleTest {
 
         assertThatIllegalStateException()
                 .isThrownBy(() -> PackFileSet.listing(pack, TABLE))
-                .withMessage("'notes/valid.md' is classified as content_form markdown: the markdown form is classified"
-                        + " but no store path reads it yet; the first consumer (#260 for pack.md) wires it");
+                .withMessage("'notes/valid.md' is classified as content_form markdown: Markdown is read only as a"
+                        + " companion; this rule has no store path of its own yet (#260)");
         assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).byKind())
                 .as("the bundled table leaves the file unclassified, so the same pack lists")
                 .isEmpty();
@@ -113,7 +113,7 @@ class MarkdownFilesRuleTest {
 
         assertThatIllegalStateException()
                 .isThrownBy(() -> FileSystemPackInspector.readsAsYaml(markdown, "notes/valid.md"))
-                .withMessageContaining("no store path reads it yet");
+                .withMessageContaining("this rule has no store path of its own yet (#260)");
         assertThat(FileSystemPackInspector.readsAsYaml(yaml, "directives/x.directive.yaml"))
                 .isTrue();
     }

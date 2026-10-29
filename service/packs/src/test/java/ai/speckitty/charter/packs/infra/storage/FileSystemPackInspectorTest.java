@@ -277,6 +277,83 @@ class FileSystemPackInspectorTest {
         assertThat(unreadable.get(5).violations()).isNotEmpty();
     }
 
+    private static final String GUIDE = "# Use make\n\n## Overview\n\nHow to use make.\n";
+
+    @Test
+    void aToolguideGuideIsReadAsMarkdownAndHeldToTheRulesTheLoadHoldsItTo(@TempDir Path dir) throws IOException {
+        write(dir, "toolguides/good.guide.md", GUIDE);
+        write(dir, "toolguides/preamble.guide.md", "# Use make\n\nRead this first.\n\n## Overview\n\nO.\n");
+        write(dir, "toolguides/no-overview.guide.md", "# Use make\n\n## Usage\n\nRun make.\n");
+        write(dir, "toolguides/no-h1.guide.md", "## Overview\n\nO.\n");
+        write(dir, "toolguides/fenced.guide.md", "# Use make\n\n## Overview\n\n```\nunclosed\n");
+        write(dir, "toolguides/README.md", "Not a guide.\n");
+        write(dir, "notes/loose.md", "Read me.\n");
+
+        List<FileRead.Unreadable<?>> unreadable = full(dir).unreadableFiles();
+
+        assertThat(unreadable)
+                .extracting(FileRead::file)
+                .containsExactlyInAnyOrder(
+                        "toolguides/preamble.guide.md",
+                        "toolguides/no-overview.guide.md",
+                        "toolguides/no-h1.guide.md",
+                        "toolguides/fenced.guide.md");
+        assertThat(unreadable)
+                .filteredOn(file -> file.file().equals("toolguides/preamble.guide.md"))
+                .singleElement()
+                .satisfies(file -> assertThat(file.violations())
+                        .extracting(PackContents.SchemaViolation::keyword)
+                        .containsExactly("const"));
+        assertThat(unreadable)
+                .filteredOn(file -> file.file().equals("toolguides/no-overview.guide.md"))
+                .singleElement()
+                .satisfies(file -> assertThat(file.parse())
+                        .isEqualTo(new PackContents.ParseFailure(
+                                "toolguides/no-overview.guide.md", "the guide has no ## Overview")));
+        assertThat(unreadable)
+                .filteredOn(file -> file.file().equals("toolguides/no-h1.guide.md"))
+                .singleElement()
+                .satisfies(file -> assertThat(String.valueOf(file.parse())).contains("has no H1"));
+        assertThat(PackPolicy.judge(full(dir)).findings())
+                .extracting(PackFinding::detail)
+                .anySatisfy(detail -> assertThat(detail)
+                        .isEqualTo("qa/toolguides/no-overview.guide.md is not valid Markdown: the guide has no ##"
+                                + " Overview"));
+        assertThat(full(dir).files())
+                .as("a Markdown file is read, not listed in the YAML classification")
+                .isEmpty();
+    }
+
+    private static final String PROCEDURE = """
+            schema_version: '1.0'
+            id: %s
+            title: T
+            description: D
+            entry_condition: E
+            exit_condition: X
+            steps:
+              - title: S
+            """;
+
+    @Test
+    void aProcedureWhoseIdIsNotItsFileStemIsUnreadableAsTheLoadRefusesIt(@TempDir Path dir) throws IOException {
+        write(dir, "procedures/named.procedure.yaml", PROCEDURE.formatted("named"));
+        write(dir, "procedures/misnamed.procedure.yaml", PROCEDURE.formatted("other"));
+
+        PackContents contents = full(dir);
+
+        assertThat(contents.unreadableFiles()).singleElement().satisfies(file -> {
+            assertThat(file.file()).isEqualTo("procedures/misnamed.procedure.yaml");
+            assertThat(file.violations()).singleElement().satisfies(violation -> {
+                assertThat(violation.keyword()).isEqualTo("const");
+                assertThat(violation.pointer()).containsExactly("id");
+            });
+        });
+        assertThat(contents.artifacts())
+                .extracting(PackContents.ArtifactFacts::id)
+                .containsExactly("named");
+    }
+
     @Test
     void aFileThatIsReadCleanlyIsNotListedAsUnreadable(@TempDir Path dir) throws IOException {
         write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));

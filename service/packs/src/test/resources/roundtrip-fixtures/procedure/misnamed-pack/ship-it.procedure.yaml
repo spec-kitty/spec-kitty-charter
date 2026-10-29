@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: land-it
+title: Ship it
+description: Its id is not its file stem, so the load and validate mode refuse it.
+entry_condition: A change is ready.
+exit_condition: The change is shipped.
+steps:
+  - title: Ship

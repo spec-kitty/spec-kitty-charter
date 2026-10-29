@@ -5,7 +5,7 @@
   "description": "A tool-specific governance guide.",
   "properties": {
     "id": {
-      "pattern": "^[a-z][a-z0-9-]*$",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
       "title": "Id",
       "type": "string"
     },

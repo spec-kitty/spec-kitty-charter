@@ -446,9 +446,13 @@ final class GeneratedPackTree {
         return Kind.values()[random.nextInt(kinds)];
     }
 
-    private Planted plantLoaded(Pack pack, Shape shape, Kind kind) throws IOException {
+    private Planted plantLoaded(Pack pack, Shape shape, Kind wanted) throws IOException {
         int n = ++counter;
-        String stem = "e" + n;
+        // A procedure's id is its file stem (ADR-0043 S1), and the id cannot hold a dot: a procedure is planted under
+        // its id, and never in a shape whose stem holds a dot (a hidden or a config stem), where a tactic stands in.
+        boolean dottedStem = shape == Shape.LOADED_HIDDEN_STEM || shape == Shape.LOADED_CONFIG_STEM;
+        Kind kind = wanted == Kind.PROCEDURE && dottedStem ? Kind.TACTIC : wanted;
+        String stem = kind == Kind.PROCEDURE ? idOf(kind, n) : "e" + n;
         String path = loadedPath(shape, stem, kind);
         boolean valid =
                 pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;

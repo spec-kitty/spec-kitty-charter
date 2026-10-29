@@ -138,4 +138,41 @@ class KindBindingsTest {
                     .contains(name);
         }
     }
+
+    @Test
+    @DisplayName("the companion structures are derived from the bindings: each Markdown files rule names one, and each"
+            + " declared one is the structure the binding's companion carries")
+    void theCompanionStructuresAreTheBindingsOwn() {
+        assertThat(KindBindings.isCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
+                .isTrue();
+        assertThat(KindBindings.isCompanionStructure("toolguide")).isFalse();
+        assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
+                .containsSame(ToolguideBinding.INSTANCE);
+        assertThat(PackFileKind.bundled().fileRules())
+                .filteredOn(rule -> rule.contentForm() == ContentForm.MARKDOWN)
+                .isNotEmpty()
+                .allSatisfy(rule -> assertThat(KindBindings.isCompanionStructure(rule.schema()))
+                        .as(rule.match())
+                        .isTrue());
+        ToolguideDso dso = new ToolguideDso(
+                "x",
+                "1.0",
+                "x",
+                "X",
+                "x.guide.md",
+                "s",
+                List.of(),
+                List.of(),
+                java.util.Optional.empty(),
+                List.of(),
+                java.util.Optional.empty());
+        assertThat(ToolguideBinding.INSTANCE.companions(dso))
+                .allSatisfy(companion -> assertThat(ToolguideBinding.INSTANCE.companionStructures())
+                        .containsAll(companion.structureSchema().stream().toList()));
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            if (!binding.companionStructures().isEmpty()) {
+                assertThat(binding.hasCompanions()).as(binding.kind().token()).isTrue();
+            }
+        }
+    }
 }

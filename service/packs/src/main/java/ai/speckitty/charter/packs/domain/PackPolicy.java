@@ -575,7 +575,7 @@ public final class PackPolicy {
         if (parse != null) {
             String text = PACK_YAML.equals(file)
                     ? origin(packName, file) + " is not valid YAML"
-                    : origin(packName, file) + " is not valid YAML: " + parse.firstLine();
+                    : origin(packName, file) + " is not valid " + language(file) + ": " + parse.firstLine();
             return List.of(new PackFinding(codeFor(file), file, List.of(), text));
         }
         return schemaFindings(packName, unreadable.violations());
@@ -676,6 +676,11 @@ public final class PackPolicy {
 
     private static boolean isFragment(String file) {
         return file.equals(FRAGMENT) || file.endsWith("/" + FRAGMENT);
+    }
+
+    /** The language a file is written in, as a parse failure names it: Markdown for a {@code .md} companion. */
+    private static String language(String file) {
+        return file.endsWith(".md") ? "Markdown" : "YAML";
     }
 
     private static String origin(String packName, String file) {

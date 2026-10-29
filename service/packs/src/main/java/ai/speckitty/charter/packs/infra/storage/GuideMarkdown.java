@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.GuideSection;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -20,8 +21,11 @@ import java.util.Optional;
  *
  * <p>Read: the same layout, strictly. Refused: frontmatter; a preamble (its text belongs in {@code ## Overview}); an H1
  * that differs from the toolguide's title; a missing overview; a fixed block out of order or twice; a fixed heading in
- * another letter case; a leading block after a freeform section; a freeform section after a trailing block. An absent
- * H1 is accepted (incoming content, FR-011), so the title has one home; the writer always adds it.
+ * another letter case; a leading block after a freeform section; a freeform section after a trailing block.
+ *
+ * <p>The H1 is derived data (ADR-0036 S8, ADR-0043): it is written from the toolguide's {@code title}, which is its one
+ * home. Incoming content ({@link #fromDocument}, FR-011) may leave it out; a stored guide ({@link #fromStored}) must
+ * carry it, so a stored guide has one spelling: the one the writer produces.
  */
 public final class GuideMarkdown {
 
@@ -53,7 +57,54 @@ public final class GuideMarkdown {
     }
 
     /**
-     * The guide a stored or incoming document holds.
+     * The Markdown a guide is stored and answered as: {@link #toDocument} in the canonical form.
+     *
+     * @param title the toolguide's title, written as the H1
+     * @param guide the guide
+     * @return the Markdown text
+     * @throws IllegalArgumentException when the title cannot be an H1: blank, more than one line, or a text the
+     *     Markdown reader would not read back as itself (one that ends in a closing {@code #} sequence)
+     */
+    public static String write(String title, Guide guide) {
+        MarkdownDocument document = toDocument(title, guide);
+        try {
+            return MarkdownCodec.write(document);
+        } catch (IllegalStateException unreadable) {
+            throw new IllegalArgumentException(
+                    "the title '" + title + "' cannot be the guide's H1: Markdown would not read it back as written",
+                    unreadable);
+        }
+    }
+
+    /**
+     * The guide a stored document holds: as {@link #fromDocument}, and the document must carry the H1, which the
+     * writer always adds.
+     *
+     * @param title the toolguide's title, which the H1 must equal
+     * @param document the parsed document
+     * @return the guide
+     * @throws IllegalArgumentException naming the first rule the document breaks
+     */
+    public static Guide fromStored(String title, MarkdownDocument document) {
+        if (document.title().isEmpty()) {
+            throw refused("has no H1; a stored guide carries its toolguide's title '" + title + "' as its H1");
+        }
+        return fromDocument(title, document);
+    }
+
+    /**
+     * The structure rules of a stored guide, judged without its toolguide (validate mode reads the guide file on its
+     * own): {@link #fromStored} with the guide's own H1 as the title, so every rule but the H1's equality is applied.
+     *
+     * @param document the parsed document
+     * @throws IllegalArgumentException naming the first rule the document breaks
+     */
+    static void checkStored(MarkdownDocument document) {
+        fromStored(document.title().orElse(""), document);
+    }
+
+    /**
+     * The guide an incoming document holds (FR-011): the H1 may be absent.
      *
      * @param title the toolguide's title, which a present H1 must equal
      * @param document the parsed document
@@ -100,13 +151,22 @@ public final class GuideMarkdown {
                 throw refused("has the freeform section '" + heading + "' after ## "
                         + last.get().heading() + "; freeform sections come before ## " + GuideBlock.CAUTIONS.heading());
             }
-            sections.add(new GuideSection(heading, section.content()));
+            sections.add(section(heading, section.content()));
         }
         if (!blocks.containsKey(GuideBlock.OVERVIEW)) {
             throw refused("has no ## " + GuideBlock.OVERVIEW.heading());
         }
         try {
             return new Guide(blocks, sections);
+        } catch (ConstraintBreachException breach) {
+            throw refused("breaks a guide rule: " + breach.getMessage());
+        }
+    }
+
+    /** A freeform section, a breach of its rules refused like any other rule of the guide. */
+    private static GuideSection section(String title, String content) {
+        try {
+            return new GuideSection(title, content);
         } catch (ConstraintBreachException breach) {
             throw refused("breaks a guide rule: " + breach.getMessage());
         }

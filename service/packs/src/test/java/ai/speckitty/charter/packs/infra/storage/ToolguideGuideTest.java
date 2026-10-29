@@ -37,6 +37,8 @@ import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * A toolguide's structured guide (#194, research D5, D10, D11): the {@code <id>.guide.md} companion beside the
@@ -371,6 +373,63 @@ class ToolguideGuideTest {
                         "domain",
                         "the guide has the H1 'Another title', which differs from the toolguide title '" + TITLE
                                 + "'"));
+    }
+
+    @Test
+    @DisplayName("a stored guide without its H1 is a domain violation; the H1 is derived from the title (ADR-0043)")
+    void aStoredGuideWithoutItsH1IsADomainViolation() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.writeString(pack.resolve(GUIDE_FILE), "## Overview\n\nO.\n");
+        DomainRepositoryService service =
+                new DomainRepositoryService(() -> List.of(new PackLocation(PACK, PackLevel.ORG, pack)), strategy);
+
+        Pack loaded = service.load(PACK_ID);
+
+        assertThat(loaded.toolguides()).isEmpty();
+        assertThat(loaded.violations())
+                .containsExactly(new PackElementViolation(
+                        ID,
+                        "domain",
+                        "the guide has no H1; a stored guide carries its toolguide's title '" + TITLE + "' as its H1"));
+
+        Files.writeString(pack.resolve(GUIDE_FILE), "# " + TITLE + "\n\n## Overview\n\nO.\n");
+        assertThat(service.load(PACK_ID).toolguides())
+                .as("the same guide with its H1")
+                .hasSize(1);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"Search for #", "C #", "#"})
+    @DisplayName(
+            "a stored toolguide whose title cannot be the guide's H1 is refused at load, never when it is answered")
+    void aStoredTitleThatCannotBeTheH1IsRefusedAtLoad(String title) throws IOException {
+        PackFixtures.copyOf(PACK, host);
+        ToolguideDso read = new FilesystemPackStore(host, strategy)
+                .read(PACK_ID, List.of(ToolguideBinding.INSTANCE))
+                .dsos(ToolguideBinding.INSTANCE)
+                .getFirst();
+        MarkdownDocument guide = read.guide().orElseThrow();
+        ToolguideDso retitled = new ToolguideDso(
+                        read.id(),
+                        read.schemaVersion(),
+                        read.tool(),
+                        title,
+                        read.guidePath(),
+                        read.summary(),
+                        read.commands(),
+                        read.appliesToLanguages(),
+                        read.lastUpdated(),
+                        read.references(),
+                        Optional.empty())
+                .withGuide(Optional.of(new MarkdownDocument(
+                        guide.frontmatter(), Optional.of(title), guide.preamble(), guide.sections())));
+
+        assertThatThrownBy(() -> ToolguideBinding.INSTANCE.toEntity(PACK_ID, retitled))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot be the guide's H1");
+        assertThatCode(() -> ToolguideBinding.INSTANCE.toEntity(PACK_ID, read))
+                .as("the stored title")
+                .doesNotThrowAnyException();
     }
 
     @Test
