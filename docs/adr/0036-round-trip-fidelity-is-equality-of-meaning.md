@@ -75,8 +75,7 @@ which the pull request for #193 asks for.
 ### Amendment 2026-10-28 (#195): pack-level files, the closed descriptor and derived fields
 
 Superseded in part by
-[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
-2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
 [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) and the mission's decisions
 under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
 

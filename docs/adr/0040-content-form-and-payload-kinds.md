@@ -53,8 +53,7 @@ amendment in that record).
 ### Amendment 2026-10-28 (#195): the fingerprint gains a pack-level tail
 
 Extended in part by
-[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
-2026-10-28) for [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195), on the
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (2026-10-28) for [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195), on the
 mission's decision `DM-01M60H8FP4AJ8TJWH670JT4WAV` under
 `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`: every file the store reads is in
 the fingerprint.

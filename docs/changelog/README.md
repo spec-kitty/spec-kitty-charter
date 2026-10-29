@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-29 — ADR-0041 and ADR-0042 are accepted](/changelog/2026-10-29-adrs-0041-0042-accepted/)
 - [2026-10-28 — The containerized service's configuration model is proposed](/changelog/2026-10-28-containerized-configuration-adr/)
 - [2026-10-28 — Presets and the pack manifest round-trip, and pack.yaml is closed](/changelog/2026-10-28-pack-level-files-round-trip/)
 - [2026-10-28 — The contract declares GET /openapi.yaml, the document a client fetches from the service](/changelog/2026-10-28-contract-serves-itself/)

@@ -33,7 +33,7 @@ longer the authoring form of a requirement. What "required" means (presence only
 refused) is unchanged.
 
 Two questions are **open** (see [Open questions](#open-questions)).
-*(Answered by ADR-0042, 2026-10-28, proposed: see the amendment below.)*
+*(Answered by ADR-0042, accepted 2026-10-29: see the amendment below.)*
 
 ### Amendment 2026-10-28 (#195): the open questions are answered
 
@@ -51,8 +51,8 @@ under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`:
 
 The decision text below is unchanged. The points this note answers are annotated where they stand:
 decision 6 and the two open questions. The answers are in force for the code #195 ships, which
-implements them. ADR-0042 itself is Proposed, pending the operator's acceptance, which the pull
-request for #195 asks for.
+implements them. ADR-0042 itself is Accepted (2026-10-29), the acceptance the pull request for
+#195 asked for.
 
 ## Context
 

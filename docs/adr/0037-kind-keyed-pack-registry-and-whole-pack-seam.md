@@ -83,8 +83,7 @@ first kind that needs both. It changes decisions 4 and 6 and no other decision.
 ### Amendment 2026-10-28 (#195): pack-level files, the manifest beside the aggregate
 
 Extended in part by
-[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (Proposed,
-2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (2026-10-28) on the operator's rulings of 2026-10-27 and 2026-10-28 on
 [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) and the mission's decisions
 under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. It changes decisions 4, 5 and 7 and
 no other decision:
