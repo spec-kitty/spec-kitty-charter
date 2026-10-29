@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: procedure-antipattern-toolguide-round-trip-01M60H9B
 mission_id: 01M60H9B96RVV0JBDF4CHB5VS6
-generated_at: '2026-10-29T06:32:58.253403+00:00'
+generated_at: '2026-10-29T07:08:44.511291+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -18,19 +18,15 @@ input_artifacts:
     sha256: 2011e5a1957dc456c04ba3f934e2a6a9684584a9f63c6a466d89a29729e6f890
   charter:
     path: .kittify/charter/charter.yaml
-    sha256: dd742ab182b61a760929320c028e6174ee7c7f4ffcf5a8d749b94a42847fd9ab
-verdict: blocked
+    sha256: af2620decc50721d9aa4e6f169d3e1e8c718412cc7d347a2891ca6d8aacbd351
+verdict: ready
 issue_counts:
-  critical: 1
-  medium: 3
-  low: 2
   high: 0
+  medium: 3
+  critical: 0
+  low: 2
   info: 0
 findings:
-- id: C1
-  severity: critical
-  category: charter
-  summary: 'Charter PROJECT_002 (charter.yaml) still grants no exception for core-oracle divergence and incompatible contract changes reaching core, conflicting with the #186 ruling the spec and plan apply; the amendment is PR #262 (green, awaiting operator merge).'
 - id: R1
   severity: medium
   category: underspecification
@@ -57,7 +53,6 @@ findings:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Charter | CRITICAL | .kittify/charter/charter.yaml PROJECT_002; plan.md Charter Check; spec.md C-001, C-004 | PROJECT_002 grants no exception; the mission relies on the #186 ruling. | Merge PR #262 (operator-approved amendment), then re-run analyze. PR-A1 proceeds meanwhile (touches neither invariant). |
 | R1 | Underspecification | MEDIUM | tasks/WP10, plan IC-06 | Open-packs merge gates WP10 with no fallback. | Escalate at WP09 completion; options: wait, pin to the PR head temporarily, or known-failure fallback. |
 | R2 | Inconsistency | MEDIUM | tasks.md header, WP03/WP04/WP06 | Red window on `check` inside the mission branch (operator accepted 2026-10-29). | Closed by WP10; PR-A2 opens only after it. |
 | U1 | Ambiguity | MEDIUM | tasks/WP05 T021, tasks/WP03 T014 | Implementer choices left open / contradictory text. | Implementer decides and records; reviewer checks. |
@@ -81,10 +76,10 @@ findings:
 | FR-010 guide-over-http | yes | T032–T043 | WP07, WP08 |
 | FR-011 guide-h1 | yes | T027, T039 | WP06, WP07 |
 | NFR-001..005 | yes | T005, T036, T051, T053, T039 | |
-| C-001..C-007 | yes | T038, T049, T054, T052 | C-004 depends on C1 |
+| C-001..C-007 | yes | T038, T049, T054, T052 | charter-aligned after #262 |
 | SC-001..SC-006 | yes | T005, T019, T031, T051, T053 | |
 
-**Charter Alignment Issues:** C1.
+**Charter Alignment Issues:** none. PROJECT_002 carries the epic #186 rewrite ruling (PR #262, merged 2026-10-29), so C-001/C-004 and the plan's Charter Check align with the charter.
 
 **Unmapped Tasks:** none.
 
@@ -95,10 +90,10 @@ findings:
 - Coverage: 100%
 - Ambiguity Count: 1
 - Duplication Count: 0
-- Critical Issues Count: 1
+- Critical Issues Count: 0
 
 ### Next Actions
 
-- C1: charter amendment PR #262 awaits the operator merge; re-run analyze after it lands.
+- C1 resolved: PR #262 merged; the mission branch merged origin/main.
 - Planning edit since the last report: ADR renumbered to 0043 (#195 merged ADR-0042 with rules S1–S8).
 - R1, R2: accept or adjust before WP04/WP09 start; U1, G1 during implementation.
