@@ -6,8 +6,12 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.Map;
+import java.util.Optional;
 
-/** The YAML form of the toolguide. */
+/**
+ * The YAML form of the toolguide. The guide is not a YAML field: it is the companion {@code guide_path} names, read and
+ * written by the store ({@link ToolguideBinding}).
+ */
 enum ToolguideYaml implements YamlFormat<ToolguideDso> {
     /** The format. */
     INSTANCE;
@@ -34,7 +38,8 @@ enum ToolguideYaml implements YamlFormat<ToolguideDso> {
                 strings(root, "commands"),
                 strings(root, "applies_to_languages"),
                 optional(root, "last_updated"),
-                strings(root, "references"));
+                strings(root, "references"),
+                Optional.empty());
     }
 
     @Override

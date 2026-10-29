@@ -35,7 +35,8 @@
 #   Its `schema` is a structure schema in schemas/ (Draft 2020-12, standard keywords only, loaded
 #   when the table loads; one that does not load fails the table). It validates the model as the
 #   JSON tree {frontmatter?, title?, preamble, sections: [{title, content}]}, with `frontmatter`
-#   and `title` left out, not null, when the document has none. No rule declares it yet.
+#   and `title` left out, not null, when the document has none. The toolguide guide rule declares
+#   it (#194).
 #
 # Matching
 #   `match` is a glob over the file's path relative to the directory that holds the pack
@@ -136,6 +137,12 @@ files:
   # validated, not silently ignored.
   - match: "**/charter.yaml"
     schema: charter
+  # A toolguide's guide (#194): the Markdown companion its guide_path names, <id>.guide.md beside
+  # the toolguide. This rule is the guide companion's own (same schema, same form), so the
+  # companion ownership rule admits the toolguide's guide here and refuses any other companion.
+  - match: "**/toolguides/*.guide.md"
+    schema: toolguide-guide
+    content_form: markdown
 
 exclusions:
   - match: "**/mission-steps/**/step.yaml"

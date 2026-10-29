@@ -23,7 +23,7 @@
       "type": "string"
     },
     "guide_path": {
-      "pattern": "^[^/].*\\.md$",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*\\.guide\\.md$",
       "title": "Guide Path",
       "type": "string"
     },

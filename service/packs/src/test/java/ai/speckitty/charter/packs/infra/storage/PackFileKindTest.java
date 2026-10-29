@@ -36,6 +36,7 @@ class PackFileKindTest {
             Map.entry("core/tactics/a.tactic.yaml", "tactic"),
             Map.entry("core/styleguides/a.styleguide.yaml", "styleguide"),
             Map.entry("core/toolguides/a.toolguide.yaml", "toolguide"),
+            Map.entry("core/toolguides/a.guide.md", "toolguide-guide"),
             Map.entry("core/paradigms/a.paradigm.yaml", "paradigm"),
             Map.entry("core/procedures/a.procedure.yaml", "procedure"),
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
@@ -85,7 +86,9 @@ class PackFileKindTest {
             PackFileKind.Mapped mapped = (PackFileKind.Mapped) c;
             assertThat(mapped.kind()).as(path).isEqualTo(schema);
             assertThat(mapped.schema()).as(path).contains("packs/schemas/" + schema + ".schema.json");
-            assertThat(mapped.contentForm()).as(path).isEqualTo(ContentForm.YAML);
+            assertThat(mapped.contentForm())
+                    .as(path)
+                    .isEqualTo(path.endsWith(".md") ? ContentForm.MARKDOWN : ContentForm.YAML);
             byPath.put(path, mapped.kind());
         });
         assertThat(KINDS.fileRules())
@@ -213,9 +216,10 @@ class PackFileKindTest {
                 .hasSize(15)
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(18);
+        assertThat(KINDS.fileRules()).hasSize(19);
         assertThat(KINDS.fileRules())
-                .as("every files rule keeps the default form")
+                .as("every files rule keeps the default form but the toolguide guide's (#194)")
+                .filteredOn(rule -> !rule.schema().equals("toolguide-guide"))
                 .extracting(PackFileKind.FileRule::contentForm)
                 .containsOnly(ContentForm.YAML);
     }

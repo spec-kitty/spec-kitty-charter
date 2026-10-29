@@ -48,8 +48,8 @@ final class PackFileKind {
      * The content forms the table admits. A rule naming another form fails when the table loads (C-004). Admitting a
      * form is one entry here plus its codec; holding it also takes the store's read and write path, the digest and
      * validate mode, each an exhaustive switch over {@link ContentForm}. {@code markdown} is admitted and classified,
-     * but no store path reads it yet: a file of it fails loudly ({@code PackFileSet.notStored}) until the first
-     * consumer (#260 for {@code pack.md}) wires it.
+     * and the store reads it as a bound kind's companion (a toolguide's guide, #194); any other file of it fails
+     * loudly ({@code PackFileSet.notStored}) until its first consumer (#260 for {@code pack.md}) wires it.
      */
     private static final Set<ContentForm> BUILT_FORMS =
             EnumSet.of(ContentForm.YAML, ContentForm.MARKDOWN, ContentForm.BYTES);

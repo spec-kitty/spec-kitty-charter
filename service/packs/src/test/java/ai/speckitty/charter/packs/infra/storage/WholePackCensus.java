@@ -97,14 +97,18 @@ final class WholePackCensus {
         return kindOf(packName, path, new TreeMap<>());
     }
 
-    /** The schema name, else the owning artifact's gate kind for a companion, else {@code other:<first segment>}. */
+    /**
+     * The owning artifact's gate kind for a companion, else the schema name, else {@code other:<first segment>}. A
+     * companion the companion rule admits is unclassified or at its own rule (a toolguide's guide at the
+     * {@code toolguide-guide} rule, #194); either way it is modelled with its owner.
+     */
     private static String kindOf(String packName, String path, SortedMap<String, CompanionFile> companions) {
-        if (PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped) {
-            return mapped.kind();
-        }
         @Nullable CompanionFile companion = companions.get(path);
         if (companion != null) {
             return companion.ownerKind();
+        }
+        if (PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped) {
+            return mapped.kind();
         }
         int slash = path.indexOf('/');
         return OTHER + (slash < 0 ? path : path.substring(0, slash));
