@@ -1,0 +1,37 @@
+{
+  "accept_commit": "251cf9598a29d31b75276443f6243b004a4539f0",
+  "acceptance_history": [
+    {
+      "accept_commit": "251cf9598a29d31b75276443f6243b004a4539f0",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-29T19:24:45.148258+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "50f5241185385d205d4b0da6c2c843b5918dc7f9"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-29T19:24:45.148258+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "50f5241185385d205d4b0da6c2c843b5918dc7f9",
+  "baseline_merge_commit": "a868c9d9a19ba9f5f03bddcfc47e9eca778bcb2e",
+  "contracts": "none",
+  "contracts_rationale": "The operation is already declared in contracts/charter (#208); this mission implements it with no contract change.",
+  "created_at": "2026-10-29T18:48:30.390874+00:00",
+  "flattened": true,
+  "friendly_name": "Serve the contract document",
+  "merged_at": "2026-10-29T19:25:32.651530+00:00",
+  "merged_commit": "12c914aa49f2b4a0b7e0501d01d5cc97ee5e2064",
+  "mid8": "01M64FVZ",
+  "mission_id": "01M64FVZCACNAB0NFNGD2BKQDC",
+  "mission_number": 12,
+  "mission_slug": "serve-openapi-document-01M64FVZ",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #207 lets users fetch the latest charter OpenAPI document from the service itself, locally and hosted, instead of downloading a release. #208 declared the operation in the contract and left a 501 stub; #209 packages the validated bundle build output into the deployable and serves it byte for byte, with application/yaml, a strong SHA-256 ETag computed once at startup and 304 on a matching If-None-Match, while the token and browser guards, the Charter headers and the Problem error handling still apply.",
+  "purpose_tldr": "The running service answers GET /openapi.yaml with the exact contract bundle it was built from, guarded like every operation and cacheable by ETag.",
+  "slug": "serve-openapi-document-01M64FVZ",
+  "status_phase": "1",
+  "target_branch": "feat/209-serve-openapi-document",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-29T19:00:58.276514+00:00"
+}
