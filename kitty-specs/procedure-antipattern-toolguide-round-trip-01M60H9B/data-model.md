@@ -11,8 +11,8 @@ Entities are charter domain types in `service/packs` (`domain`), with their stor
 | `id` | kebab string | yes | equals the file stem |
 | `title` | string | yes | `CharterArtifact.label()` |
 | `description` | string | yes | `CharterArtifact.description()` |
-| `entry_condition` | string | no | |
-| `exit_condition` | string | no | |
+| `entry_condition` | string | yes | kept required (all 41 pinned procedures carry it) |
+| `exit_condition` | string | yes | kept required |
 | `steps` | `ProcedureStep[]`, min 1 | yes | ordered |
 | `anti_patterns` | `AntiPatternEntry[]` | no | ordered |
 | `references` | `Reference[]` | no | kept; never minted as relationships (#189) |
