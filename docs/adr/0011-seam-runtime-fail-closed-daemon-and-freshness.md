@@ -78,6 +78,7 @@ After the cutover every offering read crosses a process boundary
      the worktree goes away.
    - It binds to loopback only, and every request carries a per-worktree token.
      *Superseded in part by ADR-0034: loopback is the local option; a hosted option uses a configured endpoint and a standard login token.*
+     *(Superseded in part by ADR-0041, Proposed, 2026-10-28, under the container profile only: `GET /actuator/health` carries no token.)*
    - The seam receives only an endpoint and a credential, so it does not depend on how the
      service was started.
    - **Trust model.** This puts a CLI-started daemon back in the trust model core rejected
