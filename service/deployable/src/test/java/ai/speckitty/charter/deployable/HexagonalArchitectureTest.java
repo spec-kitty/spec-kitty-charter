@@ -48,6 +48,9 @@ class HexagonalArchitectureTest {
     private static final String PACKS_APPLICATION = ROOT + ".packs.application..";
     private static final String PACKS_STORAGE = ROOT + ".packs.infra.storage..";
     private static final String PACKS_API = ROOT + ".packs.infra.api..";
+    /** The outbound adapter that fetches a guide by URI (#194). */
+    private static final String PACKS_FETCH = ROOT + ".packs.infra.fetch..";
+
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
     private static final String GENERATED_API = ROOT + ".api..";
     private static final String DEPLOYABLE = ROOT + ".deployable..";
@@ -87,10 +90,10 @@ class HexagonalArchitectureTest {
     /** ONION_DEPENDS_INWARD (3/3): only the composition root composes the adapters. */
     private static final ArchRule ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS = noClasses()
             .that()
-            .resideOutsideOfPackages(PACKS_API, PACKS_STORAGE, DEPLOYABLE)
+            .resideOutsideOfPackages(PACKS_API, PACKS_STORAGE, PACKS_FETCH, DEPLOYABLE)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PACKS_API, PACKS_STORAGE);
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH);
 
     /** ONION_DEPENDS_INWARD (3/3): nothing, the edge rings included, depends on the composition root. */
     private static final ArchRule ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT = noClasses()
@@ -331,12 +334,44 @@ class HexagonalArchitectureTest {
             .resideInAPackage(PACKS_API)
             .should()
             .dependOnClassesThat()
-            .resideInAPackage(PACKS_STORAGE);
+            .resideInAnyPackage(PACKS_STORAGE, PACKS_FETCH);
 
     @Test
     @DisplayName("ENTRYPOINT_OVER_APPLICATION")
     void entrypointOverApplication() {
         ENTRYPOINT_OVER_APPLICATION.check(classes);
+    }
+
+    /**
+     * FETCH_ADAPTER_STANDS_ALONE (#194): the outbound fetch adapter is reached only through its application-ring port
+     * ({@code GuideFetcher}) and composed by the composition root; no other adapter names it, and it names none.
+     */
+    private static final ArchRule FETCH_ADAPTER_STANDS_ALONE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS_FETCH);
+
+    private static final ArchRule FETCH_ADAPTER_NAMES_NO_OTHER_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(PACKS_FETCH)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE);
+
+    @Test
+    @DisplayName("FETCH_ADAPTER_STANDS_ALONE")
+    void fetchAdapterStandsAlone() {
+        FETCH_ADAPTER_STANDS_ALONE.check(classes);
+        FETCH_ADAPTER_NAMES_NO_OTHER_ADAPTER.check(classes);
+    }
+
+    @Test
+    void theFetchAdapterRulesFailOnAnAdapterThatNamesTheFetcher() {
+        assertBites(ENTRYPOINT_OVER_APPLICATION, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesFetcher");
+        assertBites(FETCH_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesFetcher");
+        assertBites(FETCH_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.storage.badfixture", "StorageReachesFetcher");
     }
 
     /**
