@@ -4,8 +4,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The aggregate of the layer configurations: one scan over the three per-layer {@code config} packages (application,
- * storage adapter, inbound adapter), so a test can wire a layer slice from its own {@code config} package without
+ * The aggregate of the layer configurations: one scan over the per-layer {@code config} packages (application,
+ * storage adapter, guide fetch adapter, inbound adapter), so a test can wire a layer slice from its own {@code config} package without
  * listing beans. An empty package scans to nothing; each layer's configuration lands in its own package.
  *
  * <p>This aggregates only the layers' own beans, including the storage layer's {@code DomainRepositoryService.Locations}
@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan({
     "ai.speckitty.charter.packs.application.config",
     "ai.speckitty.charter.packs.infra.storage.config",
+    "ai.speckitty.charter.packs.infra.fetch.config",
     "ai.speckitty.charter.packs.infra.api.config"
 })
 public class DeployableConfiguration {

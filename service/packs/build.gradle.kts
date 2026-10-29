@@ -29,6 +29,8 @@ dependencies {
     implementation(catalog.lib("spring-boot-starter-webmvc"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
+    // NetworkCodeBoundaryTest: the inner rings name no java.net type but URI (WP08; the version deployable pins).
+    testImplementation(catalog.lib("archunit"))
 }
 
 // The contract version the service reports (ContractVersion): the info.version of contracts/charter/openapi.yaml,
