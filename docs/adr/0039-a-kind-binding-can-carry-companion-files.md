@@ -2,7 +2,7 @@
 title: "ADR-0039: A kind binding can carry companion files"
 description: An artifact may name text files beside its own, like a skill's body; the store reads, writes and fingerprints them with it under one path rule.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -12,6 +12,7 @@ related:
   - adr/0017-pack-schemas-imported-as-canonical-json-schema
   - adr/0029-charter-glossary-is-owned-here
   - conformance/divergence-register
+  - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before binding a kind whose artifact names another file, such as an asset payload, a template or a toolguide's guide.
@@ -61,6 +62,38 @@ pack-level files:
   read, the upsert and the fingerprint alike (ADR-0040 decision 5): the file has its one owner
   already. The reason joins decision 4's list of companion violation reasons (commit `198a686`).
 
+### Amendment 2026-10-29 (#194): a companion declares its form, and owns no classified path
+
+Made by [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (part of epic
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) for the toolguide guide, the
+first Markdown companion, and recorded in
+[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) (Proposed). The
+amended points are in force for the code #194 ships, which implements them. The decision text below
+is unchanged, and each point this note changes is annotated where it stands.
+
+- **Decision 1, a companion declares a form.** `Companion(path, content, form, structureSchema)`:
+  `form` is `text` or `markdown`, the same `ContentForm` a file-kind rule declares
+  ([ADR-0040](/adr/0040-content-form-and-payload-kinds/)), and `structureSchema` names the structure
+  schema a Markdown companion's model is validated with, present exactly for `markdown`. A
+  companion is never `yaml` or `bytes`. Declaring `text` on a companion does not admit `text` for a
+  `files` rule, which the table still refuses.
+- **Decision 2, content is text or Markdown.** `CompanionContent` gains a `Markdown` case beside
+  `Text`. A `text` companion is still read and written byte for byte as UTF-8. A `markdown`
+  companion is parsed into the Markdown model, validated against its structure schema, compared by
+  that model and written in the canonical form: a read and a write agree on meaning, not on bytes.
+  It never reaches the YAML reader.
+- **Decision 3, one owner, tightened.** A companion may not claim a path that any file-kind rule
+  classifies: a `files` rule, an `exclusions` rule or a `payloads` rule. The one exception is the
+  companion's own rule, a `files` rule whose schema is the companion's structure schema and whose
+  form is the companion's form (a toolguide's `<id>.guide.md`, classified by
+  `**/toolguides/*.guide.md`). This keeps a companion off, for example, a pack's `pack.md`, which
+  a toolguide with the id `pack` would otherwise claim.
+- **Decision 4, new reasons.** `is excluded by file-kinds rule '<class>', not a companion` and
+  `is a pack file of kind <kind> (file-kinds rule '<rule>'), not a companion` join the list, as do
+  a Markdown refusal (naming its line) and a structure-schema breach of a `markdown` companion.
+- **Consequences, "the toolguide guides can extend the same hooks".** They did: the guide is a
+  companion of the toolguide binding, with no second non-YAML path.
+
 ## Context
 
 ADR-0037 binds each kind once (`KindBinding`), and the store, the whole-pack seam and the source
@@ -87,6 +120,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    registry test holds every bound kind to it. A kind without companions is then never read to find
    any, so its cost and its fingerprint are unchanged. `KindBinding`'s "a binding knows no path"
    becomes "no path but its companions', relative to its artifact's file".
+   *(Amended 2026-10-29, see Status: a `Companion` also declares its form, `text` or `markdown`,
+   and for `markdown` its structure schema.)*
 2. **Content is text today.** `CompanionContent` is a sealed type with one case, `Text`, read and
    written byte for byte as UTF-8: nothing is trimmed and no line ending is converted. #193 adds a
    `Bytes` case. The revision digests of the commit path (`PackCommitStore`,
@@ -94,6 +129,9 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    *(Amended 2026-10-27, see Status: #193 adds no `Bytes` case; asset payloads and templates are
    pack-level files, not companions. The revision moved to bytes without one
    (`PackRevision.computeOverBytes`), with the same value for text.)*
+   *(Amended 2026-10-29, see Status: a companion declares its form, `text` or `markdown`, and
+   `CompanionContent` gains a `Markdown` case, compared by the Markdown model and written in the
+   canonical form.)*
 3. **One path rule, one owner** (`Companions`). A companion path is not empty and not absolute. It
    resolves, normalized, against the artifact file's directory to a file inside the pack directory.
    The resolved file name never ends in `.yaml`, so a companion can never be `pack.yaml`, a graph
@@ -104,6 +142,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    the fingerprint lists a shared companion once rather than refusing it, since the load reports it.
    *(Amended 2026-10-27, see Status: a companion that is an asset file or a template is refused,
    `is a pack file of kind <kind>, not a companion`.)*
+   *(Amended 2026-10-29, see Status: a companion may not claim any path a file-kind rule
+   classifies, except at its own `files` rule.)*
 4. **Read.** An artifact whose companion breaks the rule is left out, and the store records a
    `companion` violation of its file, `<path>: <reason>` (`is empty`, `is not a valid path`,
    `missing`, `leaves the pack`, `is a YAML file`, `is not a regular file`,
@@ -111,6 +151,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    companion.
    *(Amended 2026-10-27, see Status: `is a pack file of kind <kind>, not a companion` joins this
    list, a consequence of decision 3's one-owner rule.)*
+   *(Amended 2026-10-29, see Status: the excluded-path and classified-path reasons, a Markdown
+   refusal and a structure-schema breach join this list.)*
 5. **Upsert.** `FilesystemPackStore.write` checks every companion before writing any. Each must
    have content, pass the rule, be named once, and not replace an existing file the element does
    not already own. It then writes the companions, then the artifact's file, then removes the
@@ -171,6 +213,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
   narrow.
   *(Amended 2026-10-27, see Status: #193 shares the low-level pieces instead of extending these
   hooks: one containment check, one bytes read, one atomic write and decision 7's order.)*
+  *(Amended 2026-10-29, see Status: the toolguide guide extends these hooks as a `markdown`
+  companion.)*
 - A companion can never overwrite another part of the pack, through the upsert or the whole-pack
   write.
 

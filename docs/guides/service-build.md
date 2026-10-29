@@ -2,13 +2,14 @@
 title: Building the service
 description: How to build and test the charter service locally, what each verification task checks, and how to change the contract or a dependency.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: Guide
 kind: How-To
 related:
   - architecture/hexagonal-service
   - architecture/contract-and-dtos
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
+  - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -26,7 +27,7 @@ How to build the charter service and run every check CI runs.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. The checkout must be
   clean and at `openPacksRef` in `gradle.properties` (currently
-  `01edb4ebab308249a10ed4a4a01d77741ac1d14b`); the build refuses otherwise, and prints the
+  `5df92a5d02e47e8877364de5e2deb06c016d30a9`); the build refuses otherwise, and prints the
   command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
   stash or clean the checkout).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
@@ -153,7 +154,56 @@ The report, per kind and per file, is written to `service/packs/build/reports/wh
 in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required
 check until the gate is green.
 
+### When a shape change refuses the pinned packs
+
+A known-failure entry is for a few files that a pack gets wrong. When a deliberate shape change
+refuses a whole class of pinned files, as the sanitized procedure and toolguide shapes did (#194),
+listing them does not work: the gate can only pin files of a modelled kind, and a refused toolguide
+leaves its guide unowned. Migrate instead
+([ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) decision 6):
+
+1. Change the schema and the binding here first.
+2. Convert the pinned files with the service's own writer, through a throwaway test-scope harness
+   that checks the result field by field, never by hand.
+3. Land the output in spec-kitty-open-packs, generated on its `main`, and move `openPacksRef` to it
+   in the same change that removes the harness.
+
+The gate is red for that class between the first step and the last; keep that window to one pull
+request. The #194 harness ran as:
+
+```bash
+./gradlew :packs:packMigration -PmigrationTarget=<an absent or empty directory>
+```
+
 To fix formatting rather than report it, run `./gradlew spotlessApply`.
+
+## Fetching toolguide guides
+
+A toolguide registration may name its guide with `guideUri` instead of sending it as `guide`. The
+service then fetches it once per registration, before it takes the pack's write lock. The fetcher is
+configured under `charter.guide-fetch` (`GuideFetchProperties`):
+
+| Property | Default | What it does |
+|---|---|---|
+| `charter.guide-fetch.allowed-hosts` | empty | The hosts a guide may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every `guideUri` (`HOST_NOT_ALLOWED`). |
+| `charter.guide-fetch.timeout` | `10s` | One deadline over resolution, every redirect and the body. |
+| `charter.guide-fetch.max-size` | `1MB` | The largest guide accepted, counted while the body streams. |
+| `charter.guide-fetch.max-redirects` | `3` | The most redirects followed; each target is checked again. |
+
+The fetch is direct: it never uses a proxy, whatever `https.proxyHost` says. A service that reaches
+the guide host only through a proxy cannot fetch, and the client sends the guide as content. Only
+HTTPS, no user information and no IP literals are accepted, and every resolved address must be
+global unicast. A JVM-wide resolver guard, `GlobalAddressResolverProvider`, enforces that again when
+the client connects. The JDK loads it through
+`META-INF/services/java.net.spi.InetAddressResolverProvider` on the JVM's first name lookup; when
+`allowed-hosts` names a host and the guard is not the JVM's resolver, the service refuses to start.
+A refused fetch is 422 `validation_failed`, naming the reason and the host, never the URI's path or
+query.
+
+A guide, sent or fetched, is Markdown in the structured form: no frontmatter, an optional H1 equal
+to the toolguide's title, no text before `## Overview`, then the fixed blocks and freeform sections
+(ADR-0043 decision 4). The `markdown` content form reads it, and diverges from CommonMark on
+purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 
 ## Exceptions to a gate
 
