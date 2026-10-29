@@ -126,6 +126,10 @@ A preset is `presets/<id>.yaml`, validated by the closed schema
   `activated_mission_types`. Each holds at least one item;
 - an item is a closed object: `id` (required, not empty) and `must_have` (optional, `const: true`).
 
+The kind gate and the selection lists are independent fields: a preset may gate a kind it lists no
+items for, or list items for a kind it does not gate. This shape does not tie them; reconciling the
+gate against the selections is the activating resolver's concern, not the stored preset's.
+
 ```yaml
 schema_version: "1.0"
 id: house-rules
