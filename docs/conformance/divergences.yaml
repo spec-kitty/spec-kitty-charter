@@ -3,7 +3,8 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..202, ADR-0020, proposed) and pack-level files (DIV-301..399, ADR-0042). Consumers: the
+# (DIV-201..202, ADR-0020, proposed), pack-level files (DIV-301..399, ADR-0042) and procedures and
+# toolguide guides (DIV-401..499, ADR-0043). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
 # enforced.
@@ -615,3 +616,58 @@
     - "core: offering/packs/pack_validator.py:592-593 and 662-690 (_validate_presets); no manifest check"
     - "corpus case: the pinned open-packs built-in pack (openPacksRef): 283 manifest and 14 preset findings, pinned in FileSystemPackInspectorTest"
     - "charter: FileSystemPackInspectorTest, a preset whose id is not its stem, refused in validate mode and by the load"
+
+# Procedures and toolguide guides (DIV-401..499), mission procedure-antipattern-toolguide-round-trip-01M60H9B
+# (#194, ADR-0043). Core paths at spec-kitty 3131fffa.
+- id: DIV-401
+  surface: The procedure shape
+  core: >-
+    Requires name and purpose; a step's actor is human, agent or system (default agent); an
+    anti-pattern is {name, description}; a reference is {type, id, reason?}; an optional list may be
+    empty; the id need not equal the file stem (offering/schemas/procedure.schema.yaml).
+  service: >-
+    Requires title and description; a step names an open role token, absent when any role may act;
+    an anti-pattern is {title, content?, bad_example?, good_example?}; a reference is
+    {type, id, when?, reason?}; an optional list holds at least one entry; the id equals the file
+    stem. Core's shape, or a misnamed file, is an artifact_schema_error in validate mode and is
+    refused by the load.
+  rationale: >-
+    The sanitized artifact shapes of ADR-0043 (S1, S10 to S16); a step names a role (ADR-0032).
+  ruling: operator rulings on #194 (2026-10-28, 2026-10-29); #186 "as if core does not exist"
+  status: open
+  since: 2026-10-29
+  evidence:
+    - "core: offering/schemas/procedure.schema.yaml (name, purpose, actor, procedure_anti_pattern)"
+    - "charter: contracts/packs/schemas/procedure.schema.json; ProcedureSchemaTest; ProcedureEdgesTest (a procedure whose id is not its stem)"
+    - "corpus case: the 39 pinned procedures at openPacksRef 5df92a5d (open-packs#91)"
+- id: DIV-402
+  surface: Toolguide guide naming and toolguide id
+  core: >-
+    guide_path is any relative Markdown path (^[^/].*\.md$) and the id is ^[a-z][a-z0-9-]*$
+    (offering/schemas/toolguide.schema.yaml).
+  service: >-
+    guide_path must be <id>.guide.md beside the toolguide, and the id is ^[a-z][a-z0-9]*(-[a-z0-9]+)*$,
+    so every id names a guide file the schema accepts; the guide is an ADR-0039 companion admitted
+    only at its own files rule, **/toolguides/*.guide.md.
+  rationale: One file per guide with one name; no accepted id names a refused guide file (ADR-0043).
+  ruling: operator rulings on #194 (2026-10-28, 2026-10-29)
+  status: open
+  since: 2026-10-29
+  evidence:
+    - "core: offering/schemas/toolguide.schema.yaml (guide_path pattern)"
+    - "charter: contracts/packs/schemas/toolguide.schema.json; ToolguideIdentifier; ToolguideControllerTest (a- and a--b refused)"
+    - "corpus case: the 24 pinned toolguides and guides at openPacksRef 5df92a5d"
+- id: DIV-403
+  surface: The toolguide guide's structure
+  core: Reads a guide as free Markdown; validate mode does not judge its structure.
+  service: >-
+    A guide is structured: no frontmatter, its H1 equal to the toolguide title (required when
+    stored), no preamble, a non-blank Overview, fixed blocks in order, freeform sections between
+    Usage and Cautions. The load and validate mode refuse a guide that breaks a rule.
+  rationale: One structure across guides so a guide's meaning round-trips; validate mode and the load refuse the same files.
+  ruling: operator ruling on #194 (2026-10-29), structured guide
+  status: open
+  since: 2026-10-29
+  evidence:
+    - "charter: contracts/packs/schemas/toolguide-guide.schema.json; GuideMarkdown; FileSystemPackInspectorTest; ToolguideGuideTest"
+    - "corpus case: the 24 pinned guides at openPacksRef 5df92a5d"

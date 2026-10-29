@@ -46,9 +46,11 @@ this record shapes, and rules S9 to S16 below are added for them. ADR-0042 is no
 rules stand as written.
 
 It **amends** [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) (Accepted):
-decision 2 (a companion declares its content form) and decision 3 (a companion may not claim a path
-any file-kind rule classifies, except its own). ADR-0039 carries a dated amendment under its Status,
-with each point annotated where it stands.
+decisions 1 to 4 and a consequence. A companion declares its content form and structure schema
+(decision 1), its content may be Markdown (decision 2), it owns no path any file-kind rule
+classifies except its own rule (decision 3), and it has new refusal reasons (decision 4). ADR-0039
+carries a dated amendment under its Status, with each point annotated where it stands; the amendment
+takes effect when this record is accepted.
 
 ## Context
 
@@ -85,10 +87,11 @@ mission's `research/` directory.
 ### 1. The sanitized-shape rules for artifact kinds
 
 S1 to S8 of [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)
-apply to every artifact kind this record shapes: one identity name (`id`, equal to the file stem),
-one version header (`schema_version`, `"1.0"`), one name per concept, closed objects, no retired,
-variant or always-null fields, one way to say a thing, explicit types, and derived data declared.
-For artifact kinds they are extended by:
+apply, as written there, to every artifact kind this record shapes. For a procedure, S1's
+"`id` is the file stem" is enforced: the store's load and validate mode both refuse a
+`<stem>.procedure.yaml` whose `id` is not `<stem>`, the rule ADR-0042 applies to presets. For a
+toolguide it is not enforced yet, because two pinned qa toolguides break it (see the follow-up list).
+For artifact kinds the rules are extended by:
 
 | Rule | What it says |
 |---|---|
@@ -99,7 +102,7 @@ For artifact kinds they are extended by:
 | S13. `<role>_path` names a file | A field that names another pack file is `<role>_path`, relative to the artifact's file. Every companion is named by a field (ADR-0039 decision 1). |
 | S14. One reference shape | Where references are kept they are `{type, id, when?, reason?}`, `type` an artifact-kind token. Keeping a reference never mints a relationship until #189 rules on edge authority. |
 | S15. `role` names who acts | Who performs a step is `role`, an open role token such as `operator` (ADR-0032); absent means any role may act. |
-| S16. An empty optional list is absent | The writer leaves an empty optional list out; absent and empty mean the same (ADR-0036 decision 2). |
+| S16. An empty optional list is refused | An optional list holds at least one entry (`minItems: 1`); an empty one is left out, never written `[]`. This is ADR-0042 decision 3's rule, so S6 (one spelling per meaning) holds with no comparator exception. |
 
 A pinned file that breaks a rule is a pack inconsistency, fixed in `spec-kitty-open-packs`, never
 tolerated by the service ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)
@@ -120,7 +123,9 @@ ADR-0015) and closed at every level:
 - `references`: optional, `{type, id, when?, reason?}` (S14). They are kept on the procedure,
   verbatim and in authored order, and `Procedure.relationships()` is always empty: a procedure mints
   no relationship, pending #189;
-- `notes` (not empty) and `applies_to_languages`: optional.
+- `notes` (not empty) and `applies_to_languages`: optional;
+- each optional list (`anti_patterns`, `references`, `applies_to_languages`) holds at least one
+  entry when present (S16).
 
 `ProcedureBinding` maps the shape to the `Procedure` entity; procedures are a bound kind of the
 registry ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)).
@@ -165,14 +170,33 @@ A toolguide's guide is a `Guide` value: fixed blocks and freeform sections.
 
 The guide is stored as an ADR-0039 companion of the `markdown` form, `<id>.guide.md` beside its
 toolguide. `guide_path` names it relative to the toolguide's file and must equal `<id>.guide.md`
-(the schema's pattern and the `Toolguide` entity's invariant). The `files` rule
+(the schema's pattern and the `Toolguide` entity's invariant). The toolguide `id` grammar is
+`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, the grammar of the guide's file name, so every id the service
+accepts names a guide file the schema accepts (an id such as `a-` or `a--b` is refused). The `files` rule
 `**/toolguides/*.guide.md` (`content_form: markdown`, structure schema `toolguide-guide`) classifies
 it, and ADR-0039's ownership rule, as amended, admits a companion only at that rule of its own.
 `GuideMarkdown` maps the guide to the document: no frontmatter, the H1 written from the toolguide's
 `title`, an empty preamble, then the leading blocks, the freeform sections and the trailing blocks.
 On read it refuses frontmatter, a preamble, an H1 that differs from the title, a missing overview, a
-fixed block out of order or twice, and a fixed heading in another letter case; an absent H1 is
-accepted.
+fixed block out of order or twice, and a fixed heading in another letter case.
+
+**The H1 is derived data (S8).** It is computed from the toolguide's `title` and written on every
+write; `title` is its one home. A stored guide must carry it, so a stored guide has one spelling:
+the store's load refuses a guide file without its H1. Incoming content over HTTP may leave the H1
+out (FR-011): the service writes it. A title that cannot be written as an H1 (blank, more than one
+line, or one the Markdown reader would not read back as itself, such as `Search for #`) is refused
+422 on registration and is a read violation of a stored toolguide, never a failure when it is
+answered.
+
+**`guide_path` is determined by the id (S5).** It always equals `<id>.guide.md`, so it repeats a
+fact the `id` already states. It is kept because it is the file reference S13 asks for: every
+companion is named by a field (ADR-0039 decision 1), and a reader finds the guide from the field,
+not from a naming convention. The domain invariant `guide_path == id + ".guide.md"` keeps the two
+from diverging.
+
+Validate mode reads each guide file too: a `*.guide.md` file the `files` rule maps is parsed as
+Markdown, validated against the `toolguide-guide` structure schema and held to the rules above, so
+validate mode and the load refuse the same guide.
 
 The toolguide YAML stays the one home of `title`, `summary`, `commands` and the artifact
 `references`. The guide holds none of them, so none is written twice.
@@ -182,10 +206,16 @@ The toolguide YAML stays the one home of `title`, `summary`, `commands` and the 
 The contract changes on the 0.x line (breaking; `contracts/charter/CHANGELOG.md`):
 
 - `ToolguideRegistration` loses `guidePath` and carries exactly one of `guide` (the Markdown) or
-  `guideUri` (`https` only). The schema says so with a `oneOf`, which the generator this repository
-  builds with ignores, so `ToolguideController` enforces it: both, neither, a null or an empty value
-  is 422 `validation_failed`.
-- An inline guide is capped at 1 MiB of UTF-8, refused 422 before it is parsed.
+  `guideUri` (a URI; the service fetches `https` only and enforces it, the schema carries no
+  pattern for it). The schema says so with a `oneOf`, which the generator this repository builds
+  with ignores, so the service enforces it: both, neither, an empty value or an explicit `null`
+  (also beside a valid other field) is 422 `validation_failed`.
+- An inline guide is capped at the guide size, 1 MiB of UTF-8 by default (configurable via
+  `charter.guide-fetch.max-size`, the same cap a fetched guide is held to), refused 422 before it is
+  parsed; so is one holding an unpaired surrogate, which has no UTF-8 form. A registration body
+  larger than six times that cap plus 1 MiB (7 MiB by default) is refused 422 before it is read, by
+  its `Content-Length` or while it is read. `commands`, `appliesToLanguages` and `references` hold
+  at most 256 items each.
 - The response, `Toolguide`, loses `guidePath` and carries `guide`: the stored Markdown, its H1
   written from `title`.
 - A refused fetch or an invalid guide is 422 `validation_failed`. The detail names the typed reason
@@ -194,31 +224,50 @@ The contract changes on the 0.x line (breaking; `contracts/charter/CHANGELOG.md`
 - Inline and fetched text go through one port, `application/GuideFormat` (adapter
   `MarkdownGuideFormat`), so both obey the same rules. A URI is fetched through the port
   `application/GuideFetcher` before the pack's write lock is taken, never under it, and on every
-  registration that names it: a PUT with the same URI fetches again.
+  registration that names it: a PUT with the same URI fetches again. The refusals that need no guide
+  come first, so they never cost a fetch: an unknown pack, a stale `If-Match`, a POST that names an
+  existing id and a write the policy refuses. They run again under the lock of the commit, where
+  they are authoritative.
 
 **The fetch posture** (`HttpsGuideFetcher`, configured under `charter.guide-fetch.*`,
 [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)):
 
 - **Direct.** The client is built with no proxy: a JVM proxy would resolve and connect for the
   service and void every address check.
-- **Allowlisted HTTPS.** The host must be exactly on `allowed-hosts`, after lower-casing and
-  stripping a trailing dot; the list is empty by default, so every URI is refused until an operator
-  allowlists a host. User information and IP literals are refused.
+- **Allowlisted HTTPS on port 443.** The host must be exactly on `allowed-hosts`, after
+  lower-casing and stripping a trailing dot; the list is empty by default, so every URI is refused
+  until an operator allowlists a host. A port other than 443, user information and IP literals are
+  refused, on the first URI and on every redirect. Each allowlist entry is checked when it is bound:
+  a URI, a `host:port`, a wildcard or an IP literal fails the start, and a Unicode host name is
+  listed in its ASCII (`xn--`) form.
 - **Global unicast only.** Every resolved address is checked before the first request and after
   every redirect (at most 3, followed by hand). A JEP 418 resolver provider
   (`GlobalAddressResolverProvider`, installed through `META-INF/services`) refuses a non-global
   answer for every allowlisted host when the client resolves again to connect, which closes DNS
   rebinding. The service refuses to start with a non-empty allowlist if the JVM did not install
-  that provider.
-- **Bounded.** One 10-second deadline over resolution, every hop and the body; a 1 MiB streamed
-  cap; identity encoding and UTF-8 only; no credentials or cookies forwarded.
+  that provider. Each exchange runs on a client of its own, whose every task works for the fetch, so
+  a guard refusal is attributed to the fetch that caused it and never relabels another fetch's
+  failure.
+- **Bounded.** By default (configurable via `charter.guide-fetch.*`): one 10-second deadline over
+  resolution, every hop and the body, at most 3 redirects, and a 1 MiB cap. The cap is streamed, and
+  a success whose `Content-Length` already passes it is refused unread. The pre-check's lookup is
+  interrupted at the deadline; the JDK's resolver blocks in the operating system's `getaddrinfo`,
+  which an interrupt cannot stop, so at most 8 lookups run at once and a fetch that finds none free
+  is refused.
+- **Markdown text only.** The response must declare `text/markdown`, `text/x-markdown` or
+  `text/plain` (parameters such as `charset` aside; an absent `Content-Type` is refused), identity
+  encoding and UTF-8; no credentials or cookies are forwarded. A refusal typed `UNREACHABLE` logs
+  its cause at DEBUG with the host only, the URI's path and query cut from every message.
 
 ### 6. Migration by the service's own writer, then a re-pin
 
-The pinned procedures, toolguides and guides are converted with this service's own writer, not by
-hand and not by listing known failures. A throwaway test-scope harness (run only by
-`./gradlew :packs:packMigration`) reads the old shapes, writes the sanitized ones through the
-production writer into a copy, and checks the result field by field with a verifier independent of
+The pinned procedures, toolguides and guides were converted with this service's own writer, not by
+hand and not by listing known failures. This decision is historical: the harness no longer exists
+on this branch or on `main`. It was a throwaway test-scope harness, run as
+`./gradlew :packs:packMigration` while it existed; its code was not kept. Its output, the verifier
+report and the manual decisions are in
+[open-packs#91](https://github.com/spec-kitty/spec-kitty-open-packs/pull/91). It read the old shapes, wrote the sanitized ones through the
+production writer into a copy, and checked the result field by field with a verifier independent of
 the conversion. Every source key path maps to one target path or to a justified drop: an
 `actor: agent` or `actor: system` step that carries no role (decision 2), and an empty list the
 writer leaves out. The verifier also checks the order within each section. An authored YAML
@@ -228,7 +277,7 @@ never folded into a reference `reason`. The output is landed in `spec-kitty-open
 on its `main` at `72cb7dbc` (operator ruling), and `openPacksRef` moves to it. On that `main` 2
 procedures had become directives, so the migration covers 39 procedures (built-in 22, internal 12,
 qa 5) and 24 toolguides with 24 guides. The known-failure list keeps only residual divergences. The
-harness is then deleted.
+harness was then deleted, before this branch was opened for review.
 
 The output landed as
 [spec-kitty/spec-kitty-open-packs#91](https://github.com/spec-kitty/spec-kitty-open-packs/pull/91),
@@ -243,7 +292,9 @@ shapes stand on their merits, and a pinned file in another shape is an open-pack
 core is red on the migrated procedures: the maintainer merged
 [open-packs#91](https://github.com/spec-kitty/spec-kitty-open-packs/pull/91) with that check red,
 by waiver. Core follows when it cuts over to using the service, per the #186 ruling. No core issue
-is filed.
+is filed. The shapes the service now accepts and core does not are recorded in the
+[divergence register](/conformance/divergence-register/) as DIV-401 to DIV-403, as #195 recorded
+DIV-301, so the conformance gate (#72) sees them.
 
 ### Per-kind rows
 
@@ -253,7 +304,7 @@ ADR-0039 decision 8 recorded its own:
 | Files (`match`) | Schema | Compared as | Sets (member identity) | Unknown fields refused |
 | --- | --- | --- | --- | --- |
 | `**/*.procedure.yaml` | procedure | YAML; `steps`, `anti_patterns` and `references` are sequences | none | yes |
-| `**/toolguides/*.guide.md` | toolguide-guide (structure) | the Markdown model (ADR-0040, as amended) | none | yes (frontmatter and a preamble are refused) |
+| `**/toolguides/*.guide.md` | toolguide-guide (structure) | the Markdown model (ADR-0040, as amended); the H1 is derived from the toolguide's `title` (S8), required in a stored guide and recomputed on write | none | yes (frontmatter and a preamble are refused) |
 
 ## Consequences
 
@@ -264,6 +315,10 @@ ADR-0039 decision 8 recorded its own:
 - A client registers a guide without sharing a filesystem with the service.
 - The conversion is the service's own writer, checked field by field, so the migrated packs are what
   the service writes.
+- It closes [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)'s
+  "until #194" condition on the derived manifest: procedures are now bound, so the corrected
+  built-in manifest lists all 272 constituents, and ADR-0042's interim exclusion of the
+  unmodelled ones ends.
 
 ### Negative
 
@@ -281,6 +336,14 @@ ADR-0039 decision 8 recorded its own:
   `references`, a nullable `last_updated`); its renames are epic #186 follow-ups.
 - Packs that hold procedures or guides get a new fingerprint and ETag once, as binding any kind
   does (ADR-0037).
+- A guide is a companion, not a manifest constituent, so no `content_hash` of the derived manifest
+  covers a guide edit: a changed guide leaves the manifest unchanged. Whether companions join the
+  constituents is a follow-up for [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110).
+- The migration drops meaning on purpose: an `actor: agent` or `actor: system` step carries no role,
+  which reads as "any role may act", so the fact that a system or an agent performs the step is
+  lost. ADR-0036 would flag such a loss; the operator ruled it (2026-10-29).
+- The toolguide id grammar is narrower than before (`a-` and `a--b` are refused). Every pinned
+  toolguide id fits it.
 
 ### Risks
 
@@ -319,9 +382,13 @@ ADR-0039 decision 8 recorded its own:
 - `.../packs/application/`: `GuideFormat.java`, `GuideFetcher.java`, `GuideFetchRefusal.java`,
   `ToolguideRegistrationService.java`.
 - `.../packs/infra/storage/`: `ProcedureBinding.java`, `GuideMarkdown.java`,
-  `MarkdownGuideFormat.java`, `Companions.java`, `CompanionContent.java`, `KindBinding.java`.
+  `MarkdownGuideFormat.java`, `Companions.java`, `CompanionContent.java`, `KindBinding.java`,
+  `FileStems.java`, `FileSystemPackInspector.java` (validate mode reads the guides).
 - `.../packs/infra/fetch/`: `HttpsGuideFetcher.java`, `GlobalAddressResolverProvider.java`,
-  `AddressPolicy.java`, `GuideFetchProperties.java`; `.../packs/infra/api/ToolguideController.java`.
+  `GuardRefusals.java`, `AddressPolicy.java`, `GuideAllowlist.java`, `GuideFetchProperties.java`;
+  `.../packs/infra/api/ToolguideController.java`, `ToolguideRegistrationBodyAdvice.java`.
+- `service/deployable/src/test/java/.../HexagonalArchitectureTest.java` (`FETCH_ADAPTER_STANDS_ALONE`),
+  `GeneratedConstraintTypesTest.java`.
 - [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/),
   [ADR-0040](/adr/0040-content-form-and-payload-kinds/),
   [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/); the

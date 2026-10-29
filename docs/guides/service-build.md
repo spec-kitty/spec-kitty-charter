@@ -169,11 +169,20 @@ leaves its guide unowned. Migrate instead
    in the same change that removes the harness.
 
 The gate is red for that class between the first step and the last; keep that window to one pull
-request. The #194 harness ran as:
+request.
+
+The #194 harness is historical: it was deleted before its pull request, and the task below does not
+exist on `main`, so the command does not run there. It ran as:
 
 ```bash
+# historical: the task existed only on the mission's lane branch
 ./gradlew :packs:packMigration -PmigrationTarget=<an absent or empty directory>
 ```
+
+Its code was not kept (it was throwaway by design). Its output, the verifier report and the list of
+manual decisions are in
+[spec-kitty-open-packs#91](https://github.com/spec-kitty/spec-kitty-open-packs/pull/91). A later
+migration writes a harness of its own on that model.
 
 To fix formatting rather than report it, run `./gradlew spotlessApply`.
 
@@ -187,21 +196,25 @@ configured under `charter.guide-fetch` (`GuideFetchProperties`):
 |---|---|---|
 | `charter.guide-fetch.allowed-hosts` | empty | The hosts a guide may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every `guideUri` (`HOST_NOT_ALLOWED`). |
 | `charter.guide-fetch.timeout` | `10s` | One deadline over resolution, every redirect and the body. |
-| `charter.guide-fetch.max-size` | `1MB` | The largest guide accepted, counted while the body streams. |
+| `charter.guide-fetch.max-size` | 1 MiB (`1MB`, which Spring reads as 1,048,576 bytes) | The largest guide accepted, fetched or inline: counted while a fetched body streams, and the cap of an inline `guide`. A registration body is capped at six times this plus 1 MiB. |
 | `charter.guide-fetch.max-redirects` | `3` | The most redirects followed; each target is checked again. |
 
 The fetch is direct: it never uses a proxy, whatever `https.proxyHost` says. A service that reaches
 the guide host only through a proxy cannot fetch, and the client sends the guide as content. Only
 HTTPS, no user information and no IP literals are accepted, and every resolved address must be
-global unicast. A JVM-wide resolver guard, `GlobalAddressResolverProvider`, enforces that again when
+global unicast. An allowlist entry must be a plain host name: a URI, a `host:port`, a wildcard or
+an IP literal fails the start; a Unicode host name is listed in its ASCII (`xn--`) form. Only
+port 443 is fetched, and the response must be `text/markdown`, `text/x-markdown` or `text/plain`
+(an absent `Content-Type` is refused). A JVM-wide resolver guard, `GlobalAddressResolverProvider`, enforces that again when
 the client connects. The JDK loads it through
 `META-INF/services/java.net.spi.InetAddressResolverProvider` on the JVM's first name lookup; when
 `allowed-hosts` names a host and the guard is not the JVM's resolver, the service refuses to start.
 A refused fetch is 422 `validation_failed`, naming the reason and the host, never the URI's path or
 query.
 
-A guide, sent or fetched, is Markdown in the structured form: no frontmatter, an optional H1 equal
-to the toolguide's title, no text before `## Overview`, then the fixed blocks and freeform sections
+A guide, sent or fetched, is Markdown in the structured form: no frontmatter, an H1 equal to the
+toolguide's title (optional when sent, since the service writes it; required in a stored guide, where
+it is derived from the title), no text before `## Overview`, then the fixed blocks and freeform sections
 (ADR-0043 decision 4). The `markdown` content form reads it, and diverges from CommonMark on
 purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 

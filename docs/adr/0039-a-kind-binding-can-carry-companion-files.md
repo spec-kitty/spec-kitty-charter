@@ -62,14 +62,16 @@ pack-level files:
   read, the upsert and the fingerprint alike (ADR-0040 decision 5): the file has its one owner
   already. The reason joins decision 4's list of companion violation reasons (commit `198a686`).
 
-### Amendment 2026-10-29 (#194): a companion declares its form, and owns no classified path
+### Amendment 2026-10-29 (#194, pending ADR-0043 acceptance): a companion declares its form, and owns no classified path
 
 Made by [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (part of epic
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)) for the toolguide guide, the
 first Markdown companion, and recorded in
-[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) (Proposed). The
-amended points are in force for the code #194 ships, which implements them. The decision text below
-is unchanged, and each point this note changes is annotated where it stands.
+[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/), which is
+Proposed. This amendment is **pending ADR-0043's acceptance**: until the operator accepts ADR-0043,
+the Accepted text below stands as the record, and the amended points describe what the code #194
+ships implements. The decision text below is unchanged, and each point this note changes is
+annotated where it stands.
 
 - **Decision 1, a companion declares a form.** `Companion(path, content, form, structureSchema)`:
   `form` is `text` or `markdown`, the same `ContentForm` a file-kind rule declares
