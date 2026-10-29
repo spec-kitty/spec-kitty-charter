@@ -1,0 +1,33 @@
+{
+  "accept_commit": "1b22f329224852c7539b2ad210e8437742a06c7c",
+  "acceptance_history": [
+    {
+      "accept_commit": "1b22f329224852c7539b2ad210e8437742a06c7c",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-29T20:03:10.959742+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "1c0688e1fbebc8fc81b7250d2a0fd9aa089968ca"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-29T20:03:10.959742+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "1c0688e1fbebc8fc81b7250d2a0fd9aa089968ca",
+  "contracts": "none",
+  "contracts_rationale": "Configuration-surface change only: no API, wire or schema contract is added or changed. The HTTP side effect of bean validation (400 for a body missing a required field) is admitted by the existing default Problem response (research.md R2).",
+  "created_at": "2026-10-29T18:48:17.960095+00:00",
+  "flattened": false,
+  "friendly_name": "Container profile properties record",
+  "mid8": "01M64FVJ",
+  "mission_id": "01M64FVJR35RFYP86Y2DPM6800",
+  "mission_number": null,
+  "mission_slug": "container-properties-record-01M64FVJ",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "ADR-0041 gives the containerised charter service a container profile that is never the default. Its settings are bound into a separate validated record at charter.container.*, so a misconfigured container fails at start with the property named instead of serving nothing or serving to anyone. The local loopback daemon is unchanged. Issue #228 under epic #226.",
+  "purpose_tldr": "A validated charter.container.* properties record that fails the start of a container-profile service when a value is missing or invalid (#228).",
+  "slug": "container-properties-record-01M64FVJ",
+  "status_phase": "1",
+  "target_branch": "feat/228-container-config-properties",
+  "topology": "single_branch"
+}

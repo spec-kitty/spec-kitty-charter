@@ -1,0 +1,89 @@
+{
+  "mission_slug": "container-properties-record-01M64FVJ",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java: underTheContainerProfileTheAllowedHostsBindInOrder, theServiceAsItShipsBindsTheRecordUnderTheContainerProfile",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:15:48.854106+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java: missing/empty/whitespace-entry failure tests name charter.container.allowed-hosts; red without @Validated and with @NotEmpty for @NotBlank",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:15:53.594128+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java: withoutTheContainerProfile..., anotherProfileAlone..., positive control on the same runner",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:15:58.121158+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java: aRegistrationBodyWithoutARequiredFieldIsABadRequestProblemNotAServerError (MethodArgumentNotValidException); measured 500 without the starter",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:16:02.596914+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java port-zero + unset-port tests; ContainerPropertiesTest theServiceAsItShipsRefusesItsLocalRandomPortUnderTheContainerProfile",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T20:02:52.687158+00:00",
+      "notes": "Added after the operator's #228 ruling (WP03)"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java missing/relative/nonexistent/file root tests; value absent from stack trace",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T20:02:56.813661+00:00",
+      "notes": "Added after the operator's #228 ruling (WP03)"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java development flag refused for true and false",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T20:03:02.063723+00:00",
+      "notes": "Added after the operator's #228 ruling (WP03)"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java project-config-dir refused",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T20:03:06.178554+00:00",
+      "notes": "Added after the operator's #228 ruling (WP03)"
+    }
+  ],
+  "negative_invariants": []
+}

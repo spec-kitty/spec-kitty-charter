@@ -1,0 +1,122 @@
+{
+  "event_count": 18,
+  "last_event_id": "01M64M1SXE39HZMCECHXCW7DH5",
+  "materialized_at": "2026-10-29T20:01:34.638936+00:00",
+  "mission_number": "",
+  "mission_slug": "container-properties-record-01M64FVJ",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 3,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "user",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64HB8AYF4C1FGWSCP5S5VE5",
+      "last_transition_at": "2026-10-29T19:14:18.590177+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: verifyAll green on Java 25; pre-PR squad folded (research.md R6)",
+        "Pre-PR adversarial squad (architect-alphonso, reviewer-renata, qa-strategist-quinn): approve / approve-with-changes, all findings dispositioned in research.md R6; verifyAll green",
+        "Pre-PR adversarial squad (architect-alphonso, reviewer-renata, qa-strategist-quinn): findings dispositioned in research.md R6; verifyAll green"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/container-properties-record-01M64FVJ/tasks/WP01-validated-container-record/review-cycle-1.md",
+        "reference": "review-cycle://container-properties-record-01M64FVJ/WP01-validated-container-record/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 7704,
+      "shell_pid_created_at": "1793300709.01",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP02": {
+      "actor": "user",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64HCKT875TJ6V75H5EGCVGV",
+      "last_transition_at": "2026-10-29T19:15:03.112189+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Changelog entry and index line committed (d58d540, folded); check_docs, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean; reviewed by the pre-PR squad",
+        "Changelog entry and index line committed (d58d540, folded); check_docs, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean; reviewed by the pre-PR squad",
+        "Changelog entry and index line committed (d58d540, folded); check_docs, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean; reviewed by the pre-PR squad"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/container-properties-record-01M64FVJ/tasks/WP02-changelog/review-cycle-1.md",
+        "reference": "review-cycle://container-properties-record-01M64FVJ/WP02-changelog/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13942,
+      "shell_pid_created_at": "1793301266.63",
+      "subtasks": {
+        "T007": "done",
+        "T008": "done"
+      }
+    },
+    "WP03": {
+      "actor": "user",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64M1SXE39HZMCECHXCW7DH5",
+      "last_transition_at": "2026-10-29T20:01:34.638936+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-10-29T19:57:58Z – claude – shell_pid=3516 – Out-of-map edit: ContainerPropertiesTest (owned by WP01) now passes --server.port and --configRootLocation as start arguments, which the new check requires; plus a test pinning the local port 0 refused under container.",
+        "WP03 delta squad (architect-alphonso, reviewer-renata): approve-with-changes, folded; dispositions in research.md R7; verifyAll green; non-vacuity: early return turns all 8 breach tests red",
+        "WP03 delta squad (architect-alphonso, reviewer-renata): approve-with-changes, folded; dispositions in research.md R7; verifyAll green; non-vacuity: early return turns all 8 breach tests red",
+        "WP03 delta squad (architect-alphonso, reviewer-renata): approve-with-changes, folded; dispositions in research.md R7; verifyAll green; non-vacuity: early return turns all 8 breach tests red"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/container-properties-record-01M64FVJ/tasks/WP03-container-startup-check/review-cycle-1.md",
+        "reference": "review-cycle://container-properties-record-01M64FVJ/WP03-container-startup-check/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 3516,
+      "shell_pid_created_at": "1793303863.06",
+      "subtasks": {
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    }
+  }
+}
