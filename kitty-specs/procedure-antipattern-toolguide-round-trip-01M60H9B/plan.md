@@ -4,56 +4,54 @@
 **Input**: Mission specification from `kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/spec.md`
 
 The planning questions are answered and recorded as Decision Moments under `decisions/`; the Engineering Alignment
-was confirmed by the operator on 2026-10-29. Grounding: `research/squad/` (pre-spec squad) and
-`research/content-squad/` (toolguide guide shape), consolidated in [research.md](research.md).
+was confirmed by the operator on 2026-10-29 and revised after the post-plan review squad
+(`research/post-plan-squad/`, dispositions in [research.md](research.md#post-plan-squad-dispositions)).
 
 ## Summary
 
 Bring procedures, procedure anti-patterns and toolguide guides into the whole-pack round trip with sanitized,
 deliberately designed storage shapes, and build ADR-0040's `markdown` content form.
 
-- The `markdown` content form parses a Markdown document into a structural model (frontmatter, title, preamble, H2
-  sections) and compares documents by that model. It is admitted for `files` rules (ADR-0040 decision 1 amended, for
-  sibling #195's `pack.md`) and for companions (ADR-0039 widened).
-- A toolguide's guide becomes a structured `Guide` (fixed blocks plus freeform sections), stored as a Markdown
-  companion at a `guide_path` relative to the toolguide's file.
-- Procedures get a sanitized schema (rewritten in place), a domain entity and a binding, following Tactic.
-- The HTTP toolguide registration carries the guide's content or a URI the service fetches (authorized contract
-  change); the API never assumes a shared filesystem.
-- A throwaway harness rewrites the pinned packs into the new shapes with this service's own writer; the result lands
-  in spec-kitty-open-packs and `openPacksRef` moves to it.
-- ADR-0042 records the sanitized-shape rules and these shapes.
+- The `markdown` form parses a Markdown document into a structural model (frontmatter, title, preamble, H2
+  sections), writes it canonically and compares by the model. It serves `files` rules (with a structure schema,
+  for #195's `pack.md`) and companions.
+- A toolguide's guide becomes a structured `Guide` stored as a Markdown companion `<id>.guide.md` beside the
+  toolguide.
+- Procedures get a sanitized schema, entity and binding, following Tactic; references are kept, never minted.
+- The HTTP toolguide registration carries guide content or a URI (fetched directly, guarded); the response carries
+  the guide content; `guidePath` leaves the API.
+- A throwaway harness migrates the pinned and vendored packs with this service's writer, verified by an old-to-new
+  field mapping; the result lands in spec-kitty-open-packs and `openPacksRef` moves to it.
+- ADR-0042 records the sanitized-shape rules and these shapes; ADR-0039 and ADR-0040 are amended.
 
-Delivery is two pull requests (operator- and parent-session agreed): **PR-A1** the `markdown` content form and the
-ADR-0040 amendment, small, landing first so #195 can rebase; **PR-A2** everything else.
+Delivery: **PR-A1** = the `markdown` form, its `files`-rule schema application, gate comparison by form for `files`
+rules, the ADR-0040 amendment; lands first (#195 rebases on it). **PR-A2** = everything else.
 
 ## Technical Context
 
 **Language/Version**: Java 25 (CI authority; Temurin 25 locally), Gradle 9.8 with the Kotlin DSL convention plugins in
 `build-logic/`
-**Primary Dependencies**: Spring Boot (existing), snakeyaml-engine (existing YAML reader/writer), the bundled JSON
-Schema validator behind `PackSchemas` (existing), the JDK `java.net.http.HttpClient` for the guide fetch (JDK, no new
-artifact). No new dependency; no change to `gradle/verification-metadata.xml` is expected (DIRECTIVE_051: nothing to
-verify; if an implementer finds one is needed, it is a plan deviation and goes back to the operator).
-**Markdown parsing**: a small purpose-built line scanner in `packs/infra/storage` (H1/H2 at column 0, fence tracking at
-any indentation, frontmatter delimiters). No CommonMark library: the model needs only document structure, and a full
-parser would add a dependency and its own normalization.
-**Storage**: pack files on disk via `FilesystemPackStore` / `WholePackStore`; companions per ADR-0039.
-**Testing**: JUnit 5 + AssertJ in `service/packs/src/test` — unit tests for the Markdown model, corpus round-trip tests
-over the pinned packs (built-in, internal, qa), the whole-pack gate (`WholePackOpenPacksRoundTripTest`), contract
-scenarios under `contracts/charter/scenarios/` for the registration change, ArchUnit gate. Per
-`NO_FULL_HEAVY_SUITES_IN_MISSION`, work packages run the affected module's tests; `./gradlew verifyAll` runs before
-review and in CI.
+**Primary Dependencies**: Spring Boot, snakeyaml-engine, the JSON Schema validator behind `PackSchemas` (all
+existing); the JDK `java.net.http.HttpClient` and the JDK `java.net.spi.InetAddressResolverProvider` SPI (JEP 418)
+for the guide fetch. No new artifact; `gradle/verification-metadata.xml` unchanged (DIRECTIVE_051: no dependency
+change; any need for one is a plan deviation for the operator).
+**Markdown parsing**: a purpose-built line scanner in `packs/infra/storage` with CommonMark fence rules (backtick and
+tilde fences, a closing fence of the same character at least as long as the opener, fences at any indentation hide
+headings); H1/H2 recognized at column 0 only. No CommonMark library.
+**Storage**: pack files via `FilesystemPackStore` / `WholePackStore`; companions per ADR-0039 (amended).
+**Testing**: JUnit 5 + AssertJ in `service/packs/src/test`; corpus tests are tagged `open-packs` and run through
+`:packs:openPacksRoundTrip` (part of `check`); the whole-pack gate is tagged `whole-pack` and runs through
+`:packs:wholePackRoundTrip` (not part of `check`, run explicitly); contract scenarios are Cucumber in `service/deployable` (`CharterContractSuite`);
+ArchUnit gate with its bad-fixture control. Per `NO_FULL_HEAVY_SUITES_IN_MISSION`, work packages run the affected
+module's tests; `./gradlew verifyAll` runs once before each PR's review and in CI.
 **Target Platform**: the charter service (Linux container), Spring Boot deployable.
 **Project Type**: single multi-module Gradle project (`service/*`, `contracts`, `build-logic`).
-**Performance Goals**: guide fetch bounded (10 s total, 1 MiB); pack load time grows only by the Markdown scan of
-companions (24 guides at the pin), no measurable target beyond the existing gate runtime.
-**Constraints**: ADR-0036 equality of meaning, unknown fields refused, no tolerance logic; one configuration root
-(ADR-0038: the fetch allowlist lives under `charter.` in the packs domain's properties); append-only edits to shared
-files except this mission's own exclusions and baseline entries; Java style check (Spotless palantir, Checkstyle,
-Error Prone, NullAway, doclint).
-**Scale/Scope**: 41 procedure files, 24 toolguides and guides across three packs; 1 contract schema change; 1 new ADR
-(0042) and amendments to ADR-0039 and ADR-0040.
+**Performance Goals**: guide fetch bounded (10 s deadline, 1 MiB); the fetch runs outside the pack write lock.
+**Constraints**: ADR-0036 equality of meaning, unknown fields refused, no tolerance logic; ADR-0038 one configuration
+root (`charter.` properties for the fetch allowlist and limits); C-002 shared-file rule; Java style check (Spotless
+palantir, Checkstyle, Error Prone, NullAway, doclint).
+**Scale/Scope**: 41 procedures, 24 toolguides and guides across three packs (18 procedures and 6 toolguides also
+vendored under `packs/`); 2 contract schemas and their scenarios; ADR-0042 plus two amendments.
 
 ## Charter Check
 
@@ -61,13 +59,13 @@ Error Prone, NullAway, doclint).
 
 | Charter item | Status | Note |
 |---|---|---|
-| Divergence from the oracle (core must not break) | Justified deviation | Operator ruling on epic #186 (2026-10-28): during the rewrite missions operate as if core does not exist; core changes when the service is incorporated. Recorded in Complexity Tracking. |
-| Breaking the OpenAPI contract | Pass, with authorized change | The contract is `0.1.0-SNAPSHOT` with no released tag; under ADR-0022 a 0.x line may break. The registration change is operator-authorized (#194 comment of 2026-10-28), gets a CHANGELOG `### Breaking` entry and a scenario. No core consumer exists yet (see row above). |
-| Open-packs content round-trips without loss of meaning | Pass by design | The migration changes pack content upstream through a reviewed open-packs PR; the gate then holds equality of meaning at the new pin. |
-| No unverified dependency | Pass | No new artifact (JDK HttpClient). |
-| Adversarial review squad at plan point and before merge | Done / planned | Pre-spec squad and content squad ran; a post-plan squad runs before tasks; a pre-PR review squad runs before each PR. |
-| `verifyAll` on Java 25, style check, docs checks | Planned | Each PR runs them before review. |
-| BDD / specification by example | Planned | Contract scenario for registration; example-driven corpus fixtures. |
+| Divergence from the oracle (core must not break) | Justified deviation | Operator ruling on epic #186: operate as if core does not exist. |
+| Breaking the OpenAPI contract | Pass, authorized | Contract `0.1.0-SNAPSHOT`, no released tag; 0.x may break (ADR-0022). Registration and response change authorized on #194; `### Breaking` CHANGELOG entry, scenarios. |
+| Open-packs round-trips without loss of meaning | Pass by design | Migration verified by an old-to-new field mapping; the gate holds equality at the new pin. |
+| No unverified dependency | Pass | JDK only. |
+| Adversarial squad at plan point and before merge | Done / planned | Pre-spec, content and post-plan squads ran; a pre-PR squad runs before each PR. |
+| `verifyAll` on Java 25, style, docs checks | Planned | Once before each PR's review. |
+| BDD / specification by example | Planned | Contract scenarios; example fixtures with accepted/refused pairs. |
 
 ## Project Structure
 
@@ -75,172 +73,182 @@ Error Prone, NullAway, doclint).
 
 ```
 kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/
-├── spec.md
-├── plan.md               # this file
-├── research.md           # Phase 0: decisions, rationale, alternatives
-├── research/squad/       # pre-spec squad reports + synthesis
-├── research/content-squad/  # toolguide guide squad reports + synthesis
-├── data-model.md         # Phase 1: entities, shapes, invariants
-├── contracts/            # Phase 1: HTTP registration delta, pack schema sketches
-├── quickstart.md         # Phase 1: how to exercise the change
-├── decisions/            # Decision Moments
-└── tasks.md              # /spec-kitty.tasks (not created here)
+├── spec.md, plan.md, research.md, data-model.md, quickstart.md
+├── contracts/                    # HTTP delta + pack schema notes
+├── decisions/                    # Decision Moments
+├── research/squad/               # pre-spec squad
+├── research/content-squad/       # toolguide guide shape squad
+├── research/post-plan-squad/     # post-plan review squad
+└── tasks.md                      # /spec-kitty.tasks
 ```
 
 ### Source Code (repository root)
 
 ```
 contracts/
-├── charter/schemas/ToolguideRegistration.yaml   # guide content | guideUri (PR-A2)
-├── charter/scenarios/                            # registration scenarios (PR-A2)
-├── charter/CHANGELOG.md                          # ### Breaking entry (PR-A2)
-└── packs/
-    ├── file-kinds.yaml                           # markdown admitted (A1); own exclusions removed (A2)
-    ├── README.md
-    └── schemas/
-        ├── procedure.schema.json                 # rewritten, sanitized (A2)
-        ├── toolguide.schema.json                 # guide_path relative (A2)
-        └── toolguide-guide.schema.json           # structure of the parsed guide (A2)
+├── charter/schemas/ToolguideRegistration.yaml, Toolguide.yaml   # guide | guideUri in, guide out (A2)
+├── charter/paths/packs_packId_toolguides*.yaml                    # response codes (A2)
+├── charter/scenarios/ (toolguides.feature, journey-05)            # rewritten (A2)
+├── charter/CHANGELOG.md                                           # ### Breaking (A2)
+└── packs/file-kinds.yaml, README.md, schemas/
+    ├── procedure.schema.json (rewritten), toolguide.schema.json (A2)
+    └── toolguide-guide.schema.json (new, A2)
 service/packs/src/main/java/ai/speckitty/charter/packs/
-├── domain/
-│   ├── Procedure.java, ProcedureIdentifier.java, ProcedureStep.java, AntiPatternEntry.java  (A2)
-│   ├── Toolguide.java (+ Guide), Guide.java, GuideBlock.java, GuideSection.java             (A2)
-├── application/
-│   ├── ToolguideRegistrationService.java         # guide content or fetched URI (A2)
-│   └── GuideFetcher.java (port)                  (A2)
+├── domain/ Procedure*, AntiPatternEntry, Guide*, Toolguide (A2)
+├── application/ ToolguideRegistrationService, GuideFetcher port (A2)
 └── infra/
-    ├── storage/
-    │   ├── ContentForm.java, PackFileKind.java   # MARKDOWN built (A1)
-    │   ├── MarkdownDocument.java, MarkdownCodec.java  (A1)
-    │   ├── CompanionContent.java                 # Markdown case (A2)
-    │   ├── KindBinding.java / Companions.java    # companion form (A2)
-    │   ├── ProcedureDso/Yaml/Binding.java        (A2)
-    │   ├── ToolguideDso/Yaml/Binding.java        # guide companion (A2)
-    │   ├── KindBindings.java, YamlFormats.java   # append procedure (A2)
-    │   └── PackSchemas.java                      # companion structure schemas (A2)
-    ├── fetch/HttpsGuideFetcher.java              # guarded JDK HttpClient (A2)
-    └── api/ToolguideController.java              # DTO mapping (A2)
-service/packs/src/test/...                        # unit, corpus, gate, migration harness (throwaway)
-service/packs/src/test/resources/whole-pack/expected-red.yaml, known-failures.yaml
-docs/adr/0042-sanitized-pack-shapes.md (A2); docs/adr/0039, 0040 amendments; docs/changelog; site/.contextive/definitions.yaml
-gradle.properties                                 # openPacksRef (A2, after the open-packs PR merges)
+    ├── storage/ ContentForm, PackFileKind, MarkdownDocument, MarkdownCodec, PackSchemas (A1);
+    │            CompanionContent, KindBinding, Companions, WholePackStore, Procedure*/Toolguide* DSO/Yaml/Binding,
+    │            KindBindings, YamlFormats (A2)
+    ├── fetch/ HttpsGuideFetcher, GlobalAddressResolverProvider (+ META-INF/services) (A2)
+    └── api/ ToolguideController (A2)
+service/packs/src/test/... WholePackCensus, MeaningComparator, DomainRoundTrip (A1 for files rules, A2 for
+                           companions), corpus tests, fetcher matrix, migration harness (A2, deleted before review)
+packs/internal, packs/qa                                           # re-vendored at the new pin (A2)
+gradle.properties (openPacksRef, A2)
+docs/adr/0042-*.md, ADR-0039/0040 amendments, docs/changelog/, docs/guides/service-build.md,
+site/.contextive/definitions.yaml
 ```
 
-**Structure Decision**: existing hexagonal layout of `service/packs` (domain / application / infra), ADR-0037
-kind-keyed registry; no new module. The guide fetcher is an application port with an infra adapter so the domain and
-application layers stay free of network code (ArchUnit gate).
+**Structure Decision**: existing hexagonal layout of `service/packs` and the ADR-0037 registry; no new module. The
+fetcher is an application port with an infra adapter; an ArchUnit rule (with a bad fixture) keeps `java.net` out of
+domain and application.
 
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Charter "divergence from the oracle" — shapes and the registration body diverge from core | Operator ruling on epic #186: operate as if core does not exist; sanitized shapes win (#194) | Matching core's formats would reintroduce the legacy and variant fields the operator ruled out |
-| Breaking contract change (registration body) | API must not assume a shared filesystem (operator) | Keeping a bare `guidePath` makes a registered toolguide unwritable (no content to store) |
-| First outbound HTTP call from the service | Operator chose fetch-and-store for guide URIs | Storing the URI only was offered and declined |
+| Shapes and the toolguide API diverge from core | Operator ruling on #186; sanitized shapes win | Matching core reintroduces the fields ruled out |
+| Breaking contract change (registration and response) | API must not assume a shared filesystem | A bare `guidePath` leaves nothing to store or read back |
+| First outbound HTTP call, with a JVM-wide resolver provider | Operator chose fetch-and-store, direct with a resolver guard | URI-only storage and proxied fetch were offered and declined |
 
 ## Implementation Concern Map
 
 > Concerns are not work packages; `/spec-kitty.tasks` decomposes them.
 
-### IC-01 — Markdown content form
+### IC-01 — Markdown content form (PR-A1)
 
-- **Purpose**: Build ADR-0040's declared `markdown` form: parse a Markdown document into `MarkdownDocument`
-  (optional frontmatter, optional H1 title, preamble, H2 sections of title and content), write it back canonically,
-  and compare documents by model equality.
-- **Relevant requirements**: FR-005, NFR-002, NFR-003
-- **Affected surfaces**: `ContentForm`, `PackFileKind` (admit `markdown` for `files` rules), new `MarkdownDocument` /
-  `MarkdownCodec` in `infra/storage`, `MeaningComparator` and `WholePackCensus` (test-side comparison by form),
-  `contracts/packs/file-kinds.yaml` header docs, ADR-0040 amendment (decision 1).
-- **Sequencing/depends-on**: none (ships as PR-A1).
-- **Risks**: refusal rules must be exact (unclosed fence, CR or BOM, misplaced H1, indented heading 1–3 spaces,
-  setext underline) and `parse(write(d)) == d` must hold on write; headings inside fences at any indentation never
-  count. Collision with #195: this PR owns the form, #195 only adds its rule.
+- **Purpose**: build `MarkdownDocument` / `MarkdownCodec` (parse, canonical write, model equality, refusals) and admit
+  `markdown` for `files` rules, including applying a rule's structure schema (a JSON Schema over the parsed model,
+  standard 2020-12 keywords only, registered with `PackSchemas`).
+- **Relevant requirements**: FR-005, SC-006, NFR-002, C-006
+- **Affected surfaces**: `ContentForm`, `PackFileKind`, `PackSchemas`, new `MarkdownDocument` / `MarkdownCodec`,
+  test-side `WholePackCensus` / `MeaningComparator` / `DomainRoundTrip` (exhaustive dispatch by `ContentForm` for
+  `files` rules), `contracts/packs/file-kinds.yaml` header, ADR-0040 amendment (decisions 1 and 3), docs changelog
+  entry for A1.
+- **Sequencing/depends-on**: none.
+- **Risks**: model invariants at construction (no leading or trailing blank lines in content, titles single-line and
+  non-blank, no H1/H2 inside content) so `parse(write(d)) == d` cannot fail late; thematic breaks are not setext
+  underlines; the indented-heading refusal covers H1 and H2 only (indented H3 in lists exists in the corpus);
+  `pack.md` has an H1 and no H2. Tests: unit matrix with accepted/refused neighbours for each refusal, the three
+  structural non-vacuity pairs (fenced heading, in-section change, blank-line change), a fixture pack with a
+  `markdown` rule through `WholePackStore`, 72/72 byte-equal corpus check. No gate outcome changes at the pin.
 
-### IC-02 — Companions carry a content form
+### IC-02 — Markdown companions in store and gate (PR-A2)
 
-- **Purpose**: Let a companion declare `text` or `markdown` (with a structure schema), read and compare it by its form,
-  and register companion structure schemas with `PackSchemas`.
-- **Relevant requirements**: FR-004, FR-005
-- **Affected surfaces**: `KindBinding.Companion`, `CompanionContent` (Markdown case), `Companions`, `WholePackStore`,
-  `PackSchemas` (registration path for schemas not named by a `files` rule), gate comparison of companions,
-  ADR-0039 amendment ("content is text today").
-- **Sequencing/depends-on**: IC-01
-- **Risks**: the gate currently compares companions as YAML (headings become comments) — must change in the same
-  step; the skill companion stays `text` and must not change behaviour.
+- **Purpose**: a companion declares `text` or `markdown` (with a structure schema); the store reads, writes and
+  validates it by form; the gate classifies, pairs and compares companions by form.
+- **Relevant requirements**: FR-005a, FR-009, NFR-002
+- **Affected surfaces**: `KindBinding.Companion`, `CompanionContent` (Markdown case), `Companions` (refuse any path a
+  `files` or exclusions rule classifies, not only schema-less payloads), `WholePackStore`, a `files` rule for
+  `**/toolguides/*.guide.md` with `content_form: markdown`, test-side census/pairing (`MODELLED`/required kinds,
+  companion outcomes), companion conflicts mapped to client errors, ADR-0039 amendment.
+- **Sequencing/depends-on**: IC-01.
+- **Risks**: the skill companion stays `text` with unchanged behaviour; a Markdown companion must never reach
+  `Yaml.load`.
 
-### IC-03 — Structured toolguide guide
+### IC-03 — Structured toolguide guide (PR-A2)
 
-- **Purpose**: Model the guide as a `Guide` value (fixed blocks `overview` (required), `when_to_use`, `setup`, `usage`,
-  `cautions`, `known_limitations`, `references`, plus freeform `sections` of `title` and `content`), stored as a
-  Markdown companion at `guide_path` relative to the toolguide's file; the H1 is written from the toolguide `title`.
-- **Relevant requirements**: FR-004, FR-009
-- **Affected surfaces**: `Toolguide`, new `Guide` / `GuideBlock` / `GuideSection`, `ToolguideDso`, `ToolguideYaml`,
-  `ToolguideBinding` (companions), `toolguide.schema.json`, new `toolguide-guide.schema.json`, `file-kinds.yaml`
-  (remove this mission's own guide exclusion), `expected-red.yaml` (`other:toolguides` removed when green).
-- **Sequencing/depends-on**: IC-02
-- **Risks**: fixed-block headings are canonical text (`## Overview`, `## When to use`, `## Setup`, `## Usage`,
-  `## Cautions`, `## Known limitations`, `## References`); an H1 different from `title` or a reserved block out of
-  order is refused; guide prose links are content, never relationships.
+- **Purpose**: the `Guide` value (fixed blocks, freeform sections) at `<id>.guide.md` relative to the toolguide;
+  H1 written from `title`, incoming H1 optional but refused when different; preamble and frontmatter refused.
+- **Relevant requirements**: FR-004, FR-011
+- **Affected surfaces**: `Toolguide`, `Guide` / `GuideBlock` / `GuideSection`, `ToolguideDso`, `ToolguideYaml`,
+  `ToolguideBinding` (companions), `toolguide.schema.json`, `toolguide-guide.schema.json`, `expected-red.yaml`
+  (`other:toolguides` removed at the re-pin).
+- **Sequencing/depends-on**: IC-02.
+- **Risks**: fixed-block headings are canonical (`## Overview`, `## When to use`, `## Setup`, `## Usage`,
+  `## Cautions`, `## Known limitations`, `## References`); a reserved heading in another case is refused; freeform
+  sections sit between `usage` and `cautions`; guide prose links are never relationships.
 
-### IC-04 — Sanitized procedure
+### IC-04 — Sanitized procedure (PR-A2)
 
-- **Purpose**: Rewrite `procedure.schema.json` to the sanitized shape and bind procedures: entity, identifier, steps
-  with `role`, anti-pattern entries `{title, content, bad_example?, good_example?}`, references in the shared
-  `Reference` shape kept on the entity but never minted as relationships (#189).
-- **Relevant requirements**: FR-001, FR-002, FR-003, FR-007, FR-008
-- **Affected surfaces**: `contracts/packs/schemas/procedure.schema.json`, new domain `Procedure*` and
-  `AntiPatternEntry`, `ProcedureDso` / `ProcedureYaml` / `ProcedureBinding`, `KindBindings` and `YamlFormats` (append),
-  `ArtifactEdges` (ensure no minting for procedure), registry and exactness tests, `expected-red.yaml`
-  (`kind: procedure` removed).
-- **Sequencing/depends-on**: none (parallel to IC-01..03); its anti-pattern entry shape is shared with the guide's
-  `cautions` only by name, not by type.
-- **Risks**: `ArtifactEdges` mints typed references as SUGGESTS today — procedure references must be excluded
-  explicitly and tested; `anti_pattern.graph.yaml` must stay red for tags only (#236).
+- **Purpose**: rewrite `procedure.schema.json`; bind procedures (entity, identifier, steps with optional `role`,
+  anti-pattern entries, references kept but never minted).
+- **Relevant requirements**: FR-001, FR-002, FR-003, FR-003a, FR-007, FR-008, SC-002, SC-004, SC-005, C-005
+- **Affected surfaces**: `procedure.schema.json`, domain `Procedure*` and `AntiPatternEntry`, `ProcedureDso` /
+  `ProcedureYaml` / `ProcedureBinding`, `KindBindings` and `YamlFormats` (append), `ArtifactEdges` (exhaustive
+  per-kind decision; procedure mints nothing), `KindBindingsTest`, `PackFileKindTest` / `PackSchemasTest` counts,
+  `expected-red.yaml` (`kind: procedure` removed at the re-pin), a retired-name source scan.
+- **Sequencing/depends-on**: none (parallel to IC-01..03).
+- **Risks**: edge-minting negative control paired with a tactic positive control in one fixture;
+  `anti_pattern.graph.yaml` stays red for tags only.
 
-### IC-05 — Guide over HTTP
+### IC-05 — Guide over HTTP (PR-A2)
 
-- **Purpose**: Change the toolguide registration to carry `guide` (the guide's Markdown) or `guideUri`, exactly one;
-  fetch a URI through a guarded fetcher and store the content as the guide companion; parse and validate the guide
-  before storing.
-- **Relevant requirements**: FR-010, NFR-004, C-001
-- **Affected surfaces**: `contracts/charter/schemas/ToolguideRegistration.yaml` (and the read DTO if it exposes
-  `guidePath`), contract scenarios, `contracts/charter/CHANGELOG.md` (`### Breaking`), `ToolguideController`,
-  `ToolguideRegistrationService`, `GuideFetcher` port, `HttpsGuideFetcher` adapter, `StorageProperties` (allowlist,
-  limits under `charter.`), refusal codes (reuse existing ones where they fit; any new code is a contract addition).
-- **Sequencing/depends-on**: IC-03
-- **Risks**: SSRF — resolve the host and refuse private, loopback, link-local and unique-local addresses before
-  connecting and on every redirect; pin the resolved address for the connection; HTTPS only; 3 redirects; 10 s; 1 MiB
-  streamed cap; no credentials forwarded; tests use a local stub server through an injectable resolver, never the
-  network.
+- **Purpose**: registration carries exactly one of `guide` or `guideUri`; the response carries `guide`; `guidePath`
+  leaves the API; a URI is fetched by a guarded adapter before the pack write lock.
+- **Relevant requirements**: FR-010, FR-011, NFR-004, NFR-005, C-001
+- **Affected surfaces**: `ToolguideRegistration.yaml`, `Toolguide.yaml`, toolguide paths (response codes),
+  `toolguides.feature` and journey-05 scenarios, `CHANGELOG.md`, `ToolguideController` (exactly-one check: null,
+  empty, both), `ToolguideRegistrationService`, `GuideFetcher` port, `HttpsGuideFetcher`
+  (`HttpClient.newBuilder().proxy(NO_PROXY).followRedirects(NEVER)`, manual redirects with per-hop scheme, exact-host
+  allowlist and address re-checks; one deadline over DNS, every hop and the body via `sendAsync` + counting body
+  subscriber + `orTimeout` + cancel; identity encoding and UTF-8 only; no credentials), `GlobalAddressResolverProvider`
+  (JEP 418: for allowlisted hosts, refuses any answer that is not global unicast, covering IPv4-mapped and
+  compatible IPv6, unique-local, CGNAT, 0.0.0.0, NAT64/6to4), `StorageProperties` (allowlist, limits), refusal codes
+  (existing where they fit; new ones listed in the CHANGELOG and `ReservedRefusalCodesTest`), Java tests using
+  `guidePath`.
+- **Sequencing/depends-on**: IC-03.
+- **Risks**: the `oneOf` keyword is the contract's first composition — spike what the generator emits, and enforce
+  exactly-one in the controller regardless; the resolver provider is JVM-wide, so it acts only for allowlisted hosts
+  and delegates otherwise; the offline test matrix uses a resolver seam and a transport seam that records the
+  connect address (optionally a JDK HttpServer stub), plus a stub `GuideFetcher` bean for the BDD scenarios.
 
-### IC-06 — Pack migration and re-pin
+### IC-06 — Pack migration and re-pin (PR-A2)
 
-- **Purpose**: A throwaway test-scope harness reads the pinned procedures, toolguides and guides in their current
-  form, converts them to the sanitized shapes, and writes them with the production writer into an open-packs
-  working copy; the result is reviewed and landed in spec-kitty-open-packs (one issue per class of change), then
-  `openPacksRef` moves to the merged commit.
-- **Relevant requirements**: FR-006, NFR-001, NFR-002, SC-001..SC-004
-- **Affected surfaces**: a test-scope harness class (deleted before PR-A2 is reviewed, or kept out of the main source
-  set and excluded from the build), open-packs branch + PR + issues, `gradle.properties` (`openPacksRef`),
-  `known-failures.yaml` (only residual divergences, if any), `WholePackOpenPacksRoundTripTest` counts.
-- **Sequencing/depends-on**: IC-03, IC-04
-- **Risks**: the harness is the only place that reads the old shapes — it must never ship in `src/main`; content
-  decisions the converter cannot make mechanically (heading-to-block mapping, summary/overview overlap, stray notes)
-  follow the content-squad mapping table and are listed in the open-packs PR for human review; #195 must rebase onto
-  the new pin (parent session informed).
+- **Purpose**: a test-scope harness reads the pinned and vendored procedures, toolguides and guides in their current
+  form, converts them (actor `human`→`operator`, `agent`/`system`→no role; `name`→`title`; `purpose`→`description`;
+  anti-pattern `name`/`description`→`title`/`content`; guides renamed to `<id>.guide.md` and restructured per the
+  content-squad mapping; `guide_path` relative), and writes them with the production writer into an open-packs
+  working copy; an old-to-new field-mapping verifier fails on any unmapped key; counts in equal counts out
+  (41/41, 24/24); conversion is idempotent.
+- **Relevant requirements**: FR-006, NFR-001, NFR-002, SC-001..SC-004, C-002, C-007
+- **Affected surfaces**: harness class in the test source set under an excluded `migration` tag, guarded against
+  writing into the pinned checkout; open-packs branch, PR and issues; `gradle.properties` (`openPacksRef`);
+  `packs/internal`, `packs/qa` (re-vendored) and `VendoredPacksTest.LOCAL_DELTA` (recomputed); `known-failures.yaml`
+  (residuals only); `WholePackOpenPacksRoundTripTest` (add pinned procedure and guide counts); other entries whose
+  `at` text the re-pin changes.
+- **Sequencing/depends-on**: IC-03, IC-04. Order: PR-A2 code proven on fixtures → harness output → open-packs PR
+  (human review of per-class diffs) → merge → one commit moves the pin, removes the baseline entries, re-vendors,
+  recomputes `LOCAL_DELTA` and deletes the harness. Between the code and that commit the corpus tests (part of `check`) and the
+  gate are red at the old pin by design; the PR is opened only after it.
+- **Risks**: content decisions the converter cannot make mechanically follow the content-squad mapping table and
+  are listed in the open-packs PR for review; #195 rebases onto the new pin (parent session informed).
 
 ### IC-07 — Decision record and docs
 
-- **Purpose**: ADR-0042 (sanitized-shape rules R1–R13 with the shapes of procedure, anti-pattern entry and toolguide
-  guide; the `content` naming rule), ADR-0039 and ADR-0040 amendments, docs changelog, `docs/guides/service-build.md`,
-  glossary definitions; list the merged-schema follow-ups on epic #186.
-- **Relevant requirements**: C-003, C-002
-- **Affected surfaces**: `docs/adr/`, `docs/adr/README.md` index (append), `docs/changelog/`, `site/.contextive/definitions.yaml`
-  (append), `contracts/packs/README.md`.
-- **Sequencing/depends-on**: IC-01 (amendment for A1); others with A2.
-- **Risks**: ADR numbering reserved (0042 is #194's, 0043 is #195's).
+- **Purpose**: ADR-0042 (sanitized-shape rules, the procedure, anti-pattern entry and guide shapes, the `content`
+  rule, the fetch posture and its residuals); ADR-0039 and ADR-0040 amendments; docs changelog entries (A1, A2);
+  `docs/guides/service-build.md`; glossary definitions (append); `contracts/packs/README.md`; the #186 follow-up list.
+- **Relevant requirements**: C-003, C-001, C-006
+- **Affected surfaces**: `docs/adr/`, `docs/adr/README.md` (append), `docs/changelog/`, `site/.contextive/definitions.yaml`.
+- **Sequencing/depends-on**: the ADR-0040 amendment with IC-01 (A1, which does not cite ADR-0042); the rest with A2.
+- **Risks**: ADR numbering reserved (0042 is #194's, 0043 #195's).
+
+## Exit criteria (frozen)
+
+- **E1 (PR-A1)**: Markdown unit matrix green with the three structural non-vacuity pairs and accepted/refused
+  neighbours for each refusal; 72/72 pinned Markdown files parse and write byte-equal; the fixture pack with a
+  `markdown` rule round-trips and its one-character positive control fails; `PackFileKindTest` / `PackSchemasTest`
+  updated; no gate outcome changes at the current pin; `verifyAll` and docs checks green.
+- **E2 (PR-A2)**: `:packs:wholePackRoundTrip` green at the new pin with `procedure` and `other:toolguides` gone and the
+  `anti_pattern.graph.yaml` entry intact; lossy-writer positive controls (YAML, Markdown, procedure) red;
+  `VendoredPacksTest` green; edge-minting negative and positive controls green; fetcher matrix green offline;
+  contract suite green in `:deployable`; ArchUnit rule and its bad fixture green; retired-name source scan green;
+  harness absent from the tree; migration verification artifacts attached to the open-packs PR; `verifyAll` and docs
+  checks green.
 
 ## Post-design Charter re-check
 
-Unchanged from the table above: the only deviations are the operator-authorized ones in Complexity Tracking; the design
-adds no dependency, keeps network code out of domain/application, and keeps tolerance logic out of every reader.
+Unchanged: the only deviations are the operator-authorized ones in Complexity Tracking; no dependency is added;
+network code stays out of domain and application; no reader tolerates a retired field.
