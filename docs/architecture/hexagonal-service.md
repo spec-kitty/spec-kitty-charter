@@ -36,12 +36,12 @@ Amendment 2026-10-03):
 
 ## Modules
 
-One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-vertical-slices-archunit/)); the onion layers are packages *within* each slice (`domain`, `application` with `read`/`write` sub-packages, and `infra` with `api.rest`, a reserved `api.graphql`, and `storage`).
+One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-vertical-slices-archunit/)); the onion layers are packages *within* each slice (`domain`, `application` with `read`/`write` sub-packages, and `infra` with `api.rest`, a reserved `api.graphql`, `storage` and, in the packs slice, the outbound `fetch` adapter).
 
 | Module | Depends on | Holds |
 |---|---|---|
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
-| `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, ports, services), `application` (read/write use cases), `infra` (`api.rest`, reserved `api.graphql`, `storage`) |
+| `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, built with its `domain` ring only (`AgentProfile`); `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
@@ -56,8 +56,9 @@ Within a slice, the read and write use cases are packages inside its `applicatio
 ```text
 infra.api.rest / infra.api.graphql ──┐
                                      ├─> application (read / write) ──> domain (models + ports)
-infra.storage (file / db / blob /    │
-               resolver) ────────────┴───────────────────────────────> domain repository ports
+infra.storage (file / db / blob /    │      application ports (GuideFormat, GuideFetcher)
+               resolver) ────────────┤        ^
+infra.fetch (outbound HTTPS) ────────┴────────┴──────────────────────> domain repository ports
 ```
 
 - Arrows point **inward only**: the entry-point infra ring knows the application ring; the
@@ -78,6 +79,16 @@ infra.storage (file / db / blob /    │
 - Repository interfaces and invariants belong to the domain; their implementations belong to
   `infra.storage`. A later SQL or object-store projection can replace or sit beside the
   file-based adapter without touching the domain, the entry-point adapters or the core seam.
+- **Application-ring ports.** A port that a use case needs and that is not about the domain's
+  state lives in `application`, not in `domain`: `GuideFormat` (the guide's Markdown codec,
+  implemented in `infra.storage` by `MarkdownGuideFormat`, beside the stored guide's model) and
+  `GuideFetcher` (an outbound fetch, implemented in `infra.fetch` by `HttpsGuideFetcher`). They
+  carry a wire format and a network call, which the pure domain does not know of; a domain
+  repository port, by contrast, speaks only domain models. The domain ring stays free of both.
+- **`infra.fetch`** is an outbound adapter like `infra.storage`: it implements an application-ring
+  port and is composed by `deployable`. No other adapter names it, and it names no other adapter
+  (the `FETCH_ADAPTER_STANDS_ALONE` rule); the entry point reaches it only through the application
+  ring (`ENTRYPOINT_OVER_APPLICATION`).
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).

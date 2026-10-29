@@ -228,11 +228,20 @@ Conventions for a kind of work. Schema: `styleguide.schema.yaml`.
 
 ### Toolguide — `*.toolguide.yaml`
 
-How to use one tool. Schema: `toolguide.schema.yaml`.
+How to use one tool. Schema: `toolguide.schema.json`; the guide's shape is
+[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) decision 4.
 
-- **Required:** `id`, `schema_version`, `tool`, `title`, `guide_path`, `summary`.
-- **Key fields:** `commands`, `applies_to_languages`, `last_updated`, `references`.
-- `guide_path` points at a Markdown guide beside the descriptor.
+- **Required:** `id` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`), `schema_version`, `tool`, `title`,
+  `guide_path`, `summary`.
+- **Key fields:** `commands`, `applies_to_languages`, `last_updated`, `references` (plain
+  citation strings).
+- `guide_path` is `<id>.guide.md`, the toolguide's guide beside the descriptor. The guide is a
+  structured Markdown companion (schema `toolguide-guide.schema.json`): no frontmatter, an H1
+  equal to `title` (derived from it), no text before the first H2, a non-blank `## Overview`, then
+  the fixed blocks `## When to use`, `## Setup`, `## Usage`, `## Cautions`, `## Known limitations`
+  and `## References` in that order, with freeform H2 sections between `## Usage` and
+  `## Cautions`. Over HTTP a registration sends the guide's Markdown as `guide` or names it with
+  `guideUri`, never a path.
 - **CRG:** `toolguide:<id>`.
 
 ### Paradigm — `*.paradigm.yaml`
@@ -246,11 +255,16 @@ A way of thinking about the work. Schema: `paradigm.schema.yaml`.
 ### Procedure — `*.procedure.yaml`
 
 A multi-step operating procedure with entry and exit conditions. Schema:
-`procedure.schema.yaml`.
+`procedure.schema.json`, the sanitized shape of
+[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) decision 2.
 
-- **Required:** `schema_version`, `id`, `name`, `purpose`, `entry_condition`,
-  `exit_condition`, `steps`.
-- **Key fields:** `anti_patterns`, `applies_to_languages`, `notes`, `references`.
+- **Required:** `schema_version` (`"1.0"`), `id` (the file stem), `title`, `description`,
+  `entry_condition`, `exit_condition`, `steps` (at least one).
+- **Steps:** `{title, description?, role?, on_success?, on_failure?}`; `role` is an open role
+  token such as `operator`, absent when any role may act.
+- **Key fields:** `anti_patterns` (`{title, content?, bad_example?, good_example?}`),
+  `references` (`{type, id, when?, reason?}`, kept but never minted as relationships), `notes`,
+  `applies_to_languages`. An optional list holds at least one entry when present.
 - **CRG:** `procedure:<id>`.
 
 ### Agent profile — `*.agent.yaml`

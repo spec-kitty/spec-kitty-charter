@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -36,7 +36,8 @@ Entries are grouped by block, one block per mission, so that two missions never 
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
-- **Pack-level files (DIV-301..399, ADR-0042)** is last.
+- **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
+- **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is last.
 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
@@ -458,3 +459,46 @@ The block of mission `pack-level-files-round-trip-01M60H1A`
   - Core: `offering/packs/pack_validator.py:592-593` and `:662-690` (`_validate_presets`); no manifest check
   - Charter: corpus case: the pinned open-packs `built-in` pack (`openPacksRef`), whose two presets and manifest validate mode refuses: 283 manifest and 14 preset findings, pinned in `FileSystemPackInspectorTest`
   - Charter: `FileSystemPackInspectorTest`, a preset whose id is not its stem, refused in validate mode and by the load
+
+## Procedures and toolguide guides (DIV-401..499, ADR-0043)
+
+The block of mission `procedure-antipattern-toolguide-round-trip-01M60H9B`
+([#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194),
+[ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)). The service
+operates as if core does not exist (the #186 ruling): core follows when it cuts over to the service.
+Core paths are at spec-kitty `3131fffa`.
+
+### DIV-401: The procedure shape
+
+- **Core:** Requires `name` and `purpose`; a step names who acts with `actor` (`human`, `agent` or `system`, default `agent`); an anti-pattern is `{name, description}`, both required; a reference is `{type, id, reason?}`; an optional list may be empty; the `id` is `^[a-z][a-z0-9-]*$` and need not equal the file stem (`offering/schemas/procedure.schema.yaml`).
+- **Service:** Requires `title` and `description`; a step names the acting `role` (`^[a-z][a-z0-9-]*$`, absent when any role may act), never `actor`; an anti-pattern is `{title, content?, bad_example?, good_example?}`; a reference is `{type, id, when?, reason?}`; an optional list holds at least one entry; the `id` is `^[a-z0-9]+(-[a-z0-9]+)*$` and equals the file stem. A procedure in core's shape, or one whose `id` is not its stem, is an `artifact_schema_error` in validate mode and is refused by the load.
+- **Rationale:** The sanitized artifact shapes of ADR-0043 (S1, S10 to S16); a step names a role, not an agent kind (ADR-0032).
+- **Ruling:** operator rulings on #194 (2026-10-28, 2026-10-29); #186 "as if core does not exist"
+- **Status:** open, since 2026-10-29
+- **Evidence:**
+  - Core: `offering/schemas/procedure.schema.yaml` (`name`, `purpose`, `actor`, `procedure_anti_pattern`)
+  - Charter: `contracts/packs/schemas/procedure.schema.json`; `ProcedureSchemaTest`; `ProcedureEdgesTest`, a procedure whose id is not its stem, refused by the load and in validate mode
+  - Corpus case: the 39 pinned procedures at `openPacksRef` `5df92a5d`, migrated by open-packs#91, which core's own check refuses
+
+### DIV-402: Toolguide guide naming and toolguide id
+
+- **Core:** A toolguide's `guide_path` is any relative Markdown path (`^[^/].*\.md$`), and its `id` is `^[a-z][a-z0-9-]*$` (`offering/schemas/toolguide.schema.yaml`).
+- **Service:** `guide_path` must be `<id>.guide.md` beside the toolguide, and the `id` is `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` (no trailing or doubled hyphen), so every id names a guide file the schema accepts. Any other `guide_path` or id is an `artifact_schema_error`; the guide is an ADR-0039 companion admitted only at its own `files` rule, `**/toolguides/*.guide.md`.
+- **Rationale:** One file per guide with one name; an id the service accepts never names a guide file it refuses (ADR-0043 decision 4).
+- **Ruling:** operator rulings on #194 (2026-10-28, 2026-10-29)
+- **Status:** open, since 2026-10-29
+- **Evidence:**
+  - Core: `offering/schemas/toolguide.schema.yaml` (`guide_path` pattern `^[^/].*\.md$`)
+  - Charter: `contracts/packs/schemas/toolguide.schema.json`; `ToolguideIdentifier`; `ToolguideControllerTest`, the ids `a-` and `a--b` refused 422
+  - Corpus case: the 24 pinned toolguides and guides at `openPacksRef` `5df92a5d`
+
+### DIV-403: The toolguide guide's structure
+
+- **Core:** Reads a guide as free Markdown; validate mode does not judge its structure.
+- **Service:** A guide is structured (ADR-0043 decision 4): no frontmatter, its H1 equal to the toolguide's `title` (required in a stored guide), no preamble, a non-blank `## Overview`, the fixed blocks in order and freeform sections between `## Usage` and `## Cautions`. The load and validate mode both refuse a guide that breaks a rule; validate mode reports it as `artifact_schema_error` on the guide's file.
+- **Rationale:** One structure across all guides, so a guide's meaning round-trips (ADR-0043); validate mode and the load refuse the same files.
+- **Ruling:** operator ruling on #194 (2026-10-29), structured guide
+- **Status:** open, since 2026-10-29
+- **Evidence:**
+  - Charter: `contracts/packs/schemas/toolguide-guide.schema.json`; `GuideMarkdown`; `FileSystemPackInspectorTest`, a guide with a preamble, without an overview or without an H1 reported in validate mode; `ToolguideGuideTest`
+  - Corpus case: the 24 pinned guides at `openPacksRef` `5df92a5d`
