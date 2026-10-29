@@ -4,27 +4,38 @@ title: Risk Appetite and Non-Negotiable Failures
 intent: >-
   Two failures are the costliest and are never traded for speed, scope or
   convenience: (1) the service answering governance content that differs from
-  core's Python charter oracle (the wire format may differ, but the data must
-  match closely enough that core does not break); (2) the service not honoring
-  the OpenAPI contract, or an incompatible contract change reaching core. Also
-  never traded away: spec-kitty-open-packs YAML content always round-trips
-  without loss of meaning (ADR-0036: meaning, not bytes, so formatting and
-  comments may change), and no unverified dependency enters the build. No
-  exception is granted for the first two failures.
+  the charter's own model, contract and packs; (2) the service dishonoring
+  its OpenAPI contract, or a contract change that breaks the contract's own
+  versioning rules (ADR-0022: the 0.x line may break on a minor, with a
+  `### Breaking` CHANGELOG entry; no released contract is broken
+  incompatibly). Until the service is incorporated into core, core is not a
+  consumer of the service or its contract, so failure (1) is judged against
+  the charter's own model, contract and packs, not core's current behavior
+  (operator ruling, epic #186, 2026-10-28); the core-oracle and
+  core-compatibility clauses return when the service is incorporated into
+  core, and that work is planned then. Also never traded away:
+  spec-kitty-open-packs YAML content always round-trips without loss of
+  meaning (ADR-0036: meaning, not bytes, so formatting and comments may
+  change), and no unverified dependency enters the build. No exception is
+  granted for the first two failures.
 enforcement: required
 scope: >-
   Every change to the service, the charter contract, the file-based pack layer,
   the build and its dependency set, whether it runs as a mission or as an Op.
 procedures:
-  - Pin governance content with contract scenarios taken from core's Python
-    charter behavior, and check a divergence against the oracle before
-    accepting it; when
-    the Java service is deliberately stricter than core, record that as an
-    operator ruling, not a silent divergence.
-  - Treat every edit to contracts/charter/ as a public contract change - run
+  - >-
+    Pin governance content with contract scenarios taken from the charter's
+    own model, contract and packs, not from core's current behavior (epic
+    #186 ruling, 2026-10-28); a deliberate divergence from them is recorded as
+    an operator ruling, not a silent divergence. Pinning against core's Python
+    charter oracle returns when the service is incorporated into core.
+  - >-
+    Treat every edit to contracts/charter/ as a public contract change - run
     the contract validation in ./gradlew verifyAll, add a line to
-    contracts/charter/CHANGELOG.md (scenario changes included), and keep
-    changes backward compatible for core's vendored DTOs.
+    contracts/charter/CHANGELOG.md (scenario changes included), and follow
+    the contract's versioning rules (ADR-0022): a break lands only on a 0.x
+    minor with a `### Breaking` CHANGELOG entry, and no released contract is
+    broken incompatibly.
   - Keep the open-packs round trip (openPacksRoundTrip) green and never
     skipped; a change that cannot round-trip every open-packs YAML file, by
     meaning (ADR-0036), does not merge. A file on the gate's self-expiring
@@ -36,15 +47,16 @@ procedures:
     and a sunset or review date in the pull request and, when it outlives the
     change, in docs/plans/open-questions.md.
 integrity_rules:
-  - An exception, waiver, skip or deferral that touches oracle fidelity or
-    contract compatibility is invalid regardless of who approves it.
+  - An exception, waiver, skip or deferral that touches fidelity to the
+    charter's own model, contract and packs, or the contract's versioning
+    rules, is invalid regardless of who approves it.
   - Skipping or quarantining the open-packs round trip, or disabling
     dependency verification, to reach green is non-compliant.
   - An exception for any other risk without scope, reason, approver and sunset
     or review date is non-compliant.
 validation_criteria:
-  - No pull request carries an exception against oracle fidelity or contract
-    compatibility.
+  - No pull request carries an exception against fidelity to the charter's own
+    model, contract and packs, or against the contract's versioning rules.
   - Every contract change has a matching contracts/charter/CHANGELOG.md line.
   - ./gradlew verifyAll passes with strict dependency verification and the
     round trip executed, not skipped.
