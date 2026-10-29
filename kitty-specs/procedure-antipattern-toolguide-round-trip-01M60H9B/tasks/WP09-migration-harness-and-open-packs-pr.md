@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: feat/194a-procedure-antipattern-toolguide
 merge_target_branch: feat/194a-procedure-antipattern-toolguide
 branch_strategy: Planning artifacts for this mission were generated on feat/194a-procedure-antipattern-toolguide. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/194a-procedure-antipattern-toolguide unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-procedure-antipattern-toolguide-round-trip-01M60H9B
+base_commit: 7c39bc4733a09797a74c15c1f691b76146da142f
+created_at: '2026-10-29T07:23:54.576667+00:00'
 subtasks:
 - T044
 - T045
