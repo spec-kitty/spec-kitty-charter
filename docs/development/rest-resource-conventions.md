@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: REST resource conventions
 description: How the charter API names resources and paths, uses methods and parameters, negotiates media types and versions the contract.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -126,9 +126,13 @@ A path names a resource, never an action. Every resource is one of four archetyp
   the per-worktree token and the browser refusal move to a local deployment profile;
   `Charter-Worktree` becomes `Charter-Instance`; the fingerprint covers pack files only.
 
-## Conditional requests (proposed)
+## Conditional requests
 
-The activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
+`getOpenApiDocument` (`GET /openapi.yaml`) is the one conditional read built into the contract: its
+answer carries a strong `ETag`, the SHA-256 digest of the bundled contract, and an `If-None-Match`
+that is `*` or matches it is a 304 without a body.
+
+Proposed: the activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
 changes:
 
 - **`ETag`** on every activation answer: the document's `revision`, a strong validator.

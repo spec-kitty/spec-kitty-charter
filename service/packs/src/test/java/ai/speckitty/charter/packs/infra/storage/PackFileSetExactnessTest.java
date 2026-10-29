@@ -183,6 +183,19 @@ class PackFileSetExactnessTest {
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
+    void aDigestThatDropsTheManifestFailsTheOracleNamingIt() throws IOException {
+        GeneratedPackTree tree = tree(0);
+        Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(
+                locations,
+                dir -> PackFileSet.digested(dir).stream()
+                        .filter(file -> !file.equals(PackFileSet.MANIFEST))
+                        .toList());
+
+        assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.verdict() == Verdict.MANIFEST));
+    }
+
+    @Test
+    @Timeout(HANG_CAP_SECONDS)
     void aDigestThatDropsThePayloadsFailsTheOracleNamingAPayload() throws IOException {
         GeneratedPackTree tree = tree(0);
         Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(locations, dir -> {
@@ -303,6 +316,12 @@ class PackFileSetExactnessTest {
                                 p.kind() == kind && p.valid() && typed.get(kind).contains(p.id()))
                         .forEach(p -> observed.add(p.path()));
             }
+            // #195: a preset is no kind; the store reads the valid ones into their own slot.
+            Set<String> presets = read.presets().stream()
+                    .map(FilesystemPackStore.Stored::file)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            assertThat(presets).as("%s the valid presets the store read", where).isEqualTo(validPresets(pack));
+            observed.addAll(presets);
             read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
             Set<String> payloads = new LinkedHashSet<>();
             for (AssetFile file : read.assetFiles()) {
@@ -439,6 +458,14 @@ class PackFileSetExactnessTest {
                 .filter(p -> p.kind() == kind && p.valid())
                 .map(Planted::id)
                 .collect(Collectors.toSet());
+    }
+
+    /** The planted presets the store must read: a loaded file of no kind is a preset (#195). */
+    private static Set<String> validPresets(Pack pack) {
+        return pack.planted().values().stream()
+                .filter(p -> p.verdict() == Verdict.LOADED && p.kind() == null && p.valid())
+                .map(Planted::path)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static Set<String> malformed(Pack pack) {

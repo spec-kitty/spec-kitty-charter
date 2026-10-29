@@ -1,0 +1,24 @@
+# Generated over the source bytes; every hash is fresh (computed with Python, independently of the Java recipe).
+# To restamp after editing a listed file, from this directory:
+#   content_hash: python3 -c "import hashlib,sys;b=open(sys.argv[1],'rb').read().replace(b'\r\n',b'\n')
+#                   .replace(b'\r',b'\n');print(hashlib.sha256(b).hexdigest())" <path>
+#   manifest_hash: sha256 of json.dumps({"schema_version","constituents","presets"}, sort_keys=True,
+#                   separators=(',',':'), ensure_ascii=False).encode() over the entries below (RFC 8785).
+schema_version: '1.0'
+manifest_hash: c1b93b60510573c8a2b7b34e2ee54be81d8d25d4a1449ee51a94a0a168203851
+constituents:
+  - kind: directive
+    id: DIRECTIVE_018
+    path: directives/018-doctrine-versioning.directive.yaml
+    content_hash: 115199c6165f70ff7bc3771b7a6ec53856749f04d2a6709f2c85e23daf791378
+  - kind: tactic
+    id: refactoring-inline-temp
+    path: tactics/refactoring/refactoring-inline-temp.tactic.yaml
+    content_hash: 30067fe329217eb75f76d277e6b2e1c238fd50a4c80e608318c774bb4026e991
+presets:
+  - id: convenience
+    path: presets/convenience.yaml
+    content_hash: d6d6a5f97ebc1af30de89d67f5f0626b142d20635655cb7c7a019a0f5c39ab2a
+  - id: governing
+    path: presets/governing.yaml
+    content_hash: 08254c46bcb09dc3af1b03433cd0caba3c7d2460413aac2eb98bc5ababf8e87e

@@ -1,0 +1,8 @@
+# A preset written by hand, with comments and quoting a writer does not keep.
+schema_version: "1.0"   # the sanitized shape's only version
+id: commented
+description: 'A preset with comments.'
+# The directives this preset requires.
+activated_directives:
+  - id: "DIRECTIVE_024"
+    must_have: true   # required

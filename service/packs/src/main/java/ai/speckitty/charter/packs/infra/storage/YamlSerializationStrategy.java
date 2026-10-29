@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * The YAML {@link SerializationStrategy}: it writes through {@link YamlDumpEmitter} and reads through
@@ -26,13 +27,40 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
     /** Parses, validates against the bundled schema of the kind, then maps the root; never throws on content. */
     @Override
     public <D> FileRead<D> read(KindBinding<D, ?> kind, String text, String file) {
-        YamlFormat<D> format = YamlFormats.of(kind);
+        return readValidated(kind.schemaName(), text, file, YamlFormats.of(kind)::read);
+    }
+
+    @Override
+    public String writePreset(PresetDso preset) {
+        return PresetYaml.write(preset);
+    }
+
+    @Override
+    public FileRead<PresetDso> readPreset(String text, String file) {
+        return readValidated(PresetYaml.SCHEMA, text, file, PresetYaml::read);
+    }
+
+    @Override
+    public String writeManifest(PackManifestDso manifest) {
+        return PackManifestYaml.write(manifest);
+    }
+
+    @Override
+    public FileRead<PackManifestDso> readManifest(String text, String file) {
+        return readValidated(PackManifestYaml.SCHEMA, text, file, PackManifestYaml::read);
+    }
+
+    /**
+     * The one schema-validated read: parses, validates against the bundled {@code schema}, then maps the root with
+     * {@code reader}; never throws on content.
+     */
+    private static <D> FileRead<D> readValidated(
+            String schema, String text, String file, Function<Map<?, ?>, D> reader) {
         ParsedYaml parsed = ParsedYaml.parse(text, file);
         if (parsed.failure() != null) {
             return new FileRead.Unreadable<>(file, parsed.failure(), List.of());
         }
         Object document = parsed.document();
-        String schema = kind.schemaName();
         List<SchemaViolation> violations = PackSchemas.bundled().validate(schema, file, document);
         if (!violations.isEmpty()) {
             return new FileRead.Unreadable<>(file, null, violations);
@@ -40,7 +68,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
         if (!(document instanceof Map<?, ?> root)) {
             throw new IllegalStateException("a " + schema + " passed the schema but is no mapping");
         }
-        return new FileRead.Read<>(file, format.read(root));
+        return new FileRead.Read<>(file, reader.apply(root));
     }
 
     @Override

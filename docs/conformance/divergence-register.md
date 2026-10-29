@@ -36,13 +36,14 @@ Entries are grouped by block, one block per mission, so that two missions never 
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
 - **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
+- **Pack-level files (DIV-301..399, ADR-0042)** is last.
 
 The register has two forms of one list. This page is for readers. The file
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
-is for programs: it holds every entry of all three blocks (pack schemas, context read, and the
-proposed activation block) and documents its own schema at the top. The proposed activation
-entries carry status `proposed`, so the gate does not enforce them until their operations are
-built. Each entry has a status:
+is for programs: it holds every entry of all four blocks (pack schemas, context read, the
+proposed activation block and pack-level files) and documents its own schema at the top. The
+proposed activation entries carry status `proposed`, so the gate does not enforce them until their
+operations are built. Each entry has a status:
 
 - `open`: the difference stands.
 - `aligned`: core now agrees, so the difference is gone.
@@ -174,8 +175,9 @@ ruling, its status and the evidence.
 - **Core:** Reported as an error. Core reports the key twice, as a drg and as a pack finding, when the pack has a drg/fragment.yaml, and once otherwise.
 - **Service:** Tolerated, with a warning on the pack listing: the diagnostic pack_unknown_key. The schema's top level stays open for this.
 - **Rationale:** A newer pack should still register on an older service, and the author is told about the key. The operator chose tolerance with a warning.
-- **Ruling:** R5 (2026-10-19); plan call P1
-- **Status:** open, since 2026-10-19
+- **Ruling:** R5 (2026-10-19); plan call P1; superseded by ADR-0036 ruling 1 (2026-10-27)
+- **Status:** retired, 2026-10-28. The schema is closed and an unknown key makes `pack.yaml` unreadable, as in core;
+  the warning is no longer raised (#195, ADR-0036 decision 3).
 - **Evidence:**
   - Core: `offering/packs/pack_descriptor.py:88` (`extra="forbid"`)
   - Core: `offering/drg/org_pack_loader.py:547-560` (the second report, when `drg/fragment.yaml` exists)
@@ -186,8 +188,9 @@ ruling, its status and the evidence.
 - **Core:** Refused with a blocking finding (offering/packs/retired_fields.py:84-91).
 - **Service:** Warned like any unknown key (pack_unknown_key).
 - **Rationale:** One rule for every key the schema does not declare. This is laxer than core and is accepted.
-- **Ruling:** R13 (2026-10-19)
-- **Status:** open, since 2026-10-19
+- **Ruling:** R13 (2026-10-19); superseded by ADR-0036 ruling 1 (2026-10-27)
+- **Status:** retired, 2026-10-28. A retired field is an unknown key of the closed schema, refused as unreadable like
+  core's blocking finding (#195, ADR-0036 decision 3).
 - **Evidence:**
   - Core: `offering/packs/retired_fields.py:84-91`
   - Charter: `contracts/packs/schemas/pack-descriptor.schema.json: the top level stays open and pack_level is optional, so a retired key is reported by the adapter (import change C9; see kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md, Import changes C1-C16)`
@@ -437,3 +440,21 @@ Not divergences, because the contract matches core:
 
 Unknown and stale deny entries are refused by the contract and dropped by core's seam at export.
 That is an export rule, not a divergence.
+
+## Pack-level files (DIV-301..399, ADR-0042)
+
+The block of mission `pack-level-files-round-trip-01M60H1A`
+([#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195),
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)).
+
+### DIV-301: Validate mode, presets and the pack manifest
+
+- **Core:** Checks each `presets/<name>.yaml` in its own format, keyed by `name`, with `mission_type_activations` and bare-string lists. It reports `preset_format`, `preset_unresolved_id` (an id that resolves neither in the built-in pack nor in this pack) and `preset_kind_gate`. It does not schema-check `pack-manifest.yaml` (offering/packs/pack_validator.py:592-593, 662-690).
+- **Service:** Holds presets and the manifest to the closed, sanitized schemas of ADR-0042. A preset or manifest in core's shape, or a preset whose `id` is not its file stem, is an `artifact_schema_error` on its file. It does not resolve preset ids against the offering or check the kind gate against the listed kinds. A preset that breaks only a domain rule (an item id listed twice) passes validate mode and is refused by the load.
+- **Rationale:** Validate mode and the load refuse the same files (#195, D9). Id resolution and the kind gate need the activation model, which this service does not build yet.
+- **Ruling:** operator requirement on #195 (2026-10-28)
+- **Status:** open, since 2026-10-28
+- **Evidence:**
+  - Core: `offering/packs/pack_validator.py:592-593` and `:662-690` (`_validate_presets`); no manifest check
+  - Charter: corpus case: the pinned open-packs `built-in` pack (`openPacksRef`), whose two presets and manifest validate mode refuses: 283 manifest and 14 preset findings, pinned in `FileSystemPackInspectorTest`
+  - Charter: `FileSystemPackInspectorTest`, a preset whose id is not its stem, refused in validate mode and by the load

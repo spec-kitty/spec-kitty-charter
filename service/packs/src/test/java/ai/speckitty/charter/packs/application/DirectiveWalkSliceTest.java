@@ -138,13 +138,7 @@ class DirectiveWalkSliceTest {
             Pack.Builder builder = Pack.builder()
                     .id(PACK)
                     .descriptor(new PackDescriptor(
-                            PACK.value(),
-                            "1.0.0",
-                            Optional.empty(),
-                            PACK.value(),
-                            Optional.empty(),
-                            Optional.empty(),
-                            List.of()));
+                            PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty()));
             directives.values().forEach(builder::directive);
             return builder.build();
         }

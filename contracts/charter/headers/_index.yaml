@@ -2,4 +2,5 @@ files:
   - CharterContractVersion.yaml
   - CharterSourceFingerprint.yaml
   - CharterWorktree.yaml
+  - ContractETag.yaml
   - WwwAuthenticate.yaml

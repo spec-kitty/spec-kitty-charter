@@ -3,12 +3,8 @@
     "name": "qa",
     "level": "org"
   },
-  "diagnostics": [
-    {
-      "code": "pack_unknown_key",
-      "detail": "pack.yaml of qa declares unknown key 'surprise'; it is ignored"
-    }
-  ],
-  "nodeCount": 0,
-  "edgeCount": 0
+  "refusal": {
+    "code": "pack_unreadable",
+    "detail": "pack.yaml of qa: unknown key 'surprise'"
+  }
 }

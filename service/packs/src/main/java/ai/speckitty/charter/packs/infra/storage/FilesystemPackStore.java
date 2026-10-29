@@ -103,13 +103,17 @@ final class FilesystemPackStore {
      * @param descriptor the descriptor
      * @param elements the readable files of each bound kind, in path order; a kind with none may be absent
      * @param violations the files that could not be read, in kind then path order
+     * @param assetFiles the asset files, in path order
+     * @param templates the templates, in path order
+     * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
      */
     record PackRead(
             PackDescriptorDso descriptor,
             Map<ArtifactKind, List<Stored<?>>> elements,
             List<PackElementViolation> violations,
             List<AssetFile> assetFiles,
-            List<TemplateFile> templates) {
+            List<TemplateFile> templates,
+            List<Stored<PresetDso>> presets) {
         /**
          * Copies the collections.
          *
@@ -118,6 +122,7 @@ final class FilesystemPackStore {
          * @param violations the unreadable files
          * @param assetFiles the asset files, in path order
          * @param templates the templates, in path order
+         * @param presets the readable presets, in path order
          */
         PackRead {
             Objects.requireNonNull(descriptor, "descriptor");
@@ -127,10 +132,11 @@ final class FilesystemPackStore {
             violations = List.copyOf(violations);
             assetFiles = List.copyOf(assetFiles);
             templates = List.copyOf(templates);
+            presets = List.copyOf(presets);
         }
 
         /**
-         * A read that holds no asset file and no template.
+         * A read that holds no asset file, no template and no preset.
          *
          * @param descriptor the descriptor
          * @param elements the readable files of each kind
@@ -140,7 +146,7 @@ final class FilesystemPackStore {
                 PackDescriptorDso descriptor,
                 Map<ArtifactKind, List<Stored<?>>> elements,
                 List<PackElementViolation> violations) {
-            this(descriptor, elements, violations, List.of(), List.of());
+            this(descriptor, elements, violations, List.of(), List.of(), List.of());
         }
 
         /**
@@ -301,7 +307,34 @@ final class FilesystemPackStore {
             }
             elements.put(kind.kind(), read);
         }
-        return new PackRead(descriptor, elements, violations, assetFiles, templates);
+        List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
+        return new PackRead(descriptor, elements, violations, assetFiles, templates, presets);
+    }
+
+    /**
+     * The readable presets, in path order. A preset file that is not UTF-8, is not YAML or breaks the {@code preset}
+     * schema is a violation on its file, as an artifact file is; so is one whose {@code id} is not its file stem
+     * ({@link PresetFiles#stemMismatch}), the rule validate mode applies too.
+     */
+    private List<Stored<PresetDso>> readPresets(
+            Path directory, List<String> files, List<PackElementViolation> violations) {
+        List<Stored<PresetDso>> out = new ArrayList<>();
+        for (String file : files) {
+            switch (readFile(directory.resolve(file), file, text -> strategy.readPreset(text, file))) {
+                case FileRead.Read<PresetDso> good -> {
+                    Optional<String> mismatch =
+                            PresetFiles.stemMismatch(file, good.value().id());
+                    if (mismatch.isPresent()) {
+                        violations.add(new PackElementViolation(file, "schema", mismatch.get()));
+                    } else {
+                        out.add(new Stored<>(file, good.value()));
+                    }
+                }
+                case FileRead.Unreadable<PresetDso> bad -> violations.addAll(violationsOf(bad));
+                case FileRead.Absent<PresetDso> absent -> {}
+            }
+        }
+        return out;
     }
 
     /**
@@ -521,6 +554,20 @@ final class FilesystemPackStore {
         Path directory = existingDirectory(id);
         writeAtomically(
                 directory, directory.resolve(PackFileSet.PACK_YAML), utf8(strategy.writeDescriptor(descriptor)));
+    }
+
+    /**
+     * Writes an activation preset in place at {@code presets/<id>.yaml}, creating the directory, replacing the file
+     * when it is there. The file name is the preset's id, so the stem rule holds by construction.
+     *
+     * @param id the pack
+     * @param preset what to write
+     * @throws CharterRefusal when the file cannot be written
+     */
+    void writePreset(PackIdentifier id, PresetDso preset) {
+        Path directory = existingDirectory(id);
+        writeAtomically(
+                directory, directory.resolve(PresetFiles.pathOf(preset.id())), utf8(strategy.writePreset(preset)));
     }
 
     /**
@@ -800,7 +847,14 @@ final class FilesystemPackStore {
         });
     }
 
-    private static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
+    /**
+     * The violations of an unreadable file, one per schema violation or one for its parse failure: the store's one
+     * wording, which the whole-pack seam reuses for the manifest it owns.
+     *
+     * @param bad the unreadable file
+     * @return the violations, in the reader's order
+     */
+    static List<PackElementViolation> violationsOf(FileRead.Unreadable<?> bad) {
         if (bad.parse() != null) {
             return List.of(new PackElementViolation(
                     bad.file(), "unreadable", bad.parse().firstLine()));

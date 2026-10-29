@@ -2,7 +2,7 @@
 title: "ADR-0011: At runtime the seam fails closed, a daemon serves every read, and the service stays fresh by fingerprint and push"
 description: No Python fallback or cache; one daemon per worktree, CI included; first-load state stays in core; the service rebuilds on a changed input fingerprint and on write.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -35,6 +35,8 @@ Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-s
 Superseded in part by [ADR-0034](/adr/0034-local-and-hosted-deployment-options/) (2026-10-26): loopback is the local deployment option, and a configured remote endpoint is allowed (decision 2).
 
 Superseded in part by [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) (2026-10-27): packs are discovered under one configuration root, not configured, so a missing pack directory is simply not served; the fail-closed refusal for a configured pack whose directory is missing no longer has a case (decision 4).
+
+Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28), under the container profile only: `GET /actuator/health` is the one request that carries no token (decision 2).
 
 ## Context
 
@@ -76,6 +78,7 @@ After the cutover every offering read crosses a process boundary
      the worktree goes away.
    - It binds to loopback only, and every request carries a per-worktree token.
      *Superseded in part by ADR-0034: loopback is the local option; a hosted option uses a configured endpoint and a standard login token.*
+     *(Superseded in part by ADR-0041, 2026-10-28, under the container profile only: `GET /actuator/health` carries no token.)*
    - The seam receives only an endpoint and a credential, so it does not depend on how the
      service was started.
    - **Trust model.** This puts a CLI-started daemon back in the trust model core rejected

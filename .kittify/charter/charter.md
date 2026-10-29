@@ -10,7 +10,10 @@ it. Keep it in step with charter.yaml's governance and activation sections.
 -->
 
 Interviewed with the operator on 2026-10-18. Amended 2026-10-27 (operator): the round-trip
-rule of PROJECT_002 reads as equality of meaning (ADR-0036).
+rule of PROJECT_002 reads as equality of meaning (ADR-0036). Amended 2026-10-28: rules for
+orchestrating cloud sessions, and the rewrite is designed without regard to core. Amended
+2026-10-29 (operator): until the service is incorporated into core, PROJECT_002's first two
+failures are judged against the charter's own model, contract and packs (epic #186).
 
 ## What this repository is for
 
@@ -21,11 +24,16 @@ DTOs from it.
 
 ## What must never go wrong
 
-1. **Divergence from the oracle.** The service may change the wire format, but the
-   governance content it answers must match the Python charter closely enough that
-   core does not break.
-2. **Breaking the OpenAPI contract.** The service honors the contract, and no
-   incompatible contract change reaches core.
+1. **Divergence from the charter's own model.** The governance content the service answers
+   matches the charter's own model, contract and packs.
+2. **Breaking the OpenAPI contract.** The service honors the contract, and contract changes
+   follow the contract's own versioning rules (ADR-0022: the 0.x line may break on a minor,
+   with a `### Breaking` CHANGELOG entry; no released contract is broken incompatibly).
+
+Until the service is incorporated into core, core is not a consumer of the service or its
+contract, so both are judged against the charter's own model, contract and packs, not core's
+current behavior (operator ruling, epic #186, 2026-10-28). When the service is incorporated
+into core, the oracle and core-compatibility clauses return; that work is planned then.
 
 Also: open-packs YAML always round-trips without loss of meaning (ADR-0036: the same
 meaning, not the same bytes, so formatting and comments may change), and no unverified
@@ -39,6 +47,29 @@ two.
 - Contract, architecture and domain changes get an **adversarial review squad** at the
   plan point and before merge, then operator approval.
 - A call made without review is logged as an open review item, never left implicit.
+
+## Designing during the rewrite
+
+While the charter service is rewritten, work is designed against this repository's own model,
+contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
+
+- No compatibility with core's current formats or behavior, and no "core first" ordering.
+- No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
+- Core changes when the service is incorporated into core; that work is planned then.
+
+## Orchestrating cloud sessions
+
+When a session hands Missions to child cloud sessions, it follows these rules. The detail is in
+`docs/development/cloud-session-setup.md` ("Running several cloud sessions").
+
+- Session tooling (the Spec Kitty CLI, CodeGraph) is installed by the environment setup script,
+  never per session.
+- Sibling repositories are cloned read-only; child sessions are not given push access to them.
+- A child session that needs to write to a sibling repository writes draft issues into its Mission
+  research directory, with `open-packs#TBD-<slug>` placeholders; the orchestrator files them and
+  replaces the placeholders before merge.
+- An ADR number is chosen when the ADR is written, against `main` and the open PRs.
+- A session the permission classifier blocks is replaced, not retried.
 
 ## Gates before merge
 

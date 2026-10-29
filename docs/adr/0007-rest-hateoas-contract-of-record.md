@@ -31,6 +31,16 @@ returns generated, closed DTOs), and sits over the layering of
 [ADR-0006](/adr/0006-onion-vertical-slices-archunit/). It resolves four design-mission Decision Moments
 (GraphQL vs the single-contract principle, HATEOAS vs closed DTOs, the MCP adapter, and REST/GraphQL parity).
 
+### Amendment 2026-10-28 (#208): the contract serves itself, and the first realized conditional read
+
+`getOpenApiDocument` (`GET /openapi.yaml`, tag Service) adds a read-only projection by which the
+contract of record serves its own document, and realizes the first conditional GET in the contract —
+a strong `ETag` validator and `If-None-Match` → `304 Not Modified`, weakly compared (RFC 9110
+§13.1.2). Both sit within this record's envelope: a read-only Service projection, no structural
+change. The service answers `501` as a `default` Problem until #209 serves the bundle, and the RFC
+8631 `service-desc` link is deferred to #126. The `304`-has-no-body invariant is recorded in
+[ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)'s amendment of the same day.
+
 ## Context
 
 The architecture brief names two API versions — OpenAPI-based HATEOAS REST and GraphQL — both as entry-point

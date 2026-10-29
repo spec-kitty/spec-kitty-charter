@@ -4,9 +4,12 @@ import static ai.speckitty.charter.packs.infra.storage.PackFixtures.ALPHA_FILE;
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BETA_FILE;
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,8 +39,7 @@ class PackRoundTripTest {
             Optional.of("org"),
             Optional.of(">=1.0"),
             Optional.of("org-charter.yaml"),
-            Optional.of("drg/fragment.yaml"),
-            List.of());
+            Optional.of("drg/fragment.yaml"));
 
     private static final TacticDso ALPHA = new TacticDso(
             ALPHA_ID,
@@ -218,8 +220,7 @@ class PackRoundTripTest {
                 Optional.of("project"),
                 d.requiresCore(),
                 d.activeCharter(),
-                d.packDrg(),
-                d.undeclaredKeys());
+                d.packDrg());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));
@@ -228,22 +229,22 @@ class PackRoundTripTest {
         assertThat(refetched.descriptor().packLevel()).contains("project");
     }
 
-    /** The pinned exception: undeclared keys are captured on read and dropped on write-back. */
+    /**
+     * No exception any more (ADR-0036 decision 3): a {@code pack.yaml} with an undeclared key is refused on read, so a
+     * value is never dropped on write-back. The clean fixture, read by the same store, is the control.
+     */
     @Test
-    void anUndeclaredDescriptorKeyIsCapturedOnReadButDroppedOnWriteBack(@TempDir Path host) throws IOException {
+    void anUndeclaredDescriptorKeyMakesThePackUnreadable(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-undeclared", host);
+        PackFixtures.copyOf("pack-a", host.resolve("clean"));
         PackIdentifier id = new PackIdentifier(pack.getFileName().toString());
-        FilesystemPackStore store = storeOver(host);
 
-        PackDescriptorDso read = store.read(id).descriptor();
-        assertThat(read.undeclaredKeys()).containsExactly("experimental_note");
-
-        store.writeDescriptor(id, read);
-        PackDescriptorDso refetched = store.read(id).descriptor();
-
-        assertThat(refetched.undeclaredKeys()).isEmpty();
-        assertThat(refetched.packId()).isEqualTo(read.packId());
-        assertThat(refetched.name()).isEqualTo(read.name());
+        assertThat(storeOver(host.resolve("clean")).read(PACK).descriptor()).isEqualTo(PACK_A_DESCRIPTOR);
+        assertThatThrownBy(() -> storeOver(host).read(id))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage("pack.yaml of " + id.value() + " cannot be read");
     }
 
     /** Partial tolerance: the broken file is reported, and the valid elements are still returned (the control). */

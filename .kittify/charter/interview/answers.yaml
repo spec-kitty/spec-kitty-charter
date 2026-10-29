@@ -51,12 +51,19 @@ answers:
     changes in docs/changelog/. US spelling; the terms guard applies.
   risk_boundaries: >-
     The costliest failures: (1) the service answering governance content that
-    differs from core's Python charter oracle - the wire format may differ,
-    but the data must match closely enough that core does not break; (2) the
-    service not honoring the OpenAPI contract, or an incompatible contract
-    change reaching core. Also never lose the meaning of open-packs YAML
-    content in a round trip (equality of meaning, not of bytes: ADR-0036),
-    and never admit an unverified dependency. These are not traded for speed.
+    differs from the charter's own model, contract and packs; (2) the service
+    dishonoring its OpenAPI contract, or a contract change that breaks the
+    contract's own versioning rules (ADR-0022: the 0.x line may break on a
+    minor, with a ### Breaking CHANGELOG entry; no released contract is broken
+    incompatibly). Until the service is incorporated into core, core is not a
+    consumer of the service or its contract, so (1) is judged against the
+    charter's own model, contract and packs, not core's current behavior
+    (operator ruling, epic #186, 2026-10-28); the core-oracle and
+    core-compatibility clauses return when the service is incorporated into
+    core, and that work is planned then. Also never lose the meaning of
+    open-packs YAML content in a round trip (equality of meaning, not of
+    bytes: ADR-0036), and never admit an unverified dependency. These are not
+    traded for speed.
   amendment_process: >-
     Charter changes are proposed by pull request, through /spec-kitty.charter,
     and approved by the operator.

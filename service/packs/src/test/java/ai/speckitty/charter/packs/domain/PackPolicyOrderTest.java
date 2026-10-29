@@ -36,8 +36,7 @@ class PackPolicyOrderTest {
 
     private static FileRead<PackDescriptor> descriptor(Optional<PackLevel> declared) {
         return new FileRead.Read<>(
-                "pack.yaml",
-                new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "qa", declared, Optional.empty(), List.of()));
+                "pack.yaml", new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "qa", declared, Optional.empty()));
     }
 
     private static PackContents contents(
@@ -336,7 +335,7 @@ class PackPolicyOrderTest {
     // ---- the order of the places within a file is total (a TimSort contract violation was a 500) --------
 
     private static PackFinding at(String key) {
-        return new PackFinding(PackFindingCode.PACK_UNKNOWN_KEY, "pack.yaml", List.of(key), "d");
+        return new PackFinding(PackFindingCode.PACK_UNREADABLE, "pack.yaml", List.of(key), "d");
     }
 
     /** Indexes of every length, with leading zeros, empty, keys that start with digits, and declared keys. */

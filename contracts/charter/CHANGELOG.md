@@ -15,6 +15,29 @@ client, and 1.0.0 is minted once it is stable. The version is `0.1.0-SNAPSHOT` a
 was cut under either label. `Added` lists what this version holds that the first draft did not;
 `Changed` lists what differs from that draft.
 
+### Pack-level files round trip (issue #195)
+
+- Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036
+  decision 3). A `pack.yaml` key the pack descriptor schema does not declare, a retired field such
+  as `accompanies_doctrine_pack` included, no longer loads with this warning: the schema is closed,
+  and the pack is refused as `pack_unreadable`. The value stays in the enum, so no shape changes; no
+  operation references `DiagnosticCode`. Operator approval: #195, 2026-10-28.
+
+### The contract document (issue #208)
+
+- Added: `getOpenApiDocument` (`GET /openapi.yaml`, Service tag) answers the bundled contract the
+  service was built from, byte for byte, as `application/yaml` (RFC 9512), with a strong `ETag`: the
+  SHA-256 digest of those bytes, `"sha256:<64 hex>"` (the new `ContractETag` header). An optional
+  `If-None-Match` is compared weakly; a match, or `*`, is a `304` without a body that carries the
+  `ETag` again. It needs the worktree token like every operation (`401` and `403` as the shared
+  responses) and never sends `Charter-Source-Fingerprint`, which now says so. No version bump: the
+  contract is unreleased, so this is part of 0.1.0. The `service-desc` link (RFC 8631) to it is left
+  to #126, which sets how the contract expresses links.
+- Lint: `error-responses-are-problems` exempts a `304`, which RFC 9110 forbids a body, and the new
+  rule `not-modified-has-no-body` holds every `304` to no content, with a planted fixture.
+- The service answers the operation with the shared `Problem` of `501` until #209 serves the bundle.
+  No scenario calls it yet; its scenarios are #210.
+
 ### Contract tooling (issues #119 and #45)
 
 - No shape changes. Code generated from the contract now has one class per schema: the

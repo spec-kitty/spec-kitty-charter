@@ -4,8 +4,11 @@ description: >-
   seam in core maps them to core's own spellings. pack_level_missing: the pack has no pack.yaml,
   or its pack.yaml has no pack_level; the configured level is used. Core treats it the same way
   during the deprecation window of core ADR 2026-10-11-2; when the window closes it becomes a
-  refusal in a new contract version. pack_unknown_key: a key in pack.yaml that the pack descriptor
-  schema does not declare, a retired field included; it is reported and ignored, never refused.
+  refusal in a new contract version. pack_unknown_key: retired, never raised. A pack.yaml key that
+  the pack descriptor schema does not declare, a retired field included, once loaded with this
+  warning; the schema is closed now (ADR-0036 decision 3), so such a pack is refused as
+  pack_unreadable. The value stays in the enum so a client built against an earlier draft still
+  reads it.
 type: string
 enum:
   - pack_level_missing

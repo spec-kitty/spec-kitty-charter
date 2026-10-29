@@ -8,7 +8,10 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -31,26 +35,27 @@ import org.jspecify.annotations.Nullable;
  * Loads a whole pack from a directory into the {@link Pack} aggregate, and writes an aggregate to a new directory
  * (ADR-0037 decision 5). This is the seam the whole-pack round-trip gate drives.
  *
- * <p>The load reads {@code pack.yaml}, every file of every kind bound in {@link KindBindings}, the asset files and the
- * templates into the aggregate (one assembly with {@link DomainRepositoryService#load(PackIdentifier)}), records where
- * each artifact sat in a {@link PackLayout}, and reads the DRG documents (the root {@code *.graph.yaml}
- * shards and {@code drg/fragment.yaml}, the files the source fingerprint covers) with every field. It lists every
- * other file of the pack as {@linkplain LoadedPack#unmodelled() unmodelled}: nothing models those yet. It is
- * partial-tolerant like {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable artifact file is a
- * violation on the aggregate. An unreadable DRG document refuses the pack as {@code drg_schema_error} (ADR-0036
- * decision 3). The pack's identity is the {@code pack_id} its descriptor declares, whatever the directory is called. The
- * load reads the directory as it finds it; it takes no lock, so a pack swapped by a concurrent commit may be read
- * half before and half after.
+ * <p>The load reads {@code pack.yaml}, every file of every kind bound in {@link KindBindings}, the asset files, the
+ * templates and the presets into the aggregate (one assembly with
+ * {@link DomainRepositoryService#load(PackIdentifier)}), records where each artifact sat in a {@link PackLayout}, and
+ * reads the DRG documents (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}, the files the source
+ * fingerprint covers) with every field. It lists every other file of the pack as
+ * {@linkplain LoadedPack#unmodelled() unmodelled}: nothing models those yet. It is partial-tolerant like
+ * {@link DomainRepositoryService#load(PackIdentifier)}: an unreadable artifact file is a violation on the aggregate. An
+ * unreadable DRG document refuses the pack as {@code drg_schema_error} (ADR-0036 decision 3). The pack's identity is
+ * the {@code pack_id} its descriptor declares, whatever the directory is called. The load reads the directory as it
+ * finds it; it takes no lock, so a pack swapped by a concurrent commit may be read half before and half after.
  *
  * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039), each
- * asset file at {@code assets/<path>} and each DRG document at its own path into a
- * staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
- * does; a failure removes the staging directory and leaves no target. Templates and asset files are written byte for
- * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG
- * documents hold and nothing else: the unmodelled files are not copied, and the caller has their list. It refuses a
- * target that already exists (replacing a live pack is the commit store's job), a pack with read violations, and a
- * descriptor with undeclared keys, whose values the descriptor does not keep: writing either would drop content
- * without a word.
+ * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml} and each DRG document at its own path
+ * into a staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
+ * does; a failure removes the staging directory and leaves no target. The manifest, when the pack has one, is written
+ * last, its derived fields recomputed from the staged bytes (ADR-0042). Templates and asset files are written byte for
+ * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG documents hold and nothing else: the
+ * unmodelled files are not copied, and the caller has their list. It refuses a target that already exists (replacing a
+ * live pack is the commit store's job) and a pack with read violations: writing it would drop content without a word.
+ * A {@code pack.yaml} with an undeclared key never loads (its schema is closed, ADR-0036 decision 3), so the
+ * descriptor written is the whole of the file read.
  */
 public final class WholePackStore {
 
@@ -62,8 +67,16 @@ public final class WholePackStore {
      * @param graphs the DRG documents as authored, the root shards by name then the fragment
      * @param unmodelled the pack-relative paths of every other file of the pack, sorted: what the write will not
      *     reproduce
+     * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
+     *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
+     *     violation on the aggregate). This store is its only owner (ADR-0042).
      */
-    public record LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<String> unmodelled) {
+    public record LoadedPack(
+            Pack pack,
+            PackLayout layout,
+            List<GraphDocument> graphs,
+            List<String> unmodelled,
+            Optional<PackManifestDso> manifest) {
         /**
          * Checks the fields and copies the lists.
          *
@@ -71,12 +84,26 @@ public final class WholePackStore {
          * @param layout the layout
          * @param graphs the DRG documents
          * @param unmodelled the files nothing models
+         * @param manifest the manifest, if the pack holds a readable one
          */
         public LoadedPack {
             Objects.requireNonNull(pack, "pack");
             Objects.requireNonNull(layout, "layout");
             graphs = List.copyOf(graphs);
             unmodelled = List.copyOf(unmodelled);
+            Objects.requireNonNull(manifest, "manifest");
+        }
+
+        /**
+         * A loaded pack without a manifest.
+         *
+         * @param pack the aggregate
+         * @param layout the layout
+         * @param graphs the DRG documents
+         * @param unmodelled the files nothing models
+         */
+        public LoadedPack(Pack pack, PackLayout layout, List<GraphDocument> graphs, List<String> unmodelled) {
+            this(pack, layout, graphs, unmodelled, Optional.empty());
         }
     }
 
@@ -119,6 +146,24 @@ public final class WholePackStore {
             throw new CharterRefusal(
                     RefusalCode.DRG_SCHEMA_ERROR, id.value() + "/" + first.file() + ": " + first.reason());
         }
+        Path manifestFile = packDir.resolve(PackFileSet.MANIFEST);
+        Optional<PackManifestDso> manifest = Optional.empty();
+        if (Files.isRegularFile(manifestFile)) {
+            switch (readManifest(manifestFile)) {
+                case FileRead.Read<PackManifestDso> good -> {
+                    List<String> misplaced = misplacedPresetEntries(good.value());
+                    if (misplaced.isEmpty()) {
+                        manifest = Optional.of(good.value());
+                    } else {
+                        misplaced.forEach(reason ->
+                                builder.violation(new PackElementViolation(PackFileSet.MANIFEST, "schema", reason)));
+                    }
+                }
+                case FileRead.Unreadable<PackManifestDso> bad ->
+                    FilesystemPackStore.violationsOf(bad).forEach(builder::violation);
+                case FileRead.Absent<PackManifestDso> absent -> {}
+            }
+        }
         Pack pack;
         try {
             pack = builder.build();
@@ -130,7 +175,37 @@ public final class WholePackStore {
         modelled.add(PackFileSet.PACK_YAML);
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
         pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
-        return new LoadedPack(pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key));
+        pack.presets().forEach(preset -> modelled.add(PresetFiles.pathOf(preset.id())));
+        if (Files.isRegularFile(manifestFile)) {
+            modelled.add(PackFileSet.MANIFEST);
+        }
+        return new LoadedPack(
+                pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest);
+    }
+
+    /**
+     * Every preset entry of a manifest that does not name its own preset's file, as its reason
+     * ({@link PresetFiles#entryPathMismatch}), in listed order.
+     *
+     * @param manifest a schema-valid manifest
+     * @return the reasons; empty when every entry names {@code presets/<id>.yaml}
+     */
+    static List<String> misplacedPresetEntries(PackManifestDso manifest) {
+        List<String> out = new ArrayList<>();
+        for (PackManifestDso.PresetEntry entry : manifest.presets()) {
+            PresetFiles.entryPathMismatch(entry.id(), entry.path()).ifPresent(out::add);
+        }
+        return out;
+    }
+
+    /** The manifest's text read through the format, or why it cannot be read; the store never parses it. */
+    private FileRead<PackManifestDso> readManifest(Path file) {
+        return FilesystemPackStore.readText(file)
+                .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))
+                .orElseGet(() -> new FileRead.Unreadable<>(
+                        PackFileSet.MANIFEST,
+                        new ParseFailure(PackFileSet.MANIFEST, "the file cannot be read as UTF-8 text"),
+                        List.of()));
     }
 
     /**
@@ -180,8 +255,8 @@ public final class WholePackStore {
      *
      * @param loaded the pack, its layout and its DRG documents
      * @param target the directory to create
-     * @throws CharterRefusal with {@code VALIDATION_FAILED} when the pack has read violations or its descriptor has
-     *     undeclared keys; with {@code PACK_UNREADABLE} when the target exists, a path leaves the target, two parts
+     * @throws CharterRefusal with {@code VALIDATION_FAILED} when the pack has read violations; with
+     *     {@code PACK_UNREADABLE} when the target exists, a path leaves the target, two parts
      *     share a path, or the write fails. In every case no staging directory remains, and no target unless it was
      *     there before.
      */
@@ -192,13 +267,6 @@ public final class WholePackStore {
                     RefusalCode.VALIDATION_FAILED,
                     "pack " + pack.id().value() + " has " + pack.violations().size()
                             + " unreadable files; writing it would drop them");
-        }
-        if (!pack.descriptor().undeclaredKeys().isEmpty()) {
-            throw new CharterRefusal(
-                    RefusalCode.VALIDATION_FAILED,
-                    "pack.yaml of " + pack.id().value() + " has undeclared keys "
-                            + pack.descriptor().undeclaredKeys()
-                            + " whose values are not kept; writing it would drop them");
         }
         Path destination = target.toAbsolutePath().normalize();
         Path parent = destination.getParent();
@@ -228,8 +296,18 @@ public final class WholePackStore {
                         PackFileKind.ASSET_PAYLOAD,
                         written);
             }
+            for (Preset preset : pack.presets()) {
+                put(
+                        staging,
+                        PresetFiles.pathOf(preset.id()),
+                        utf8(strategy.writePreset(PresetFiles.toDso(preset))),
+                        written);
+            }
             for (GraphDocument graph : loaded.graphs()) {
                 put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
+            }
+            if (loaded.manifest().isPresent()) {
+                putManifest(staging, pack, loaded.manifest().get(), written);
             }
             moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
@@ -246,6 +324,30 @@ public final class WholePackStore {
                     "cannot write pack " + pack.id().value(),
                     failure);
         }
+    }
+
+    /**
+     * Writes the manifest last, every derived field recomputed from the bytes staged (ADR-0042): what was read is never
+     * copied. A listed path the write does not hold refuses the write.
+     */
+    private void putManifest(Path staging, Pack pack, PackManifestDso manifest, Set<String> written)
+            throws IOException {
+        PackManifests.Recomputed recomputed = PackManifests.recompute(manifest, path -> staged(staging, path));
+        if (!recomputed.missing().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    PackFileSet.MANIFEST + " of " + pack.id().value() + " lists "
+                            + recomputed.missing().getFirst() + ", which the write does not hold");
+        }
+        put(staging, PackFileSet.MANIFEST, utf8(strategy.writeManifest(recomputed.stamped())), written);
+    }
+
+    /** The bytes of a staged pack-relative file, or empty when the path leaves the pack or holds no regular file. */
+    private static Optional<byte[]> staged(Path staging, String path) {
+        if (Companions.inPack(staging, path) instanceof Companions.Inside at && Files.isRegularFile(at.file())) {
+            return FilesystemPackStore.readBytes(at.file());
+        }
+        return Optional.empty();
     }
 
     /**

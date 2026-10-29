@@ -2,7 +2,7 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -10,6 +10,7 @@ related:
   - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
   - adr/0039-a-kind-binding-can-carry-companion-files
   - adr/0035-charter-artifact-interface-lives-in-the-kernel
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - architecture/logical-model
 audience:
   - profile: charter-service-contributor
@@ -48,6 +49,27 @@ stands.
 It amends [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) (Accepted) decision 2
 and two of its consequences, on the reconciliation ruling `DM-01M5ZAMP0R5V5YF5KM09YXY0NS` (see the
 amendment in that record).
+
+### Amendment 2026-10-28 (#195): the fingerprint gains a pack-level tail
+
+Extended in part by
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) (2026-10-28) for [#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195), on the
+mission's decision `DM-01M60H8FP4AJ8TJWH670JT4WAV` under
+`kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`: every file the store reads is in
+the fingerprint.
+It changes decision 9 only:
+
+- **Decision 9, the order.** After the templates, `PackFileSet.digested` ends with the pack-level
+  tail, in one ordered step: the presets, in path order, then `pack-manifest.yaml`. When `pack.md`
+  is held through #194's `markdown` form, it joins the tail between the two. A pack with no
+  presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them gets a
+  new `Charter-Source-Fingerprint` and ETag once.
+
+Decision 1's table still admits `yaml` and `bytes` only. The `markdown` form is #194's to build,
+and `pack.md` uses it when built (ADR-0042 decision 8). The decision text below is unchanged, and
+decision 9 is annotated where it stands. The amended point is in force for the code #195 ships,
+which implements it. Both records are Proposed, pending the operator's acceptance, which the pull
+requests for #193 and #195 ask for.
 
 ## Context
 
@@ -209,6 +231,9 @@ Four facts force a decision:
    (`PackRevision.computeOverBytes`); the text form is the same computation over UTF-8, so every
    revision of a text-only pack keeps its value, and a pack with a binary payload commits and
    answers `If-Match`.
+   *(Extended by ADR-0042, 2026-10-28: after the templates come the presets, in path order, then
+   `pack-manifest.yaml`; `pack.md` joins between them with #194's form. See the amendment under
+   Status.)*
 
 ## Consequences
 

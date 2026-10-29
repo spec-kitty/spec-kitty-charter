@@ -18,7 +18,7 @@ model, since core exports no schema for it. Where a schema differs from core's b
 
 | Path | Holds |
 |---|---|
-| `schemas/<kind>.schema.json` | One schema per kind, 16 in all |
+| `schemas/<kind>.schema.json` | One schema per kind, 18 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042) |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, and the schema-less payloads |
 
 `file-kinds.yaml` classifies a pack file in three steps: its `files` rules map a file to the schema that

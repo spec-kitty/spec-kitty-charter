@@ -36,9 +36,8 @@ class PackPolicyRulesTest {
     private static final FileRead<RawGraph> EMPTY_FRAGMENT = new FileRead.Read<>(
             "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
 
-    private static PackDescriptor descriptor(Optional<String> requiresCore, List<String> undeclared) {
-        return new PackDescriptor(
-                "01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), requiresCore, undeclared);
+    private static PackDescriptor descriptor(Optional<String> requiresCore) {
+        return new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), requiresCore);
     }
 
     private static PackContents contents(
@@ -58,20 +57,13 @@ class PackPolicyRulesTest {
                 List.of());
     }
 
-    private static PackContents withDescriptor(Optional<String> requiresCore, List<String> undeclared) {
-        return contents(
-                new FileRead.Read<>("pack.yaml", descriptor(requiresCore, undeclared)),
-                List.of(),
-                List.of(),
-                List.of());
+    private static PackContents withDescriptor(Optional<String> requiresCore) {
+        return contents(new FileRead.Read<>("pack.yaml", descriptor(requiresCore)), List.of(), List.of(), List.of());
     }
 
     private static PackContents withAssets(AssetFacts... assets) {
         return contents(
-                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty(), List.of())),
-                List.of(),
-                List.of(),
-                List.of(assets));
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())), List.of(), List.of(), List.of(assets));
     }
 
     private static List<PackFinding> judge(PackContents contents) {
@@ -84,7 +76,7 @@ class PackPolicyRulesTest {
 
     @Test
     void anInvalidRequiresCoreIsBlockingWithThePinnedText() {
-        List<PackFinding> findings = judge(withDescriptor(Optional.of("banana"), List.of()));
+        List<PackFinding> findings = judge(withDescriptor(Optional.of("banana")));
 
         assertThat(findings)
                 .containsExactly(new PackFinding(
@@ -97,7 +89,7 @@ class PackPolicyRulesTest {
 
     @Test
     void theRequiresCoreRefusalIsPackUnreadableWithTheExactText() {
-        PackContents contents = withDescriptor(Optional.of("~=1"), List.of());
+        PackContents contents = withDescriptor(Optional.of("~=1"));
 
         assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(contents))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
@@ -110,12 +102,12 @@ class PackPolicyRulesTest {
     @ParameterizedTest
     @ValueSource(strings = {">=4.0.0rc7,<5", "", ">=1.0", "~=1.4.5"})
     void aValidRequiresCoreGivesNoFinding(String requiresCore) {
-        assertThat(judge(withDescriptor(Optional.of(requiresCore), List.of()))).isEmpty();
+        assertThat(judge(withDescriptor(Optional.of(requiresCore)))).isEmpty();
     }
 
     @Test
     void anAbsentRequiresCoreGivesNoFinding() {
-        assertThat(judge(withDescriptor(Optional.empty(), List.of()))).isEmpty();
+        assertThat(judge(withDescriptor(Optional.empty()))).isEmpty();
     }
 
     @Test
@@ -128,53 +120,13 @@ class PackPolicyRulesTest {
         assertThat(judge(contents)).noneMatch(f -> f.code() == PackFindingCode.REQUIRES_CORE_INVALID);
     }
 
-    // ---- pack_unknown_key ------------------------------------------------------------------------
+    // ---- pack_unknown_key: retired (ADR-0036 decision 3) ----------------------------------------------
 
     @Test
-    void everyUndeclaredKeyIsOneSortedWarningWithThePinnedText() {
-        List<PackFinding> findings =
-                judge(withDescriptor(Optional.empty(), List.of("zeta", "accompanies_doctrine_pack")));
-
-        assertThat(findings)
-                .containsExactly(
-                        new PackFinding(
-                                PackFindingCode.PACK_UNKNOWN_KEY,
-                                "pack.yaml",
-                                List.of("accompanies_doctrine_pack"),
-                                "pack.yaml of qa declares unknown key 'accompanies_doctrine_pack'; it is ignored"),
-                        new PackFinding(
-                                PackFindingCode.PACK_UNKNOWN_KEY,
-                                "pack.yaml",
-                                List.of("zeta"),
-                                "pack.yaml of qa declares unknown key 'zeta'; it is ignored"));
-        assertThat(findings).allSatisfy(f -> assertThat(f.severity()).isEqualTo(PackFindingCode.Severity.WARNING));
-    }
-
-    @Test
-    void aRetiredFieldIsJustAnUndeclaredKey() {
-        assertThat(judge(withDescriptor(Optional.empty(), List.of("accompanies_doctrine_pack"))))
-                .extracting(PackFinding::code)
-                .containsExactly(PackFindingCode.PACK_UNKNOWN_KEY);
-    }
-
-    @Test
-    void noUndeclaredKeyGivesNoWarning() {
-        assertThat(judge(withDescriptor(Optional.empty(), List.of()))).isEmpty();
-    }
-
-    @Test
-    void theUnknownKeyCodeIsAWarningThatProjectsOntoItsDiagnostic() {
-        assertThat(PackFindingCode.PACK_UNKNOWN_KEY.severity()).isEqualTo(PackFindingCode.Severity.WARNING);
-        assertThat(PackFindingCode.PACK_UNKNOWN_KEY.diagnostic()).isEqualTo(Diagnostic.Code.PACK_UNKNOWN_KEY);
-        assertThat(Diagnostic.Code.PACK_UNKNOWN_KEY.token()).isEqualTo("pack_unknown_key");
-    }
-
-    @Test
-    void anUndeclaredKeyLoadsWithItsDiagnosticAndItsPinnedText() {
-        assertThat(Judged.diagnostics(withDescriptor(Optional.empty(), List.of("surprise"))))
-                .containsExactly(new Diagnostic(
-                        Diagnostic.Code.PACK_UNKNOWN_KEY,
-                        "pack.yaml of qa declares unknown key 'surprise'; it is ignored"));
+    void theUnknownKeyCodeIsRetiredFromTheFindingsAndTheDiagnostics() {
+        assertThat(PackFindingCode.values()).extracting(PackFindingCode::name).doesNotContain("PACK_UNKNOWN_KEY");
+        assertThat(Diagnostic.Code.values()).extracting(Diagnostic.Code::name).doesNotContain("PACK_UNKNOWN_KEY");
+        assertThat(PackFindingCode.PACK_LEVEL_MISSING.diagnostic()).isEqualTo(Diagnostic.Code.PACK_LEVEL_MISSING);
     }
 
     @Test
@@ -189,8 +141,7 @@ class PackPolicyRulesTest {
                                 Optional.empty(),
                                 "qa",
                                 Optional.of(PackLevel.PROJECT),
-                                Optional.of("banana"),
-                                List.of("zeta"))),
+                                Optional.of("banana"))),
                 List.of(),
                 EMPTY_FRAGMENT,
                 List.of(),
@@ -201,10 +152,7 @@ class PackPolicyRulesTest {
 
         assertThat(PackPolicy.judge(contents).findings())
                 .extracting(PackFinding::code)
-                .containsExactly(
-                        PackFindingCode.REQUIRES_CORE_INVALID,
-                        PackFindingCode.PACK_UNKNOWN_KEY,
-                        PackFindingCode.PACK_LEVEL_MISMATCH);
+                .containsExactly(PackFindingCode.REQUIRES_CORE_INVALID, PackFindingCode.PACK_LEVEL_MISMATCH);
     }
 
     // ---- org_fragment_missing --------------------------------------------------------------------
@@ -225,8 +173,7 @@ class PackPolicyRulesTest {
 
     private static FileRead<PackDescriptor> declaring(Optional<PackLevel> level) {
         return new FileRead.Read<>(
-                "pack.yaml",
-                new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "lonely", level, Optional.empty(), List.of()));
+                "pack.yaml", new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "lonely", level, Optional.empty()));
     }
 
     private static final FileRead<RawGraph> NO_FRAGMENT = new FileRead.Absent<>("drg/fragment.yaml");
@@ -315,8 +262,7 @@ class PackPolicyRulesTest {
                                 Optional.empty(),
                                 "lonely",
                                 Optional.of(PackLevel.PROJECT),
-                                Optional.of("banana"),
-                                List.of())),
+                                Optional.of("banana"))),
                 NO_FRAGMENT);
 
         assertThat(PackPolicy.judge(contents).findings())
@@ -333,7 +279,7 @@ class PackPolicyRulesTest {
 
     private static List<PackFinding> stepFindings(StepContractFacts... contracts) {
         return judge(contents(
-                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty(), List.of())),
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
                 List.of(contracts),
                 List.of(),
                 List.of()));
@@ -384,7 +330,7 @@ class PackPolicyRulesTest {
 
     private static List<PackFinding> artifactFindings(ArtifactFacts... artifacts) {
         return judge(contents(
-                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty(), List.of())),
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
                 List.of(),
                 List.of(artifacts),
                 List.of()));
@@ -724,7 +670,7 @@ class PackPolicyRulesTest {
     @Test
     void theValidateOnlyRulesAreJudged() {
         PackContents contents = contents(
-                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty(), List.of())),
+                new FileRead.Read<>("pack.yaml", descriptor(Optional.empty())),
                 List.of(new StepContractFacts(CONTRACT, List.of("a", "a"))),
                 List.of(new ArtifactFacts("t/a.yaml", "tactic", "x"), new ArtifactFacts("t/b.yaml", "tactic", "x")),
                 List.of(asset("../logo.png", "text/plain", false)));

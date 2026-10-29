@@ -11,15 +11,9 @@ kinds:
   - kind: other:missions
     reason: Mission types, mission steps, actions and mission templates are not modelled yet.
     issue: "#194"
-  - kind: other:presets
-    reason: Presets are not modelled yet.
-    issue: "#195"
   - kind: other:pack.md
-    reason: The pack's Markdown description is not modelled yet.
-    issue: "#195"
-  - kind: other:pack-manifest.yaml
-    reason: The generated pack manifest is not modelled yet.
-    issue: "#195"
+    reason: The pack's Markdown description is not modelled yet; split off from #195, blocked on #194.
+    issue: "#260"
   - kind: other:toolguides
     reason: >-
       The Markdown guides a toolguide points to with guide_path are not read or written with the toolguide; no

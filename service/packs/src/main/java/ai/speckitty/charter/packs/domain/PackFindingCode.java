@@ -12,8 +12,6 @@ public enum PackFindingCode {
     PACK_UNREADABLE(Severity.BLOCKING),
     /** {@code requires_core} is not a valid specifier set. */
     REQUIRES_CORE_INVALID(Severity.BLOCKING),
-    /** {@code pack.yaml} has a key the schema does not declare; it is ignored. */
-    PACK_UNKNOWN_KEY(Severity.WARNING),
     /** An org pack has no {@code drg/fragment.yaml}. */
     ORG_FRAGMENT_MISSING(Severity.BLOCKING),
     /** A graph document breaks the DRG schema. */
@@ -78,7 +76,6 @@ public enum PackFindingCode {
     public Diagnostic.Code diagnostic() {
         return switch (this) {
             case PACK_LEVEL_MISSING -> Diagnostic.Code.PACK_LEVEL_MISSING;
-            case PACK_UNKNOWN_KEY -> Diagnostic.Code.PACK_UNKNOWN_KEY;
             default -> throw new IllegalStateException(name() + " has no diagnostic on the load path");
         };
     }

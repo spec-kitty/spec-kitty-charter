@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -190,6 +191,18 @@ public final class DomainRepositoryService
                 resolved.key, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
     }
 
+    /**
+     * Writes one activation preset of a configured pack in place, at {@code presets/<id>.yaml} (ADR-0042).
+     *
+     * @param pack the pack to write into
+     * @param preset the preset
+     * @throws CharterRefusal when the pack is not configured or the write fails
+     */
+    void writePreset(PackIdentifier pack, Preset preset) {
+        Resolved resolved = resolve(pack);
+        resolved.store.writePreset(resolved.key, PresetFiles.toDso(preset));
+    }
+
     private <D, E extends CharterArtifact> Optional<E> loadOne(
             PackIdentifier pack, KindBinding<D, E> kind, String elementId) {
         Resolved resolved = resolve(pack);
@@ -266,7 +279,8 @@ public final class DomainRepositoryService
     /**
      * The one assembly of a read into the aggregate, shared by {@link #load(PackIdentifier)} and
      * {@link WholePackStore#load}: the descriptor, the read violations, every bound kind (through {@link #collect}),
-     * the asset files and the templates. Each added artifact's file is put in {@code places} under its URN.
+     * the asset files, the templates and the presets. Each added artifact's file is put in {@code places} under its
+     * URN; a preset is no artifact and has none, its place being {@code presets/<id>.yaml} by the stem rule.
      *
      * @param pack the pack the artifacts belong to
      * @param read what the store read
@@ -289,6 +303,14 @@ public final class DomainRepositoryService
                 places.put(template.urn(), place);
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(new PackElementViolation(place, "domain", String.valueOf(breach.getMessage())));
+            }
+        }
+        for (FilesystemPackStore.Stored<PresetDso> stored : read.presets()) {
+            try {
+                builder.preset(PresetFiles.toPreset(stored.dso()));
+            } catch (ConstraintBreachException breach) {
+                builder.violation(
+                        new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
             }
         }
         return builder;

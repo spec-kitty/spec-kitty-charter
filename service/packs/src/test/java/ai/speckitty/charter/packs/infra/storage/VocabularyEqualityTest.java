@@ -155,7 +155,10 @@ class VocabularyEqualityTest {
                     "/packs/schemas/" + rule.schema() + ".schema.json")) {
                 Map<?, ?> properties = (Map<?, ?>)
                         JsonMapper.builder().build().readValue(in, Map.class).get("properties");
-                if (properties != null && properties.containsKey("id")) {
+                // A preset declares an id but is a pack-level file, not an artifact (#195, ADR-0042).
+                if (properties != null
+                        && properties.containsKey("id")
+                        && !rule.schema().equals("preset")) {
                     expected.add(rule.schema());
                 }
             }
@@ -230,12 +233,7 @@ class VocabularyEqualityTest {
         }
 
         assertThat(projected)
-                .contains(
-                        "pack_level_missing",
-                        "pack_unknown_key",
-                        "pack_level_mismatch",
-                        "pack_unreadable",
-                        "drg_schema_error");
+                .contains("pack_level_missing", "pack_level_mismatch", "pack_unreadable", "drg_schema_error");
         assertThat(contract).containsAll(projected);
     }
 

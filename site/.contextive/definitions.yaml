@@ -22,7 +22,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Activation preset"
-        definition: "A named selection that a Charter Pack ships (`presets/<name>.yaml`) and a project applies to its active charter. A preset has two jobs: as a governor it states what must be on the plate (its must-have items are the requirement), and as a convenience it offers an author's sane defaults to a project that does not want to customize. For the convenience job, applying a preset is a one-time write to the active charter; a governing preset keeps holding. How a governing preset is told apart from a convenience preset is an open question (ADR-0031). The built-in pack ships `default` and `minimal`."
+        definition: "A named selection that a Charter Pack ships (`presets/<id>.yaml`, its `id` equal to the file stem) and a project applies to its active charter. A preset has two jobs: as a governor it states what must be on the plate (its must-have items are the requirement), and as a convenience it offers an author's sane defaults to a project that does not want to customize. For the convenience job, applying a preset is a one-time write to the active charter; a governing preset keeps holding. Its activation lists hold preset items, and a preset with at least one must-have item is a governing preset (ADR-0031, ADR-0042). The built-in pack ships `default` and `minimal`."
         meta:
           status: "canonical"
       - name: "Activation Registry"
@@ -233,6 +233,26 @@ contexts:
           status: "canonical"
       - name: "Template (pack)"
         definition: "A file under a pack's top-level `templates/` directory, read as an artifact whose local id is its path under that directory (`writing/meeting-minutes.md`, URN `template:writing/meeting-minutes.md`) and held as its exact bytes, frontmatter included. Not activatable. Mission templates under `missions/<mission>/templates/` are mission-type content, not pack templates (ADR-0040)."
+        meta:
+          status: "canonical"
+      - name: "Preset item"
+        definition: "One entry of an activation preset's list: the `id` of an artifact or a mission type, as its own file declares it (never a file stem), optionally carrying the must-have mark. Written `{id: <id>}` or `{id: <id>, must_have: true}`. One list names an id once (ADR-0042)."
+        meta:
+          status: "canonical"
+      - name: "Must-have mark"
+        definition: "The per-item flag `must_have: true` on a preset item. It makes the item part of the preset's required set, which the service derives from the marks and never reads from a second list. An item without the mark is not must-have; there is no `false` spelling. Not to be confused with the legacy `required_<plural>` lists of `org-charter.yaml` (#206) or with JSON Schema's `required` (ADR-0031, ADR-0042)."
+        meta:
+          status: "canonical"
+      - name: "Governing preset"
+        definition: "An activation preset with at least one must-have item: it states what every project that takes it must have. A preset with none is a convenience preset, which only offers defaults. Derived from the items, never declared: a preset carries no flag of its own (ADR-0031, ADR-0042)."
+        meta:
+          status: "canonical"
+      - name: "Pack manifest"
+        definition: "A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent artifacts (`kind`, `id`, `path`, `content_hash`) and its presets (`id`, `path`, `content_hash`), with a `manifest_hash` over the whole. Only the authored-pack variant is a pack file; the fetched-pack and charter-bundle fields are refused. Its hashes are derived fields. The service holds it beside the pack aggregate, not in it (ADR-0042)."
+        meta:
+          status: "canonical"
+      - name: "Derived field"
+        definition: "A field of a storage object computed from other content, such as a pack manifest's `content_hash` (SHA-256 of the file's bytes with line endings normalized to LF) and `manifest_hash` (SHA-256 of the RFC 8785 canonical JSON of the manifest without it). Declared per kind in a decision record. The writer recomputes it from the bytes it writes, the reader takes it as written, and the round-trip gate verifies it on each side instead of comparing it (ADR-0042)."
         meta:
           status: "canonical"
   - name: "Governance"

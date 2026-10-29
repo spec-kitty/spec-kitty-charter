@@ -39,9 +39,13 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>a sidecar-less {@code assets/<dirs><stem>.config.yaml}; a nested {@code assets/a/b/<stem>.png}</td>
  *     <td>payload</td></tr>
  * <tr><td>a top-level template {@code templates/<dirs><stem>.md}</td><td>payload</td></tr>
+ * <tr><td>a preset {@code presets/<stem>.yaml} (#195): refused by the load when malformed or its id is not its
+ *     stem</td><td>loaded</td></tr>
+ * <tr><td>root {@code pack-manifest.yaml} (#195)</td><td>manifest: digested, not loaded by the store</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
- * <tr><td>{@code presets/<stem>.<kind>.yaml} (a files rule wins over the presets exclusion)</td><td>loaded</td></tr>
+ * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
+ *     {@code PackFileKindTest} pins it)</td><td>loaded</td></tr>
  * <tr><td>{@code <stem>.config.<kind>.yaml}</td><td>loaded</td></tr>
  * <tr><td>a file symlink inside the pack to an external valid tactic</td><td>loaded</td></tr>
  * <tr><td>root {@code a.graph.yaml}, hidden root {@code .b.graph.yaml}, {@code drg/fragment.yaml}</td>
@@ -73,6 +77,8 @@ final class GeneratedPackTree {
         GRAPH_INPUT,
         /** An asset file or a template: digested and read as bytes. */
         PAYLOAD,
+        /** The pack manifest (#195): digested; the store never loads it, the whole-pack seam reads it. */
+        MANIFEST,
         /** A file or directory the service neither loads nor digests. */
         DECOY
     }
@@ -117,6 +123,8 @@ final class GeneratedPackTree {
         PAYLOAD_UNNAMED(Verdict.PAYLOAD),
         PAYLOAD_NESTED(Verdict.PAYLOAD),
         TEMPLATE_TOP(Verdict.PAYLOAD),
+        PRESET(Verdict.LOADED),
+        MANIFEST(Verdict.MANIFEST),
         DECOY_YML(Verdict.DECOY),
         DECOY_UPPER_EXTENSION(Verdict.DECOY),
         DECOY_UPPER_KIND(Verdict.DECOY),
@@ -166,6 +174,7 @@ final class GeneratedPackTree {
             Shape.PAYLOAD_UNNAMED,
             Shape.PAYLOAD_NESTED,
             Shape.TEMPLATE_TOP,
+            Shape.PRESET,
             Shape.DECOY_MISSION_TEMPLATE,
             Shape.DECOY_PAYLOAD_OUTSIDE_ASSETS,
             Shape.DECOY_ASSETS_HIDDEN,
@@ -400,6 +409,7 @@ final class GeneratedPackTree {
             case LOADED_PLAIN, LOADED_HIDDEN_STEM, LOADED_HIDDEN_DIR, LOADED_PRESETS, LOADED_CONFIG_STEM ->
                 plantLoaded(pack, shape, randomKind(true));
             case LOADED_FILE_SYMLINK -> plantSymlink(pack);
+            case PRESET -> plantPreset(pack);
             case ASSET_WITH_PAYLOAD -> plantAssetBesideItsPayload(pack);
             case ASSET_WITHOUT_PAYLOAD -> plantSidecarWithoutPayload(pack);
             case DECOY_TACTIC_DIRECTORY -> plantDirectory(pack);
@@ -422,6 +432,9 @@ final class GeneratedPackTree {
         Shape shape = STEM_SHAPES.get(random.nextInt(STEM_SHAPES.size()));
         if (shape == Shape.ASSET_WITHOUT_PAYLOAD) {
             return plantSidecarWithoutPayload(pack);
+        }
+        if (shape == Shape.PRESET) {
+            return plantPreset(pack);
         }
         // A late file is one file: an asset with its payload would leave the payload behind when it is removed.
         return shape.verdict() == Verdict.LOADED ? plantLoaded(pack, shape, randomKind(false)) : plantFile(pack, shape);
@@ -451,6 +464,26 @@ final class GeneratedPackTree {
         Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
         remember(pack, shape, planted);
         return planted;
+    }
+
+    /**
+     * A preset at {@code presets/<stem>.yaml} (#195): no kind, its id the stem. One in five is refused by the load,
+     * half of those malformed and half declaring an id that is not the stem.
+     */
+    private Planted plantPreset(Pack pack) throws IOException {
+        int n = ++counter;
+        String stem = "e" + n;
+        String path = "presets/" + stem + ".yaml";
+        boolean valid = random.nextInt(5) != 0;
+        String content = valid ? preset(stem) : random.nextBoolean() ? MALFORMED : preset("x" + n);
+        Path file = write(pack, path, content);
+        Planted planted = new Planted(path, Verdict.LOADED, null, valid ? stem : null, file, null);
+        remember(pack, Shape.PRESET, planted);
+        return planted;
+    }
+
+    private static String preset(String id) {
+        return "schema_version: '1.0'\nid: " + id + "\ndescription: D\nactivated_tactics:\n  - id: t\n";
     }
 
     /** A sidecar and its payload side by side under {@code assets/}, the way the open packs lay them out. */
@@ -556,6 +589,7 @@ final class GeneratedPackTree {
             case GRAPH_ROOT -> "a.graph.yaml";
             case GRAPH_HIDDEN_ROOT -> ".b.graph.yaml";
             case GRAPH_FRAGMENT -> "drg/fragment.yaml";
+            case MANIFEST -> PackFileSet.MANIFEST;
             case DECOY_YML -> directories(2) + stem + ".tactic.yml";
             case DECOY_UPPER_EXTENSION -> directories(2) + stem + ".tactic.YAML";
             case DECOY_UPPER_KIND -> directories(2) + stem + ".TACTIC.yaml";

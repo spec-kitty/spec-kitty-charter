@@ -2,7 +2,7 @@
 title: Packs resource model
 description: "The proposed REST resource tree for packs and their contents: the API root, the per-pack sub-resources, the link graph and example responses."
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-28T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -13,6 +13,7 @@ related:
   - architecture/pack-registration-distribution
   - architecture/contract-and-dtos
   - api/service-contract
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the resource tree, the link graph and how each resource maps onto the domain.
@@ -144,8 +145,13 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 | `/packs/{packId}` | a pack query over the same load | `CharterPack`, `PackDescriptor` |
 | `/packs/{packId}/artifacts…` | an artifact query | the artifact repositories (R2) |
 | `/packs/{packId}/graph` | a graph query | the pack's `DoctrineGraph` |
-| `/packs/{packId}/presets`, `assets` | pack content queries | pack content (R4, R11) |
+| `/packs/{packId}/presets`, `assets` | pack content queries | pack content (R4, R11): the pack's `presets()` and asset files |
 | `POST /packs`, `/distributions`, `/resolution` | registration use cases | `RegisteredPack`, `PackResolver` ([Pack registration and distribution](/architecture/pack-registration-distribution/)) |
+
+The domain already holds a pack's presets, each a `Preset` value with its items and must-have marks
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). No
+route serves them yet. The pack manifest is held beside the aggregate, not in it, and no resource
+is proposed for it.
 
 Links are built in the REST adapter (`packs.infra.api`), from the use-case answer and the request
 URL. No link crosses into the application or domain ring (ADR-0007 decision 6).

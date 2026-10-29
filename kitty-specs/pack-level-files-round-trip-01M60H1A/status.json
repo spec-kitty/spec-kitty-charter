@@ -1,0 +1,149 @@
+{
+  "event_count": 88,
+  "last_event_id": "01M60ZF3NR3V1K5ASANYWGAQMT",
+  "materialized_at": "2026-10-28T10:04:07.224685+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-level-files-round-trip-01M60H1A",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 1,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZEFDP7TN87HWC73BYJBA6",
+      "last_transition_at": "2026-10-28T10:03:46.486765+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP01-pack-level-schemas/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP01-pack-level-schemas/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 5382,
+      "shell_pid_created_at": "1793173315.8"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZEJJP13E7F7NNK34GQDED",
+      "last_transition_at": "2026-10-28T10:03:49.718626+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP02-preset-domain/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP02-preset-domain/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 9058,
+      "shell_pid_created_at": "1793173697.68"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZENT7F9DNNW83WWTXP6F8",
+      "last_transition_at": "2026-10-28T10:03:53.031330+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP03-descriptor-closure/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP03-descriptor-closure/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 10570,
+      "shell_pid_created_at": "1793173895.78"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZERX4E4MEGK6HMYEKXBTD",
+      "last_transition_at": "2026-10-28T10:03:56.196461+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP04-preset-storage-and-gate/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP04-preset-storage-and-gate/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 25794,
+      "shell_pid_created_at": "1793176049.29"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZEWG3YD9HEETC84C3HVW3",
+      "last_transition_at": "2026-10-28T10:03:59.875848+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP05-manifest-model-and-recipes/review-cycle-1.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP05-manifest-model-and-recipes/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 13083,
+      "shell_pid_created_at": "1793174199.44"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 3,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZF0B2RXS3BTGR03S6H67A",
+      "last_transition_at": "2026-10-28T10:04:03.810311+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP06-manifest-wiring-and-gate/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP06-manifest-wiring-and-gate/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 12854,
+      "shell_pid_created_at": "1793181681.63"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M60ZF3NR3V1K5ASANYWGAQMT",
+      "last_transition_at": "2026-10-28T10:04:07.224685+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/pack-level-files-round-trip-01M60H1A-coord/kitty-specs/pack-level-files-round-trip-01M60H1A/tasks/WP07-decision-records-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://pack-level-files-round-trip-01M60H1A/WP07-decision-records-and-docs/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 9067,
+      "shell_pid_created_at": "1793178310.22"
+    },
+    "WP08": {
+      "actor": "claude",
+      "cancellation_reason": "Split off to #260 by the operator on #195 (2026-10-28): pack.md is blocked on #194; #195 closes on the delivered scope",
+      "force_count": 0,
+      "lane": "canceled",
+      "last_event_id": "01M60YX42RYWWH5D17S6H66ZEA",
+      "last_transition_at": "2026-10-28T09:54:17.816546+00:00",
+      "reason_source": "operator"
+    }
+  }
+}

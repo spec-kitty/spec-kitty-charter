@@ -37,7 +37,9 @@ class PackFileKindTest {
             Map.entry("core/assets/a.asset.yaml", "asset"),
             Map.entry("core/glossary/a.glossary-pack.yaml", "glossary-pack"),
             Map.entry("core/skills/a.skill.yaml", "skill"),
-            Map.entry("project/charter.yaml", "charter"));
+            Map.entry("project/charter.yaml", "charter"),
+            Map.entry("core/presets/minimal.yaml", "preset"),
+            Map.entry("core/pack-manifest.yaml", "pack-manifest"));
 
     /** One sample path for each exclusion rule. */
     private static final List<String> EXCLUDED = List.of(
@@ -48,8 +50,6 @@ class PackFileKindTest {
             "core/missions/software-dev/expected-artifacts.yaml",
             "core/missions/software-dev/governance-profile.yaml",
             "core/mission_types/software-dev.yaml",
-            "core/presets/minimal.yaml",
-            "core/pack-manifest.yaml",
             "built-in.source.yaml",
             "core/missions/software-dev/templates/plan-field-declaration.yaml",
             "built-in/assets/README.md",
@@ -207,7 +207,7 @@ class PackFileKindTest {
                 .hasSize(15)
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(16);
+        assertThat(KINDS.fileRules()).hasSize(18);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form")
                 .extracting(PackFileKind.FileRule::contentForm)
@@ -315,5 +315,21 @@ class PackFileKindTest {
         assertThat(table.classify("p/a.bin"))
                 .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.YAML));
         assertThat(table.payloadRules()).isEmpty();
+    }
+
+    /**
+     * #195: a kind file under {@code presets/} matches both its kind's rule and the preset rule. The kind's rule comes
+     * first in the table, and the first match wins, so it stays a file of its kind; a plain preset stays a preset.
+     */
+    @Test
+    void aKindFileUnderPresetsStaysAFileOfItsKind() {
+        assertThat(KINDS.classify("core/presets/a.tactic.yaml"))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Mapped.class,
+                        mapped -> assertThat(mapped.kind()).isEqualTo("tactic"));
+        assertThat(KINDS.classify("core/presets/a.yaml"))
+                .isInstanceOfSatisfying(
+                        PackFileKind.Mapped.class,
+                        mapped -> assertThat(mapped.kind()).isEqualTo("preset"));
     }
 }

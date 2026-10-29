@@ -86,14 +86,11 @@ locks. Field names are fixed when the schema lands.
 
 An explicit `null` is refused ("must be a string") for `pack_id`, `pack_version`, `name` and
 `pack_level`. `parent_pack`, `requires_core`, `active_charter` and `pack_drg` accept `null`, as
-well as a string. Only the fields the schema marks optional may be left out. A key the schema does not
-declare is tolerated (DIV-005): the pack still loads and the pack listing carries the warning
-`pack_unknown_key`, naming the key. Retired core fields such as `accompanies_doctrine_pack`
-are unknown keys like any other (DIV-006).
-
-**Planned** ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/), accepted 2026-10-27, not built yet): an
-undeclared key, a retired field included, is a schema violation, and the pack is refused as
-`pack_unreadable`; `pack_unknown_key` is retired. DIV-005 and DIV-006 close when the code changes.
+well as a string. Only the fields the schema marks optional may be left out. The schema is
+closed ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) decision 3): a key it
+does not declare, a retired core field such as `accompanies_doctrine_pack` included, is a schema
+violation, and the pack is refused as `pack_unreadable`, naming the key. `pack_unknown_key` is
+retired and never raised; DIV-005 and DIV-006 are closed (#195).
 
 CRG: none directly; it scopes the nodes the pack contributes.
 

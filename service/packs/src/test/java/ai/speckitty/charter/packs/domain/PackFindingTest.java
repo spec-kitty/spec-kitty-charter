@@ -26,19 +26,18 @@ class PackFindingTest {
     }
 
     @Test
-    void onlyTheLevelMissingAndUnknownKeyCodesAreWarnings() {
+    void onlyTheLevelMissingCodeIsAWarning() {
         assertThat(EnumSet.allOf(PackFindingCode.class).stream()
                         .filter(c -> c.severity() == PackFindingCode.Severity.WARNING))
-                .containsExactlyInAnyOrder(PackFindingCode.PACK_LEVEL_MISSING, PackFindingCode.PACK_UNKNOWN_KEY);
+                .containsExactly(PackFindingCode.PACK_LEVEL_MISSING);
     }
 
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aFindingTakesItsSeverityFromItsCode(PackFindingCode code) {
-        PackFindingCode.Severity expected =
-                code == PackFindingCode.PACK_LEVEL_MISSING || code == PackFindingCode.PACK_UNKNOWN_KEY
-                        ? PackFindingCode.Severity.WARNING
-                        : PackFindingCode.Severity.BLOCKING;
+        PackFindingCode.Severity expected = code == PackFindingCode.PACK_LEVEL_MISSING
+                ? PackFindingCode.Severity.WARNING
+                : PackFindingCode.Severity.BLOCKING;
         assertThat(finding(code).severity()).isEqualTo(expected);
     }
 
@@ -49,13 +48,6 @@ class PackFindingTest {
         CharterRefusal refusal = finding(PackFindingCode.PACK_LEVEL_MISMATCH).toRefusal();
         assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_LEVEL_MISMATCH);
         assertThat(refusal.getMessage()).isEqualTo("the detail");
-    }
-
-    @Test
-    void theUnknownKeyWarningProjectsOntoItsDiagnosticAndHasNoRefusal() {
-        assertThat(finding(PackFindingCode.PACK_UNKNOWN_KEY).toDiagnostic())
-                .isEqualTo(new Diagnostic(Diagnostic.Code.PACK_UNKNOWN_KEY, "the detail"));
-        assertThatThrownBy(PackFindingCode.PACK_UNKNOWN_KEY::refusal).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -71,9 +63,7 @@ class PackFindingTest {
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aValidateOnlyCodeHasNoWireValue(PackFindingCode code) {
-        if (LOAD_PATH_BLOCKING.contains(code)
-                || code == PackFindingCode.PACK_LEVEL_MISSING
-                || code == PackFindingCode.PACK_UNKNOWN_KEY) {
+        if (LOAD_PATH_BLOCKING.contains(code) || code == PackFindingCode.PACK_LEVEL_MISSING) {
             return;
         }
         assertThatThrownBy(code::refusal).isInstanceOf(IllegalStateException.class);
