@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * The derived fields of a pack manifest (ADR-0043) and their one recompute. Both recipes are language-neutral, so any
+ * The derived fields of a pack manifest (ADR-0042) and their one recompute. Both recipes are language-neutral, so any
  * reader can reproduce them byte for byte, whatever YAML emitter wrote the files:
  *
  * <ul>

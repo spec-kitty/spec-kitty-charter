@@ -21,7 +21,7 @@ related:
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
   - adr/0040-content-form-and-payload-kinds
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -118,7 +118,7 @@ core today carries a signed `impacts` strength on an edge (see [Relations](#rela
 org policy's `required_<kind>` lists are likewise the current-state authoring form; the target
 authors a requirement as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)).
 The preset fields shown are the sanitized shape this service holds
-([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/)); core's
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)); core's
 preset files still write `name`, bare strings and `mission_type_activations`.
 
 ## Charter and active charter
@@ -163,7 +163,7 @@ level from directory presence.
 
 Four files describe a pack as a whole rather than one artifact. This service reads each into the
 domain and writes it back in one closed, sanitized shape
-([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). A
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). A
 pinned file in another shape is refused, never tolerated, and fixed in the pack.
 
 | File | Schema | How the service holds it |
@@ -367,7 +367,7 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   preset whose must-have items are the required set, and the service derives the required set
   from it. Either way, required means always active: deactivating a required artifact is refused,
   naming the requiring pack. Its content stays as open as its mutability level allows.
-  Target ([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
+  Target ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
   proposed): a preset item is marked `must_have: true`; a preset with any must-have item is a
   governing preset; a preset carries no `required_*` key, and migrating `org-charter.yaml`'s lists
   is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). Enforcing the required

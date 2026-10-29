@@ -27,7 +27,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0043.\n\nA preset selects artifacts and mission types to activate. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind is switched off by leaving it out of activated_kinds, never by an empty list. Legacy required_<plural> keys are not part of the shape.",
+  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0042.\n\nA preset selects artifacts and mission types to activate. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind is switched off by leaving it out of activated_kinds, never by an empty list. Legacy required_<plural> keys are not part of the shape.",
   "properties": {
     "schema_version": {
       "const": "1.0",

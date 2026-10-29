@@ -17,7 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("Activation preset (#195, ADR-0043)")
+@DisplayName("Activation preset (#195, ADR-0042)")
 class PresetTest {
 
     private static Map<ArtifactKind, List<PresetItem>> lists(ArtifactKind kind, PresetItem... items) {

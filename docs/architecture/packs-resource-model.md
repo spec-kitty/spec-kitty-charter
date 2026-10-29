@@ -13,7 +13,7 @@ related:
   - architecture/pack-registration-distribution
   - architecture/contract-and-dtos
   - api/service-contract
-  - adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the resource tree, the link graph and how each resource maps onto the domain.
@@ -149,7 +149,7 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 | `POST /packs`, `/distributions`, `/resolution` | registration use cases | `RegisteredPack`, `PackResolver` ([Pack registration and distribution](/architecture/pack-registration-distribution/)) |
 
 The domain already holds a pack's presets, each a `Preset` value with its items and must-have marks
-([ADR-0043](/adr/0043-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). No
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). No
 route serves them yet. The pack manifest is held beside the aggregate, not in it, and no resource
 is proposed for it.
 

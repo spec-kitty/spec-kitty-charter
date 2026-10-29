@@ -192,7 +192,7 @@ public final class DomainRepositoryService
     }
 
     /**
-     * Writes one activation preset of a configured pack in place, at {@code presets/<id>.yaml} (ADR-0043).
+     * Writes one activation preset of a configured pack in place, at {@code presets/<id>.yaml} (ADR-0042).
      *
      * @param pack the pack to write into
      * @param preset the preset

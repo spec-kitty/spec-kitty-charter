@@ -105,7 +105,7 @@ final class FilesystemPackStore {
      * @param violations the files that could not be read, in kind then path order
      * @param assetFiles the asset files, in path order
      * @param templates the templates, in path order
-     * @param presets the readable presets whose id is their file stem, in path order (ADR-0043)
+     * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
      */
     record PackRead(
             PackDescriptorDso descriptor,

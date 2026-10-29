@@ -31,11 +31,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Presets through the whole-pack store (#195, ADR-0043): read into the {@code Pack}, written back at
+ * Presets through the whole-pack store (#195, ADR-0042): read into the {@code Pack}, written back at
  * {@code presets/<id>.yaml}, and equal by meaning, the must-have mark included. Each refusal is paired with a clean
  * control on the same one-preset pack.
  */
-@DisplayName("Preset round trip (#195, ADR-0043)")
+@DisplayName("Preset round trip (#195, ADR-0042)")
 class PresetRoundTripTest {
 
     private static final String FIXTURE = "presets-pack";

@@ -3,7 +3,7 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..202, ADR-0020, proposed) and pack-level files (DIV-301..399, ADR-0043). Consumers: the
+# (DIV-201..202, ADR-0020, proposed) and pack-level files (DIV-301..399, ADR-0042). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
 # enforced.
@@ -593,7 +593,7 @@
   evidence:
     - "corpus case: required-promoted-at-write"
 
-# Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0043).
+# Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
   surface: Validate mode, presets and the pack manifest
   core: >-
@@ -601,7 +601,7 @@
     lists): preset_format, preset_unresolved_id and preset_kind_gate. Does not schema-check
     pack-manifest.yaml (offering/packs/pack_validator.py:592-593, 662-690).
   service: >-
-    Holds presets and the manifest to the closed, sanitized schemas of ADR-0043: core's shape, or a
+    Holds presets and the manifest to the closed, sanitized schemas of ADR-0042: core's shape, or a
     preset whose id is not its file stem, is an artifact_schema_error on its file. Does not resolve
     preset ids or check the kind gate; a domain-only break (an item id listed twice) passes validate
     mode and is refused by the load.

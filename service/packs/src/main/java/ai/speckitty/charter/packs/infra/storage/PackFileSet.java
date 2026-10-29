@@ -31,7 +31,7 @@ import org.jspecify.annotations.Nullable;
  * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests
  * {@code pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared
  * graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets and the manifest (the pack-level tail, ADR-0043). Both take their list from here, so a
+ * templates, then the presets and the manifest (the pack-level tail, ADR-0042). Both take their list from here, so a
  * file the service loads cannot escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The
  * asset files, templates and presets come last, so a pack that holds none keeps its exact digest list.
  *
@@ -50,7 +50,7 @@ final class PackFileSet {
     /** The pack descriptor's file name. */
     static final String PACK_YAML = "pack.yaml";
 
-    /** The pack manifest's pack-relative path (ADR-0043). */
+    /** The pack manifest's pack-relative path (ADR-0042). */
     static final String MANIFEST = "pack-manifest.yaml";
 
     /** The DRG fragment's pack-relative path. */
@@ -315,7 +315,7 @@ final class PackFileSet {
             if (mapped.contentForm() == ContentForm.BYTES) {
                 bytesHolder(mapped.kind(), assetFiles, templates).add(file);
             } else if (PresetFiles.KIND.equals(mapped.kind())) {
-                // A pack-level file, not a bound kind: the pack holds its presets in their own slot (ADR-0043).
+                // A pack-level file, not a bound kind: the pack holds its presets in their own slot (ADR-0042).
                 presets.add(file);
             } else if (mapped.schema().isPresent()) {
                 KindBindings.bySchema(mapped.kind())

@@ -36,12 +36,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The pack manifest through the whole-pack seam and the gate (#195, ADR-0043). The fixture's manifest was generated
+ * The pack manifest through the whole-pack seam and the gate (#195, ADR-0042). The fixture's manifest was generated
  * with Python over the source bytes, so a fresh read here also shows the two recipes agree. Its tactic, directive and
  * one preset carry comments the writer drops, so every written file's bytes differ from its source and every
  * {@code content_hash} must be recomputed, not copied.
  */
-@DisplayName("Pack manifest round trip (#195, ADR-0043)")
+@DisplayName("Pack manifest round trip (#195, ADR-0042)")
 class PackManifestRoundTripTest {
 
     private static final String FIXTURE = "manifest-pack";

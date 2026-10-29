@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The YAML form of {@code presets/<id>.yaml} (ADR-0043): how a {@link PresetDso} is written from scratch and read back
+ * The YAML form of {@code presets/<id>.yaml} (ADR-0042): how a {@link PresetDso} is written from scratch and read back
  * from a document that has already passed the bundled {@code preset} schema. Keys are written in schema order;
  * {@code must_have} is written only on a must-have item, as the schema has no {@code false} spelling, and a list the
  * preset does not hold is left out, as the schema has no empty one. Not a {@link YamlFormat}: a preset is a pack-level

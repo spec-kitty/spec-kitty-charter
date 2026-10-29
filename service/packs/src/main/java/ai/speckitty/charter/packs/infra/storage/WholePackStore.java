@@ -50,7 +50,7 @@ import org.jspecify.annotations.Nullable;
  * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml} and each DRG document at its own path
  * into a staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
  * does; a failure removes the staging directory and leaves no target. The manifest, when the pack has one, is written
- * last, its derived fields recomputed from the staged bytes (ADR-0043). Templates and asset files are written byte for
+ * last, its derived fields recomputed from the staged bytes (ADR-0042). Templates and asset files are written byte for
  * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG documents hold and nothing else: the
  * unmodelled files are not copied, and the caller has their list. It refuses a target that already exists (replacing a
  * live pack is the commit store's job) and a pack with read violations: writing it would drop content without a word.
@@ -69,7 +69,7 @@ public final class WholePackStore {
      *     reproduce
      * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
      *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
-     *     violation on the aggregate). This store is its only owner (ADR-0043).
+     *     violation on the aggregate). This store is its only owner (ADR-0042).
      */
     public record LoadedPack(
             Pack pack,
@@ -327,7 +327,7 @@ public final class WholePackStore {
     }
 
     /**
-     * Writes the manifest last, every derived field recomputed from the bytes staged (ADR-0043): what was read is never
+     * Writes the manifest last, every derived field recomputed from the bytes staged (ADR-0042): what was read is never
      * copied. A listed path the write does not hold refuses the write.
      */
     private void putManifest(Path staging, Pack pack, PackManifestDso manifest, Set<String> written)

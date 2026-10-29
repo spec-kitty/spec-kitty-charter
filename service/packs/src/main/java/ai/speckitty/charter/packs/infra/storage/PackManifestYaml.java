@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The YAML form of {@code pack-manifest.yaml} (ADR-0043): how a {@link PackManifestDso} is written from scratch and
+ * The YAML form of {@code pack-manifest.yaml} (ADR-0042): how a {@link PackManifestDso} is written from scratch and
  * read back from a document that has already passed the bundled {@code pack-manifest} schema. Keys are written in
  * schema order ({@code schema_version}, {@code manifest_hash}, {@code constituents}, {@code presets}); {@code presets}
  * is left out when the manifest lists none, as the schema refuses an empty list. Not a {@link YamlFormat}: the manifest

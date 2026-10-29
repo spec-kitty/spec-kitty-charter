@@ -41,7 +41,7 @@ final class WholePackExpectation {
     private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
     /**
-     * The two placeholders #195 may name while its upstream drafts are not yet filed (ADR-0043): the preset shape and
+     * The two placeholders #195 may name while its upstream drafts are not yet filed (ADR-0042): the preset shape and
      * the manifest shape. Exactly these are admitted; any other {@code #TBD-} key is refused. The hand-off replaces
      * each with the filed issue's number and removes this set.
      */

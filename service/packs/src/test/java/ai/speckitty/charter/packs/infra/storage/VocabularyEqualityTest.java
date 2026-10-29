@@ -155,7 +155,7 @@ class VocabularyEqualityTest {
                     "/packs/schemas/" + rule.schema() + ".schema.json")) {
                 Map<?, ?> properties = (Map<?, ?>)
                         JsonMapper.builder().build().readValue(in, Map.class).get("properties");
-                // A preset declares an id but is a pack-level file, not an artifact (#195, ADR-0043).
+                // A preset declares an id but is a pack-level file, not an artifact (#195, ADR-0042).
                 if (properties != null
                         && properties.containsKey("id")
                         && !rule.schema().equals("preset")) {

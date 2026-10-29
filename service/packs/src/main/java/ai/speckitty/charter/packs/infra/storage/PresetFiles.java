@@ -12,7 +12,7 @@ import java.util.Optional;
 
 /**
  * The storage rules of a preset file that are not in its schema, shared by the store's load and by validate mode so the
- * two refuse the same files (ADR-0043): a preset's {@code id} is its file stem, and its persistence shape maps to the
+ * two refuse the same files (ADR-0042): a preset's {@code id} is its file stem, and its persistence shape maps to the
  * domain {@link Preset} and back.
  */
 final class PresetFiles {

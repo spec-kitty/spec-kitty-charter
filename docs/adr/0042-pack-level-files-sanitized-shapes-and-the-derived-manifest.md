@@ -1,5 +1,5 @@
 ---
-title: "ADR-0043: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
+title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: draft
 updated: 2026-10-28T00:00:00Z
@@ -24,7 +24,7 @@ audience:
     guidance_text: Read this for the sanitized preset and manifest shapes, the RFC 8785 manifest hash, and validate mode's new findings.
 ---
 
-# ADR-0043: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest
+# ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest
 
 ## Status
 
