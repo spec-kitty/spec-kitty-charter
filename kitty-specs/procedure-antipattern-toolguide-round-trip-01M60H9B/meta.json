@@ -13,5 +13,7 @@
   "purpose_tldr": "Bring procedures, inline anti-patterns and toolguide Markdown guides into the whole-pack round trip with a sanitized storage shape.",
   "slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
   "target_branch": "feat/194a-procedure-antipattern-toolguide",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-29T05:30:51.782078+00:00"
 }
