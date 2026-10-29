@@ -2,7 +2,7 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-29T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -71,6 +71,43 @@ decision 9 is annotated where it stands. The amended point is in force for the c
 which implements it. Both records are Proposed, pending the operator's acceptance, which the pull
 requests for #193 and #195 ask for.
 
+### Amendment 2026-10-29 (#194): `markdown` is built
+
+Made by [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (PR-A1, part of epic
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), which is the mission that first
+needs the form: the toolguide guides it round-trips and `pack.md`, split off from
+[#195](https://github.com/spec-kitty/spec-kitty-charter/issues/195) to [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260), are Markdown. The
+decision text below is unchanged, and each point this note changes is annotated where it stands.
+The record stays Proposed.
+
+- **Decision 1: a `files` rule may declare `markdown`.** The table admits `yaml`, `markdown` and
+  `bytes`; `text` stays declared and unbuilt, refused when the table loads. A `files` rule naming
+  `bytes` is still refused, and so is a `payloads` rule naming anything but `bytes`. A `markdown`
+  rule's `schema` is a **structure schema**: a schema of the bundled set, loaded by the same strict
+  loader (Draft 2020-12, standard keywords only, so an `x-` keyword is refused; offline), that
+  validates the parsed model rather than a YAML tree. It must load when the table loads; one that
+  does not fails the table, naming the rule and the schema.
+- **Decision 3: `markdown` is built.** The model is a document of optional frontmatter (a YAML
+  mapping), an optional title (the H1), a preamble (the text before the first H2) and the H2
+  sections in order, each a title and its content. An H1 or H2 counts only at column 0 and outside a
+  fence; a backtick or tilde fence at any indentation hides headings, and it closes only on a fence
+  of its own character at least as long; H3 and deeper headings stay in their section's content.
+  Two documents are equal in meaning when their models are equal: the frontmatter by YAML meaning,
+  every string exactly; the blank lines between blocks and the final newline are not part of the
+  model. A text is refused as ambiguous, naming the line, for an unclosed fence, a carriage return
+  or a byte order mark, an H1 that is not the first block, an H1 or H2 indented by one to three
+  spaces, an empty heading, a tab after the `#` run, a closing `#` sequence, or a heading underlined with
+  `===` or `---` (a thematic break is not one). An empty file is a valid, empty
+  document. The model checks its own invariants when it is built (titles single-line and not
+  blank, no leading or trailing blank line in a content, no H1 or H2 inside one), and the canonical
+  writer reads its output back and fails unless it reads as the same document, so a document that
+  cannot be written faithfully is never written. The structure schema validates the model as the
+  JSON tree `{frontmatter?, title?, preamble, sections: [{title, content}]}`, `frontmatter` and
+  `title` left out when absent. The whole-pack gate compares a `markdown` file by its model and
+  reports a difference at its model path (`sections[2].content`); a Markdown text never reaches the
+  YAML reader, only its frontmatter does. At the pin no bundled rule declares `markdown`, so no gate
+  outcome changes; #194's toolguide guides and `pack.md` (#260) are its first files.
+
 ## Context
 
 Issue #193 asks for the two payload-bearing kinds: an **asset** (a `*.asset.yaml` sidecar and the
@@ -116,6 +153,9 @@ Four facts force a decision:
    leave its files held nowhere. A `files` rule has a
    schema, which validates a parsed YAML document, so a `files` rule declaring any form but `yaml`
    fails when the table loads, naming the rule: no schema-bearing kind is `bytes` today.
+   *(Amended 2026-10-29, see Status: the table admits `markdown` too, and a `files` rule may
+   declare it with a structure schema that validates the parsed model; `text` stays refused, and a
+   `files` rule naming `bytes` still fails.)*
 2. **Files with no schema have their own section, `payloads`.** A payload rule names `match`,
    `kind` and `content_form`, all required. It is consulted only when no `files` and no
    `exclusions` rule matches, so it overlaps them by design and the first match counts; no two
@@ -146,6 +186,8 @@ Four facts force a decision:
    shipped companions, text files an artifact names, read and written byte for byte as UTF-8
    (`CompanionContent.Text`), with no frontmatter split and no normalization. `markdown` stays a
    declared, unbuilt form until a kind needs it.
+   *(Amended 2026-10-29, see Status: #194 builds `markdown`: its model, equality, refusals,
+   canonical write and structure schemas.)*
 4. **The registry widens, without a second registry** (ADR-0037 decision 4). The file walk
    classifies every regular file once, not only `*.yaml`. In the domain:
    - an **`Asset`** is a `CharterArtifact` holding the sidecar's metadata (`id`, `mime`, `path` as

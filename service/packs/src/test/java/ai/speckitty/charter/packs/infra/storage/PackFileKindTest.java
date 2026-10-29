@@ -278,7 +278,7 @@ class PackFileKindTest {
                 Map.entry(payload.formatted("kind: k, content_form: html"), "unknown content_form 'html'"),
                 Map.entry(
                         payload.formatted("kind: k, content_form: markdown"),
-                        "content_form 'markdown' is declared but not built yet (the mission that first needs it builds it)"),
+                        "declares content_form 'markdown'; a payloads rule has no schema and its files are bytes"),
                 Map.entry(
                         payload.formatted("kind: k, content_form: text"),
                         "content_form 'text' is declared but not built yet"),
@@ -289,8 +289,11 @@ class PackFileKindTest {
                         "files: []\nexclusions: [{match: a, reason: r, note: x}]",
                         "a rule in exclusions has the unknown key 'note'"),
                 Map.entry(
+                        "files: [{match: a, schema: s, content_form: text}]\nexclusions: []",
+                        "content_form 'text' is declared but not built yet (the mission that first needs it builds it)"),
+                Map.entry(
                         "files: [{match: a, schema: s, content_form: markdown}]\nexclusions: []",
-                        "content_form 'markdown' is declared but not built yet"));
+                        "the files rule for 'a' declares content_form 'markdown' with schema 's', which does not load"));
 
         problems.forEach((rules, problem) -> assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rules)))
                 .as(rules)
@@ -310,7 +313,7 @@ class PackFileKindTest {
         assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rule.formatted("bytes"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("packs/file-kinds.yaml: the files rule for '*/a.bin' declares content_form 'bytes'; a"
-                        + " files rule has a schema and its files are yaml");
+                        + " files rule has a schema and its files are yaml or markdown");
         PackFileKind table = new PackFileKind(TABLE.formatted(rule.formatted("yaml")));
         assertThat(table.classify("p/a.bin"))
                 .isEqualTo(new PackFileKind.Mapped("s", Optional.of("packs/schemas/s.schema.json"), ContentForm.YAML));
@@ -331,5 +334,58 @@ class PackFileKindTest {
                 .isInstanceOfSatisfying(
                         PackFileKind.Mapped.class,
                         mapped -> assertThat(mapped.kind()).isEqualTo("preset"));
+    }
+
+    // ---- the markdown form (#194) ----------------------------------------------------------------------
+
+    /** The directory of the test-only structure schemas a {@code markdown} rule names here. */
+    private static final String STRUCTURE_SCHEMAS = "markdown-rule-fixtures/";
+
+    /**
+     * FR-005: {@code markdown} is built, so a {@code files} rule may declare it with a structure schema; the file maps
+     * to that schema and the {@code markdown} form. {@code text} stays refused, on a {@code files} and a
+     * {@code payloads} rule alike.
+     */
+    @Test
+    void aMarkdownFilesRuleLoadsAndTextIsStillRefused() {
+        String rule = "files: [{match: '*/notes/*.md', schema: notes, content_form: %s}]\nexclusions: []";
+
+        PackFileKind table = new PackFileKind(TABLE.formatted(rule.formatted("markdown")), STRUCTURE_SCHEMAS);
+
+        assertThat(table.classify("p/notes/a.md"))
+                .isEqualTo(new PackFileKind.Mapped(
+                        "notes", Optional.of(STRUCTURE_SCHEMAS + "notes.schema.json"), ContentForm.MARKDOWN));
+        assertThat(table.fileRules())
+                .singleElement()
+                .isEqualTo(new PackFileKind.FileRule("*/notes/*.md", "notes", ContentForm.MARKDOWN));
+        assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rule.formatted("text")), STRUCTURE_SCHEMAS))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("packs/file-kinds.yaml: content_form 'text' is declared but not built yet (the mission"
+                        + " that first needs it builds it); the rule for '*/notes/*.md' cannot be read");
+    }
+
+    /**
+     * A {@code markdown} rule's structure schema must load as strictly as the bundled ones; one that is missing or uses
+     * a keyword outside 2020-12 is refused when the table loads, naming the rule and the schema. The same rule with
+     * {@code yaml} keeps today's behaviour: its schema is not loaded with the table.
+     */
+    @Test
+    void aMarkdownRuleWhoseSchemaDoesNotLoadIsRefusedWhenTheTableLoads() {
+        String rule = "files: [{match: '*/notes/*.md', schema: notes, content_form: %s}]\nexclusions: []";
+
+        assertThatThrownBy(() -> new PackFileKind(TABLE.formatted(rule.formatted("markdown"))))
+                .as("no notes schema among the bundled ones")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageStartingWith("packs/file-kinds.yaml: the files rule for '*/notes/*.md' declares content_form"
+                        + " 'markdown' with schema 'notes', which does not load: notes.schema.json is missing");
+        assertThatThrownBy(() -> new PackFileKind(
+                        TABLE.formatted(rule.formatted("markdown")), STRUCTURE_SCHEMAS + "unloadable/"))
+                .as("an x- keyword")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageStartingWith("packs/file-kinds.yaml: the files rule for '*/notes/*.md' declares content_form"
+                        + " 'markdown' with schema 'notes', which does not load: notes.schema.json cannot be compiled");
+        assertThat(new PackFileKind(TABLE.formatted(rule.formatted("yaml"))).classify("p/notes/a.md"))
+                .isEqualTo(new PackFileKind.Mapped(
+                        "notes", Optional.of("packs/schemas/notes.schema.json"), ContentForm.YAML));
     }
 }

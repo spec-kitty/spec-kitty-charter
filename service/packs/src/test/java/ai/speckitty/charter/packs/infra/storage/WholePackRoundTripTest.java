@@ -33,6 +33,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -305,6 +306,62 @@ class WholePackRoundTripTest {
     }
 
     /**
+     * The Markdown branch (#194): a file whose form is {@code markdown} is compared by its model, so a blank-line change
+     * is green, one changed character is red at its section, a written text the Markdown reader refuses is red naming
+     * the refusal, and no text reaches the YAML reader (each source line {@code key: a: b} would throw there).
+     */
+    @Test
+    void theMarkdownBranchComparesModelsAndNeverReadsYaml(@TempDir Path temp) throws IOException {
+        String text = "---\nid: n\n---\n# Notes\n\n## Summary\n\nkey: a: b\n\n## Detail\n\nmore: c: d\n";
+        Path source = temp.resolve("src").resolve(BUILT_IN);
+        Path written = temp.resolve("out").resolve(BUILT_IN);
+        for (String name : List.of("same.md", "spaced.md", "changed.md", "refused.md")) {
+            writeBytes(source.resolve("notes/" + name), text.getBytes(StandardCharsets.UTF_8));
+        }
+        writeBytes(written.resolve("notes/same.md"), text.getBytes(StandardCharsets.UTF_8));
+        writeBytes(
+                written.resolve("notes/spaced.md"),
+                text.replace("## Detail", "\n\n## Detail").getBytes(StandardCharsets.UTF_8));
+        writeBytes(
+                written.resolve("notes/changed.md"),
+                text.replace("more: c: d", "more: c: e").getBytes(StandardCharsets.UTF_8));
+        writeBytes(
+                written.resolve("notes/refused.md"),
+                text.replace("# Notes\n", "# Notes\r\n").getBytes(StandardCharsets.UTF_8));
+        SortedMap<String, String> census = new TreeMap<>();
+        List.of("same.md", "spaced.md", "changed.md", "refused.md")
+                .forEach(name -> census.put("notes/" + name, "notes"));
+        WholePackRoundTrip inPlace = new WholePackRoundTrip() {
+            @Override
+            public Set<String> modelledKinds() {
+                return Set.of("notes");
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
+                return kindOf.keySet().stream().collect(Collectors.toMap(path -> path, Written::new));
+            }
+        };
+        Set<String> paired = new TreeSet<>();
+        Map<String, List<String>> information = new TreeMap<>();
+
+        Map<String, Optional<String>> observed =
+                observe(inPlace, source, written, census, information, paired, path -> ContentForm.MARKDOWN);
+
+        assertThat(observed)
+                .containsEntry("notes/same.md", Optional.empty())
+                .containsEntry("notes/spaced.md", Optional.empty())
+                .containsEntry(
+                        "notes/changed.md", Optional.of("sections[1].content: source more: c: d, written more: c: e"))
+                .containsEntry(
+                        "notes/refused.md",
+                        Optional.of(
+                                "document: source read, written refused: line 4: a carriage return is not admitted"));
+        assertThat(paired).isEqualTo(census.keySet());
+        assertThat(information).isEmpty();
+    }
+
+    /**
      * The loaded pack with every asset file's and template's bytes changed by {@code change}; nothing else moves, the
      * presets included.
      */
@@ -462,51 +519,102 @@ class WholePackRoundTripTest {
             SortedMap<String, String> census,
             Map<String, List<String>> information,
             Set<String> paired) {
+        String packName = String.valueOf(pack.getFileName());
+        return observe(
+                roundTrip,
+                pack,
+                written,
+                census,
+                information,
+                paired,
+                path -> WholePackCensus.contentFormOf(packName, path));
+    }
+
+    /**
+     * Runs the round trip and compares every modelled file with its source by the content form {@code formOf} gives
+     * its path; the gate passes the bundled table's form ({@link WholePackCensus#contentFormOf}), a test a fixture's.
+     */
+    private static Map<String, Optional<String>> observe(
+            WholePackRoundTrip roundTrip,
+            Path pack,
+            Path written,
+            SortedMap<String, String> census,
+            Map<String, List<String>> information,
+            Set<String> paired,
+            Function<String, ContentForm> formOf) {
         Map<String, Outcome> outcomes = roundTrip.roundTrip(pack, written, census);
         MeaningComparator comparator = MeaningComparator.adr0036();
         Map<String, Optional<String>> observed = new TreeMap<>();
-        String packName = String.valueOf(pack.getFileName());
         for (Map.Entry<String, Outcome> entry : outcomes.entrySet()) {
             String path = entry.getKey();
             String kind = census.get(path);
-            if (WholePackCensus.contentFormOf(packName, path) == ContentForm.BYTES) {
-                // #193: decided before any text read; a payload need not be text, and has no edges.
-                observed.put(
-                        path,
-                        switch (entry.getValue()) {
-                            case Written w -> {
-                                paired.add(w.writtenPath());
-                                yield bytesRed(
-                                        readBytes(pack.resolve(path)), readBytes(written.resolve(w.writtenPath())));
-                            }
-                            case Refused r -> Optional.of("refused: " + r.reason());
-                        });
-                continue;
-            }
-            String source = read(pack.resolve(path));
-            observed.put(
-                    path,
-                    switch (entry.getValue()) {
+            Outcome outcome = entry.getValue();
+            // The form is decided before any text is read; the dispatch is exhaustive, so a new form is decided here.
+            Optional<String> red = switch (formOf.apply(path)) {
+                // #193: a payload need not be text, and has no edges.
+                case BYTES ->
+                    switch (outcome) {
                         case Written w -> {
                             paired.add(w.writtenPath());
-                            String writtenText = read(written.resolve(w.writtenPath()));
-                            Optional<String> red = red(comparator.differencesOfTexts(kind, source, writtenText));
-                            yield DomainRoundTrip.MANIFEST.equals(kind)
-                                    ? withStale(red, pack, written, outcomes, source, writtenText)
-                                    : red;
+                            yield bytesRed(readBytes(pack.resolve(path)), readBytes(written.resolve(w.writtenPath())));
                         }
                         case Refused r -> Optional.of("refused: " + r.reason());
-                    });
-            List<String> duplicates = comparator.duplicateEdges(kind, source);
-            if (!duplicates.isEmpty()) {
-                information.put(
-                        path,
-                        duplicates.stream()
-                                .map(e -> "duplicate edge in the source: " + e)
-                                .toList());
-            }
+                    };
+                // #194: compared by the Markdown model; the text never reaches the YAML reader, and has no edges.
+                case MARKDOWN ->
+                    switch (outcome) {
+                        case Written w -> {
+                            paired.add(w.writtenPath());
+                            yield red(comparator.compareMarkdown(
+                                    read(pack.resolve(path)), read(written.resolve(w.writtenPath()))));
+                        }
+                        case Refused r -> Optional.of("refused: " + r.reason());
+                    };
+                case YAML -> yamlRed(comparator, kind, pack, path, written, outcome, outcomes, information, paired);
+                case TEXT ->
+                    throw new IllegalStateException(
+                            path + ": content form 'text' is not built; the gate has no comparison for it");
+            };
+            observed.put(path, red);
         }
         return observed;
+    }
+
+    /**
+     * A YAML file compared by meaning (ADR-0036), with a graph shard's duplicate edges noted as information and the
+     * manifest's derived fields verified on both sides (#195).
+     */
+    private static Optional<String> yamlRed(
+            MeaningComparator comparator,
+            String kind,
+            Path pack,
+            String path,
+            Path written,
+            Outcome outcome,
+            Map<String, Outcome> outcomes,
+            Map<String, List<String>> information,
+            Set<String> paired) {
+        String source = read(pack.resolve(path));
+        Optional<String> red = switch (outcome) {
+            case Written w -> {
+                paired.add(w.writtenPath());
+                String writtenText = read(written.resolve(w.writtenPath()));
+                Optional<String> meaning = red(comparator.differencesOfTexts(kind, source, writtenText));
+                yield DomainRoundTrip.MANIFEST.equals(kind)
+                        ? withStale(meaning, pack, written, outcomes, source, writtenText)
+                        : meaning;
+            }
+            case Refused r -> Optional.of("refused: " + r.reason());
+        };
+        List<String> duplicates = comparator.duplicateEdges(kind, source);
+        if (!duplicates.isEmpty()) {
+            information.put(
+                    path,
+                    duplicates.stream()
+                            .map(e -> "duplicate edge in the source: " + e)
+                            .toList());
+        }
+        return red;
     }
 
     /**

@@ -31,9 +31,16 @@ rule also says the file's **content form**, how it is read, held, written and co
 held by its rule's kind, an `asset-payload` as an asset file and a `template` as a template, round-tripped byte for
 byte; a `yaml` file is validated by its rule's schema. A file's extension and an asset's `mime` never choose the
 form. The table fails when it loads, naming the rule, if a rule names a form the service does not build yet
-(`markdown`, `text`), a `files` rule names a form other than `yaml` (every schema-bearing kind is YAML today), a
-`payloads` rule names a form other than `bytes` (the only form the service holds a schema-less file in), or a
-`bytes` rule names a kind other than `asset-payload` or `template`.
+(`text`), a `files` rule names `bytes` (a schema validates a parsed document), a `markdown` rule's schema does not
+load, a `payloads` rule names a form other than `bytes` (the only form the service holds a schema-less file in), or
+a `bytes` rule names a kind other than `asset-payload` or `template`.
+
+A `files` rule may declare `content_form: markdown` with a `schema`: its files are read into a Markdown model
+(optional frontmatter, optional H1 title, a preamble, and the H2 sections in order, each a `title` and its
+`content`), compared by that model and written back in a canonical form. The rule's schema is a **structure
+schema**, a Draft 2020-12 schema in `schemas/` with standard keywords only, that validates the model as the JSON
+tree `{"frontmatter": {...}, "title": "...", "preamble": "...", "sections": [{"title": "...", "content": "..."}]}`;
+`frontmatter` and `title` are left out when the document has none. No rule declares `markdown` yet.
 
 ## Validate a file
 

@@ -1,5 +1,8 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -37,6 +40,9 @@ import org.jspecify.annotations.Nullable;
  * </ul>
  *
  * <p>Not implemented: ADR-0036's reading that an absent field equals its schema default (no corpus file needs it).
+ *
+ * <p>A file of the {@code markdown} content form is compared by {@link #compareMarkdown}, never through the YAML
+ * reader: its texts are read into Markdown models and compared there (ADR-0040 decision 3, as amended by #194).
  */
 final class MeaningComparator {
 
@@ -105,6 +111,55 @@ final class MeaningComparator {
      */
     List<Difference> differencesOfTexts(String kind, String sourceText, String writtenText) {
         return differences(kind, Yaml.load(sourceText), Yaml.load(writtenText));
+    }
+
+    /**
+     * Reads both texts as Markdown documents and lists every difference between their models, located by model path
+     * ({@code frontmatter}, {@code title}, {@code preamble}, {@code sections[i].title}, {@code sections[i].content},
+     * {@code sections[i]}). A text the Markdown reader refuses is one difference at {@code document}, naming the refusal;
+     * the texts never reach the YAML reader; only a frontmatter's own lines do, loaded by the Markdown reader.
+     *
+     * @param sourceText the source file's text
+     * @param writtenText the written file's text
+     * @return every difference, in model order; empty when both models are equal
+     */
+    List<Difference> compareMarkdown(String sourceText, String writtenText) {
+        MarkdownCodec.Outcome source = MarkdownCodec.parse(sourceText);
+        MarkdownCodec.Outcome written = MarkdownCodec.parse(writtenText);
+        if (!(source instanceof MarkdownCodec.Parsed(MarkdownDocument s))
+                || !(written instanceof MarkdownCodec.Parsed(MarkdownDocument w))) {
+            return List.of(new Difference("document", describe(source), describe(written)));
+        }
+        return MarkdownDocument.differences(s, w).stream()
+                .map(path -> new Difference(path, renderAt(s, path), renderAt(w, path)))
+                .toList();
+    }
+
+    /** A read outcome as a difference renders it: the refusal, or that the text was read. */
+    private static String describe(MarkdownCodec.Outcome outcome) {
+        return switch (outcome) {
+            case MarkdownCodec.Parsed parsed -> "read";
+            case MarkdownRefusal refusal -> "refused: " + refusal.message();
+        };
+    }
+
+    /** The value at a model path {@link MarkdownDocument#differences} names, rendered, or {@code <absent>}. */
+    private static String renderAt(MarkdownDocument document, String path) {
+        if ("frontmatter".equals(path)) {
+            return document.frontmatter().map(MeaningComparator::render).orElse(ABSENT);
+        }
+        if ("title".equals(path)) {
+            return document.title().map(MeaningComparator::render).orElse(ABSENT);
+        }
+        if ("preamble".equals(path)) {
+            return render(document.preamble());
+        }
+        int index = Integer.parseInt(path.substring(path.indexOf('[') + 1, path.indexOf(']')));
+        if (index >= document.sections().size()) {
+            return ABSENT;
+        }
+        MarkdownDocument.Section section = document.sections().get(index);
+        return render(path.endsWith(".content") ? section.content() : section.title());
     }
 
     /**

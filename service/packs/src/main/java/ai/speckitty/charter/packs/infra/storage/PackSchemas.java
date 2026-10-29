@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaException;
@@ -45,6 +46,9 @@ import tools.jackson.databind.node.StringNode;
  * build or configuration fault and throws {@link IllegalStateException} naming the file, never a pack finding.
  *
  * <p>Validation returns facts ({@link SchemaViolation}); the validator's localized message text is never read.
+ *
+ * <p>A {@code markdown} rule's schema is a structure schema: it is loaded like every other one and validates the parsed
+ * Markdown model rendered as a JSON tree ({@link #validateMarkdown}).
  */
 final class PackSchemas {
 
@@ -208,6 +212,44 @@ final class PackSchemas {
         }
         violations.addAll(judged);
         return violations;
+    }
+
+    /**
+     * Validates a parsed Markdown document against the structure schema of {@code kind}: the schema sees the model as
+     * the tree {@link #markdownTree} renders.
+     *
+     * @param kind the schema kind, as {@link PackFileKind.Mapped#kind()} names it for a {@code markdown} rule
+     * @param file the pack-relative path, copied onto every violation
+     * @param document the parsed document
+     * @return the violations, empty when the model conforms; the same facts {@link #validate} returns
+     * @throws IllegalArgumentException when no schema of that kind is loaded
+     */
+    List<SchemaViolation> validateMarkdown(String kind, String file, MarkdownDocument document) {
+        return validate(kind, file, markdownTree(document));
+    }
+
+    /**
+     * The Markdown model as the tree a structure schema validates: {@code frontmatter} (the loaded mapping) and
+     * {@code title} only when the document has them, never as null; then {@code preamble} (a string, possibly empty)
+     * and {@code sections}, a list of {@code {title, content}}.
+     *
+     * @param document the parsed document
+     * @return the tree, in model order
+     */
+    static Map<String, Object> markdownTree(MarkdownDocument document) {
+        Map<String, Object> tree = new LinkedHashMap<>();
+        document.frontmatter().ifPresent(frontmatter -> tree.put("frontmatter", frontmatter));
+        document.title().ifPresent(title -> tree.put("title", title));
+        tree.put("preamble", document.preamble());
+        List<Map<String, String>> sections = new ArrayList<>();
+        for (MarkdownDocument.Section section : document.sections()) {
+            Map<String, String> entry = new LinkedHashMap<>();
+            entry.put("title", section.title());
+            entry.put("content", section.content());
+            sections.add(entry);
+        }
+        tree.put("sections", sections);
+        return tree;
     }
 
     /**

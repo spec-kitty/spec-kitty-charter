@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import com.networknt.schema.InvalidSchemaException;
 import com.networknt.schema.InvalidSchemaRefException;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -354,5 +356,69 @@ class PackSchemasTest {
         assertThat(node.get("a").asString()).isEqualTo("NaN");
         assertThat(node.get("b").get(0).asString()).isEqualTo("Infinity");
         assertThat(node.get("b").get(1).asString()).isEqualTo("-Infinity");
+    }
+
+    // ---- structure schemas: a markdown rule's schema validates the parsed model (#194) ----------------
+
+    private static final PackSchemas STRUCTURE = new PackSchemas("markdown-rule-fixtures/", List.of("notes"));
+
+    private static MarkdownDocument notes(List<MarkdownDocument.Section> sections) {
+        return new MarkdownDocument(
+                Optional.of(Map.of("id", "weekly")), Optional.of("Weekly notes"), "A preamble.", sections);
+    }
+
+    @Test
+    void aStructureSchemaLoadsThroughTheSameStrictLoaderAndAcceptsAConformingModel() {
+        MarkdownDocument document = notes(List.of(
+                new MarkdownDocument.Section("Summary", "One line."), new MarkdownDocument.Section("Detail", "")));
+
+        assertThat(STRUCTURE.kinds()).containsExactly("notes");
+        assertThat(STRUCTURE.validateMarkdown("notes", "p/notes/a.md", document))
+                .isEmpty();
+    }
+
+    @Test
+    void aStructureSchemaRefusesAModelMissingARequiredSection() {
+        MarkdownDocument document = notes(List.of(new MarkdownDocument.Section("Detail", "Only detail.")));
+
+        assertThat(STRUCTURE.validateMarkdown("notes", "p/notes/a.md", document))
+                .singleElement()
+                .satisfies(v -> {
+                    assertThat(v.file()).isEqualTo("p/notes/a.md");
+                    assertThat(v.pointer()).containsExactly("sections");
+                    // The validator reports an unmet `contains` as its implied `minContains: 1`.
+                    assertThat(v.keyword()).isEqualTo("minContains");
+                });
+    }
+
+    @Test
+    void theModelTreeOmitsAnAbsentFrontmatterAndTitleRatherThanWritingNull() {
+        MarkdownDocument bare = new MarkdownDocument(
+                Optional.empty(), Optional.empty(), "", List.of(new MarkdownDocument.Section("Summary", "x")));
+
+        assertThat(PackSchemas.markdownTree(bare))
+                .containsOnlyKeys("preamble", "sections")
+                .containsEntry("sections", List.of(Map.of("title", "Summary", "content", "x")));
+        assertThat(PackSchemas.markdownTree(notes(List.of())))
+                .containsOnlyKeys("frontmatter", "title", "preamble", "sections");
+        assertThat(STRUCTURE.validateMarkdown("notes", "p/notes/a.md", bare))
+                .as("the schema requires frontmatter and title, so their absence is reported, not a null type")
+                .extracting(SchemaViolation::keyword)
+                .containsOnly("required");
+    }
+
+    @Test
+    void aStructureSchemaWithAnUnknownKeywordIsRefusedWhenItLoads() {
+        assertThatThrownBy(() -> new PackSchemas("markdown-rule-fixtures/unloadable/", List.of("notes")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("notes.schema.json")
+                .hasRootCauseInstanceOf(InvalidSchemaException.class);
+    }
+
+    @Test
+    void validatingMarkdownAgainstAKindThatIsNotLoadedIsRefused() {
+        assertThatThrownBy(() -> STRUCTURE.validateMarkdown("guide", "p/a.md", MarkdownDocument.empty()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No schema of kind 'guide' is loaded");
     }
 }

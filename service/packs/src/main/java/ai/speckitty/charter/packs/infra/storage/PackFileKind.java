@@ -21,9 +21,10 @@ import org.jspecify.annotations.Nullable;
  * {@code payloads}.
  *
  * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
- * rule declares a form other than {@code yaml} (its schema validates a parsed YAML document), a {@code payloads} rule
- * declares a form other than {@code bytes} (the only form the store holds a schema-less file in), or a {@code bytes}
- * rule names a kind outside {@link #BYTES_KINDS}, the kinds the store holds a {@code bytes} file as.
+ * rule declares a form other than {@code yaml} or {@code markdown} (its schema validates the parsed YAML document, or
+ * the parsed Markdown model), a {@code markdown} rule's schema does not load, a {@code payloads} rule declares a form
+ * other than {@code bytes} (the only form the store holds a schema-less file in), or a {@code bytes} rule names a kind
+ * outside {@link #BYTES_KINDS}, the kinds the store holds a {@code bytes} file as.
  *
  * <p>A rule's {@code match} is a glob over the path relative to the directory that holds the pack directories, with
  * forward slashes. {@code *} matches within one path segment, {@code **}{@code /} matches zero or more whole
@@ -47,7 +48,8 @@ final class PackFileKind {
      * The content forms the store builds. A rule naming another form fails when the table loads (C-004); building a
      * form is one entry here plus its codec.
      */
-    private static final Set<ContentForm> BUILT_FORMS = EnumSet.of(ContentForm.YAML, ContentForm.BYTES);
+    private static final Set<ContentForm> BUILT_FORMS =
+            EnumSet.of(ContentForm.YAML, ContentForm.MARKDOWN, ContentForm.BYTES);
 
     /** The {@code payloads} rule kind of an asset file. */
     static final String ASSET_PAYLOAD = "asset-payload";
@@ -119,6 +121,7 @@ final class PackFileKind {
 
     private record Compiled(String match, Pattern pattern) {}
 
+    private final String schemaDir;
     private final List<String> nodeKinds;
     private final Map<String, String> fragmentKinds;
     private final List<FileRule> fileRules;
@@ -134,10 +137,25 @@ final class PackFileKind {
      * @throws IllegalStateException when the text is not a well-formed table
      */
     PackFileKind(String yaml) {
-        this(parse(yaml));
+        this(yaml, SCHEMA_DIR);
     }
 
-    private PackFileKind(Table table) {
+    /**
+     * A table read from the text of a {@code file-kinds.yaml} whose schemas live in {@code schemaDir}, which the tests
+     * use to classify with a rule whose structure schema is a test fixture.
+     *
+     * @param yaml the table's YAML text
+     * @param schemaDir the classpath directory (with a trailing slash) that holds {@code <schema>.schema.json}
+     * @throws IllegalStateException when the text is not a well-formed table, or a {@code markdown} rule's schema does
+     *     not load
+     */
+    PackFileKind(String yaml, String schemaDir) {
+        this(parse(yaml), schemaDir);
+    }
+
+    private PackFileKind(Table table, String schemaDir) {
+        requireLoadableStructureSchemas(table.fileRules(), schemaDir);
+        this.schemaDir = schemaDir;
         this.nodeKinds = List.copyOf(table.nodeKinds());
         this.fragmentKinds = Map.copyOf(table.fragmentKinds());
         this.fileRules = List.copyOf(table.fileRules());
@@ -225,7 +243,7 @@ final class PackFileKind {
             if (i < fileRules.size()) {
                 FileRule rule = fileRules.get(i);
                 return new Mapped(
-                        rule.schema(), Optional.of(SCHEMA_DIR + rule.schema() + SCHEMA_SUFFIX), rule.contentForm());
+                        rule.schema(), Optional.of(schemaDir + rule.schema() + SCHEMA_SUFFIX), rule.contentForm());
             }
             ExclusionRule rule = exclusionRules.get(i - fileRules.size());
             return new Excluded(rule.match(), rule.reason());
@@ -275,11 +293,11 @@ final class PackFileKind {
         for (Object entry : list(table.get("files"), "files")) {
             Map<String, Object> rule = rule(entry, "files", FILE_KEYS);
             ContentForm form = rule.containsKey(CONTENT_FORM) ? contentForm(rule) : ContentForm.YAML;
-            if (form != ContentForm.YAML) {
-                // Every schema'd kind is YAML today: the schema validates the parsed document.
+            if (form == ContentForm.BYTES) {
+                // A schema validates a parsed document: a YAML tree, or the model of a Markdown document.
                 throw new IllegalStateException(RESOURCE + ": the files rule for '" + string(rule, MATCH)
                         + "' declares content_form '" + form.token()
-                        + "'; a files rule has a schema and its files are yaml");
+                        + "'; a files rule has a schema and its files are yaml or markdown");
             }
             files.add(new FileRule(string(rule, MATCH), string(rule, "schema"), form));
         }
@@ -310,6 +328,27 @@ final class PackFileKind {
             payloads.add(new PayloadRule(string(rule, MATCH), kind, form));
         }
         return new Table(nodeKinds, fragments, files, exclusions, payloads);
+    }
+
+    /**
+     * A {@code markdown} rule's schema validates the parsed model, so it must load as strictly as every bundled schema
+     * ({@link PackSchemas}: standard 2020-12 keywords only, offline); one that does not is refused when the table
+     * loads, naming the rule, instead of when the first file is validated.
+     */
+    private static void requireLoadableStructureSchemas(List<FileRule> rules, String schemaDir) {
+        for (FileRule rule : rules) {
+            if (rule.contentForm() != ContentForm.MARKDOWN) {
+                continue;
+            }
+            try {
+                new PackSchemas(schemaDir, List.of(rule.schema()));
+            } catch (RuntimeException notLoadable) {
+                throw new IllegalStateException(
+                        RESOURCE + ": the files rule for '" + rule.match() + "' declares content_form 'markdown' with"
+                                + " schema '" + rule.schema() + "', which does not load: " + notLoadable.getMessage(),
+                        notLoadable);
+            }
+        }
     }
 
     /** A rule of {@code section}; a key the section does not define is refused, never ignored. */
