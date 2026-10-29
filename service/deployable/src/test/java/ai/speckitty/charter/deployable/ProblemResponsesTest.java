@@ -21,13 +21,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The failures the contract scenarios cannot provoke: a method the path does not have, the container's error page
- * reached by a forward and by a direct request, and a server error Spring resolves itself (logged once, never
- * shown). The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
+ * reached by a forward and by a direct request, a server error Spring resolves itself (logged once, never
+ * shown), and a registration body that bean validation refuses before the handler runs. The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
  * {@code errors.feature}; what the container answers before Spring sees the request is {@code ConnectorErrorsTest}.
  */
 @SpringBootTest(
@@ -70,6 +71,26 @@ class ProblemResponsesTest {
                 .andExpect(header().string("Allow", "GET"))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(content().json("{\"title\":\"Method Not Allowed\",\"status\":405}", JsonCompareMode.STRICT));
+    }
+
+    /**
+     * A registration body without a field the contract requires is a client error. With bean validation on the
+     * classpath (ADR-0041 decision 2), Spring refuses it as the contract's {@code default} problem before the
+     * controller runs; before that, the missing field surfaced as an {@code internal_error} 500 (#228).
+     */
+    @Test
+    void aRegistrationBodyWithoutARequiredFieldIsABadRequestProblemNotAServerError() throws Exception {
+        mvc.perform(
+                        post("/api/v1/packs/qa/directives")
+                                .header("Authorization", BEARER)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"id\": \"X\", \"schemaVersion\": \"1.0\", \"intent\": \"i\", \"enforcement\": \"required\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(result ->
+                        assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(content().json("{\"title\":\"Bad Request\",\"status\":400}", JsonCompareMode.STRICT));
     }
 
     @Test
