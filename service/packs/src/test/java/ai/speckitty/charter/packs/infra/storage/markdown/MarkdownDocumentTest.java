@@ -109,6 +109,20 @@ class MarkdownDocumentTest {
                     .isThrownBy(() -> new Section("S", "one\ntwo\n## three"))
                     .withMessageContaining("line 3 is a column-0 H2 heading outside a fence");
         }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"---", "---\nx", "\uFEFFintro"})
+        @DisplayName("a preamble that opens the text is refused when it would not read back; behind a title it is not")
+        void openingPreamble(String preamble) {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> withPreamble(preamble))
+                    .withMessageContaining("preamble must not start with");
+            assertThat(new MarkdownDocument(Optional.empty(), Optional.of("T"), preamble, List.of()).preamble())
+                    .isEqualTo(preamble);
+            assertThat(new MarkdownDocument(Optional.of(Map.of()), Optional.empty(), preamble, List.of()).preamble())
+                    .isEqualTo(preamble);
+            assertThat(withPreamble("x\n\n" + preamble).preamble()).isEqualTo("x\n\n" + preamble);
+        }
     }
 
     @Nested

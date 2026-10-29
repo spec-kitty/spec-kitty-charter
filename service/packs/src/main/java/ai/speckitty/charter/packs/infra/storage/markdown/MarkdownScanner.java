@@ -25,16 +25,13 @@ final class MarkdownScanner {
     /** A setext underline: up to three spaces, a run of {@code =} or of {@code -}, then only spaces or tabs. */
     private static final Pattern SETEXT_UNDERLINE = Pattern.compile("^ {0,3}(?:=+|-+)[ \\t]*$");
 
-    /** A thematic break: up to three spaces, three or more of one of {@code - * _}, spaces or tabs between. */
-    private static final Pattern THEMATIC_BREAK =
-            Pattern.compile("^ {0,3}(?:(?:-[ \\t]*){3,}|(?:\\*[ \\t]*){3,}|(?:_[ \\t]*){3,})$");
-
     /** A heading text that ends in a closing sequence: only {@code #}s, or a space then {@code #}s. */
     private static final Pattern CLOSING_SEQUENCE = Pattern.compile("^(?:#+|.*[ \\t]#+)$");
 
     private static final int MAX_HEADING_INDENT = 3;
     private static final int MAX_ATX_LEVEL = 6;
     private static final int MIN_FENCE_LENGTH = 3;
+    private static final int MIN_THEMATIC_BREAK_LENGTH = 3;
 
     private MarkdownScanner() {}
 
@@ -188,7 +185,7 @@ final class MarkdownScanner {
                 throw refused(number, "a setext heading underline is ambiguous; use an ATX heading or a blank line");
             }
             scanned.add(new Line(number, text, Kind.TEXT, ""));
-            underParagraph = !THEMATIC_BREAK.matcher(text).matches() && !isDeeperHeading(text);
+            underParagraph = !isThematicBreak(text) && !isDeeperHeading(text);
         }
         fences.open().ifPresent(fence -> {
             throw refused(fence.line(), "unclosed fence opened at line " + fence.line());
@@ -287,6 +284,32 @@ final class MarkdownScanner {
             throw refused(number, name + " with a closing # sequence is ambiguous");
         }
         return new Line(number, text, level == 1 ? Kind.H1 : Kind.H2, title);
+    }
+
+    /**
+     * Whether a line is a thematic break: up to three spaces, then three or more of one of {@code - * _} with only
+     * spaces or tabs between and after them. One pass over the line, so no line length can exhaust the stack (a
+     * repeated regex group recursed once per marker).
+     */
+    static boolean isThematicBreak(String text) {
+        int indent = leadingSpaces(text);
+        if (indent > MAX_HEADING_INDENT || indent == text.length()) {
+            return false;
+        }
+        char marker = text.charAt(indent);
+        if (marker != '-' && marker != '*' && marker != '_') {
+            return false;
+        }
+        int markers = 0;
+        for (int i = indent; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == marker) {
+                markers++;
+            } else if (c != ' ' && c != '\t') {
+                return false;
+            }
+        }
+        return markers >= MIN_THEMATIC_BREAK_LENGTH;
     }
 
     /** Whether a line is an ATX heading of level 3 to 6 (text for this form, not a paragraph line). */

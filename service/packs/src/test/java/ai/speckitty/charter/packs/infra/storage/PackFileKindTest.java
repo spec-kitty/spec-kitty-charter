@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -11,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -387,5 +393,85 @@ class PackFileKindTest {
         assertThat(new PackFileKind(TABLE.formatted(rule.formatted("yaml"))).classify("p/notes/a.md"))
                 .isEqualTo(new PackFileKind.Mapped(
                         "notes", Optional.of("packs/schemas/notes.schema.json"), ContentForm.YAML));
+    }
+
+    /**
+     * A {@code markdown} rule is a {@code files} rule, so it outranks every exclusion and payload rule: a rule such as
+     * {@code **}{@code /*.md} would turn an excluded assets README and every Markdown template or asset into a
+     * schema'd Markdown file. The table load checks no overlap, so this does: no bundled {@code markdown} rule (none at
+     * the pin) may match a path an exclusion or a payload rule matches, over the sample paths here and every file of
+     * the vendored packs. It fails as soon as an overlapping {@code markdown} rule is added (ADR-0040, 2026-10-29).
+     */
+    @Test
+    void noBundledMarkdownRuleMatchesAPathAnExclusionOrAPayloadRuleMatches() throws IOException {
+        assertThat(markdownOverlaps(KINDS, samplePaths())).isEmpty();
+    }
+
+    /** The guard above is not vacuous: an overlapping rule is caught, a disjoint one is not. */
+    @Test
+    void theMarkdownOverlapGuardCatchesAnOverlappingRuleAndPassesADisjointOne() throws IOException {
+        List<String> samples = samplePaths();
+
+        assertThat(markdownOverlaps(withMarkdownRule("**/*.md"), samples))
+                .contains(
+                        "**/*.md matches built-in/assets/README.md, excluded by */assets/**/README.md",
+                        "**/*.md matches built-in/assets/audiences/line_manager.md, a payload of */assets/**/*",
+                        "**/*.md matches built-in/templates/writing/meeting-minutes.md, a payload of */templates/**/*");
+        assertThat(markdownOverlaps(withMarkdownRule("*/notes/*.md"), samples)).isEmpty();
+    }
+
+    /** Every sample exclusion and payload path, then every file of the vendored packs, relative to {@code packs/}. */
+    private static List<String> samplePaths() throws IOException {
+        List<String> paths = new ArrayList<>(EXCLUDED);
+        paths.addAll(PAYLOADS.keySet());
+        String root = System.getProperty("charter.repositoryRoot");
+        assertThat(root).as("charter.repositoryRoot, set by the build").isNotNull();
+        Path packs = Path.of(root, "packs");
+        try (Stream<Path> walk = Files.walk(packs)) {
+            walk.filter(Files::isRegularFile)
+                    .map(p -> packs.relativize(p).toString().replace('\\', '/'))
+                    .sorted()
+                    .forEach(paths::add);
+        }
+        return paths;
+    }
+
+    /** Each {@code markdown} rule and path it matches that an exclusion or a payload rule also matches. */
+    private static List<String> markdownOverlaps(PackFileKind table, List<String> paths) {
+        Set<String> markdownRules = new LinkedHashSet<>();
+        Set<String> exclusionRules = new LinkedHashSet<>();
+        table.fileRules().stream()
+                .filter(rule -> rule.contentForm() == ContentForm.MARKDOWN)
+                .forEach(rule -> markdownRules.add(rule.match()));
+        table.exclusionRules().forEach(rule -> exclusionRules.add(rule.match()));
+        List<String> overlaps = new ArrayList<>();
+        for (String path : paths) {
+            List<String> matching = table.matchingRules(path);
+            for (String markdown : matching) {
+                if (!markdownRules.contains(markdown)) {
+                    continue;
+                }
+                matching.stream()
+                        .filter(exclusionRules::contains)
+                        .forEach(exclusion ->
+                                overlaps.add(markdown + " matches " + path + ", excluded by " + exclusion));
+                table.matchingPayloadRules(path)
+                        .forEach(payload -> overlaps.add(markdown + " matches " + path + ", a payload of " + payload));
+            }
+        }
+        return overlaps;
+    }
+
+    /** The bundled table with one {@code markdown} rule first among its {@code files} rules. */
+    private static PackFileKind withMarkdownRule(String match) throws IOException {
+        String table;
+        try (InputStream in = PackFileKindTest.class.getClassLoader().getResourceAsStream(PackFileKind.RESOURCE)) {
+            assertThat(in).isNotNull();
+            table = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        String files = "\nfiles:\n";
+        assertThat(table).contains(files);
+        String rule = "  - match: \"" + match + "\"\n    schema: notes\n    content_form: markdown\n";
+        return new PackFileKind(table.replace(files, files + rule), STRUCTURE_SCHEMAS);
     }
 }

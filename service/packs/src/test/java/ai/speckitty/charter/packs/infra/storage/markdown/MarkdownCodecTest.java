@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The {@code markdown} form's codec (research D6, D12): every refusal rule with a refused text and an accepted
@@ -46,7 +49,7 @@ class MarkdownCodecTest {
                 Arguments.of("---\n- a\n---\n", 1, "must be a YAML mapping", "---\na: x\n---\n"),
                 Arguments.of("---\nhello\n---\n", 1, "must be a YAML mapping", "---\nhello: x\n---\n"),
                 Arguments.of("---\na: 1\na: 2\n---\n", 3, "not valid YAML", "---\na: 1\nb: 2\n---\n"),
-                Arguments.of("---\n1: x\n---\n", 1, "keys must be strings", "---\n'1': x\n---\n"),
+                Arguments.of("---\n1: x\n---\n", 1, "a mapping key is not a string", "---\n'1': x\n---\n"),
                 // A 4-backtick fence is not closed by 3 backticks, but is by 4.
                 Arguments.of(
                         "````\n```\n## A\n```\n", 1, "unclosed fence opened at line 1", "````\n```\n## A\n```\n````\n"),
@@ -198,6 +201,105 @@ class MarkdownCodecTest {
             assertThat(document.sections()).isEmpty();
             assertThat(MarkdownCodec.write(document)).isEqualTo(text);
         }
+
+        /** Aliases chained level by level, each level twice the last: 48 aliases, 2^24 paths. */
+        private static String aliasChain(int levels) {
+            StringBuilder yaml = new StringBuilder("a0: &a0 [x, x]\n");
+            for (int i = 1; i < levels; i++) {
+                yaml.append("a%d: &a%d [*a%d, *a%d]\n".formatted(i, i, i - 1, i - 1));
+            }
+            return "---\n" + yaml + "---\n# T\n";
+        }
+
+        /** Frontmatter refused by a guard every pack YAML file passes, and its accepted neighbour. */
+        static Stream<Arguments> guardedWithNeighbours() {
+            return Stream.of(
+                    Arguments.of(aliasChain(25), "the document is too large", aliasChain(3)),
+                    Arguments.of(
+                            "---\na: " + "[".repeat(10_000) + "]".repeat(10_000) + "\n---\n",
+                            "the document is nested too deeply",
+                            "---\na: [[[x]]]\n---\n"),
+                    Arguments.of(
+                            "---\na:\n" + nestedBlock(300) + "---\n",
+                            "the document is nested too deeply",
+                            "---\na:\n" + nestedBlock(3) + "---\n"),
+                    Arguments.of(
+                            "---\nb: !!binary aGVsbG8=\n---\n",
+                            "a value is not a string, a number, a boolean or null",
+                            "---\nb: aGVsbG8=\n---\n"),
+                    Arguments.of(
+                            "---\na:\n  1: x\n---\n", "a mapping key is not a string", "---\na:\n  '1': x\n---\n"));
+        }
+
+        /** A block mapping nested {@code depth} levels under the first key. */
+        private static String nestedBlock(int depth) {
+            StringBuilder yaml = new StringBuilder();
+            for (int i = 1; i <= depth; i++) {
+                yaml.append("  ".repeat(i)).append("k:\n");
+            }
+            return yaml.append("  ".repeat(depth + 1)).append("v: x\n").toString();
+        }
+
+        @ParameterizedTest(name = "[{index}] {1}")
+        @MethodSource("guardedWithNeighbours")
+        @DisplayName("frontmatter passes the guards of a pack YAML file: refused at the opening ---, never thrown")
+        void guarded(String refused, String reason, String neighbour) {
+            MarkdownRefusal refusal = refusal(refused);
+
+            assertThat(refusal.line()).isEqualTo(1);
+            assertThat(refusal.reason()).isEqualTo("frontmatter is refused: " + reason);
+            assertThat(MarkdownCodec.parse(neighbour)).isInstanceOf(Parsed.class);
+        }
+
+        @Test
+        @DisplayName("a parser refusal inside the frontmatter names the file's line, the frontmatter's line plus one")
+        void parserRefusalNamesFileLine() {
+            MarkdownRefusal refusal = refusal("---\na: 1\nb: 2\nb: 3\n---\n");
+
+            assertThat(refusal.line()).isEqualTo(4);
+            assertThat(refusal.reason()).startsWith("frontmatter is not valid YAML: ");
+        }
+    }
+
+    @Nested
+    @DisplayName("thematic breaks")
+    class ThematicBreaks {
+
+        /** The regular expression the scanner used before its linear scan, kept here as the oracle. */
+        private static final Pattern REGEX =
+                Pattern.compile("^ {0,3}(?:(?:-[ \\t]*){3,}|(?:\\*[ \\t]*){3,}|(?:_[ \\t]*){3,})$");
+
+        @Test
+        @DisplayName(
+                "the linear scan classifies every short line over the break alphabet as the regular expression did")
+        void sameAsRegex() {
+            char[] alphabet = {' ', '\t', '-', '*', '_', 'x'};
+            Random random = new Random(194);
+            for (int n = 0; n < 50_000; n++) {
+                StringBuilder line = new StringBuilder();
+                int length = random.nextInt(11);
+                for (int i = 0; i < length; i++) {
+                    line.append(alphabet[random.nextInt(alphabet.length)]);
+                }
+                String text = line.toString();
+                assertThat(MarkdownScanner.isThematicBreak(text))
+                        .as("%s", text.replace("\t", "\\t"))
+                        .isEqualTo(REGEX.matcher(text).matches());
+            }
+        }
+
+        @ParameterizedTest(name = "[{index}] marker {0}")
+        @ValueSource(strings = {"- ", "* ", "_ "})
+        @DisplayName("a 5000-marker break under a paragraph line reads in one pass and still ends the paragraph")
+        void longBreakEndsParagraph(String marker) {
+            String breakLine = marker.repeat(5_000);
+            MarkdownDocument document = parsed("x\n" + breakLine + "\n---\n");
+            MarkdownRefusal neighbour = refusal("x\n" + breakLine + "x\n---\n");
+
+            assertThat(document.preamble()).isEqualTo("x\n" + breakLine + "\n---");
+            assertThat(neighbour.line()).isEqualTo(3);
+            assertThat(neighbour.reason()).contains("setext");
+        }
     }
 
     @Nested
@@ -280,15 +382,14 @@ class MarkdownCodecTest {
         }
 
         @Test
-        @DisplayName("write refuses a model whose output reads back differently: a leading --- read as frontmatter")
-        void writeChecksPreambleReadBack() {
-            MarkdownDocument document = new MarkdownDocument(Optional.empty(), Optional.empty(), "---\nx", List.of());
+        @DisplayName("a leading --- line behind a title or a frontmatter writes and reads back as preamble")
+        void leadingDelimiterBehindTitleOrFrontmatter() {
             MarkdownDocument titled = new MarkdownDocument(Optional.empty(), Optional.of("T"), "---\nx", List.of());
+            MarkdownDocument fronted =
+                    new MarkdownDocument(Optional.of(Map.of()), Optional.empty(), "---\nx", List.of());
 
-            assertThatIllegalStateException()
-                    .isThrownBy(() -> MarkdownCodec.write(document))
-                    .withMessageContaining("unterminated frontmatter");
             assertThat(MarkdownCodec.write(titled)).isEqualTo("# T\n\n---\nx\n");
+            assertThat(MarkdownCodec.write(fronted)).isEqualTo("---\n---\n---\nx\n");
         }
     }
 }

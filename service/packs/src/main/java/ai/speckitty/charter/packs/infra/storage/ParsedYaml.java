@@ -12,6 +12,7 @@ import org.snakeyaml.engine.v2.api.lowlevel.Parse;
 import org.snakeyaml.engine.v2.events.CollectionEndEvent;
 import org.snakeyaml.engine.v2.events.CollectionStartEvent;
 import org.snakeyaml.engine.v2.events.Event;
+import org.snakeyaml.engine.v2.exceptions.MarkedYamlEngineException;
 
 /**
  * A pack file's text parsed as YAML: the document, or the failure reduced to what may be shown.
@@ -58,17 +59,44 @@ record ParsedYaml(@Nullable Object document, @Nullable ParseFailure failure) {
      * @return the document or the failure; never throws on content
      */
     static ParsedYaml parse(String text, String file) {
+        Checked checked = check(text);
+        String problem = checked.problem();
+        return problem == null ? new ParsedYaml(checked.document(), null) : failed(file, problem);
+    }
+
+    /**
+     * YAML text put through the guards of {@link #parse}: the document, or the first problem and where the parser
+     * found it. The guards are the same; only the line is kept, for a reader that names lines (a Markdown file's
+     * frontmatter).
+     *
+     * @param document the loaded document; {@code null} for an empty stream or a YAML null, and when there is a problem
+     * @param problem the failure's first line, as {@link #parse} reports it; {@code null} when there is none
+     * @param line the 1-based line of the text the parser names for its own refusal; 0 for a guard's problem, which
+     *     names no line
+     */
+    record Checked(@Nullable Object document, @Nullable String problem, int line) {}
+
+    /**
+     * Puts text through the guards of {@link #parse}.
+     *
+     * @param text the YAML text
+     * @return the document or the problem; never throws on content
+     */
+    static Checked check(String text) {
         if (nestedTooDeeply(text)) {
-            return failed(file, TOO_DEEP);
+            return new Checked(null, TOO_DEEP, 0);
         }
         Object document;
         try {
             document = Yaml.load(text);
         } catch (RuntimeException e) {
-            return failed(file, firstLine(e));
+            int line = e instanceof MarkedYamlEngineException marked
+                    ? marked.getProblemMark().map(mark -> mark.getLine() + 1).orElse(0)
+                    : 0;
+            return new Checked(null, firstLine(e), line);
         }
         String problem = problem(document, 0, Collections.newSetFromMap(new IdentityHashMap<>()), new int[1]);
-        return problem == null ? new ParsedYaml(document, null) : failed(file, problem);
+        return problem == null ? new Checked(document, null, 0) : new Checked(null, problem, 0);
     }
 
     /**

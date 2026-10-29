@@ -13,7 +13,8 @@ enum ContentForm {
     /**
      * A Markdown document, read into a {@link ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument} and
      * compared by that model (#194, ADR-0040 as amended): a {@code files} rule may declare it, and its schema then
-     * validates the parsed model ({@link PackSchemas#validateMarkdown}).
+     * validates the parsed model ({@link PackSchemas#validateMarkdown}). No store path reads it yet: a file of it
+     * fails loudly when a pack is listed or validated, until the first consumer (#260 for {@code pack.md}) wires it.
      */
     MARKDOWN("markdown"),
     /**

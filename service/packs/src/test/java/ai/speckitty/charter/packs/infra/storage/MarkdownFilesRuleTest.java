@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -10,15 +11,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * FR-005 (#194): a {@code files} rule may declare {@code content_form: markdown}. With a copy of the bundled table plus
  * one test rule, a fixture file is classified as {@code markdown} with its structure schema, and the path a Markdown
  * kind takes holds end to end: parse, validate against the structure schema, write canonically, compare by model. No
- * store consumer exists yet (#195 adds the first), so this proves the classification, schema and comparison path.
+ * store consumer exists yet (#260 adds the first), so this proves the classification, schema and comparison path,
+ * and that every production path that dispatches on a rule's content form refuses a {@code markdown} file loudly
+ * instead of reading it as YAML or skipping it.
  */
 class MarkdownFilesRuleTest {
 
@@ -82,6 +88,44 @@ class MarkdownFilesRuleTest {
         assertThat(violations)
                 .extracting(SchemaViolation::file, SchemaViolation::pointer, SchemaViolation::keyword)
                 .contains(tuple("built-in/notes/missing-summary.md", List.of("sections"), "minContains"));
+    }
+
+    @Test
+    void listingAPackRefusesAMarkdownFileLoudlyWhileNoStorePathReadsIt(@TempDir Path host) throws IOException {
+        Path pack = Files.createDirectories(host.resolve("built-in"));
+        Files.createDirectories(pack.resolve("notes"));
+        Files.writeString(pack.resolve("notes/valid.md"), fixture("valid.md"));
+
+        assertThatIllegalStateException()
+                .isThrownBy(() -> PackFileSet.listing(pack, TABLE))
+                .withMessage("'notes/valid.md' is classified as content_form markdown: the markdown form is classified"
+                        + " but no store path reads it yet; the first consumer (#260 for pack.md) wires it");
+        assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).byKind())
+                .as("the bundled table leaves the file unclassified, so the same pack lists")
+                .isEmpty();
+    }
+
+    @Test
+    void validateModeRefusesAMarkdownFileInsteadOfReadingItAsYaml() {
+        PackFileKind.Mapped markdown = (PackFileKind.Mapped) TABLE.classify("built-in/notes/valid.md");
+        PackFileKind.Mapped yaml = (PackFileKind.Mapped) TABLE.classify("built-in/directives/x.directive.yaml");
+
+        assertThatIllegalStateException()
+                .isThrownBy(() -> FileSystemPackInspector.readsAsYaml(markdown, "notes/valid.md"))
+                .withMessageContaining("no store path reads it yet");
+        assertThat(FileSystemPackInspector.readsAsYaml(yaml, "directives/x.directive.yaml"))
+                .isTrue();
+    }
+
+    @Test
+    void aCompanionPathOntoAMarkdownFileIsRefusedAsOwnedByItsRule(@TempDir Path host) {
+        Path pack = host.resolve("built-in").toAbsolutePath().normalize();
+
+        assertThat(Companions.resolve(pack, "directives/x.directive.yaml", "../notes/valid.md", TABLE))
+                .isEqualTo(new Companions.Refused("is a pack file of kind notes, not a companion"));
+        assertThat(Companions.resolve(pack, "directives/x.directive.yaml", "../notes/valid.md"))
+                .as("unclassified under the bundled table, the same path is a companion")
+                .isInstanceOf(Companions.Inside.class);
     }
 
     private static MarkdownDocument parsed(String text) {

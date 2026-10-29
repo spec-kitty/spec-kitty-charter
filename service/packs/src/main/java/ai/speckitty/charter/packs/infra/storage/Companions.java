@@ -107,6 +107,20 @@ final class Companions {
      * @return where it leads, or why the rule refuses it
      */
     static Resolution resolve(Path packDir, String artifactFile, String declared) {
+        return resolve(packDir, artifactFile, declared, PackFileKind.bundled());
+    }
+
+    /**
+     * Resolves a declared companion path against a classification table; {@link #resolve(Path, String, String)} with
+     * the bundled table.
+     *
+     * @param packDir the pack directory, absolute and normalized
+     * @param artifactFile the artifact's file, relative to the pack directory
+     * @param declared the companion path as the artifact declares it
+     * @param table the classification table
+     * @return where it leads, or why the rule refuses it
+     */
+    static Resolution resolve(Path packDir, String artifactFile, String declared, PackFileKind table) {
         Path base = Objects.requireNonNullElse(packDir.resolve(artifactFile).getParent(), packDir);
         Resolution resolution = contained(packDir, base, declared);
         // The resolved name, not the declared text: "pack.yaml/" and "x.tactic.yaml/." both normalize to a YAML file.
@@ -119,12 +133,22 @@ final class Companions {
         // A pack-level file (#193, ADR-0040) belongs to the rule that classifies it; claiming it too is a pack
         // inconsistency, refused rather than resolved by precedence.
         if (resolution instanceof Inside at
-                && PackFileKind.bundled().classify(packDir.getFileName() + "/" + at.packRelative())
-                        instanceof PackFileKind.Mapped mapped
-                && mapped.schema().isEmpty()) {
+                && table.classify(packDir.getFileName() + "/" + at.packRelative()) instanceof PackFileKind.Mapped mapped
+                && heldInItsOwnRight(mapped)) {
             return new Refused("is a pack file of kind " + mapped.kind() + ", not a companion");
         }
         return resolution;
+    }
+
+    /**
+     * Whether a mapped file belongs to its rule rather than to a companion claim: a {@code bytes} payload or a
+     * {@code markdown} file. A {@code yaml} file is refused by name before this ({@code .yaml}) and otherwise resolves.
+     */
+    private static boolean heldInItsOwnRight(PackFileKind.Mapped mapped) {
+        return switch (mapped.contentForm()) {
+            case BYTES, MARKDOWN, TEXT -> true;
+            case YAML -> false;
+        };
     }
 
     /**

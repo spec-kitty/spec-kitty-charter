@@ -22,7 +22,9 @@ import java.util.Optional;
  * section title are a single line, not blank, without leading or trailing whitespace; the preamble and every section's
  * content have no leading or trailing blank line, contain no carriage return, and could stand inside a document
  * unchanged, judged by the scanner's own line rules ({@link MarkdownScanner}): no column-0 H1 or H2 outside a fence,
- * no fence left open, nothing the scanner refuses as ambiguous. The empty document is valid.
+ * no fence left open, nothing the scanner refuses as ambiguous. When there is neither frontmatter nor a title, the
+ * preamble opens the written text, so it must not start with a {@code ---} line (it would read back as frontmatter)
+ * or a byte order mark. The empty document is valid.
  *
  * @param frontmatter the frontmatter mapping as loaded YAML, if the document has one; copied, unmodifiable at its top
  *     level
@@ -49,6 +51,9 @@ public record MarkdownDocument(
         frontmatter = frontmatter.map(mapping -> Collections.unmodifiableMap(new LinkedHashMap<>(mapping)));
         title.ifPresent(t -> requireTitle("title", t));
         requireBlock("preamble", preamble);
+        if (frontmatter.isEmpty() && title.isEmpty()) {
+            requireOpening(preamble);
+        }
         sections = List.copyOf(sections);
     }
 
@@ -127,6 +132,19 @@ public record MarkdownDocument(
         }
         if (!title.strip().equals(title)) {
             throw new IllegalArgumentException(field + " must not have leading or trailing whitespace");
+        }
+    }
+
+    /** A preamble that opens the written text must not read back as frontmatter or be refused as a file's start. */
+    private static void requireOpening(String preamble) {
+        if (preamble.equals("---") || preamble.startsWith("---\n")) {
+            throw new IllegalArgumentException(
+                    "preamble must not start with a --- line when there is neither frontmatter nor a title:"
+                            + " it would read back as frontmatter");
+        }
+        if (!preamble.isEmpty() && preamble.charAt(0) == '\uFEFF') {
+            throw new IllegalArgumentException(
+                    "preamble must not start with a byte order mark when there is neither frontmatter nor a title");
         }
     }
 
