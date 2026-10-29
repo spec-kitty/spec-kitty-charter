@@ -20,7 +20,9 @@ audience:
 
 **Breaking, HTTP.** A toolguide registration no longer takes `guidePath`. It carries exactly one of
 `guide` (the Markdown, at most 1 MiB by default) or `guideUri` (HTTPS, port 443, an allowlisted host,
-empty by default), and the response carries `guide`. Both, neither, an empty value or a `null` is 422.
+empty by default), and the response carries `guide`. Both, neither, an empty `guideUri` or a `null` is
+422. An empty `guide`, or a `commands`, `appliesToLanguages` or `references` list over 256 items, breaks a
+constraint the schema declares and is refused 400 Bad Request before the controller (ADR-0041 decision 2).
 See the [service build guide](/guides/service-build/) and `contracts/charter/CHANGELOG.md`.
 
 **Migrating a client.** Stop sending `guidePath`: send the guide file's Markdown as `guide` (the

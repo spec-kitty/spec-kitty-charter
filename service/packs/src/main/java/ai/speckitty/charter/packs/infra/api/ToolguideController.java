@@ -175,7 +175,10 @@ public class ToolguideController implements ToolguidesApi {
      * generated DTO enforces of the contract's {@code oneOf} (FR-010). Both, neither or an empty value is refused (an
      * explicit {@code null} is refused before the body is read, by {@link ToolguideRegistrationBodyAdvice}), and so is an
      * inline guide over the cap of UTF-8 or one that is not Unicode text (an unpaired surrogate), before it is
-     * parsed (NFR-005).
+     * parsed (NFR-005). In the deployed service an empty {@code guide} never reaches this check: it breaks the
+     * contract's {@code minLength} and bean validation refuses it 400 before the controller (ADR-0041 decision 2); the
+     * check stays as defence in depth for a wiring without bean validation. An empty {@code guideUri} does reach it:
+     * the contract declares no {@code minLength} on a field the generator types {@link URI}.
      */
     private GuideSource guideSource(@Nullable String guide, @Nullable URI guideUri) {
         if ((guide == null) == (guideUri == null)) {
@@ -256,7 +259,11 @@ public class ToolguideController implements ToolguidesApi {
         }
     }
 
-    /** The list, or a refusal when it holds more than {@link #MAX_LIST_ITEMS} (the contract's {@code maxItems}). */
+    /**
+     * The list, or a refusal when it holds more than {@link #MAX_LIST_ITEMS} (the contract's {@code maxItems}). In the
+     * deployed service bean validation refuses such a list 400 before the controller (ADR-0041 decision 2); this stays
+     * as defence in depth for a wiring without bean validation.
+     */
     private static List<String> bounded(String field, List<String> items) {
         if (items.size() > MAX_LIST_ITEMS) {
             throw new IllegalArgumentException("The " + field + " list holds " + items.size() + " items; at most "

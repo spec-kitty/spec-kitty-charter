@@ -208,14 +208,18 @@ The contract changes on the 0.x line (breaking; `contracts/charter/CHANGELOG.md`
 - `ToolguideRegistration` loses `guidePath` and carries exactly one of `guide` (the Markdown) or
   `guideUri` (a URI; the service fetches `https` only and enforces it, the schema carries no
   pattern for it). The schema says so with a `oneOf`, which the generator this repository builds
-  with ignores, so the service enforces it: both, neither, an empty value or an explicit `null`
-  (also beside a valid other field) is 422 `validation_failed`.
+  with ignores, so the service enforces it: both, neither, an empty `guideUri` or an explicit `null`
+  (also beside a valid other field) is 422 `validation_failed`. An empty `guide` breaks the
+  schema's `minLength: 1` and is refused 400 Bad Request before the controller, since bean
+  validation runs on the generated DTOs (ADR-0041 decision 2). `guideUri` carries no `minLength`:
+  the generator types it `URI`, and a `@Size` on a `URI` is a server error.
 - An inline guide is capped at the guide size, 1 MiB of UTF-8 by default (configurable via
   `charter.guide-fetch.max-size`, the same cap a fetched guide is held to), refused 422 before it is
   parsed; so is one holding an unpaired surrogate, which has no UTF-8 form. A registration body
   larger than six times that cap plus 1 MiB (7 MiB by default) is refused 422 before it is read, by
   its `Content-Length` or while it is read. `commands`, `appliesToLanguages` and `references` hold
-  at most 256 items each.
+  at most 256 items each (`maxItems`); a longer list is refused 400 Bad Request before the
+  controller (ADR-0041 decision 2).
 - The response, `Toolguide`, loses `guidePath` and carries `guide`: the stored Markdown, its H1
   written from `title`.
 - A refused fetch or an invalid guide is 422 `validation_failed`. The detail names the typed reason

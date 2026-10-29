@@ -5,8 +5,10 @@ description: >-
   optional (the server answers with Location); on PUT the id is taken from the path. The guide travels in the body,
   never as a path: the body carries exactly one of guide (the Markdown content) or guideUri (a URI the service fetches
   once, at registration), so the service assumes no filesystem shared with its client. Both, neither, a null (also
-  beside the other field) or an empty value is refused 422 validation_failed, whatever a generated client enforces of
-  the oneOf below.
+  beside the other field) or an empty guideUri is refused 422 validation_failed, whatever a generated client enforces
+  of the oneOf below. An empty guide breaks guide's minLength, and a list over its maxItems breaks that: a body that
+  breaks a constraint this schema declares is refused 400 Bad Request (the contract's default problem) before the
+  controller runs, since bean validation is on the classpath (ADR-0041 decision 2).
 type: object
 additionalProperties: false
 required:
@@ -53,7 +55,8 @@ properties:
       ## Cautions, ## Known limitations, ## References) in that order, with freeform H2 sections between ## Usage and
       ## Cautions. At most 1 MiB of UTF-8 by default (configurable via charter.guide-fetch.max-size, the cap a
       fetched guide is held to); a larger guide is refused 422 validation_failed before it is parsed, and so is one
-      holding an unpaired surrogate, which has no UTF-8 form. A registration body larger than six times the cap plus
+      holding an unpaired surrogate, which has no UTF-8 form. An empty guide breaks minLength and is refused 400 Bad
+      Request before the controller (ADR-0041 decision 2). A registration body larger than six times the cap plus
       1 MiB (7 MiB by default) is refused 422 validation_failed before it is read.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
@@ -89,7 +92,7 @@ properties:
     maxItems: 256
     description: >-
       The commands the toolguide lists, in authored order;
-      at most 256, a longer list is refused 422 validation_failed.
+      at most 256, a longer list is refused 400 Bad Request (ADR-0041 decision 2).
     items:
       type: string
     x-source:
@@ -100,7 +103,7 @@ properties:
     maxItems: 256
     description: >-
       The languages the toolguide applies to, in authored order;
-      at most 256, a longer list is refused 422 validation_failed.
+      at most 256, a longer list is refused 400 Bad Request (ADR-0041 decision 2).
     items:
       type: string
     x-source:
@@ -117,7 +120,7 @@ properties:
     maxItems: 256
     description: >-
       The bare citation strings the toolguide points at, in authored order;
-      at most 256, a longer list is refused 422 validation_failed.
+      at most 256, a longer list is refused 400 Bad Request (ADR-0041 decision 2).
     items:
       type: string
     x-source:

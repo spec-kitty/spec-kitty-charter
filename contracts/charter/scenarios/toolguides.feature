@@ -105,11 +105,23 @@ Feature: Toolguides are read and registered functionally
       | case              | fields                                                                          |
       | neither           |                                                                                 |
       | a null guide      | , "guide": null                                                                 |
-      | an empty guide    | , "guide": ""                                                                   |
       | an empty guideUri | , "guideUri": ""                                                                |
       | both              | , "guide": "## Overview", "guideUri": "https://guides.example.org/git.guide.md" |
       | a null beside URI | , "guide": null, "guideUri": "https://guides.example.org/git.guide.md"          |
       | a null beside it  | , "guide": "## Overview", "guideUri": null                                      |
+
+  Scenario: An empty guide breaks the schema's minLength and is refused 400 before the controller (ADR-0041 decision 2)
+    When I PUT "/packs/qa/toolguides/git" with the body:
+      """
+      {"schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "", "summary": "Using git."}
+      """
+    Then the response status is 400
+    And the response body is:
+      """
+      {"title": "Bad Request", "status": 400}
+      """
+    When I GET "/packs/qa/toolguides/git"
+    Then the response status is 404
 
   Scenario: An inline guide over 1 MiB is refused while one of exactly 1 MiB is accepted (NFR-005, US5 AS4)
     When I PUT "/packs/qa/toolguides/git" with the body, its "guide" padded to 1048577 bytes:
