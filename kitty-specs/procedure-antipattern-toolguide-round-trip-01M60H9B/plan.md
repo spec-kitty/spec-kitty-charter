@@ -22,7 +22,7 @@ deliberately designed storage shapes, and build ADR-0040's `markdown` content fo
   the guide content; `guidePath` leaves the API.
 - A throwaway harness migrates the pinned and vendored packs with this service's writer, verified by an old-to-new
   field mapping; the result lands in spec-kitty-open-packs and `openPacksRef` moves to it.
-- ADR-0042 records the sanitized-shape rules and these shapes; ADR-0039 and ADR-0040 are amended.
+- ADR-0043 records the sanitized-shape rules and these shapes; ADR-0039 and ADR-0040 are amended.
 
 Delivery: **PR-A1** = the `markdown` form, its `files`-rule schema application, gate comparison by form for `files`
 rules, the ADR-0040 amendment; lands first (#195 rebases on it). **PR-A2** = everything else.
@@ -51,7 +51,7 @@ module's tests; `./gradlew verifyAll` runs once before each PR's review and in C
 root (`charter.` properties for the fetch allowlist and limits); C-002 shared-file rule; Java style check (Spotless
 palantir, Checkstyle, Error Prone, NullAway, doclint).
 **Scale/Scope**: 41 procedures, 24 toolguides and guides across three packs (18 procedures and 6 toolguides also
-vendored under `packs/`); 2 contract schemas and their scenarios; ADR-0042 plus two amendments.
+vendored under `packs/`); 2 contract schemas and their scenarios; ADR-0043 plus two amendments.
 
 ## Charter Check
 
@@ -227,13 +227,13 @@ domain and application.
 
 ### IC-07 — Decision record and docs
 
-- **Purpose**: ADR-0042 (sanitized-shape rules, the procedure, anti-pattern entry and guide shapes, the `content`
+- **Purpose**: ADR-0043 (sanitized-shape rules, the procedure, anti-pattern entry and guide shapes, the `content`
   rule, the fetch posture and its residuals); ADR-0039 and ADR-0040 amendments; docs changelog entries (A1, A2);
   `docs/guides/service-build.md`; glossary definitions (append); `contracts/packs/README.md`; the #186 follow-up list.
 - **Relevant requirements**: C-003, C-001, C-006
 - **Affected surfaces**: `docs/adr/`, `docs/adr/README.md` (append), `docs/changelog/`, `site/.contextive/definitions.yaml`.
-- **Sequencing/depends-on**: the ADR-0040 amendment with IC-01 (A1, which does not cite ADR-0042); the rest with A2.
-- **Risks**: ADR numbering reserved (0042 is #194's, 0043 #195's).
+- **Sequencing/depends-on**: the ADR-0040 amendment with IC-01 (A1, which does not cite ADR-0043); the rest with A2.
+- **Risks**: ADR numbering reserved (#195 merged as ADR-0043, so #194 takes ADR-0043).
 
 ## Exit criteria (frozen)
 

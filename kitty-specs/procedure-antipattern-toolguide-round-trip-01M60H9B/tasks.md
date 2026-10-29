@@ -11,7 +11,7 @@ Eleven work packages in two delivery slices.
   are approved and run in parallel with WP05 (Markdown companions). WP04 (procedure storage) needs WP03. WP06
   (structured toolguide guide) needs WP05. WP07 (guide over HTTP) needs WP06 and WP08. WP09 (migration harness and
   open-packs PR) needs WP04 and WP06. WP10 (re-pin and re-vendor) needs WP09 and the open-packs PR merged. WP11
-  (ADR-0042 and docs) needs WP04–WP08.
+  (ADR-0043 and docs) needs WP04–WP08.
 
 Every WP leaves `:packs:test` green (and `:deployable:test` for WP07). `:packs:openPacksRoundTrip` (part of `check`)
 and `:packs:wholePackRoundTrip` stay green through PR-A1; from WP04 (procedures registered) and WP06 (sanitized
@@ -80,7 +80,7 @@ WP06 appends the guide rule), `WholePackCensus.java` / `MeaningComparator.java` 
 | T051 | Corpus tests for procedures and guides; pinned counts in `WholePackOpenPacksRoundTripTest` | WP10 | |
 | T052 | Delete the harness; prove its absence | WP10 | |
 | T053 | Full gate and `verifyAll` at the new pin | WP10 | |
-| T054 | ADR-0042 (sanitized shapes, guide, fetch posture, residuals) | WP11 | |
+| T054 | ADR-0043 (sanitized shapes, guide, fetch posture, residuals) | WP11 | |
 | T055 | ADR-0039 amendment; ADR index | WP11 | [P] |
 | T056 | `docs/guides/service-build.md`; glossary definitions | WP11 | [P] |
 | T057 | A2 changelog entry | WP11 | [P] |
@@ -205,12 +205,12 @@ T051 Corpus tests and counts (WP10)
 T052 Harness deleted (WP10)
 T053 Full gate (WP10)
 
-### WP11 — ADR-0042 and living docs
+### WP11 — ADR-0043 and living docs
 
 Prompt: [tasks/WP11-adr-0042-and-living-docs.md](tasks/WP11-adr-0042-and-living-docs.md)
 Depends on: WP04, WP05, WP06, WP07, WP08.
 
-T054 ADR-0042 (WP11)
+T054 ADR-0043 (WP11)
 T055 ADR-0039 amendment, index (WP11)
 T056 Service-build guide, glossary (WP11)
 T057 A2 changelog (WP11)

@@ -176,7 +176,7 @@ a fetcher test matrix runs offline.
 |----|-------|------------|----------|----------|--------|
 | C-001 | Only the authorized HTTP change | The charter HTTP contract changes only in the toolguide registration and response (guide content or URI in, guide content out, `guidePath` removed), under the 0.x rules (ADR-0022) with a `### Breaking` CHANGELOG entry and scenarios. | Technical | High | Open |
 | C-002 | Shared files append-only | Edits to shared files are append-only, except removing this mission's own baseline entries, moving `openPacksRef`, re-vendoring the internal and qa packs, and refreshing other entries whose recorded text the re-pin changes. | Process | High | Open |
-| C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0042; ADR-0039 and ADR-0040 are amended. | Process | High | Open |
+| C-003 | Decision recorded | The sanitized-shape rules and the shapes this mission designs are recorded in ADR-0043; ADR-0039 and ADR-0040 are amended. | Process | High | Open |
 | C-004 | Design against the charter, not core | Shapes follow the charter's own model; no compatibility with core's current formats and no core issue (operator ruling on epic #186, 2026-10-28). | Process | High | Open |
 | C-005 | No tolerance logic | No reader, writer or binding accepts a retired or variant field; a test scans the main sources for retired field names. | Technical | High | Open |
 | C-006 | Two PRs | PR-A1 carries only the `markdown` form, its `files`-rule schema application and the ADR-0040 amendment, and lands first; PR-A2 carries the rest. | Process | Medium | Open |

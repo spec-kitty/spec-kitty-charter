@@ -170,4 +170,4 @@ dispositioned; none was dropped.
 | Companion conflicts as 500 (A) | accepted | IC-02 (client errors) |
 | `oneOf` unverified in generator (A) | accepted | IC-05 spike + controller check |
 | No inline size cap; fetch inside write lock (A) | accepted | NFR-005 |
-| HTML-comment heading divergence (A, low) | deferred_with_rationale | none at the pin; documented in ADR-0042 as a known CommonMark divergence |
+| HTML-comment heading divergence (A, low) | deferred_with_rationale | none at the pin; documented in ADR-0043 as a known CommonMark divergence |

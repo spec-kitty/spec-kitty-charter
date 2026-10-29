@@ -144,7 +144,7 @@ classification, schema and comparison path.)
 
 1. Amend ADR-0040 (dated amendment note in its Status, as earlier amendments did): decision 1 — `files` rules may
    declare `markdown`; decision 3 — `markdown` is built: model, equality, refusals, canonical write, structure schemas
-   (summarize research D6/D12; do not cite ADR-0042, which does not exist yet). Keep the ADR's front-matter `updated`
+   (summarize research D6/D12; do not cite ADR-0043, which does not exist yet). Keep the ADR's front-matter `updated`
    current.
 2. `docs/changelog/2026-10-29-markdown-content-form.md` (match the frontmatter and voice of the latest entries, e.g.
    `2026-10-27-asset-and-template-round-trip.md`) and append its row to `docs/changelog/README.md` (newest first).
