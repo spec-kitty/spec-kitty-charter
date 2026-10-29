@@ -1,0 +1,396 @@
+{
+  "event_count": 81,
+  "last_event_id": "01M64HB0W5C6EEW6VABG2BJCA3",
+  "materialized_at": "2026-10-29T19:14:10.949307+00:00",
+  "mission_number": "",
+  "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "mission_type": "",
+  "schema_version": 2,
+  "summary": {
+    "approved": 11,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M633E45RG5KSZ0G7GZWRF3PE",
+      "last_transition_at": "2026-10-29T05:51:58.136765+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Built: MarkdownDocument (frontmatter?, title?, preamble, sections) with compact-constructor invariants + differences(a,b) model-path helper; MarkdownScanner (CommonMark fence rules, H1/H2 col-0, refusals: BOM, CR, unterminated/non-mapping/invalid frontmatter, unclosed fence, indented/empty/tab/closing-# headings, setext, H1 not first, second H1); MarkdownRefusal(line, reason); MarkdownCodec.parse/write with write-time parse(write(d))==d check. Commit 24ea727. Tests: ./gradlew :packs:spotlessApply :packs:spotlessCheck :packs:checkstyleMain :packs:checkstyleTest :packs:compileJava :packs:compileTestJava -> exit 0; ./gradlew :packs:test --tests '*markdown*' -> exit 0 (73 tests, 0 fail/skip); ./gradlew :packs:openPacksRoundTrip --tests '*MarkdownCorpus*' -PopenPacksDir=/home/user/spec-kitty-open-packs -> exit 0 (2 tests; corpus 72/72 byte-canonical at 01edb4e). Deviation (DIRECTIVE_010): writer puts NO blank line after frontmatter closing --- (T003 step 1 said blank line); all 30 frontmatter files at the pin are written that way, so T003-literal would fail SC-006 on 30 files. Out-of-map (ownership leeway): new public infra/storage/FrontmatterYaml.java (delegates to package-private Yaml/YamlDumpEmitter, as T001 asks for a helper); OpenPacksCorpus class+root()+assertPinned() made public for the sub-package corpus test. Integration: codec has no production caller yet by design; WP02 wires it (ContentForm/MeaningComparator).",
+        "Review passed (reviewer-renata): T001-T005 met; every refusal has an accepted neighbour; CommonMark fence close verified incl. adversarial cases; parse(write(d))==d enforced in write; 72/72 pinned files byte-equal at 01edb4e. Deviations accepted (frontmatter spacing matches pin; FrontmatterYaml minimal delegate; OpenPacksCorpus visibility-only, owned by WP10 - trivial merge; two extra refusals have neighbours). LOW: private helper javadoc; conservative setext over-refusal."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP01-markdown-document-model-and-codec/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP01-markdown-document-model-and-codec/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 7461,
+      "shell_pid_created_at": "1793252782.7",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M634VHPN824Z5QRHG64AH5X6",
+      "last_transition_at": "2026-10-29T06:16:46.550015+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 commit 19f959d. MARKDOWN built (BUILT_FORMS={YAML,MARKDOWN,BYTES}); markdown files rule's structure schema loaded strictly at table load (refused naming rule+schema); PackSchemas.validateMarkdown(kind,file,doc) over {frontmatter?,title?,preamble,sections}; census + gate observe() switch over ContentForm exhaustive (TEXT throws); MeaningComparator.compareMarkdown by model path, never Yaml.load. Gate before/after: openPacksRoundTrip 22/22 green, wholePackRoundTrip 5->6 green (new markdown-branch test), report.md byte-identical. :packs:test, style, docs checks exit 0; verifyAll exit 0 with -PcontractBaseline=none (shallow clone: checkContractCompatibility cannot find tags otherwise). Deviation: validateMarkdown takes file path too; PackFileKind gains (yaml, schemaDir) test constructor; validator reports unmet contains as minContains.",
+        "Review passed (reviewer-renata): MARKDOWN built for files rules only (text refused; payloads bytes-only; markdown rule with missing/strict-invalid schema refused at table load); validateMarkdown omits absent frontmatter/title; gate dispatch exhaustive over ContentForm, Markdown never reaches Yaml.load in the gate; whole-pack report byte-identical to base c9bb05e9 (sha256 4c364472); positive control fails on mutation; ADR-0040 amendment accurate, no ADR-0042 cite; docs checks green; verifyAll green without contractBaseline override (no released baseline). LOW notes: ADR/changelog refusal list omits empty heading, tab separator, closing # sequence; DomainRoundTrip unknownFields/idOf Yaml.load source text for artefact kinds - WP05 must keep markdown kinds out; PackFileKindTest/PackSchemasTest/WholePackCensus/MeaningComparator/file-kinds.yaml are touched again by dependent WP03/WP05/WP06 (sequential, rebase on WP02)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP02-markdown-form-for-files-rules/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP02-markdown-form-for-files-rules/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15346,
+      "shell_pid_created_at": "1793254142.12",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M635QKGZBY6XYE4R5XMBR2BZ",
+      "last_transition_at": "2026-10-29T06:32:05.919623+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP03 commit 5d6998f1: sanitized procedure.schema.json (closed; title/description; step role; AntiPatternEntry; shared Reference; const schema_version; kebab id) + Procedure/ProcedureIdentifier/ProcedureStep/AntiPatternEntry/ProcedureReference; relationships() empty per D3/#189; role open token (profile ids refused at catalog boundary, out of scope). Results: style chain (spotlessApply/spotlessCheck/checkstyleMain/checkstyleTest/compileJava/compileTestJava) exit 0; :packs:test exit 0, 1471 tests, 0 failures, 3 skipped (ProcedureEntityTest 32, ProcedureSchemaTest 19 incl. 8 one-line refused twins). :packs:openPacksRoundTrip exit 1: only FileSystemPackInspectorTest::validateModeOverTheBuiltInPackFindsWhatMainFoundAndListsTheConfigPayload red; cause: pinned old-shape procedures yield ~958 ARTIFACT_SCHEMA_ERROR findings, all on procedure files; accepted red window, closed by WP10. Test expectation not changed. Choices accepted by orchestrator: kebab identifier rule, no minLength on optional sub-fields, integer schema_version yields const+type.",
+        "Review passed (reviewer-renata): schema closed at every level, retired names refused, 8 one-line twins each refused for exactly their one property, domain RULES/javadoc sound, relationships() empty with #189 rationale, only owned files touched; packs tests/spotless/checkstyle green; openPacksRoundTrip has only the known red (479 findings, all on *.procedure.yaml, test unchanged); ADR-0042 S1-S8 no conflict."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP03-procedure-domain-and-sanitized-schema/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP03-procedure-domain-and-sanitized-schema/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 27142,
+      "shell_pid_created_at": "1793255408.34",
+      "subtasks": {
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M636W9MT34JR6T700P51E59H",
+      "last_transition_at": "2026-10-29T06:52:08.218613+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review (commit 2bb5d2d1). ProcedureDso/ProcedureYaml/ProcedureBinding; append-only registry edit (procedure last in KindBindings.ALL and YamlFormats.ALL). Tests: ProcedureYamlTest (6), ProcedureEdgesTest (1, tactic SUGGESTS + procedure none + references kept, one fixture), RetiredFieldNamesTest (1, targeted Procedure*.java scan with positive control), KindBindingsTest (+1). :packs:test green (1481 tests, 0 failed, 3 skipped); spotless/checkstyle/compile clean. DEVIATION: GeneratedPackTree (WP06-owned), PackFileSetExactnessTest and DomainRoundTripTest (unowned) edited minimally - procedures went from decoy/unmodelled to loaded, so :packs:test would be red otherwise (18 failures). RED WINDOW (expected, WP10): openPacksRoundTrip 3 failed of 22 (WholePackOpenPacksRoundTripTest.everyRealPackLoads..., .aCorrectedCopyOfBuiltIn..., FileSystemPackInspectorTest.validateModeOverTheBuiltInPack...), wholePackRoundTrip 1 failed of 6 (WholePackRoundTripTest.theBuiltInPackRoundTripsAsExpected). Every failure item names a procedures/*.procedure.yaml (36 distinct across open-packs built-in, open-packs internal and the vendored packs/internal; 23 in built-in), with reasons only: steps actor, anti_patterns name/description/required title, top-level name/purpose/required. Only other items: the 6 pinned asset refusals already expected by the corrected-copy test. expected-red.yaml untouched.",
+        "Review passed (reviewer-renata): DSO mirrors schema, no retired-key fallback, append-only registry, edges test non-vacuous (mutation-verified), red window limited to old-shape procedure files plus the 6 pinned asset refusals; :packs:test and style green"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP04-procedure-storage-binding/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP04-procedure-storage-binding/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 9275,
+      "shell_pid_created_at": "1793256414.39",
+      "subtasks": {
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M6372G3CYZ01HX78AXKSQC39",
+      "last_transition_at": "2026-10-29T06:55:31.436992+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP05 ready (commit 43ad2244). T021: Companion(path, content, ContentForm form, Optional structureSchema), reuses ContentForm (smaller change; justified in KindBinding.Companion javadoc), only TEXT/MARKDOWN admitted, TEXT has no schema, MARKDOWN requires one, content must match form; CompanionContent.Markdown added, Companions.text exhaustive (Markdown via MarkdownCodec.write); SkillBinding declares TEXT explicitly, 2-arg TEXT shorthand kept so SkillYamlTest is unchanged. T022: Companions.resolve refuses paths classified by files/exclusions/payloads rules naming the rule, except a files rule whose schema+form equal the companion's (own rule); Companions.Rules(table, schemas) injectable, bundled by default. T023: Companions.read parses+validates Markdown (violation names artifact, companion path, line/keyword); locate is form-independent so fingerprint digests companions even when structure refused; writes canonical Markdown, structure-checked, via existing atomic write. T024: WholePackCensus.companionsOf/formsOf, DomainRoundTrip pairs companions by declared path with the written owner's companion, unpaired source -> refused, extra written -> unpaired; companions skipped in sourceIds/unknownFields so Markdown never reaches Yaml.load. T025: conflicts REGISTRATION_CONFLICT (409), path/structure VALIDATION_FAILED (422). Store-level proof: MarkdownCompanionTest drives a fixture pack with a Markdown-companion test binding through WholePackStore write+read and WholePackRoundTripTest.observe (green + one-char section positive control). Results: :packs:test 1431 tests 0 failures; style tasks exit 0; openPacksRoundTrip+wholePackRoundTrip exit 0 (rerun), report.md identical before/after (sha256 4c364472...). Out-of-map: WholePackCensus (recorded); PackFileSet (companions() takes Rules + uses locate, needed for the signature change and the fingerprint test); WholePackRoundTripTest (observe uses formsOf, TEXT case compares exact text, observe/unpaired package-private for the store-level gate proof); ContentForm (TEXT javadoc only).",
+        "Review passed (reviewer-renata): companion form via ContentForm (TEXT/MARKDOWN+schema, exhaustive), store read/validate/write by form, one-owner rule over files/exclusions/payloads with own-rule exception, conflicts 409/422, gate pairs/compares companions by form with no Markdown to Yaml.load. :packs:test/spotless/checkstyle/openPacksRoundTrip green (--rerun-tasks), whole-pack report sha256 4c364472... identical, throwaway mutations killed 3 tests. Shared files: WholePackCensus/WholePackRoundTripTest/ContentForm also touched by WP02 (lane-b, recorded out-of-map); other lanes carry only WP02's version. LOW: WholePackStore.putArtifact still PACK_UNREADABLE for companion refusal and no catch of inexpressible Markdown (not client-reachable)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP05-markdown-companions-in-store-and-gate/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP05-markdown-companions-in-store-and-gate/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 10643,
+      "shell_pid_created_at": "1793256489.71",
+      "subtasks": {
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M638MJ3J9PTJY58MPHKASRQ2",
+      "last_transition_at": "2026-10-29T07:22:51.890656+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP06 ready (ff3e26f8). :packs:test green (1477 tests, 0 failures), spotless/checkstyle/compile clean. Red window (operator-accepted, closed by WP10; green at HEAD~ baseline): openPacksRoundTrip 3 tests red - FileSystemPackInspectorTest.validateModeOverTheBuiltInPack (18 ARTIFACT_SCHEMA_ERROR guide_path on built-in toolguides), WholePackOpenPacksRoundTripTest.everyRealPackLoads (21 open-packs toolguides + 3 vendored packs/internal toolguides: pattern violated at /guide_path), WholePackOpenPacksRoundTripTest.aCorrectedCopyOfBuiltIn (24 = pinned six asset + 18 toolguide guide_path); wholePackRoundTrip 1 test red - theBuiltInPackRoundTripsAsExpected (18 UNEXPECTED_RED built-in toolguides, guide_path pattern). Every failure item is a pinned toolguide guide_path. :deployable:test: 2 contract scenarios red in toolguides.feature (lines 31, 43 assert response guidePath git.md/make.md, now git.guide.md/make.guide.md) - WP07 owns the contract rewrite. Interim ToolguideController: request guidePath ignored, guide = overview from summary, until WP07. Out-of-map: file-kinds.yaml rule, PackFileKindTest/PackSchemasTest counts, WholePackCensus (companion kind before table kind), markdown-rule-fixtures schema copy, test builders in 6 service/api/domain tests, DomainRoundTripTest + PackCommitStoreTest guide expectations. GeneratedPackTree change local to toolguide (no Kind enum change) for WP04 merge.",
+        "Review passed (reviewer-renata): T026-T031 delivered. Title has one home (H1 written from Toolguide.title, compared on read, absent H1 accepted, never stored in Guide); guide_path = <id>.guide.md in schema pattern and domain invariant, no repo-rooted tolerance anywhere; every T027 refusal tested beside the ACCEPTED twin (preamble vs overview twin included); toolguide-guide schema and guide_path pattern use standard 2020-12 keywords only. Verified: :packs:test --rerun 1477 green (3 skipped), spotless/checkstyle clean. Red window only of the guide_path kind: openPacksRoundTrip 3 failing tests = 18 built-in + 3 open-packs internal + 3 vendored packs/internal guide_path violations (pinned-six test 24 = 6 pinned asset + 18 guide_path); wholePackRoundTrip 18 UNEXPECTED_RED all guide_path; WP10 closes. :deployable:test 270/272, the 2 reds are toolguides.feature guidePath git.md/make.md vs *.guide.md; WP07 T038/T042 removes guidePath and rewrites toolguides.feature (WP07-closed). Interim ToolguideController (request guidePath ignored, guide = Guide.of(summary), PUT overwrites guide) accepted on unreleased mission branch; WP07 T039 replaces it. Coordination: WP06 touched WP07-owned ToolguideController.java/ToolguideControllerTest.java and WP02-owned contracts/packs/file-kinds.yaml (pre-authorised); WP07 must rebase onto WP06. Non-blocking: GuideBlock.required() and Guide.overview() have no production caller; ToolguideIdentifier pattern admits ids (a-, a--b) whose <id>.guide.md the guide_path pattern refuses; GuideSection built outside the try in GuideMarkdown.fromDocument (unreachable given MarkdownDocument.Section rules). Issue matrix: recorded #262 not-applicable (context citation in analysis-report.md)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP06-structured-toolguide-guide/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP06-structured-toolguide-guide/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 23036,
+      "shell_pid_created_at": "1793258280.96",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M63A9H7VEZP1SD25SZXR7JY8",
+      "last_transition_at": "2026-10-29T07:51:47.707714+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP07 ready (33c8786a, signed). guidePath removed from ToolguideRegistration/Toolguide (### Breaking CHANGELOG). Exactly-one guide/guideUri enforced in ToolguideController (generator ignores oneOf: spike recorded in CHANGELOG); 1 MiB UTF-8 inline cap before parse; response carries guide with H1 from title. ToolguideRegistrationService fetches guideUri via GuideFetcher before writeStore.exclusively (service test asserts lock not held), reads via new GuideFormat port (MarkdownGuideFormat adapter in infra.storage; api cannot depend on storage per ENTRYPOINT_OVER_APPLICATION). Fetch refusals/invalid guide -> validation_failed 422, companion conflict stays registration_conflict 409; no new codes. WP06 Guide.of(summary) path gone. Scenarios rewritten + guideUri/matrix/cap/invalid/H1/refused-fetch via @Primary StubGuideFetcher (no sockets); 3 new steps documented in scenarios README. Gates: :contracts:check :packs:test (1738/0 fail) :deployable:test (282/0 fail) spotlessCheck checkstyle compile all exit 0. verifyAll not run (NO_FULL_HEAVY_SUITES_IN_MISSION; openPacksRoundTrip/wholePackRoundTrip known red until WP10). Out-of-map: GuideFormat, MarkdownGuideFormat, TacticReadWiredTest, CucumberSpringConfiguration, RegistrationSteps, scenarios/README.",
+        "Review passed (reviewer-renata, 33c8786a). Contract: guidePath gone from request+response, oneOf guide/guideUri (generator ignores oneOf; controller enforces), Toolguide.guide required, CHANGELOG Breaking. Controller exactly-one matrix (both/neither/null/empty) -> 422 validation_failed with positive controls; 1 MiB UTF-8 cap pre-parse (exact 1 MiB accepted); H1 from title; Guide.of(summary) interim removed. Service fetches via GuideFetcher before writeStore.exclusively, every PUT refetches, refused fetch never locks, invalid guide stores nothing. Only HttpsGuideFetcher (infra.fetch) wired in prod; no other HTTP client in main; all GuideFetchRefusal details path/query-free. Out-of-map edits (GuideFormat port + MarkdownGuideFormat adapter, TacticReadWiredTest refusing fetcher bean, Cucumber config/RegistrationSteps, scenarios README) minimal and justified. Shared files with WP06 only via dependency (WP06 interim code superseded as planned). Ran: :contracts:check :packs:test --rerun (1738/0 fail/3 skip) :deployable:test --rerun (282/0) green; spotless/checkstyle/javadoc packs+deployable green; verifyAll --continue red ONLY on :packs:openPacksRoundTrip; openPacksRoundTrip 3 failing tests and wholePackRoundTrip 18 UNEXPECTED_RED, all guide_path (+ pinned six assets), identical to WP06 red window closed by WP10. Non-blocking: verifyAll skip citation was wrong (tactic note says verifyAll is not heavy); generated @Pattern on URI getter is a latent 500 if a Bean Validation provider is added; no HTTP-level test for http:// guideUri or malformed guideUri 400; scenario asserts detail by prefix only."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP07-guide-over-http/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP07-guide-over-http/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 2257,
+      "shell_pid_created_at": "1793259904.6",
+      "subtasks": {
+        "T038": "done",
+        "T039": "done",
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done"
+      }
+    },
+    "WP08": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M63761MB2VVXMXTEJFKH4AD5",
+      "last_transition_at": "2026-10-29T06:57:27.691227+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Guarded guide fetcher (commit e4fae1a0). Gates: style chain (:packs spotlessApply/spotlessCheck/checkstyleMain/checkstyleTest/compileJava/compileTestJava/javadoc + :deployable spotlessCheck/checkstyleMain) exit 0; ./gradlew :packs:test :deployable:test exit 0 (packs 1657 tests, 3 pre-existing skips in FileSystemPackSourcesTest, 0 failures; deployable 272, 0 failures). Rebinding: HttpClient re-resolves at connect via InetAddress -> JEP 418 GlobalAddressResolverProvider refuses non-global answers for allowlisted hosts; proven by HttpsGuideFetcherTest.Rebinding (fake transport resolves at connect through the guard: refused NON_GLOBAL_ADDRESS, zero connect targets; control without guard connects to 10.0.0.1) and GlobalAddressResolverProviderTest end-to-end through the JVM-installed provider (localhost, guard refusal record). Mutation (guard disabled) fails both. Config fails start if allowed-hosts set but JDK did not install the guard. Out-of-owned (minimal): DeployableConfiguration scans infra.fetch.config; packs testImplementation archunit (already pinned); bad fixture packs.application.badfixture.ApplicationOpensSocket (test). Port uses java.net.URI, allowed explicitly by NetworkCodeBoundaryTest. Deviations: deadline via System.nanoTime and future.get(remaining)+cancel(true) instead of orTimeout (orTimeout would complete the future without aborting the exchange); IDN/underscore/127.1/0x7f.1 forms give URI host=null -> HOST_NOT_ALLOWED, not IP_LITERAL. Residual: Spring Boot fat-jar SPI visibility at first lookup is enforced fail-closed, not otherwise verified in packaging.",
+        "Review passed (reviewer-renata): NO_PROXY, Redirect.NEVER, no cookie handler/authenticator asserted; per-hop https/userinfo/null-host/IP-literal/exact-allowlist/all-addresses-global checks; AddressPolicy allow-only over raw bytes (mapped, compatible, NAT64, 6to4, Teredo, CGNAT, ULA); mixed answers refused; rebinding test with unguarded control; one nanoTime deadline over DNS (virtual thread), every hop and body (verified: HttpClient connect-time DNS runs async inside the future); 1 MiB streamed cap; ArchUnit rule + test-only bad fixture. PACKAGING: bootJar run with --charter.guide-fetch.allowed-hosts=example.org starts; -Xlog:class+load shows GlobalAddressResolverProvider and its Guard loaded from BOOT-INF/lib/packs jar (JDK called get()), so the guard is installed under the executable jar; no external network used. packs+deployable tests, spotless, checkstyle green. Coordination: service/packs/build.gradle.kts is owned by WP09 (WP08 appends one testImplementation archunit line, no new artifact, verification-metadata unchanged); WP07 must make StubGuideFetcher @Primary or replace the HttpsGuideFetcher bean. LOW follow-ups: non-443 ports not restricted; text/html not refused; timed-out DNS virtual thread is not interrupted."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP08-guarded-guide-fetcher/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP08-guarded-guide-fetcher/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13199,
+      "shell_pid_created_at": "1793256632.4",
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done",
+        "T035": "done",
+        "T036": "done",
+        "T037": "done"
+      }
+    },
+    "WP09": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 6,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M63TTP4XBXHTM76QBC09D9AC",
+      "last_transition_at": "2026-10-29T12:40:47.005531+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "T044-T047 done; T048 prepared, not posted (orchestrator pushes, files issues, opens the PR); --force only because T048 stays open as instructed. Charter commit 58edc5f7 (signed): migration harness in service/packs/src/test/.../packs/migration, run only by :packs:packMigration (tag migration, excluded from test, openPacksRoundTrip and wholePackRoundTrip). :packs:test is green: 1538 tests, 0 failures. Open-packs branch feat/charter-194-sanitized-procedures-toolguides at 0cd66922 (signed, not pushed), cut from pin 01edb4eb because origin/main changes or deletes 10 of the migrated files. True counts: 41 procedures (built-in 23, internal 13, qa 5), 24 toolguides and 24 guides (built-in 18, internal 3, qa 3). Vendored charter packs: internal 13+3, qa 5+3; migrated copies are in scratchpad wp09/vendored-migrated. Verifier: 0 problems, 2259 key paths and units checked, 253 justified drops (246 actor:agent, 7 empty lists), idempotent. openPacksRoundTrip passes 22/22 at the branch head once WP10's re-vendor is simulated. wholePackRoundTrip: 0 red files; the only problems are the 2 stale expected-red entries (procedure, other:toolguides) for WP10. Risks: core rejects the sanitized procedures (upstream CI will be red), docs/packs pages drift, and 2 stale references sit outside the migrated kinds. Issue and PR bodies are in scratchpad/wp09-upstream.",
+        "- 2026-10-29T12:13:18Z – claude – review_status: acknowledged — review-cycle-1 feedback (yaml comments blocking; guide order check, relative target, T048 texts) read and being addressed",
+        "Cycle 1 fixes at bedf568c: authored YAML comments detected (snakeyaml comment events), reported as yaml-comment decisions, unreported comment = verifier problem, '#' outside scalars cross-checked; refactoring.procedure.yaml lines 59-62 folded verbatim into the reason of the 9 Fowler references. Guide verifier checks per-section line order and freeform relative order; fixed-block moves (12 in 7 guides) listed. Relative -PmigrationTarget refused. Open-packs branch regenerated on origin/main 72cb7dbc: 24df2c10 (signed, no upstream). Verifier 0 problems, 39/24/24, idempotent. Upstream texts updated; T048 (post issues/PR) left open by design (orchestrator-owned), hence --force.",
+        "- 2026-10-29T12:39:19Z – claude – review_status: acknowledged — review-cycle-2 feedback (fold the references comment into notes once, not into nine reasons) read and addressed",
+        "Cycle 2 fix at a52a3530: the first comment block inside a procedure's references becomes its top-level notes, verbatim, only when it has none; a block where notes exist, a second block, any other comment and toolguide comments are dropped and listed (yaml-comment rows kept). Verifier checks target notes equal the comment text. Open-packs branch regenerated on 72cb7dbc: 0d0e0217 (signed, no upstream). Verifier 0 problems, 39/24/24, 4 comment lines, 42 decisions, idempotent. Texts updated. --force only for T048 (orchestrator-owned, left open).",
+        "Cycle-3 review passed: the references comment is folded verbatim into the top-level notes, once (refactoring had none); references are unchanged; the verifier checks notes equal to the comment; 0 problems, idempotent; open-packs head 0d0e0217 on main 72cb7dbc. --force only because T048 (upstream posting) is orchestrator-owned by design."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP09-migration-harness-and-open-packs-pr/review-cycle-3.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP09-migration-harness-and-open-packs-pr/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 19545,
+      "shell_pid_created_at": "1793277614.07",
+      "subtasks": {
+        "T044": "done",
+        "T045": "done",
+        "T046": "done",
+        "T047": "done",
+        "T048": "done"
+      }
+    },
+    "WP10": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64HB0W5C6EEW6VABG2BJCA3",
+      "last_transition_at": "2026-10-29T19:14:10.949307+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: openPacksRef -> 5df92a5d02e47e8877364de5e2deb06c016d30a9 (open-packs#91). Commit 2f142740 (signed). internal+qa re-vendored; LOCAL_DELTA = internal/assets/validate-pr-body.py only. expected-red: removed kind procedure and other:toolguides; anti_pattern.graph.yaml (#236) intact; known-failures unchanged (6 asset sidecars, #75). New ProcedureAndGuideCorpusTest (39 procedures / 24 toolguides / 24 guides across built-in, internal, qa; qa read from a copy with a fixture pack.yaml; migration package absent). WholePackOpenPacksRoundTripTest pins procedure/toolguide counts; CompanionDigestTest admits qa toolguide guides. WP09 harness + migration tag/packMigration task deleted. Gates green: :packs:test 1799/0 fail (3 skipped), openPacksRoundTrip 28/0, wholePackRoundTrip 6/0 (0 red), :deployable:test 282/0, spotlessCheck+checkstyle, verifyAll, check_docs all, markdownlint 0, cspell 0. Positive controls (not committed): dropping procedure step descriptions turned 22/22 built-in procedures red; dropping guide trailing sections turned 12 guides red. Gap: WP11 (lane-k 11b2c8c9/4fd4ae07) is NOT in lane-j, so the WP11 TODO placeholders could not be filled here.",
+        "Review passed (reviewer-renata). Pin 5df92a5 (open-packs#91 merge commit, verified via API) consistent in gradle.properties, service-build.md, both PROVENANCE files; CI reads it from gradle.properties. packs/internal and packs/qa diff-clean vs git archive 5df92a5 except README/PROVENANCE and validate-pr-body.py (\\s*:? delta, dd86daa). expected-red: procedure + other:toolguides removed, #236/#235 entries intact; known-failures unchanged (6x open-packs#75). Harness, migration tag and packMigration gone; build.gradle.kts = pre-WP09 + WP08 archunit. qa pack.yaml fixture is test-only (the defect stays pinned in OpenPacksCorpus.DIAGNOSTICS). CompanionDigestTest edit tightens (exactly 3 guides, each after a toolguide). Gates green: packs test 1799/0 fail (3 pre-existing root-perm skips), openPacksRoundTrip 28/0, wholePackRoundTrip 6/0, deployable:test, verifyAll+spotless+checkstyle (--rerun-tasks), docs checks, markdownlint, cspell. Own positive control (drop on_success in ProcedureYaml.write) turned ProcedureAndGuideCorpusTest red; reverted. Coordination: out-of-map edits to build.gradle.kts (WP09/WP08), CompanionDigestTest.java and docs/guides/service-build.md are recorded here. Non-blocking follow-ups: spec NFR-001/SC-002 say 41 procedures, the pin has 39 (red-main procedures became directives upstream); dd86daa's semi-auto-delivery reword is dropped by taking the upstream copy, and the colon-form regex has no upstream issue linked."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP10-re-pin-and-re-vendor/review-cycle-1.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP10-re-pin-and-re-vendor/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 7284,
+      "shell_pid_created_at": "1793300736.4",
+      "subtasks": {
+        "T049": "done",
+        "T050": "done",
+        "T051": "done",
+        "T052": "done",
+        "T053": "done"
+      }
+    },
+    "WP11": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M63SMJ53CNC0F0GR2D8KEHEM",
+      "last_transition_at": "2026-10-29T12:19:57.731617+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "ADR-0043 (Proposed; S9-S16 extend ADR-0042 S1-S8), ADR-0039 amendment 2026-10-29, service-build guide (charter.guide-fetch.*, migrate-and-re-pin), glossary terms, A2 changelog + README row, epic #186 follow-up list. Out-of-map: docs/changelog/README.md row (approved) and one link in docs/development/README.md (orphans gate). TODO placeholders for open-packs PR/new pin in ADR-0043 d6 and the changelog. On this lane check_docs adr/related/links fail only because the mission branch lacks ADR-0041/0042 (present on feat/194a); a trial merge with feat/194a passes check_docs all and cspell; markdownlint then shows only the inherited ADR-0031:55 MD018 from feat/194a.",
+        "- 2026-10-29T12:17:54Z – unknown – review_status: acknowledged — review-cycle-1 feedback (procedure count scopes; agent/system roleless drop) read and being addressed",
+        "Cycle-1 rework in 4fd4ae07: ADR-0043 Context counts 41 procedures (23/13/5) and 24 guides (18/3/3) at 01edb4e; decision 6 drops actor agent/system steps and writer-omitted empty lists, adds per-section order check and yaml-comment manual decision, and states the migration scope on open-packs main 72cb7dbc (39 procedures 22/12/5, 24 toolguides, 24 guides). markdownlint/cspell 0; check_docs only the known 0041/0042 gaps.",
+        "Cycle-2 review passed: both blocking findings fixed exactly as specified (41/24 pin counts split by pack; agent+system roleless drops; 39/24/24 migration on main 72cb7dbc). The yaml-comment/order sentences depend on the WP09 rework; the orchestrator re-checks them at closeout. TODO placeholders for the open-packs PR and pin are intentional."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/procedure-antipattern-toolguide-round-trip-01M60H9B-coord/kitty-specs/procedure-antipattern-toolguide-round-trip-01M60H9B/tasks/WP11-adr-0042-and-living-docs/review-cycle-2.md",
+        "reference": "review-cycle://procedure-antipattern-toolguide-round-trip-01M60H9B/WP11-adr-0042-and-living-docs/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 11745,
+      "shell_pid_created_at": "1793276363.22",
+      "subtasks": {
+        "T054": "done",
+        "T055": "done",
+        "T056": "done",
+        "T057": "done",
+        "T058": "done"
+      }
+    }
+  }
+}

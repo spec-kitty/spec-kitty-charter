@@ -1,0 +1,34 @@
+{
+  "accept_commit": "888aed251f51a7bb5721768b460120e498d66dcc",
+  "acceptance_history": [
+    {
+      "accept_commit": "888aed251f51a7bb5721768b460120e498d66dcc",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-29T19:21:08.940129+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "4df8ad9df42d2ccc68daba74cb9624d3a2f4d937"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-29T19:21:08.940129+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "4df8ad9df42d2ccc68daba74cb9624d3a2f4d937",
+  "coordination_branch": "kitty/mission-procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "created_at": "2026-10-28T05:56:19.258646+00:00",
+  "flattened": false,
+  "friendly_name": "Procedure, anti-pattern and toolguide guide round trip",
+  "mid8": "01M60H9B",
+  "mission_id": "01M60H9B96RVV0JBDF4CHB5VS6",
+  "mission_number": null,
+  "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Part of the 4.0 GA whole-pack round trip (epic #186, issue #194, absorbing #168). Procedures, the anti-patterns they and styleguides carry inline, and the Markdown guides that toolguides point to must be read into the charter domain and written back with equal meaning, using deliberately designed, consistent storage shapes. Pack content that diverges from those shapes is reported upstream rather than tolerated.",
+  "purpose_tldr": "Bring procedures, inline anti-patterns and toolguide Markdown guides into the whole-pack round trip with a sanitized storage shape.",
+  "slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "status_phase": "1",
+  "target_branch": "feat/194a-procedure-antipattern-toolguide",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-29T05:30:51.782078+00:00"
+}

@@ -1,0 +1,139 @@
+{
+  "mission_slug": "procedure-antipattern-toolguide-round-trip-01M60H9B",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "lane-j :packs:test --rerun ProcedureSchemaTest (19/19), ProcedureEntityTest (32/32), ProcedureYamlTest (6/6), RetiredFieldNamesTest (1/1): pass; contracts/packs/schemas/procedure.schema.json read (closed objects, schema_version const 1.0, step role optional, AntiPatternEntry {title,content?,bad_example?,good_example?}, one Reference def)",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureSchemaTest.java:50,76,107; service/packs/src/test/java/ai/speckitty/charter/packs/domain/ProcedureEntityTest.java:44,148; contracts/packs/schemas/procedure.schema.json",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:19:54.890483+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": ":packs:test ProcedureYamlTest (6/6) + :packs:openPacksRoundTrip --rerun ProcedureAndGuideCorpusTest (5/5: 39/39 pinned procedures round-trip) + :packs:wholePackRoundTrip WholePackRoundTripTest (6/6): pass at pin 5df92a5d",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureYamlTest.java:37; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureAndGuideCorpusTest.java:64,92; service/packs/src/test/resources/whole-pack/expected-red.yaml (no procedure entry)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:00.348983+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": ":packs:test ProcedureYamlTest.antiPatternEntriesKeepTheirShape + ProcedureEntityTest.anAntiPatternEntryNeedsATitle: pass; :packs:openPacksRoundTrip ProcedureAndGuideCorpusTest (every pinned procedure incl. anti_patterns equal by meaning): pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureYamlTest.java:69; service/packs/src/test/java/ai/speckitty/charter/packs/domain/ProcedureEntityTest.java:219; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureAndGuideCorpusTest.java:64",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:05.809080+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003a",
+      "description": "Verify FR-003a is satisfied",
+      "proof_type": ":packs:openPacksRoundTrip --rerun PackDoctrineCorpusRoundTripTest.everyCorpusStyleguideReadsBackEqualAfterAWrite (28 pinned styleguides carry anti_patterns) + :packs:test DoctrineRoundTripTest (6/6), StyleguideEntityTest (5/5) + :packs:wholePackRoundTrip (styleguides not in expected-red): pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDoctrineCorpusRoundTripTest.java:80; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineRoundTripTest.java:93",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:11.349384+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": ":packs:test GuideTest (23/23), ToolguideGuideTest (21/21), ToolguideDsoRoundTripTest (5/5), ToolguideEntityTest (10/10) + :packs:openPacksRoundTrip ProcedureAndGuideCorpusTest (24/24 toolguides with 24 <id>.guide.md guides round-trip): pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/GuideTest.java:23; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ToolguideGuideTest.java:98,183,291; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureAndGuideCorpusTest.java:64",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:16.689341+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": ":packs:test MarkdownCodecTest (22+), MarkdownDocumentTest, MarkdownFilesRuleTest (4/4, structure schema applied) + :packs:openPacksRoundTrip MarkdownCorpusTest (72/72 byte-for-byte) + :packs:wholePackRoundTrip theMarkdownBranchComparesModelsAndNeverReadsYaml: pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/markdown/MarkdownCodecTest.java:75; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MarkdownFilesRuleTest.java:35,49,78; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/markdown/MarkdownCorpusTest.java:54; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java:307",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:21.818528+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005a",
+      "description": "Verify FR-005a is satisfied",
+      "proof_type": ":packs:test MarkdownCompanionTest (11/11), CompanionFilesTest (14/14), CompanionDigestTest (5/5): pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/MarkdownCompanionTest.java:92,120,200,249,265",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:26.966572+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "gradle.properties openPacksRef=5df92a5d (upstream PR spec-kitty-open-packs#91 merged, merge_commit 5df92a5d, closes #77/#78/#79 per class, decisions #81-#90; verified via gh api); :packs:openPacksRoundTrip --rerun VendoredPacksTest (2/2), ProcedureAndGuideCorpusTest.theMigrationHarnessIsGone, WholePackOpenPacksRoundTripTest (5/5) + :packs:wholePackRoundTrip (6/6): pass",
+      "evidence": "gradle.properties:9; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VendoredPacksTest.java:42; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureAndGuideCorpusTest.java:110; commits 58edc5f7 (WP09 harness), 2f142740 (WP10 re-pin)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:32.380886+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": ":packs:wholePackRoundTrip --rerun WholePackRoundTripTest.theBuiltInPackRoundTripsAsExpected (6/6) with anti_pattern.graph.yaml expected-red for nodes{...}.tags only (#236); :packs:test WholePackExpectationTest (60/60): pass",
+      "evidence": "service/packs/src/test/resources/whole-pack/expected-red.yaml (anti_pattern.graph.yaml entry); service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java:74",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:37.637040+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": ":packs:test ProcedureEdgesTest.theTacticMintsAndTheProcedureDoesNot (1/1, tactic positive control in same fixture), ProcedureEntityTest.relationshipsAreNeverMinted, ProcedureYamlTest.referencesKeepTheirOptionalTexts: pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureEdgesTest.java:41; service/packs/src/test/java/ai/speckitty/charter/packs/domain/ProcedureEntityTest.java:89; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ProcedureYamlTest.java:115",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:42.705416+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "expected-red.yaml has no procedure/other:toolguides entries; contracts/packs/file-kinds.yaml:138 adds **/toolguides/*.guide.md markdown rule; :packs:wholePackRoundTrip --rerun WholePackRoundTripTest (6/6) + :packs:test WholePackExpectationTest (60/60), ToolguideGuideTest.theFixtureIsGreenThroughTheGate: pass",
+      "evidence": "service/packs/src/test/resources/whole-pack/expected-red.yaml; contracts/packs/file-kinds.yaml:138-140; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java:74; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ToolguideGuideTest.java:170",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:47.991098+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": ":deployable:test --rerun CharterContractSuite (105/105 incl. 17 toolguide scenarios: guide|guideUri exactly-one, 1 MiB, guideUri fetched with stub, non-allowlisted refused) + :packs:test ToolguideControllerTest (29/29), ToolguideRegistrationServiceTest (11/11), ToolguideReadServiceTest (9/9), HttpsGuideFetcherTest (124/124), GlobalAddressResolverProviderTest (102/102): pass; guidePath absent from contracts/charter",
+      "evidence": "contracts/charter/scenarios/toolguides.feature:23,94,112,126,168; contracts/charter/schemas/ToolguideRegistration.yaml; service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ToolguideControllerTest.java:109,172",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:53.157718+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": ":packs:test ToolguideGuideTest anAbsentH1IsAcceptedAndWritten + H1-differs-refused (21/21), ToolguideControllerTest.aGuideWithoutAnH1IsStoredAndAnsweredWithTheH1FromTheTitle + :deployable:test toolguides.feature FR-011 scenario: pass",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ToolguideGuideTest.java:136,274; service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ToolguideControllerTest.java:172; contracts/charter/scenarios/toolguides.feature:65",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-29T19:20:58.315934+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
