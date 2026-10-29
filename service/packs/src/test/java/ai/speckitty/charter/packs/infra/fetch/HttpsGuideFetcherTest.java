@@ -30,7 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLSession;
 import org.jspecify.annotations.Nullable;
@@ -60,9 +63,16 @@ class HttpsGuideFetcherTest {
         return fetcher(Duration.ofSeconds(10), allowed);
     }
 
+    /**
+     * A fetcher over the hosts as listed, only normalised: the bind-time check of an entry
+     * ({@link GuideAllowlist#of}) is bypassed, so these tests show the fetcher refusing an IP literal or a host
+     * {@link URI} cannot read even when the allowlist holds it.
+     */
     private HttpsGuideFetcher fetcher(Duration timeout, String... allowed) {
+        GuideAllowlist allowlist = new GuideAllowlist(
+                Arrays.stream(allowed).map(GuideAllowlist::normalise).collect(Collectors.toSet()));
         return new HttpsGuideFetcher(
-                GuideAllowlist.of(List.of(allowed)), timeout, MIB, 3, this::lookUp, transport, new GuardRefusals());
+                allowlist, timeout, MIB, 3, this::lookUp, transport, HttpsGuideFetcher.LOOKUP_SLOTS);
     }
 
     private List<InetAddress> lookUp(String host) throws UnknownHostException {
@@ -161,6 +171,23 @@ class HttpsGuideFetcherTest {
             assertThat(transport.requests).isEmpty();
         }
 
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "https://guide.example:22/g.md",
+                    "https://guide.example:80/g.md",
+                    "https://guide.example:6379/g.md",
+                    "https://guide.example:8443/g.md"
+                })
+        void aPortOtherThan443IsRefusedBeforeAnyRequest(String uri) throws GuideFetchRefusal {
+            assertRefused(fetcher(HOST), uri, Reason.PORT_NOT_ALLOWED);
+            assertThat(transport.requests).isEmpty();
+
+            transport.route("https://guide.example:443/g.md", Canned.ok(GUIDE));
+            assertThat(fetcher(HOST).fetch(URI.create("https://guide.example:443/g.md")))
+                    .isEqualTo(GUIDE);
+        }
+
         @Test
         void theEmptyAllowlistRefusesEveryHost() {
             assertRefused(fetcher(), "https://guide.example/g.md", Reason.HOST_NOT_ALLOWED);
@@ -229,7 +256,7 @@ class HttpsGuideFetcherTest {
                         throw new NonGlobalAddressException(host);
                     },
                     transport,
-                    new GuardRefusals());
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertRefused(guarded, "https://guide.example/g.md", Reason.NON_GLOBAL_ADDRESS);
         }
@@ -299,6 +326,14 @@ class HttpsGuideFetcherTest {
             assertRefused(fetcher(HOST, "10.0.0.1"), "https://guide.example/b", Reason.IP_LITERAL);
         }
 
+        @Test
+        void aRedirectToAnotherPortIsRefused() {
+            transport.route("https://guide.example/a", Canned.redirect(302, "https://mirror.example:8443/g.md"));
+
+            assertRefused(fetcher(HOST, "mirror.example"), "https://guide.example/a", Reason.PORT_NOT_ALLOWED);
+            assertThat(transport.requested()).containsExactly("https://guide.example/a");
+        }
+
         @ParameterizedTest
         @ValueSource(ints = {300, 304, 305, 306, 399})
         void aThreeHundredThatIsNotAFollowableRedirectIsRefused(int status) {
@@ -343,11 +378,41 @@ class HttpsGuideFetcherTest {
             transport.connectThrough(viaGuard);
             transport.route("https://guide.example/g.md", Canned.ok(GUIDE));
             HttpsGuideFetcher fetcher = new HttpsGuideFetcher(
-                    GuideAllowlist.of(List.of(HOST)), Duration.ofSeconds(10), MIB, 3, viaGuard, transport, refusals);
+                    GuideAllowlist.of(List.of(HOST)),
+                    Duration.ofSeconds(10),
+                    MIB,
+                    3,
+                    viaGuard,
+                    transport,
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertRefused(fetcher, "https://guide.example/g.md", Reason.NON_GLOBAL_ADDRESS);
             assertThat(rebinder.lookups).isEqualTo(2);
             assertThat(transport.connectTargets).isEmpty();
+        }
+
+        @Test
+        void aGuardRefusalInAnotherFetchNeverRelabelsThisFetchsFailure() {
+            GuardRefusals refusals = new GuardRefusals();
+            // Another fetch of the same host, at the same moment, on another thread: its lookup is refused.
+            transport.duringSend(() -> {
+                Thread other = Thread.ofVirtual().start(new GuardRefusals.Attempt().bound(() -> refusals.record(HOST)));
+                try {
+                    other.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            transport.failWith(new ConnectException("connection refused"));
+
+            assertRefused(fetcher(HOST), "https://guide.example/g.md", Reason.UNREACHABLE);
+            assertThat(refusals.refusedSince(HOST, 0L))
+                    .as("the other fetch was refused")
+                    .isTrue();
+
+            // The same refusal made for this fetch types it.
+            transport.duringSend(() -> refusals.record(HOST));
+            assertRefused(fetcher(HOST), "https://guide.example/g.md", Reason.NON_GLOBAL_ADDRESS);
         }
 
         @Test
@@ -364,7 +429,7 @@ class HttpsGuideFetcherTest {
                     3,
                     unguarded,
                     transport,
-                    new GuardRefusals());
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertThat(fetcher.fetch(URI.create("https://guide.example/g.md"))).isEqualTo(GUIDE);
             assertThat(transport.connectTargets).containsExactly(PRIVATE);
@@ -381,7 +446,13 @@ class HttpsGuideFetcherTest {
             transport.connectThrough(viaGuard);
             transport.route("https://guide.example/g.md", Canned.ok(GUIDE));
             HttpsGuideFetcher fetcher = new HttpsGuideFetcher(
-                    GuideAllowlist.of(List.of(HOST)), Duration.ofSeconds(10), MIB, 3, viaGuard, transport, refusals);
+                    GuideAllowlist.of(List.of(HOST)),
+                    Duration.ofSeconds(10),
+                    MIB,
+                    3,
+                    viaGuard,
+                    transport,
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertThat(fetcher.fetch(URI.create("https://guide.example/g.md"))).isEqualTo(GUIDE);
             assertThat(transport.connectTargets).containsExactly(GLOBAL);
@@ -409,6 +480,23 @@ class HttpsGuideFetcherTest {
 
             transport.route("https://guide.example/h.md", Canned.chunked(MIB + 1, 64 * 1024));
             assertRefused(fetcher(HOST), "https://guide.example/h.md", Reason.TOO_LARGE);
+        }
+
+        @Test
+        void aSuccessThatDeclaresMoreThanTheCapIsRefusedBeforeItsBodyIsRead() throws GuideFetchRefusal {
+            transport.route(
+                    "https://guide.example/g.md",
+                    Canned.chunked(MIB, 64 * 1024).with("Content-Length", String.valueOf(1024L * MIB)));
+
+            assertRefused(fetcher(HOST), "https://guide.example/g.md", Reason.TOO_LARGE);
+            assertThat(transport.cancelled).isTrue();
+            assertThat(transport.chunksDelivered).isZero();
+
+            transport.route(
+                    "https://guide.example/e.md",
+                    Canned.chunked(MIB, 64 * 1024).with("Content-Length", String.valueOf(MIB)));
+            assertThat(fetcher(HOST).fetch(URI.create("https://guide.example/e.md")))
+                    .hasSize(MIB);
         }
     }
 
@@ -445,12 +533,88 @@ class HttpsGuideFetcherTest {
                         return List.of(GLOBAL);
                     },
                     transport,
-                    new GuardRefusals());
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
             long started = System.nanoTime();
 
             assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
             assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(2));
             assertThat(transport.requests).isEmpty();
+        }
+
+        @Test
+        void aLookupThatOutrunsTheDeadlineIsInterruptedAndDoesNotOutliveIt() throws InterruptedException {
+            AtomicReference<Thread> lookup = new AtomicReference<>();
+            HttpsGuideFetcher slowDns = new HttpsGuideFetcher(
+                    GuideAllowlist.of(List.of(HOST)),
+                    Duration.ofMillis(200),
+                    MIB,
+                    3,
+                    host -> {
+                        lookup.set(Thread.currentThread());
+                        try {
+                            Thread.sleep(60_000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        return List.of(GLOBAL);
+                    },
+                    transport,
+                    HttpsGuideFetcher.LOOKUP_SLOTS);
+
+            assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
+            assertThat(lookup.get()).isNotNull();
+            assertThat(lookup.get().join(Duration.ofSeconds(2)))
+                    .as("the interrupted lookup ended")
+                    .isTrue();
+        }
+
+        @Test
+        void lookupsTheResolverCannotStopHoldTheirSlotSoTheyCannotPileUp() throws GuideFetchRefusal {
+            CountDownLatch answer = new CountDownLatch(1);
+            HttpsGuideFetcher stuckDns = new HttpsGuideFetcher(
+                    GuideAllowlist.of(List.of(HOST)),
+                    Duration.ofMillis(200),
+                    MIB,
+                    3,
+                    host -> {
+                        // As getaddrinfo: the wait ignores the interrupt.
+                        boolean interrupted = false;
+                        while (true) {
+                            try {
+                                answer.await();
+                                break;
+                            } catch (InterruptedException e) {
+                                interrupted = true;
+                            }
+                        }
+                        if (interrupted) {
+                            Thread.currentThread().interrupt();
+                        }
+                        return List.of(GLOBAL);
+                    },
+                    transport,
+                    1);
+
+            assertRefused(stuckDns, "https://guide.example/g.md", Reason.TIMEOUT);
+            assertRefused(stuckDns, "https://guide.example/g.md", Reason.UNREACHABLE);
+            assertThat(transport.requests).isEmpty();
+
+            answer.countDown();
+            transport.route("https://guide.example/g.md", Canned.ok(GUIDE));
+            // The answered lookup frees its slot: the next fetch resolves again.
+            long until = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+            String fetched = null;
+            while (fetched == null) {
+                try {
+                    fetched = stuckDns.fetch(URI.create("https://guide.example/g.md"));
+                } catch (GuideFetchRefusal busy) {
+                    if (busy.reason() != Reason.UNREACHABLE || System.nanoTime() > until) {
+                        throw busy;
+                    }
+                    Thread.onSpinWait();
+                }
+            }
+            assertThat(fetched).isEqualTo(GUIDE);
         }
     }
 
@@ -498,12 +662,63 @@ class HttpsGuideFetcherTest {
         }
 
         @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "text/html",
+                    "text/html; charset=utf-8",
+                    "application/json",
+                    "application/octet-stream",
+                    "text/markdownx",
+                    ""
+                })
+        void aContentTypeOtherThanMarkdownOrPlainTextIsRefused(String contentType) {
+            transport.route("https://guide.example/t", Canned.ok(GUIDE).with("Content-Type", contentType));
+
+            assertRefused(fetcher(HOST), "https://guide.example/t", Reason.CONTENT_TYPE);
+        }
+
+        @Test
+        void anAbsentContentTypeIsRefused() {
+            transport.route("https://guide.example/t", Canned.ok(GUIDE).without("Content-Type"));
+
+            assertRefused(fetcher(HOST), "https://guide.example/t", Reason.CONTENT_TYPE);
+        }
+
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                    "text/markdown",
+                    "text/x-markdown",
+                    "text/plain",
+                    "TEXT/Markdown; variant=CommonMark; charset=utf-8",
+                    " text/plain ;charset=UTF-8"
+                })
+        void markdownOrPlainTextWithAnyParametersIsAccepted(String contentType) throws GuideFetchRefusal {
+            transport.route("https://guide.example/t", Canned.ok(GUIDE).with("Content-Type", contentType));
+
+            assertThat(fetcher(HOST).fetch(URI.create("https://guide.example/t")))
+                    .isEqualTo(GUIDE);
+        }
+
+        @ParameterizedTest
         @MethodSource("ai.speckitty.charter.packs.infra.fetch.HttpsGuideFetcherTest#malformedUtf8")
         void malformedUtf8IsRefused(byte[] body) {
             transport.route("https://guide.example/m", Canned.bytes(body));
 
             assertRefused(fetcher(HOST), "https://guide.example/m", Reason.NOT_UTF8);
         }
+    }
+
+    @Test
+    void theLoggedCauseOfAnUnreachableFetchNamesNeitherThePathNorTheQuery() {
+        URI target = URI.create("https://guide.example/secret/g.md?token=s3cr3t");
+        Throwable failure = new ConnectException("connect to " + target + " failed");
+        failure.initCause(new javax.net.ssl.SSLHandshakeException("no trust for /secret/g.md, token=s3cr3t"));
+
+        assertThat(HttpsGuideFetcher.causeOf(failure, target))
+                .contains("java.net.ConnectException", "javax.net.ssl.SSLHandshakeException")
+                .doesNotContain("secret", "s3cr3t");
+        assertThat(HttpsGuideFetcher.causeOf(null, target)).isEqualTo("unknown failure");
     }
 
     static Stream<byte[]> malformedUtf8() {
@@ -524,6 +739,9 @@ class HttpsGuideFetcherTest {
         assertThat(transport.requests).hasSize(2).allSatisfy(request -> {
             assertThat(request.headers().map()).doesNotContainKeys("Authorization", "Cookie", "Proxy-Authorization");
             assertThat(request.headers().firstValue("Accept-Encoding")).contains("identity");
+            assertThat(request.headers().firstValue("Accept"))
+                    .hasValueSatisfying(accept ->
+                            assertThat(accept).contains("text/markdown").doesNotContain("*/*"));
             assertThat(request.method()).isEqualTo("GET");
         });
     }
@@ -551,27 +769,34 @@ class HttpsGuideFetcherTest {
     void invalidLimitsAreRefusedAtConstruction() {
         GuideAllowlist list = GuideAllowlist.of(List.of(HOST));
         assertThatThrownBy(() -> new HttpsGuideFetcher(
-                        list, Duration.ZERO, MIB, 3, this::lookUp, transport, new GuardRefusals()))
+                        list, Duration.ZERO, MIB, 3, this::lookUp, transport, HttpsGuideFetcher.LOOKUP_SLOTS))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new HttpsGuideFetcher(
-                        list, Duration.ofSeconds(1), 0, 3, this::lookUp, transport, new GuardRefusals()))
+                        list, Duration.ofSeconds(1), 0, 3, this::lookUp, transport, HttpsGuideFetcher.LOOKUP_SLOTS))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new HttpsGuideFetcher(
-                        list, Duration.ofSeconds(1), MIB, -1, this::lookUp, transport, new GuardRefusals()))
+                        list, Duration.ofSeconds(1), MIB, -1, this::lookUp, transport, HttpsGuideFetcher.LOOKUP_SLOTS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new HttpsGuideFetcher(list, Duration.ofSeconds(1), MIB, 3, this::lookUp, transport, 0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     // ---- test doubles --------------------------------------------------------------------------------------------
 
-    /** A canned response: status, headers, body chunks; {@code hang} never answers. */
+    /**
+     * A canned response: status, headers, body chunks; {@code hang} never answers. A body is served as
+     * {@code text/markdown} unless a test says otherwise.
+     */
     record Canned(int status, Map<String, List<String>> headers, List<byte[]> chunks, boolean hang) {
+
+        private static final Map<String, List<String>> MARKDOWN = Map.of("Content-Type", List.of("text/markdown"));
 
         static Canned ok(String body) {
             return bytes(body.getBytes(StandardCharsets.UTF_8));
         }
 
         static Canned bytes(byte[] body) {
-            return new Canned(200, Map.of(), List.of(body), false);
+            return new Canned(200, MARKDOWN, List.of(body), false);
         }
 
         static Canned chunked(int size, int chunk) {
@@ -581,7 +806,7 @@ class HttpsGuideFetcherTest {
                 Arrays.fill(bytes, (byte) 'a');
                 chunks.add(bytes);
             }
-            return new Canned(200, Map.of(), chunks, false);
+            return new Canned(200, MARKDOWN, chunks, false);
         }
 
         static Canned redirect(int status, String location) {
@@ -596,6 +821,12 @@ class HttpsGuideFetcherTest {
             Map<String, List<String>> more = new HashMap<>(headers);
             more.put(name, List.of(value));
             return new Canned(status, more, chunks, hang);
+        }
+
+        Canned without(String name) {
+            Map<String, List<String>> fewer = new HashMap<>(headers);
+            fewer.remove(name);
+            return new Canned(status, fewer, chunks, hang);
         }
     }
 
@@ -629,6 +860,8 @@ class HttpsGuideFetcherTest {
         private final Map<String, Canned> routes = new HashMap<>();
         private final Map<String, Canned> anyHostRoutes = new HashMap<>();
         private HttpsGuideFetcher.@Nullable Resolver connect;
+        private @Nullable Runnable duringSend;
+        private @Nullable Throwable failure;
         final List<HttpRequest> requests = new ArrayList<>();
         final List<InetAddress> connectTargets = new ArrayList<>();
         final List<CompletableFuture<HttpResponse<byte[]>>> hanging = new ArrayList<>();
@@ -643,6 +876,16 @@ class HttpsGuideFetcherTest {
             anyHostRoutes.put(path, canned);
         }
 
+        /** Runs this while a send is under way, on the sending thread, before the send fails or answers. */
+        void duringSend(Runnable action) {
+            duringSend = action;
+        }
+
+        /** Fails every send with this, as the client reports a failed connect. */
+        void failWith(Throwable failure) {
+            this.failure = failure;
+        }
+
         /** Resolves the host again at connect time through this resolver, as the real client does. */
         void connectThrough(HttpsGuideFetcher.Resolver resolver) {
             connect = resolver;
@@ -654,8 +897,16 @@ class HttpsGuideFetcherTest {
 
         @Override
         public CompletableFuture<HttpResponse<byte[]>> send(
-                HttpRequest request, HttpResponse.BodyHandler<byte[]> bodyHandler) {
+                HttpRequest request, HttpResponse.BodyHandler<byte[]> bodyHandler, GuardRefusals.Attempt attempt) {
             requests.add(request);
+            Runnable action = duringSend;
+            if (action != null) {
+                action.run();
+            }
+            Throwable failing = failure;
+            if (failing != null) {
+                return CompletableFuture.failedFuture(failing);
+            }
             HttpsGuideFetcher.Resolver resolver = connect;
             if (resolver != null) {
                 try {

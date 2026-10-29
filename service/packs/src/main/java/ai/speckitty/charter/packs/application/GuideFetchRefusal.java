@@ -18,6 +18,8 @@ public final class GuideFetchRefusal extends Exception {
         NOT_HTTPS,
         /** The host is absent, not a plain DNS name, or not exactly on the allowlist (empty by default). */
         HOST_NOT_ALLOWED,
+        /** The URI names a port other than 443 (initially or after a redirect). */
+        PORT_NOT_ALLOWED,
         /** The URI carries user information. */
         USERINFO,
         /** The host is an IP literal rather than a name. */
@@ -34,6 +36,11 @@ public final class GuideFetchRefusal extends Exception {
         TOO_LARGE,
         /** The response carries a {@code Content-Encoding} other than {@code identity}. */
         ENCODED,
+        /**
+         * The response declares no {@code Content-Type}, or one other than {@code text/markdown},
+         * {@code text/x-markdown} or {@code text/plain} (parameters such as {@code charset} aside).
+         */
+        CONTENT_TYPE,
         /** The declared charset is not UTF-8, or the body is not valid UTF-8. */
         NOT_UTF8,
         /** The final response is not 2xx. */

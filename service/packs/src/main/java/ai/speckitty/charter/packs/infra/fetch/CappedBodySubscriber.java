@@ -18,12 +18,29 @@ import org.jspecify.annotations.Nullable;
 final class CappedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> {
 
     private final long maxBytes;
+    private final boolean refuseAtOnce;
     private final ByteArrayOutputStream body = new ByteArrayOutputStream();
     private final CompletableFuture<byte[]> result = new CompletableFuture<>();
     private Flow.@Nullable Subscription subscription;
 
     CappedBodySubscriber(long maxBytes) {
+        this(maxBytes, false);
+    }
+
+    private CappedBodySubscriber(long maxBytes, boolean refuseAtOnce) {
         this.maxBytes = maxBytes;
+        this.refuseAtOnce = refuseAtOnce;
+    }
+
+    /**
+     * A subscriber that refuses the body before reading any of it: for a response whose declared
+     * {@code Content-Length} already passes the cap.
+     *
+     * @param maxBytes the cap, named in the failure
+     * @return the subscriber; it cancels its subscription and fails as soon as it is subscribed
+     */
+    static CappedBodySubscriber refusing(long maxBytes) {
+        return new CappedBodySubscriber(maxBytes, true);
     }
 
     @Override
@@ -34,6 +51,11 @@ final class CappedBodySubscriber implements HttpResponse.BodySubscriber<byte[]> 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
         this.subscription = subscription;
+        if (refuseAtOnce) {
+            subscription.cancel();
+            result.completeExceptionally(new BodyTooLargeException(maxBytes));
+            return;
+        }
         subscription.request(Long.MAX_VALUE);
     }
 

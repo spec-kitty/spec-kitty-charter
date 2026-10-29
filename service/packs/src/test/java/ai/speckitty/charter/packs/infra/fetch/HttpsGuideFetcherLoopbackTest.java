@@ -13,7 +13,6 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -40,7 +39,6 @@ class HttpsGuideFetcherLoopbackTest {
     private static final String GUIDE = "# Guide\n\nUse the tool.\n";
 
     private HttpServer server;
-    private HttpClient client;
     private final Map<String, Map<String, List<String>>> seenHeaders = new ConcurrentHashMap<>();
 
     @BeforeEach
@@ -52,23 +50,22 @@ class HttpsGuideFetcherLoopbackTest {
         server.createContext("/over", exchange -> respond(exchange, filled(MIB + 1)));
         server.createContext("/drip", this::drip);
         server.start();
-        client = HttpsGuideFetcher.newHttpClient(Duration.ofSeconds(2));
     }
 
     @AfterEach
     void stop() {
-        client.close();
         server.stop(0);
     }
 
     private HttpsGuideFetcher fetcher(Duration timeout) {
         URI loopback = URI.create("http://" + server.getAddress().getHostString() + ":"
                 + server.getAddress().getPort());
-        HttpsGuideFetcher.Transport toLoopback = (request, handler) -> client.sendAsync(
-                HttpRequest.newBuilder(request, (name, value) -> true)
+        // The production transport (a client per exchange, its tasks bound to the fetch), its target rewritten.
+        HttpsGuideFetcher.Transport toLoopback = HttpsGuideFetcher.clientPerExchange(
+                Duration.ofSeconds(2),
+                request -> HttpRequest.newBuilder(request, (name, value) -> true)
                         .uri(loopback.resolve(request.uri().getRawPath()))
-                        .build(),
-                handler);
+                        .build());
         return new HttpsGuideFetcher(
                 GuideAllowlist.of(List.of("guide.example")),
                 timeout,
@@ -76,7 +73,7 @@ class HttpsGuideFetcherLoopbackTest {
                 3,
                 host -> List.of(GLOBAL),
                 toLoopback,
-                new GuardRefusals());
+                HttpsGuideFetcher.LOOKUP_SLOTS);
     }
 
     @Test
@@ -117,6 +114,7 @@ class HttpsGuideFetcherLoopbackTest {
 
     private void respond(HttpExchange exchange, byte[] body) throws IOException {
         seenHeaders.put(exchange.getRequestURI().getPath(), Map.copyOf(exchange.getRequestHeaders()));
+        exchange.getResponseHeaders().add("Content-Type", "text/markdown; charset=utf-8");
         exchange.sendResponseHeaders(200, body.length);
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(body);
@@ -125,6 +123,7 @@ class HttpsGuideFetcherLoopbackTest {
 
     private void drip(HttpExchange exchange) throws IOException {
         seenHeaders.put(exchange.getRequestURI().getPath(), Map.copyOf(exchange.getRequestHeaders()));
+        exchange.getResponseHeaders().add("Content-Type", "text/markdown");
         exchange.sendResponseHeaders(200, 0);
         try (OutputStream out = exchange.getResponseBody()) {
             for (int i = 0; i < 100; i++) {

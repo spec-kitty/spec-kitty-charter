@@ -8,10 +8,13 @@ import ai.speckitty.charter.packs.application.GuideFetcher;
 import ai.speckitty.charter.packs.infra.fetch.config.GuideFetchConfiguration;
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -89,6 +92,36 @@ class GuideFetchConfigurationTest {
                 });
 
         assertThat(GlobalAddressResolverProvider.installed()).isEqualTo(GuideAllowlist.EMPTY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "https://guide.example",
+                "guide.example:443",
+                "guide.example/guides",
+                "*.example.com",
+                "a_b.example",
+                "93.184.215.14",
+                "[::1]",
+                "guide..example",
+                "-guide.example"
+            })
+    void anEntryThatIsNotAPlainHostNameIsRefusedWhenBound(String entry) {
+        assertThatThrownBy(() -> GuideAllowlist.of(List.of("guide.example", entry)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("charter.guide-fetch.allowed-hosts")
+                .hasMessageContaining("'" + GuideAllowlist.normalise(entry) + "'");
+        runner.withPropertyValues("charter.guide-fetch.allowed-hosts=" + entry)
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void anInternationalisedEntryIsListedInItsAsciiForm() {
+        assertThat(GuideAllowlist.of(List.of("Bücher.Example.", "xn--bcher-kva.example"))
+                        .hosts())
+                .containsExactly("xn--bcher-kva.example");
+        assertThat(GuideAllowlist.of(List.of(" ", "")).hosts()).isEmpty();
     }
 
     @Test
