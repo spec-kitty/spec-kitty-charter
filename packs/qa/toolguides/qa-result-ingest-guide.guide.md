@@ -1,4 +1,6 @@
-# QA Result Ingestion — Invocation Contract
+# QA Result Ingestion (JUnit-XML Producer)
+
+## Overview
 
 `qa_result_ingest.py` is the producer, not the validator: it reads `spec.md`'s Requirement
 Register, every `tasks/WP*.md`'s frontmatter (including the `automation_ref` field), and
@@ -8,17 +10,7 @@ script's invocation contract only: how to resolve it, its flag surface, its exit
 shape of the carrier it writes. It does not restate the carrier schema itself in full — that lives
 in this mission's own `data-model.md`.
 
-## Scope: what this ingester does not read
-
-Not ingested in v1, named explicitly rather than left as a vague "other formats": **TAP**, **TRX**
-(MSTest/VSTest's own native XML schema), **Cucumber JSON**, **Robot Framework**'s native XML, and
-**CTRF**. Within JUnit-XML itself, only the outcome-as-child-element dialect
-(`<failure>`/`<error>`/`<skipped/>`) is supported — the outcome-as-`status`-attribute dialect some
-emitters use (e.g. `<testcase status="failed">` with no `<failure>` child) is explicitly
-unsupported, and is detected and refused rather than silently mis-read as passing (see Exit codes
-below).
-
-## Resolving the script
+## Setup
 
 Two different ids are in play here and they are not interchangeable:
 
@@ -33,7 +25,7 @@ Two different ids are in play here and they are not interchangeable:
 
   Never pass this toolguide's own id (`qa-result-ingest-guide`) to `asset path` — it will not
   resolve, because it is not an asset id. (This is the same two-distinct-ids caution
-  `toolguides/QA-CARRIER-LINT.md` already carries for its own `qa-traceability-lint`
+  `toolguides/qa-carrier-lint.guide.md` already carries for its own `qa-traceability-lint`
   asset/`qa-carrier-lint` toolguide split.)
 
 **Anchor asymmetry.** The sidecar's own manifest `path:` value is `qa_result_ingest.py`, with no
@@ -48,7 +40,7 @@ path qa-result-ingest` is the resolution path a caller should use regardless of 
 of the resolved path — a bare resolved-path invocation fails "Permission denied," not a Python
 traceback.
 
-## Flag surface
+## Usage
 
 ```
 qa_result_ingest.py --results PATH [--results PATH ...] --strategy path/to/spec.md
@@ -65,6 +57,16 @@ qa_result_ingest.py --self-test
 | `--mission-dir PATH` | The mission-dir root `qa-traceability.yaml` is written (or refreshed) into. Required unless `--self-test` is passed. |
 | `--json` | Additionally echo a six-key ingestion record (`status`, `exit_code`, `carrier_path`, `requirements_total`, `cases_total`, `unmapped_testcases`) -- not the carrier document's own structure to stdout, alongside writing `qa-traceability.yaml` unconditionally to `<mission-dir>/qa-traceability.yaml` regardless of this flag. |
 | `--self-test` | Runs the script's own built-in fixture/assertion pairs — one fixture that trips each named guard, one compliant fixture that does not — printing its own derived pair count (the tool derives and prints the count itself, so this guide does not restate it), mirroring `qa_carrier_lint.py --self-test`'s own convention. Makes every other flag optional — when `--self-test` is passed, none of them are read. |
+
+## Scope: what this ingester does not read
+
+Not ingested in v1, named explicitly rather than left as a vague "other formats": **TAP**, **TRX**
+(MSTest/VSTest's own native XML schema), **Cucumber JSON**, **Robot Framework**'s native XML, and
+**CTRF**. Within JUnit-XML itself, only the outcome-as-child-element dialect
+(`<failure>`/`<error>`/`<skipped/>`) is supported — the outcome-as-`status`-attribute dialect some
+emitters use (e.g. `<testcase status="failed">` with no `<failure>` child) is explicitly
+unsupported, and is detected and refused rather than silently mis-read as passing (see Exit codes
+below).
 
 ## Exit codes
 
@@ -90,7 +92,7 @@ neutralising a direct quotation of a field name would misdescribe the schema); a
 guessed into an automated correlation it was not declared for. The full field-by-field shape lives
 in this mission's own `data-model.md`.
 
-## Known limitation
+## Known limitations
 
 No runtime hook compels running this ingester or blocks on a `blocked`/`error` exit today:
 `GateBinding.handler_kind: "asset"` remains inert pending upstream issue #2599 (open), and
@@ -99,11 +101,3 @@ this pack's own `qa-carrier-lint` toolguide already discloses for its sibling va
 here too. This ingester's output is mechanically checkable — a real exit code, a real
 `qa-traceability.yaml` on disk — but it is agent-invoked, never machine-enforced, until both of
 those conditions close.
-
-## Note on this guide's own provenance
-
-This guide's CLI-surface description and exit-code table are drafted directly from `spec.md`
-(FR-001 and Decision 1), in parallel with the producer core's own implementation. They must be
-reconciled against the actual, final `assets/qa_result_ingest.py` implementation — its real
-argparse surface and its shipped docstring — at this work package's own review, before that review
-approves.

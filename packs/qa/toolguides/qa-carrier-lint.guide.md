@@ -1,4 +1,6 @@
-# QA Traceability Carrier Lint — Invocation Contract
+# QA Traceability Carrier Lint (Coverage Validator)
+
+## Overview
 
 `qa_carrier_lint.py` validates a `qa-traceability/v1` carrier (`qa-traceability.yaml`) and
 computes `qa-coverage.json`, this pack's own machine-readable coverage record. This guide
@@ -7,7 +9,7 @@ codes, and the shape of the record it writes. It does not restate the carrier sc
 (`qa-traceability.yaml`'s own `requirements[]`/`cases[]`/`defects[]` shape) — that lives in this
 mission's own `data-model.md`, Section A.
 
-## Resolving the script
+## Setup
 
 Two different ids are in play here and they are not interchangeable:
 
@@ -35,7 +37,7 @@ path a caller should use regardless of this detail; the detail is documented her
 who inspects the sidecar manifest directly does not misread its unprefixed `path:` value as a
 mistake.
 
-## Flag surface
+## Usage
 
 ```
 qa_carrier_lint.py --carrier PATH --mission-dir PATH [--json]
@@ -107,7 +109,7 @@ when `status: completed` **and** `overrun: false`; `status: completed` with `ove
 in its own dedicated `overrun` bucket, never `passed` or `failed`; `status: aborted` counts as
 `failed`. Full mechanism and the count-reconciliation identities live in `data-model.md` Section B.
 
-## Known limitation (FR-016)
+## Known limitations
 
 No runtime hook compels running this validator or blocks on its verdict today:
 `GateBinding.handler_kind: "asset"` remains inert pending upstream issue #2599 (open), and

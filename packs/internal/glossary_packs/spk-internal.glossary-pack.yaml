@@ -12,8 +12,8 @@ terms:
     definition: >
       The policy that main is allowed to carry known-failing tests when they are
       honestly documented (an ADR-tracked P0), rather than papered over. CI, not a
-      green local run, is the release authority. See built-in procedure
-      red-main-release-discipline.
+      green local run, is the release authority. See built-in directive
+      RED_MAIN_RELEASE_DISCIPLINE.
     confidence: 0.9
     status: active
     see_also:

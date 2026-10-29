@@ -1,4 +1,4 @@
-# Test-Quality Triage
+# Test-Quality Triage (static scan of the pytest corpus)
 
 ## Overview
 
@@ -13,7 +13,7 @@ listed below per test function, and ranks files so review squads read the worst
 first. The whole corpus (over 3,000 modules, about 36,000 tests) scans in about
 20 seconds.
 
-## Kick off a run
+## Usage
 
 From the repository root:
 
@@ -89,18 +89,6 @@ The review codes (R1 to R9) come from the 2026-09-29 test review.
 | `vague-name` | 1 | The name promises nothing (`test_basic`, `test_1`) | R8 unclear |
 | `provenance-tokens` | 1 | WP, FR or T ids, or issue numbers, in the name or docstring | development-assist lens |
 
-## Known false positives
-
-Every flag is a candidate, not a verdict:
-
-- `no-assertion` fires on a test that delegates to a helper whose name does not look like an assertion.
-- `weak-only-assert` fires on "passes strict validation" tests, where the call under test raises on failure. The assert is then only a formality.
-- `provenance-tokens` fires on legitimate issue-pinned regression tests. It only feeds the development-assist lens, and it weighs the least.
-
-The opposite also holds: an unflagged test is not proven good. The scanner
-cannot see a self-constructed oracle or a new gate stubbed out of an old
-harness. Those need a read and a planted break, as the procedure describes.
-
 ## Shallow clones
 
 Provenance comes from one `git log` pass over the top-level directory of each
@@ -111,3 +99,15 @@ an add. On a shallow
 clone, the graft point stands in for the `added` date of older files. Deepen
 the clone (`git fetch --deepen=<n>` or `--unshallow`) when the
 development-assist lens matters.
+
+## Known limitations
+
+Every flag is a candidate, not a verdict:
+
+- `no-assertion` fires on a test that delegates to a helper whose name does not look like an assertion.
+- `weak-only-assert` fires on "passes strict validation" tests, where the call under test raises on failure. The assert is then only a formality.
+- `provenance-tokens` fires on legitimate issue-pinned regression tests. It only feeds the development-assist lens, and it weighs the least.
+
+The opposite also holds: an unflagged test is not proven good. The scanner
+cannot see a self-constructed oracle or a new gate stubbed out of an old
+harness. Those need a read and a planted break, as the procedure describes.

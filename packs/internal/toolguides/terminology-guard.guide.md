@@ -7,7 +7,7 @@ The legacy-terminology guard is an architectural test that scans active source f
 It enforces canonical naming at the commit level — if a superseded term reappears in prose
 or code, CI fails and the change is rejected before merge.
 
-## When to Run
+## When to use
 
 Before pushing any changes to `src/charter/offering/` or user-facing prose. The test runs in the
 `tests/architectural/` suite, which is a CI-only shard — it does not run with the default
@@ -17,7 +17,7 @@ Before pushing any changes to `src/charter/offering/` or user-facing prose. The 
 pytest tests/architectural/test_no_legacy_terminology.py -q
 ```
 
-## Command
+## Usage
 
 ```bash
 pytest tests/architectural/test_no_legacy_terminology.py -q

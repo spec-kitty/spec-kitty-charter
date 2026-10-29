@@ -15,6 +15,10 @@ nodes:
     kind: directives
     title: "No Full Runs of Computationally Heavy Suites in Mission Work"
     body_path: directives/no-full-heavy-suites-in-mission.directive.yaml
+  - id: SPEC_KITTY_RED_MAIN_POLICY
+    kind: directives
+    title: "Spec Kitty Red-Main Policy (repository specifics)"
+    body_path: directives/spec-kitty-red-main-policy.directive.yaml
   # Branded-document + project-evolution-postmortem doctrine (maintainer authoring).
   - id: spec-kitty-branded-pdf
     kind: assets
@@ -92,10 +96,6 @@ nodes:
     kind: procedures
     title: "Spec Kitty Arch-Gate Adjudication (repository specifics)"
     body_path: procedures/spec-kitty-arch-gate-adjudication.procedure.yaml
-  - id: spec-kitty-red-main-policy
-    kind: procedures
-    title: "Spec Kitty Red-Main Policy (repository specifics)"
-    body_path: procedures/spec-kitty-red-main-policy.procedure.yaml
   - id: spec-kitty-package-tiers
     kind: styleguides
     title: "Spec Kitty Package-to-Tier Map"
@@ -217,7 +217,7 @@ edges:
   # fully-qualified <kind>:<id> DRG URNs (singular kind), verified present in
   # packs/built-in/.
   - source: "procedure:landing-contributor-prs"
-    target: "procedure:red-main-release-discipline"
+    target: "directive:RED_MAIN_RELEASE_DISCIPLINE"
     relation: refines
   - source: "procedure:landing-contributor-prs"
     target: "tactic:pr-agent-worktree-isolation"
@@ -230,7 +230,7 @@ edges:
     target: "tactic:no-parallel-duplicate-test-runs"
     relation: refines
   - source: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
-    target: "procedure:red-main-release-discipline"
+    target: "directive:RED_MAIN_RELEASE_DISCIPLINE"
     relation: refines
   # The built-in post-merge adjudication procedure inventories failing gates;
   # this directive bounds how a mission agent runs them locally (named gate
@@ -274,8 +274,8 @@ edges:
   - source: "procedure:spec-kitty-arch-gate-adjudication"
     target: "directive:NO_FULL_HEAVY_SUITES_IN_MISSION"
     relation: requires
-  - source: "procedure:spec-kitty-red-main-policy"
-    target: "procedure:red-main-release-discipline"
+  - source: "directive:SPEC_KITTY_RED_MAIN_POLICY"
+    target: "directive:RED_MAIN_RELEASE_DISCIPLINE"
     relation: refines
   - source: "styleguide:spec-kitty-package-tiers"
     target: "styleguide:tiered-standards"

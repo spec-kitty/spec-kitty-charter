@@ -15,7 +15,7 @@ Follow the `issue-triage-pass` procedure. It carries the rules and the commands;
 ## Two rules to repeat in every brief
 
 - Never set `priority:P0` yourself. Name the criterion the issue meets and flag it for the operator.
-- Flag rather than guess. Never touch `status:*`, `squad:*` or `needs:*` labels; they belong to the agent fleet.
+- Flag rather than guess. Remove `status:triage` once an issue is triaged and nothing is pending on it; never touch the other workflow-state labels (`status:ready`, `status:claimed`, `status:blocked`, `taken-by-human`), which are leases set by a person or by contributor tooling. Never apply a retired or renamed label (`bug`, `enhancement`, `type:*`, `question`, `wontfix`, `domain:merge`, ...); a pending human call is `triage:needs-decision`.
 
 ## Stop and ask the operator when
 

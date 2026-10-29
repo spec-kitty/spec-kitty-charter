@@ -1,4 +1,6 @@
-# QA Promise Trace Lint
+# QA Promise Trace Lint (promise -> scenario chain)
+
+## Overview
 
 `qa_promise_trace_lint.py` checks that the chain from product description to
 acceptance scenario is intact. It reads two trees and runs nothing.

@@ -119,7 +119,8 @@ class CompanionDigestTest {
     }
 
     @Test
-    @DisplayName("binding skills adds nothing to the digest of a pack with no skill, and no Markdown is digested")
+    @DisplayName(
+            "binding skills adds nothing to the digest of a pack with no skill; only toolguide guides are Markdown")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
         // The vendored qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
         // styleguides, ...) and Markdown beside them, and no skill.
@@ -128,13 +129,19 @@ class CompanionDigestTest {
         withoutSkills.remove(ArtifactKind.SKILL);
 
         List<String> digested = PackFileSet.digested(qa);
-        // #193 digests the pack's asset files (three .py payloads), last; every file before them is YAML.
+        // #193 digests the pack's asset files (three .py payloads), last.
         List<String> assetFiles = PackFileSet.assetFiles(qa);
+        // #194: every file before them is YAML, except the three toolguide guides, each right after its toolguide.
+        List<String> beforeAssets = digested.subList(0, digested.size() - assetFiles.size());
+        List<String> guides =
+                beforeAssets.stream().filter(file -> !file.endsWith(".yaml")).toList();
 
         assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
         assertThat(digested).hasSizeGreaterThan(10).endsWith(assetFiles.toArray(String[]::new));
-        assertThat(digested.subList(0, digested.size() - assetFiles.size()))
-                .allSatisfy(file -> assertThat(file).endsWith(".yaml"));
+        assertThat(guides).hasSize(3).allSatisfy(guide -> {
+            assertThat(guide).startsWith("toolguides/").endsWith(".guide.md");
+            assertThat(beforeAssets.get(beforeAssets.indexOf(guide) - 1)).endsWith(".toolguide.yaml");
+        });
         assertThat(digested).doesNotContain("README.md", "PROVENANCE.md");
         assertThat(digested)
                 .as("binding the skill kind adds nothing to a pack that has no skill")
