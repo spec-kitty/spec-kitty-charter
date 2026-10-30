@@ -257,8 +257,9 @@ final class PackFileSet {
     /**
      * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
      * order, then the pack document ({@code pack.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
-     * (ADR-0042 decision 9). A pack without them keeps its digest list (NFR-002). The document is digested as text,
-     * whatever the load makes of it, so a change to a {@code pack.md} the load refuses still moves the fingerprint.
+     * (ADR-0042 decision 9). A pack without them keeps its digest list (NFR-002). The document is digested by its
+     * bytes, whatever the load makes of them, so a change to a {@code pack.md} the load refuses still moves the
+     * fingerprint; one that cannot be read refuses the digest, as any digested file does.
      */
     private static List<String> packLevelTail(Path directory, Listing loaded) {
         List<String> out = new ArrayList<>(loaded.presets());

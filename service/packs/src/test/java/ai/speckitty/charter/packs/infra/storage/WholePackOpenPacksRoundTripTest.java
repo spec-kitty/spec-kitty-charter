@@ -218,6 +218,10 @@ class WholePackOpenPacksRoundTripTest {
                             Files.readString(target.resolve(file)))
                     .ifPresent(difference -> out.add(pack + "/" + file + " differs: " + difference));
         }
+        if (Files.isRegularFile(pack.resolve(PackDocumentMarkdown.FILE))
+                != loaded.pack().document().isPresent()) {
+            out.add(pack + "/" + PackDocumentMarkdown.FILE + ": the file and the loaded document disagree");
+        }
         if (loaded.pack().document().isPresent()) {
             String file = PackDocumentMarkdown.FILE;
             MeaningComparator.adr0036()

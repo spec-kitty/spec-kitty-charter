@@ -338,6 +338,10 @@ class PackFileSetExactnessTest {
             observed.addAll(presets);
             // #260: the pack document is no kind either; the store reads a valid one into its own slot.
             read.document().map(FilesystemPackStore.Stored::file).ifPresent(observed::add);
+            Planted document = pack.planted().get(PackDocumentMarkdown.FILE);
+            assertThat(read.document().isPresent())
+                    .as("%s the pack document is held exactly when a valid one is planted", where)
+                    .isEqualTo(document != null && document.valid());
             read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
             Set<String> payloads = new LinkedHashSet<>();
             for (AssetFile file : read.assetFiles()) {

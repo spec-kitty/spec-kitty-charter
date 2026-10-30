@@ -573,6 +573,31 @@ class WholePackStoreTest {
     }
 
     /**
+     * One file has one owner (ADR-0039 decision 3, #260): a skill whose body names the pack's {@code pack.md} is refused
+     * as a {@code companion} violation, and the file stays the pack document; the same skill naming its own body loads.
+     */
+    @Test
+    @DisplayName("a companion that is the pack document is refused; pack.md keeps its one owner")
+    void aCompanionThatIsThePackDocumentIsRefused(@TempDir Path host) throws IOException {
+        Path clean = richPack(host.resolve("clean"));
+        write(clean, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
+        Path claimed = richPack(host.resolve("claimed"));
+        write(claimed, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: ../pack.md"));
+        write(claimed, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
+
+        assertThat(store.load(clean).pack().violations()).isEmpty();
+        WholePackStore.LoadedPack loaded = store.load(claimed);
+        assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(SKILL_FILE);
+            assertThat(violation.kind()).isEqualTo("companion");
+            assertThat(violation.reason()).startsWith("../pack.md: is a pack file of kind pack-document");
+        });
+        assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
+        assertThat(loaded.pack().document()).isPresent();
+        assertThat(PackFileSet.digested(claimed)).containsOnlyOnce(PackDocumentMarkdown.FILE);
+    }
+
+    /**
      * One file has one owner (ADR-0039 decision 3): a skill whose body names a file the {@code payloads} rules classify
      * (a template, an asset file) is a pack inconsistency. The file stays with the rule that classifies it; the skill
      * is refused as a {@code companion} violation, so the pack is never written as if whole, and the fingerprint lists
