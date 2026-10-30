@@ -35,8 +35,8 @@
 #   Its `schema` is a structure schema in schemas/ (Draft 2020-12, standard keywords only, loaded
 #   when the table loads; one that does not load fails the table). It validates the model as the
 #   JSON tree {frontmatter?, title?, preamble, sections: [{title, content}]}, with `frontmatter`
-#   and `title` left out, not null, when the document has none. The toolguide guide rule declares
-#   it (#194).
+#   and `title` left out, not null, when the document has none. The toolguide guide rule (#194)
+#   and the pack document rule `*/pack.md` (#260) declare it.
 #
 # Matching
 #   `match` is a glob over the file's path relative to the directory that holds the pack
@@ -142,6 +142,11 @@ files:
   # companion ownership rule admits the toolguide's guide here and refuses any other companion.
   - match: "**/toolguides/*.guide.md"
     schema: toolguide-guide
+    content_form: markdown
+  # A pack's description (#260, ADR-0042 decision 8): pack.md at the pack root, held in the Pack as its document
+  # through the markdown content form. Only the root file is the document; a pack.md deeper in the pack is not.
+  - match: "*/pack.md"
+    schema: pack-document
     content_form: markdown
 
 exclusions:

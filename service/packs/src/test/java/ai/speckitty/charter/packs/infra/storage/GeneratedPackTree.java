@@ -42,6 +42,8 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>a preset {@code presets/<stem>.yaml} (#195): refused by the load when malformed or its id is not its
  *     stem</td><td>loaded</td></tr>
  * <tr><td>root {@code pack-manifest.yaml} (#195)</td><td>manifest: digested, not loaded by the store</td></tr>
+ * <tr><td>root {@code pack.md} (#260), one in five with a carriage return</td><td>loaded (a refused one is a
+ *     violation); digested</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
@@ -125,6 +127,7 @@ final class GeneratedPackTree {
         PAYLOAD_NESTED(Verdict.PAYLOAD),
         TEMPLATE_TOP(Verdict.PAYLOAD),
         PRESET(Verdict.LOADED),
+        PACK_DOCUMENT(Verdict.LOADED),
         MANIFEST(Verdict.MANIFEST),
         DECOY_YML(Verdict.DECOY),
         DECOY_UPPER_EXTENSION(Verdict.DECOY),
@@ -411,6 +414,7 @@ final class GeneratedPackTree {
                 plantLoaded(pack, shape, randomKind(true));
             case LOADED_FILE_SYMLINK -> plantSymlink(pack);
             case PRESET -> plantPreset(pack);
+            case PACK_DOCUMENT -> plantPackDocument(pack);
             case ASSET_WITH_PAYLOAD -> plantAssetBesideItsPayload(pack);
             case ASSET_WITHOUT_PAYLOAD -> plantSidecarWithoutPayload(pack);
             case DECOY_TACTIC_DIRECTORY -> plantDirectory(pack);
@@ -489,6 +493,20 @@ final class GeneratedPackTree {
         Planted planted = new Planted(path, Verdict.LOADED, null, valid ? stem : null, file, null);
         remember(pack, Shape.PRESET, planted);
         return planted;
+    }
+
+    /**
+     * The pack document (#260), {@code pack.md} at the pack root, loaded into its own slot; one in five refused by the
+     * Markdown codec (a carriage return), which the load reports and the digest still covers. Planted once per pack.
+     */
+    private void plantPackDocument(Pack pack) throws IOException {
+        String path = PackDocumentMarkdown.FILE;
+        if (Files.exists(pack.directory().resolve(path), LinkOption.NOFOLLOW_LINKS)) {
+            return;
+        }
+        boolean valid = random.nextInt(5) != 0;
+        Path file = write(pack, path, valid ? "# P\n\nThe pack.\n" : "# P\r\n\r\nThe pack.\r\n");
+        remember(pack, Shape.PACK_DOCUMENT, new Planted(path, Verdict.LOADED, null, valid ? path : null, file, null));
     }
 
     private static String preset(String id) {

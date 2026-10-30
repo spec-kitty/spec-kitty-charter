@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
  * <p>A file that {@code contracts/packs/file-kinds.yaml} maps to a schema takes the schema's name ({@code directive},
  * {@code graph-shard}, {@code pack-descriptor}, {@code agent-profile}, …). Any other file takes
  * {@code other:<top-level directory>}, or {@code other:<file name>} at the pack root, so files without a schema are
- * grouped where they live ({@code other:missions}, {@code other:pack.md}).
+ * grouped where they live ({@code other:missions}, {@code other:README.md}).
  *
  * <p>A companion file (ADR-0039, #194) that no rule maps takes its owning artifact's gate kind, so it is modelled with
  * that artifact: the gate pairs it with the owner's written companion at the same relative path and compares it in the

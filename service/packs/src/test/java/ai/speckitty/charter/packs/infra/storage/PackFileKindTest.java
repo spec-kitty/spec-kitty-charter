@@ -46,7 +46,8 @@ class PackFileKindTest {
             Map.entry("core/skills/a.skill.yaml", "skill"),
             Map.entry("project/charter.yaml", "charter"),
             Map.entry("core/presets/minimal.yaml", "preset"),
-            Map.entry("core/pack-manifest.yaml", "pack-manifest"));
+            Map.entry("core/pack-manifest.yaml", "pack-manifest"),
+            Map.entry("core/pack.md", "pack-document"));
 
     /** One sample path for each exclusion rule. */
     private static final List<String> EXCLUDED = List.of(
@@ -185,6 +186,7 @@ class PackFileKindTest {
         "core/a.unknown.yaml",
         "pack.yaml",
         "core/deep/er/pack.yaml",
+        "core/docs/pack.md",
         "qa/missions/qa/templates/test-report-template.md",
         "built-in/missions/software-dev/templates/spec-template.md"
     })
@@ -216,10 +218,10 @@ class PackFileKindTest {
                 .hasSize(15)
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(19);
+        assertThat(KINDS.fileRules()).hasSize(20);
         assertThat(KINDS.fileRules())
-                .as("every files rule keeps the default form but the toolguide guide's (#194)")
-                .filteredOn(rule -> !rule.schema().equals("toolguide-guide"))
+                .as("every files rule keeps the default form but the toolguide guide's (#194) and pack.md's (#260)")
+                .filteredOn(rule -> !Set.of("toolguide-guide", "pack-document").contains(rule.schema()))
                 .extracting(PackFileKind.FileRule::contentForm)
                 .containsOnly(ContentForm.YAML);
     }

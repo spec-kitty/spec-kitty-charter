@@ -59,7 +59,9 @@ import org.jspecify.annotations.Nullable;
  * companion structure (a toolguide's guide, #194), as the store's load does: parsed with {@link MarkdownCodec},
  * validated against the structure schema, then held to the rules the schema cannot express
  * ({@link KindBinding#checkCompanion}). A guide that breaks one is {@link PackContents#unreadableFiles()}, so validate
- * mode and the load refuse the same guide. Other Markdown files are not read, nor listed in the classification.
+ * mode and the load refuse the same guide. It reads the pack document ({@code pack.md}, #260) the same way, through
+ * the store's own read ({@link PackDocumentMarkdown#read}). Other Markdown files are not read, nor listed in the
+ * classification.
  *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
  * so that a document nested too deeply or holding a scalar no validator can judge is a parse failure. A file whose
@@ -225,11 +227,22 @@ public final class FileSystemPackInspector implements PackInspector {
             }
             for (Path path : packFiles(directory, name, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
-                if (PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped
-                        && mapped.contentForm() == ContentForm.MARKDOWN
-                        && KindBindings.isCompanionStructure(mapped.kind())) {
-                    readCompanion(path, file, mapped.kind());
+                if (!(PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped)
+                        || mapped.contentForm() != ContentForm.MARKDOWN) {
+                    continue;
                 }
+                if (KindBindings.isCompanionStructure(mapped.kind())) {
+                    readCompanion(path, file, mapped.kind());
+                } else if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
+                    readDocument(path, file);
+                }
+            }
+        }
+
+        /** The pack document (#260), read as the store's load reads it, so the two refuse the same {@code pack.md}. */
+        private void readDocument(Path path, String file) {
+            if (read(path, file, name, PackDocumentMarkdown::read) instanceof FileRead.Unreadable<?> bad) {
+                unreadable.add(bad);
             }
         }
 

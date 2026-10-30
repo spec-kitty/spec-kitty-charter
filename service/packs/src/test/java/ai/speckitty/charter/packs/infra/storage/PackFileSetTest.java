@@ -145,6 +145,47 @@ class PackFileSetTest {
                         "templates/writing/minutes.md");
     }
 
+    /**
+     * ADR-0042 decision 9, #260: the pack-level tail is the presets in path order, then {@code pack.md}, then the
+     * manifest. A {@code pack.md} the load refuses (a carriage return) is still digested; one below the root is not the
+     * pack document and is not digested.
+     */
+    @Test
+    void thePackDocumentIsDigestedBetweenThePresetsAndTheManifest(@TempDir Path host) throws IOException {
+        Path documented = Files.createDirectories(host.resolve("tail/qa"));
+        for (String file : List.of(
+                "pack.yaml",
+                "a.tactic.yaml",
+                "presets/b.yaml",
+                "presets/a.yaml",
+                "pack.md",
+                "docs/pack.md",
+                "pack-manifest.yaml",
+                "templates/t.md")) {
+            Files.createDirectories(documented.resolve(file).getParent());
+            Files.writeString(documented.resolve(file), "# T\r\n");
+        }
+
+        assertThat(PackFileSet.digested(documented))
+                .containsExactly(
+                        "pack.yaml",
+                        "a.tactic.yaml",
+                        "templates/t.md",
+                        "presets/a.yaml",
+                        "presets/b.yaml",
+                        "pack.md",
+                        "pack-manifest.yaml");
+        Files.delete(documented.resolve("pack.md"));
+        assertThat(PackFileSet.digested(documented))
+                .containsExactly(
+                        "pack.yaml",
+                        "a.tactic.yaml",
+                        "templates/t.md",
+                        "presets/a.yaml",
+                        "presets/b.yaml",
+                        "pack-manifest.yaml");
+    }
+
     @Test
     void aSubsetOfTheKindsLeavesTheOthersOutButKeepsThePackYamlAndTheGraphInputs() {
         assertThat(PackFileSet.digested(pack, EnumSet.of(ArtifactKind.PARADIGM, ArtifactKind.DIRECTIVE)))

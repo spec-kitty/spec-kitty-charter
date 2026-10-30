@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
@@ -73,7 +74,8 @@ class WholePackRoundTripTest {
             "asset-payload",
             "template", // #193
             "preset", // #195
-            "pack-manifest"); // #195
+            "pack-manifest", // #195
+            "pack-document"); // #260
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -105,14 +107,16 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve(BUILT_IN), paired))
                 .as("written files no source file pairs with (ADR-0036: an extra file is a difference)")
                 .isEmpty();
-        // The two pack documents, #193's two payload kinds (bytes, no binding), #195's presets and every bound kind.
+        // The descriptor and the shards, #193's two payload kinds (bytes, no binding), #195's presets and manifest,
+        // #260's pack document and every bound kind.
         Set<String> bound = new TreeSet<>(Set.of(
                 DomainRoundTrip.DESCRIPTOR,
                 DomainRoundTrip.GRAPH_SHARD,
                 DomainRoundTrip.ASSET_PAYLOAD,
                 DomainRoundTrip.TEMPLATE,
                 DomainRoundTrip.PRESET,
-                DomainRoundTrip.MANIFEST));
+                DomainRoundTrip.MANIFEST,
+                DomainRoundTrip.PACK_DOCUMENT));
         KindBindings.all().forEach(binding -> bound.add(binding.schemaName()));
         assertThat(roundTrip.modelledKinds())
                 .as("the kinds the round trip models")
@@ -139,6 +143,8 @@ class WholePackRoundTripTest {
         assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.KNOWN_FAILURE, 6));
         assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
         assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 2));
+        assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
+        assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
                 .filter(entry -> entry.getValue().equals("asset"))
                 .map(Map.Entry::getKey)
@@ -177,6 +183,73 @@ class WholePackRoundTripTest {
                         .filter(entry -> entry.getValue().equals("template"))
                         .map(Map.Entry::getKey))
                 .allSatisfy(path -> assertThat(path).startsWith("templates/"));
+    }
+
+    /**
+     * Positive control through the production write path (#260): the loaded pack's document has one character of its
+     * preamble changed before the save, within the rendered prefix of a difference, and {@code pack.md}, green in the
+     * faithful run, is red at {@code preamble} alone with both renderings; every other outcome is the faithful run's,
+     * and neither run writes a file no source file pairs with.
+     */
+    @Test
+    void aLossyBodyWriterTurnsPackMdRedBesideAGreenFaithfulRun(@TempDir Path temp) throws IOException {
+        OpenPacksCorpus.assertPinned();
+        Path pack = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
+        SortedMap<String, String> census = WholePackCensus.of(pack);
+        SerializationStrategy yaml = new YamlSerializationStrategy();
+        AtomicReference<PackDocument> loaded = new AtomicReference<>();
+        Set<String> faithfulPaired = new TreeSet<>();
+        Set<String> lossyPaired = new TreeSet<>();
+
+        Map<String, Optional<String>> faithful = observe(
+                new DomainRoundTrip(yaml), pack, temp.resolve("faithful"), census, new TreeMap<>(), faithfulPaired);
+        Map<String, Optional<String>> lossy = observe(
+                new DomainRoundTrip(yaml, read -> {
+                    PackDocument document = read.document().orElseThrow();
+                    loaded.set(document);
+                    return read.toBuilder()
+                            .document(withPreamble(document, lossyPreamble(document)))
+                            .build();
+                }),
+                pack,
+                temp.resolve("lossy"),
+                census,
+                new TreeMap<>(),
+                lossyPaired);
+
+        assertThat(census).containsEntry(PackDocumentMarkdown.FILE, DomainRoundTrip.PACK_DOCUMENT);
+        assertThat(faithful.get(PackDocumentMarkdown.FILE))
+                .as("faithful pack.md")
+                .isEmpty();
+        String source = loaded.get().preamble();
+        assertThat(lossy.get(PackDocumentMarkdown.FILE))
+                .as("lossy pack.md")
+                .hasValue(
+                        "preamble: source " + rendered(source) + ", written " + rendered(lossyPreamble(loaded.get())));
+        Map<String, Optional<String>> others = new TreeMap<>(lossy);
+        others.remove(PackDocumentMarkdown.FILE);
+        Map<String, Optional<String>> faithfulOthers = new TreeMap<>(faithful);
+        faithfulOthers.remove(PackDocumentMarkdown.FILE);
+        assertThat(others).isEqualTo(faithfulOthers);
+        assertThat(unpaired(temp.resolve("faithful"), faithfulPaired)).isEmpty();
+        assertThat(unpaired(temp.resolve("lossy"), lossyPaired)).isEmpty();
+    }
+
+    /** The preamble with its first {@code built-in} changed to {@code built-iN}: one character, rendered. */
+    private static String lossyPreamble(PackDocument document) {
+        String preamble = document.preamble();
+        int at = preamble.indexOf("built-in");
+        assertThat(at).as("where the change goes").isBetween(0, 70);
+        return preamble.substring(0, at) + "built-iN" + preamble.substring(at + "built-in".length());
+    }
+
+    private static PackDocument withPreamble(PackDocument document, String preamble) {
+        return new PackDocument(document.frontmatter(), document.title(), preamble, document.sections());
+    }
+
+    /** A value as a gate difference renders it: its first 80 characters, then an ellipsis when longer. */
+    private static String rendered(String value) {
+        return value.length() <= 80 ? value : value.substring(0, 80) + "…";
     }
 
     /**
@@ -223,6 +296,13 @@ class WholePackRoundTripTest {
                 .hasSize(7 + 2);
         assertThat(bytesKind)
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
+        // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.
+        assertThat(flipped.get(PackDocumentMarkdown.FILE))
+                .as("pack.md in the flipped run")
+                .isEmpty();
+        faithful.keySet().stream()
+                .filter(path -> !bytesKind.contains(path))
+                .forEach(path -> assertThat(flipped.get(path)).as(path).isEqualTo(faithful.get(path)));
         for (String path : bytesKind) {
             byte[] source = Files.readAllBytes(pack.resolve(path));
             int middle = source.length / 2;
@@ -363,7 +443,7 @@ class WholePackRoundTripTest {
 
     /**
      * The loaded pack with every asset file's and template's bytes changed by {@code change}; nothing else moves, the
-     * presets included.
+     * presets and the pack document included.
      */
     private static Pack withPayloads(Pack pack, UnaryOperator<byte[]> change) {
         Pack.Builder builder = Pack.builder().id(pack.id()).descriptor(pack.descriptor());
@@ -383,6 +463,7 @@ class WholePackRoundTripTest {
                 .forEach(file -> builder.assetFile(new AssetFile(
                         file.path(), Payload.of(change.apply(file.payload().bytes())))));
         pack.presets().forEach(builder::preset);
+        pack.document().ifPresent(builder::document);
         return builder.build();
     }
 

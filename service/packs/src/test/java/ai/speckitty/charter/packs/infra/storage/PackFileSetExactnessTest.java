@@ -196,6 +196,19 @@ class PackFileSetExactnessTest {
 
     @Test
     @Timeout(HANG_CAP_SECONDS)
+    void aDigestThatDropsThePackDocumentFailsTheOracleNamingIt() throws IOException {
+        GeneratedPackTree tree = tree(0);
+        Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(
+                locations,
+                dir -> PackFileSet.digested(dir).stream()
+                        .filter(file -> !file.equals(PackDocumentMarkdown.FILE))
+                        .toList());
+
+        assertOracleFailsNaming(tree, mutant, plantedPaths(tree, p -> p.path().equals(PackDocumentMarkdown.FILE)));
+    }
+
+    @Test
+    @Timeout(HANG_CAP_SECONDS)
     void aDigestThatDropsThePayloadsFailsTheOracleNamingAPayload() throws IOException {
         GeneratedPackTree tree = tree(0);
         Function<List<PackLocation>, String> mutant = locations -> FileSystemPackSources.digest(locations, dir -> {
@@ -323,6 +336,8 @@ class PackFileSetExactnessTest {
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             assertThat(presets).as("%s the valid presets the store read", where).isEqualTo(validPresets(pack));
             observed.addAll(presets);
+            // #260: the pack document is no kind either; the store reads a valid one into its own slot.
+            read.document().map(FilesystemPackStore.Stored::file).ifPresent(observed::add);
             read.violations().stream().map(PackElementViolation::file).forEach(observed::add);
             Set<String> payloads = new LinkedHashSet<>();
             for (AssetFile file : read.assetFiles()) {
@@ -461,10 +476,11 @@ class PackFileSetExactnessTest {
                 .collect(Collectors.toSet());
     }
 
-    /** The planted presets the store must read: a loaded file of no kind is a preset (#195). */
+    /** The planted presets the store must read: a loaded file of no kind but the pack document is a preset (#195). */
     private static Set<String> validPresets(Pack pack) {
         return pack.planted().values().stream()
                 .filter(p -> p.verdict() == Verdict.LOADED && p.kind() == null && p.valid())
+                .filter(p -> !p.path().equals(PackDocumentMarkdown.FILE))
                 .map(Planted::path)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
