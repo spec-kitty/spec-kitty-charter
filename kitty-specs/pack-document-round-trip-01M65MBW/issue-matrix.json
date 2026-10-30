@@ -36,6 +36,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#229": {
+      "evidence_ref": "cited in research as a parallel sibling run (hosted config); no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#260": {
       "evidence_ref": "the feat(packs), fix(packs) and docs commits for #260 on issue-260-pack-md-round-trip; built-in pack.md green in :packs:wholePackRoundTrip",
       "fr": "FR-001..FR-011",
