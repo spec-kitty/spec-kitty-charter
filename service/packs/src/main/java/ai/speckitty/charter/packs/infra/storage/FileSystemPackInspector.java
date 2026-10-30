@@ -235,6 +235,11 @@ public final class FileSystemPackInspector implements PackInspector {
                     readCompanion(path, file, mapped.kind());
                 } else if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
                     readDocument(path, file);
+                } else {
+                    // A future Markdown kind must fail loud in validate mode too, as the store's
+                    // listing walk does (PackFileSet#loaded) — never silently skipped. Unreachable
+                    // with today's two-rule table; keeps load and validate symmetric by construction.
+                    throw PackFileSet.notStored(file, mapped.contentForm());
                 }
             }
         }
