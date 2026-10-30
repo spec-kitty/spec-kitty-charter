@@ -1,0 +1,65 @@
+{
+  "rows": {
+    "#186": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#194": {
+      "evidence_ref": "cited for context: the blocker (merged, feeff0a); no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "#194 PR-A built the markdown content form this mission uses",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#195": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#229": {
+      "evidence_ref": "cited in research as a parallel sibling run (hosted config); no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#260": {
+      "evidence_ref": "the feat(packs), fix(packs) and docs commits for #260 on issue-260-pack-md-round-trip; built-in pack.md green in :packs:wholePackRoundTrip",
+      "fr": "FR-001..FR-011",
+      "nfr": null,
+      "repo": null,
+      "sc": "SC-001..SC-003",
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Round-trip pack.md through #194's markdown content form",
+      "verdict": "fixed",
+      "wp": "WP01"
+    }
+  },
+  "schema_version": 1
+}

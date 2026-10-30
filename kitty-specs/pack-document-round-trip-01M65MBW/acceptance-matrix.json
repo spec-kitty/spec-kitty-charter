@@ -1,0 +1,119 @@
+{
+  "mission_slug": "pack-document-round-trip-01M65MBW",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileKindTest (core/pack.md -> pack-document; core/docs/pack.md unclassified), PackSchemasTest (20 schemas), PackDocumentRoundTripTest.theFixtureSchemaCopyIsTheBundledOne",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:34.361548+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackDocumentTest (refusals, deep copy, Pack slot through toBuilder/with/withoutDocument)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:38.668732+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackDocumentRoundTripTest: frontmatter/none/empty/no-final-newline/CRLF/BOM/empty file/nested docs/pack.md; MarkdownFilesRuleTest keeps notStored for other Markdown",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:42.659481+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackDocumentRoundTripTest (write canonically, unwritable document and closing-# title refused VALIDATION_FAILED, no target)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:46.861508+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileSetTest.thePackDocumentIsDigestedBetweenThePresetsAndTheManifest; PackFileSetExactnessTest.aDigestThatDropsThePackDocumentFailsTheOracleNamingIt",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:50.778045+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackDocumentRoundTripTest.validateModeAgreesWithTheLoad (crlf, bom)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:54.724843+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackRoundTripTest.theBuiltInPackRoundTripsAsExpected (REQUIRED_KINDS, bound, pack-document GREEN 1); DomainRoundTripTest; PackDocumentRoundTripTest gate runs",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:58.437742+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "expected-red.yaml without other:pack.md; :packs:wholePackRoundTrip green (no STALE_BASELINE)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:01:02.410219+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackRoundTripTest.aLossyBodyWriterTurnsPackMdRedBesideAGreenFaithfulRun",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:01:06.380996+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackDocumentRoundTripTest frontmatter, CRLF, no final newline cases",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:01:10.278797+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "ADR-0042/0040/0037/0036 amendments, changelog, logical model; check_docs all, markdownlint-cli2 0.18.1, cspell 9.2.0 clean; curator-carla review folded",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:01:14.059772+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

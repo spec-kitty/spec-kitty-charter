@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "mission_slug": "pack-document-round-trip-01M65MBW",
+  "mission_id": "01M65MBWAE8VZM6W97DTHDKMQT",
+  "mission_branch": "issue-260-pack-md-round-trip",
+  "target_branch": "issue-260-pack-md-round-trip",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/packs/README.md",
+        "contracts/packs/file-kinds.yaml",
+        "contracts/packs/schemas/pack-document.schema.json",
+        "docs/**",
+        "service/packs/**"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-30T05:46:22.101901+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP02"
+  ],
+  "planning_commit_sha": "764489bd7d568875432729f33bdbf81234032047"
+}
