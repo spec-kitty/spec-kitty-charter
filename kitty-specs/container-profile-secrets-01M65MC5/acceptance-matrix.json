@@ -1,0 +1,109 @@
+{
+  "mission_slug": "container-profile-secrets-01M65MC5",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ContainerSecretsTest.theProfileListensOnAllInterfacesOnPort8080 + ShippedConfigurationTest.theContainerProfileFileHoldsOnlyItsDefaultsAndTheRequiredImport (lane-a 747b842, lane-d); integrated :deployable:check green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:06.771889+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ContainerSecretsTest.aMissingSecretsDirectoryFailsTheStartNamingIt (ConfigDataResourceNotFoundException + path); default /run/secrets and no optional: pinned by ShippedConfigurationTest (analysis I1)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:11.557792+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ContainerSecretsTest.theTokenAndTheAllowedHostsBindFromFilesInTheSecretsDirectory (guard 200/401, trailing newline dropped); env-style file name sets nothing and, after integration with FR-010, is refused as foreign (integration fold)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:16.259338+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ContainerSecretsTest.theSameKeysBindFromEnvVarsWithAnEmptySecretsDirectory + theSecretsDirectoryCanBeNamedByItsEnvVar (env via getSystemEnvironment())",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:21.248032+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GuardWiringTest container cases (4 red before the change) + withoutTheProfileTheRefusalsAreTheLocalDaemonsWordForWord (lane-b)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:25.957159+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ShippedConfigurationTest.theComposeExampleRunsTheContainerProfileWithARequiredReadOnlySecretsMount; docker compose v5.6.1 config passes on a scratch copy",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:30.750207+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ShippedConfigurationTest.theEnvTemplateSetsNoValueAndLeavesTheSecretsAsComments + gitIgnoresEnvFilesAndTheSecretsDirectoryButNotTheTemplate (red without the .gitignore block)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:36.715482+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ShippedConfigurationTest.noShippedConfigurationFileHoldsASecret + noTrackedFileIsAnEnvFileOrInASecretsDirectory, positive controls theSecretScanCatchesEachFormOfACommittedToken + theTrackedPathCheckCatchesEnvFilesAndSecretsDirectories",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:41.921280+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ShippedConfigurationTest.theLocalApplicationYamlStillBindsLoopbackOnPortZeroAndImportsNothing; application.yaml unchanged vs origin/main",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:46.788420+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ContainerStartupCheckTest new cases (7 red before the change, 4 positive controls) (lane-c)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:31:51.729905+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

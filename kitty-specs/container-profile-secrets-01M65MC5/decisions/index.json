@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-30T05:28:54.438612Z",
+      "decision_id": "01M65MGKX68G0EGHV2AETWWKNX",
+      "final_answer": "placeholder charter.container.secrets-dir defaulting to /run/secrets/ (operator, 2026-10-30): configtree:${charter.container.secrets-dir:/run/secrets/}, no optional: prefix; recorded as an ADR-0041 D3 clarification",
+      "input_key": "secrets_import_seam",
+      "mission_id": "01M65MC5T397P2ASWZ3RKSVXGR",
+      "mission_slug": "container-profile-secrets-01M65MC5",
+      "opened_by": "cli",
+      "options": [
+        "placeholder charter.container.secrets-dir defaulting to /run/secrets/",
+        "literal /run/secrets/ only",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0041 D3 writes the required import as configtree:/run/secrets/. Tests (and CI) cannot create /run/secrets/. Resolve the location through a placeholder defaulting to /run/secrets/ (still required, no optional:), or keep the literal path?",
+      "rationale": null,
+      "resolved_at": "2026-10-30T05:52:46.300494Z",
+      "resolved_by": null,
+      "slot_key": "specify.secrets.import-seam",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M65MC5T397P2ASWZ3RKSVXGR",
+  "version": 1
+}

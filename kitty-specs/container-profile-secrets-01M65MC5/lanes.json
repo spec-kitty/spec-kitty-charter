@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "mission_slug": "container-profile-secrets-01M65MC5",
+  "mission_id": "01M65MC5T397P2ASWZ3RKSVXGR",
+  "mission_branch": "kitty/mission-container-profile-secrets-01M65MC5",
+  "target_branch": "issue-229-hosted-config-secrets",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/deployable/src/main/resources/application-container.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerSecretsTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/GuardWiring.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/GuardWiringTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerStartupCheck.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        ".gitignore",
+        "deploy/compose/.env.example",
+        "deploy/compose/compose.yaml",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ShippedConfigurationTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "docs/_meta/spelling-words.txt",
+        "docs/adr/0041-containerized-configuration-model.md",
+        "docs/architecture/service-lifecycle.md",
+        "docs/changelog/2026-10-30-container-profile-secrets.md",
+        "docs/changelog/README.md",
+        "docs/guides/README.md",
+        "docs/guides/run-in-a-container.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-10-30T06:04:19.225592+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP05"
+  ],
+  "planning_commit_sha": "efcea828a51816059c410cac8117e751a4e4c386"
+}
