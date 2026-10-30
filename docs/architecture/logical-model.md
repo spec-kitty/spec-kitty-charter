@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -163,7 +163,7 @@ level from directory presence.
 
 Four files describe a pack as a whole rather than one artifact. This service reads each into the
 domain and writes it back in one closed, sanitized shape
-([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), proposed). A
+([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/), accepted). A
 pinned file in another shape is refused, never tolerated, and fixed in the pack.
 
 | File | Schema | How the service holds it |
@@ -171,7 +171,7 @@ pinned file in another shape is refused, never tolerated, and fixed in the pack.
 | `pack.yaml` | `pack-descriptor`, closed | The pack's descriptor. An unknown key, a retired one included, makes the pack unreadable (`pack_unreadable`). |
 | `presets/<id>.yaml` | `preset`, closed | A `Preset` value in the pack's `presets()` slot, sorted by id. Not an artifact: it has no URN. Its `id` is its file stem. |
 | `pack-manifest.yaml` | `pack-manifest`, closed | Beside the aggregate, on the whole-pack load (`LoadedPack.manifest`), because it holds paths and hashes. |
-| `pack.md` | none | Planned: held through the `markdown` content form that #194 builds. Not modelled yet. |
+| `pack.md` | `pack-document` (a Markdown structure schema) | A `PackDocument` in the pack's `document()` slot (#260): optional frontmatter, an optional title, a preamble and the H2 sections, read and written through the `markdown` content form. A carriage return, a byte order mark or an ambiguous heading is refused, never normalized. |
 
 - **Presets.** A preset holds a description, an optional kind gate (`activated_kinds`) and up to
   ten `activated_<plural>` lists of preset items, `activated_mission_types` included. An item is

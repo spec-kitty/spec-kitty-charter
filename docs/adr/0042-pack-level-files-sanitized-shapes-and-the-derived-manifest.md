@@ -2,7 +2,7 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -44,15 +44,43 @@ It supersedes in part [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-me
 per-kind table gains its `preset` and `pack-manifest` rows.
 
 It extends [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Accepted):
-decision 4's "pack-level files (#195)" is built for presets and the manifest (`pack.md` is split off to
-[#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260), blocked on #194), decision 5's load returns the manifest, and the
-write's undeclared-keys refusal is gone.
+decision 4's "pack-level files (#195)" is built for presets and the manifest (`pack.md` was split off to
+[#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260), which built it on 2026-10-30; see the amendment below),
+decision 5's load returns the manifest, and the write's undeclared-keys refusal is gone.
 
 It extends [ADR-0040](/adr/0040-content-form-and-payload-kinds/) (Proposed): decision 9's
 fingerprint order gains a pack-level tail.
 
 Each of those records carries a dated amendment under its Status, with each point annotated where
 it stands.
+
+### Amendment 2026-10-30 (#260): `pack.md` is held, decision 8 is done
+
+Made by [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) (part of epic
+[#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), mission
+`pack-document-round-trip-01M65MBW`, after #194's first pull request built the `markdown` content
+form. The decision text below is unchanged, and each point this note changes is annotated where it
+stands. #260 cited these decisions as "ADR-0043 decisions 8 to 10"; they are this record's: 0043
+was reserved for #195 (`DM-01M60HM8BV7CE17HYE1QS829K4`) before the numbers changed.
+
+- **Decision 8 is done.** `*/pack.md` is a `files` rule of `content_form: markdown` with the
+  structure schema `pack-document` (optional frontmatter, an optional title, a free preamble and
+  free H2 sections). The store reads it through #194's codec into the `Pack` aggregate as a domain
+  `PackDocument` (the domain cannot hold the infra Markdown model, ADR-0006, so the value keeps the
+  model's shape and an infra mapper converts it, as #194 did for the toolguide guide;
+  `DM-01M65MKX2FG5E5SAM9D57BX2AE`). `WholePackStore` writes it in the canonical form before the
+  manifest, and validate mode reads it through the same read. A refused `pack.md` (a carriage
+  return, a byte order mark, an ambiguous heading) is a violation on its file; it is never
+  normalized. The gate models it as `pack-document`, and `other:pack.md` is off the expected-red
+  list: built-in `pack.md` is green.
+- **Decision 9, the order.** The tail is the presets in path order, then `pack.md`, then
+  `pack-manifest.yaml`. A `pack.md` is digested as text, whatever the load makes of it. A pack
+  without one keeps its digest list; the built-in pack gets a new fingerprint and ETag once.
+- **Decision 10.** The pack document is the third pack-level slot, `Pack.document()`, kept by
+  `toBuilder` and `with`. The `PackLevelContent` extraction stays a follow-up on #186.
+- **The document's title and the descriptor's `name` are independent.** The H1 of `pack.md` is
+  prose the author writes; nothing ties it to `pack.yaml`'s `name`, and the service checks neither
+  against the other.
 
 ## Context
 
@@ -290,7 +318,7 @@ ids and checks their kind gate, and does not check the manifest. The service hol
 shapes and does neither of core's preset checks. The divergence is DIV-301, in a block of its own for #195, in the
 [divergence register](/conformance/divergence-register/).
 
-### 8. `pack.md` uses #194's `markdown` content form (split off to #260)
+### 8. `pack.md` uses #194's `markdown` content form (split off to #260; done 2026-10-30)
 
 `pack.md` is held through the `markdown` content form that sibling
 [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) builds in its first pull
@@ -299,6 +327,7 @@ This mission builds no form of its own. The `pack.md` work is not built here: #1
 had not opened, so the operator split it off to
 [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) on 2026-10-28, and #195 closes
 on the scope it delivered. Until #260 lands, `other:pack.md` stays on the gate's expected-red list.
+*(Done by #260 on 2026-10-30; see the amendment under Status. `other:pack.md` is off the list.)*
 
 ### 9. The fingerprint order
 
@@ -310,7 +339,8 @@ on the scope it delivered. Until #260 lands, `other:pack.md` stays on the gate's
 4. the asset files, then the templates;
 5. the pack-level tail, in one ordered step: the presets in path order, then `pack-manifest.yaml`.
 
-When `pack.md` lands (decision 8), it joins the tail between the presets and the manifest. A pack
+When `pack.md` lands (decision 8), it joins the tail between the presets and the manifest *(it
+did, in #260, 2026-10-30)*. A pack
 with no presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them
 gets a new `Charter-Source-Fingerprint` and ETag once, as binding any kind does (ADR-0037).
 
@@ -327,8 +357,8 @@ The manifest is not in the aggregate. It holds file paths and hashes, which `Pac
 only for asset files. It sits beside the aggregate on `LoadedPack`, as the graph documents do
 (ADR-0037 decision 5). `LoadedPack` keeps a four-argument constructor that means "no manifest".
 
-Asset files (ADR-0040), presets, and the pack document to come are three pack-level slots beside the
-kind map. The rule of three has fired. Extracting them into one `PackLevelContent` value is a
+Asset files (ADR-0040), presets, and the pack document (#260, `Pack.document()`) are three pack-level
+slots beside the kind map. The rule of three has fired. Extracting them into one `PackLevelContent` value is a
 follow-up on epic #186. It is not done here, because #194 edits `Pack` at the same time.
 
 ### Per-kind table
@@ -340,6 +370,7 @@ The rows this record adds to ADR-0036's per-kind table:
 | `*/presets/*.yaml` | preset | YAML | none: every list is a sequence | none | yes |
 | `*/pack-manifest.yaml` | pack-manifest | YAML, less its derived fields | none: `constituents` and `presets` are sequences | `manifest_hash`; each entry's `content_hash`. Recomputed on write and verified by the gate on each side, never compared | yes |
 | `*/pack.yaml` | pack-descriptor | YAML | none | none | yes: the schema is closed (decision 4) |
+| `*/pack.md` (#260) | pack-document | the Markdown model (ADR-0040 as amended): frontmatter as loaded YAML values, every string exactly | none: the sections are a sequence | none | not applicable: the structure schema is closed over the model |
 
 ### The gate and the pinned files
 
@@ -422,7 +453,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 - A registration leaves the manifest stale until #110 decides regeneration.
 - Validate mode passes a preset that breaks only a domain invariant, such as a duplicated item id
   (decision 7).
-- `Pack` has two pack-level slots now, and a third is coming, before the extraction.
+- `Pack` has two pack-level slots now, and a third is coming, before the extraction *(it came: the
+  pack document, #260)*.
 - The whole-pack load of the corrected built-in pack, presets and manifest included, takes 420 ms
   in the seam test, against a budget of 0.5 s (NFR-004). It is close to the budget; no figure before
   #195 was taken for the built-in pack. The internal pack, which holds no manifest, took 43 ms
@@ -441,7 +473,7 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 
 - File OP-1 and OP-2, replace the placeholder keys, and remove the two slugs from the loader.
 - [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260): `pack.md` through #194's
-  `markdown` form, once #194's first pull request merges.
+  `markdown` form, once #194's first pull request merges. *(Done 2026-10-30.)*
 - #206: migrate `org-charter.yaml`'s `required_<plural>` lists into presets, then refuse them.
 - #110: manifest membership and restamping after a registration.
 - Epic #186: extract `PackLevelContent` (decision 10).

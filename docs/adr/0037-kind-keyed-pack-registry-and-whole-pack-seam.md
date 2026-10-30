@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -88,12 +88,12 @@ Extended in part by
 under `kitty-specs/pack-level-files-round-trip-01M60H1A/decisions/`. It changes decisions 4, 5 and 7 and
 no other decision:
 
-- **Decision 4, "pack-level files (#195)", is built for presets and the manifest; `pack.md` is
-  split off to #260 (blocked on #194).** The `Pack` aggregate holds its activation
+- **Decision 4, "pack-level files (#195)", is built for presets and the manifest; `pack.md` was
+  split off to #260 and is built (2026-10-30, see the note below).** The `Pack` aggregate holds its activation
   presets in a slot of its own, `presets()`, keyed by id, beside the kind map. A preset is a
   pack-level value, not an artifact: core gives it no URN. The store pairs each preset with its file
   stem. With ADR-0040's asset files, this is the second pack-level slot, and the pack document is
-  the third to come. The rule of three has fired; extracting a `PackLevelContent` value is a
+  the third (`Pack.document()`, #260). The rule of three has fired; extracting a `PackLevelContent` value is a
   follow-up on epic #186.
 - **Decision 5, the load returns the manifest.** `LoadedPack` gains `manifest`, the
   `pack-manifest.yaml` as read, beside the layout and the CRG documents. It stays out of the
@@ -108,7 +108,17 @@ no other decision:
 
 The decision text below is unchanged. Each point this note changes is annotated where it stands.
 The amended points are in force for the code #195 ships, which implements them. ADR-0042 itself is
-Proposed, pending the operator's acceptance, which the pull request for #195 asks for.
+Proposed, pending the operator's acceptance, which the pull request for #195 asks for *(accepted
+2026-10-29)*.
+
+### Note 2026-10-30 (#260): the pack document is held
+
+[#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) builds the last pack-level file
+of decision 4, `pack.md`, under
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)'s amendment of
+2026-10-30. The `Pack` aggregate holds it as `document()`, a value in the shape of #194's Markdown
+model; `WholePackStore` (decision 5) reads it and writes it in the canonical form before the
+manifest. No decision of this record changes.
 
 ## Context
 
@@ -160,8 +170,8 @@ nothing about how a new kind is shaped.
      would write standalone files that must not exist;
    - pack-level files (#195).
      *(Built by #195, 2026-10-28, ADR-0042, for presets and the manifest: presets in a `Pack` slot
-     of their own, the manifest beside the aggregate. `pack.md` is split off to #260 (blocked on #194). See the
-     amendment under Status.)*
+     of their own, the manifest beside the aggregate. `pack.md` is built by #260, 2026-10-30, in a
+     `Pack` slot of its own through #194's `markdown` form. See the amendments under Status.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
    reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:
    - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is
