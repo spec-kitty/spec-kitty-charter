@@ -160,7 +160,7 @@ public class GuardWiring {
     /** Where a container takes the token from: the env var, or the file in its secrets directory. A path, no secret. */
     private static String containerSources(ConfigurableEnvironment environment) {
         String dir = environment.getProperty(
-                ContainerStartupCheck.SECRETS_DIR_PROPERTY, ContainerStartupCheck.DEFAULT_SECRETS_DIR);
+                ContainerProperties.SECRETS_DIR_PROPERTY, ContainerProperties.DEFAULT_SECRETS_DIR);
         String trimmed = dir.endsWith("/") ? dir.substring(0, dir.length() - 1) : dir;
         return "CHARTER_WORKTREE_TOKEN in the environment or the file " + trimmed + "/charter.worktree-token";
     }

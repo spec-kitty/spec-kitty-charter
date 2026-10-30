@@ -28,4 +28,13 @@ public record ContainerProperties(
 
     /** The profile of a containerized service; activated only explicitly, never a default (ADR-0041 decision 1). */
     public static final String PROFILE = "container";
+
+    /**
+     * The directory the profile's file imports as a required config tree (ADR-0041 decision 3). In the namespace but not
+     * a component: the import reads it, through a placeholder, before anything is bound.
+     */
+    static final String SECRETS_DIR_PROPERTY = "charter.container.secrets-dir";
+
+    /** The secrets directory when {@link #SECRETS_DIR_PROPERTY} is not set. */
+    static final String DEFAULT_SECRETS_DIR = "/run/secrets";
 }
