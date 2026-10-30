@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -340,7 +339,8 @@ final class FilesystemPackStore {
 
     /**
      * The pack document, when it reads (#260): a {@code pack.md} that is not UTF-8, that the Markdown codec refuses or
-     * that breaks the {@code pack-document} structure schema is a violation on its file, and the read holds no document.
+     * that breaks the {@code pack-document} structure schema is a violation on its file, and the read holds no
+     * document.
      */
     private static Optional<Stored<MarkdownDocument>> readDocument(
             Path directory, String file, List<PackElementViolation> violations) {
@@ -624,17 +624,15 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Writes the pack document in place at {@code pack.md}, in the Markdown form's canonical text (#260), replacing the
-     * file when it is there.
+     * Writes the pack document in place at {@code pack.md}, replacing the file when it is there (#260).
      *
      * @param id the pack
-     * @param document what to write
+     * @param text the document's canonical Markdown text ({@link PackDocumentMarkdown#toWritableText})
      * @throws CharterRefusal when the file cannot be written
-     * @throws IllegalStateException when the codec cannot write the document faithfully (its own guard)
      */
-    void writePackDocument(PackIdentifier id, MarkdownDocument document) {
+    void writePackDocument(PackIdentifier id, String text) {
         Path directory = existingDirectory(id);
-        writeAtomically(directory, directory.resolve(PackDocumentMarkdown.FILE), utf8(MarkdownCodec.write(document)));
+        writeAtomically(directory, directory.resolve(PackDocumentMarkdown.FILE), utf8(text));
     }
 
     /**

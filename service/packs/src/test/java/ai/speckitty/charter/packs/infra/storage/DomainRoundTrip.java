@@ -491,8 +491,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     /**
      * A pack-level file written in place: {@link Written} at its own path when the loaded pack held it and the
-     * read-back pack holds it again with no violation on that path, else {@link Refused} with the store's exact reasons.
-     * The gate then compares the two files in their form.
+     * read-back pack holds it again with no violation on that path, else {@link Refused} with the store's exact
+     * reasons. The gate then compares the two files in their form.
      *
      * @param path the file, pack-relative
      * @param what what the pack holds there, named in a refusal

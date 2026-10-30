@@ -188,8 +188,8 @@ class WholePackRoundTripTest {
     /**
      * Positive control through the production write path (#260): the loaded pack's document has one character of its
      * preamble changed before the save, within the rendered prefix of a difference, and {@code pack.md}, green in the
-     * faithful run, is red at {@code preamble} alone with both renderings; every other outcome is the faithful run's, and
-     * neither run writes a file no source file pairs with.
+     * faithful run, is red at {@code preamble} alone with both renderings; every other outcome is the faithful run's,
+     * and neither run writes a file no source file pairs with.
      */
     @Test
     void aLossyBodyWriterTurnsPackMdRedBesideAGreenFaithfulRun(@TempDir Path temp) throws IOException {
@@ -235,7 +235,7 @@ class WholePackRoundTripTest {
         assertThat(unpaired(temp.resolve("lossy"), lossyPaired)).isEmpty();
     }
 
-    /** The preamble with its first {@code built-in} changed to {@code built-iN}: one character, inside the rendering. */
+    /** The preamble with its first {@code built-in} changed to {@code built-iN}: one character, rendered. */
     private static String lossyPreamble(PackDocument document) {
         String preamble = document.preamble();
         int at = preamble.indexOf("built-in");

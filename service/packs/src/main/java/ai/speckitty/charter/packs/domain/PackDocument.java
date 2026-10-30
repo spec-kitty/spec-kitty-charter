@@ -17,11 +17,12 @@ import org.jspecify.annotations.Nullable;
  * <p>The domain holds the shape only; reading and writing Markdown, and the rules a text must keep to stand in a
  * document (no carriage return, no column-0 H1 or H2 inside a block, no open fence), are the content form's, applied
  * where the document is stored. A document read from a file always keeps them; one built here that breaks them is
- * refused when it is written. Two documents are equal exactly when every part is: the frontmatter as loaded YAML values,
- * every string exactly. An absent frontmatter and an empty one are different documents.
+ * refused when it is written. Two documents are equal exactly when every part is: the frontmatter as loaded YAML
+ * values, every string exactly. An absent frontmatter and an empty one are different documents.
  *
- * @param frontmatter the frontmatter mapping as loaded YAML values (strings, booleans, numbers, nulls, lists and
- *     mappings), if the document has one; copied deeply, unmodifiable at every level
+ * @param frontmatter the frontmatter mapping as loaded YAML values, if the document has one: string keys; values that
+ *     are strings, booleans, numbers, lists, string-keyed mappings or a YAML null (kept as a {@code null} value, as
+ *     #194's model holds it); copied deeply, unmodifiable at every level
  * @param title the H1's text, if the document has one: a single line, not blank, without surrounding whitespace
  * @param preamble the text after the title (or the frontmatter, or the start) and before the first H2; may be empty
  * @param sections the H2 sections in document order; copied, unmodifiable
@@ -36,7 +37,8 @@ public record PackDocument(
      * @param title the H1's text, if any
      * @param preamble the preamble
      * @param sections the H2 sections
-     * @throws IllegalArgumentException when the title is not a single, non-blank, trimmed line
+     * @throws IllegalArgumentException when the title is not a single, non-blank, trimmed line, or the frontmatter
+     *     holds a key that is not a string or a value that is not a YAML value
      */
     public PackDocument {
         Objects.requireNonNull(frontmatter, "frontmatter");
@@ -89,7 +91,11 @@ public record PackDocument(
             list.forEach(item -> copy.add(frozenValue(item)));
             return Collections.unmodifiableList(copy);
         }
-        return value;
+        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Number) {
+            return value;
+        }
+        throw new IllegalArgumentException("frontmatter values must be YAML values, but one is a "
+                + value.getClass().getName());
     }
 
     private static void requireHeading(String field, String heading) {

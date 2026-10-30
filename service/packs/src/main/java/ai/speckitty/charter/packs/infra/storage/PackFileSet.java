@@ -28,12 +28,13 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The single declaration of which files of a pack the service loads and which it digests. The store reads the files of
- * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests
- * {@code pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared
- * graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042). Both take their list from here, so a
- * file the service loads cannot escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The
- * asset files, templates, presets and pack document come last, so a pack that holds none keeps its exact digest list.
+ * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests {@code
+ * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
+ * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
+ * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042).
+ * Both take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind is all it
+ * takes for the digest to cover it. The asset files, templates, presets and pack document come last, so a pack that
+ * holds none keeps its exact digest list.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}:
  * the rule's content form decides the store. A file of the {@code bytes} form is held by its rule's kind: an
@@ -386,7 +387,8 @@ final class PackFileSet {
      */
     static IllegalStateException notStored(String file, ContentForm form) {
         String why = form == ContentForm.MARKDOWN
-                ? "Markdown is read only as a companion or the pack document; this rule has no store path of its own yet"
+                ? "Markdown is read only as a companion or the pack document;"
+                        + " this rule has no store path of its own yet"
                 : "the store does not build that form";
         return new IllegalStateException("'" + file + "' is classified as content_form " + form.token() + ": " + why);
     }

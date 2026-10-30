@@ -84,19 +84,21 @@ final class PackDocumentMarkdown {
     }
 
     /**
-     * The Markdown model of a document about to be written, or a refusal naming {@code pack.md}: a domain document
-     * holds the model's shape only, so a part that cannot stand in a Markdown document (a column-0 H1 in the preamble,
-     * a carriage return, an open fence) is refused here, before any byte is written.
+     * The canonical text of a document about to be written, or a refusal naming {@code pack.md}: a domain document
+     * holds the model's shape only, so a part that cannot stand in a Markdown document is refused here, before any byte
+     * is written. The model refuses a part it cannot hold (a column-0 H1 in the preamble, a carriage return, an open
+     * fence); the codec refuses a text it cannot read back as the same document (a title ending in a closing {@code #}
+     * sequence).
      *
      * @param pack the pack, named in the refusal
      * @param document the document
-     * @return the model to write
+     * @return the canonical Markdown text
      * @throws CharterRefusal with {@code VALIDATION_FAILED} when the document cannot stand as Markdown
      */
-    static MarkdownDocument toWritable(PackIdentifier pack, PackDocument document) {
+    static String toWritableText(PackIdentifier pack, PackDocument document) {
         try {
-            return toMarkdown(document);
-        } catch (IllegalArgumentException breach) {
+            return MarkdownCodec.write(toMarkdown(document));
+        } catch (IllegalArgumentException | IllegalStateException breach) {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
                     pack.value() + "/" + FILE + " cannot be written as Markdown: " + breach.getMessage(),

@@ -281,6 +281,28 @@ class PackDocumentRoundTripTest {
         assertThat(refused).doesNotExist();
     }
 
+    @Test
+    @DisplayName("a title the codec cannot read back (a closing # sequence) refuses the write as VALIDATION_FAILED")
+    void aTitleTheCodecCannotWriteRefusesTheWrite(@TempDir Path host) throws IOException {
+        Path pack = documentedPack(host.resolve("source"), WITHOUT_FRONTMATTER);
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        PackDocument held = loaded.pack().document().orElseThrow();
+        PackDocument closed =
+                new PackDocument(held.frontmatter(), Optional.of("Release #"), held.preamble(), held.sections());
+        PackDocument open =
+                new PackDocument(held.frontmatter(), Optional.of("Release 1"), held.preamble(), held.sections());
+        Path refused = host.resolve("refused").resolve("documented");
+
+        store.write(withDocument(loaded, open), host.resolve("clean").resolve("documented"));
+
+        assertThatThrownBy(() -> store.write(withDocument(loaded, closed), refused))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.getMessage()).contains("pack.md cannot be written as Markdown");
+                });
+        assertThat(refused).doesNotExist();
+    }
+
     // ---- through the gate: DomainRoundTrip, compared by the Markdown model -------------------------------------
 
     @Test

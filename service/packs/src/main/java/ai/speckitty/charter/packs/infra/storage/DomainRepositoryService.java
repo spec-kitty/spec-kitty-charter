@@ -215,7 +215,7 @@ public final class DomainRepositoryService
      */
     void writePackDocument(PackIdentifier pack, PackDocument document) {
         Resolved resolved = resolve(pack);
-        resolved.store.writePackDocument(resolved.key, PackDocumentMarkdown.toWritable(pack, document));
+        resolved.store.writePackDocument(resolved.key, PackDocumentMarkdown.toWritableText(pack, document));
     }
 
     private <D, E extends CharterArtifact> Optional<E> loadOne(

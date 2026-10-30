@@ -180,8 +180,8 @@ public final class Pack {
 
     /**
      * This pack with {@code artifact} added, or replacing the artifact of the same kind and local id, revalidated.
-     * Every other artifact, every violation, every asset file, every preset and the document are kept; a replaced artifact moves to
-     * the end of its kind.
+     * Every other artifact, every violation, every asset file, every preset and the document are kept; a replaced
+     * artifact moves to the end of its kind.
      *
      * @param artifact the artifact to add or replace
      * @return the revalidated pack

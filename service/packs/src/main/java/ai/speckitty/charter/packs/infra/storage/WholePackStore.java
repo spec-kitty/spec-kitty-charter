@@ -13,8 +13,6 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -49,15 +47,15 @@ import org.jspecify.annotations.Nullable;
  * finds it; it takes no lock, so a pack swapped by a concurrent commit may be read half before and half after.
  *
  * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039), each
- * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml}, the pack document at {@code pack.md} in
- * the Markdown form's canonical text, and each DRG document at its own path into a staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
- * does; a failure removes the staging directory and leaves no target. The manifest, when the pack has one, is written
- * last, its derived fields recomputed from the staged bytes (ADR-0042). Templates and asset files are written byte for
- * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG documents hold and nothing else: the
- * unmodelled files are not copied, and the caller has their list. It refuses a target that already exists (replacing a
- * live pack is the commit store's job) and a pack with read violations: writing it would drop content without a word.
- * A {@code pack.yaml} with an undeclared key never loads (its schema is closed, ADR-0036 decision 3), so the
- * descriptor written is the whole of the file read.
+ * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml}, the pack document at {@code pack.md}
+ * in the Markdown form's canonical text, and each DRG document at its own path into a staging directory beside the
+ * target, then renames the staging directory into place, as {@link PackCommitStore} does; a failure removes the staging
+ * directory and leaves no target. The manifest, when the pack has one, is written last, its derived fields recomputed
+ * from the staged bytes (ADR-0042). Templates and asset files are written byte for byte; everything else is UTF-8 text.
+ * It writes what the aggregate and the DRG documents hold and nothing else: the unmodelled files are not copied, and
+ * the caller has their list. It refuses a target that already exists (replacing a live pack is the commit store's job)
+ * and a pack with read violations: writing it would drop content without a word. A {@code pack.yaml} with an undeclared
+ * key never loads (its schema is closed, ADR-0036 decision 3), so the descriptor written is the whole of the file read.
  */
 public final class WholePackStore {
 
@@ -328,9 +326,12 @@ public final class WholePackStore {
                 put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
             }
             if (pack.document().isPresent()) {
-                MarkdownDocument document = PackDocumentMarkdown.toWritable(
-                        pack.id(), pack.document().get());
-                put(staging, PackDocumentMarkdown.FILE, utf8(MarkdownCodec.write(document)), written);
+                put(
+                        staging,
+                        PackDocumentMarkdown.FILE,
+                        utf8(PackDocumentMarkdown.toWritableText(
+                                pack.id(), pack.document().get())),
+                        written);
             }
             if (loaded.manifest().isPresent()) {
                 putManifest(staging, pack, loaded.manifest().get(), written);
