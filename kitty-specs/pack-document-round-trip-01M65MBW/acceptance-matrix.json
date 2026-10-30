@@ -18,10 +18,10 @@
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "PackDocumentTest (refusals, deep copy, Pack slot through toBuilder/with/withoutDocument)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:00:38.668732+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
