@@ -21,7 +21,12 @@ fingerprint between the presets and `pack-manifest.yaml`, validates it in valida
 
 Confirmed by the orchestrator's brief (semi-automatic session). Two calls are recorded as Decision Moments:
 `01M65MKX2FG5E5SAM9D57BX2AE` (the domain holds a `PackDocument` value with an infra mapper, since the domain cannot
-depend on infra) and `01M65MKYMAAQE6RQZEY361SBTP` (frontmatter compares as loaded YAML values).
+depend on infra) and `01M65MKYMAAQE6RQZEY361SBTP` (frontmatter compares as loaded YAML values). Clarified at the
+plan-point squad: that frontmatter rule is *stricter* than ADR-0036 (`1` and `1.0` differ; empty and absent differ),
+not ADR-0036 meaning; it is sound while one reader compares a source with its own canonical write, and it stays an
+open review item for the operator. Moving #194's Markdown model into the domain (which would let `PackDocument` and
+`Guide` share its rules) was weighed and left as a follow-up: it rewrites #194's merged code (C-002) and the files #194
+PR-B is editing.
 
 The issue cites "ADR-0043 decisions 8, 9, 10"; these are ADR-0042's (research R1). This mission amends ADR-0042,
 ADR-0037 and ADR-0040.
@@ -55,7 +60,7 @@ green under kind `pack-document`, with `other:pack.md` gone from the expected-re
 A pack author writes `pack.md` with or without frontmatter, with Windows line endings, or without a final newline. The
 service treats each exactly as the `markdown` content form does.
 
-**Why this priority**: Each case is a way a hand-edited file drifts; a silent normalisation or a silent loss is the
+**Why this priority**: Each case is a way a hand-edited file drifts; a silent normalization or a silent loss is the
 failure the charter forbids (ADR-0036).
 
 **Independent Test**: Load and write fixture packs whose `pack.md` covers each case through `WholePackStore`.
@@ -70,7 +75,7 @@ failure the charter forbids (ADR-0036).
 3. **Given** a `pack.md` with no final newline, **Then** it loads, and the written file is the canonical text with one
    final newline, equal in meaning.
 4. **Given** a `pack.md` with CRLF line endings, **Then** the load records a violation on `pack.md` naming the line and
-   "a carriage return is not admitted", and the write refuses the pack: nothing is normalised and nothing is dropped.
+   "a carriage return is not admitted", and the write refuses the pack: nothing is normalized and nothing is dropped.
 5. **Given** an empty `pack.md`, **Then** it loads as the empty document and is written back.
 
 ---
@@ -98,7 +103,11 @@ mode and the load must agree.
 - A `pack.md` below the pack root (`docs/pack.md`) is not the pack document: the rule matches `*/pack.md` only.
 - Any other Markdown file a `files` rule classifies, other than a companion, still fails loudly (`notStored`): this
   mission routes `pack-document` alone.
-- A `pack.md` that breaks the structure schema is a violation on `pack.md`, like a preset that breaks its schema.
+- A `pack.md` that breaks the structure schema is a violation on `pack.md`, like a preset that breaks its schema. No
+  file on disk reaches this today: every model the codec reads fits the permissive `pack-document` schema, and the
+  codec refuses first (plan-point squad). The validation is kept so the rule obeys ADR-0040 decision 1.
+- A `PackDocument` built in code whose part cannot stand as Markdown (a column-0 `# X` in the preamble) refuses the
+  write as `VALIDATION_FAILED`, naming `pack.md`, and leaves no target.
 - `pack-manifest.yaml` does not list `pack.md`; the manifest restamp is unchanged.
 - A byte order mark, an unclosed fence or another ambiguity is refused at its line, as #194's codec refuses it.
 

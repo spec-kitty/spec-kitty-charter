@@ -41,8 +41,11 @@ String preamble, List<Section> sections)`, `Section(String title, String content
 (frontmatter top level unmodifiable, as `MarkdownDocument` does); a title is one non-blank line without surrounding
 whitespace. Markdown standing (no column-0 H1/H2 in a block, no CR, fences closed) is the codec's: a document read from
 a file always holds; one built in code that breaks it is refused when written (`MarkdownDocument`'s constructor),
-which `WholePackStore` reports as a refused write. `Pack` gains `Optional<PackDocument> document()`, set by
-`Builder.document(PackDocument)`, kept by `toBuilder` (so `with` keeps it).
+which `PackDocumentMarkdown.toWritable` turns into `VALIDATION_FAILED` naming `pack.md`, before any byte is written
+(plan-point squad). The frontmatter is copied deeply into unmodifiable collections (YAML nulls kept). `Pack` gains
+`Optional<PackDocument> document()`, set by `Builder.document(PackDocument)` and cleared by
+`Builder.withoutDocument()`, kept by `toBuilder` (so `with` keeps it). A `pack.md` with a violation leaves `document()`
+empty.
 
 ### D2. Infra mapper (IC-01)
 
@@ -79,12 +82,17 @@ manifest in its canonical form; a document the codec cannot write refuses the wr
 ### D6. Gate (IC-05)
 
 `DomainRoundTrip`: `PACK_DOCUMENT = "pack-document"` in `MODELLED`; `writeAll` writes the document in place; an
-outcome `packDocument(path, pack, assemblyFailure, reloaded)` mirrors `preset`: refused with the store's exact reasons
-when the load recorded violations on `pack.md`, `Written("pack.md")` when the reloaded pack holds a document, else
+outcome shares the preset's check step for step (`inPlace`, generalized from `preset`): refused with the store's exact
+reasons when the load recorded violations on `pack.md`, refused when the loaded pack holds no document, refused with
+`read-back:` reasons when the written pack's load records violations on it, `Written("pack.md")` when the reloaded
+pack holds a document, else
 refused. `WholePackRoundTripTest`: `REQUIRED_KINDS` and `bound` gain `pack-document`; `withPayloads` keeps the
 document. `expected-red.yaml` loses `other:pack.md` only. `WholePackExpectationTest`, `DomainRoundTripTest`,
 `PackFileKindTest`, `PackSchemasTest` and `WholePackOpenPacksRoundTripTest` follow (research, "Gate and ledger
-changes").
+changes"). Plan-point squad folds: the lossy test changes one character inside the rendered prefix and asserts the
+exact red text and no unpaired file; the byte-flip control asserts `pack.md` and every non-payload outcome unchanged;
+the gate pins `pack-document` at one green; `GeneratedPackTree` plants `pack.md` (one in five with a carriage return)
+so the digest oracle covers it.
 
 ### D7. Docs (IC-06)
 
@@ -118,7 +126,7 @@ built-in pack.
 
 ## Project Structure
 
-```
+```text
 contracts/packs/file-kinds.yaml, contracts/packs/schemas/pack-document.schema.json, contracts/packs/README.md
 service/packs/src/main/java/ai/speckitty/charter/packs/domain/{PackDocument,Pack}.java
 service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/{PackDocumentMarkdown,PackFileSet,

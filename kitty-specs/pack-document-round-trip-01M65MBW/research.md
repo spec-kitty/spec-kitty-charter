@@ -34,7 +34,7 @@ Baseline: `./gradlew verifyAll` on `feeff0a` passed (Java 25, 3 m 53 s). No base
   (`VocabularyEqualityTest` reads an `id` as an artifact kind) and use only covered keywords
   (`SchemaKeywordCoverageTest`).
 - **R5. #194's rule for the edge cases** (ADR-0040 decision 3 as amended; `MarkdownCodec`): CRLF and a byte order mark
-  are refused at their line, never normalised (ADR-0036 decision 5: a bad shape is a pack inconsistency, fixed in
+  are refused at their line, never normalized (ADR-0036 decision 5: a bad shape is a pack inconsistency, fixed in
   open-packs); a missing final newline is the same model and is written back canonically; an empty file is the empty
   document; frontmatter compares as loaded YAML (`Map.equals`).
 - **R6. Frontmatter equality is #260's to settle.** ADR-0040 leaves "full ADR-0036 numeric and empty-versus-absent
