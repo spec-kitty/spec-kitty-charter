@@ -82,6 +82,9 @@ abstract class ShippedConfigurationArguments : CommandLineArgumentProvider {
     @get:Internal abstract val root: DirectoryProperty
     @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val files: ConfigurableFileCollection
 
+    /** The tracked paths, which the test scans for an env file or a secret: content, not the index's stat data. */
+    @get:Input abstract val trackedFiles: Property<String>
+
     override fun asArguments(): List<String> = listOf("-Dcharter.test.repo-root=${root.get().asFile.absolutePath}")
 }
 
@@ -91,7 +94,9 @@ tasks.test {
         root.set(repository)
         files.from(repository.file("deploy/compose/compose.yaml"), repository.file("deploy/compose/.env.example"))
         files.from(repository.file(".gitignore"))
-        // The tracked-file scan reads the git index; in a linked worktree it lives elsewhere and is not tracked here.
-        files.from(repository.file(".git/index"))
+        trackedFiles.set(providers.exec {
+            commandLine("git", "-C", repository.asFile.absolutePath, "ls-files")
+            isIgnoreExitValue = true
+        }.standardOutput.asText)
     })
 }

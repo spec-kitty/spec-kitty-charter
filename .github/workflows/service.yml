@@ -25,6 +25,10 @@ on:
       - ".github/workflows/service.yml"
       - ".github/workflows/contract-release.yml"
       - "scripts/release/**"
+      # The deployable's tests check the compose example, the env template and the ignore rules (#229).
+      - "deploy/**"
+      - ".gitignore"
+      - "**/.env*"
   workflow_call:
   workflow_dispatch:
 
