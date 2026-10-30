@@ -2,7 +2,7 @@
   "mission_slug": "pack-document-round-trip-01M65MBW",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -107,11 +107,11 @@
     {
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "manual_review",
+      "evidence": "ADR-0042/0040/0037/0036 amendments, changelog, logical model; check_docs all, markdownlint-cli2 0.18.1, cspell 9.2.0 clean; curator-carla review folded",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-30T06:01:14.059772+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     }
   ],
