@@ -279,22 +279,6 @@ class DomainRoundTripTest {
                 "pack-document"));
         KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
-                .containsAll(Set.of(
-                        "directive",
-                        "tactic",
-                        "styleguide",
-                        "toolguide",
-                        "paradigm",
-                        "agent-profile",
-                        "mission-step-contract",
-                        "pack-descriptor",
-                        "graph-shard",
-                        "asset",
-                        "asset-payload",
-                        "template",
-                        "preset",
-                        "pack-manifest",
-                        "pack-document"))
                 .isEqualTo(expected);
     }
 
