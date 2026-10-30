@@ -151,8 +151,8 @@ any import. Separately, start without the profile and with no `/run/secrets/`.
   start, naming the file, never its content (research R10).
 - **Empty env var:** an empty `CHARTER_WORKTREE_TOKEN` outranks and hides a mounted token file. Under the container profile
   the blank refusal says so.
-- **Unsafe secrets directory:** under the container profile a secrets directory that is blank, relative, the filesystem
-  root or writable by others fails the start, naming the directory.
+- **Unsafe secrets directory:** under the container profile a secrets directory that is blank, relative or the
+  filesystem root fails the start, naming the directory. File permissions are the platform's (R11).
 - **Overriding the secrets directory:** `charter.container.secrets-dir` can be set from the environment or the command
   line. It is a path, not a secret, so it may appear in a message.
 - **Command line refusal:** the token is still refused from the command line and from system properties under both
@@ -172,7 +172,7 @@ any import. Separately, start without the profile and with no `/run/secrets/`.
 | FR-006 | Compose example | As an operator, I want a committed docker compose example that runs the service under the container profile, reads an env file, mounts a secrets directory at `/run/secrets` and names the image through a required variable, so that the setup is shown end to end without inventing an image tag (#234). | Medium | Open | [build] | no — a test reads the file |
 | FR-007 | Env template only | As a reviewer, I want only `.env.example` committed, with every variable named and none given a value, and `.env` ignored by git, so that no secret value can be committed by accident. | High | Open | [build] | no — `git check-ignore` decides |
 | FR-008 | No secret in a committed config | As a reviewer, I want a test that fails when a tracked `.env*` file other than `.env.example` or a tracked file under a `secrets/` directory exists, or when an `application*.yaml`, the compose example or `.env.example` holds a value for a key that names the token (any spelling, nested or flat) or a secret-shaped value, so that the rule "no secret is committed" is checked, not only stated. | High | Open | [build] | no — a positive control shows the check catches a planted value |
-| FR-010 | Config tree sets only its own keys | As an operator, I want a container-profile start refused when a file in the secrets directory names a property other than `charter.worktree-token` or a `charter.container.*` key, or when the secrets directory is blank, relative, the root or writable by others, naming the file or the directory and never a value, so that a shared or misplaced secrets mount cannot reconfigure the service (research R10). | High | Open | [build] | no — paired with a start on the allowed files |
+| FR-010 | Config tree sets only its own keys | As an operator, I want a container-profile start refused when a config tree holds a file naming a property other than `charter.worktree-token` or a `charter.container.*` key (the secrets directory itself excepted, Kubernetes' service-account tree left alone), or when the secrets directory is blank, relative or the root, naming the file or the directory and never a value, so that a shared or misplaced secrets mount cannot reconfigure the service (research R10, R11; operator decision 2026-10-30). | High | Open | [build] | no — paired with a start on the allowed files |
 | FR-009 | Local file asserted | As a developer, I want a test that pins `application.yaml` to `127.0.0.1`, port 0 and no import, so that the local daemon stays unchanged (ADR-0041 decision 1). | High | Open | [ratchet] | yes — it pins existing content, paired with FR-001's read-back of the container values |
 
 ### Non-Functional Requirements

@@ -146,3 +146,40 @@ Each finding is listed with its disposition.
 | 12 | The `.gitignore` coverage was too narrow. #234's image needs a `.dockerignore`. | security | minor | **Folded.** `.env`, `.env.*` and `!.env.example` repository-wide, plus `deploy/compose/secrets/`. The `.dockerignore` is noted for #234 in the changelog. |
 | 13 | "Byte-for-byte" in SC-004 does not match a content test. | architecture | minor | **Folded.** SC-004 now states the content assertion. |
 | 14 | No ADR violation. The placeholder is a sound reading of decision 3 and goes in as a dated note under it. | architecture | — | Accepted. |
+
+## R11: Pre-PR adversarial squad (architecture, security, tests and gates)
+
+Three read-only lenses reviewed the consolidated branch:
+
+- `architect-alphonso`: approve with changes;
+- `reviewer-renata`, focused on security: changes requested;
+- `qa-strategist-quinn`: not ready.
+
+None found a blocker. `verifyAll` was green before the folds.
+
+**Operator decision (2026-10-30).** Ship the allowlist, hardened, and drop the permission check. Two findings
+triggered the decision:
+
+- Kubernetes secret volumes mount as `1777`, read-only, so the permission check would refuse every default Kubernetes
+  start.
+- Kubernetes mounts its service-account tree under `/var/run/secrets/kubernetes.io`.
+
+| # | Finding | Lens | Severity | Disposition |
+|---|---------|------|----------|-------------|
+| 1 | The permission check refuses Kubernetes secret volumes. It checks only the top directory, and a planted `charter.container.secrets-dir` file redirects what it inspects. | security, architecture | major | **Folded (operator):** the permission check is removed, and file permissions are left to the platform. |
+| 2 | The allowlist trips on Kubernetes' service-account tree. The message says "secrets directory" for any config tree. | architecture | major | **Folded:** `kubernetes.io.*` names are ignored, and the message says "the config tree <path>". |
+| 3 | A config tree could set `charter.container.secrets-dir`. | security | major | **Folded:** it is refused from a tree. |
+| 4 | Lazy initialization could skip the check. | security | minor | **Folded:** a `LazyInitializationExcludeFilter` keeps it eager, and a test pins this. |
+| 5 | A PR touching only `deploy/`, `.gitignore` or `.env*` skips the service job. | tests | major | **Folded:** `ci.yml` `service_re` and the `service.yml` push paths include them. |
+| 6 | `.git/index` as a test input defeats the build cache. | tests | major | **Folded:** the input is the output of `git ls-files`, which is content, not stat data. |
+| 7 | The scan flags long paths and image digests. It misses commented secrets in the template. Quotes skew it. | tests | minor | **Folded:** the token alphabet has no `/`, letters and digits are both required, `sha256:` digests are exempt, commented `KEY=value` lines in the template are scanned, and values are unquoted. Each has a control. |
+| 8 | The tracked-path rule refuses any `/secrets/` path, and a stray `charter.worktree-token` file is missed. | tests, security | minor | **Folded:** the rule covers `deploy/**/secrets/`, `.env*` anywhere, and a file named `charter.worktree-token` anywhere. |
+| 9 | Unit tests read the host's `/run/secrets`. | tests | minor | **Folded:** `container()` names a test directory. |
+| 10 | Git errors cannot be diagnosed. | tests | minor | **Folded:** stderr goes into the message. |
+| 11 | The secrets-dir constants have the wrong owner. | architecture | minor | **Folded:** they now live in `ContainerProperties`, documented as in the namespace but not a component. |
+| 12 | The trailing-slash wording disagrees with the code. | architecture | minor | **Folded:** the docs say a trailing slash is not needed. |
+| 13 | The how-to leaves the image unable to read the files, and the reason to prefer files is not given. | security, architecture | minor | **Folded:** `chown`/`chmod 0440` guidance, a warning against widening, and `docker inspect` exposure. |
+| 14 | The command line may name the secrets directory. | security | minor | **Accepted:** a path is not a secret, and the ADR note says so. |
+| 15 | `secrets-dir` has no property metadata. | architecture | minor | **Handed to #230** (configuration processor). |
+| 16 | `ShippedConfigurationTest` needs a `.git` checkout, so a build from a source archive fails. | architecture | minor | **Kept, failing loudly** (the charter allows no skip). Noted for #234's image build, which should not run the tests from an archive. |
+| 17 | SC-001's default-path start is proven by the content pin plus an overridden-path start (analysis I1). | tests | info | **Stated in the PR.** |
