@@ -32,7 +32,8 @@
       "notes": [
         "Tests drafted first (red at compile, then green); analyze ran after the code was drafted (analysis P1). :packs:test, openPacksRoundTrip, wholePackRoundTrip and verifyAll green.",
         "Review (reviewer-renata): changes requested: unwritable documents escaping as runtime errors; no domain tests; non-YAML frontmatter values; long Javadoc lines.",
-        "Review findings 1-4 folded (fix commit); finding 5 is the ADR's annotate-in-place style, kept."
+        "Review findings 1-4 folded (fix commit); finding 5 is the ADR's annotate-in-place style, kept.",
+        "Review by the reviewer-renata subagent; findings folded in the fix commit."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
