@@ -111,15 +111,18 @@ it: a developer can run the same container on their own machine.
    - No committed YAML file holds a secret value. The existing refusal of the command line and of
      system properties as token sources stays in force under both profiles.
    - Mounted files are read once at the start. A rotated secret takes effect on the next start.
-   - **Clarified 2026-10-30** ([#229](https://github.com/spec-kitty/spec-kitty-charter/issues/229); the placeholder
-     is an operator decision, and the two rules on the directory are open for the operator's review):
-     - The import reads `configtree:${charter.container.secrets-dir:/run/secrets}/`. It is still required, and its
-       default is the path above. Tests point it at a temporary directory, and an operator may name another absolute
-       directory. The env form is `CHARTER_CONTAINER_SECRETS_DIR`, and a value takes no trailing slash.
-     - Under the container profile, a file in the directory may set only `charter.worktree-token` or a
-       `charter.container.*` key.
-     - The directory must not be blank, relative, the root, or writable by others.
-     - A breach fails the start, naming the file or the directory.
+   - **Clarified 2026-10-30** ([#229](https://github.com/spec-kitty/spec-kitty-charter/issues/229), operator
+     decisions):
+     - **Import and placeholder.** The import reads `configtree:${charter.container.secrets-dir:/run/secrets}/`. It
+       is still required, and its default is the path above. Tests point it at a temporary directory, and an operator
+       may name another absolute directory, the root excepted. The env form is `CHARTER_CONTAINER_SECRETS_DIR`, and a
+       trailing slash is not needed.
+     - **The command line may name the directory.** A path is not a secret, so this needs no refusal.
+     - **Allowlist.** Under the container profile, a config tree may set only `charter.worktree-token` or a
+       `charter.container.*` key, other than the secrets directory itself.
+     - **Kubernetes tree.** The service-account tree Kubernetes mounts (`kubernetes.io/…`) is left alone.
+     - **Refusal.** Any other file fails the start, naming the file and never its content.
+     - **File permissions.** These are left to the platform: a check would refuse Kubernetes' secret volumes.
 4. **The bind address follows the profile.**
    - Without the container profile, `server.address` must be a loopback address. A non-loopback
      bind without the container profile fails the start.

@@ -27,8 +27,8 @@ This entry covers [#229](https://github.com/spec-kitty/spec-kitty-charter/issues
   start.
 - **Two sources.** The token and `charter.container.*` keys bind from files named after their property, or from env
   vars, which outrank the files.
-- **Narrower than the ADR's text.** A file in the directory may set only the token and `charter.container.*` keys, and
-  the directory must not be writable by others. This is an open review item.
+- **Allowlist.** A file in the directory may set only the token and `charter.container.*` keys (operator decision,
+  noted in the ADR). Kubernetes' service-account tree is left alone.
 - **Token refusals.** Under the profile, they name the env var and the mounted file.
 - **Compose example.** `deploy/compose/` holds a compose example and `.env.example`, with no value set. Git ignores
   `.env`, `.env.*` and `deploy/compose/secrets/`. A test fails on a committed secret.

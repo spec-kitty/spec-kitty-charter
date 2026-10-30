@@ -42,7 +42,8 @@ you built yourself.
    printf 'localhost' > secrets/charter.container.allowed-hosts
    ```
 
-   `./secrets` is ignored by git. The user the image runs as must be able to read the files.
+   `./secrets` is ignored by git. The user the image runs as must be able to read the files: give them to that user
+   (`chown <uid>`) or to a group it is in (`chmod 0440`), and do not widen the directory's permissions.
 3. Start the service:
 
    ```bash
@@ -64,17 +65,21 @@ you built yourself.
   (`CHARTER_WORKTREE_TOKEN`) is refused.
 - **Precedence.** An env var outranks the file, and an empty env var hides the file. That is why `.env.example` lists
   the secrets only as comments.
+- **Why files.** An env var's value shows in `docker inspect` and in the process environment; a mounted file does
+  not.
 - **Whitespace.** One trailing newline in a file is dropped. Any other whitespace stays part of the value.
 - **Another directory.** The service reads the directory at start-up, `/run/secrets` unless
-  `CHARTER_CONTAINER_SECRETS_DIR` names another absolute directory, given without a slash at the end.
+  `CHARTER_CONTAINER_SECRETS_DIR` names another absolute directory; a trailing slash is not needed.
+- **Kubernetes.** The service-account files Kubernetes mounts under `/var/run/secrets/kubernetes.io` are left alone.
 
 ## What stops the start
 
 Among other checks, the service refuses to start, naming the property, file or directory, but never a value, when:
 
 - the secrets directory is missing. The example's mount does not create `./secrets`.
-- the secrets directory is relative, is the root, or is writable by others.
-- a file in it sets anything other than the token or a `charter.container.*` key, such as `server.address`.
+- the secrets directory is relative or is the root.
+- a file in it sets anything other than the token or a `charter.container.*` key, such as `server.address`, or names
+  the secrets directory itself.
 - there is no token, or it is blank or shorter than 32 characters.
 - `charter.container.allowed-hosts` is missing or empty, or has a blank entry.
 - the configuration root is unset or does not exist, or the port is 0.
