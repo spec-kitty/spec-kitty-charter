@@ -31,8 +31,14 @@ class ShippedConfigurationTest {
     private static final Path COMPOSE = ROOT.resolve("deploy/compose/compose.yaml");
     private static final Path ENV_TEMPLATE = ROOT.resolve("deploy/compose/.env.example");
 
-    /** A value that looks like a credential: 32 or more characters of a token alphabet. */
-    private static final Pattern SECRET_SHAPED = Pattern.compile("[A-Za-z0-9+/=_-]{32,}");
+    /**
+     * A value that looks like a credential: a run of 32 or more token characters with both letters and digits. A path
+     * ({@code /} is not a token character) and a pinned image digest ({@code sha256:<hex>}) are not.
+     */
+    private static final Pattern SECRET_SHAPED = Pattern.compile(
+            "(?<![A-Za-z0-9+=_-])(?=[A-Za-z0-9+=_-]*[A-Za-z])(?=[A-Za-z0-9+=_-]*[0-9])[A-Za-z0-9+=_-]{32,}");
+
+    private static final Pattern IMAGE_DIGEST = Pattern.compile("sha256:[0-9a-f]{64}");
 
     private static final Pattern ENV_ENTRY = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*=.*");
 
@@ -77,9 +83,25 @@ class ShippedConfigurationTest {
 
     /** The live entries of an env file: no comments, an {@code export} prefix dropped, split on the first {@code =}. */
     private static Map<String, String> envEntries(String text) {
+        return envEntries(text, false);
+    }
+
+    /**
+     * The entries of an env file, split on the first {@code =}, with an {@code export} prefix and quotes dropped; with
+     * {@code commented}, a commented-out {@code KEY=value} line counts too, so a secret parked in a comment is seen.
+     */
+    private static Map<String, String> envEntries(String text, boolean commented) {
         Map<String, String> entries = new LinkedHashMap<>();
         for (String raw : text.split("\n", -1)) {
             String line = raw.strip();
+            if (commented && line.startsWith("#")) {
+                line = line.substring(1).strip();
+                if (!ENV_ENTRY
+                        .matcher(line.startsWith("export ") ? line.substring("export ".length()) : line)
+                        .matches()) {
+                    continue;
+                }
+            }
             if (line.isEmpty() || line.startsWith("#")) {
                 continue;
             }
@@ -87,9 +109,17 @@ class ShippedConfigurationTest {
                 line = line.substring("export ".length()).strip();
             }
             int at = line.indexOf('=');
-            entries.put(at < 0 ? line : line.substring(0, at), at < 0 ? "" : line.substring(at + 1));
+            entries.put(
+                    at < 0 ? line : line.substring(0, at),
+                    at < 0 ? "" : unquoted(line.substring(at + 1).strip()));
         }
         return entries;
+    }
+
+    private static String unquoted(String value) {
+        boolean quoted = value.length() >= 2
+                && ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'")));
+        return quoted ? value.substring(1, value.length() - 1) : value;
     }
 
     private static List<Path> applicationFiles() {
@@ -103,7 +133,7 @@ class ShippedConfigurationTest {
     }
 
     /** What a git command answered: its exit code and its standard output, one entry per line. */
-    private record GitResult(int exit, List<String> lines) {}
+    private record GitResult(int exit, List<String> lines, String error) {}
 
     private static GitResult git(String... arguments) {
         if (!Files.exists(ROOT.resolve(".git"))) {
@@ -112,11 +142,14 @@ class ShippedConfigurationTest {
         List<String> command = new ArrayList<>(List.of("git", "-C", ROOT.toString()));
         command.addAll(List.of(arguments));
         try {
-            Process process = new ProcessBuilder(command)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
+            Path errors = Files.createTempFile("git", ".err");
+            Process process =
+                    new ProcessBuilder(command).redirectError(errors.toFile()).start();
             String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return new GitResult(process.waitFor(), output.lines().toList());
+            int exit = process.waitFor();
+            String error = Files.readString(errors, StandardCharsets.UTF_8).strip();
+            Files.delete(errors);
+            return new GitResult(exit, output.lines().toList(), error);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
@@ -127,9 +160,11 @@ class ShippedConfigurationTest {
 
     private static boolean ignored(String path) {
         // 0: ignored, 1: not ignored; anything else is git failing, which must not pass for either.
-        int exit = git("check-ignore", "-q", "--no-index", path).exit();
+        GitResult result = git("check-ignore", "-q", "--no-index", path);
+        int exit = result.exit();
         if (exit != 0 && exit != 1) {
-            throw new IllegalStateException("git check-ignore failed for " + path + " with exit " + exit);
+            throw new IllegalStateException(
+                    "git check-ignore failed for " + path + " with exit " + exit + ": " + result.error());
         }
         return exit == 0;
     }
@@ -137,7 +172,7 @@ class ShippedConfigurationTest {
     private static List<String> trackedFiles() {
         GitResult result = git("ls-files");
         if (result.exit() != 0) {
-            throw new IllegalStateException("git ls-files failed with exit " + result.exit());
+            throw new IllegalStateException("git ls-files failed with exit " + result.exit() + ": " + result.error());
         }
         return result.lines();
     }
@@ -155,7 +190,10 @@ class ShippedConfigurationTest {
     private static List<String> secretFindings(Map<String, String> entries) {
         List<String> findings = new ArrayList<>();
         entries.forEach((key, value) -> {
-            String own = BARE_REFERENCE.matcher(value).replaceAll("").strip();
+            String own = IMAGE_DIGEST
+                    .matcher(BARE_REFERENCE.matcher(value).replaceAll(""))
+                    .replaceAll("")
+                    .strip();
             boolean token = normalized(key).endsWith("charterworktreetoken");
             if (!own.isEmpty() && (token || SECRET_SHAPED.matcher(own).find())) {
                 findings.add(key);
@@ -164,13 +202,17 @@ class ShippedConfigurationTest {
         return findings;
     }
 
-    /** Tracked paths a secret goes in: an env file other than the template, or anything in a secrets directory. */
+    /**
+     * Tracked paths a secret goes in: an env file other than the template, a file in a secrets directory of the
+     * deployment examples, or a token file wherever it is.
+     */
     private static List<String> secretPaths(List<String> tracked) {
         return tracked.stream()
                 .filter(path -> {
                     String name = path.substring(path.lastIndexOf('/') + 1);
                     boolean envFile = name.startsWith(".env") && !".env.example".equals(name);
-                    return envFile || ("/" + path).contains("/secrets/");
+                    boolean deploySecret = path.startsWith("deploy/") && path.contains("/secrets/");
+                    return envFile || deploySecret || "charter.worktree-token".equals(name);
                 })
                 .toList();
     }
@@ -249,7 +291,7 @@ class ShippedConfigurationTest {
             findings.put(file.getFileName().toString(), secretFindings(flattenedYaml(read(file))));
         }
         findings.put("compose.yaml", secretFindings(flattenedYaml(read(COMPOSE))));
-        findings.put(".env.example", secretFindings(envEntries(read(ENV_TEMPLATE))));
+        findings.put(".env.example", secretFindings(envEntries(read(ENV_TEMPLATE), true)));
         assertThat(findings).containsKeys("application.yaml", "application-container.yaml");
         assertThat(findings.values()).allMatch(List::isEmpty);
     }
@@ -285,12 +327,31 @@ class ShippedConfigurationTest {
         assertThat(secretFindings(flattenedYaml("token:\n  charter-worktree-token: ${CHARTER_WORKTREE_TOKEN}\n")))
                 .isEmpty();
         assertThat(secretFindings(flattenedYaml("server:\n  port: 8080\n"))).isEmpty();
+        // A secret parked in a comment of the template is seen; quotes do not hide an empty value.
+        assertThat(secretFindings(envEntries("# CHARTER_WORKTREE_TOKEN=abc\n", true)))
+                .containsExactly("CHARTER_WORKTREE_TOKEN");
+        assertThat(secretFindings(envEntries("CHARTER_WORKTREE_TOKEN=\"\"\n", true)))
+                .isEmpty();
+        // A long path or a pinned image digest is not a credential.
+        assertThat(secretFindings(flattenedYaml("root: /var/lib/spec-kitty/charter-config/and/more/levels\n")))
+                .isEmpty();
+        assertThat(secretFindings(flattenedYaml("image: example.org/charter@sha256:" + "ab12".repeat(16) + "\n")))
+                .isEmpty();
     }
 
     @Test
     void theTrackedPathCheckCatchesEnvFilesAndSecretsDirectories() {
-        assertThat(secretPaths(
-                        List.of("deploy/compose/.env", "x/secrets/y", ".env.prod", "deploy/compose/.env.example")))
-                .containsExactly("deploy/compose/.env", "x/secrets/y", ".env.prod");
+        assertThat(secretPaths(List.of(
+                        "deploy/compose/.env",
+                        "deploy/compose/secrets/y",
+                        ".env.prod",
+                        "docs/x/charter.worktree-token",
+                        "deploy/compose/.env.example",
+                        "docs/guides/secrets/handling.md")))
+                .containsExactly(
+                        "deploy/compose/.env",
+                        "deploy/compose/secrets/y",
+                        ".env.prod",
+                        "docs/x/charter.worktree-token");
     }
 }
