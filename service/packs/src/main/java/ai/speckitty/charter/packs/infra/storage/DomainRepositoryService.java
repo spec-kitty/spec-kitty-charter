@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -203,6 +204,20 @@ public final class DomainRepositoryService
         resolved.store.writePreset(resolved.key, PresetFiles.toDso(preset));
     }
 
+    /**
+     * Writes the document of a configured pack in place, at {@code pack.md}, in the Markdown form's canonical text
+     * (#260, ADR-0042 decision 8).
+     *
+     * @param pack the pack to write into
+     * @param document the document
+     * @throws CharterRefusal with {@code VALIDATION_FAILED} when a part of the document cannot stand in a Markdown
+     *     document; when the pack is not configured or the write fails
+     */
+    void writePackDocument(PackIdentifier pack, PackDocument document) {
+        Resolved resolved = resolve(pack);
+        resolved.store.writePackDocument(resolved.key, PackDocumentMarkdown.toWritable(pack, document));
+    }
+
     private <D, E extends CharterArtifact> Optional<E> loadOne(
             PackIdentifier pack, KindBinding<D, E> kind, String elementId) {
         Resolved resolved = resolve(pack);
@@ -313,6 +328,8 @@ public final class DomainRepositoryService
                         new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
             }
         }
+        // #260: the document's parts are the read model's, which already holds them to the same rules.
+        read.document().ifPresent(stored -> builder.document(PackDocumentMarkdown.toDomain(stored.dso())));
         return builder;
     }
 

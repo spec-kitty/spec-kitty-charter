@@ -13,6 +13,8 @@ import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -36,7 +38,7 @@ import org.jspecify.annotations.Nullable;
  * (ADR-0037 decision 5). This is the seam the whole-pack round-trip gate drives.
  *
  * <p>The load reads {@code pack.yaml}, every file of every kind bound in {@link KindBindings}, the asset files, the
- * templates and the presets into the aggregate (one assembly with
+ * templates, the presets and the pack document ({@code pack.md}, #260) into the aggregate (one assembly with
  * {@link DomainRepositoryService#load(PackIdentifier)}), records where each artifact sat in a {@link PackLayout}, and
  * reads the DRG documents (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}, the files the source
  * fingerprint covers) with every field. It lists every other file of the pack as
@@ -47,8 +49,8 @@ import org.jspecify.annotations.Nullable;
  * finds it; it takes no lock, so a pack swapped by a concurrent commit may be read half before and half after.
  *
  * <p>The write puts {@code pack.yaml}, each artifact at its layout path with its companions beside it (ADR-0039), each
- * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml} and each DRG document at its own path
- * into a staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
+ * asset file at {@code assets/<path>}, each preset at {@code presets/<id>.yaml}, the pack document at {@code pack.md} in
+ * the Markdown form's canonical text, and each DRG document at its own path into a staging directory beside the target, then renames the staging directory into place, as {@link PackCommitStore}
  * does; a failure removes the staging directory and leaves no target. The manifest, when the pack has one, is written
  * last, its derived fields recomputed from the staged bytes (ADR-0042). Templates and asset files are written byte for
  * byte; everything else is UTF-8 text. It writes what the aggregate and the DRG documents hold and nothing else: the
@@ -192,6 +194,9 @@ public final class WholePackStore {
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
         pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
         pack.presets().forEach(preset -> modelled.add(PresetFiles.pathOf(preset.id())));
+        if (pack.document().isPresent()) {
+            modelled.add(PackDocumentMarkdown.FILE);
+        }
         if (Files.isRegularFile(manifestFile)) {
             modelled.add(PackFileSet.MANIFEST);
         }
@@ -321,6 +326,11 @@ public final class WholePackStore {
             }
             for (GraphDocument graph : loaded.graphs()) {
                 put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
+            }
+            if (pack.document().isPresent()) {
+                MarkdownDocument document = PackDocumentMarkdown.toWritable(
+                        pack.id(), pack.document().get());
+                put(staging, PackDocumentMarkdown.FILE, utf8(MarkdownCodec.write(document)), written);
             }
             if (loaded.manifest().isPresent()) {
                 putManifest(staging, pack, loaded.manifest().get(), written);

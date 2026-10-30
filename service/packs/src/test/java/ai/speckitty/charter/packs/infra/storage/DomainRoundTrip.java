@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.BiPredicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +50,9 @@ import org.jspecify.annotations.Nullable;
  * source and written presets are paired by path. A preset the store refused is refused with the store's exact reasons,
  * joined by {@code "; "}: no kind prefix and no unknown-field suffix, so the known-failure list and the seam test pin
  * one text (research R5).
+ *
+ * <p>#260: the pack document is written in place at {@code pack.md}, paired by path like a preset, and refused with
+ * the store's exact reasons (a Markdown refusal names its line). The gate compares the two files by the Markdown model.
  *
  * <p>#195: the source {@code pack-manifest.yaml} is read through the format; an unreadable one is refused with the
  * store's exact reasons. A readable one is restamped (ADR-0042) over the written files it pairs with: a constituent
@@ -79,13 +83,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     /** #195: the pack manifest, owned by the whole-pack seam: restamped over the written files, paired by path. */
     static final String MANIFEST = PackManifestYaml.SCHEMA;
 
+    /** #260: the pack document, {@code pack.md}, a pack-level file: written in place, paired by path. */
+    static final String PACK_DOCUMENT = PackDocumentMarkdown.KIND;
+
     /** The gate kinds of the bound artefact kinds: each binding's schema name, as the census names its files. */
     static final Set<String> ARTEFACT_KINDS =
             KindBindings.all().stream().map(KindBinding::schemaName).collect(Collectors.toUnmodifiableSet());
 
     private static final Set<String> MODELLED = Stream.concat(
                     ARTEFACT_KINDS.stream(),
-                    Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST))
+                    Stream.of(DESCRIPTOR, GRAPH_SHARD, ASSET_PAYLOAD, TEMPLATE, PRESET, MANIFEST, PACK_DOCUMENT))
             .collect(Collectors.toUnmodifiableSet());
 
     private final SerializationStrategy strategy;
@@ -162,7 +169,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             } else if (MANIFEST.equals(kind)) {
                 outcomes.put(path, manifest(source, target, path, written));
             } else if (PRESET.equals(kind)) {
-                outcomes.put(path, preset(path, pack, assemblyFailure, reloaded));
+                outcomes.put(
+                        path, inPlace(path, "preset", DomainRoundTrip::holdsPreset, pack, assemblyFailure, reloaded));
+            } else if (PACK_DOCUMENT.equals(kind)) {
+                outcomes.put(
+                        path,
+                        inPlace(path, "document", DomainRoundTrip::holdsDocument, pack, assemblyFailure, reloaded));
             }
         });
         SortedMap<String, WholePackCensus.CompanionFile> writtenCompanions = WholePackCensus.companionsOf(target);
@@ -227,6 +239,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             pack.artifacts().forEach(to::saveArtifact);
             // #195: presets in place, at presets/<id>.yaml.
             pack.presets().forEach(preset -> to.writePreset(id, preset));
+            // #260: the pack document in place, at pack.md.
+            pack.document().ifPresent(document -> to.writePackDocument(id, document));
             return null;
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
@@ -473,13 +487,24 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         return out;
     }
 
-    // ---- presets (#195) ------------------------------------------------------------------------
+    // ---- pack-level files written in place: presets (#195) and the pack document (#260) -----------
 
     /**
-     * A preset is written in place: {@link Written} at its own path when the loaded pack held it and the read-back pack
-     * holds it again with no violation on that path, else {@link Refused} with the store's exact reasons.
+     * A pack-level file written in place: {@link Written} at its own path when the loaded pack held it and the
+     * read-back pack holds it again with no violation on that path, else {@link Refused} with the store's exact reasons.
+     * The gate then compares the two files in their form.
+     *
+     * @param path the file, pack-relative
+     * @param what what the pack holds there, named in a refusal
+     * @param holds whether a pack holds the file at {@code path}
      */
-    private static Outcome preset(String path, @Nullable Pack pack, @Nullable String assemblyFailure, Loaded reloaded) {
+    private static Outcome inPlace(
+            String path,
+            String what,
+            BiPredicate<Pack, String> holds,
+            @Nullable Pack pack,
+            @Nullable String assemblyFailure,
+            Loaded reloaded) {
         if (pack == null) {
             return new Refused("the pack does not assemble: " + assemblyFailure);
         }
@@ -487,8 +512,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!refused.isEmpty()) {
             return new Refused(String.join("; ", refused));
         }
-        if (!holdsPreset(pack, path)) {
-            return new Refused("not read: the loaded pack holds no preset at " + path);
+        if (!holds.test(pack, path)) {
+            return new Refused("not read: the loaded pack holds no " + what + " at " + path);
         }
         @Nullable Pack readBack = reloaded.pack();
         if (readBack == null) {
@@ -498,9 +523,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         if (!readBackRefused.isEmpty()) {
             return new Refused("read-back: " + String.join("; ", readBackRefused));
         }
-        return holdsPreset(readBack, path)
+        return holds.test(readBack, path)
                 ? new Written(path)
-                : new Refused("read-back: the written pack holds no preset at " + path);
+                : new Refused("read-back: the written pack holds no " + what + " at " + path);
     }
 
     /** The reasons of every violation on {@code path}, as the store gave them. */
@@ -513,6 +538,10 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     private static boolean holdsPreset(Pack pack, String path) {
         return pack.presets().stream().anyMatch(preset -> path.equals(PresetFiles.pathOf(preset.id())));
+    }
+
+    private static boolean holdsDocument(Pack pack, String path) {
+        return PackDocumentMarkdown.FILE.equals(path) && pack.document().isPresent();
     }
 
     // ---- graph shards --------------------------------------------------------------------------

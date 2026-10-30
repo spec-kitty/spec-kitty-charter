@@ -12,6 +12,8 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -106,6 +108,7 @@ final class FilesystemPackStore {
      * @param assetFiles the asset files, in path order
      * @param templates the templates, in path order
      * @param presets the readable presets whose id is their file stem, in path order (ADR-0042)
+     * @param document the pack document ({@code pack.md}) when the pack has a readable one (#260)
      */
     record PackRead(
             PackDescriptorDso descriptor,
@@ -113,7 +116,8 @@ final class FilesystemPackStore {
             List<PackElementViolation> violations,
             List<AssetFile> assetFiles,
             List<TemplateFile> templates,
-            List<Stored<PresetDso>> presets) {
+            List<Stored<PresetDso>> presets,
+            Optional<Stored<MarkdownDocument>> document) {
         /**
          * Copies the collections.
          *
@@ -123,6 +127,7 @@ final class FilesystemPackStore {
          * @param assetFiles the asset files, in path order
          * @param templates the templates, in path order
          * @param presets the readable presets, in path order
+         * @param document the readable pack document, if any
          */
         PackRead {
             Objects.requireNonNull(descriptor, "descriptor");
@@ -133,10 +138,11 @@ final class FilesystemPackStore {
             assetFiles = List.copyOf(assetFiles);
             templates = List.copyOf(templates);
             presets = List.copyOf(presets);
+            Objects.requireNonNull(document, "document");
         }
 
         /**
-         * A read that holds no asset file, no template and no preset.
+         * A read that holds no asset file, no template, no preset and no pack document.
          *
          * @param descriptor the descriptor
          * @param elements the readable files of each kind
@@ -146,7 +152,7 @@ final class FilesystemPackStore {
                 PackDescriptorDso descriptor,
                 Map<ArtifactKind, List<Stored<?>>> elements,
                 List<PackElementViolation> violations) {
-            this(descriptor, elements, violations, List.of(), List.of(), List.of());
+            this(descriptor, elements, violations, List.of(), List.of(), List.of(), Optional.empty());
         }
 
         /**
@@ -327,7 +333,25 @@ final class FilesystemPackStore {
             elements.put(kind.kind(), read);
         }
         List<Stored<PresetDso>> presets = readPresets(directory, listing.presets(), violations);
-        return new PackRead(descriptor, elements, violations, assetFiles, templates, presets);
+        Optional<Stored<MarkdownDocument>> document =
+                listing.document().flatMap(file -> readDocument(directory, file, violations));
+        return new PackRead(descriptor, elements, violations, assetFiles, templates, presets, document);
+    }
+
+    /**
+     * The pack document, when it reads (#260): a {@code pack.md} that is not UTF-8, that the Markdown codec refuses or
+     * that breaks the {@code pack-document} structure schema is a violation on its file, and the read holds no document.
+     */
+    private static Optional<Stored<MarkdownDocument>> readDocument(
+            Path directory, String file, List<PackElementViolation> violations) {
+        return switch (readFile(directory.resolve(file), file, PackDocumentMarkdown::read)) {
+            case FileRead.Read<MarkdownDocument> good -> Optional.of(new Stored<>(file, good.value()));
+            case FileRead.Unreadable<MarkdownDocument> bad -> {
+                violations.addAll(violationsOf(bad));
+                yield Optional.empty();
+            }
+            case FileRead.Absent<MarkdownDocument> absent -> Optional.empty();
+        };
     }
 
     /**
@@ -597,6 +621,20 @@ final class FilesystemPackStore {
         Path directory = existingDirectory(id);
         writeAtomically(
                 directory, directory.resolve(PresetFiles.pathOf(preset.id())), utf8(strategy.writePreset(preset)));
+    }
+
+    /**
+     * Writes the pack document in place at {@code pack.md}, in the Markdown form's canonical text (#260), replacing the
+     * file when it is there.
+     *
+     * @param id the pack
+     * @param document what to write
+     * @throws CharterRefusal when the file cannot be written
+     * @throws IllegalStateException when the codec cannot write the document faithfully (its own guard)
+     */
+    void writePackDocument(PackIdentifier id, MarkdownDocument document) {
+        Path directory = existingDirectory(id);
+        writeAtomically(directory, directory.resolve(PackDocumentMarkdown.FILE), utf8(MarkdownCodec.write(document)));
     }
 
     /**

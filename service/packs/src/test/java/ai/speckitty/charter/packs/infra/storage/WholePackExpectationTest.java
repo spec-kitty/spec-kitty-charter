@@ -863,7 +863,7 @@ class WholePackExpectationTest {
             assertThat(WholePackCensus.of(pack))
                     .containsExactlyEntriesOf(new TreeMap<>(Map.of(
                             "missions/m/mission.yaml", "other:missions",
-                            "pack.md", "other:pack.md",
+                            "pack.md", "pack-document",
                             "pack.yaml", "pack-descriptor",
                             "tactic.graph.yaml", "graph-shard",
                             "tactics/x/a.tactic.yaml", "tactic",

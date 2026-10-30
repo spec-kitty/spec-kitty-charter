@@ -140,16 +140,19 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the companion structures are derived from the bindings: each Markdown files rule names one, and each"
-            + " declared one is the structure the binding's companion carries")
+    @DisplayName("the companion structures are derived from the bindings: each Markdown files rule but the pack"
+            + " document's names one, and each declared one is the structure the binding's companion carries")
     void theCompanionStructuresAreTheBindingsOwn() {
         assertThat(KindBindings.isCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .isTrue();
         assertThat(KindBindings.isCompanionStructure("toolguide")).isFalse();
         assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .containsSame(ToolguideBinding.INSTANCE);
+        // #260: pack.md is the one Markdown files rule that is no companion; the pack holds it in its own slot.
+        assertThat(KindBindings.isCompanionStructure(PackDocumentMarkdown.KIND)).isFalse();
         assertThat(PackFileKind.bundled().fileRules())
                 .filteredOn(rule -> rule.contentForm() == ContentForm.MARKDOWN)
+                .filteredOn(rule -> !rule.schema().equals(PackDocumentMarkdown.KIND))
                 .isNotEmpty()
                 .allSatisfy(rule -> assertThat(KindBindings.isCompanionStructure(rule.schema()))
                         .as(rule.match())
