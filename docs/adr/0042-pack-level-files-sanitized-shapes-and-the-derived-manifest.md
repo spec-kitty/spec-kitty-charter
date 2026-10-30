@@ -497,7 +497,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 
 1. **The manifest's known-failure text.** Its pinned `at` holds all 283 joined reasons, about 24 KB.
    The operator was asked whether to pin a shorter form. Not answered yet.
-2. **Acceptance.** This record is Proposed until the operator accepts it on #195.
+2. **Acceptance.** This record is Proposed until the operator accepts it on #195. *(Accepted
+   2026-10-29; see Status.)*
 
 ## Alternatives considered
 
