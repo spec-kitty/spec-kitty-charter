@@ -35,6 +35,7 @@ import tools.jackson.databind.json.JsonMapper;
 class GuardWiringTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
+    private static final String CONTAINER = "spring.profiles.active=container";
 
     @Configuration(proxyBeanMethods = false)
     static class Surroundings {
@@ -79,6 +80,11 @@ class GuardWiringTest {
         assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("charter.worktree-token");
         assertThat(rootMessages(context.getStartupFailure())).doesNotContain(TOKEN);
         assertThat(output.getAll()).doesNotContain(TOKEN);
+    }
+
+    private static String failureText(AssertableApplicationContext context) {
+        assertThat(context).hasFailed();
+        return rootMessages(context.getStartupFailure());
     }
 
     private static String rootMessages(Throwable failure) {
@@ -376,6 +382,73 @@ class GuardWiringTest {
         runner.withPropertyValues("charter.worktree-token=" + TOKEN, "charter.insecure-no-token=true")
                 .run(context -> registration(context));
         assertThat(output.getAll()).doesNotContain(TOKEN);
+    }
+
+    // Under the container profile the refusals say where a container's token goes (ADR-0041 decision 3); without
+    // it they are the local daemon's, as before.
+
+    @Test
+    void withoutTheProfileTheRefusalsAreTheLocalDaemonsWordForWord() {
+        runner.run(context -> assertThat(context.getStartupFailure())
+                .rootCause()
+                .hasMessage("charter.worktree-token is required: set CHARTER_WORKTREE_TOKEN in the environment (for"
+                        + " development only, charter.insecure-no-token=true starts the service without one)"));
+        runner.withPropertyValues("charter.worktree-token=")
+                .run(context -> assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessage("charter.worktree-token is blank; it must be at least 32 characters"));
+        runner.withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addFirst(new SimpleCommandLinePropertySource("--charter.worktree-token=" + TOKEN)))
+                .run(context -> assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessage("charter.worktree-token must come from the environment (CHARTER_WORKTREE_TOKEN),"
+                                + " not from the command line or a system property, where other processes can read"
+                                + " it"));
+    }
+
+    @Test
+    void underTheContainerProfileTheMissingTokenRefusalNamesTheEnvVarAndTheMountedFile() {
+        runner.withPropertyValues(CONTAINER)
+                .run(context -> assertThat(failureText(context))
+                        .contains("CHARTER_WORKTREE_TOKEN")
+                        .contains("/run/secrets/charter.worktree-token")
+                        .doesNotContain("charter.insecure-no-token"));
+    }
+
+    @Test
+    void underTheContainerProfileTheRefusalNamesTheConfiguredSecretsDirectory() {
+        runner.withPropertyValues(CONTAINER, "charter.container.secrets-dir=/srv/secrets/")
+                .run(context -> assertThat(failureText(context))
+                        .contains("/srv/secrets/charter.worktree-token")
+                        .doesNotContain("/run/secrets"));
+    }
+
+    @Test
+    void underTheContainerProfileATokenFromTheCommandLineIsRefusedNamingBothAcceptedForms(CapturedOutput output) {
+        runner.withPropertyValues(CONTAINER)
+                .withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addFirst(new SimpleCommandLinePropertySource("--charter.worktree-token=" + TOKEN)))
+                .run(context -> {
+                    assertThat(failureText(context))
+                            .contains("not from the command line")
+                            .contains("CHARTER_WORKTREE_TOKEN")
+                            .contains("/run/secrets/charter.worktree-token");
+                    assertRefusedWithoutTheToken(context, output);
+                });
+    }
+
+    @Test
+    void underTheContainerProfileABlankTokenSaysAnEmptyEnvVarHidesTheMountedFile() {
+        runner.withPropertyValues(CONTAINER)
+                .withInitializer(context -> context.getEnvironment()
+                        .getPropertySources()
+                        .addLast(new SystemEnvironmentPropertySource(
+                                "test-environment", Map.of("CHARTER_WORKTREE_TOKEN", ""))))
+                .run(context -> assertThat(failureText(context))
+                        .contains("charter.worktree-token is blank")
+                        .contains("an empty CHARTER_WORKTREE_TOKEN hides"));
     }
 
     private static int countOf(String text, String needle) {
