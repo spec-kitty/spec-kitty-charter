@@ -1,0 +1,101 @@
+{
+  "event_count": 35,
+  "last_event_id": "01M65R653150R2R7Z5KCGCC461",
+  "materialized_at": "2026-10-30T06:33:05.889895+00:00",
+  "mission_number": "",
+  "mission_slug": "container-profile-secrets-01M65MC5",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M65R5TXX2R2KSZ7RA843B0BK",
+      "last_transition_at": "2026-10-30T06:32:55.485915+00:00",
+      "review_result": {
+        "reference": "review subagent (reviewer-renata): 8 checks pass; ContainerSecretsTest 9/9, ContainerPropertiesTest 10/10; red 8/9 before the yaml; nits accepted",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 2634,
+      "shell_pid_created_at": "1793340299.89"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M65R5XGQR4YSBPRA2BP90VP7",
+      "last_transition_at": "2026-10-30T06:32:58.135678+00:00",
+      "review_result": {
+        "reference": "review subagent (reviewer-renata): local messages byte-identical, container messages name both forms, no token in messages, tests outcome-based; minor folded: local refusals pinned word for word",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 4866,
+      "shell_pid_created_at": "1793340567.4"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M65R602NV99K4BK5TXJ4V63X",
+      "last_transition_at": "2026-10-30T06:33:00.757590+00:00",
+      "review_result": {
+        "reference": "review subagent (reviewer-renata): 22/22 ContainerStartupCheckTest; no value reaches a message; exact allowlist; merge-time folds: WP01 env-style-name test expects the allowlist refusal, secrets-dir constants get one owner",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 8386,
+      "shell_pid_created_at": "1793340848.87"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M65R62JXZ1D38CC7TKGPK40Q",
+      "last_transition_at": "2026-10-30T06:33:03.325291+00:00",
+      "review_result": {
+        "reference": "review subagent (reviewer-renata): 9/9 ShippedConfigurationTest; folds applied: defaults scanned, find() shape rule, single checked ls-files, git index input, loopback port",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 11008,
+      "shell_pid_created_at": "1793341103.07"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M65R653150R2R7Z5KCGCC461",
+      "last_transition_at": "2026-10-30T06:33:05.889895+00:00",
+      "review_result": {
+        "reference": "review subagent (reviewer-renata): every claim matches the lane code; check_docs all ok; nits folded (refusal list, unset root, ADR note wording)",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 14450,
+      "shell_pid_created_at": "1793341491.68"
+    }
+  }
+}

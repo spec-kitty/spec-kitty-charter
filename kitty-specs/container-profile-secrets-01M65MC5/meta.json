@@ -1,0 +1,35 @@
+{
+  "accept_commit": "720f227eaea6e753bcd62d6e80b03c3407191ecc",
+  "acceptance_history": [
+    {
+      "accept_commit": "720f227eaea6e753bcd62d6e80b03c3407191ecc",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-30T06:32:07.825455+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "f52617e08a282910c582ec0c438a271d4a3fa866"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-30T06:32:07.825455+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "f52617e08a282910c582ec0c438a271d4a3fa866",
+  "baseline_merge_commit": "cb3b289edae443a27f7b8741e05a7faa37865427",
+  "created_at": "2026-10-30T05:26:29.814397+00:00",
+  "flattened": true,
+  "friendly_name": "Container profile file and secret import",
+  "merged_at": "2026-10-30T06:33:13.043915+00:00",
+  "merged_commit": "a098aaa12e24d66f08884ff8376a072437de8d7f",
+  "mid8": "01M65MC5",
+  "mission_id": "01M65MC5T397P2ASWZ3RKSVXGR",
+  "mission_number": 13,
+  "mission_slug": "container-profile-secrets-01M65MC5",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "ADR-0041 decision 3 says a containerised charter service takes its secrets only from mounted files under /run/secrets/ or from env vars, never from committed YAML, and that a container started without the secrets mount fails at start. Issue #229 under epic #226 delivers the container profile's defaults file, the required secrets import, a docker compose example with an env file, and an .env.example with placeholders only; the local loopback daemon is unchanged.",
+  "purpose_tldr": "The container profile gets its own non-secret defaults file and reads its secrets only from /run/secrets/ or env vars, with a compose example and an .env.example (#229).",
+  "slug": "container-profile-secrets-01M65MC5",
+  "status_phase": "1",
+  "target_branch": "issue-229-hosted-config-secrets",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-30T06:05:04.067162+00:00"
+}
