@@ -100,7 +100,6 @@ and each entry's `content_hash` for `pack-manifest`.
 The amended points are in force for the code #195 ships, which implements them. ADR-0042 itself is
 Proposed, pending the operator's acceptance, which the pull request for #195 asks for.
 
-
 ### Amendment 2026-10-30 (#260): `pack.md` compares by its Markdown model
 
 Superseded in part by
