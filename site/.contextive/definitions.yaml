@@ -263,6 +263,10 @@ contexts:
         definition: "A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent artifacts (`kind`, `id`, `path`, `content_hash`) and its presets (`id`, `path`, `content_hash`), with a `manifest_hash` over the whole. Only the authored-pack variant is a pack file; the fetched-pack and charter-bundle fields are refused. Its hashes are derived fields. The service holds it beside the pack aggregate, not in it (ADR-0042)."
         meta:
           status: "canonical"
+      - name: "Pack document"
+        definition: "A pack's `pack.md`, at the pack root: its hand-authored Markdown description. The service holds it in the pack aggregate as the pack's document (optional frontmatter, an optional title, a preamble and the H2 sections), read and written through the `markdown` content form and validated by the `pack-document` structure schema. Its title is independent of the descriptor's `name` (ADR-0042, #260)."
+        meta:
+          status: "canonical"
       - name: "Derived field"
         definition: "A field of a storage object computed from other content, such as a pack manifest's `content_hash` (SHA-256 of the file's bytes with line endings normalized to LF) and `manifest_hash` (SHA-256 of the RFC 8785 canonical JSON of the manifest without it). Declared per kind in a decision record. The writer recomputes it from the bytes it writes, the reader takes it as written, and the round-trip gate verifies it on each side instead of comparing it (ADR-0042)."
         meta:
