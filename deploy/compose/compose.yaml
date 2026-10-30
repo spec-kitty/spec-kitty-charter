@@ -1,0 +1,29 @@
+# An example: the charter service in a container under the container profile (ADR-0041). Copy .env.example to .env,
+# put each secret in ./secrets as a file named after its property (./secrets/charter.worktree-token), then
+# `docker compose up`. No image is published yet (#234): set CHARTER_IMAGE to one you built.
+# Never run `docker compose config` with a real .env: it prints the values.
+name: charter
+services:
+  charter:
+    image: ${CHARTER_IMAGE:?set CHARTER_IMAGE in .env to a charter service image}
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: container
+      # Local to this example until the image fixes its mount path (#234).
+      CHARTER_CONFIGROOT: /var/lib/spec-kitty/charter
+    ports:
+      # Loopback only: until the guard reads allowed-hosts it accepts only loopback Host names (#231 follow-up).
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Required: the service does not start without it. Not created when missing, so a forgotten directory fails.
+      - type: bind
+        source: ./secrets
+        target: /run/secrets
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: volume
+        source: charter-config
+        target: /var/lib/spec-kitty/charter
+volumes:
+  charter-config:
