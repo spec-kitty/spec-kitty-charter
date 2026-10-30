@@ -44,6 +44,7 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>root {@code pack-manifest.yaml} (#195)</td><td>manifest: digested, not loaded by the store</td></tr>
  * <tr><td>root {@code pack.md} (#260), one in five with a carriage return</td><td>loaded (a refused one is a
  *     violation); digested</td></tr>
+ * <tr><td>nested {@code sub/pack.md} (#260)</td><td>decoy: not the pack document</td></tr>
  * <tr><td>{@code .<stem>.<kind>.yaml}, a hidden stem</td><td>loaded</td></tr>
  * <tr><td>{@code .h/<stem>.<kind>.yaml}, a hidden directory</td><td>loaded</td></tr>
  * <tr><td>{@code presets/<stem>.<kind>.yaml} (the kind's rule comes before the preset rule, and the first match wins;
@@ -144,6 +145,7 @@ final class GeneratedPackTree {
         DECOY_ORG_CHARTER(Verdict.DECOY),
         DECOY_SUB_CHARTER(Verdict.DECOY),
         DECOY_SUB_PACK(Verdict.DECOY),
+        DECOY_SUB_PACK_DOCUMENT(Verdict.DECOY),
         DECOY_NESTED_SHARD(Verdict.DECOY),
         DECOY_NESTED_FRAGMENT(Verdict.DECOY),
         DECOY_TACTIC_DIRECTORY(Verdict.DECOY),
@@ -636,6 +638,7 @@ final class GeneratedPackTree {
             case DECOY_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_SUB_CHARTER -> "sub/charter.yaml";
             case DECOY_SUB_PACK -> "sub/pack.yaml";
+            case DECOY_SUB_PACK_DOCUMENT -> "sub/pack.md";
             case DECOY_NESTED_SHARD -> "sub/y.graph.yaml";
             case DECOY_NESTED_FRAGMENT -> "sub/drg/fragment.yaml";
             default -> throw new IllegalArgumentException(shape + " has no file path");

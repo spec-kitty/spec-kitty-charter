@@ -206,7 +206,8 @@ public final class DomainRepositoryService
 
     /**
      * Writes the document of a configured pack in place, at {@code pack.md}, in the Markdown form's canonical text
-     * (#260, ADR-0042 decision 8).
+     * (#260, ADR-0042 decision 8). Like {@link #writePreset}, it is the whole-pack gate's seam: it bypasses the commit
+     * store's lock and does not restamp a manifest, so no production write path calls it.
      *
      * @param pack the pack to write into
      * @param document the document
@@ -328,8 +329,15 @@ public final class DomainRepositoryService
                         new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
             }
         }
-        // #260: the document's parts are the read model's, which already holds them to the same rules.
-        read.document().ifPresent(stored -> builder.document(PackDocumentMarkdown.toDomain(stored.dso())));
+        // #260: the document's parts are the read model's; one the domain refuses is a violation, never a failed load.
+        read.document().ifPresent(stored -> {
+            try {
+                builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
+            } catch (IllegalArgumentException breach) {
+                builder.violation(
+                        new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
+            }
+        });
         return builder;
     }
 

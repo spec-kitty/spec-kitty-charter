@@ -26,11 +26,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The pack document through the whole-pack store (#260, ADR-0042 decision 8): {@code pack.md} is read into the
@@ -245,19 +247,48 @@ class PackDocumentRoundTripTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"crlf", "bom"})
-    @DisplayName("validate mode refuses the pack.md the load refuses, and is silent on the clean one")
-    void validateModeAgreesWithTheLoad(String breakage, @TempDir Path host) throws IOException {
-        String text = "crlf".equals(breakage) ? WITHOUT_FRONTMATTER.replace("\n", "\r\n") : "﻿" + WITHOUT_FRONTMATTER;
+    @MethodSource("refusedTexts")
+    @DisplayName(
+            "validate mode refuses the pack.md the load refuses, with the same reason, and is silent on the clean one")
+    void validateModeAgreesWithTheLoad(String breakage, byte[] bytes, String validateReason, @TempDir Path host)
+            throws IOException {
         Path clean = documentedPack(host.resolve("clean"), WITHOUT_FRONTMATTER);
-        Path refused = documentedPack(host.resolve("refused"), text);
-        String reason = store.load(refused).pack().violations().getFirst().reason();
+        Path refused = documentedPack(host.resolve("refused"), "");
+        Files.write(refused.resolve(PackDocumentMarkdown.FILE), bytes);
+        List<PackElementViolation> violations = store.load(refused).pack().violations();
+        assertThat(violations).hasSize(1);
+        PackElementViolation violation = violations.getFirst();
 
+        assertThat(violation.file()).isEqualTo(PackDocumentMarkdown.FILE);
         assertThat(validateFindings(clean)).isEmpty();
         assertThat(validateFindings(refused)).singleElement().satisfies(finding -> {
             assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
-            assertThat(finding.detail()).endsWith(reason);
+            assertThat(finding.detail()).endsWith(validateReason.isEmpty() ? violation.reason() : validateReason);
         });
+    }
+
+    /**
+     * Each way a pack.md is refused when read: its name, the file's bytes, and validate mode's reason when it is not the
+     * load's own. A file that is not UTF-8 is refused by both in each one's existing wording for every file kind (the
+     * store: "cannot be read as UTF-8 text"; validate mode: "is not valid UTF-8"); every Markdown refusal is the same.
+     */
+    static Stream<Arguments> refusedTexts() {
+        return Stream.of(
+                Arguments.of("crlf", utf8(WITHOUT_FRONTMATTER.replace("\n", "\r\n")), ""),
+                Arguments.of("bom", utf8("\uFEFF" + WITHOUT_FRONTMATTER), ""),
+                Arguments.of(
+                        "not UTF-8",
+                        new byte[] {'#', ' ', 'T', '\n', (byte) 0xff, '\n'},
+                        "the file is not valid UTF-8"),
+                Arguments.of("frontmatter that is a list", utf8("---\n- a\n---\n" + WITHOUT_FRONTMATTER), ""),
+                Arguments.of(
+                        "binary scalar in frontmatter",
+                        utf8("---\nb: !!binary aGk=\n---\n" + WITHOUT_FRONTMATTER),
+                        ""));
+    }
+
+    private static byte[] utf8(String text) {
+        return text.getBytes(StandardCharsets.UTF_8);
     }
 
     @Test
