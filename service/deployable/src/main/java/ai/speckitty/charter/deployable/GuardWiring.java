@@ -26,7 +26,9 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <ul>
  *   <li>the token is {@code charter.worktree-token}, which the launcher passes in the environment as
- *       {@code CHARTER_WORKTREE_TOKEN};
+ *       {@code CHARTER_WORKTREE_TOKEN}. Under the {@code container} profile a file in the secrets directory,
+ *       {@code /run/secrets/charter.worktree-token} by default, is the other form, and the refusals name both
+ *       (ADR-0041 decision 3);
  *   <li>the start is refused when the token is blank or shorter than 32 characters, or when it comes from the
  *       command line or a system property, where other processes can read it. That includes the route through
  *       {@code spring.application.json} given on the command line or as a system property, judged on the keys Boot
@@ -91,17 +93,14 @@ public class GuardWiring {
         String token = environment.getProperty(TOKEN_PROPERTY);
         if (token == null) {
             if (!insecure) {
-                throw new IllegalStateException(TOKEN_PROPERTY
-                        + " is required: set CHARTER_WORKTREE_TOKEN in the environment (for development only, "
-                        + INSECURE_PROPERTY + "=true starts the service without one)");
+                throw new IllegalStateException(missingTokenMessage(environment));
             }
             LOG.warn("The service starts WITHOUT a worktree token (" + INSECURE_PROPERTY
                     + " is set): any local process can read this worktree's charter. Development only.");
             return null;
         }
         if (token.isBlank()) {
-            throw new IllegalStateException(
-                    TOKEN_PROPERTY + " is blank; it must be at least " + MIN_TOKEN_LENGTH + " characters");
+            throw new IllegalStateException(blankTokenMessage(environment));
         }
         if (token.length() < MIN_TOKEN_LENGTH) {
             throw new IllegalStateException(
@@ -118,7 +117,7 @@ public class GuardWiring {
         for (PropertySource<?> source : environment.getPropertySources()) {
             if (READABLE_SOURCES.contains(source.getName()) && source instanceof EnumerablePropertySource<?> readable) {
                 if (namesToken(readable.getPropertyNames())) {
-                    throw unreadableSourceRefusal();
+                    throw unreadableSourceRefusal(environment);
                 }
                 jsonFromReadableSource |= namesApplicationJson(readable.getPropertyNames());
             }
@@ -128,14 +127,42 @@ public class GuardWiring {
         if (jsonFromReadableSource
                 && unpacked instanceof EnumerablePropertySource<?> json
                 && namesToken(json.getPropertyNames())) {
-            throw unreadableSourceRefusal();
+            throw unreadableSourceRefusal(environment);
         }
     }
 
-    private static IllegalStateException unreadableSourceRefusal() {
-        return new IllegalStateException(TOKEN_PROPERTY
-                + " must come from the environment (CHARTER_WORKTREE_TOKEN), not from the command line or"
-                + " a system property, where other processes can read it");
+    private static IllegalStateException unreadableSourceRefusal(ConfigurableEnvironment environment) {
+        String accepted =
+                inContainer(environment) ? containerSources(environment) : "the environment (CHARTER_WORKTREE_TOKEN)";
+        return new IllegalStateException(TOKEN_PROPERTY + " must come from " + accepted
+                + ", not from the command line or a system property, where other processes can read it");
+    }
+
+    private static String missingTokenMessage(ConfigurableEnvironment environment) {
+        if (inContainer(environment)) {
+            return TOKEN_PROPERTY + " is required under the container profile: set " + containerSources(environment);
+        }
+        return TOKEN_PROPERTY + " is required: set CHARTER_WORKTREE_TOKEN in the environment (for development only, "
+                + INSECURE_PROPERTY + "=true starts the service without one)";
+    }
+
+    private static String blankTokenMessage(ConfigurableEnvironment environment) {
+        String message = TOKEN_PROPERTY + " is blank; it must be at least " + MIN_TOKEN_LENGTH + " characters";
+        return inContainer(environment)
+                ? message + "; an empty CHARTER_WORKTREE_TOKEN hides a mounted token file"
+                : message;
+    }
+
+    private static boolean inContainer(ConfigurableEnvironment environment) {
+        return environment.matchesProfiles(ContainerProperties.PROFILE);
+    }
+
+    /** Where a container takes the token from: the env var, or the file in its secrets directory. A path, no secret. */
+    private static String containerSources(ConfigurableEnvironment environment) {
+        String dir = environment.getProperty(
+                ContainerStartupCheck.SECRETS_DIR_PROPERTY, ContainerStartupCheck.DEFAULT_SECRETS_DIR);
+        String trimmed = dir.endsWith("/") ? dir.substring(0, dir.length() - 1) : dir;
+        return "CHARTER_WORKTREE_TOKEN in the environment or the file " + trimmed + "/charter.worktree-token";
     }
 
     private static boolean namesApplicationJson(String[] names) {
