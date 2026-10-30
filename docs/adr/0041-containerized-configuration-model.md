@@ -2,7 +2,7 @@
 title: "ADR-0041: The containerized service is configured through a container profile, validated properties and mounted secrets"
 description: A container profile that is never the default; validated properties fail the start; secrets only from env or /run/secrets; Spring Cloud Config rejected.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -111,6 +111,15 @@ it: a developer can run the same container on their own machine.
    - No committed YAML file holds a secret value. The existing refusal of the command line and of
      system properties as token sources stays in force under both profiles.
    - Mounted files are read once at the start. A rotated secret takes effect on the next start.
+   - **Clarified 2026-10-30** ([#229](https://github.com/spec-kitty/spec-kitty-charter/issues/229); the placeholder
+     is an operator decision, and the two rules on the directory are open for the operator's review):
+     - The import reads `configtree:${charter.container.secrets-dir:/run/secrets}/`. It is still required, and its
+       default is the path above. Tests point it at a temporary directory, and an operator may name another absolute
+       directory. The env form is `CHARTER_CONTAINER_SECRETS_DIR`, and a value takes no trailing slash.
+     - Under the container profile, a file in the directory may set only `charter.worktree-token` or a
+       `charter.container.*` key.
+     - The directory must not be blank, relative, the root, or writable by others.
+     - A breach fails the start, naming the file or the directory.
 4. **The bind address follows the profile.**
    - Without the container profile, `server.address` must be a loopback address. A non-loopback
      bind without the container profile fails the start.

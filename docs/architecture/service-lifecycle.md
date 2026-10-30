@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -11,6 +11,7 @@ related:
   - architecture/strangler-transition
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0041-containerized-configuration-model
+  - guides/run-in-a-container
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -26,9 +27,19 @@ How the service runs: in the local deployment option, one instance per worktree,
 
 This page describes the **local** deployment option. [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)
 adds a **hosted** option: the CLI calls a configured endpoint with a standard login token and fails
-closed when it is unreachable. Its container configuration is proposed in
+closed when it is unreachable. Its container configuration is decided in
 [ADR-0041](/adr/0041-containerized-configuration-model/) (the `container` profile); its login flow
 is not yet decided.
+
+Under the `container` profile, the service reads `application-container.yaml`:
+
+- **Bind.** It listens on all interfaces on port 8080.
+- **Secrets.** It imports a required secrets directory, `/run/secrets` by default:
+  - A container without the directory does not start.
+  - A secret is a file named after its property, such as `/run/secrets/charter.worktree-token`, or an env var, which
+    outranks the file.
+  - A file in the directory may set only the token and `charter.container.*` keys.
+- **How-to.** [Run the service in a container](/guides/run-in-a-container/).
 
 ## One service per worktree
 
@@ -61,7 +72,8 @@ rules below are how this one is scoped to its worktree.
 - The service refuses to start without a token of at least 32 characters, unless
   `charter.insecure-no-token=true` is set (development only; it warns at every start). It refuses
   a token that comes from argv or a system property, including through `spring.application.json`
-  given on argv or with `-D`. The environment (`CHARTER_WORKTREE_TOKEN`) is the source.
+  given on argv or with `-D`. The environment (`CHARTER_WORKTREE_TOKEN`) is the source; under the
+  `container` profile a mounted file in the secrets directory is the other one.
 - The token proves the client to the service, not the service to the client. The launcher's
   process identity is what identifies the server. Residual risks, for the launcher's security
   review (#70): a process that squats the port receives the token, and a derived worktree id is

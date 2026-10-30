@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Guides
 description: Task-oriented how-tos for contributors to the charter service and, later, for its consumers.
 doc_status: draft
-updated: 2026-10-18T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Guide
 kind: Hub
 audience:
@@ -19,6 +19,8 @@ audience:
   locally, and what CI publishes.
 - [Building the service](/guides/service-build/) — building and testing the charter service,
   changing the contract or a dependency.
+- [Run the service in a container](/guides/run-in-a-container/) — the `container` profile under
+  docker compose, with its secrets mounted and none committed.
 
 Consumer how-tos (depending on a contract release, running the service locally) will be
 added when there is something to depend on and run.
