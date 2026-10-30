@@ -268,9 +268,15 @@ class DomainRoundTripTest {
     }
 
     @Test
-    void theAdapterModelsEveryBoundKindAndTheTwoPackDocuments() {
-        Set<String> expected = new HashSet<>(
-                Set.of("pack-descriptor", "graph-shard", "asset-payload", "template", "preset", "pack-manifest"));
+    void theAdapterModelsEveryBoundKindAndThePackLevelFiles() {
+        Set<String> expected = new HashSet<>(Set.of(
+                "pack-descriptor",
+                "graph-shard",
+                "asset-payload",
+                "template",
+                "preset",
+                "pack-manifest",
+                "pack-document"));
         KindBindings.all().forEach(binding -> expected.add(binding.schemaName()));
         assertThat(new DomainRoundTrip(new YamlSerializationStrategy()).modelledKinds())
                 .containsAll(Set.of(
@@ -287,7 +293,8 @@ class DomainRoundTripTest {
                         "asset-payload",
                         "template",
                         "preset",
-                        "pack-manifest"))
+                        "pack-manifest",
+                        "pack-document"))
                 .isEqualTo(expected);
     }
 

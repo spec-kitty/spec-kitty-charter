@@ -21,10 +21,10 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * FR-005 (#194): a {@code files} rule may declare {@code content_form: markdown}. With a copy of the bundled table plus
  * one test rule, a fixture file is classified as {@code markdown} with its structure schema, and the path a Markdown
- * kind takes holds end to end: parse, validate against the structure schema, write canonically, compare by model. No
- * store consumer exists yet (#260 adds the first), so this proves the classification, schema and comparison path,
- * and that every production path that dispatches on a rule's content form refuses a {@code markdown} file loudly
- * instead of reading it as YAML or skipping it.
+ * kind takes holds end to end: parse, validate against the structure schema, write canonically, compare by model. The
+ * store reads only the pack document ({@code pack.md}, #260) and the companions, so this proves the classification,
+ * schema and comparison path, and that every production path that dispatches on a rule's content form refuses any
+ * other {@code markdown} file loudly instead of reading it as YAML or skipping it.
  */
 class MarkdownFilesRuleTest {
 
@@ -100,7 +100,7 @@ class MarkdownFilesRuleTest {
         assertThatIllegalStateException()
                 .isThrownBy(() -> PackFileSet.listing(pack, TABLE))
                 .withMessage("'notes/valid.md' is classified as content_form markdown: Markdown is read only as a"
-                        + " companion; this rule has no store path of its own yet (#260)");
+                        + " companion or the pack document; this rule has no store path of its own yet");
         assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).byKind())
                 .as("the bundled table leaves the file unclassified, so the same pack lists")
                 .isEmpty();
@@ -113,7 +113,7 @@ class MarkdownFilesRuleTest {
 
         assertThatIllegalStateException()
                 .isThrownBy(() -> FileSystemPackInspector.readsAsYaml(markdown, "notes/valid.md"))
-                .withMessageContaining("this rule has no store path of its own yet (#260)");
+                .withMessageContaining("this rule has no store path of its own yet");
         assertThat(FileSystemPackInspector.readsAsYaml(yaml, "directives/x.directive.yaml"))
                 .isTrue();
     }

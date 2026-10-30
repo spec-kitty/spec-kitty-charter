@@ -37,8 +37,8 @@ import org.junit.jupiter.api.io.TempDir;
  * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it as
  * known failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack
  * that loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files,
- * the templates and every DRG document. The files are compared too: asset sidecars by meaning (ADR-0036), asset files
- * and templates by SHA-256.
+ * the templates, the presets, the pack document and every DRG document. The files are compared too: asset sidecars and
+ * presets by meaning (ADR-0036), the pack document by its Markdown model (#260), asset files and templates by SHA-256.
  *
  * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused, and its two presets and its
  * manifest are not in the sanitized shapes and are refused too (#195, ADR-0042); a temporary copy with the six paths,
@@ -98,6 +98,7 @@ class WholePackOpenPacksRoundTripTest {
                                 template.id().value() + "=" + template.content().sha256())
                         .toList());
         out.put("presets", loaded.pack().presets());
+        out.put("document", loaded.pack().document());
         out.put("graphs", loaded.graphs());
         out.put("layout", loaded.layout().paths());
         return out;
@@ -216,6 +217,12 @@ class WholePackOpenPacksRoundTripTest {
                             Files.readString(pack.resolve(file)),
                             Files.readString(target.resolve(file)))
                     .ifPresent(difference -> out.add(pack + "/" + file + " differs: " + difference));
+        }
+        if (loaded.pack().document().isPresent()) {
+            String file = PackDocumentMarkdown.FILE;
+            MeaningComparator.adr0036()
+                    .compareMarkdown(Files.readString(pack.resolve(file)), Files.readString(target.resolve(file)))
+                    .forEach(difference -> out.add(pack + "/" + file + " differs: " + difference));
         }
         return out;
     }

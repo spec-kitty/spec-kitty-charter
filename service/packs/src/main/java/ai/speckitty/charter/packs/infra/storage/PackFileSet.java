@@ -28,18 +28,21 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The single declaration of which files of a pack the service loads and which it digests. The store reads the files of
- * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests
- * {@code pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared
- * graph inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets and the manifest (the pack-level tail, ADR-0042). Both take their list from here, so a
- * file the service loads cannot escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The
- * asset files, templates and presets come last, so a pack that holds none keeps its exact digest list.
+ * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests {@code
+ * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
+ * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
+ * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042).
+ * Both take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind is all it
+ * takes for the digest to cover it. The asset files, templates, presets and pack document come last, so a pack that
+ * holds none keeps its exact digest list.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}:
  * the rule's content form decides the store. A file of the {@code bytes} form is held by its rule's kind: an
  * {@value #ASSET_PAYLOAD} file is an asset file (under {@code assets/}), a {@code template} file a template (under the
  * top-level {@code templates/}); the table admits no {@code bytes} rule of another kind ({@link PackFileKind}). A file
- * of the {@code yaml} form, which every {@code files} rule declares, is a file of its schema's bound kind. The walk is
+ * of the {@code yaml} form, the default of a {@code files} rule, is a file of its schema's bound kind. A file of the
+ * {@code markdown} form is a bound kind's companion (a toolguide's guide, #194), which its artifact holds, or the pack
+ * document ({@code pack.md}, #260); no store path reads any other. The walk is
  * the store's: {@link Files#walkFileTree} (hidden directories are entered, a directory link is not followed, an entry
  * that vanishes mid-walk is not listed), every regular file ({@link Files#isRegularFile} follows a file link)
  * classified once, in {@link String} order. Every entry point normalizes the directory first, so a configured root such
@@ -76,12 +79,14 @@ final class PackFileSet {
      * @param assetFiles the asset files, pack-relative (they start with {@code assets/})
      * @param templates the templates, pack-relative (they start with {@code templates/})
      * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
+     * @param document the pack document, {@code pack.md}, when the pack has one
      */
     record Listing(
             Map<ArtifactKind, List<String>> byKind,
             List<String> assetFiles,
             List<String> templates,
-            List<String> presets) {
+            List<String> presets,
+            Optional<String> document) {
         /**
          * Copies the collections.
          *
@@ -89,6 +94,7 @@ final class PackFileSet {
          * @param assetFiles the asset files
          * @param templates the templates
          * @param presets the presets
+         * @param document the pack document, if any
          */
         Listing {
             Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
@@ -97,6 +103,7 @@ final class PackFileSet {
             assetFiles = List.copyOf(assetFiles);
             templates = List.copyOf(templates);
             presets = List.copyOf(presets);
+            Objects.requireNonNull(document, "document");
         }
 
         /**
@@ -174,7 +181,8 @@ final class PackFileSet {
 
     /**
      * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every bound kind, the
-     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets and the manifest.
+     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets, {@code pack.md} and
+     * the manifest.
      *
      * @param packDir the pack directory
      * @return the pack-relative paths, in digest order
@@ -190,8 +198,8 @@ final class PackFileSet {
      * @param kinds the loaded kinds to include
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file;
-     *     the asset files; the templates; the presets; {@code pack-manifest.yaml} when a regular file. None of those is
-     *     a bound kind, and they are always included.
+     *     the asset files; the templates; the presets; {@code pack.md} when a regular file; {@code pack-manifest.yaml}
+     *     when a regular file. None of those is a bound kind, and they are always included.
      */
     static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
         return digested(packDir, kinds, nameOf(normalized(packDir)));
@@ -248,11 +256,13 @@ final class PackFileSet {
 
     /**
      * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
-     * order, then {@code pack-manifest.yaml} when it is a regular file. A pack without them keeps its digest list
-     * (NFR-002).
+     * order, then the pack document ({@code pack.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
+     * (ADR-0042 decision 9). A pack without them keeps its digest list (NFR-002). The document is digested as text,
+     * whatever the load makes of it, so a change to a {@code pack.md} the load refuses still moves the fingerprint.
      */
     private static List<String> packLevelTail(Path directory, Listing loaded) {
         List<String> out = new ArrayList<>(loaded.presets());
+        loaded.document().ifPresent(out::add);
         if (Files.isRegularFile(directory.resolve(MANIFEST))) {
             out.add(MANIFEST);
         }
@@ -305,8 +315,8 @@ final class PackFileSet {
     }
 
     /**
-     * One walk of the pack, each file classified once: every bound kind's files grouped, the payload files and the
-     * presets apart.
+     * One walk of the pack, each file classified once: every bound kind's files grouped, the payload files, the
+     * presets and the pack document apart.
      */
     private static Listing loaded(Path directory, String packName, PackFileKind table) {
         // The classification globs are relative to the directory that holds the pack directories.
@@ -315,6 +325,7 @@ final class PackFileSet {
         List<String> assetFiles = new ArrayList<>();
         List<String> templates = new ArrayList<>();
         List<String> presets = new ArrayList<>();
+        List<String> documents = new ArrayList<>();
         for (String file : regularFiles(directory, packName)) {
             if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)) {
                 continue;
@@ -323,12 +334,14 @@ final class PackFileSet {
             Optional<List<String>> holder = switch (mapped.contentForm()) {
                 case BYTES -> Optional.of(bytesHolder(mapped.kind(), assetFiles, templates));
                 case YAML -> yamlHolder(mapped, byKind, presets);
-                case MARKDOWN -> markdownHolder(file, mapped);
+                case MARKDOWN -> markdownHolder(file, mapped, documents);
                 case TEXT -> throw notStored(file, mapped.contentForm());
             };
             holder.ifPresent(files -> files.add(file));
         }
-        return new Listing(byKind, assetFiles, templates, presets);
+        // The rule matches only <pack>/pack.md, so there is at most one.
+        return new Listing(
+                byKind, assetFiles, templates, presets, documents.stream().findFirst());
     }
 
     /** The list a {@code yaml} file joins: the presets, its bound kind's files, or none for an unbound kind. */
@@ -347,19 +360,26 @@ final class PackFileSet {
 
     /**
      * The list a {@code markdown} file joins: none when it is a bound kind's companion (a toolguide's guide, #194),
-     * which its artifact holds and reads; any other {@code markdown} file fails loudly ({@link #notStored}).
+     * which its artifact holds and reads; the pack document's when it is {@code pack.md} (#260); any other
+     * {@code markdown} file fails loudly ({@link #notStored}).
      */
-    private static Optional<List<String>> markdownHolder(String file, PackFileKind.Mapped mapped) {
+    private static Optional<List<String>> markdownHolder(
+            String file, PackFileKind.Mapped mapped, List<String> documents) {
         if (KindBindings.isCompanionStructure(mapped.kind())) {
             return Optional.empty();
+        }
+        if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
+            // A pack-level file, not a bound kind: the pack holds its document in its own slot (ADR-0042 decision 8).
+            return Optional.of(documents);
         }
         throw notStored(file, mapped.contentForm());
     }
 
     /**
      * The failure for a file whose rule declares a form no store path reads: {@code markdown} is classified (the table
-     * admits it, ADR-0040 as amended) but held only as a bound kind's companion (#194), so any other file of it must
-     * neither reach a YAML reader nor be skipped unseen. Its first consumer wires the store path and replaces this.
+     * admits it, ADR-0040 as amended) but held only as a bound kind's companion (#194) or as the pack document (#260),
+     * so any other file of it must neither reach a YAML reader nor be skipped unseen. A rule that adds a Markdown kind
+     * wires its store path beside these.
      *
      * @param file the file, pack-relative
      * @param form the rule's content form, not {@code yaml} or {@code bytes}
@@ -367,7 +387,8 @@ final class PackFileSet {
      */
     static IllegalStateException notStored(String file, ContentForm form) {
         String why = form == ContentForm.MARKDOWN
-                ? "Markdown is read only as a companion; this rule has no store path of its own yet (#260)"
+                ? "Markdown is read only as a companion or the pack document;"
+                        + " this rule has no store path of its own yet"
                 : "the store does not build that form";
         return new IllegalStateException("'" + file + "' is classified as content_form " + form.token() + ": " + why);
     }
