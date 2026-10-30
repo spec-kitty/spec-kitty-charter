@@ -3,6 +3,9 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +93,7 @@ class ContainerPropertiesTest {
 
     /**
      * The service as it ships, without a web server, under the container profile with the token. Builder properties
-     * rank below {@code application.yaml}, so the port and the root come as arguments ({@link #startArguments}).
+     * rank below {@code application.yaml}, so the port, the root and the secrets directory come as arguments ({@link #startArguments}).
      */
     private static SpringApplicationBuilder shippedService(Map<String, Object> properties) {
         Map<String, Object> all = new HashMap<>(properties);
@@ -101,9 +104,28 @@ class ContainerPropertiesTest {
                 .properties(all);
     }
 
-    /** A fixed port and an existing root, as a container's command line would give them. */
+    /**
+     * A fixed port, an existing root and an empty secrets directory, as a container's command line would give them.
+     * The profile's own file requires the secrets directory (ADR-0041 decision 3).
+     */
     private static String[] startArguments(Path root) {
-        return new String[] {"--server.port=8080", CharterServiceApplication.CONFIG_ROOT_OPTION + "=" + root};
+        return startArguments(root, 8080);
+    }
+
+    private static String[] startArguments(Path root, int port) {
+        return new String[] {
+            "--server.port=" + port,
+            CharterServiceApplication.CONFIG_ROOT_OPTION + "=" + root,
+            "--charter.container.secrets-dir=" + secretsDirectory(root)
+        };
+    }
+
+    private static Path secretsDirectory(Path root) {
+        try {
+            return Files.createDirectories(root.resolve("secrets"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Test
@@ -113,10 +135,10 @@ class ContainerPropertiesTest {
     }
 
     @Test
-    void theServiceAsItShipsRefusesItsLocalRandomPortUnderTheContainerProfile(@TempDir Path root) {
-        // Only the root is given: the port is the local application.yaml's 0.
-        assertThatThrownBy(() -> shippedService(Map.of(PROPERTY, "charter.example.org"))
-                        .run(CharterServiceApplication.CONFIG_ROOT_OPTION + "=" + root))
+    void theServiceAsItShipsStillRefusesAnExplicitRandomPortUnderTheContainerProfile(@TempDir Path root) {
+        // The profile's file sets 8080; a port of 0 given on top of it is still refused (ADR-0041 decision 4).
+        assertThatThrownBy(() ->
+                        shippedService(Map.of(PROPERTY, "charter.example.org")).run(startArguments(root, 0)))
                 .hasStackTraceContaining("server.port must be a fixed port under the container profile");
     }
 
