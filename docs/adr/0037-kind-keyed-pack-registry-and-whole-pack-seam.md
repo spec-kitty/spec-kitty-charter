@@ -108,7 +108,8 @@ no other decision:
 
 The decision text below is unchanged. Each point this note changes is annotated where it stands.
 The amended points are in force for the code #195 ships, which implements them. ADR-0042 itself is
-Proposed, pending the operator's acceptance, which the pull request for #195 asks for.
+Proposed, pending the operator's acceptance, which the pull request for #195 asks for *(accepted
+2026-10-29)*.
 
 ### Note 2026-10-30 (#260): the pack document is held
 

@@ -61,7 +61,8 @@ It changes decision 9 only:
 
 - **Decision 9, the order.** After the templates, `PackFileSet.digested` ends with the pack-level
   tail, in one ordered step: the presets, in path order, then `pack-manifest.yaml`. When `pack.md`
-  is held through #194's `markdown` form, it joins the tail between the two. A pack with no
+  is held through #194's `markdown` form, it joins the tail between the two *(it did: #260,
+  2026-10-30)*. A pack with no
   presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them gets a
   new `Charter-Source-Fingerprint` and ETag once.
 
@@ -120,10 +121,11 @@ The record stays Proposed.
   opens (CommonMark reads an indented code block); a `---` line with a trailing space and a `...` closer
   are not frontmatter delimiters, only an exact `---` line is; frontmatter holding only a comment is
   refused as not a mapping, while blank frontmatter is the empty mapping; an HTML block is text.
-- **Admitted, not yet held.** No production store path reads a `files`-rule Markdown file yet. The
+- **Admitted, not yet held.** *(Held for `pack.md` since #260, 2026-10-30; see the amendment below.)*
+  No production store path reads a `files`-rule Markdown file yet. The
   store's listing, validate mode and the companion rule each switch over the content form, and a
   file classified `markdown` fails loudly there ("no store path reads it yet") instead of reaching
-  the YAML reader or being skipped *(#260 wired `pack.md`, 2026-10-30)*. The first consumer (#260 for `pack.md`) wires the store read and
+  the YAML reader or being skipped. The first consumer (#260 for `pack.md`) wires the store read and
   write, the digest and validate mode. Whoever adds a `markdown` rule also keeps it disjoint from
   every exclusion and payload rule: a `files` rule outranks both, so an overlapping rule would take
   an excluded README or a Markdown template. `PackFileKindTest` fails on such an overlap, over its
@@ -320,7 +322,7 @@ Four facts force a decision:
    answers `If-Match`.
    *(Extended by ADR-0042, 2026-10-28: after the templates come the presets, in path order, then
    `pack-manifest.yaml`; `pack.md` joins between them with #194's form. See the amendment under
-   Status. It did: #260, 2026-10-30.)*
+   Status. `pack.md` joined there in #260, 2026-10-30.)*
 
 ## Consequences
 

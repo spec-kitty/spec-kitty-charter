@@ -60,8 +60,8 @@ Made by [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) (par
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), mission
 `pack-document-round-trip-01M65MBW`, after #194's first pull request built the `markdown` content
 form. The decision text below is unchanged, and each point this note changes is annotated where it
-stands. #260 cited these decisions as "ADR-0043 decisions 8 to 10"; they are this record's (the
-two records swapped numbers before merge).
+stands. #260 cited these decisions as "ADR-0043 decisions 8 to 10"; they are this record's: 0043
+was reserved for #195 (`DM-01M60HM8BV7CE17HYE1QS829K4`) before the numbers changed.
 
 - **Decision 8 is done.** `*/pack.md` is a `files` rule of `content_form: markdown` with the
   structure schema `pack-document` (optional frontmatter, an optional title, a free preamble and
