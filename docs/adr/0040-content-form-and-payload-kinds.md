@@ -2,7 +2,7 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -61,7 +61,8 @@ It changes decision 9 only:
 
 - **Decision 9, the order.** After the templates, `PackFileSet.digested` ends with the pack-level
   tail, in one ordered step: the presets, in path order, then `pack-manifest.yaml`. When `pack.md`
-  is held through #194's `markdown` form, it joins the tail between the two. A pack with no
+  is held through #194's `markdown` form, it joins the tail between the two *(it did: #260,
+  2026-10-30)*. A pack with no
   presets and no manifest keeps its exact digest list and fingerprint. A pack that holds them gets a
   new `Charter-Source-Fingerprint` and ETag once.
 
@@ -96,7 +97,8 @@ The record stays Proposed.
   Two documents are equal in meaning when their models are equal: the frontmatter as loaded YAML
   values (a `Map.equals` on the loaded mappings, lists and scalars, so quoting, comments and key
   order do not count; full ADR-0036 numeric and empty-versus-absent equality of the frontmatter is
-  left to #260, where a non-canonical reader first compares two separately-authored documents),
+  left to #260, where a non-canonical reader first compares two separately-authored documents;
+  *#260 kept `Map.equals`, stricter than ADR-0036, see the 2026-10-30 amendment*),
   every string exactly; the blank lines between blocks and the final newline are not part of the
   model. A text is refused as ambiguous, naming the line, for an unclosed fence, a carriage return
   or a byte order mark, an H1 that is not the first block, an H1 or H2 indented by one to three
@@ -119,7 +121,8 @@ The record stays Proposed.
   opens (CommonMark reads an indented code block); a `---` line with a trailing space and a `...` closer
   are not frontmatter delimiters, only an exact `---` line is; frontmatter holding only a comment is
   refused as not a mapping, while blank frontmatter is the empty mapping; an HTML block is text.
-- **Admitted, not yet held.** No production store path reads a `files`-rule Markdown file yet. The
+- **Admitted, not yet held.** *(Held for `pack.md` since #260, 2026-10-30; see the amendment below.)*
+  No production store path reads a `files`-rule Markdown file yet. The
   store's listing, validate mode and the companion rule each switch over the content form, and a
   file classified `markdown` fails loudly there ("no store path reads it yet") instead of reaching
   the YAML reader or being skipped. The first consumer (#260 for `pack.md`) wires the store read and
@@ -127,6 +130,30 @@ The record stays Proposed.
   every exclusion and payload rule: a `files` rule outranks both, so an overlapping rule would take
   an excluded README or a Markdown template. `PackFileKindTest` fails on such an overlap, over its
   sample paths and the vendored packs.
+
+### Amendment 2026-10-30 (#260): the first stored `markdown` files rule, and frontmatter equality
+
+Made by [#260](https://github.com/spec-kitty/spec-kitty-charter/issues/260) (mission
+`pack-document-round-trip-01M65MBW`), the first consumer the amendment above names. The decision
+text below is unchanged; the record stays Proposed.
+
+- **The store reads a `markdown` files rule: `*/pack.md`.** Its structure schema is
+  `pack-document`. The store lists it in a slot of its own, reads it through `MarkdownCodec`,
+  validates the model and holds it in the `Pack` aggregate (ADR-0042, amendment 2026-10-30). It is
+  digested between the presets and the manifest, and validate mode reads it through the same read,
+  so the two refuse the same file. Every other non-companion `markdown` file still fails loudly: a
+  rule that adds one wires its own store path.
+- **Frontmatter equality: stricter than ADR-0036, on purpose.** `pack.md` frontmatter compares as
+  the loaded YAML values (`Map.equals`): `1` and `1.0` differ, and an empty frontmatter differs from
+  an absent one (`DM-01M65MKYMAAQE6RQZEY361SBTP`). ADR-0036's numeric and empty-versus-absent
+  equality is not applied. This is sound while one reader compares a source and its own canonical
+  write: the writer emits the loaded values, so a faithful write is equal and a stricter rule can
+  only turn a real loss red, never hide one. It is not ADR-0036 meaning, and it is revisited when a
+  second reader compares two separately authored documents. Open for the operator's review.
+- **A pack author's `pack.md` is now judged.** A carriage return (for example from a
+  `core.autocrlf` checkout), a byte order mark or an ambiguous heading in `pack.md` is now a load
+  violation and a validate-mode finding, where the file was ignored before. Core does not read
+  `pack.md`; the divergence is deliberate (ADR-0036 decision 5: a bad shape is fixed in the pack).
 
 ## Context
 
@@ -295,7 +322,7 @@ Four facts force a decision:
    answers `If-Match`.
    *(Extended by ADR-0042, 2026-10-28: after the templates come the presets, in path order, then
    `pack-manifest.yaml`; `pack.md` joins between them with #194's form. See the amendment under
-   Status.)*
+   Status. `pack.md` joined there in #260, 2026-10-30.)*
 
 ## Consequences
 
