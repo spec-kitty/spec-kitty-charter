@@ -72,3 +72,26 @@ tasks.processTestResources {
         into("contract")
     }
 }
+
+/**
+ * Hands the repository root to the test that checks the shipped configuration files (#229): the compose example, its
+ * env template and the ignore rules live outside this module, so they are declared as inputs and a change to them
+ * reruns the tests.
+ */
+abstract class ShippedConfigurationArguments : CommandLineArgumentProvider {
+    @get:Internal abstract val root: DirectoryProperty
+    @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val files: ConfigurableFileCollection
+
+    override fun asArguments(): List<String> = listOf("-Dcharter.test.repo-root=${root.get().asFile.absolutePath}")
+}
+
+tasks.test {
+    val repository = rootProject.layout.projectDirectory
+    jvmArgumentProviders.add(objects.newInstance<ShippedConfigurationArguments>().apply {
+        root.set(repository)
+        files.from(repository.file("deploy/compose/compose.yaml"), repository.file("deploy/compose/.env.example"))
+        files.from(repository.file(".gitignore"))
+        // The tracked-file scan reads the git index; in a linked worktree it lives elsewhere and is not tracked here.
+        files.from(repository.file(".git/index"))
+    })
+}
