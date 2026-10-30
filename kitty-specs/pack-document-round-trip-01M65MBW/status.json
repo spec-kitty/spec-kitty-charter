@@ -1,7 +1,7 @@
 {
-  "event_count": 1,
-  "last_event_id": "01M65NGGJST3G4SBESJXVT4ZM1",
-  "materialized_at": "2026-10-30T05:46:19.610002+00:00",
+  "event_count": 2,
+  "last_event_id": "01M65NGJ25EVRXJAA0VKBA9JTM",
+  "materialized_at": "2026-10-30T05:46:21.125034+00:00",
   "mission_number": "",
   "mission_slug": "pack-document-round-trip-01M65MBW",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 1
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -24,6 +24,13 @@
       "lane": "planned",
       "last_event_id": "01M65NGGJST3G4SBESJXVT4ZM1",
       "last_transition_at": "2026-10-30T05:46:19.610002+00:00"
+    },
+    "WP02": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M65NGJ25EVRXJAA0VKBA9JTM",
+      "last_transition_at": "2026-10-30T05:46:21.125034+00:00"
     }
   }
 }
