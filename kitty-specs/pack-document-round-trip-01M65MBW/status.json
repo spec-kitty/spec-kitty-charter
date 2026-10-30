@@ -1,0 +1,76 @@
+{
+  "event_count": 12,
+  "last_event_id": "01M65P8SJJ21MAQ2HKPHPRCPVM",
+  "materialized_at": "2026-10-30T05:59:35.250471+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-document-round-trip-01M65MBW",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 2,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M65P3Y3GTRS7YHDGG0RWT7AW",
+      "last_transition_at": "2026-10-30T05:56:56.077278+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Tests drafted first (red at compile, then green); analyze ran after the code was drafted (analysis P1). :packs:test, openPacksRoundTrip, wholePackRoundTrip and verifyAll green.",
+        "Review (reviewer-renata): changes requested: unwritable documents escaping as runtime errors; no domain tests; non-YAML frontmatter values; long Javadoc lines.",
+        "Review findings 1-4 folded (fix commit); finding 5 is the ADR's annotate-in-place style, kept.",
+        "Review by the reviewer-renata subagent; findings folded in the fix commit."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 10788,
+      "shell_pid_created_at": "1793339245.79",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M65P8SJJ21MAQ2HKPHPRCPVM",
+      "last_transition_at": "2026-10-30T05:59:35.250471+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Docs committed (3e483ec); check_docs all, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean.",
+        "Review by the curator-carla subagent; findings folded."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 15069,
+      "shell_pid_created_at": "1793339826.04",
+      "subtasks": {
+        "T007": "done",
+        "T008": "done"
+      }
+    }
+  }
+}

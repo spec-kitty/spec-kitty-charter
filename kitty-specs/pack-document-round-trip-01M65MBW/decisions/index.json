@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-30T05:30:42.127097Z",
+      "decision_id": "01M65MKX2FG5E5SAM9D57BX2AE",
+      "final_answer": "A domain PackDocument with the markdown model shape (frontmatter, title, preamble, sections) plus an infra mapper to and from MarkdownDocument, as #194 did for Guide/GuideMarkdown",
+      "input_key": "pack_document_type",
+      "mission_id": "01M65MBWAE8VZM6W97DTHDKMQT",
+      "mission_slug": "pack-document-round-trip-01M65MBW",
+      "opened_by": "claude",
+      "options": [
+        "A domain PackDocument with the markdown model shape (frontmatter, title, preamble, sections) plus an infra mapper to and from MarkdownDocument, as #194 did for Guide/GuideMarkdown",
+        "Move MarkdownDocument into the domain or kernel",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "The domain cannot depend on infra (HexagonalArchitectureTest), and MarkdownDocument is infra. How does Pack hold the document while being typed as #194's markdown value?",
+      "rationale": "ADR-0006 and HexagonalArchitectureTest keep packs.domain free of infra; #194 set the precedent (Guide + GuideMarkdown). The value keeps the markdown model's shape, so nothing of the form is rebuilt: parsing, canonical writing and comparison stay MarkdownCodec's (ADR-0042 d8, DM-01M60HM8).",
+      "resolved_at": "2026-10-30T05:30:45.323678Z",
+      "resolved_by": "claude",
+      "slot_key": "specify.pack_document_type",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-30T05:30:43.722499Z",
+      "decision_id": "01M65MKYMAAQE6RQZEY361SBTP",
+      "final_answer": "Map.equals on the loaded YAML values (ADR-0040 as built); absent and empty frontmatter stay different models, numbers compare as loaded",
+      "input_key": "frontmatter_equality",
+      "mission_id": "01M65MBWAE8VZM6W97DTHDKMQT",
+      "mission_slug": "pack-document-round-trip-01M65MBW",
+      "opened_by": "claude",
+      "options": [
+        "Map.equals on the loaded YAML values (ADR-0040 as built); absent and empty frontmatter stay different models, numbers compare as loaded",
+        "Full ADR-0036 meaning comparison of the frontmatter (numeric equality, empty equals absent)",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0040 leaves full ADR-0036 numeric and empty-versus-absent frontmatter equality to #260. Which equality does pack.md frontmatter use?",
+      "rationale": "The gate compares a source and a written pack.md read by the same reader, and the canonical writer emits the loaded values, so Map.equals on loaded values is exactly ADR-0036 meaning for a round trip; no numeric or empty-vs-absent drift can arise from our own write. The built-in pack.md has no frontmatter. ADR-0040 is amended to record the ruling; logged as an open review item for the operator.",
+      "resolved_at": "2026-10-30T05:30:46.916619Z",
+      "resolved_by": "claude",
+      "slot_key": "specify.frontmatter_equality",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M65MBWAE8VZM6W97DTHDKMQT",
+  "version": 1
+}
