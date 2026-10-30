@@ -6,7 +6,7 @@ spring:
     # fails the start, naming it. One file per property, named in dot form (<dir>/charter.worktree-token); an empty
     # directory is valid. An env var (CHARTER_WORKTREE_TOKEN) is the alternative and outranks the file, so an empty one
     # hides it. The directory is /run/secrets unless charter.container.secrets-dir (env CHARTER_CONTAINER_SECRETS_DIR)
-    # names another: an absolute path, without a slash at the end.
+    # names another: an absolute path; a trailing slash is not needed.
     import: configtree:${charter.container.secrets-dir:/run/secrets}/
 server:
   # All interfaces, on a fixed port a container can publish (ADR-0041 decision 4).

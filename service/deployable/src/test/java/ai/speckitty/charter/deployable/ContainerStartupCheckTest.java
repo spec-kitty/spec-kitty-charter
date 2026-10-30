@@ -1,18 +1,16 @@
 package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import org.assertj.core.util.Throwables;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.env.ConfigTreePropertySource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -30,9 +28,16 @@ class ContainerStartupCheckTest {
     private final ApplicationContextRunner runner =
             new ApplicationContextRunner().withUserConfiguration(ContainerStartupCheck.class);
 
-    /** The container profile with every rule met; each test breaks one. */
+    /**
+     * The container profile with every rule met; each test breaks one. The secrets directory is a path of the test's
+     * own, so the host's {@code /run/secrets} plays no part.
+     */
     private ApplicationContextRunner container() {
-        return runner.withPropertyValues(CONTAINER, "server.port=8080", "charter.config-root=" + root);
+        return runner.withPropertyValues(
+                CONTAINER,
+                "server.port=8080",
+                "charter.config-root=" + root,
+                "charter.container.secrets-dir=" + root.resolve("secrets"));
     }
 
     @Test
@@ -134,7 +139,8 @@ class ContainerStartupCheckTest {
                 .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ContainerStartupCheck.class));
     }
 
-    // The secrets directory may set only its own keys and must be safe (ADR-0041 decision 3, research R10).
+    // A config tree may set only its own keys, and the secrets directory is absolute (ADR-0041 decision 3, research
+    // R10 and the pre-PR squad, research R11).
 
     private static final String PLANTED = "planted-value-0123456789";
 
@@ -205,7 +211,8 @@ class ContainerStartupCheckTest {
                 .run(context -> assertThat(context)
                         .hasFailed()
                         .getFailure()
-                        .hasStackTraceContaining("charter.container.secrets-dir must name an absolute directory"));
+                        .hasStackTraceContaining(
+                                "charter.container.secrets-dir must name an absolute directory other than the root"));
     }
 
     @Test
@@ -215,31 +222,38 @@ class ContainerStartupCheckTest {
                 .run(context -> assertThat(context)
                         .hasFailed()
                         .getFailure()
-                        .hasStackTraceContaining("charter.container.secrets-dir must name an absolute directory"));
+                        .hasStackTraceContaining(
+                                "charter.container.secrets-dir must name an absolute directory other than the root"));
     }
 
     @Test
-    void underTheContainerProfileASecretsDirectoryOthersCanWriteFailsTheStart() throws IOException {
-        assumeTrue(
-                FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
-                "POSIX permissions are a platform capability");
-        Path secrets = Files.createDirectories(root.resolve("secrets"));
-        Files.setPosixFilePermissions(secrets, PosixFilePermissions.fromString("rwxrwxrwx"));
-        container()
-                .withPropertyValues("charter.container.secrets-dir=" + secrets)
+    void underTheContainerProfileTheKubernetesServiceAccountTreeIsLeftAlone() throws IOException {
+        // Kubernetes mounts /var/run/secrets/kubernetes.io/serviceaccount, and /var/run is often /run.
+        withConfigTree(
+                        container(),
+                        root.resolve("secrets"),
+                        "charter.worktree-token",
+                        "kubernetes.io.serviceaccount.token",
+                        "kubernetes.io.serviceaccount.namespace")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void underTheContainerProfileAConfigTreeCannotRedirectTheSecretsDirectory() throws IOException {
+        withConfigTree(container(), root.resolve("secrets"), "charter.container.secrets-dir")
                 .run(context -> assertThat(context)
                         .hasFailed()
                         .getFailure()
-                        .hasStackTraceContaining("others can write to")
-                        .hasStackTraceContaining(secrets.toString()));
+                        .hasStackTraceContaining("remove charter.container.secrets-dir"));
     }
 
     @Test
-    void underTheContainerProfileASecretsDirectoryOnlyItsOwnerCanWriteStarts() throws IOException {
-        Path secrets = Files.createDirectories(root.resolve("secrets"));
-        container()
-                .withPropertyValues("charter.container.secrets-dir=" + secrets)
-                .run(context -> assertThat(context).hasNotFailed());
+    void underTheContainerProfileLazyInitializationDoesNotSkipTheCheck() throws IOException {
+        withConfigTree(container(), root.resolve("secrets"), "server.address")
+                .withInitializer(context ->
+                        context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor()))
+                .run(context ->
+                        assertThat(context).hasFailed().getFailure().hasStackTraceContaining("remove server.address"));
     }
 
     @Test
