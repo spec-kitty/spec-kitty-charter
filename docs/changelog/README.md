@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-charter repository and its documentation.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Changelog
 kind: Hub
 audience:
@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-30 — A pack's pack.md round-trips through the markdown content form](/changelog/2026-10-30-pack-document-round-trip/)
 - [2026-10-29 — Procedures and toolguide guides round-trip, and a toolguide registration carries its guide](/changelog/2026-10-29-procedures-and-toolguide-guides-round-trip/)
 - [2026-10-29 — The service serves GET /openapi.yaml, the contract it was built from](/changelog/2026-10-29-the-service-serves-its-contract/)
 - [2026-10-29 — The container profile's properties are validated at the start](/changelog/2026-10-29-container-properties-record/)

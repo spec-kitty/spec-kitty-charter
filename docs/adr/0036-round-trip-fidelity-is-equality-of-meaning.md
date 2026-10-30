@@ -2,7 +2,7 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -351,6 +351,7 @@ below.)*
 | `built-in.source.yaml`, `**/templates/plan-field-declaration.yaml` | none (excluded) | YAML | none | when a schema lands |
 | `*.md` (`pack.md`, `*.skill.md`, mission-step `prompt.md` and `guidelines.md`, `PROVENANCE.md`, `README.md`) | none | frontmatter, if any, as YAML; body as text (LF, one final newline) | none | frontmatter: when a schema lands |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the extension no longer chooses the form (R8). A Markdown file under `assets/` or a top-level `templates/` compares by bytes, frontmatter included (R9); `assets/**/README.md` stays excluded (R4). A Markdown kind declares `markdown` on its own rule when that form is built.)* | | | | |
+| *(Superseded in part by ADR-0042, amendment 2026-10-30 (#260), on the `*.md` row: `*/pack.md` has the structure schema `pack-document` and compares by the `markdown` content form's model (ADR-0040 as amended). A carriage return or a byte order mark is refused at its line, not normalized to LF; blank lines between blocks and the final newline do not count. Its frontmatter compares as loaded YAML values, stricter than this record's numeric and empty-versus-absent equality.)* | | | | |
 | Any other file (asset payloads, templates, `.csv`, `.feature`, `.py`, images, fonts, `.gitkeep`) | none | bytes | none | not applicable |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: asset payloads (`*/assets/**/*`) and top-level templates (`*/templates/**/*`) are no longer "any other file": each has its own `payloads` rule, of the `bytes` form, and is read, written and fingerprinted as pack content.)* | | | | |
 
