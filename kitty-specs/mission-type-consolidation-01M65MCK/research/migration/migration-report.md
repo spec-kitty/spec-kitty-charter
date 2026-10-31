@@ -1,0 +1,37 @@
+# Mission-tier migration report
+
+- built-in/documentation/discover: dropped step.yaml display_name "Discovery" beside runtime title "Documentation Discovery"
+- built-in/documentation/audit: dropped step.yaml display_name "Audit" beside runtime title "Documentation Audit"
+- built-in/documentation/design: dropped step.yaml display_name "Design" beside runtime title "Documentation Design"
+- built-in/documentation/generate: dropped step.yaml display_name "Generation" beside runtime title "Documentation Generation"
+- built-in/documentation/validate: dropped step.yaml display_name "Validation" beside runtime title "Documentation Validation"
+- built-in/documentation/publish: dropped step.yaml display_name "Publication" beside runtime title "Documentation Publication"
+- built-in/documentation: empty prompt missions/mission-steps/documentation/retrospect/prompt.md not carried
+- built-in/documentation: 7 steps, 1 on demand
+- built-in/plan/specify: dropped step.yaml display_name "Specification" beside runtime title "Specify"
+- built-in/plan/plan: dropped step.yaml display_name "Planning" beside runtime title "Plan"
+- built-in/plan: 4 steps, 0 on demand
+- built-in/research/scoping: dropped step.yaml display_name "Scoping" beside runtime title "Research Scoping"
+- built-in/research/methodology: dropped step.yaml display_name "Methodology" beside runtime title "Methodology Design"
+- built-in/research/gathering: dropped step.yaml display_name "Gathering" beside runtime title "Source Gathering"
+- built-in/research/synthesis: dropped step.yaml display_name "Synthesis" beside runtime title "Findings Synthesis"
+- built-in/research/output: dropped step.yaml display_name "Output" beside runtime title "Publication Output"
+- built-in/research: empty prompt missions/mission-steps/research/retrospect/prompt.md not carried
+- built-in/research: 6 steps, 1 on demand
+- built-in/software-dev: step discovery takes the step directory research its prompt names
+- built-in/software-dev/discovery: dropped step.yaml display_name "Research" beside runtime title "Discovery & Research"
+- built-in/software-dev/plan: dropped step.yaml display_name "Implementation Plan" beside runtime title "Implementation Planning"
+- built-in/software-dev/tasks: dropped step.yaml display_name "Task Breakdown" beside runtime title "Tasks"
+- built-in/software-dev/review: dropped step.yaml display_name "Review" beside runtime title "Code Review"
+- built-in/software-dev/charter: description taken from the prompt frontmatter only: "Interview and compile a project charter"
+- built-in/software-dev/tasks-finalize: description taken from the prompt frontmatter only: "Validate dependencies, finalize WP metadata, and commit all task artifacts."
+- built-in/software-dev/tasks-outline: description taken from the prompt frontmatter only: "Create a work package manifest"
+- built-in/software-dev/tasks-packages: description taken from the prompt frontmatter only: "Materialize work package files"
+- built-in/software-dev: missions/software-dev/actions/retrospect/index.yaml belongs to no step and is not carried
+- built-in/software-dev: 8 steps, 4 on demand
+- cave-kitty/cave-dev: 8 steps, 0 on demand
+- cave-kitty/drg/fragment.yaml: body_path of cave-dev now names its type file
+- qa/qa: dropped selected_agent_profiles [qa-strategist-quinn, qa-test-designer-tessa, qa-test-executor-elena, qa-reporter-rhea, qa-defect-triager-dmitri] (ADR-0032: a type names roles; a preset activates profiles)
+- qa/qa/implement: the type-level output output.defect-log.qa moves to the step, which carries its template
+- qa/qa: 7 steps, 0 on demand
+- qa/drg/fragment.yaml: body_path of qa now names its type file

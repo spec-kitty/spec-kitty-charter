@@ -1,0 +1,129 @@
+{
+  "mission_slug": "mission-type-consolidation-01M65MCK",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/packs/schemas/mission-type.schema.json; MissionTypeSchemaTest (accepted, smallest, 30+ one-change twins incl. maxLength 160 in code points); PackSchemasTest; ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:34.820621+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "mission-step-prompt/guidelines schemas; MissionTypeBindingTest.anyOtherPromptFrontmatterIsRefused (7 cases), promptFrontmatterIsTheDetailedDescription, theFixtureWritesBackByteForByte; MarkdownRuleSchemaTest fixtures; ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:38.351567+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/packs/file-kinds.yaml (mission_type kind, three files rules, retired section replacing the seven exclusions, split README exclusions); PackFileKindTest, RetiredFilesTest.TheTable, VocabularyEqualityTest; ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:41.816922+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ArtifactKind.MISSION_TYPE; ArtifactKindTest, NodeKindTest (mission_types plural artifact-backed), VocabularyEqualityTest; ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:45.451444+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/missions module (ai.speckitty.charter.missions.domain); HexagonalArchitectureTest (MISSIONS_DOMAIN_IS_PURE, slices, badfixture MissionDomainReachesPacks); ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:49.006052+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MissionTypeTest, MissionValuesTest (ids, unique steps and keys, guidance-only references, no relationships, description <= 160 code points, guidelines carry no detailed description); ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:52.572901+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MissionTypeBinding/MissionTypeDso/MissionTypeYaml; MissionTypeBindingTest (placement, derived companion paths, template_path named by step, linked-out refusal), TemplateStoreTest (duplicate template id), MissionTypeCorpusTest; ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:56.029311+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackFileKind.Retired; RetiredFilesTest (load, validate mode, companions, census), PackFileSetTest (digest tail), PackPolicyTest (retired wording); ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:30:59.690046+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WholePackRoundTripTest (mission-type in REQUIRED_KINDS; mission templates are templates, so other:missions is gone rather than narrowed), WholePackOpenPacksRoundTripTest, MissionTypeCorpusTest (66 files byte-identical through the production writer), MarkdownCorpusTest (85); ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:31:03.162659+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "research/migration: verifier 0 problems, self-test 14/14, gate-evidence.md, patch landed as spec-kitty/spec-kitty-open-packs#95 (86d92846, tree equal to the verified bundle); harness deleted: MissionTypeCorpusTest.theMigrationHarnessIsGone",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:31:06.814742+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "gradle.properties openPacksRef=86d9284695a18a71f9f7cc934f0305b1b03de19e; packs/qa re-vendored (VendoredPacksTest); ./gradlew -PopenPacksDir=<pin 86d92846> verifyAll :packs:openPacksRoundTrip :packs:wholePackRoundTrip, green 2026-10-31",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:31:10.373161+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ADR-0044, DIV-501..503 (DivergenceRegisterTest), descriptor and kind pages, contracts/packs/README.md, contract CHANGELOG + relationships.feature (CharterContractSuite), changelog, #186 follow-ups; check_docs.py all green; WP07 review-feedback-1",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T06:31:13.707917+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

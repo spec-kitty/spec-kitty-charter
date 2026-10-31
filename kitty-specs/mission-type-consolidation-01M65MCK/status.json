@@ -1,0 +1,258 @@
+{
+  "event_count": 85,
+  "last_event_id": "01M68AGXYE5EZ27TECM5J0XDWJ",
+  "materialized_at": "2026-10-31T06:32:02.254342+00:00",
+  "mission_number": "13",
+  "mission_slug": "mission-type-consolidation-01M65MCK",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68AGQZ15ZKQT4ZXMM9A2EEP",
+      "last_transition_at": "2026-10-31T06:31:56.129160+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        ":missions:check and HexagonalArchitectureTest green",
+        "Feedback 1 addressed",
+        "Review passed: feedback 1 addressed in 4d62a10 (schema-version twin, step title/description twins + neighbour, step-id accepted neighbour); :missions:check green; checklist all PASS; packs build api line is a known closeout move to WP01 history"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP01-missions-module-and-domain/review-cycle-2.md",
+        "reference": "review-cycle://mission-type-consolidation-01M65MCK/WP01-missions-module-and-domain/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 21135,
+      "shell_pid_created_at": "1793343149.26",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done"
+      }
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68AGPQT3RTT2YFS3K2PXEF6",
+      "last_transition_at": "2026-10-31T06:31:54.874798+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Kernel kind, schema and vocabulary; :kernel:check :packs:check :deployable:test green",
+        "Review feedback 1 addressed",
+        "Feedback 2: dependency line moves to WP01 in history cleanup",
+        "Approved by reviewer"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP02-kernel-kind-schema-and-vocabulary/review-cycle-3.md",
+        "reference": "review-cycle://mission-type-consolidation-01M65MCK/WP02-kernel-kind-schema-and-vocabulary/review-cycle-3.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 14082,
+      "shell_pid_created_at": "1793342145.87",
+      "subtasks": {
+        "T005": "done",
+        "T006": "done",
+        "T007": "done"
+      }
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68AGS5YAE2XP6D8017ZZZX1",
+      "last_transition_at": "2026-10-31T06:31:57.374439+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation is commit c4439ed, made before the start marker fa3fb71 (the first start was refused for a stale analysis). :packs:check and wholePackRoundTrip green.",
+        "Feedback 1 addressed",
+        "Review passed (cycle 2, head 7b2e842): feedback 1 addressed - template_path existence via KindBinding.namedFiles + store reference violation, ADR restored, Q1/Q2 decision moments recorded, KindBinding.java owned, procedure assertions restored, create-refusal message checked, validate-mode placement test, Javadoc. :packs:check :deployable:test :packs:wholePackRoundTrip green. Residual LOW nits for follow-up: frontmatterIsRefused (MissionTypeBindingTest:276) still asserts file not reason; template refusal names the path but not the step (spec US3 AS-5); missingNamedFile containment is lexical (symlinked parent not caught)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP03-mission-type-binding-and-companions/review-cycle-2.md",
+        "reference": "review-cycle://mission-type-consolidation-01M65MCK/WP03-mission-type-binding-and-companions/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1990,
+      "shell_pid_created_at": "1793344325.86",
+      "subtasks": {
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68AGTBGNCGEV74G7DVZETT3",
+      "last_transition_at": "2026-10-31T06:31:58.576753+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation is commit f0a36d0 (built in an isolated worktree, cherry-picked before the start marker). :packs:check, :deployable:test, :packs:wholePackRoundTrip green.",
+        "Review passed (f0a36d0): Retired handled in all 4 sealed switches (Companions, inspector, PackFileSet noun, census); store+validate both report from PackFileSet.listing(dir, table).retired; digest tail after manifest keeps packs without retired byte-identical (PackFileSetTest); companion refusal, retired: census bucket, unknown top-level key refusal tested; fixtures cover all 8 families at root+missions layouts; bundled table comment-only (no rule; shared with WP06, coordination noted); source scan matches reviewer M8 list, agent_profile narrowed to quoted literal (justified: live node-kind token); zero suppressions; Javadoc present. :packs:check :deployable:test :packs:wholePackRoundTrip green. Accepted deviation: validate mode says 'is not valid YAML/Markdown: the file is retired: <reason>' via ParseFailure (code artifact_schema_error, names file+retired+reason, satisfies US4). Not operator-visible until WP06 re-pin; follow-up: give PackPolicy a retired wording at/before WP06. Nit: store fingerprint (digested) still uses bundled table while read uses companionRules.table(); converges at re-pin."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP04-retired-files-refused-by-name/review-cycle-1.md",
+        "reference": "review-cycle://mission-type-consolidation-01M65MCK/WP04-retired-files-refused-by-name/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 8730,
+      "shell_pid_created_at": "1793345645.73",
+      "subtasks": {
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 8,
+      "lane": "done",
+      "last_event_id": "01M68AGVJSETRGJDRNVPR672TM",
+      "last_transition_at": "2026-10-31T06:31:59.833722+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation: 4b4bdec (harness, verifier), 957d9bc (bundle, verifier report and self-test, issue drafts), b543946 (mission templates as templates, found by the re-pin dry run). Bundle sent to the orchestrator.",
+        "Review 1 addressed in d123c6d, d6e5d13, 9c00274, 81289f6; see review-response-1.md. Bundle regenerated for refined Q1 (migrated commit 12b0e553).",
+        "Review 2 addressed in the commits up to 3c04788; see review-response-2.md.",
+        "Review 3 approved (review-feedback-3.md); N1 fixed.",
+        "Re-recording the independent reviewer's approval under its own identity.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP05-migration-harness-and-open-packs-bundle/review-feedback-3.md.",
+        "Implemented before the start marker (see the WP's commits on the branch); ready for the independent reviewer's recorded verdict.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP05-migration-harness-and-open-packs-bundle/review-feedback-3.md."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP05-migration-harness-and-open-packs-bundle/review-feedback-3.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13191,
+      "shell_pid_created_at": "1793428148.17",
+      "subtasks": {
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 5,
+      "lane": "done",
+      "last_event_id": "01M68AGWQPTY0ZJGYZM544G9QR",
+      "last_transition_at": "2026-10-31T06:32:01.014490+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Re-pinned to 86d92846 (open-packs#95); verifyAll green.",
+        "Re-pinned to 86d92846 (open-packs#95); verifyAll green.",
+        "Review 1 addressed; see review-response-1.md.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP06-re-pin-and-gates/review-feedback-2.md; N1 pinned.",
+        "Implemented before the start marker (see the WP's commits on the branch); ready for the independent reviewer's recorded verdict.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP06-re-pin-and-gates/review-feedback-2.md."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP06-re-pin-and-gates/review-feedback-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 12766,
+      "shell_pid_created_at": "1793428123.18",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done"
+      }
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 5,
+      "lane": "done",
+      "last_event_id": "01M68AGXYE5EZ27TECM5J0XDWJ",
+      "last_transition_at": "2026-10-31T06:32:02.254342+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Docs in 75d7e30 and follow-ups; check_docs all green.",
+        "Review 1 approved (review-feedback-1.md); L1-L3, N1, N2 folded.",
+        "Re-recording the independent reviewer's approval under its own identity.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP07-documentation/review-feedback-1.md.",
+        "Implemented before the start marker (see the WP's commits on the branch); ready for the independent reviewer's recorded verdict.",
+        "Approved by the independent reviewer subagent; verdict in kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP07-documentation/review-feedback-1.md."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "kitty-specs/mission-type-consolidation-01M65MCK/tasks/WP07-documentation/review-feedback-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13191,
+      "shell_pid_created_at": "1793428148.17",
+      "subtasks": {
+        "T023": "done",
+        "T024": "done"
+      }
+    }
+  }
+}
