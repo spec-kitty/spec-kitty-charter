@@ -1,7 +1,7 @@
 {
-  "event_count": 5,
-  "last_event_id": "01M6932NAPMBDNSZEXCR7MPC3M",
-  "materialized_at": "2026-10-31T13:41:09.078395+00:00",
+  "event_count": 6,
+  "last_event_id": "01M6932PV27761H4Y9DFXSST79",
+  "materialized_at": "2026-10-31T13:41:10.626113+00:00",
   "mission_number": "",
   "mission_slug": "gate-a-read-surface-01M691ND",
   "mission_type": "",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -52,6 +52,13 @@
       "lane": "planned",
       "last_event_id": "01M6932NAPMBDNSZEXCR7MPC3M",
       "last_transition_at": "2026-10-31T13:41:09.078395+00:00"
+    },
+    "WP06": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M6932PV27761H4Y9DFXSST79",
+      "last_transition_at": "2026-10-31T13:41:10.626113+00:00"
     }
   }
 }
