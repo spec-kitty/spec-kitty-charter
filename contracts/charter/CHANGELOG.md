@@ -77,6 +77,17 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+### The charter schema declares `activated_glossary_packs` (issue #131)
+
+No schema, operation, parameter, response or header changes in this contract; the change is to the pack schema
+`contracts/packs/schemas/charter.schema.json`.
+
+- Added: `activated_glossary_packs`, the root key core's activation writer puts in `charter.yaml`, in the shape of the
+  other `activated_*` keys: absent or `null` (every glossary pack is in force), `[]` (none) or a list of glossary pack
+  ids. Additive, not breaking (ADR-0022). A `charter.yaml` found inside a pack (`file-kinds.yaml`, `**/charter.yaml`)
+  that holds the key was refused as `artifact_schema_error`, `unknown key 'activated_glossary_packs'`; it now
+  validates, and a value that is not a list of strings is refused at the key.
+
 ### Mission types are an artifact kind (issue #194)
 
 No schema, operation, parameter, response or header changes (mission mission-type-consolidation, ADR-0044).

@@ -715,7 +715,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The structured shape of the git-tracked, authorable ``charter.yaml``.\n\nContract: ``kitty-specs/consolidate-charter-bundle-01KXSYB9/contracts/\ncharter-yaml-schema.md``.\n\n⚠ Activation is FLAT AT THE ROOT (paula BLOCKER-1) — the ten\n``activated_*`` / ``mission_type_activations`` fields below are NOT\nnested under an ``activation:`` key, matching the activation presets\n(``packs/built-in/presets/<name>.yaml``), so\n``pack_context._read_activated_*`` / ``_read_list_key`` and\n``activation_engine.commit_plan`` read/write them unchanged.\n``model_config`` forbids extra fields, which doubles as the structural\nguard against a stray nested ``activation:`` mapping creeping back in\n(a nested mapping is not a declared field on this model, so\n``extra=\"forbid\"`` rejects it).\n\nEach ``activated_*`` field is three-state (charter contract G3):\n``None`` == absent key == the kind is unrestricted (every available\nartifact of it is effective); ``[]`` == explicit fail-closed empty; a\nnon-empty list == the activated set.",
+  "description": "The structured shape of the git-tracked, authorable ``charter.yaml``.\n\nContract: ``kitty-specs/consolidate-charter-bundle-01KXSYB9/contracts/\ncharter-yaml-schema.md``.\n\n⚠ Activation is FLAT AT THE ROOT (paula BLOCKER-1) — the eleven\n``activated_*`` / ``mission_type_activations`` fields below are NOT\nnested under an ``activation:`` key, matching the activation presets\n(``packs/built-in/presets/<name>.yaml``), so\n``pack_context._read_activated_*`` / ``_read_list_key`` and\n``activation_engine.commit_plan`` read/write them unchanged.\n``model_config`` forbids extra fields, which doubles as the structural\nguard against a stray nested ``activation:`` mapping creeping back in\n(a nested mapping is not a declared field on this model, so\n``extra=\"forbid\"`` rejects it).\n\nEach ``activated_*`` field is three-state (charter contract G3):\n``None`` == absent key == the kind is unrestricted (every available\nartifact of it is effective); ``[]`` == explicit fail-closed empty; a\nnon-empty list == the activated set.",
   "properties": {
     "schema_version": {
       "default": "2.0.0",
@@ -881,6 +881,21 @@
       ],
       "default": null,
       "title": "Activated Mission Step Contracts"
+    },
+    "activated_glossary_packs": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activated Glossary Packs"
     },
     "overrides": {
       "additionalProperties": true,
