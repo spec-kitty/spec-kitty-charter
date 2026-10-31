@@ -213,7 +213,9 @@ A **[mission type](/glossary/charter/#mission-type)** is the recipe of the work.
 is on the plate, Missions of that type can be run.
 
 - **[Mission steps](/glossary/charter/#mission-step)** say how to make the dish. A
-  **[step contract](/glossary/charter/#step-contract)** is the detailed version of a step. A
+  **[step contract](/glossary/charter/#step-contract)** holds the structural sub-steps of one
+  mission step and what each delegates to; the step's role and expected artifacts live on the
+  mission step itself. A
   **[step template](/glossary/charter/#step-template)** is the prompt fed to the agent when that
   step runs.
 - **Steps name roles, never profiles.** The earlier mix of roles and profiles in steps is dropped

@@ -40,7 +40,9 @@ It **applies** the sanitized-shape rules S1 to S8 of
 [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) and S9 to S16 of
 [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) to the mission tier, and restates
 them here as the rule every storage object of the service follows. It adds no new rule letter: the mission tier needs
-none. Neither record is amended.
+none. Neither record is amended. It reverses in passing statements of ADR-0036, ADR-0037, ADR-0040
+and ADR-0042 that a mission type is no artifact kind or its files are excluded; each carries a dated
+note.
 
 It **takes up** [#148](https://github.com/spec-kitty/spec-kitty-charter/issues/148) for the mission type: the mission
 type becomes an artifact kind. Step contracts stay as they are.
@@ -211,7 +213,7 @@ Dropped, each for a stated reason (the field-by-field table is in the mission's 
 - **Conflicting values (S6):** `mission.yaml` `name` and `version`, the runtime `mission.name`, `title` and `version`
   (the pack's own version governs content).
 - **Replaced by the runtime title (S6):** a `step.yaml` `display_name` that differs from the runtime `title` (17 steps,
-  listed in the open-packs issue).
+  listed in spec-kitty/spec-kitty-open-packs#96).
 - **Always empty or null (S5, S16):** `guidance`, `delegates_to`, `selected_mission_step_contracts`,
   `available_tools`, `activations`, `required_always`, the `done` step.
 - **Not the type's to say:** `selected_agent_profiles` and every profile list (a mission type names roles, not
@@ -282,7 +284,7 @@ form ([ADR-0040](/adr/0040-content-form-and-payload-kinds/)), each with its own 
 `description`: the prompt's detailed description, longer than the step's one-line description, stored and written back
 (the refined ruling Q1). Guidelines hold no frontmatter. Where the runtime gives a step no description, the prompt's
 frontmatter `description` is also the step's description; the four on-demand software-dev steps this applies to are
-listed in the open-packs issue. A pinned step with no prompt, or an empty one, has no
+listed in spec-kitty/spec-kitty-open-packs#96. A pinned step with no prompt, or an empty one, has no
 `prompt_path`. "Guidelines" here are a step's working notes, not the glossary's charter Guideline.
 
 ### 6. Retired files
@@ -307,14 +309,14 @@ on the module, never the other way; the ArchUnit slice rules cover it.
 ### 8. Migration by the service's own writer, then a re-pin
 
 As ADR-0043 decision 6: a throwaway harness reads each pinned mission tier, maps it by the tables above, writes it
-with the service's writer, and is deleted before merge. The result lands in `spec-kitty-open-packs` with an issue per
-required change, and `openPacksRef` moves to it. The migration also rewrites the qa and cave-kitty CRG fragments'
+with the service's writer, and is deleted before merge. The result lands in `spec-kitty-open-packs` (spec-kitty/spec-kitty-open-packs#95) with an issue per
+required change (spec-kitty/spec-kitty-open-packs#96 to #100), and `openPacksRef` moves to it. The migration also rewrites the qa and cave-kitty CRG fragments'
 `body_path`, which name a retired `governance-profile.yaml`, to the mission-type file. Divergences the mapping cannot
 settle are open-packs issues: the qa steps' missing `prompt.md` (their prompts are the command templates), the empty
 retrospect prompts, software-dev's `retrospect` action index with no step, qa's `selected_agent_profiles` (a preset
 activates profiles; qa has none), the step descriptions copied from prompt frontmatter and the dropped step titles,
 and the qa implement defect-log, which becomes an output no pinned list named. The retired files' YAML comments are
-not carried; the open-packs issue names the qa rationale they held.
+not carried; spec-kitty/spec-kitty-open-packs#95 names the qa rationale they held.
 
 ## Consequences
 
@@ -357,7 +359,8 @@ not carried; the open-packs issue names the qa rationale they held.
 
 ## References
 
-- Operator rulings: #194 comments of 2026-10-28 and 2026-10-29; rulings of 2026-10-30 in the mission's `decisions/`.
+- Operator rulings: #194 comments of 2026-10-28 and 2026-10-29 (D1 to D6, D1a); rulings of 2026-10-30 (Q1, its
+  refinement, and Q2), relayed by the orchestrator and held in the mission's `decisions/`.
 - Research: `kitty-specs/mission-type-consolidation-01M65MCK/research.md` and `research/squad/`.
 - [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) S1 to S8,
   [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) S9 to S16 and decision 6.

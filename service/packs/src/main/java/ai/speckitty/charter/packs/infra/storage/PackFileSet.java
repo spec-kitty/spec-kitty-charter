@@ -234,8 +234,8 @@ final class PackFileSet {
     }
 
     /**
-     * The digested files when {@code table} classifies in place of the bundled one: the seam a test uses to digest a
-     * retired file before the bundled table has a {@code retired} rule (#194).
+     * The digested files when {@code table} classifies in place of the bundled one: the seam a test uses to digest with
+     * rules of its own, a table without the retired section included (#194).
      *
      * @param packDir the pack directory
      * @param table the file-kind table

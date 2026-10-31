@@ -254,8 +254,7 @@ final class FilesystemPackStore {
 
     /**
      * A store whose pack files and companions are held to the given table and schemas: the seam a test uses to give a
-     * companion a structure schema of its own, or to refuse a retired file before the bundled table has a
-     * {@code retired} rule (#194).
+     * companion a structure schema of its own, or to retire a file family of its own (#194).
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format

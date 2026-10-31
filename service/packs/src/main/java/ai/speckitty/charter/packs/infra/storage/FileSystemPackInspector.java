@@ -120,8 +120,8 @@ public final class FileSystemPackInspector implements PackInspector {
     }
 
     /**
-     * An inspector that classifies with {@code table} in place of the bundled one: the seam a test uses to refuse a
-     * retired file before the bundled table has a {@code retired} rule (#194).
+     * An inspector that classifies with {@code table} in place of the bundled one: the seam a test uses to classify
+     * with rules of its own, retired ones included (#194).
      *
      * @param table the file-kinds table
      */

@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -201,7 +201,8 @@ nothing about how a new kind is shaped.
    live in their own slices (ADR-0035), and ADR-0006 forbids those slices from depending on
    `packs`. Their bindings will need a contribution seam wired by `deployable`; it is built with
    the first such kind, not here. Mission types are not an `ArtifactKind` at all. *(Reversed
-   2026-10-27, see Status: the pack store binds such a kind.)*
+   2026-10-27, see Status: the pack store binds such a kind. Reversed again on 2026-10-30 by
+   ADR-0044 decision 2: `mission_type` is an `ArtifactKind`, bound in this registry.)*
 7. **Aligned with [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)**
    (round-trip fidelity, Accepted 2026-10-27):
    - The CRG reader and writer keep every declared field (node `provenance` and `tags`, fragment

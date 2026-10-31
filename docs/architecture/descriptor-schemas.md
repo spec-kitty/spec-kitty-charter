@@ -56,7 +56,9 @@ file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may c
 the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level
 `preset` and `pack-manifest` schemas are not drawn yet; they are described in
 [Pack-level schemas](#pack-level-schemas). Nor is the `mission-type` schema with its step
-companions; it is described in [Mission type](#mission-type).
+companions; it is described in [Mission type](#mission-type). The other two Markdown structure
+schemas are not drawn either: `toolguide-guide` is described in [Descriptors](/architecture/descriptors/),
+and `pack-document` in the [logical model](/architecture/logical-model/).
 
 ## Kinds, containment and edges
 
@@ -156,7 +158,8 @@ every level.
 - `+ schema_version`: `"1.0"`
 - `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, equal to the file stem
 - `+ description`: not empty
-- `- activated_kinds`: `[1..]` unique kind plurals, from the 13 kinds
+- `- activated_kinds`: `[1..]` unique kind plurals, from the 13 gateable kinds (every artifact kind but
+  `mission_type`, which a preset activates in its own `activated_mission_types` list)
 - `- activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`,
   `activated_paradigms`, `activated_procedures`, `activated_agent_profiles`,
   `activated_mission_step_contracts`, `activated_anti_patterns`, `activated_mission_types`: each

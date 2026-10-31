@@ -171,7 +171,7 @@ leaves its guide unowned. Migrate instead
 The gate is red for that class between the first step and the last; keep that window to one pull
 request.
 
-The #194 harness is historical: it was deleted before its pull request, and the task below does not
+The harness of #194's first pull request is historical: it was deleted before that pull request, and the task below does not
 exist on `main`, so the command does not run there. It ran as:
 
 ```bash
@@ -182,7 +182,11 @@ exist on `main`, so the command does not run there. It ran as:
 Its code was not kept (it was throwaway by design). Its output, the verifier report and the list of
 manual decisions are in
 [spec-kitty-open-packs#91](https://github.com/spec-kitty/spec-kitty-open-packs/pull/91). A later
-migration writes a harness of its own on that model.
+migration writes a harness of its own on that model, as #194's second pull request did for the
+mission tier (ADR-0044 decision 8): its output landed as
+[spec-kitty-open-packs#95](https://github.com/spec-kitty/spec-kitty-open-packs/pull/95), and its
+independent verifier, self-test, gate evidence and re-pin script are kept in
+`kitty-specs/mission-type-consolidation-01M65MCK/research/migration/`.
 
 To fix formatting rather than report it, run `./gradlew spotlessApply`.
 

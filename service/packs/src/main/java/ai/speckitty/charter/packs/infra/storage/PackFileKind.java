@@ -240,14 +240,14 @@ final class PackFileKind {
         return payloadRules;
     }
 
-    /** The retired families, in table order; empty until the re-pin gives the bundled table its rules (#194). */
+    /** The retired families, in table order (#194, ADR-0044 decision 6). */
     List<RetiredRule> retiredRules() {
         return retiredRules;
     }
 
     /**
      * Every {@code files}, {@code exclusions} or {@code retired} rule glob that matches {@code path}; the table
-     * promises at most one.
+     * promises at most one, but for the one README overlap of an exclusion and a retired rule its header names.
      * The payload rules are left out: they overlap the other two by design (a sidecar under {@code assets/} matches a
      * {@code files} rule and a payload rule), and only the first match counts.
      */

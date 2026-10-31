@@ -98,7 +98,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Mission type"
-        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model and endpoints. Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044)."
+        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model; it has no HTTP operations of its own yet (#194 out of scope). Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Mission-Type Profile"

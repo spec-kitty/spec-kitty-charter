@@ -111,6 +111,8 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   `guideUri`, and their refusals.
 - `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
   `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
+- `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
+  does not hold (#194, ADR-0044).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
 
 ## Tags

@@ -2,7 +2,7 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -112,6 +112,17 @@ normalized to LF. Its frontmatter compares as loaded YAML values, stricter than 
 numeric and empty-versus-absent equality (ADR-0040's amendment records why, and that it is open for
 the operator's review). The decision text below is unchanged, and the row is annotated where it
 stands.
+
+### Amendment 2026-10-30 (#194): the mission tier is one mission-type file
+
+Superseded in part by [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) for [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194). It changes the per-kind table's two mission rows and the
+mission-step part of the `*.md` row. The old mission files are no longer excluded: each family is
+retired, refused by name in the load and validate mode. A mission type is validated by the closed
+schema `mission-type` and compared as YAML; a step's prompt and guidelines
+(`missions/<type>/steps/<step>.prompt.md` and `.guidelines.md`) have the structure schemas
+`mission-step-prompt` and `mission-step-guidelines` and compare by the `markdown` content form's
+model, as `pack.md` does. A mission type's templates are template payloads compared by bytes. The
+decision text below is unchanged, and the rows are annotated where they stand.
 
 ## Context
 
@@ -354,6 +365,7 @@ below.)*
 | `**/charter.yaml` | charter | YAML; open maps such as `overrides`, `activation_context` | none | yes (a project file; not expected in a pack) |
 | `**/mission-steps/**/step.yaml`, `**/actions/*/index.yaml`, `**/missions/*/mission.yaml`, `**/missions/*/mission-runtime.yaml`, `**/missions/*/expected-artifacts.yaml`, `**/governance-profile.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
 | `**/mission_types/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#194) |
+| *(Superseded by ADR-0044, 2026-10-30, on the two rows above: the exclusions are retired rules, and a file of those families is refused by name. A mission type is `missions/<id>/<id>.mission-type.yaml`, validated by the closed schema `mission-type` and compared as YAML. Unknown fields are refused.)* | | | | |
 | `**/presets/*.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#195; the per-item must-have mark, and `required_<plural>` migrated then refused in #206) |
 | *(Superseded by ADR-0042, 2026-10-28, on the row above: the exclusion is retired. `*/presets/*.yaml` is validated by the closed schema `preset`, compared as YAML, with no sets and no derived fields; an empty activation list is refused. Unknown fields are refused.)* | | | | |
 | `**/*.skill.yaml`, `**/*.glossary-pack.yaml` | none (excluded) | YAML | none until a schema names one | when a schema lands (#192) |
@@ -365,6 +377,7 @@ below.)*
 | `*.md` (`pack.md`, `*.skill.md`, mission-step `prompt.md` and `guidelines.md`, `PROVENANCE.md`, `README.md`) | none | frontmatter, if any, as YAML; body as text (LF, one final newline) | none | frontmatter: when a schema lands |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: the extension no longer chooses the form (R8). A Markdown file under `assets/` or a top-level `templates/` compares by bytes, frontmatter included (R9); `assets/**/README.md` stays excluded (R4). A Markdown kind declares `markdown` on its own rule when that form is built.)* | | | | |
 | *(Superseded in part by ADR-0042 and ADR-0040, amendments 2026-10-30 (#260), on the `*.md` row: `*/pack.md` has the structure schema `pack-document` and compares by the `markdown` content form's model (ADR-0040 as amended). A carriage return or a byte order mark is refused at its line, not normalized to LF; blank lines between blocks and the final newline do not count. Its frontmatter compares as loaded YAML values, stricter than this record's numeric and empty-versus-absent equality.)* | | | | |
+| *(Superseded in part by ADR-0044, 2026-10-30, on the `*.md` row: a mission step's `prompt.md` and `guidelines.md` are retired; its prompt and guidelines are `missions/<type>/steps/<step>.prompt.md` and `.guidelines.md`, with the structure schemas `mission-step-prompt` and `mission-step-guidelines`, compared by the `markdown` content form's model. A prompt's frontmatter holds only its detailed description; guidelines hold none.)* | | | | |
 | Any other file (asset payloads, templates, `.csv`, `.feature`, `.py`, images, fonts, `.gitkeep`) | none | bytes | none | not applicable |
 | *(Superseded in part by ADR-0040, 2026-10-27, on the row above: asset payloads (`*/assets/**/*`) and top-level templates (`*/templates/**/*`) are no longer "any other file": each has its own `payloads` rule, of the `bytes` form, and is read, written and fingerprinted as pack content.)* | | | | |
 
