@@ -73,7 +73,22 @@ and [HATEOAS](https://restfulapi.net/hateoas/):
   scenarios check every answer at run time: its `self`, that every link resolves to an operation
   of the contract, the `Location` of a 201, and every relation key against this table. A client
   ignores a relation it does not know.
-- **Example** (proposed), one pack:
+- **Example** (in the contract), one entry of the offering, `GET /api/v1/offering`. It links to its pack's
+  artifacts and has no `self`, because `GET /packs/{packId}` is not built:
+
+  ```json
+  {
+    "packId": "qa",
+    "level": "org",
+    "name": "QA house rules",
+    "version": "1.2.0",
+    "_links": {
+      "artifacts": { "href": "/api/v1/packs/qa/artifacts" }
+    }
+  }
+  ```
+
+- **Example** (proposed), one pack, once `GET /packs/{packId}` is built:
 
   ```json
   {

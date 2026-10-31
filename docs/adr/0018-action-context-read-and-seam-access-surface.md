@@ -2,7 +2,7 @@
 title: "ADR-0018: The action-context read is the offering's walk, and the seam reaches the service with a token, a fingerprint and a refresh"
 description: Fixes the five-step walk, depth as suggests hops, the fingerprint inputs, the per-worktree token, refresh, stale_input and the divergence register before the 1.0 tag.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -71,6 +71,16 @@ entity carries an `ETag`) does not match `*` on a GET and skips what it cannot p
 answer `304` to a value the contract answers `200`. The `200` entity therefore carries no `ETag`; a
 `ResponseBodyAdvice` (`ContractDocumentETag`) adds it as the body is written, after that check. A
 later conditional read follows the same shape. No decision of this record changes.
+
+**Amendment 2026-10-31** ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175), operator ruling 4
+on [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126)): the rule "every response declares the
+three Charter headers" (D11, as restated in the amendment of 2026-10-25) is narrowed to the two always-on headers.
+Every response still declares `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is
+declared, and required, only on the 200 of a verified read (`getServiceInfo`, `getOffering`, `listPackArtifacts`
+and `getPackArtifact`). A refusal, a write, the contract document (`getOpenApiDocument`) and the shared `Problem`
+do not declare it, since the service never sends it there. The lint rule `charter-headers-on-every-response`
+checks the two always-on headers; `fingerprint-on-verified-reads` and `fingerprint-only-on-verified-reads` check the
+fingerprint. The decision text of D11 is unchanged.
 
 This record supersedes, point by point:
 

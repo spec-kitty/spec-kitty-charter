@@ -2,7 +2,7 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-10-21T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -99,11 +99,12 @@ realized layout.
 
 Reading a tactic through the service touches every ring, once, in order.
 
-1. A client calls `GET /packs/{packId}/tactics` (or `/tactics/{tacticId}`). A controller in
-   `packs.infra.api` maps the request to an application service call and never touches storage
-   (`ENTRYPOINT_OVER_APPLICATION`).
-2. The `@Service` in `packs.application` asks a domain port, such as `TacticRepository.load(packId,
-   tacticId)`, for the tactic. It names only domain types.
+1. A client calls `GET /packs/{packId}/artifacts/tactic/{artifactId}` (or lists
+   `GET /packs/{packId}/artifacts?kind=tactic`). `ArtifactController` in `packs.infra.api` maps the request to an
+   application service call and never touches storage (`ENTRYPOINT_OVER_APPLICATION`).
+2. `ArtifactReadService` in `packs.application` resolves the pack and the kind, and delegates the item to the
+   kind's own read service, `TacticReadService`. That `@Service` asks a domain port, such as
+   `TacticRepository.load(packId, tacticId)`, for the tactic. It names only domain types.
 3. `DomainRepositoryService` in `packs.infra.storage` implements that port. It finds the file for
    the identifiers inside the pack root, reads the YAML through the
    `YamlSerializationStrategy` into a `TacticDso` record, and maps the DSO into a `Tactic`
@@ -111,7 +112,8 @@ Reading a tactic through the service touches every ring, once, in order.
 4. `Tactic` is built through its builder. Its `ModularRuleset` runs `guard`, so a tactic with no
    steps cannot exist. Its `TacticStep` and `TacticReference` lists are value objects whose
    order and duplicates are kept.
-5. The `Tactic` is returned inward. The controller maps it to a generated DTO on the way out.
+5. The `Tactic` is returned inward. The controller maps it to a generated DTO on the way out, inside the
+   `Artifact` envelope, and builds its `_links` from the request.
 
 A write runs the same path in reverse: entity to DSO to YAML, written to a temporary file and
 moved into place atomically, so a failed write leaves the original untouched. Round-trip fidelity

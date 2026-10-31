@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-31 — The API has a root, an offering and one artifact tree, and every answer links onward](/changelog/2026-10-31-gate-a-read-surface/)
 - [2026-10-31 — A pack linked into the configuration root is served](/changelog/2026-10-31-linked-packs/)
 - [2026-10-31 — A tension edge and the fields of a graph node round-trip as written](/changelog/2026-10-31-drg-tension-and-node-fields-round-trip/)
 - [2026-10-30 — Mission types are one sanitized file each, and an artifact kind](/changelog/2026-10-30-mission-types-consolidated/)
