@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Hypermedia (HATEOAS)
 description: How charter API responses link to what a client can do next, through one closed Links component and documented relation names.
 doc_status: draft
-updated: 2026-10-20T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -24,11 +24,15 @@ audience:
 
 # Hypermedia (HATEOAS)
 
-> **Status:** proposed. [ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 4 chose a
-> reusable `Links` component; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) proposes
-> its shape and the root resource, and [ADR-0020](/adr/0020-offering-and-activations/) the
-> offering and activation relations. None is in the contract yet: no response carries `_links`
-> today.
+> **Status:** in the contract for the read surface of `0.1.0`.
+> [ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 4 chose a reusable `Links`
+> component; [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) gives its shape and the
+> root resource, and [ADR-0020](/adr/0020-offering-and-activations/) the offering and activation
+> relations. The contract holds `Links` and `Link`, and every JSON success answer carries a
+> required `_links`: the root (`GET /`), the service info, the offering, a page of artifacts and
+> its summaries, an artifact (as the item read and the writes answer it) and a registered
+> relationship. The relations in the contract are marked so in the table below; the rest are
+> still proposed.
 
 ## The principles
 
@@ -62,8 +66,13 @@ and [HATEOAS](https://restfulapi.net/hateoas/):
   | `title` | No | A human-readable label; never parsed |
 
 - **How the open keys are checked.** The closure checker reports a map as an open response
-  position; `_links` is its one exemption, pinned by a fixture. A lint rule checks the relation
-  keys the contract uses against the table below. A client ignores a relation it does not know.
+  position; `_links` is its one exemption, pinned by a fixture. Three lint rules
+  (`contracts/lint/README.md`) require `_links` on every JSON success schema, an example with
+  `_links` on every JSON success response, and every relation key of those examples to be in the
+  table below; a unit test fails when the rule's list and this table differ. The contract
+  scenarios check every answer at run time: its `self`, that every link resolves to an operation
+  of the contract, the `Location` of a 201, and every relation key against this table. A client
+  ignores a relation it does not know.
 - **Example** (proposed), one pack:
 
   ```json
@@ -84,8 +93,8 @@ and [HATEOAS](https://restfulapi.net/hateoas/):
   `/api/v1/offering/mission-types/software-dev/actions/implement/context{?depth}`.
 - **One link, one action.** A link has one `method`. A resource that takes `PUT` and `DELETE` gets
   two relations, such as `exclude` and `include`.
-- **Paging** uses the shared `PageInfo` plus `first`, `prev` and `next` links; a `next` link is
-  absent on the last page.
+- **Paging** uses the shared `PageInfo` plus `first` and `next` links; a `next` link is absent
+  on the last page. `prev` is not written yet.
 
 ## Relation names
 
@@ -96,16 +105,19 @@ used.
 
 | Relation | Points to | Method | On | Status |
 |---|---|---|---|---|
-| `self` | The resource itself | `GET` | Every success response | Proposed |
-| `collection` | The collection the resource belongs to | `GET` | A pack | Proposed |
+| `self` | The resource itself | `GET` | Every success response whose URI has a `GET`: the root, the info, the offering, a page of artifacts, an artifact summary, an artifact (also as a write answers it). Not on a registered relationship, whose path has no `GET` | In the contract |
+| `collection` | The collection the resource belongs to | `GET` | An artifact: the pack's artifacts of its kind (`…/artifacts?kind=<kind>`); a pack, once packs are read | In the contract (on an artifact) |
 | `item` | One member of a collection | `GET` | A listing item: pack, artifact | Proposed |
 | `up` | The parent resource | `GET` | An artifact (its pack) | Proposed |
-| `info` | `/api/v1/info` | `GET` | Root | Proposed |
+| `first` | The first page of a paged list: the same request without its page cursor ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page | In the contract |
+| `next` | The next page of a paged list ([IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml)) | `GET` | A page that is not the last; absent on the last | In the contract |
+| `info` | `/api/v1/info` | `GET` | Root | In the contract |
+| `service-desc` | The contract document, `/api/v1/openapi.yaml` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) | `GET` | Root; the service info | In the contract |
 | `packs` | `/api/v1/packs` | `GET` | Root | Proposed |
-| `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | Proposed ([ADR-0020](/adr/0020-offering-and-activations/)) |
+| `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root; proposed elsewhere ([ADR-0020](/adr/0020-offering-and-activations/)) |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
-| `artifacts` | `…/artifacts{?kind}` | `GET` | A pack; the offering; an activation (`{?kind,state}`) | Proposed |
+| `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`{?kind,state}`) | In the contract on the root, an offering pack and a registered relationship; proposed elsewhere |
 | `graph` | `…/graph` | `GET` | A pack; the offering; an activation | Proposed |
 | `presets` | `…/presets` | `GET` | A pack; the offering | Proposed |
 | `assets` | `/api/v1/packs/{packId}/assets` | `GET` | A pack | Proposed |
@@ -115,7 +127,7 @@ used.
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
 | `activations` | `/api/v1/activations` | `POST` | Root, once activation writes are built | Proposed |
-| `edit` | The activation | `PUT` | An activation, once writes are built | Proposed |
+| `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so an artifact's registration is not advertised by a link | Proposed |
 | `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
 | `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |
 | `effective-context` | `…/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An activation | Proposed |
