@@ -195,6 +195,30 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
+    void theFullScopeEntersAPackRootThatIsALinkAndNoDirectoryLinkBelowIt(@TempDir Path dir) throws IOException {
+        Path real = dir.resolve("checkout/qa");
+        write(real, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(real, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
+        write(real, "notes.yaml", "no: rule\n");
+        Path outside = dir.resolve("outside");
+        write(outside, "y.tactic.yaml", TACTIC.formatted("y"));
+        SymbolicLinks.create(real.resolve("linked"), outside);
+        Path link = SymbolicLinks.create(
+                Files.createDirectories(dir.resolve("packs")).resolve("qa"), real);
+
+        PackContents linked = full(link);
+        PackContents direct = full(real);
+
+        assertThat(linked.files())
+                .as("validate mode walks a linked root from its real path (#284)")
+                .extracting(PackContents.ClassifiedFile::file)
+                .containsExactly("pack.yaml", "tactics/x.tactic.yaml");
+        assertThat(linked.files()).isEqualTo(direct.files());
+        assertThat(linked.artifacts()).isEqualTo(direct.artifacts()).isNotEmpty();
+        assertThat(linked.unreadableFiles()).isEqualTo(direct.unreadableFiles());
+    }
+
+    @Test
     void theFullScopeReadsThePackFilesOfTheLoadPathAsTheLoadPathDoes(@TempDir Path dir) throws IOException {
         write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
         write(dir, "a.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");

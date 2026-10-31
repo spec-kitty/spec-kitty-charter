@@ -38,7 +38,11 @@ Amended 2026-10-31 ([#174](https://github.com/spec-kitty/spec-kitty-charter/issu
 symbolic link under `packs/` to a directory is a pack. A pack linked from outside the configuration
 root is read-only through the service, and one linked from inside it is committed through its real
 target. This reverses the part of decision 3 that refused links. See
-[Amendment 2026-10-31](#amendment-2026-10-31-a-linked-pack-is-a-pack).
+[Amendment 2026-10-31](#amendment-2026-10-31-a-linked-pack-is-a-pack). Extended the same day
+([#285](https://github.com/spec-kitty/spec-kitty-charter/issues/285), operator): a `packs/` that is
+itself a link is followed under the same rules, and every write path, not only the commit, keeps a
+read-only pack read-only ([#287](https://github.com/spec-kitty/spec-kitty-charter/issues/287)). See
+[A linked pack domain](#a-linked-pack-domain-and-every-write-path-285-287).
 
 ## Context
 
@@ -128,7 +132,8 @@ the part of decision 3 that refused symbolic links.
 - **A pack linked from outside the configuration root is read-only through the service.** It is
   read and digested wherever its target is, but `PackCommitStore` refuses a commit to it with
   `PACK_UNREADABLE` ("is linked from outside the configuration root; it is read-only through the
-  service") before anything is staged. The service does not replace a directory it does not own,
+  service") before anything is staged. The per-file writes of `DomainRepositoryService` refuse it
+  with the same message (#287). The service does not replace a directory it does not own,
   such as a pack author's checkout. Edit such a pack where it lives.
 - **Inside the configuration root, a commit goes through the real target.** For a link whose target
   is inside the configuration root (in practice, in a hidden directory of `packs/`, since any other
@@ -145,7 +150,43 @@ the part of decision 3 that refused symbolic links.
     commit to the outer pack would copy and replace the inner one's files, and the per-pack write
     lock would not serialize the two, so none of them is served (ADR-0026's atomic commit holds
     only for packs that do not overlap).
-- **Unchanged.** `<root>/packs` itself is still not followed when it is a link.
+- **A linked pack domain is followed** (#285). This replaces the original line, "`<root>/packs`
+  itself is still not followed when it is a link". See
+  [below](#a-linked-pack-domain-and-every-write-path-285-287).
+
+### A linked pack domain, and every write path (#285, #287)
+
+Operator ruling on [#285](https://github.com/spec-kitty/spec-kitty-charter/issues/285), 2026-10-31.
+Before it, a `<root>/packs` that was itself a link listed no pack and logged nothing, so the service
+served an empty pack set and gave no reason.
+
+- **A `packs/` that is a link is followed.** Its entries are listed through the link, under the rules
+  above, checked against real paths: the domain's real directory and the configuration root's.
+- **Linked from outside the configuration root, every pack in it is read-only.** Each pack's real
+  directory is outside the configuration root, so every write is refused as for a single pack linked
+  from outside. Linked to a directory inside the configuration root, outside the activations domain,
+  its packs stay writable.
+- **The overlap refusal is unchanged.** It compares the entries' real directories.
+- **Some domain links hold no packs.** A `packs/` that resolves to no directory, to the
+  configuration root or a directory above it, or into `activations/`, lists nothing. It is logged as
+  a warning once per reason, and again if it breaks after it was fixed. Listing the configuration
+  root as the pack domain would serve `activations/` and the domain itself as packs; listing
+  `activations/` would serve, and write, each activation directory as a pack. The refusal of
+  `activations/` is the rule for a single pack link into the configuration root outside `packs/`,
+  applied to the domain (pre-PR review of #285).
+- **A pack link that holds the configuration root is not a pack.** In a domain linked from elsewhere,
+  the configuration root is no longer above the domain, so this is checked on its own.
+- **Every write into a configured pack checks.** The per-file writes of `DomainRepositoryService`
+  ask `Locations.whyReadOnly` before they write, as `PackCommitStore` does (#287): the typed saves,
+  the descriptor save, and the whole-pack gate's asset, preset and pack-document writes. They are
+  checked rather than narrowed to the gate, because six of them implement the public domain ports
+  (`TacticRepository.save` and its siblings). `WholePackStore.write`, which creates a new pack
+  directory and has no production caller, does not check; a caller that wires it into `packs/` must
+  check first.
+
+Alternative considered for #285: **warn once that a linked `packs/` is not read** (not chosen). It is
+smaller, but the service would still look empty, with only a log line to explain why. It would also
+refuse, for a whole domain, the layout the amendment already accepts for one pack.
 
 ### Consequences of the amendment
 
@@ -156,13 +197,15 @@ the part of decision 3 that refused symbolic links.
 - **Crash window.** A crash between the swap's two renames leaves the target missing, the aside
   copy beside it, named after the target, and the link dangling. The link is then refused as one
   that does not resolve. As for a plain pack, whose missing directory is not listed either, the
-  repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. Move
+  repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. In a
+  linked pack domain the aside copy is beside the pack, in the domain's real directory. Move
   the aside copy back by hand. Making that repair reachable, for both kinds of pack, is
   [#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281).
 - **Residual race.** A link pointed elsewhere between the listing and a commit's own resolution is
   committed to its new target without the listing's checks, the read-only check aside, which the
-  commit makes on the target it resolves. Whoever can do that can already write to `packs/`, so it
-  is accepted.
+  commit makes on the target it resolves. A per-file write (#287) checks the real path, then writes
+  through the link, so a link pointed elsewhere in between is written without the check. Whoever can
+  do either can already write to `packs/`, so both are accepted.
 
 ### Alternatives considered for linked packs
 

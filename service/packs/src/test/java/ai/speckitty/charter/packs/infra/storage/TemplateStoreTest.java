@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -152,9 +151,7 @@ class TemplateStoreTest {
         Path outside = host.resolve("outside.md");
         Files.write(outside, TEMPLATE);
         write(source, "templates/real.md", TEMPLATE);
-        assumeTrue(
-                AssetStoreTest.link(source.resolve("templates/leak.md"), outside),
-                "the file system cannot create symbolic links");
+        AssetStoreTest.link(source.resolve("templates/leak.md"), outside);
         AssetStoreTest.link(source.resolve("templates/inside.md"), source.resolve("templates/real.md"));
 
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);

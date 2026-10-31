@@ -324,6 +324,27 @@ class WholePackStoreTest {
     }
 
     @Test
+    @DisplayName(
+            "a pack whose root is a link lists the unmodelled files of its target; links below it are not followed")
+    void aLinkedRootListsItsUnmodelledFiles(@TempDir Path host) throws IOException {
+        Path real = richPack(host.resolve("checkout"));
+        write(real, "README.md", "# hello\n");
+        write(real, "sub/r.yaml", "a: 1\n");
+        Path outside = Files.createDirectories(host.resolve("outside"));
+        write(outside, "beyond.md", "# not the pack's\n");
+        SymbolicLinks.create(real.resolve("below"), outside);
+        Path link = SymbolicLinks.create(
+                Files.createDirectories(host.resolve("packs")).resolve("pack-a"), real);
+
+        WholePackStore.LoadedPack loaded = store.load(link);
+
+        assertThat(loaded.unmodelled())
+                .as("the link's target walked from its real path (#284), the link below the root not entered")
+                .containsExactly("README.md", "sub/r.yaml")
+                .isEqualTo(store.load(real).unmodelled());
+    }
+
+    @Test
     @DisplayName("a skill and its body are loaded, modelled and written as a pair, the body byte for byte")
     void aSkillIsWrittenWithItsBody(@TempDir Path host) throws IOException {
         Path source = richPack(host.resolve("source"));

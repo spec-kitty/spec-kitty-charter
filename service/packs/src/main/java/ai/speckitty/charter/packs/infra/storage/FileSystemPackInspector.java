@@ -461,10 +461,21 @@ public final class FileSystemPackInspector implements PackInspector {
         return packFiles(directory, packName, ".yaml");
     }
 
-    /** Every regular file under the pack directory whose name ends in {@code suffix}, in {@link #yamlFiles}' order. */
+    /**
+     * Every regular file under the pack directory whose name ends in {@code suffix}, in {@link #yamlFiles}' order. The
+     * walk starts at the directory's real path, so a pack root that is a symbolic link is entered (#284), and each file
+     * is named under {@code directory} again; a directory link below the root is not entered.
+     */
     private static List<Path> packFiles(Path directory, String packName, String suffix) {
-        try (Stream<Path> walk = Files.walk(directory)) {
+        Path root;
+        try {
+            root = directory.toRealPath();
+        } catch (IOException e) {
+            throw PackFileSet.unlistable(packName, e);
+        }
+        try (Stream<Path> walk = Files.walk(root)) {
             return walk.filter(p -> p.getFileName().toString().endsWith(suffix) && Files.isRegularFile(p))
+                    .map(p -> directory.resolve(root.relativize(p)))
                     .sorted(Comparator.comparing(
                             (Path p) -> slashed(directory.relativize(p)), FileSystemPackInspector::comparePaths))
                     .toList();

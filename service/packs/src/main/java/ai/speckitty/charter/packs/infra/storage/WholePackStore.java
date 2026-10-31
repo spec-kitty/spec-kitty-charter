@@ -254,11 +254,23 @@ public final class WholePackStore {
         return out;
     }
 
-    /** Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted. */
+    /**
+     * Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted. The walk starts at the
+     * directory's real path, as {@code PackFileSet}'s does, so a pack root that is a symbolic link is entered (#284);
+     * links below the root are not followed. Unlike {@code PackFileSet}, a file that is itself a link is not listed
+     * here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks separately, so they are not
+     * counted among the unmodelled regular files.
+     */
     private static List<String> unmodelled(Path packDir, Set<String> modelled, PackIdentifier key) {
-        try (Stream<Path> walk = Files.walk(packDir)) {
+        Path root;
+        try {
+            root = packDir.toRealPath();
+        } catch (IOException e) {
+            throw PackFileSet.unlistable(key.value(), e);
+        }
+        try (Stream<Path> walk = Files.walk(root)) {
             return walk.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
-                    .map(path -> packDir.relativize(path)
+                    .map(path -> root.relativize(path)
                             .toString()
                             .replace(path.getFileSystem().getSeparator(), "/"))
                     .filter(file -> !modelled.contains(file))

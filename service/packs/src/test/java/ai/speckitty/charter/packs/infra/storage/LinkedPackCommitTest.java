@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -61,11 +60,7 @@ class LinkedPackCommitTest {
                 .toRealPath();
         link = packs.resolve("pack-a");
         Files.deleteIfExists(link);
-        try {
-            Files.createSymbolicLink(link, target);
-        } catch (UnsupportedOperationException | IOException noLinks) {
-            abort("the filesystem cannot create symbolic links");
-        }
+        SymbolicLinks.create(link, target);
         locations = new StorageRootLocations(packs);
     }
 
@@ -90,6 +85,32 @@ class LinkedPackCommitTest {
         assertThat(residue(target.getParent()))
                 .as("nothing was staged beside the target")
                 .isEmpty();
+    }
+
+    @Test
+    void aPackDomainLinkedFromOutsideTheConfigRootIsReadButEveryCommitToItIsRefused() throws IOException {
+        Path config = Files.createDirectories(host.resolve("linked-domain-config"));
+        Path shared = Files.createDirectories(host.resolve("shared-packs"));
+        Path real = PackFixtures.copyOf("pack-a", shared).toRealPath();
+        Path domain = SymbolicLinks.create(config.resolve("packs"), shared);
+        StorageRootLocations linkedDomain = new StorageRootLocations(domain);
+        Map<String, String> before = snapshot(real);
+
+        assertThat(new DomainRepositoryService(linkedDomain, strategy)
+                        .load(PACK)
+                        .tactics())
+                .as("read and served through the linked domain (#285)")
+                .isNotEmpty();
+        assertThatThrownBy(() ->
+                        new PackCommitStore(linkedDomain, strategy).commit(PACK, null, toolguide("ripgrep"), SHARD))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage("pack pack-a is linked from outside the configuration root; it is read-only through the"
+                        + " service");
+
+        assertThat(snapshot(real)).as("the pack is unchanged").isEqualTo(before);
+        assertThat(residue(shared)).as("nothing was staged beside it").isEmpty();
     }
 
     @Test

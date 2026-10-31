@@ -173,6 +173,14 @@ tasks.test {
     val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
     inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
     systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
+    // The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
+    // (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
+    val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
+    inputs.property("requireSymlinks", requireSymlinks)
+    systemProperty("charter.requireSymlinks", requireSymlinks.get())
+    // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a
+    // cached result from a run without it never stands in for one with it.
+    inputs.property("githubActions", providers.environmentVariable("GITHUB_ACTIONS").orElse(""))
 }
 tasks.check { dependsOn(openPacksRoundTrip) }
 
