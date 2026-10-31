@@ -72,7 +72,6 @@ Keep it small; add a step only when a scenario cannot be written without it.
   tactic file or more than one.
 - `Given the directory of the pack "<name>" is missing` — deletes the configured pack's whole directory, so the first
   digest cannot read it. To remove a sibling, first write any file to it with the pack step above.
-- `Then the response body is a list with an element whose field "<field>" is "<text>"` — for a JSON array body.
 - `Then the contract declares the refusal code "<code>"`, `... is answered with status <n>`, `... may not be
   retried` and `... is raised by no operation` — read the machine-readable `x-refusal` map of
   `../schemas/CharterRefusalCode.yaml` (`status`, `retryable`, `raised` per code). `Then the contract says exactly
@@ -83,7 +82,9 @@ Keep it small; add a step only when a scenario cannot be written without it.
   transport or routing failure, not a charter refusal.
 - `Then the field at "<json-pointer>" is "<text>"`, `... is <integer>` and `... is true` or `... is false` — the
   member an RFC 6901 JSON Pointer names (for example `/page/hasNextPage` or `/items/0/id`), which must be there and
-  of that JSON type.
+  of that JSON type. `Then the field at "<json-pointer>" starts with "<text>"` — the same for the start of a string.
+- `Then the path of the Location header is the href of the link "<relation>"` — a created resource's `Location`
+  (absolute or not) has, as its path, the `href` of that relation in the answer's `_links`.
 - `Then the answer has no link "<relation>"` — the body's `_links` has no member of that relation key.
 - `When I follow the link "<relation>"` — GET the `href` of that relation in the last answer's `_links`, with the
   `/api/v1` server prefix taken off as the request steps expect.
@@ -95,12 +96,15 @@ Keep it small; add a step only when a scenario cannot be written without it.
   two requests (a cursor's anchor that goes away between pages).
 - `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
-  body:` — a registration with a JSON doc string, and its `If-Match` precondition.
+  body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
+  JSON with the body:` — the same with any method, for an outline whose examples differ in the method.
+- `Then the artifact in the response body has <n> relationship(s)` and `Then a relationship of the artifact in the
+  response body points to "<urn>"` — the `relationships` of the member an `Artifact` envelope's `kind` names.
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.
-- `Then the field "<field>" of the response body is the lines:` followed by a doc string — the field's text is the
-  doc string's lines, each ending in a newline; for a Markdown guide.
+- `Then the field at "<json-pointer>" is the lines:` followed by a doc string — the text the pointer names is the doc
+  string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
   fetches the doc string, for the rest of the scenario; a later step for the same URI replaces it. A URI no step names
   is refused as a host off the allowlist (`HOST_NOT_ALLOWED`), as the service's empty-by-default allowlist refuses it.
@@ -121,12 +125,20 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
 
 - `service.feature`, `errors.feature`, `security.feature`: the service info, the failures outside the refusals, and
   the worktree guard.
-- `toolguides.feature`: the toolguide reads and registrations, with the guide sent as content or fetched from a
-  `guideUri`, and their refusals.
+- `directives.feature`, `styleguides.feature`, `paradigms.feature`, `toolguides.feature`: the registrations of the
+  writable kinds under the artifact tree (`POST /packs/{packId}/artifacts/<kind>`, `PUT
+  /packs/{packId}/artifacts/<kind>/{artifactId}`), each answering the envelope of the generic item, their read-back
+  through the generic item and their refusals; for a toolguide, the guide sent as content or fetched from a
+  `guideUri`.
 - `artifacts.feature`: the generic artifact reads, the paged list of a pack's artifacts of the served kinds and one
   artifact in its envelope, with their paging edge cases and refusals (FR-003, FR-004, FR-007).
-- `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
-  `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
+- `tactics.feature`: the tactic reads, through the generic list and item, answer with the
+  `Charter-Source-Fingerprint` they verified, and refuse with `stale_input` or `pack_unreadable` as ADR-0018 D11
+  requires (the item's `pack_unreadable`: #176).
+- `removed-routes.feature`: every per-kind route of the earlier contract answers the 404 of a path no operation
+  defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
+  kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
+  not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.

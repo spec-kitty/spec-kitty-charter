@@ -9,6 +9,7 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -290,6 +291,24 @@ public class CharterSteps {
         JsonNode field = at(pointer);
         assertThat(field.isBoolean()).as("%s is a boolean: %s", pointer, field).isTrue();
         assertThat(field.asBoolean()).isEqualTo(Boolean.parseBoolean(value));
+    }
+
+    @Then("the field at {string} starts with {string}")
+    public void fieldAtStartsWith(String pointer, String prefix) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
+        assertThat(field.asString()).startsWith(prefix);
+    }
+
+    /**
+     * A created resource's {@code Location} names the resource its answer links as {@code relation}: the path of the
+     * header (absolute or not) equals that link's {@code href}.
+     */
+    @Then("the path of the Location header is the href of the link {string}")
+    public void locationIsLink(String relation) throws Exception {
+        String location = http.response().getHeader(HttpHeaders.LOCATION);
+        assertThat(location).as("the response carries a Location: %s", http.body()).isNotNull();
+        assertThat(URI.create(location).getRawPath()).isEqualTo(linkOf(JSON.readTree(http.body()), relation));
     }
 
     @Then("the answer has no link {string}")

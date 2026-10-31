@@ -30,7 +30,7 @@ Feature: A relationship may be authored from a mission type
       """
 
   Scenario: A relationship from a mission type of the pack is registered (ADR-0044, NFR-001)
-    When I POST "/packs/qa/directives" as JSON with the body:
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
       """
@@ -44,7 +44,7 @@ Feature: A relationship may be authored from a mission type
     And the field "from" of the response body is "mission_type:research"
 
   Scenario: A relationship from a mission type the pack does not hold is still a conflict
-    When I POST "/packs/qa/directives" as JSON with the body:
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
       """

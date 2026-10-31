@@ -19,15 +19,15 @@ Feature: Journey 04 — a governance lead sets the organisation's house rules
       """
 
   Scenario: A required directive registered in the org pack is read back as required
-    When I PUT "/packs/qa/directives/GUARD" with the body:
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
       {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
       """
     Then the response status is 201
-    When I GET "/packs/qa/directives/GUARD"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
     Then the response status is 200
     And the field "id" of the response body is "GUARD"
-    And the field "title" of the response body is "Guard the gate"
+    And the field at "/directive/title" is "Guard the gate"
 
   @WIP
   Scenario: A project of the organisation gets the required preset

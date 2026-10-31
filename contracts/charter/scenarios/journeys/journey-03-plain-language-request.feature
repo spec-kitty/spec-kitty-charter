@@ -6,7 +6,15 @@ Feature: Journey 03 — a non-engineer makes a plain-language request
   pack's tactics works today; recipes and profile selection are not in the contract yet.
 
   Background:
-    Given the org pack "qa" with the file "rehearse.tactic.yaml":
+    Given the org pack "qa" with the file "pack.yaml":
+      """
+      pack_id: qa
+      pack_version: 1.0.0
+      parent_pack: null
+      name: qa
+      pack_level: org
+      """
+    And the org pack "qa" with the file "rehearse.tactic.yaml":
       """
       id: rehearse
       schema_version: '1.0'
@@ -16,7 +24,7 @@ Feature: Journey 03 — a non-engineer makes a plain-language request
       """
 
   Scenario: The tactics a recipe can draw on are readable
-    When I GET "/packs/qa/tactics/rehearse"
+    When I GET "/packs/qa/artifacts/tactic/rehearse"
     Then the response status is 200
     And the field "id" of the response body is "rehearse"
 

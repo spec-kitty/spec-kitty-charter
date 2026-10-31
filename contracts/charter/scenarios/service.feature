@@ -43,7 +43,7 @@ Feature: What the service says about itself
 
   Scenario: A refusal carries the contract version and the worktree, not the fingerprint
     The fingerprint is the digest a read verified and set on its 200 answer; no refusal carries one.
-    When I GET "/packs/no-such-pack/tactics"
+    When I GET "/packs/no-such-pack/artifacts"
     Then the response status is 404
     And the problem code is "pack_not_found"
     And the response header "Charter-Contract-Version" is the contract version
