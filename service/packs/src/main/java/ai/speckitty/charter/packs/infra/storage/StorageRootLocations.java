@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * <p>The directory is listed on every call, so a pack copied in or removed while the service runs is seen on the next
  * read; a domain directory that does not exist yet holds no packs. A domain that is itself a symbolic link is followed
  * (#285): its packs are read-only when it resolves outside the configuration root, and it holds no packs, warned once,
- * when it resolves to no directory or to the configuration root or a directory above it. A symbolic link to a directory
+ * when it resolves to no directory, to the configuration root or a directory above it, or into the activations domain. A symbolic link to a directory
  * is a pack named after
  * the link (#174, ADR-0038 decision 3 as amended 2026-10-31): the store reads it through the link, and a commit stages
  * and swaps beside the link's real target, so the link stays a link ({@link PackCommitStore}). Links below a pack's
@@ -128,7 +128,8 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
     /**
      * The pack domain's real directory, or empty when it holds no packs. A domain that does not exist yet, or is a
      * file, holds none, silently. A domain that is a link is followed (#285, ADR-0038 as amended 2026-10-31); one that
-     * resolves to no directory, or to the configuration root or a directory above it, holds none and is warned once.
+     * resolves to no directory, to the configuration root or a directory above it, or into the activations domain, holds
+     * none and is warned once.
      */
     private Optional<Path> realDomain() {
         boolean link = Files.isSymbolicLink(packs);
@@ -141,6 +142,10 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
             real = packs.toRealPath();
             why = whyNotADomain(real);
         } catch (IOException unresolved) {
+            if (!link) {
+                // A directory removed while it is listed holds no packs, as one that does not exist yet.
+                return Optional.empty();
+            }
             real = packs;
             why = Optional.of("is a link that does not resolve");
         }
@@ -159,8 +164,12 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
         if (!Files.isDirectory(real)) {
             return Optional.of("resolves to " + real + ", which is not a directory");
         }
-        if (realConfigRoot().startsWith(real)) {
+        Path configRoot = realConfigRoot();
+        if (configRoot.startsWith(real)) {
             return Optional.of("resolves to " + real + ", which holds the configuration root");
+        }
+        if (real.startsWith(configRoot.resolve(ConfigRoot.ACTIVATIONS))) {
+            return Optional.of("resolves to " + real + ", in the activations domain");
         }
         return Optional.empty();
     }
