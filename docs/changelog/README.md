@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-31 — A linked packs/ directory is followed, and every write keeps a linked pack read-only](/changelog/2026-10-31-linked-pack-hardening/)
 - [2026-10-31 — A pack linked into the configuration root is served](/changelog/2026-10-31-linked-packs/)
 - [2026-10-30 — Mission types are one sanitized file each, and an artifact kind](/changelog/2026-10-30-mission-types-consolidated/)
 - [2026-10-30 — A pack's pack.md round-trips through the markdown content form](/changelog/2026-10-30-pack-document-round-trip/)
