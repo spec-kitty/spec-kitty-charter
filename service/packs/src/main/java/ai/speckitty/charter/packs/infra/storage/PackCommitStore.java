@@ -49,7 +49,8 @@ import org.springframework.stereotype.Service;
  * moves a sole aside copy back into place before a write to a pack that is still resolved, which restores the last
  * committed state; the interrupted commit was never acknowledged. A pack listed from the pack domain
  * ({@link StorageRootLocations}) is not resolved in that state, plain or linked, so it is not repaired there yet: move
- * the aside copy back by hand (for a linked pack, it sits beside the link's target and is named after the target).
+ * the aside copy back by hand (for a linked pack, it sits beside the link's target and is named after the target). Making the repair reachable is
+ * <a href="https://github.com/spec-kitty/spec-kitty-charter/issues/281">#281</a>.
  *
  * <p>This store never performs the per-child {@code save()} upsert of {@link DomainRepositoryService}; registration
  * goes load &rarr; mutate &rarr; revalidate the whole aggregate in memory &rarr; commit the delta here.
