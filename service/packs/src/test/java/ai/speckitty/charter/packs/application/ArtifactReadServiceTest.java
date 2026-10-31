@@ -389,7 +389,10 @@ class ArtifactReadServiceTest {
                     assertThat(refused.code().token()).isEqualTo(kind + "_not_found");
                     assertThat(refused.getMessage()).isEqualTo("Pack pack-a has no " + kind + " Not an id.");
                 });
-        assertThat(digests).as("the pack is judged inside one verified read").hasValue(2);
+        // The pack is judged inside the item's verified read (two digests) around the not-found's own (two more).
+        assertThat(digests)
+                .as("the pack is judged inside the item's verified read")
+                .hasValue(4);
         assertThat(codeOf(() -> service.item(ABSENT, kind, "Not an id"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 

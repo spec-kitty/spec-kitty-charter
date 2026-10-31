@@ -42,7 +42,10 @@ import org.springframework.stereotype.Service;
  * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
  * 2026-10-31): the list and the item of every kind refuse it {@link RefusalCode#PACK_UNREADABLE}, never
  * {@code PACK_NOT_FOUND}, since it is configured. The item judges the descriptor before it delegates to the kind's read,
- * which reads one file and would otherwise answer the artifact of a pack that cannot be read as a whole.
+ * which reads one file and would otherwise answer the artifact of a pack that cannot be read as a whole. The check and
+ * the kind's read run inside one outer verified read, and the answer carries the kind's fingerprint only when it equals
+ * the outer digests: all four digests agree, so the 200 or the refusal is the one the fingerprinted inputs give. A
+ * change during it is {@link RefusalCode#STALE_INPUT}, with the kind's own detail.
  */
 @Service
 public final class ArtifactReadService {
@@ -286,16 +289,27 @@ public final class ArtifactReadService {
         Objects.requireNonNull(kindToken, "kindToken");
         Objects.requireNonNull(id, "id");
         Optional<ArtifactKind> kind = servedKind(kindToken);
-        if (kind.isPresent()) {
-            judgeDescriptor(pack);
-        }
         if (kind.isEmpty()) {
             return refusedAfterThePack(
                     pack,
                     new CharterRefusal(
                             RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
         }
-        return switch (kind.get()) {
+        ArtifactKind served = kind.get();
+        String stale = "The inputs changed while the " + served.token() + " was read; read it again.";
+        ConsistentRead.Verified<ConsistentRead.Verified<Item>> judged = read.read(stale, () -> {
+            judgeDescriptor(pack);
+            return servedItem(pack, served, id);
+        });
+        if (!judged.fingerprint().equals(judged.value().fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, stale);
+        }
+        return judged.value();
+    }
+
+    /** The kind's own verified read of one artifact, typed by its kind. */
+    private ConsistentRead.Verified<Item> servedItem(PackIdentifier pack, ArtifactKind kind, String id) {
+        return switch (kind) {
             case TACTIC ->
                 readAs(
                         pack,
@@ -339,7 +353,7 @@ public final class ArtifactReadService {
                         toolguide -> as(
                                 toolguides.toolguideWithRevision(pack, toolguide),
                                 revised -> new Item.OfToolguide(revised.value(), revised.revision())));
-            default -> throw new IllegalStateException("a served kind without a read: " + kind.get());
+            default -> throw new IllegalStateException("a served kind without a read: " + kind);
         };
     }
 
@@ -410,8 +424,8 @@ public final class ArtifactReadService {
 
     /**
      * Refuses a pack the item cannot read as a canonical pack, before the kind's read, which reads one file: its
-     * descriptor must be there and readable. It is not a verified read; the kind's read that follows is one, and a
-     * change in between is caught there.
+     * descriptor must be there and readable. It runs inside the item's outer verified read, between the same two
+     * digests as the kind's read, so a {@code pack.yaml} that changes after it is looked up refuses the item as stale.
      */
     private void judgeDescriptor(PackIdentifier pack) {
         Optional<PackDescriptor> descriptor;

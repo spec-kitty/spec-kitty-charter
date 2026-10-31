@@ -269,7 +269,9 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
   `pack.yaml`, and a configured pack without one refuses `getOffering` with a 500 `pack_unreadable`, as an invalid
   one does. `listPackArtifacts` and `getPackArtifact` refuse such a pack with a 500 `pack_unreadable` too, whatever
   the kind and id the item names; they answered 404 `pack_not_found` for the list and an unserved kind, and the
-  item of a served kind read the one file it names (200, or the kind's not-found). 404 `pack_not_found` stays the
+  item of a served kind read the one file it names (200, or the kind's not-found). The item judges `pack.yaml` and
+  reads the artifact between the same digests, so a `pack.yaml` that changes during it is `stale_input`, never a 200
+  fingerprinted with a state that refuses. 404 `pack_not_found` stays the
   answer for an identifier that matches no configured pack. The descriptions of both reads, `PackNotFound`,
   `OfferingUnreadable` and `getOffering` say so. Scenarios: 180 before, 186 after (+6). New in `offering.feature`:
   "A configured pack without pack.yaml refuses the offering with pack_unreadable"; new in `artifacts.feature`: the

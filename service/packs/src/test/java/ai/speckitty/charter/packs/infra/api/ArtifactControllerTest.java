@@ -199,9 +199,10 @@ class ArtifactControllerTest {
         AtomicInteger commits = new AtomicInteger();
         String readAt = PackRevision.compute(List.of("commit:0")).token();
         AtomicInteger digests = new AtomicInteger();
-        // A commit lands just after the read's closing digest, which still saw the files the body came from.
+        // A commit lands just after the read's closing digest, which still saw the files the body came from. The item
+        // is the kind's verified read nested in the item's own (the pack.yaml check), so the closing digest is the 4th.
         ConsistentRead racing = new ConsistentRead(() -> {
-            if (digests.incrementAndGet() == 2) {
+            if (digests.incrementAndGet() == 4) {
                 commits.incrementAndGet();
             }
             return DIGEST;
