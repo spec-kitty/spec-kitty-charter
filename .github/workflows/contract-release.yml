@@ -4,7 +4,8 @@ name: contract-release
 # contract-charter-v<version> at the release's merge commit on main rebuilds the release assets at
 # that tag with scripts/release/contract-release-assets.sh and attaches them to a GitHub Release of
 # the tag: charter-openapi.yaml (the single-file bundle core vendors), charter-openapi.yaml.sha256
-# and charter-scenarios.tar.gz (contracts/charter/scenarios/, the conformance corpus). Nothing is
+# charter-scenarios.tar.gz (contracts/charter/scenarios/, the conformance corpus) and
+# ActivationConfig.schema.json (contracts/offering/schemas/, the canonical activation document). Nothing is
 # published unless the tag, info.version and the top CHANGELOG heading name one released version,
 # the contract checks pass and the tagged commit is on main, and the publish job refuses a tag that
 # moved while the assets were built. The workflow file runs from the tagged commit, so these checks
@@ -149,4 +150,5 @@ jobs:
           notes="${notes}"$'\n\n'"Check the bundle with: sha256sum --check charter-openapi.yaml.sha256"
           gh release create "$TAG" --repo "$REPO" --verify-tag \
             --title "Charter contract ${version}" --notes "$notes" \
-            dist/charter-openapi.yaml dist/charter-openapi.yaml.sha256 dist/charter-scenarios.tar.gz
+            dist/charter-openapi.yaml dist/charter-openapi.yaml.sha256 dist/charter-scenarios.tar.gz \
+            dist/ActivationConfig.schema.json

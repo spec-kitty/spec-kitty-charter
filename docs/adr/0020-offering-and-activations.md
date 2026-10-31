@@ -2,7 +2,7 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -66,6 +66,9 @@ This record supersedes or amends, point by point:
   which this record splits into `/offering` and `/activations`.
 
 Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): local `activation.yaml` wins visibly on a cold-start divergence (D5).
+
+Amended 2026-10-31 (operator rulings on #125): the activation set is declared in the contract and reserved; its open
+questions 1 and 2 are ruled. See [Amendment 2026-10-31](#amendment-2026-10-31-the-activation-set-is-declared-125).
 
 ## Context
 
@@ -171,13 +174,16 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
   the `config` member of every answer, and what core's seam maps its own files to and from. Its JSON Schema lives at
   `contracts/offering/schemas/ActivationConfig.schema.json` (JSON Schema 2020-12, the
   [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) pattern), and the OpenAPI
-  contract references it.
+  contract references it. *(Amended 2026-10-31: the contract mirrors it, and three checks keep the two equal;
+  `contextActivations` and `appliedPresets` are left out, `packs` holds `{packId, version?}`, and `Activation`
+  carries `governanceFingerprint`. See the amendment.)*
 - **`Activation`** is the resource: `activationId`, `revision`, `config` (an `ActivationConfig`),
   a derived `summary` (counts of active, inactive, excluded, required, locked and skipped
   artifacts) and `_links`. A config file carries no links and no server fields, so it is wrapped,
   not extended.
 
-`ActivationConfig`, in outline (the schema issue fixes every field before 1.0.0):
+`ActivationConfig`, in outline (the schema issue fixes every field before 1.0.0; *fixed 2026-10-31 by #125: `packs`
+holds `{packId, version?}` objects, and the last two rows are left out of the document; see the amendment*):
 
 | Field | Meaning | Core's key today |
 |---|---|---|
@@ -188,8 +194,8 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
 | `selected` | Map from kind to an id list; a kind that is absent takes its default (all, except `skill`: org-required only) | `activated_<plural>` |
 | `deactivated` | Map from a known kind to a non-empty id list: the user's deny list | `deactivated_<plural>` (core branch) |
 | `languages` | Language list, as authored; core's derived languages are not sent | `catalog.languages` |
-| `contextActivations` | Artifacts active only in one mission type or action | `governance.activations` |
-| `appliedPresets` | Provenance only: which presets were applied, when | not persisted today |
+| `contextActivations` | *Left out (ruling 2, 2026-10-31).* Artifacts active only in one mission type or action | `governance.activations` |
+| `appliedPresets` | *Left out (ruling 3, 2026-10-31).* Provenance only: which presets were applied, when | not persisted today |
 
 **Three states, exactly as core has them** (core response, 2026-10-20): for `activatedKinds`,
 `missionTypes`, `languages` and each `selected.<kind>`, an absent key is the default, `[]` is
@@ -197,7 +203,8 @@ empty, and a list is that set. `null` is not a value.
 
 **Content alignment, not file shape (ruled, 2026-10-20, on the core side).** Core keeps its own
 file layout: `.kittify/charter/activation.yaml` holds the activation keys, while `packs`,
-`languages` and `contextActivations` stay in `config.yaml` and `charter.yaml`. Core's seam maps
+`languages` and `contextActivations` stay in `config.yaml` and `charter.yaml` (`contextActivations` is no longer
+mapped: the document leaves it out, amendment of 2026-10-31). Core's seam maps
 those files to and from `ActivationConfig` in one module. The contract fixes the content, not
 where core keeps it.
 
@@ -259,8 +266,10 @@ without it the write is last-writer-wins, because core's content is what it mean
    - **unselect** and **re-activate** are the narrow operations: each changes one list only.
 
    **Cascades:**
-   - `cascade` names one of core's cascade scopes; the schema issue fixes the list.
-   - A mission type can be a cascade source: `{kind}` is `mission-type`.
+   - `cascade` names one of core's cascade scopes; the schema issue fixes the list. *(Fixed 2026-10-31: a non-empty
+     array of activatable kinds, or exactly `["all"]`; see the amendment.)*
+   - A mission type can be a cascade source: `{kind}` is `mission-type`. *(2026-10-31: spelled `mission_type`, and a
+     `{kind}` of selections only, since mission types have no deny list.)*
    - A cascading select stops at a deactivated artifact and reports it (ADR-0013 D4), unless
      `includeDeactivated` is `true`, which clears the exclusions the walk reaches.
    - A cascading deactivate removes the reached artifacts from `selected` but records a deny
@@ -293,6 +302,9 @@ a client's mistaken id).
 
 ### D7. Effective reads are sub-resources of an activation
 
+*(Declared 2026-10-31, #125: `EffectiveArtifactList` (paged), `ActivationSkippedReport`, `EffectiveGraph` and
+`EffectiveActionContext`, closed and minimal; #103 may reshape them. See the amendment.)*
+
 The project-effective reads of R9 are resources under the activation, with their own closed
 schemas, never a filter on the offering's reads (ADR-0018 D1 and its rejected `activationFiltered`
 flag):
@@ -316,7 +328,8 @@ divergence. Rejected: matching core, which would serve a charter that breaks its
 
 ### D8. The activation operations are declared early and answer `501` until built (ruled: reserved)
 
-Every operation of D3, D6 and D7 is declared in full in an early 0.x minor, ahead of the other
+Every operation of D3, D6 and D7 is declared in full in an early 0.x minor *(2026-10-31: inside the unreleased
+0.1.0-SNAPSHOT, by the operator's ruling; 13 operations, #125)*, ahead of the other
 reshapes, because core's deny-list work codes against it (ADR-0022 D5): request body, success
 responses, refusals and headers. After 1.0.0 a request body or a success status added to an
 existing operation is breaking, so declaring only the path would reserve nothing. Each reserved operation also:
@@ -374,8 +387,9 @@ the tag:
 - `violations`: a list of `{pointer, code, detail}` for a `422`, where `pointer` is an RFC 6901
   JSON Pointer into the body.
 
-The vendored `Problem` is unchanged. Rejected: a `422` with prose only, which leaves core to parse
-`detail`.
+The vendored `Problem` was to stay unchanged. *(Corrected 2026-10-31: `CharterRefusal` extends the closed vendored
+`Problem`, so the two members are optional members of `Problem` itself; see the amendment.)* Rejected: a `422` with
+prose only, which leaves core to parse `detail`.
 
 ### D11. The project's own content is a pack (default)
 
@@ -426,7 +440,9 @@ before 1.0.0, in a 0.x minor:
 
 - The contract grows: four schemas, about twelve reserved operations, three conditional headers,
   six refusal codes, two `CharterRefusal` members, a security scheme with scopes and three lint
-  rules, all before 1.0.0.
+  rules, all before 1.0.0. *(As declared on 2026-10-31: 13 reserved operations; the four document schemas plus the
+  effective-read, request-body and `Links`/`Link` schemas; the two members on the shared `Problem`; four new lint
+  rules and one amended; the scopes deferred to the hosted-first minor.)*
 - The activation set must be built before cutover stage 3, not after stage 5, which moves work
   forward.
 - Core must change its plan: the unmerged deny-list branch, its seam and its ADR
@@ -437,7 +453,7 @@ before 1.0.0, in a 0.x minor:
 ### Risks
 
 - **The reserved surface is wrong once built.** Mitigation: the operations stay `501` until each
-  lands with its scenarios, and the schema issue settles every field before 1.0.0. In 0.x, a reserved
+  lands with its scenarios, and the schema issue settles every field before 1.0.0 *(settled 2026-10-31, #125)*. In 0.x, a reserved
   shape that proves wrong in core's integration changes in the next minor.
 - **Normalized ids surprise core.** Content core registered comes back with canonical spellings.
   Mitigation: core emits declared ids already (its response of 2026-10-20), and the `ETag` changes
@@ -485,12 +501,15 @@ writes, and because core's deny-list work needs the document and operations firs
 These need a ruling before 1.0.0, because each is a closed shape. Core's integration on 0.x
 (ADR-0022) should inform them:
 
+*(Questions 1 and 2 ruled 2026-10-31: both left out; see the amendment.)*
+
 1. **Provenance per entry.** Should the document keep, per artifact, the last decision (how, when,
    by whom), as core's deny-list branch proposes? If so, is `by` an opaque actor id?
 2. **Context activations.** Does `contextActivations` stay in the document, or move to the effective
    read as a derived fact?
 3. **The `Links` shape** (ADR-0019 D3) applies here too: the activation resources carry many
-   relations.
+   relations. *(Settled 2026-10-31: the shared `Links`/`Link` components, agreed with #126; the activation answers
+   carry `self` until the writes are built.)*
 
 ## Requests to core
 
@@ -507,6 +526,73 @@ These need a ruling before 1.0.0, because each is a closed shape. Core's integra
   Accepted in core's response of 2026-10-20: the service is authoritative after the 1.0.0
   cutover, and switching to the charter surface is a core 4.0 GA deliverable
   (spec-kitty/spec-kitty#6518).
+
+## Amendment 2026-10-31: the activation set is declared (#125)
+
+The schema issue this record names ([#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125)) declared
+the activation set in the contract. The operator ruled on its open points on 2026-10-31 (all as the mission's
+research recommended, one later changed); they are recorded here, and the decisions above carry notes where they
+change.
+
+**Rulings (2026-10-31).**
+
+1. **Per-entry provenance** (open question 1) is **left out** of `ActivationConfig`. Core's ledger keeps none, and a
+   timestamp would make the revision depend on time, not meaning. A later 0.x minor may add it.
+2. **Context activations** (open question 2) are **left out** of the document. "For this Mission, also include X"
+   is the client's, in the activation context it passes (ADR-0033 D4); the effective context read is where it
+   surfaces (#103).
+3. **`appliedPresets`** is **left out** too: core never persists the preset name, and `ActivationChange` reports a
+   preset's effect.
+4. **Skills and mission types.** `selected.skill` absent means only the required skills, which the must-have items
+   of the governing presets derive (ADR-0031, ADR-0042). `missionTypes` absent and `[]` both mean none in force; the
+   two stay distinct on the wire, so a fetched document registers unchanged.
+5. **Kinds.** `selected` and `deactivated` hold one member per activatable artifact kind: every artifact kind except
+   `template` and `asset`, and except `mission_type`, which `missionTypes` holds (11; the snake_case tokens of
+   `NodeKind`). They align with the charter schema's `activated_<plural>` keys, which a test checks.
+6. **Cascade.** `cascade` is a non-empty array of kinds, or exactly `["all"]`; absent means no cascade, as core's
+   `CascadeScope` is either "all" or a set of kinds. `all` beside kinds is a semantic `422`.
+7. **Packs** are `{packId, version?}`, in merge order (ADR-0033 D6); `version` absent means the version the service
+   holds.
+8. **`requiredBy` and `violations`** are optional members of the vendored shared `Problem`, not of `CharterRefusal`
+   alone: `CharterRefusal` extends the closed `Problem`. **This corrects D10's "The vendored `Problem` is
+   unchanged."**
+9. **Effective reads** are all four declared now, with closed and minimal schemas (`EffectiveArtifactList`, paged;
+   `ActivationSkippedReport`; `EffectiveGraph`; `EffectiveActionContext`). #103 may reshape them in a later minor.
+10. **The JSON Schema file is canonical; the contract mirrors it.** `contracts/offering/schemas/ActivationConfig.schema.json`
+    is the ADR-0017 artifact; `schemas/ActivationConfig.yaml` and its parts mirror it, and three checks keep them
+    equal (a structural comparison, and a shared corpus through networknt and through the scenario validator). **D4's
+    "the OpenAPI contract references it" reads "mirrors it".**
+11. **The 501 pin.** A `@reserved` scenario may call a reserved operation and expect `501` (D8); the scenario README
+    has two forms of `@reserved`.
+12. **Version (changed by the operator, 2026-10-31).** The set lands inside the unreleased `0.1.0-SNAPSHOT`, beside
+    #126, under its `### Breaking` subsection; `info.version` stays `0.1.0-SNAPSHOT`. It was first ruled
+    `0.2.0-SNAPSHOT`. ADR-0022 D5's order (0.1.0 first, then the activation minor) therefore collapses into 0.1.0.
+13. **`x-stability-level`** (#46) does not touch reserved operations; `x-reserved` is their marker.
+14. **No new record; no security scopes.** This amendment carries the rulings. D12's scopes come with the
+    hosted-first minor.
+
+**Design decisions made with them** (mission `activation-set`, research D-1 to D-15):
+
+- **Validators (amends D4).** `Activation` carries `governanceFingerprint`, and its `summary` is derived for that
+  fingerprint: an answer is byte-stable for one revision and one fingerprint. Its `ETag` is the quoted revision,
+  which `If-Match` carries (or `*`). An effective read's `ETag` is opaque: a digest that changes with the revision or
+  the fingerprint. JCS sorts keys itself, so the revision does not depend on member order; the service writes
+  members in schema order.
+- **Conditional headers are optional parameters**: a sub-resource write without `If-Match` is the declared `428`,
+  not a framework `400`.
+- **`mission_type` is a `{kind}` under `selections/` only**: mission types have no deny list, so an exclusion of one
+  would not be the inverse of its `DELETE`. An unknown mission type is `mission_type_not_found`.
+- **The 501 comes before binding.** A `@ReservedOperation` controller and an interceptor answer before the request is
+  read, so a reserved operation answers `501` whatever its request holds. The controller lives in
+  `packs.infra.api`, the one adapter allowed to name the generated types; the built activation set becomes a slice
+  of its own, and the `PACKS_*` ArchUnit constants are generalized then (#140).
+- **Growth.** A new activatable kind, effective state, policy level or reason is a contract change: a 0.x minor
+  before 1.0.0, a major after. The activation links carry `self` only; `Link.method` admits `GET`, `POST` and `PUT`,
+  and widens to `DELETE` when the writes are built.
+- **Build notes.** When an operation is built: a String-to-enum converter for snake_case path kinds; unknown JSON
+  members on activation bodies refused (`422`, never dropped); a body that fails bean validation answered
+  `422 activation_invalid` with `violations`; `containerDefaultToNull` and the `NON_NULL` mix-in keep absent apart
+  from `[]` (already in place).
 
 ## References
 

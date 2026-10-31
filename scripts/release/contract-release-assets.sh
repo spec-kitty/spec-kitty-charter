@@ -4,6 +4,7 @@
 #   charter-openapi.yaml           the single-file bundle (./gradlew :contracts:bundleContract)
 #   charter-openapi.yaml.sha256    its checksum, in sha256sum format
 #   charter-scenarios.tar.gz       contracts/charter/scenarios/, the contract scenarios (the conformance corpus)
+#   ActivationConfig.schema.json   contracts/offering/schemas/, the canonical activation document (JSON Schema 2020-12)
 #
 # Usage: scripts/release/contract-release-assets.sh <tag> <out-dir>
 #
@@ -36,6 +37,8 @@ fi
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 cp build/contracts/contract/charter-openapi.yaml build/contracts/contract/charter-openapi.yaml.sha256 "$stage/"
+# The canonical activation document (#125, ADR-0020 D4): the bundle mirrors it, and consumers may validate with it.
+cp contracts/offering/schemas/ActivationConfig.schema.json "$stage/"
 (cd "$stage" && sha256sum --check --strict charter-openapi.yaml.sha256)
 
 # A reproducible archive of the tracked scenario files: sorted names, fixed owner and modes, and the commit's time

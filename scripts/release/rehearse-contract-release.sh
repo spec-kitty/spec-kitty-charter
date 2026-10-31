@@ -55,7 +55,7 @@ sed -i "0,/^## $snapshot\$/s//## $version/" "$changelog"
 git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --message "rehearsal: release $version"
 git tag "$tag"
 scripts/release/contract-release-assets.sh "$tag" "$work/assets"
-for asset in charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.tar.gz; do
+for asset in charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.tar.gz ActivationConfig.schema.json; do
   if [[ ! -s "$work/assets/$asset" ]]; then
     echo "error: the release has no $asset" >&2
     exit 1

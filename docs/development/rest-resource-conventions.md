@@ -30,7 +30,8 @@ These rules keep every operation of the charter contract shaped the same way. Th
 [ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/) (additive contract
 sets). The contract is the source of record: `contracts/charter/openapi.yaml`. Rules marked
 *proposed* come from [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) and
-[ADR-0020](/adr/0020-offering-and-activations/) and are not in the contract yet.
+[ADR-0020](/adr/0020-offering-and-activations/) and are not in the contract yet; *reserved* ones are the activation
+set, declared in the contract (#125) and answered `501` until built.
 
 ## Resources are nouns, in four archetypes
 
@@ -39,8 +40,8 @@ A path names a resource, never an action. Every resource is one of four archetyp
 | Archetype | What it is | Name | Example in this contract |
 |---|---|---|---|
 | Document | One thing | Singular noun or an id | `/info`; `/packs/{packId}` (proposed) |
-| Collection | A server-managed set; `POST` adds a member and the server names it | Plural noun | `/packs`; `POST /activations` (proposed) |
-| Store | A client-managed set; `PUT` puts a member at an id the client chose | Plural noun | `/activations/{activationId}` (proposed) |
+| Collection | A server-managed set; `POST` adds a member and the server names it | Plural noun | `/packs`; `POST /activations` (reserved, #125) |
+| Store | A client-managed set; `PUT` puts a member at an id the client chose | Plural noun | `/activations/{activationId}` (reserved, #125) |
 | Controller | A procedure no method expresses | A verb, as the last segment | `POST /packs/refresh` |
 
 - **Rule:** plural nouns for collections, singular nouns for documents, a verb only for a controller.
@@ -64,7 +65,7 @@ A path names a resource, never an action. Every resource is one of four archetyp
 ## Parameters
 
 - **Path parameters identify.** They are stable ids: `{packId}` is the pack's minted ULID
-  `pack_id`, `{missionType}` and `{action}` are graph node names, and `{activationId}` (proposed)
+  `pack_id`, `{missionType}` and `{action}` are graph node names, and `{activationId}` (reserved, #125)
   is an opaque id the service never parses. A path never identifies by a query parameter.
 - **Query parameters shape.** They filter, sort, page or tune a read, never select the resource:
   `?depth=2` on the action context; `?level=org` on `/packs` (proposed).
@@ -86,10 +87,10 @@ A path names a resource, never an action. Every resource is one of four archetyp
 | Method | Meaning | Safe | Idempotent | Used here |
 |---|---|---|---|---|
 | `GET` | Read a resource | Yes | Yes | Every read |
-| `POST` | Create in a collection, or run a controller | No | No, unless documented | `POST /packs/refresh` (documented idempotent); register, distribute and create an activation (proposed) |
-| `PUT` | Create or replace a resource at a known URI | No | Yes | Store an activation, and its selections, exclusions and presets (proposed) |
+| `POST` | Create in a collection, or run a controller | No | No, unless documented | `POST /packs/refresh` (documented idempotent); register and distribute (proposed); create an activation (reserved, #125) |
+| `PUT` | Create or replace a resource at a known URI | No | Yes | Store an activation, and its selections, exclusions and presets (reserved, #125) |
 | `PATCH` | Change part of a resource | No | No | Not used. Incremental changes are sub-resource `PUT` and `DELETE` |
-| `DELETE` | Remove a resource | No | Yes, in effect: a second call is a 404 | Remove an activation, a selection or an exclusion (proposed) |
+| `DELETE` | Remove a resource | No | Yes, in effect: a second call is a 404 | Remove an activation, a selection or an exclusion (reserved, #125) |
 
 - A `GET` never changes state.
 - A method the path does not have is a 405 with an `Allow` header. That is the service's
