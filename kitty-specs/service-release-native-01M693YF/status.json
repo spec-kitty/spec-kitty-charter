@@ -1,7 +1,7 @@
 {
-  "event_count": 11,
-  "last_event_id": "01M695F966EHCAJQDP7V2C0XWJ",
-  "materialized_at": "2026-10-31T14:22:59.782845+00:00",
+  "event_count": 12,
+  "last_event_id": "01M695K460623Y5TG2ER730T8W",
+  "materialized_at": "2026-10-31T14:25:05.728778+00:00",
   "mission_number": "",
   "mission_slug": "service-release-native-01M693YF",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -47,14 +47,19 @@
       }
     },
     "WP02": {
-      "actor": "user",
+      "actor": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01M695F966EHCAJQDP7V2C0XWJ",
-      "last_transition_at": "2026-10-31T14:22:59.782845+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M695K460623Y5TG2ER730T8W",
+      "last_transition_at": "2026-10-31T14:25:05.728778+00:00",
+      "model": "__resolved_model_absent__",
       "notes": [
         "Implementation commit fab81302 was made before the runtime claim was recorded (claim recorded afterwards); red-first evidence and verifyAll green"
       ],
+      "provider": "__resolved_provider_absent__",
+      "role": "reviewer",
       "subtasks": {
         "T005": "done",
         "T006": "done",
