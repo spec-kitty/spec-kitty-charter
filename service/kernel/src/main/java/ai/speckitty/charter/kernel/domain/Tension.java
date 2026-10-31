@@ -12,7 +12,7 @@ import java.util.Optional;
  * {@link DoctrineGraph} and is outside their unordered-pair identity (ADR-0027). It is compared as written, orientation
  * included (ADR-0036 Decision 4: the reader never turns an edge around). Today's pack files write it
  * {@code in_tension_with}; that spelling belongs to the pack policy and the writers, not to the kernel
- * (ADR-0044).
+ * (ADR-0045).
  *
  * @param from the rule the tension is authored from
  * @param to the rule the tension is authored to

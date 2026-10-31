@@ -7,7 +7,7 @@ updated: 2026-10-31T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
-  - adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field
+  - adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field
   - adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
 audience:
@@ -48,5 +48,5 @@ A writer refuses a field its document shape cannot hold instead of dropping it.
   description no longer states the −1 reading.
 
 The representation is recorded in
-[ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/), which
+[ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/), which
 is proposed and pending the operator's acceptance.

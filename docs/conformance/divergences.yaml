@@ -300,13 +300,13 @@
   service: >-
     Models both. The pack schemas' Relation enum is core's 15 values, including in_tension_with, plus impacts, 16 in all, and an edge may carry
     a numeric impacts strength. in_tension_with is today's spelling of the ADR-0028 tension: the service
-    holds it as a tension beside the relationships and writes it back as written (ADR-0044); it is never
+    holds it as a tension beside the relationships and writes it back as written (ADR-0045); it is never
     read as impacts.
   rationale: >-
     The contract leads and core aligns at the cutover. The service's own Relation type has 15
     values, the same set without in_tension_with, which is a known difference: a tension is not a
-    relation type (ADR-0044).
-  ruling: ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0044
+    relation type (ADR-0045).
+  ruling: ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045
   status: open
   since: 2026-10-19
   evidence:

@@ -107,7 +107,7 @@ No schema, operation, parameter, response or header changes (mission mission-typ
 
 - Changed (description only): the `Relation` description no longer says that a graph document's
   `in_tension_with` edge is read as `impacts` with strength -1. The service holds it as a tension
-  beside the relationships and writes it back as written (ADR-0028, ADR-0044); it never answers
+  beside the relationships and writes it back as written (ADR-0028, ADR-0045); it never answers
   `in_tension_with` as a relationship, as before. No enum value, path or wire shape changes. The
   `Removed` entry and the reserved-`impacts` item under `Added` below record the reading as it was
   then. The graph-node fields of #236 have no contract surface.
