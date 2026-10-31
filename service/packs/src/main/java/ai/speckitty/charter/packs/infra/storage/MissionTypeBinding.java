@@ -12,7 +12,7 @@ import ai.speckitty.charter.missions.domain.MissionTypeIdentifier;
 import ai.speckitty.charter.missions.domain.PathConventions;
 import ai.speckitty.charter.missions.domain.StepDocument;
 import ai.speckitty.charter.missions.domain.StepSection;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

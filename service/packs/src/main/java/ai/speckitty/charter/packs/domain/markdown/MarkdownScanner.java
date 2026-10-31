@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.storage.markdown;
+package ai.speckitty.charter.packs.domain.markdown;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * setext underline ({@code =} or {@code -} line directly under a paragraph line), and a fence still open at the end.
  * H3 and deeper, a thematic break after a blank line, HTML, lists, blockquotes and tables are text.
  */
-final class MarkdownScanner {
+public final class MarkdownScanner {
 
     /** A setext underline: up to three spaces, a run of {@code =} or of {@code -}, then only spaces or tabs. */
     private static final Pattern SETEXT_UNDERLINE = Pattern.compile("^ {0,3}(?:=+|-+)[ \\t]*$");
@@ -36,7 +36,7 @@ final class MarkdownScanner {
     private MarkdownScanner() {}
 
     /** What the scanner reads a line as. */
-    enum Kind {
+    public enum Kind {
         /** A fence opener, a line inside a fence, or a fence closer. */
         FENCED,
         /** An empty or whitespace-only line outside a fence. */
@@ -57,7 +57,7 @@ final class MarkdownScanner {
      * @param kind what the scanner reads it as
      * @param title the heading's title for {@link Kind#H1} and {@link Kind#H2}, stripped; empty otherwise
      */
-    record Line(int number, String text, Kind kind, String title) {
+    public record Line(int number, String text, Kind kind, String title) {
         /**
          * Checks the fields.
          *
@@ -66,38 +66,54 @@ final class MarkdownScanner {
          * @param kind what the scanner reads it as
          * @param title the heading's title, or empty
          */
-        Line {
+        public Line {
             Objects.requireNonNull(text, "text");
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(title, "title");
         }
     }
 
-    /** A scan stopped by a refusal; internal to this package, caught by the codec and the model. */
-    static final class Refused extends RuntimeException {
+    /**
+     * A scan stopped by a refusal: the text is ambiguous at a named line. The codec reads it as its refusal; the model
+     * reads it as the problem of a block.
+     */
+    public static final class Refused extends RuntimeException {
         private static final long serialVersionUID = 1L;
 
-        /** The refusal. */
-        @SuppressWarnings("serial")
-        private final MarkdownRefusal refusal;
+        /** The 1-based line the refusal names. */
+        private final int line;
+
+        /** Why the text is refused: a short, stable phrase. */
+        private final String reason;
 
         /**
-         * A stop with the refusal.
+         * A stop at a line.
          *
-         * @param refusal why
+         * @param line the 1-based line
+         * @param reason why
          */
-        Refused(MarkdownRefusal refusal) {
-            super(refusal.message(), null, false, false);
-            this.refusal = refusal;
+        Refused(int line, String reason) {
+            super("line " + line + ": " + reason, null, false, false);
+            this.line = line;
+            this.reason = reason;
         }
 
         /**
-         * The refusal.
+         * The line the refusal names.
          *
-         * @return why the scan stopped
+         * @return the 1-based line
          */
-        MarkdownRefusal refusal() {
-            return refusal;
+        public int line() {
+            return line;
+        }
+
+        /**
+         * Why the text is refused.
+         *
+         * @return the reason, used verbatim in violations
+         */
+        public String reason() {
+            return reason;
         }
     }
 
@@ -158,7 +174,7 @@ final class MarkdownScanner {
      * @return every line, classified
      * @throws Refused when a line is ambiguous, or a fence is still open at the end
      */
-    static List<Line> scan(List<String> lines, int firstNumber) {
+    public static List<Line> scan(List<String> lines, int firstNumber) {
         FenceTracker fences = new FenceTracker();
         List<Line> scanned = new ArrayList<>(lines.size());
         boolean underParagraph = false;
@@ -209,7 +225,7 @@ final class MarkdownScanner {
             }
             return Optional.empty();
         } catch (Refused e) {
-            return Optional.of(e.refusal().message());
+            return Optional.of(String.valueOf(e.getMessage()));
         }
     }
 
@@ -290,6 +306,9 @@ final class MarkdownScanner {
      * Whether a line is a thematic break: up to three spaces, then three or more of one of {@code - * _} with only
      * spaces or tabs between and after them. One pass over the line, so no line length can exhaust the stack (a
      * repeated regex group recursed once per marker).
+     *
+     * @param text the line, without its newline
+     * @return whether it is a thematic break
      */
     static boolean isThematicBreak(String text) {
         int indent = leadingSpaces(text);
@@ -325,9 +344,15 @@ final class MarkdownScanner {
                 && (rest.length() == level || rest.charAt(level) == ' ' || rest.charAt(level) == '\t');
     }
 
-    /** A refusal to throw. */
-    static Refused refused(int line, String reason) {
-        return new Refused(new MarkdownRefusal(line, reason));
+    /**
+     * A refusal to throw.
+     *
+     * @param line the 1-based line it names
+     * @param reason why the text is refused
+     * @return the stop, to throw
+     */
+    public static Refused refused(int line, String reason) {
+        return new Refused(line, reason);
     }
 
     private static int leadingSpaces(String line) {

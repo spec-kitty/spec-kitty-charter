@@ -11,7 +11,7 @@ enum ContentForm {
     /** A YAML document, compared by meaning; the default of a {@code files} rule. */
     YAML("yaml"),
     /**
-     * A Markdown document, read into a {@link ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument} and
+     * A Markdown document, read into a {@link ai.speckitty.charter.packs.domain.markdown.MarkdownDocument} and
      * compared by that model (#194, ADR-0040 as amended): a {@code files} rule may declare it, and its schema then
      * validates the parsed model ({@link PackSchemas#validateMarkdown}). The store reads it as a bound kind's
      * companion (a toolguide's guide, #194) or as the pack document ({@code pack.md}, #260); any other file of it fails

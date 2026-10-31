@@ -1,9 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage.markdown;
 
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument.Section;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner.Kind;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownScanner.Line;
 import ai.speckitty.charter.packs.infra.storage.FrontmatterYaml;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument.Section;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownScanner.Kind;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownScanner.Line;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -76,7 +78,7 @@ public final class MarkdownCodec {
         try {
             return new Parsed(read(text));
         } catch (MarkdownScanner.Refused e) {
-            return e.refusal();
+            return new MarkdownRefusal(e.line(), e.reason());
         }
     }
 
