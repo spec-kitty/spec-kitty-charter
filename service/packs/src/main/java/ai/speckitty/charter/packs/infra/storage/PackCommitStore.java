@@ -145,10 +145,10 @@ public final class PackCommitStore {
             @Nullable CharterArtifact artifact,
             @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
-        Path liveDir = realDirectory(resolve(pack).directory, pack);
-        locations.whyReadOnly(liveDir).ifPresent(why -> {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " " + why);
-        });
+        // The commit stages beside the live directory and swaps it, so a configured link keeps the link and its target
+        // takes the new content (#174); the real path is captured once and reused below so a retargeted link cannot
+        // redirect the swap, and the same gate refuses a pack linked from outside the configuration root (#287).
+        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
@@ -271,23 +271,6 @@ public final class PackCommitStore {
     }
 
     // ---- filesystem helpers --------------------------------------------------------------------------------------
-
-    /**
-     * The real path of a pack's live directory: the commit stages beside it and swaps it, so a pack whose configured
-     * directory is a symbolic link keeps the link and its target takes the new content (#174, ADR-0038 decision 3 as
-     * amended 2026-10-31). The staging and aside copies sit on the target's own file system, where the swap is atomic.
-     */
-    private static Path realDirectory(Path directory, PackIdentifier pack) {
-        if (!Files.isDirectory(directory)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
-        }
-        try {
-            return directory.toRealPath();
-        } catch (IOException unresolved) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be resolved", unresolved);
-        }
-    }
 
     private static Path requireParent(Path directory) {
         Path parent = directory.getParent();

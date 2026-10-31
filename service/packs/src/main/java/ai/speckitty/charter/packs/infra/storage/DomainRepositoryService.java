@@ -32,6 +32,7 @@ import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -384,15 +385,20 @@ public final class DomainRepositoryService
     private record Resolved(FilesystemPackStore store, PackIdentifier key, Path directory) {}
 
     /**
-     * Resolves a pack to write into, refusing one its {@link Locations} keeps read-only before anything is written: the
-     * check and the refusal of {@link PackCommitStore}, so a pack linked from outside the configuration root is
-     * read-only through every write path (ADR-0038 as amended 2026-10-31, #287).
+     * The real path of a pack's live directory, refused with {@code PACK_UNREADABLE} when it is not a directory, cannot
+     * be resolved, or its {@link Locations} keeps it read-only. This is the one write gate both the per-file writes
+     * ({@link #writable}) and {@link PackCommitStore#commit} apply before anything is written, so a pack linked from
+     * outside the configuration root is read-only through every write path (ADR-0038 as amended 2026-10-31, #287). The
+     * real path is captured here and reused by the caller for the write itself, so a link retargeted after the check
+     * cannot redirect the write.
      */
-    private Resolved writable(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
+    static Path writableRealDirectory(Locations locations, Path directory, PackIdentifier pack) {
+        if (!Files.isDirectory(directory)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
+        }
         Path real;
         try {
-            real = resolved.directory.toRealPath();
+            real = directory.toRealPath();
         } catch (IOException unresolved) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be resolved", unresolved);
@@ -400,7 +406,27 @@ public final class DomainRepositoryService
         locations.whyReadOnly(real).ifPresent(why -> {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " " + why);
         });
-        return resolved;
+        return real;
+    }
+
+    /**
+     * Resolves a pack to write into over the real path of its directory, refusing one its {@link Locations} keeps
+     * read-only before anything is written (#287). The store is rooted at the real parent and keyed by the real name,
+     * not by re-resolving the configured link at write time, so an in-place write lands in the link's target and a
+     * link retargeted after the read-only check cannot redirect it (as {@link PackCommitStore} reuses its live
+     * directory).
+     */
+    private Resolved writable(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        Path real = writableRealDirectory(locations, resolved.directory, pack);
+        Path realParent = real.getParent();
+        if (realParent == null || real.getFileName() == null) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no parent directory");
+        }
+        return new Resolved(
+                new FilesystemPackStore(realParent, strategy),
+                new PackIdentifier(real.getFileName().toString()),
+                real);
     }
 
     private Resolved resolve(PackIdentifier pack) {
