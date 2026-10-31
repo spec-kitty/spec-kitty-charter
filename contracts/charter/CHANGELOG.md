@@ -221,6 +221,49 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
     "<field>" of the response body is the lines:` becomes `the field at "<json-pointer>" is the lines:`. New: `the
     field at "<json-pointer>" starts with "<text>"`, `the path of the Location header is the href of the link
     "<relation>"` and `When I send <method> "<path>" as JSON with the body:`.
+- Added: `getApiRoot` (`GET /`, the server prefix with its trailing slash, `/api/v1/`; tag `Service`), the API root
+  (FR-001, ADR-0019 D2 and D4). It answers the new schema `ApiRoot`, `_links` only: `self` (`/api/v1/`), `info`,
+  `offering`, `artifacts` (the RFC 6570 template `/api/v1/packs/{packId}/artifacts{?kind}`, `templated: true`) and
+  `service-desc` (`/api/v1/openapi.yaml`). It reads no pack file, so its 200 declares no
+  `Charter-Source-Fingerprint` (the narrowed `fingerprint-on-verified-reads` already exempts `/`); 401, 403 and
+  `default`, no 500. `/api/v1` without the slash is not mapped to the root: it answers the 404 of a path no
+  operation defines, a `Problem` without a code.
+- Added: `getOffering` (`GET /offering`, new tag `Offering`), the configured packs in force (FR-002, ADR-0020 D1).
+  It answers the new schema `Offering` (`packs`, `_links.self`) of `OfferingPack` (`packId`, the configured `level`
+  as `PackLevel`, `name` and `version` from `pack.yaml`, `_links.artifacts`; no `self`, since `GET /packs/{packId}`
+  is not part of this version). The order is the merge order: by configured level (built-in, org, project), then by
+  `packId` in code-point order. The level is the configured one, never the `pack_level` a `pack.yaml` declares.
+  Merging is not applied yet (#10, #11). The 200 requires `Charter-Source-Fingerprint` (one verified read); a
+  configured pack whose directory is missing or whose `pack.yaml` is present but unreadable or invalid is a 500
+  `pack_unreadable`, and inputs that change during the read are `stale_input` (`OfferingUnreadable`).
+- Added: `ServiceInfo._links` (required): `self` (`/api/v1/info`) and `service-desc` (`/api/v1/openapi.yaml`, RFC
+  8631; #208 hand-over). The info 200 declares the new header `Link` (`headers/ServiceDescLink.yaml`, required,
+  `</api/v1/openapi.yaml>; rel="service-desc"`); no other response declares or sends `Link`.
+- Changed (descriptions and citations only): `Charter-Source-Fingerprint` names `getOffering` among the verified
+  reads; `PackLevel` describes a declared or a configured level and cites `service/kernel/.../PackLevel.java` (its
+  `x-source` named the retired `service/charter-domain/...`). The `ServiceInfo` example carries its `_links`; new
+  examples `ApiRoot.links` and `Offering.three-levels`.
+- Scenarios. The JUnit count of `CharterContractSuite` is 162 before and 180 after (+18):
+  - New `root.feature`: "The root answers its links and carries no fingerprint" (the exact body, no `Link`
+    header); "The info link of the root answers the service info", "The offering link of the root answers the
+    offering", "The service-desc link of the root answers the contract document"; "The artifacts template of the
+    root, expanded with a configured pack, answers its artifacts" and the same "with a pack and a kind"; "The root
+    needs the worktree token"; "The server prefix without its trailing slash is no operation".
+  - New `offering.feature`: "The packs are ordered by configured level, then by pack id in code-point order" (six
+    packs configured out of order, `Zeta` before `alpha` at each level, the exact body); "The configured level wins
+    over the level pack.yaml declares"; "A pack whose pack.yaml declares no level is listed at its configured
+    level"; "Without configured packs the offering is empty"; "The artifacts link of every pack answers its
+    artifacts"; "A pack whose pack.yaml is invalid refuses the offering with pack_unreadable"; "A configured pack
+    whose directory is missing refuses the offering with pack_unreadable"; "An offering whose inputs change while it
+    is answered is refused with stale_input"; "The offering needs the worktree token".
+  - `service.feature`: new "The info answer links to itself and to the contract document, and says so in a Link
+    header"; "When the packs cannot be read the refusal carries no fingerprint but still carries the other headers"
+    also pins that the 500 has no `Link` header.
+  - The scenario hook's fingerprint rule is its own, not read from the contract (R-08 revised): a `GET` answered
+    200 with a JSON body on any path but `/` carries exactly one fingerprint, equal to `/info`'s; every other `GET`
+    answer carries none; writes stay exempt. The conformance check reads the contract document's YAML as text.
+  - Steps (scenario README): new `When I follow the templated link "<relation>" with:` (a `| name | value |` table)
+    and `Then following the link "<relation>" of every element of "<member>" answers <n>`.
 
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
