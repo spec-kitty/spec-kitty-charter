@@ -29,9 +29,11 @@ under the linked-pack rules:
 - Linked from outside the configuration root, every pack in it is read-only through the service
   (`PACK_UNREADABLE`, "is linked from outside the configuration root; it is read-only through the
   service"). Edit the packs where they live.
-- Linked to a directory inside the configuration root, its packs stay writable.
-- A `packs/` link that does not resolve, resolves to a file, or resolves to the configuration root or
-  a directory above it serves no pack. It is logged as a warning that names the reason.
+- Linked to a directory inside the configuration root, outside `activations/`, its packs stay
+  writable.
+- A `packs/` link that does not resolve, resolves to a file, resolves to the configuration root or a
+  directory above it, or resolves into `activations/` serves no pack. It is logged as a warning that
+  names the reason.
 
 **Every write path keeps a linked pack read-only**
 ([#287](https://github.com/spec-kitty/spec-kitty-charter/issues/287)). The per-file saves of the
