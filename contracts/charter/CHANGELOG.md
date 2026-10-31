@@ -101,12 +101,59 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
   response description that names a code of the map that is not raised (#176).
 - Added: schemas `Link` (closed: `href` required, an absolute path under `/api/v1` or an RFC 6570 template;
   `templated`; `method`, a string matching `^(GET|POST|PUT)$`, no enum; `title`) and `Links` (an open map from a
-  relation key to a `Link`), the hypermedia components of ADR-0019 D3. No operation references them yet, so they are
-  not in the bundle.
+  relation key to a `Link`), the hypermedia components of ADR-0019 D3. The generic artifact reads below bring them
+  into the bundle.
 - Changed (closure check): the one exemption ADR-0019 D3 names. A schema reached as the property `_links`, typed
   `object` alone, whose `additionalProperties` is a schema titled `Link` that the checker proves closed, is closed.
   Every other map is still reported; fixtures pin the exemption and three lookalikes (another property name, another
   value title, an open `Link`).
+- Added: `listPackArtifacts` (`GET /packs/{packId}/artifacts`, tag `Artifacts`) and `getPackArtifact`
+  (`GET /packs/{packId}/artifacts/{kind}/{artifactId}`), the generic reads of the served kinds (tactic, directive,
+  styleguide, paradigm, toolguide), beside the per-kind routes, which stay for now (FR-003, FR-004). The list answers
+  `ArtifactPage`: `items` (`ArtifactSummary`: `kind`, `id`, `title`, `_links.self`), `page` (the shared `PageInfo`)
+  and `_links` (`self`, the request with its query; `first`, without `pageCursor`; `next` only when
+  `page.hasNextPage`). It is ordered by the served-kind order, then by id in code-point order; `kind` filters on one
+  served kind; `pageSize` is 1 to 200 (50 by default) and `pageCursor` names the position the page starts strictly
+  after, so a deleted anchor still pages on. The item answers `Artifact`, a closed envelope (`kind`, `id`, `packId`,
+  `_links` with `self` and `collection`, and exactly one kind-named member holding the kind's existing schema
+  unchanged); there is no `edit` link (R-24), so registration is not yet advertised by a link. Both 200s require
+  `Charter-Source-Fingerprint`; the item's 200 declares an optional `ETag`, sent for the writable kinds only.
+- Added: schemas `ArtifactKindToken`, `ArtifactSummary`, `ArtifactPage` and `Artifact`; parameters `ArtifactKind` (a
+  `Slug`, no enum), `ArtifactId` and `ArtifactKindFilter`; the response `ArtifactNotFound` (`pack_not_found`, then
+  `kind_not_found`, then the kind's own not-found code). `Links` now enters the bundle, and with it the `_links`
+  closure exemption. `Artifact`'s exactly-one rule is a `oneOf` of `required` branches, as for
+  `ToolguideRegistration`; the generator ignores it, and the service fills the one member. `Artifact.kind` is a
+  string with the pattern of the five tokens rather than a reference to `ArtifactKindToken`: the generator emits an
+  inline enum on a model with a `oneOf` without its `JsonValue` import, which does not compile (C-009). The generator
+  types the `kind` query parameter as a string, so the service judges an unknown value itself.
+- Added: the refusal code `kind_not_found` (404, raised): the path names an artifact kind the service does not
+  serve. The pack is judged first, so `GET /packs/nope/artifacts/bogus/x` is `pack_not_found`. An unknown `kind`
+  filter, a malformed cursor, a cursor for another kind than the filter and a `pageSize` out of range or not a
+  number are each a 400 `Problem` without a code. An id the kind's identifier rules refuse (a lower-case directive
+  id) is the kind's not-found, not a server error.
+- Changed (citations only): the vendored `PageInfo` cites each property, and itself, with `x-derived`
+  (`_shared/VENDORED.md`); the generator types `nextPageCursor` as a nullable string, so it is not narrowed. `Links`
+  and the five kind schemas (`Tactic`, `Directive`, `Styleguide`, `Paradigm`, `Toolguide`) carry a top-level
+  citation, which `resource-property-cited` reads where they are a property of `ArtifactPage` or `Artifact`. No
+  shape changes.
+- Scenarios: `artifacts.feature` is new. It holds "A tactic is read in the envelope, with no ETag" and the same for
+  a directive, a styleguide, a paradigm and a toolguide (with an ETag); "A list filtered by a served kind answers
+  that kind's summaries (the positive control of the kind filter)"; "A kind filter the service does not know is a
+  400 Problem without a code"; "A summary's title is the name of a tactic or a paradigm and the title of the other
+  kinds"; "A list without a filter is in the served-kind order, then by id in code-point order"; "An empty pack
+  answers an empty page"; "A kind the pack holds none of answers an empty page"; "A page of exactly pageSize items
+  is the last page: no next link and no trailing empty page"; "Pages of one item cross the kind boundary and serve
+  every artifact exactly once"; "A next link keeps the kind filter and the page size, and its page keeps first
+  without the cursor"; "The anchor of a cursor deleted between two pages still pages on from its position"; the
+  outlines "A bad page cursor is a 400 Problem without a code" (another kind, not base64url, a kind not served, no
+  slash), "A page size out of range or not a number is a 400 Problem without a code" (0, 201, `abc`), "An unknown
+  pack is pack_not_found, on the list and on the item" (four paths), "A path kind the service does not serve is
+  kind_not_found" (`procedure`, `bogus`) and "An unknown id of a served kind is that kind's not-found refusal" (five
+  kinds); and "A list whose inputs change while it is answered is refused with stale_input" and the same for an
+  item. `errors.feature`'s raised-code scenario lists `kind_not_found`. New steps (scenario README): `the field at
+  "<json-pointer>" is ...`, `the answer has no link "<relation>"`, `the problem has no code`, `I follow the link
+  "<relation>"`, `following "<relation>" links from the answer, the "<member>" ids are:` and `the file "<path>" of
+  the pack "<name>" is deleted`.
 
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 

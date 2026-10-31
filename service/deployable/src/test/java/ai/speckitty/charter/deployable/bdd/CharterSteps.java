@@ -279,7 +279,9 @@ public class CharterSteps {
     @Then("the field at {string} is {int}")
     public void numberAt(String pointer, int value) throws Exception {
         JsonNode field = at(pointer);
-        assertThat(field.isIntegralNumber()).as("%s is an integer: %s", pointer, field).isTrue();
+        assertThat(field.isIntegralNumber())
+                .as("%s is an integer: %s", pointer, field)
+                .isTrue();
         assertThat(field.asInt()).isEqualTo(value);
     }
 
@@ -293,14 +295,20 @@ public class CharterSteps {
     @Then("the answer has no link {string}")
     public void noLink(String relation) throws Exception {
         JsonNode links = JSON.readTree(http.body()).path(LINKS);
-        assertThat(links.isObject()).as("the answer has _links: %s", http.body()).isTrue();
-        assertThat(links.has(relation)).as("the answer has the link %s", relation).isFalse();
+        assertThat(links.isObject())
+                .as("the answer has _links: %s", http.body())
+                .isTrue();
+        assertThat(links.has(relation))
+                .as("the answer has the link %s", relation)
+                .isFalse();
     }
 
     @Then("the problem has no code")
     public void problemWithoutCode() throws Exception {
         assertThat(http.response().getContentType()).startsWith("application/problem+json");
-        assertThat(JSON.readTree(http.body()).has("code")).as("the problem has a code: %s", http.body()).isFalse();
+        assertThat(JSON.readTree(http.body()).has("code"))
+                .as("the problem has a code: %s", http.body())
+                .isFalse();
     }
 
     @When("I follow the link {string}")
@@ -318,9 +326,13 @@ public class CharterSteps {
         List<List<String>> seen = new ArrayList<>();
         JsonNode page = JSON.readTree(http.body());
         while (true) {
-            assertThat(http.response().getStatus()).as("a followed page answers 200: %s", http.body()).isEqualTo(200);
-            page.path(member).valueStream().forEach(item -> seen.add(
-                    List.of(item.path("kind").asString(), item.path("id").asString())));
+            assertThat(http.response().getStatus())
+                    .as("a followed page answers 200: %s", http.body())
+                    .isEqualTo(200);
+            page.path(member)
+                    .valueStream()
+                    .forEach(item -> seen.add(List.of(
+                            item.path("kind").asString(), item.path("id").asString())));
             if (!page.path(LINKS).has(relation)) {
                 break;
             }
@@ -332,13 +344,17 @@ public class CharterSteps {
 
     private JsonNode at(String pointer) throws Exception {
         JsonNode field = JSON.readTree(http.body()).at(pointer);
-        assertThat(field.isMissingNode()).as("the body has %s: %s", pointer, http.body()).isFalse();
+        assertThat(field.isMissingNode())
+                .as("the body has %s: %s", pointer, http.body())
+                .isFalse();
         return field;
     }
 
     private static String linkOf(JsonNode answer, String relation) {
         JsonNode href = answer.path(LINKS).path(relation).path("href");
-        assertThat(href.isString()).as("the answer has the link %s: %s", relation, answer).isTrue();
+        assertThat(href.isString())
+                .as("the answer has the link %s: %s", relation, answer)
+                .isTrue();
         return href.asString();
     }
 
