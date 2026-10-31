@@ -45,6 +45,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            toolguide:
+              $ref: ../examples/Artifact.toolguide.yaml
     '201':
       description: The toolguide was created.
       headers:
@@ -60,6 +63,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            toolguide:
+              $ref: ../examples/Artifact.toolguide.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

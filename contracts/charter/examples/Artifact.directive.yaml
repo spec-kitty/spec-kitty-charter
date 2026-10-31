@@ -1,0 +1,23 @@
+summary: A directive in the envelope, as a registration answers it; the other four kind members are absent.
+value:
+  kind: directive
+  id: GUARD
+  packId: qa
+  directive:
+    id: GUARD
+    schemaVersion: '1.0'
+    title: Guard the gate
+    intent: Guard it.
+    enforcement: required
+    scope: null
+    procedures: []
+    integrityRules: []
+    validationCriteria: []
+    explicitAllowances: []
+    references: []
+    relationships: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/directive/GUARD
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=directive

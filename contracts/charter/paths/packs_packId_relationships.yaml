@@ -4,7 +4,9 @@ put:
   description: >-
     Registers a relationship edge, idempotent on the unordered {from, to} pair (FR-009, last-write-wins):
     re-registering a pair, in either orientation, replaces it. A new pair answers 201 and a replaced one
-    200, each with the registered edge and an ETag revision (ADR-0018 D10 as amended). The from endpoint must resolve within the
+    200, each with an ETag revision (ADR-0018 D10 as amended) and a RelationshipRegistered body: the
+    registered edge as relationship, and _links holding artifacts, the list of the pack's artifacts. There
+    is no self link and no Location: this path has no GET. The from endpoint must resolve within the
     pack (else 409 registration_conflict); to may be external. The whole pack is committed atomically and
     answers an ETag revision. A relationship write is a sub-resource write: it requires an If-Match
     precondition (none supplied is 428), and a stale precondition is 412. Both 412 and 428 are plain
@@ -40,7 +42,10 @@ put:
       content:
         application/json:
           schema:
-            $ref: ../schemas/RelationshipRegistration.yaml
+            $ref: ../schemas/RelationshipRegistered.yaml
+          examples:
+            requires:
+              $ref: ../examples/RelationshipRegistered.requires.yaml
     '201':
       description: The relationship was registered; no edge was registered for the pair before.
       headers:
@@ -55,7 +60,10 @@ put:
       content:
         application/json:
           schema:
-            $ref: ../schemas/RelationshipRegistration.yaml
+            $ref: ../schemas/RelationshipRegistered.yaml
+          examples:
+            requires:
+              $ref: ../examples/RelationshipRegistered.requires.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

@@ -43,6 +43,9 @@ post:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            toolguide:
+              $ref: ../examples/Artifact.toolguide.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

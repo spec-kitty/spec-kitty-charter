@@ -43,6 +43,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            styleguide:
+              $ref: ../examples/Artifact.styleguide.yaml
     '201':
       description: The styleguide was created.
       headers:
@@ -58,6 +61,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            styleguide:
+              $ref: ../examples/Artifact.styleguide.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

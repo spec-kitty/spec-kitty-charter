@@ -1,0 +1,16 @@
+title: RelationshipRegistered
+description: >-
+  The answer of PUT /packs/{packId}/relationships (R-13): the registered relationship, unchanged, and the links
+  of what a client can read next. _links holds artifacts, the list of the pack's artifacts. It holds no self: the
+  relationships path has no GET. It is a response schema only; the request body and the relationships entries of
+  an artifact stay RelationshipRegistration, which carries no _links.
+type: object
+additionalProperties: false
+required:
+  - relationship
+  - _links
+properties:
+  relationship:
+    $ref: RelationshipRegistration.yaml
+  _links:
+    $ref: Links.yaml

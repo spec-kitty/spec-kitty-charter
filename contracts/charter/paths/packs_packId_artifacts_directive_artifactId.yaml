@@ -43,6 +43,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            directive:
+              $ref: ../examples/Artifact.directive.yaml
     '201':
       description: The directive was created.
       headers:
@@ -58,6 +61,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            directive:
+              $ref: ../examples/Artifact.directive.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

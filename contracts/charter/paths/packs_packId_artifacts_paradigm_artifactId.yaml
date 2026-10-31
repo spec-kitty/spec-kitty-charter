@@ -43,6 +43,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            paradigm:
+              $ref: ../examples/Artifact.paradigm.yaml
     '201':
       description: The paradigm was created.
       headers:
@@ -58,6 +61,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Artifact.yaml
+          examples:
+            paradigm:
+              $ref: ../examples/Artifact.paradigm.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

@@ -1,8 +1,13 @@
 files:
   - ApiRoot.links.yaml
+  - Artifact.directive.yaml
+  - Artifact.paradigm.yaml
+  - Artifact.styleguide.yaml
   - Artifact.tactic.yaml
+  - Artifact.toolguide.yaml
   - ArtifactPage.first-page.yaml
   - CharterRefusal.action-not-found.yaml
   - CharterRefusal.tactic-not-found.yaml
   - Offering.three-levels.yaml
+  - RelationshipRegistered.requires.yaml
   - ServiceInfo.one-worktree.yaml
