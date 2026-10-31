@@ -51,7 +51,7 @@
     },
     "WP02": {
       "actor": "human",
-      "agent": "claude",
+      "agent": "human:stijn-dejongh:human-in-charge",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -62,7 +62,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Docs committed (3e483ec); check_docs all, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean.",
-        "Review by the curator-carla subagent; findings folded."
+        "Review by the curator-carla subagent; findings folded.",
+        "Independent review: maintainer landing pass on PR #270, merged at 80dc882. Recorded at the operator's explicit request."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "reviewer",
