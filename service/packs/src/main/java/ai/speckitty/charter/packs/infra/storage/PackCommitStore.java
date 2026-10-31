@@ -134,8 +134,9 @@ public final class PackCommitStore {
      * @return the revision of the committed state
      * @throws PreconditionException {@link PreconditionException.Kind#STALE} when {@code ifMatch} does not match the
      *     live revision; nothing is staged or written
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack is not configured, is not a directory, or the
-     *     commit fails; in every failure case the live pack directory is unchanged
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack is not configured, is not a directory, is
+     *     read-only through the service (a pack linked from outside the configuration root), or the commit fails; in
+     *     every failure case the live pack directory is unchanged
      */
     public PackRevision commit(
             PackIdentifier pack,
@@ -144,6 +145,9 @@ public final class PackCommitStore {
             @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
         Path liveDir = realDirectory(resolve(pack).directory, pack);
+        locations.whyReadOnly(liveDir).ifPresent(why -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " " + why);
+        });
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
