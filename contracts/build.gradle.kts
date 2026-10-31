@@ -757,10 +757,17 @@ val checkContractCompatibility = tasks.register<CheckContractCompatibility>("che
 }
 
 val lintCleanFixture = layout.projectDirectory.file("lint/fixtures/clean.yaml")
+// The relation table of the hypermedia guide is the one source of the relation keys; RelationTableParityTest checks
+// the ruleset's list against it.
+val hypermediaGuide = rootProject.layout.projectDirectory.file("docs/development/hypermedia-hateoas.md")
 tasks.test {
     // The checker must pass the lint ruleset's own positive control too.
     inputs.file(lintCleanFixture).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("lintCleanFixture")
     systemProperty("charter.lintCleanFixture", lintCleanFixture.asFile.absolutePath)
+    inputs.file(hypermediaGuide).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("hypermediaGuide")
+    systemProperty("charter.hypermediaGuide", hypermediaGuide.asFile.absolutePath)
+    inputs.file(rulesetFile).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("lintRuleset")
+    systemProperty("charter.lintRuleset", rulesetFile.asFile.absolutePath)
 }
 
 val checkClosedResponseObjects = tasks.register<CheckBundle>("checkClosedResponseObjects") {

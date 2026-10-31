@@ -3,9 +3,10 @@ package ai.speckitty.charter.packs.infra.api;
 /**
  * The relation keys this service puts in {@code _links} (ADR-0019 D3), each with its wire key. Every link the service
  * builds is keyed by one of these; the set is checked against the relation table of
- * {@code docs/development/hypermedia-hateoas.md}.
+ * {@code docs/development/hypermedia-hateoas.md} by {@code RelationSetParityTest} in {@code :deployable}, which is why
+ * the enum and its wire key are public.
  */
-enum Relation {
+public enum Relation {
     SELF("self"),
     COLLECTION("collection"),
     INFO("info"),
@@ -26,7 +27,7 @@ enum Relation {
      *
      * @return the wire key, for example {@code service-desc}
      */
-    String wireKey() {
+    public String wireKey() {
         return wireKey;
     }
 }
