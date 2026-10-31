@@ -157,9 +157,9 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -167,7 +167,8 @@
       "last_transition_at": "2026-10-31T16:22:41.469369+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "GET / (getApiRoot) and GET /offering (getOffering), ServiceInfo._links and the service-desc Link header (info 200 only), PackCatalogRepository/ConfiguredPack port, PackDescriptorRepository.find (absent vs invalid), OfferingReadService (configured level, then code-point id). Fingerprint hook: GET+200+JSON+path != / (own rule). verifyAll green: deployable 462 (CharterContractSuite 162 -> 186), packs 2294 (3 skipped), kernel 841, missions 59, profiles 9, 0 failing; ArchUnit unchanged. Option A (operator ruling of 2026-10-31, configured pack without pack.yaml is 500 pack_unreadable on /offering, the list and the item) in commit 17bd12ab, red b0e1f3d1, fixture fix 27189f83. Complexity max 8 on changed methods."
+        "GET / (getApiRoot) and GET /offering (getOffering), ServiceInfo._links and the service-desc Link header (info 200 only), PackCatalogRepository/ConfiguredPack port, PackDescriptorRepository.find (absent vs invalid), OfferingReadService (configured level, then code-point id). Fingerprint hook: GET+200+JSON+path != / (own rule). verifyAll green: deployable 462 (CharterContractSuite 162 -> 186), packs 2294 (3 skipped), kernel 841, missions 59, profiles 9, 0 failing; ArchUnit unchanged. Option A (operator ruling of 2026-10-31, configured pack without pack.yaml is 500 pack_unreadable on /offering, the list and the item) in commit 17bd12ab, red b0e1f3d1, fixture fix 27189f83. Complexity max 8 on changed methods.",
+        "Cycle 2: pack.yaml check inside the item's verified read; race test added. Red bff203cd (3 failing: race answered 200 for tactic and directive; lookup before any digest), fix 61c824eb (outer read.read around judgeDescriptor + kind read, stale unless the kind fingerprint equals the outer digest). verifyAll green: deployable 462 (suite 186), packs 2297 (3 skipped), kernel 841, missions 59, profiles 9. Complexity max=15 clean; item 3, servedItem 6."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
