@@ -115,7 +115,8 @@
       "last_transition_at": "2026-10-31T14:50:51.346852+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Implementation commit 5a716994 (claim base not recorded by the single-branch runtime claim). Smoke check green on the jar in both modes, with negative controls including the pre-WP02 fail-open regression; the native jobs prove themselves on the PR's CI"
+        "Implementation commit 5a716994 (claim base not recorded by the single-branch runtime claim). Smoke check green on the jar in both modes, with negative controls including the pre-WP02 fail-open regression; the native jobs prove themselves on the PR's CI",
+        "Rework after review: CRLF on Windows (autocrlf off before checkout), portable awk instead of GNU sed, contracts/ on native paths, token header from a file, fixture README, jar job skipped for the docs site; jar smoke green"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
