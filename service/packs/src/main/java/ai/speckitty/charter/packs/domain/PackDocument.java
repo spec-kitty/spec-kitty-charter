@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -14,17 +16,21 @@ import org.jspecify.annotations.Nullable;
  * form's model (#194, ADR-0040 as amended): optional frontmatter, an optional title (the H1), a preamble (the text
  * before the first H2) and the H2 sections in order.
  *
- * <p>The domain holds the shape only; reading and writing Markdown, and the rules a text must keep to stand in a
- * document (no carriage return, no column-0 H1 or H2 inside a block, no open fence), are the content form's, applied
- * where the document is stored. A document read from a file always keeps them; one built here that breaks them is
- * refused when it is written. Two documents are equal exactly when every part is: the frontmatter as loaded YAML
- * values, every string exactly. An absent frontmatter and an empty one are different documents.
+ * <p>Reading and writing Markdown are the content form's, where the document is stored; the rules a part must keep to
+ * stand in a document are the Markdown model's own ({@link MarkdownDocument}), and the document checks every part
+ * against them when it is built (#271), so it refuses exactly the parts the codec refuses: a title or section title
+ * that is not a single, non-blank, trimmed line or would not read back as a heading's text; a preamble or content
+ * with a carriage return, a leading or trailing blank line, an H1 or H2 outside a fence, an open fence or anything
+ * else the form refuses as ambiguous; a preamble that opens the file with a {@code ---} line or a byte order mark. Two
+ * documents are equal exactly when every part is: the frontmatter as loaded YAML values, every string exactly. An
+ * absent frontmatter and an empty one are different documents.
  *
  * @param frontmatter the frontmatter mapping as loaded YAML values, if the document has one: string keys; values that
  *     are strings, booleans, numbers, lists, string-keyed mappings or a YAML null (kept as a {@code null} value, as
  *     #194's model holds it); copied deeply, unmodifiable at every level
- * @param title the H1's text, if the document has one: a single line, not blank, without surrounding whitespace
- * @param preamble the text after the title (or the frontmatter, or the start) and before the first H2; may be empty
+ * @param title the H1's text, if the document has one: a heading's text, by the Markdown model's rule
+ * @param preamble the text after the title (or the frontmatter, or the start) and before the first H2; may be empty;
+ *     a block, by the Markdown model's rule
  * @param sections the H2 sections in document order; copied, unmodifiable
  */
 public record PackDocument(
@@ -37,8 +43,9 @@ public record PackDocument(
      * @param title the H1's text, if any
      * @param preamble the preamble
      * @param sections the H2 sections
-     * @throws IllegalArgumentException when the title is not a single, non-blank, trimmed line, or the frontmatter
-     *     holds a key that is not a string or a value that is not a YAML value
+     * @throws ConstraintBreachException when the title, the preamble or the opening breaks the Markdown model's rules
+     * @throws IllegalArgumentException when the frontmatter holds a key that is not a string or a value that is not a
+     *     YAML value
      */
     public PackDocument {
         Objects.requireNonNull(frontmatter, "frontmatter");
@@ -46,15 +53,20 @@ public record PackDocument(
         Objects.requireNonNull(preamble, "preamble");
         Objects.requireNonNull(sections, "sections");
         frontmatter = frontmatter.map(PackDocument::frozen);
-        title.ifPresent(t -> requireHeading("title", t));
+        title.ifPresent(t -> guard("title", MarkdownDocument.headingProblem(t)));
+        guard("preamble", MarkdownDocument.blockProblem(preamble));
+        if (frontmatter.isEmpty() && title.isEmpty()) {
+            guard("preamble", MarkdownDocument.openingProblem(preamble));
+        }
         sections = List.copyOf(sections);
     }
 
     /**
      * One H2 section.
      *
-     * @param title the H2's text: a single line, not blank, without surrounding whitespace
-     * @param content the text after the H2 up to the next H2 or the end; may be empty
+     * @param title the H2's text: a heading's text, by the Markdown model's rule
+     * @param content the text after the H2 up to the next H2 or the end; may be empty; a block, by the Markdown
+     *     model's rule
      */
     public record Section(String title, String content) {
         /**
@@ -62,11 +74,11 @@ public record PackDocument(
          *
          * @param title the H2's text
          * @param content the section's content
-         * @throws IllegalArgumentException when the title is not a single, non-blank, trimmed line
+         * @throws ConstraintBreachException when the title or the content breaks the Markdown model's rules
          */
         public Section {
-            requireHeading("section title", title);
-            Objects.requireNonNull(content, "content");
+            guard("section title", MarkdownDocument.headingProblem(Objects.requireNonNull(title, "title")));
+            guard("section content", MarkdownDocument.blockProblem(Objects.requireNonNull(content, "content")));
         }
     }
 
@@ -98,13 +110,10 @@ public record PackDocument(
                 + value.getClass().getName());
     }
 
-    private static void requireHeading(String field, String heading) {
-        Objects.requireNonNull(heading, field);
-        if (heading.indexOf('\n') >= 0 || heading.indexOf('\r') >= 0) {
-            throw new IllegalArgumentException(field + " must be a single line");
-        }
-        if (heading.isBlank() || !heading.strip().equals(heading)) {
-            throw new IllegalArgumentException(field + " must not be blank or have surrounding whitespace");
-        }
+    /** A part the Markdown model refuses is a breach of the document's rules, naming the part. */
+    private static void guard(String part, Optional<String> problem) {
+        problem.ifPresent(why -> {
+            throw new ConstraintBreachException(part + " " + why);
+        });
     }
 }
