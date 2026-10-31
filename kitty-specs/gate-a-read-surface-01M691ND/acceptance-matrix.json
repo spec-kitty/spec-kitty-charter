@@ -148,10 +148,10 @@
       "criterion_id": "FR-015",
       "description": "Verify FR-015 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tactics.feature: 'One tactic of a pack whose directory is missing is refused with pack_unreadable (#176)' (GET /packs/qa/artifacts/tactic/rehearse -> 500 pack_unreadable, no fingerprint); verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:34.917822+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
