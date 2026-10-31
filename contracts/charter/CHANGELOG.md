@@ -277,6 +277,42 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
   "A configured pack without pack.yaml refuses the offering with pack_unreadable"; new in `artifacts.feature`: the
   outline "A configured pack without pack.yaml is pack_unreadable, on the list and on the item" (the list, the list
   filtered by `tactic`, the item of an existing tactic, of a missing one, and of an unserved kind).
+- Changed (R-13): `putPackRelationship`'s 200 and 201 answer the new response-only schema
+  `RelationshipRegistered`: `relationship`, the registered `RelationshipRegistration` unchanged, and `_links`
+  holding `artifacts`, the list of the pack's artifacts (`/api/v1/packs/{packId}/artifacts`). They answered the bare
+  `RelationshipRegistration`: a client reads the edge at `relationship` now. There is no `self` and no `Location`:
+  the relationships path has no `GET`. `RelationshipRegistration`, the request body and the `relationships` items of
+  the kinds, carries no `_links`; it gains a top-level citation only.
+- Added (lint, FR-008, FR-011): three rules, each with a planted fixture. `success-schemas-carry-links`: every 2xx
+  `application/json` schema requires `_links`. `success-responses-have-link-examples`: every 2xx `application/json`
+  response has an example, and every example it has carries `_links` at its top level. `link-relations-are-known`:
+  every key of a `_links` in an example is a relation of the table in `docs/development/hypermedia-hateoas.md`; a
+  `contracts` unit test, `RelationTableParityTest`, fails when the rule's list and the table differ. All three are
+  core vacuum functions; no Java check was needed. `clean.yaml` and every earlier fixture now carry `_links` and a
+  linked example. `fingerprint-only-on-verified-reads` also judges `HEAD`, `OPTIONS` and `TRACE` answers, with a
+  new `head` fixture.
+- Added (examples): every write's 200 and 201 carry an `Artifact` example of their kind (`Artifact.directive`,
+  `Artifact.styleguide`, `Artifact.paradigm`, `Artifact.toolguide`), and the relationships PUT the example
+  `RelationshipRegistered.requires`, so every JSON success response has a linked example.
+- Changed (descriptions only): `ArtifactKind` and `getPackArtifact` say that a kind that is not a slug is a 400
+  `Problem` without a code, before the pack is judged, while a slug that names no served kind is 404
+  `kind_not_found`. The hypermedia guide's relation table gains `service-desc`, `first` and `next`, and says where
+  the contract writes `collection`, `artifacts` and `offering`, and that `edit` is not used in this minor; the
+  service's relation set is checked against it (`RelationSetParityTest`).
+- Scenarios. The JUnit count of `CharterContractSuite` is 186 before and 189 after (+3):
+  - `relationships.feature`: "A relationship from a mission type of the pack is registered" pins the exact
+    `RelationshipRegistered` body and that it has no `self` link, instead of the field `from`.
+  - `artifacts.feature`: new outline "A path kind that is not a slug is a 400 Problem without a code, before the
+    pack is judged" (`Tactic`, `-tactic`, and `Tactic` on an unknown pack).
+  - The scenario hook checks the links of every 2xx JSON answer (R-20), statically: `_links.self.href` is `/api/v1`
+    plus the request path (and query, for a `GET`) when the URI has a `GET`, the `Location`'s path on a 201 without
+    one, and absent otherwise; every link at any depth resolves to a path template of the contract that defines its
+    `method`; `templated` matches the `href`; a 201's `Location` path is its `self`; every relation key is in the
+    guide's table. After the last scenario, the suite fails when a 2xx status of an operation was exercised by no
+    scenario, and lists the gaps. Every one of the 20 is exercised, so no scenario was added for coverage.
+  - Steps (scenario README): `following "<relation>" links from the answer, the "<member>" ids are:` stops at 100
+    pages, so a looping `next` fails instead of hanging. The conformance check refuses an `additionalProperties`
+    mapping that holds only annotations.
 
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
