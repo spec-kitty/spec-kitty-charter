@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "human",
-      "agent": "claude",
+      "agent": "human:stijn-dejongh:human-in-charge",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 3,
@@ -33,7 +33,8 @@
         "Tests drafted first (red at compile, then green); analyze ran after the code was drafted (analysis P1). :packs:test, openPacksRoundTrip, wholePackRoundTrip and verifyAll green.",
         "Review (reviewer-renata): changes requested: unwritable documents escaping as runtime errors; no domain tests; non-YAML frontmatter values; long Javadoc lines.",
         "Review findings 1-4 folded (fix commit); finding 5 is the ADR's annotate-in-place style, kept.",
-        "Review by the reviewer-renata subagent; findings folded in the fix commit."
+        "Review by the reviewer-renata subagent; findings folded in the fix commit.",
+        "Independent review: maintainer landing pass on PR #270, merged at 80dc882. Recorded at the operator's explicit request."
       ],
       "provider": "__resolved_provider_absent__",
       "role": "reviewer",
