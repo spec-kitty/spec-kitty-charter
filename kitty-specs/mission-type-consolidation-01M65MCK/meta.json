@@ -1,0 +1,34 @@
+{
+  "accept_commit": "7ee006beed520eb0e9777e91d932ca057b2fdd66",
+  "acceptance_history": [
+    {
+      "accept_commit": "7ee006beed520eb0e9777e91d932ca057b2fdd66",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-31T06:31:27.448957+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "89c857d865b4641223e28eeab62094f6d352b7d6"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-31T06:31:27.448957+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "89c857d865b4641223e28eeab62094f6d352b7d6",
+  "baseline_merge_commit": "0c09935d2df33a0702638ec01e18bf71b3c0e4ff",
+  "created_at": "2026-10-30T05:26:43.446218+00:00",
+  "flattened": false,
+  "friendly_name": "Mission-type consolidation into the sanitized model",
+  "merged_at": "2026-10-31T06:31:54.450666+00:00",
+  "merged_commit": "0c09935d2df33a0702638ec01e18bf71b3c0e4ff",
+  "mid8": "01M65MCK",
+  "mission_id": "01M65MCK6383QZ6ZS3NFWNE5GC",
+  "mission_number": 13,
+  "mission_slug": "mission-type-consolidation-01M65MCK",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Part of the 4.0 GA whole-pack round trip (epic #186, issue #194 PR-B). The mission tier of the Charter Packs is spread over mission types, mission definitions, runtime sidecars, action indexes, governance profiles and expected-artifact manifests. It is consolidated into two deliberately designed storage shapes, mission_type and mission_step, each with a schema, read into the charter domain and written back with equal meaning; pinned content is migrated with the service's own writer rather than tolerated.",
+  "purpose_tldr": "Consolidate the mission tier into two sanitized pack kinds, mission_type and mission_step, and bring them into the whole-pack round trip.",
+  "slug": "mission-type-consolidation-01M65MCK",
+  "status_phase": "1",
+  "target_branch": "issue-194-mission-type-consolidation",
+  "topology": "single_branch"
+}

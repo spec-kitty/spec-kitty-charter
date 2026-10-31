@@ -1,0 +1,4 @@
+$ python3 -I verify_migration.py <pin 5df92a5d> <migrated 12b0e55>
+counts: {'types': 6, 'steps': 40, 'on_demand': 6, 'prompts': 43, 'guidelines': 17, 'template_paths': 13, 'added': 66, 'added_companions': 60, 'retired_deleted': 153, 'dropped_titles': 17, 'frontmatter_only_descriptions': 4, 'uncarried_action_indexes': 1}
+problems: 0
+exit code: 0
