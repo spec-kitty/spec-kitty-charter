@@ -55,9 +55,9 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -65,7 +65,8 @@
       "last_transition_at": "2026-10-31T14:25:30.289703+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Link/Links schemas in the #125-agreed shape (+_index); structural _links closure exemption (LinksMap) with 4 fixtures, red-first; ContractConformance validates schema-valued additionalProperties (true/{}/null still refused) and matches path+method preferring the concrete template, red-first; Relation enum + Hypermedia builder (package-private LinkValue record) with HypermediaTest. verifyAll green: contracts 181, deployable 373, packs 2224 (3 skipped), kernel 841, missions 59, profiles 9; 0 failures. No new suppressions."
+        "Link/Links schemas in the #125-agreed shape (+_index); structural _links closure exemption (LinksMap) with 4 fixtures, red-first; ContractConformance validates schema-valued additionalProperties (true/{}/null still refused) and matches path+method preferring the concrete template, red-first; Relation enum + Hypermedia builder (package-private LinkValue record) with HypermediaTest. verifyAll green: contracts 181, deployable 373, packs 2224 (3 skipped), kernel 841, missions 59, profiles 9; 0 failures. No new suppressions.",
+        "Cycle 2: bound() split, complexity ≤15 (measured). Checkstyle 14.3.0 CyclomaticComplexity max=15 on all changed files: 0 violations, max 14 (vetNode, constrain). Commit d9ece0db. deployable:test/check green (373), verifyAll green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
