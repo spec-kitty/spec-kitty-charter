@@ -1,5 +1,8 @@
 title: ServiceInfo
-description: What the service says about itself, so the seam in core can check it talks to the right service about the right files (ADR-0011).
+description: >-
+  What the service says about itself, so the seam in core can check it talks to the right service
+  about the right files (ADR-0011). _links holds self and service-desc, the contract document the
+  service was built against (RFC 8631, #208).
 type: object
 additionalProperties: false
 required:
@@ -7,6 +10,7 @@ required:
   - serviceVersion
   - worktree
   - sourceFingerprint
+  - _links
 properties:
   contractVersion:
     type: string
@@ -51,3 +55,5 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/ProjectConfigSources.java
       symbol: ProjectConfigSources.fingerprint
+  _links:
+    $ref: Links.yaml

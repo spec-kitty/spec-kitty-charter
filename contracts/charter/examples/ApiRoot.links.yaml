@@ -1,0 +1,14 @@
+summary: The API root and its links.
+value:
+  _links:
+    self:
+      href: /api/v1/
+    info:
+      href: /api/v1/info
+    offering:
+      href: /api/v1/offering
+    artifacts:
+      href: /api/v1/packs/{packId}/artifacts{?kind}
+      templated: true
+    service-desc:
+      href: /api/v1/openapi.yaml

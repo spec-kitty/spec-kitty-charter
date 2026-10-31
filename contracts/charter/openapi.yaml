@@ -14,7 +14,9 @@ security:
   - charterWorktreeToken: []
 tags:
   - name: Service
-    description: What the service says about itself.
+    description: What the service says about itself, and the API root a client starts from.
+  - name: Offering
+    description: The Charter Packs the service is configured with, in the merge order.
   - name: Directives
     description: The directives of a Charter Pack.
   - name: Styleguides
@@ -30,10 +32,14 @@ tags:
       The artifacts of a Charter Pack of every served kind, read through one paged list and one
       item.
 paths:
+  /:
+    $ref: paths/root.yaml
   /info:
     $ref: paths/info.yaml
   /openapi.yaml:
     $ref: paths/openapi.yaml
+  /offering:
+    $ref: paths/offering.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
   /packs/{packId}/artifacts:

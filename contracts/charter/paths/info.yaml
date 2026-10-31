@@ -9,7 +9,9 @@ get:
     from (ADR-0011). It is not an identity proof of the server: the worktree token proves the client
     to the service, never the service to the client. It digests the inputs twice, so a pack that
     cannot be read refuses it with a 500, and inputs that changed between the two digests refuse it
-    with a 500 stale_input, which may be retried. Like every operation it needs the worktree token.
+    with a 500 stale_input, which may be retried. _links holds self and service-desc, the contract
+    document (RFC 8631), and the answer names the same document in a Link header, the only answer that
+    sends one (#208). Like every operation it needs the worktree token.
   tags:
     - Service
   responses:
@@ -22,6 +24,8 @@ get:
           $ref: ../headers/CharterWorktree.yaml
         Charter-Source-Fingerprint:
           $ref: ../headers/CharterSourceFingerprint.yaml
+        Link:
+          $ref: ../headers/ServiceDescLink.yaml
       content:
         application/json:
           schema:

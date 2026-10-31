@@ -1,0 +1,8 @@
+description: >-
+  The service-desc link of RFC 8631 as a Link header (RFC 8288): the contract document the service
+  was built against, the same target as the service-desc link of the body. It is sent on the 200 of
+  getServiceInfo only (#208); no other answer carries a Link header.
+required: true
+schema:
+  type: string
+  pattern: '^</api/v1/openapi\.yaml>; rel="service-desc"$'
