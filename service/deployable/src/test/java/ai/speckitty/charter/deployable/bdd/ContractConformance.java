@@ -289,31 +289,9 @@ final class ContractConformance {
                     }
                 }
                 case "oneOf" -> validateOneOf(value, argument, resolved, at, violations);
-                case "properties" -> {
-                    for (Map.Entry<String, Object> property :
-                            mapping(argument, at + " properties").entrySet()) {
-                        JsonNode member = value.isObject() ? value.get(property.getKey()) : null;
-                        if (member != null) {
-                            validate(
-                                    member,
-                                    new Located(mapping(property.getValue(), property.getKey()), resolved.file()),
-                                    at + "." + property.getKey(),
-                                    violations);
-                        }
-                    }
-                }
+                case "properties" -> validateProperties(value, argument, resolved, at, violations);
                 case "additionalProperties" -> validateAdditional(value, argument, resolved, at, violations);
-                case "items" -> {
-                    if (value.isArray()) {
-                        for (int i = 0; i < value.size(); i++) {
-                            validate(
-                                    value.get(i),
-                                    new Located(mapping(argument, at + " items"), resolved.file()),
-                                    at + "[" + i + "]",
-                                    violations);
-                        }
-                    }
-                }
+                case "items" -> validateItems(value, argument, resolved, at, violations);
                 default -> {
                     if (CONSTRAINTS.contains(key)) {
                         constrain(value, key, argument, at, violations);
@@ -322,6 +300,34 @@ final class ContractConformance {
                                 + "', which this check does not implement");
                     }
                 }
+            }
+        }
+    }
+
+    private void validateProperties(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        for (Map.Entry<String, Object> property :
+                mapping(argument, at + " properties").entrySet()) {
+            JsonNode member = value.isObject() ? value.get(property.getKey()) : null;
+            if (member != null) {
+                validate(
+                        member,
+                        new Located(mapping(property.getValue(), property.getKey()), resolved.file()),
+                        at + "." + property.getKey(),
+                        violations);
+            }
+        }
+    }
+
+    private void validateItems(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        if (value.isArray()) {
+            for (int i = 0; i < value.size(); i++) {
+                validate(
+                        value.get(i),
+                        new Located(mapping(argument, at + " items"), resolved.file()),
+                        at + "[" + i + "]",
+                        violations);
             }
         }
     }
