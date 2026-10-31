@@ -3,7 +3,9 @@ package ai.speckitty.charter.packs.infra.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.api.model.Link;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +70,38 @@ class HypermediaTest {
                 .containsExactly(
                         Map.entry("self", hypermedia.link("info")),
                         Map.entry("service-desc", hypermedia.link("openapi.yaml")));
+    }
+
+    @Test
+    void aQueryIsWrittenInTheGivenOrderEachValueEncoded() {
+        Map<String, String> query = new LinkedHashMap<>();
+        query.put("kind", "tactic");
+        query.put("pageSize", "1");
+        query.put("pageCursor", "a b&c=d");
+
+        Hypermedia.LinkValue link = hypermedia.link(query, "packs", "my pack", "artifacts");
+
+        assertThat(link.href())
+                .isEqualTo("/api/v1/packs/my%20pack/artifacts?kind=tactic&pageSize=1&pageCursor=a%20b%26c%3Dd");
+        assertThat(link.templated()).isNull();
+        assertThat(link.method()).isNull();
+        assertThat(hypermedia.link(Map.of(), "packs", "qa", "artifacts").href())
+                .isEqualTo("/api/v1/packs/qa/artifacts");
+    }
+
+    @Test
+    void theWireLinksAreTheContractDtosInRelationOrderWithAbsentMembersLeftNull() {
+        Map<Relation, Hypermedia.LinkValue> links = new EnumMap<>(Relation.class);
+        links.put(Relation.NEXT, hypermedia.link(Hypermedia.Method.PUT, "packs"));
+        links.put(Relation.SELF, hypermedia.templated("{?kind}", "packs"));
+
+        Map<String, Link> wire = Hypermedia.wire(links);
+
+        assertThat(wire).containsOnlyKeys("self", "next");
+        assertThat(wire.keySet()).containsExactly("self", "next");
+        assertThat(wire.get("self")).isEqualTo(new Link("/api/v1/packs{?kind}").templated(true));
+        assertThat(wire.get("next")).isEqualTo(new Link("/api/v1/packs").method("PUT"));
+        assertThat(wire.get("next").getTemplated()).isNull();
     }
 
     @Test

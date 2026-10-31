@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.ArtifactReadService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -28,11 +31,18 @@ class WireTokenParityTest {
             Function<String, ?> fromValue) {}
 
     private static List<Pair> pairs() {
-        return List.of(new Pair(
-                "CharterRefusalCode",
-                tokens(RefusalCode.values(), RefusalCode::token),
-                values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
-                CharterRefusal.CodeEnum::fromValue));
+        return List.of(
+                new Pair(
+                        "CharterRefusalCode",
+                        tokens(RefusalCode.values(), RefusalCode::token),
+                        values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
+                        CharterRefusal.CodeEnum::fromValue),
+                // The served kinds against ArtifactKindToken, as the generator types it on ArtifactSummary.kind.
+                new Pair(
+                        "ArtifactKindToken",
+                        tokens(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new), ArtifactKind::token),
+                        values(ArtifactSummary.KindEnum.values(), ArtifactSummary.KindEnum::getValue),
+                        ArtifactSummary.KindEnum::fromValue));
     }
 
     private static <E> List<String> tokens(E[] constants, Function<E, String> token) {
