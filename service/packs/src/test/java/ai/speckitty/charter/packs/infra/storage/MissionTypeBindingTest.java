@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.missions.domain.ArtifactClass;
 import ai.speckitty.charter.missions.domain.MissionReference;
 import ai.speckitty.charter.missions.domain.MissionStep;
@@ -22,11 +23,13 @@ import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -332,6 +335,101 @@ class MissionTypeBindingTest {
                 .hasMessage("mission_type 'research' names templates/spec-template.md (named by step 'scoping'):"
                         + " missing");
         assertThat(pack.resolve(FILE)).hasContent(before);
+    }
+
+    /** The fixture with its scoping step's output naming {@code templates/spec-template.md}, which it holds. */
+    private Path withSpecTemplate() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.writeString(
+                pack.resolve(FILE),
+                Files.readString(pack.resolve(FILE))
+                        .replace(
+                                "    path_pattern: spec.md\n    blocking: true\n",
+                                "    path_pattern: spec.md\n    blocking: true\n    template_path:"
+                                        + " templates/spec-template.md\n"));
+        Files.createDirectories(pack.resolve("missions/research/templates"));
+        Files.writeString(pack.resolve("missions/research/templates/spec-template.md"), "# Spec\n");
+        return pack;
+    }
+
+    private static final String UNRESOLVED =
+            "templates/spec-template.md (named by step 'scoping'): is not a template of the type";
+
+    @Test
+    @DisplayName("#277: an output template resolves to the type's own template when the pack is assembled; a template"
+            + " of the same id outside the type's templates/, or none, refuses the type")
+    void anOutputTemplateResolvesToTheTypesOwnTemplate() throws IOException {
+        withSpecTemplate();
+        FilesystemPackStore.PackRead read = read();
+        FilesystemPackStore.TemplateFile own = read.templates().stream()
+                .filter(file -> file.place().equals("missions/research/templates/spec-template.md"))
+                .findFirst()
+                .orElseThrow();
+
+        Pack resolved =
+                DomainRepositoryService.assembly(PACK_ID, read, new HashMap<>()).build();
+        assertThat(resolved.violations()).isEmpty();
+        assertThat(missionType(resolved).templateReferences())
+                .extracting(
+                        reference -> reference.templateId(missionType(resolved).id()))
+                .containsExactly("research/spec-template.md");
+
+        for (List<FilesystemPackStore.TemplateFile> templates : List.of(
+                List.of(new FilesystemPackStore.TemplateFile(
+                        own.path(), own.content(), "templates/research/spec-template.md")),
+                List.<FilesystemPackStore.TemplateFile>of())) {
+            Pack refused = DomainRepositoryService.assembly(
+                            PACK_ID,
+                            new FilesystemPackStore.PackRead(
+                                    read.descriptor(),
+                                    read.elements(),
+                                    read.violations(),
+                                    read.assetFiles(),
+                                    templates,
+                                    read.presets(),
+                                    read.document()),
+                            new HashMap<>())
+                    .build();
+            assertThat(refused.artifacts(ArtifactKind.MISSION_TYPE))
+                    .as("%s", templates)
+                    .isEmpty();
+            assertThat(refused.violations())
+                    .as("%s", templates)
+                    .containsExactly(new PackElementViolation(FILE, "reference", UNRESOLVED));
+        }
+    }
+
+    @Test
+    @DisplayName("#277: a whole-pack write whose type names no template of the aggregate is refused before anything"
+            + " is written; the type's own template writes")
+    void aWholePackWriteNamingNoTemplateOfTheAggregateIsRefused() throws IOException {
+        Path pack = withSpecTemplate();
+        WholePackStore store = new WholePackStore(strategy);
+        WholePackStore.LoadedPack loaded = store.load(pack);
+        Template own = loaded.pack().templates().stream()
+                .filter(template -> template.id().value().equals("research/spec-template.md"))
+                .findFirst()
+                .orElseThrow();
+        // The same id, filed under the pack's top-level templates/: the write would put it at
+        // templates/research/spec-template.md, where the type's path does not lead.
+        Template topLevel = Template.builder()
+                .id(own.id())
+                .packId(own.packId())
+                .content(own.content())
+                .build();
+        WholePackStore.LoadedPack moved = new WholePackStore.LoadedPack(
+                loaded.pack().with(topLevel), loaded.layout(), loaded.graphs(), loaded.unmodelled(), loaded.manifest());
+        Path refused = host.resolve("refused").resolve(PACK);
+
+        Path clean = host.resolve("clean").resolve(PACK);
+        store.write(loaded, clean);
+        assertThat(clean.resolve(FILE)).as("the path is kept as written").hasSameBinaryContentAs(pack.resolve(FILE));
+
+        assertThatThrownBy(() -> store.write(moved, refused)).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+            assertThat(refusal.getMessage()).isEqualTo("mission_type 'research' names " + UNRESOLVED);
+        });
+        assertThat(refused).doesNotExist();
     }
 
     @ParameterizedTest(name = "[{index}] {2}")
