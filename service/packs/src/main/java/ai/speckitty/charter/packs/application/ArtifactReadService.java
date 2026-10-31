@@ -3,12 +3,15 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -32,9 +35,14 @@ import org.springframework.stereotype.Service;
  * item delegates to the per-kind read service of its kind.
  *
  * <p>The list is one read verified by {@link ConsistentRead}: the pack aggregate is loaded between two digests, so a
- * page and its fingerprint name the same inputs. The pack is judged before the kind: a pack the storage cannot
- * resolve is refused {@link RefusalCode#PACK_NOT_FOUND}, as the per-kind reads refuse it, then a kind outside
- * {@link #SERVED} is refused {@link RefusalCode#KIND_NOT_FOUND}, inside the same kind of verified read.
+ * page and its fingerprint name the same inputs. The pack is judged before the kind: an identifier that names no
+ * configured pack is refused {@link RefusalCode#PACK_NOT_FOUND}, then a kind outside {@link #SERVED} is refused
+ * {@link RefusalCode#KIND_NOT_FOUND}, inside the same kind of verified read.
+ *
+ * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
+ * 2026-10-31): the list and the item of every kind refuse it {@link RefusalCode#PACK_UNREADABLE}, never
+ * {@code PACK_NOT_FOUND}, since it is configured. The item judges the descriptor before it delegates to the kind's read,
+ * which reads one file and would otherwise answer the artifact of a pack that cannot be read as a whole.
  */
 @Service
 public final class ArtifactReadService {
@@ -57,6 +65,8 @@ public final class ArtifactReadService {
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND);
 
     private final PackRepository packs;
+    private final PackCatalogRepository catalog;
+    private final PackDescriptorRepository descriptors;
     private final ConsistentRead read;
     private final TacticReadService tactics;
     private final DirectiveReadService directives;
@@ -189,6 +199,8 @@ public final class ArtifactReadService {
      * A service over the pack port and the per-kind reads.
      *
      * @param packs the port that loads a pack aggregate, for the list and the pack check of an unserved kind
+     * @param catalog the port that lists the configured packs, which tells an unreadable pack from an unknown one
+     * @param descriptors the port that reads a pack's descriptor, judged before an item is read
      * @param read the verifier that digests the inputs before and after each read
      * @param tactics the tactic reads an item of that kind delegates to
      * @param directives the directive reads an item of that kind delegates to
@@ -199,6 +211,8 @@ public final class ArtifactReadService {
     @Autowired
     public ArtifactReadService(
             PackRepository packs,
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
             ConsistentRead read,
             TacticReadService tactics,
             DirectiveReadService directives,
@@ -206,6 +220,8 @@ public final class ArtifactReadService {
             ParadigmReadService paradigms,
             ToolguideReadService toolguides) {
         this.packs = Objects.requireNonNull(packs, "packs");
+        this.catalog = Objects.requireNonNull(catalog, "catalog");
+        this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
         this.tactics = Objects.requireNonNull(tactics, "tactics");
         this.directives = Objects.requireNonNull(directives, "directives");
@@ -234,7 +250,8 @@ public final class ArtifactReadService {
      * @return the page and the verified fingerprint
      * @throws IllegalArgumentException when {@code size} is below 1 or {@code filter} is not a served kind
      * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file cannot be
-     *     read, with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier, or with
+     *     read, this pack included when it has no readable {@code pack.yaml}, with {@link RefusalCode#PACK_NOT_FOUND}
+     *     when no configured pack has this identifier, or with
      *     {@link RefusalCode#STALE_INPUT} when the inputs changed while the page was read
      */
     public ConsistentRead.Verified<Page> list(
@@ -259,7 +276,8 @@ public final class ArtifactReadService {
      * @param id the artifact's id within its kind
      * @return the artifact typed by its kind, and the verified fingerprint
      * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
-     *     whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no served kind; with the
+     *     whatever the kind; with {@link RefusalCode#PACK_UNREADABLE} when the configured pack has no readable
+     *     {@code pack.yaml}, whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no served kind; with the
      *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_UNREADABLE} or
      *     {@link RefusalCode#STALE_INPUT} as every verified read refuses
      */
@@ -268,6 +286,9 @@ public final class ArtifactReadService {
         Objects.requireNonNull(kindToken, "kindToken");
         Objects.requireNonNull(id, "id");
         Optional<ArtifactKind> kind = servedKind(kindToken);
+        if (kind.isPresent()) {
+            judgeDescriptor(pack);
+        }
         if (kind.isEmpty()) {
             return refusedAfterThePack(
                     pack,
@@ -374,15 +395,46 @@ public final class ArtifactReadService {
         return new Page(rest.subList(0, Math.min(size, rest.size())), rest.size() > size);
     }
 
-    /** The pack aggregate; a pack the storage cannot resolve or read is, to the caller, a pack that is not there. */
+    /**
+     * The pack aggregate. A refusal to read it is {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has the
+     * identifier, and stays {@link RefusalCode#PACK_UNREADABLE} for a configured pack (one without a readable
+     * {@code pack.yaml} among them).
+     */
     private Pack load(PackIdentifier pack) {
         try {
             return packs.load(pack);
         } catch (CharterRefusal refused) {
-            if (refused.code() != RefusalCode.PACK_UNREADABLE) {
-                throw refused;
-            }
-            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
+            throw judged(pack, refused);
         }
+    }
+
+    /**
+     * Refuses a pack the item cannot read as a canonical pack, before the kind's read, which reads one file: its
+     * descriptor must be there and readable. It is not a verified read; the kind's read that follows is one, and a
+     * change in between is caught there.
+     */
+    private void judgeDescriptor(PackIdentifier pack) {
+        Optional<PackDescriptor> descriptor;
+        try {
+            descriptor = descriptors.find(pack);
+        } catch (CharterRefusal refused) {
+            throw judged(pack, refused);
+        }
+        if (descriptor.isEmpty()) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml");
+        }
+    }
+
+    /** An unreadable pack is not found when no configured pack has the identifier; every other refusal stays. */
+    private CharterRefusal judged(PackIdentifier pack, CharterRefusal refused) {
+        if (refused.code() != RefusalCode.PACK_UNREADABLE || isConfigured(pack)) {
+            return refused;
+        }
+        return new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.", refused);
+    }
+
+    private boolean isConfigured(PackIdentifier pack) {
+        return catalog.configured().stream()
+                .anyMatch(configured -> configured.id().equals(pack));
     }
 }

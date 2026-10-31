@@ -8,8 +8,10 @@ get:
     judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a
     404 pack_not_found, whatever the kind. Then a kind the service does not serve is a 404
     kind_not_found, and an id the pack does not hold is the not-found code of its kind. A configured
-    pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be
-    read or a directory that cannot be listed, is a 500 pack_unreadable. The answer is verified against
+    pack whose directory is missing or that has no readable pack.yaml (none, or an invalid one;
+    operator ruling of 2026-10-31), whatever kind and id the request names, or a pack holding a file
+    the fingerprint covers that cannot be read or a directory that cannot be listed, is a 500
+    pack_unreadable. The answer is verified against
     the source fingerprint and carries it; inputs that change while it is read are stale_input. A
     directive, a styleguide, a paradigm or a toolguide also carries the pack revision as its ETag, for
     a later write; a tactic, which has no write, carries none. There is no write on this templated

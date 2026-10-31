@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -11,7 +12,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>It is one read verified by {@link ConsistentRead}: the catalog and every descriptor are read between two
  * digests, so the list and its fingerprint name the same inputs. A pack whose descriptor cannot be read refuses the
- * whole offering; it is never partial.
+ * whole offering; it is never partial. A configured pack without a {@code pack.yaml} is no readable canonical pack
+ * either (operator ruling of 2026-10-31): it refuses the offering as unreadable, as an invalid one does.
  */
 @Service
 public final class OfferingReadService {
@@ -45,18 +46,18 @@ public final class OfferingReadService {
      *
      * @param id the configured identifier of the pack
      * @param level the level the pack is configured at
-     * @param name the name its descriptor gives; empty when it has none
-     * @param version the version its descriptor gives; empty when it has none
+     * @param name the name its descriptor gives
+     * @param version the version its descriptor gives
      */
-    public record OfferingEntry(PackIdentifier id, PackLevel level, Optional<String> name, Optional<String> version) {
+    public record OfferingEntry(PackIdentifier id, PackLevel level, String name, String version) {
 
         /**
          * An entry.
          *
          * @param id the configured identifier
          * @param level the configured level
-         * @param name the descriptor's name, if any
-         * @param version the descriptor's version, if any
+         * @param name the descriptor's name
+         * @param version the descriptor's version
          */
         public OfferingEntry {
             Objects.requireNonNull(id, "id");
@@ -86,8 +87,8 @@ public final class OfferingReadService {
      *
      * @return the entries and the verified fingerprint
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read, a configured pack's directory
-     *     is missing or its descriptor is there but cannot be read, or with {@code STALE_INPUT} when the inputs changed
-     *     while the offering was read
+     *     is missing or it has no readable descriptor (none, or one that cannot be read), or with {@code STALE_INPUT}
+     *     when the inputs changed while the offering was read
      */
     public ConsistentRead.Verified<List<OfferingEntry>> offering() {
         return read.read(
@@ -99,11 +100,10 @@ public final class OfferingReadService {
     }
 
     private OfferingEntry entry(ConfiguredPack pack) {
-        Optional<PackDescriptor> descriptor = descriptors.find(pack.id());
-        return new OfferingEntry(
-                pack.id(),
-                pack.level(),
-                descriptor.map(PackDescriptor::name),
-                descriptor.map(PackDescriptor::packVersion));
+        PackDescriptor descriptor = descriptors
+                .find(pack.id())
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " has no pack.yaml"));
+        return new OfferingEntry(pack.id(), pack.level(), descriptor.name(), descriptor.packVersion());
     }
 }

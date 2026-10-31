@@ -1,8 +1,9 @@
 description: >-
   A configured Charter Pack could not be read, the packs changed while the read was answered, or the
   service failed unexpectedly, refused with 500. The answer is never partial. The code names the
-  reason, and it is one of three: pack_unreadable, when a configured pack's directory is missing or a
-  file the fingerprint covers cannot be read or a directory cannot be listed; stale_input, when the
+  reason, and it is one of three: pack_unreadable, when a configured pack's directory is missing, it
+  has no readable pack.yaml, or a file the fingerprint covers cannot be read or a directory cannot be
+  listed; stale_input, when the
   packs or the project configuration changed while the read was answered, which may be retried; and
   internal_error, an unexpected failure, which may be retried. A refusal carries no source
   fingerprint header.

@@ -46,10 +46,10 @@ public class OfferingController implements OfferingApi {
     private OfferingPack pack(OfferingReadService.OfferingEntry entry) {
         String id = entry.id().value();
         return new OfferingPack(
-                        id,
-                        OfferingPack.LevelEnum.fromValue(entry.level().token()),
-                        Hypermedia.wire(Map.of(Relation.ARTIFACTS, links.link("packs", id, "artifacts"))))
-                .name(entry.name().orElse(null))
-                .version(entry.version().orElse(null));
+                id,
+                OfferingPack.LevelEnum.fromValue(entry.level().token()),
+                entry.name(),
+                entry.version(),
+                Hypermedia.wire(Map.of(Relation.ARTIFACTS, links.link("packs", id, "artifacts"))));
     }
 }

@@ -8,8 +8,8 @@ get:
     in code-point order, so Zeta comes before alpha. The level is the configured one, never the
     pack_level a pack.yaml declares. Merging is not applied yet (#10, #11): the offering lists the
     packs, not a merged result. The answer is one read verified against the source fingerprint, and
-    carries it. A configured pack whose directory is missing, or whose pack.yaml is there but cannot
-    be read or is invalid, or any input the fingerprint covers that cannot be read, refuses the whole
+    carries it. A configured pack whose directory is missing, that has no pack.yaml, or whose pack.yaml
+    cannot be read or is invalid, or any input the fingerprint covers that cannot be read, refuses the whole
     answer with a 500 pack_unreadable; inputs that change while it is read refuse it with
     stale_input, which may be retried. Like every operation it needs the worktree token.
   tags:

@@ -2,12 +2,16 @@ title: OfferingPack
 description: >-
   One configured pack as the offering names it: its id, the level it is configured at, the name and
   the version its pack.yaml gives, and the link to its artifacts. There is no self link: reading one
-  pack (GET /packs/{packId}) is not part of this version.
+  pack (GET /packs/{packId}) is not part of this version. Every listed pack has a readable pack.yaml:
+  a configured pack without one is not a readable canonical pack and refuses the offering with
+  pack_unreadable (operator ruling of 2026-10-31).
 type: object
 additionalProperties: false
 required:
   - packId
   - level
+  - name
+  - version
   - _links
 properties:
   packId:
