@@ -97,7 +97,7 @@
       "wp": "WP01"
     },
     "#176": {
-      "evidence_ref": "WP01 fixed OfferingUnreadable examples + raised-code check; WP04 adds the item-read pack_unreadable scenario",
+      "evidence_ref": "WP01: OfferingUnreadable examples pack_unreadable/stale_input + checkRefusalExamples raised-code check; WP04: tactics.feature 'One tactic of a pack whose directory is missing is refused with pack_unreadable (#176)'",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,7 +105,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP04"
     },
     "#194": {
