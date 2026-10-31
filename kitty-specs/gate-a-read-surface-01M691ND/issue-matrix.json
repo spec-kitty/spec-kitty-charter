@@ -37,7 +37,7 @@
       "wp": null
     },
     "#126": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered across WP01-WP07",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP07"
     },
     "#13": {
       "evidence_ref": "<link or commit>",
