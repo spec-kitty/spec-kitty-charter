@@ -1,0 +1,7 @@
+name: If-None-Match
+in: header
+required: false
+description: '* to create only: when the activation exists the answer is 412 (ADR-0020 D3).'
+schema:
+  type: string
+  pattern: ^\*$

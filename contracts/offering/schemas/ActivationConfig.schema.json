@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/offering/ActivationConfig.schema.json",
+  "title": "ActivationConfig",
+  "description": "The activation document: the state a client authors for one active charter (ADR-0020 D4). It is the body of PUT /activations/{activationId} and POST /activations and the config of every Activation answer. Core keeps its own files and maps them to and from this document (content alignment, not file shape).\n\nThree states: for activatedKinds, missionTypes, languages and each selected kind, an absent member takes its default, [] is empty and a list is that set; null is never a value. missionTypes is the exception in meaning, not in form: absent and [] both mean no mission type is in force, and the two stay distinct on the wire so a fetched document registers unchanged.\n\nCanonical form, which the service stores and answers: ids in their declared spelling; id and token lists deduplicated and sorted, except packs, which keeps merge order; an empty selected or deactivated object left out, while selected.<kind>: [] is kept; lists sorted by Unicode code point; members in the order of this schema. An empty deny list is refused (422), never stored. The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of the canonical document.\n\nNot in the document, by ruling (2026-10-31): per-entry provenance, context activations and applied presets. Not stored because the packs derive it: the required floor, locked artifacts, the available artifacts and the skipped report.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of this document's shape: 1."
+    },
+    "packs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/PackPin"
+      },
+      "description": "The packs the activation builds on, in merge order: a later pack wins over an earlier one. Absent means the service's configured offering. A pack id appears once (422 activation_invalid otherwise)."
+    },
+    "activatedKinds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ActivatableKind"
+      },
+      "description": "The kinds in force. Absent means every kind; [] means none."
+    },
+    "missionTypes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Slug"
+      },
+      "description": "The mission types in force, by id. Absent and [] both mean none: a mission type is never in force by default. Kept distinct on the wire."
+    },
+    "selected": {
+      "$ref": "#/$defs/SelectedArtifacts",
+      "description": "The allow lists, per kind. Absent means every kind takes its default."
+    },
+    "deactivated": {
+      "$ref": "#/$defs/DeactivatedArtifacts",
+      "description": "The deny lists, per kind. Absent means no exclusion."
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LanguageToken"
+      },
+      "description": "The project's languages, as authored; languages core derives are not sent. Absent means no language filter; [] means no language."
+    }
+  },
+  "$defs": {
+    "ActivatableKind": {
+      "title": "ActivatableKind",
+      "description": "An artifact kind an activation selects or deactivates: every artifact kind of NodeKind except template and asset, which are never activated, and mission_type, which ActivationConfig.missionTypes holds. The snake_case token of ArtifactKind.",
+      "type": "string",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure",
+        "agent_profile",
+        "mission_step_contract",
+        "glossary_pack",
+        "skill",
+        "anti_pattern"
+      ]
+    },
+    "ArtifactId": {
+      "title": "ArtifactId",
+      "description": "An artifact's declared id, the tail of its URN (directive:DIRECTIVE_001 has the id DIRECTIVE_001). A write may use another known spelling of the same artifact; the stored document holds the declared id (ADR-0020 D4).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "ArtifactIdList": {
+      "title": "ArtifactIdList",
+      "description": "Artifact ids of one kind. Empty means none of the kind.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ArtifactId"
+      }
+    },
+    "DeactivatedArtifacts": {
+      "title": "DeactivatedArtifacts",
+      "description": "The deny lists: per activatable kind, the artifacts the user deactivated (ADR-0013). A deny entry wins over a selection and a cascade; an artifact a pack requires or locks cannot be deactivated (409). A deny entry is never stored for an unknown kind or a required or locked id (ADR-0020 D9). Absent, the activation excludes nothing.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "directive": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The directive ids. Absent means no exclusion of the kind."
+        },
+        "tactic": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The tactic ids. Absent means no exclusion of the kind."
+        },
+        "styleguide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The styleguide ids. Absent means no exclusion of the kind."
+        },
+        "toolguide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The toolguide ids. Absent means no exclusion of the kind."
+        },
+        "paradigm": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The paradigm ids. Absent means no exclusion of the kind."
+        },
+        "procedure": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The procedure ids. Absent means no exclusion of the kind."
+        },
+        "agent_profile": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The agent_profile ids. Absent means no exclusion of the kind."
+        },
+        "mission_step_contract": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The mission_step_contract ids. Absent means no exclusion of the kind."
+        },
+        "glossary_pack": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The glossary_pack ids. Absent means no exclusion of the kind."
+        },
+        "skill": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The skill ids. Absent means no exclusion of the kind."
+        },
+        "anti_pattern": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The anti_pattern ids. Absent means no exclusion of the kind."
+        }
+      }
+    },
+    "DeniedArtifactIdList": {
+      "title": "DeniedArtifactIdList",
+      "description": "The deactivated ids of one kind. Never empty: a kind with no deny entry is left out of the deny list.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/ArtifactId"
+      }
+    },
+    "LanguageToken": {
+      "title": "LanguageToken",
+      "description": "A programming language as the project authored it, lower case, for example java or c#.",
+      "type": "string",
+      "maxLength": 32,
+      "pattern": "^[a-z][a-z0-9+#._-]*$"
+    },
+    "PackPin": {
+      "title": "PackPin",
+      "description": "One pack the activation builds on (ADR-0033 D6).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packId"
+      ],
+      "properties": {
+        "packId": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Slug"
+            }
+          ],
+          "description": "The pack's id, as the service's pack registry names it."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The pack version the activation builds on, as the pack declares it (pack_version). Absent means the version the service holds; with several versions held side by side, the newest (ADR-0033 D7)."
+        }
+      }
+    },
+    "SelectedArtifacts": {
+      "title": "SelectedArtifacts",
+      "description": "The allow lists: per activatable kind, the artifacts the activation selects. A kind that is absent takes its default: every artifact of the kind, except skill, whose default is only the required skills. One property per ActivatableKind, so a kind outside that vocabulary is refused (422 activation_invalid).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "directive": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The directive ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "tactic": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The tactic ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "styleguide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The styleguide ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "toolguide": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The toolguide ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "paradigm": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The paradigm ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "procedure": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The procedure ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "agent_profile": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The agent_profile ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "mission_step_contract": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The mission_step_contract ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "glossary_pack": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The glossary_pack ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        },
+        "skill": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The skill ids. Absent means only the required skills (the must-have items of the governing presets, ADR-0031), not every skill; [] means none; a list means exactly those."
+        },
+        "anti_pattern": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The anti_pattern ids. Absent means every artifact of the kind; [] means none; a list means exactly those."
+        }
+      }
+    },
+    "Slug": {
+      "title": "Slug",
+      "description": "A lowercase identifier segment of a DRG URN.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "maxLength": 64
+    }
+  }
+}

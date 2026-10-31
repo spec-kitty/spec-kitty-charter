@@ -1,0 +1,100 @@
+title: SelectedArtifacts
+description: >-
+  The allow lists: per activatable kind, the artifacts the activation selects. A kind that is absent takes its default:
+  every artifact of the kind, except skill, whose default is only the required skills. One property per ActivatableKind,
+  so a kind outside that vocabulary is refused (422 activation_invalid).
+type: object
+additionalProperties: false
+properties:
+  directive:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The directive ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/directive'
+  tactic:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: The tactic ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/tactic'
+  styleguide:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The styleguide ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/styleguide'
+  toolguide:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The toolguide ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/toolguide'
+  paradigm:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The paradigm ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/paradigm'
+  procedure:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The procedure ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/procedure'
+  agent_profile:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The agent_profile ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/agent_profile'
+  mission_step_contract:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The mission_step_contract ids. Absent means every artifact of the kind; [] means none; a list means exactly
+      those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/mission_step_contract'
+  glossary_pack:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The glossary_pack ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/glossary_pack'
+  skill:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The skill ids. Absent means only the required skills (the must-have items of the governing presets, ADR-0031),
+      not every skill; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/skill'
+  anti_pattern:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The anti_pattern ids. Absent means every artifact of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/anti_pattern'
+x-source:
+  path: contracts/offering/schemas/ActivationConfig.schema.json
+  symbol: '#/$defs/SelectedArtifacts'

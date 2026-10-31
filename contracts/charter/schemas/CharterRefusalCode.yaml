@@ -1,10 +1,12 @@
 title: CharterRefusalCode
 description: >-
-  Why the charter refused a read. Codes are part of the contract; consumers branch on them,
+  Why the charter refused a request. Codes are part of the contract; consumers branch on them,
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
-  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and toolguide_not_found are 404; validation_failed is 422; registration_conflict and
-  governance_policy_violation are 409; every other code is 500. pack_not_found means the identifier matches no configured pack, neither by its
+  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
+  activation_not_found, artifact_not_found and preset_not_found are 404; validation_failed and
+  activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
+  artifact_locked are 409; every other code is 500. x-refusal below gives each code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. A missing or invalid pack.yaml never
   refuses a tactic read: the identifier lookup skips that pack. A configured pack whose directory is
   missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
@@ -20,8 +22,9 @@ description: >-
   tactic_not_found whose inputs changed meanwhile is stale_input). The read may be retried. A change made
   after the second digest, or one reverted between the two, goes unseen.
 
-  mission_type_not_found and action_not_found are no longer raised: the action-context operation that
-  answered them is gone. pack_level_mismatch and drg_schema_error are no longer raised: no operation
+  mission_type_not_found and action_not_found are not raised: the action-context operation that
+  answered them is gone, and the reserved effective context of an activation (ADR-0020 D7) that will
+  answer them again answers 501 until it is built. pack_level_mismatch and drg_schema_error are no longer raised: no operation
   loads and judges a pack's graph any more. All four values stay in the enum so that the contract
   keeps accepting them.
 
@@ -31,6 +34,14 @@ description: >-
   #61). No operation of this version raises it. Its scenario is
   a declaration pin, not behavior: it asserts only what the x-refusal map below declares, and a unit test of
   the service fails when any main class other than the enum and its title mapping names the code.
+
+  Six codes are reserved for the activation set (ADR-0020 D9, D10, #125), declared before the operations
+  that raise them are built, which answer 501 until then (ADR-0020 D8): activation_not_found,
+  artifact_not_found and preset_not_found (404); artifact_required and artifact_locked (409), a
+  deactivation a pack requires or locks, whose refusal names every requiring pack in requiredBy;
+  activation_invalid (422), a document or body the service refuses, each refused part listed in violations.
+  No operation of this version raises them. Each scenario is a declaration pin, as for
+  governance_policy_violation.
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
   and whether an operation of this version raises it (raised). Clients and the contract scenarios read it.
@@ -66,6 +77,12 @@ enum:
   - toolguide_not_found
   - validation_failed
   - registration_conflict
+  - activation_not_found
+  - artifact_not_found
+  - preset_not_found
+  - artifact_required
+  - artifact_locked
+  - activation_invalid
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -135,6 +152,30 @@ x-refusal:
     status: 409
     retryable: false
     raised: true
+  activation_not_found:
+    status: 404
+    retryable: false
+    raised: false
+  artifact_not_found:
+    status: 404
+    retryable: false
+    raised: false
+  preset_not_found:
+    status: 404
+    retryable: false
+    raised: false
+  artifact_required:
+    status: 409
+    retryable: false
+    raised: false
+  artifact_locked:
+    status: 409
+    retryable: false
+    raised: false
+  activation_invalid:
+    status: 422
+    retryable: false
+    raised: false
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

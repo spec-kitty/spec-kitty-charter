@@ -1,3 +1,15 @@
 files:
   - PackId.yaml
   - TacticId.yaml
+  - ActionPath.yaml
+  - ActivatableKindPath.yaml
+  - ActivationId.yaml
+  - ArtifactIdPath.yaml
+  - Depth.yaml
+  - EffectiveKindQuery.yaml
+  - EffectiveStateQuery.yaml
+  - IfMatch.yaml
+  - IfNoneMatchCreate.yaml
+  - MissionTypePath.yaml
+  - PresetId.yaml
+  - SelectableKindPath.yaml

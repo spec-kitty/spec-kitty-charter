@@ -1,0 +1,10 @@
+summary: The document names an artifact the offering does not have.
+value:
+  title: Activation invalid
+  status: 422
+  code: activation_invalid
+  detail: The document names 1 unknown artifact.
+  violations:
+  - pointer: /deactivated/tactic/0
+    code: unknown_artifact
+    detail: The offering has no tactic no-such-tactic.

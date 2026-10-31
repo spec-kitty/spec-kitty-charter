@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "deactivated": {
+    "directive": [
+      "X_1"
+    ],
+    "tactic": [
+      "X_1"
+    ],
+    "styleguide": [
+      "X_1"
+    ],
+    "toolguide": [
+      "X_1"
+    ],
+    "paradigm": [
+      "X_1"
+    ],
+    "procedure": [
+      "X_1"
+    ],
+    "agent_profile": [
+      "X_1"
+    ],
+    "mission_step_contract": [
+      "X_1"
+    ],
+    "glossary_pack": [
+      "X_1"
+    ],
+    "skill": [
+      "X_1"
+    ],
+    "anti_pattern": [
+      "X_1"
+    ]
+  }
+}

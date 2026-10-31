@@ -104,14 +104,88 @@ Feature: Failures outside the charter's refusals
     And the contract says "governance_policy_violation" may not be retried
     And the contract says "governance_policy_violation" is raised by no operation
 
+  @reserved
+  Scenario: activation_not_found is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "activation_not_found"
+    And the contract says "activation_not_found" is answered with status 404
+    And the contract says "activation_not_found" may not be retried
+    And the contract says "activation_not_found" is raised by no operation
+
+  @reserved
+  Scenario: artifact_not_found is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "artifact_not_found"
+    And the contract says "artifact_not_found" is answered with status 404
+    And the contract says "artifact_not_found" may not be retried
+    And the contract says "artifact_not_found" is raised by no operation
+
+  @reserved
+  Scenario: preset_not_found is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "preset_not_found"
+    And the contract says "preset_not_found" is answered with status 404
+    And the contract says "preset_not_found" may not be retried
+    And the contract says "preset_not_found" is raised by no operation
+
+  @reserved
+  Scenario: artifact_required is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "artifact_required"
+    And the contract says "artifact_required" is answered with status 409
+    And the contract says "artifact_required" may not be retried
+    And the contract says "artifact_required" is raised by no operation
+
+  @reserved
+  Scenario: artifact_locked is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "artifact_locked"
+    And the contract says "artifact_locked" is answered with status 409
+    And the contract says "artifact_locked" may not be retried
+    And the contract says "artifact_locked" is raised by no operation
+
+  @reserved
+  Scenario: activation_invalid is reserved for the activation set
+    A declaration pin, not behavior. No operation of this version raises the code: the activation
+    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
+    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
+    calls the service.
+    Then the contract declares the refusal code "activation_invalid"
+    And the contract says "activation_invalid" is answered with status 422
+    And the contract says "activation_invalid" may not be retried
+    And the contract says "activation_invalid" is raised by no operation
+
   Scenario: The refusal codes the contract marks raised are exactly those an operation raises
     The contract's machine-readable x-refusal map agrees with the behavior of this suite: each
     refusal a scenario observes has the status and the raised flag the contract declares for its
     code, and these are all the codes raised. The per-kind reads add directive_not_found,
     styleguide_not_found, paradigm_not_found and toolguide_not_found; the registration writes add
-    validation_failed and registration_conflict. mission_type_not_found and action_not_found are no
-    longer raised: the operations that answered them are gone. unresolved_edge_endpoint, and, with the
-    load that judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation.
+    validation_failed and registration_conflict. mission_type_not_found and action_not_found are not
+    raised: the operations that answered them are gone, and the reserved activation operations that will
+    answer them again (ADR-0020 D7) answer 501 until they are built. unresolved_edge_endpoint, and, with
+    the load that judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no
+    operation; neither are the six codes reserved for the activation set.
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable            |
       | internal_error             |

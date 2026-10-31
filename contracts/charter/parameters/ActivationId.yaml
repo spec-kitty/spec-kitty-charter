@@ -1,0 +1,6 @@
+name: activationId
+in: path
+required: true
+description: 'The activation''s opaque id (ADR-0020 D2): a UUID, a ULID or any id of the client''s, never parsed.'
+schema:
+  $ref: ../schemas/ActivationId.yaml

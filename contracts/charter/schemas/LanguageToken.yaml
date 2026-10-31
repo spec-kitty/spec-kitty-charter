@@ -1,0 +1,5 @@
+title: LanguageToken
+description: A programming language as the project authored it, lower case, for example java or c#.
+type: string
+maxLength: 32
+pattern: ^[a-z][a-z0-9+#._-]*$

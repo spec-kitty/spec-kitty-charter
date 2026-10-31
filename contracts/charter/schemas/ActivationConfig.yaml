@@ -1,0 +1,79 @@
+title: ActivationConfig
+description: >-
+  The activation document: the state a client authors for one active charter (ADR-0020 D4). It is the body of PUT
+  /activations/{activationId} and POST /activations and the config of every Activation answer. Core keeps its own
+  files and maps them to and from this document (content alignment, not file shape).
+
+  Three states: for activatedKinds, missionTypes, languages and each selected kind, an absent member takes its default,
+  [] is empty and a list is that set; null is never a value. missionTypes is the exception in meaning, not in form:
+  absent and [] both mean no mission type is in force, and the two stay distinct on the wire so a fetched document
+  registers unchanged.
+
+  Canonical form, which the service stores and answers: ids in their declared spelling; id and token lists deduplicated
+  and sorted, except packs, which keeps merge order; an empty selected or deactivated object left out, while selected.<kind>:
+  [] is kept; lists sorted by Unicode code point; members in the order of this schema. An empty deny list is refused
+  (422), never stored. The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization
+  of the canonical document.
+
+  Not in the document, by ruling (2026-10-31): per-entry provenance, context activations and applied presets. Not
+  stored because the packs derive it: the required floor, locked artifacts, the available artifacts and the skipped
+  report.
+type: object
+additionalProperties: false
+required:
+- schemaVersion
+properties:
+  schemaVersion:
+    type: integer
+    minimum: 1
+    maximum: 1
+    description: 'The version of this document''s shape: 1.'
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/schemaVersion'
+  packs:
+    type: array
+    minItems: 1
+    items:
+      $ref: PackPin.yaml
+    description: >-
+      The packs the activation builds on, in merge order: a later pack wins over an earlier one. Absent means the
+      service's configured offering. A pack id appears once (422 activation_invalid otherwise).
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/packs'
+  activatedKinds:
+    type: array
+    items:
+      $ref: ActivatableKind.yaml
+    description: The kinds in force. Absent means every kind; [] means none.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/activatedKinds'
+  missionTypes:
+    type: array
+    items:
+      $ref: Slug.yaml
+    description: >-
+      The mission types in force, by id. Absent and [] both mean none: a mission type is never in force by default.
+      Kept distinct on the wire.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/missionTypes'
+  selected:
+    $ref: SelectedArtifacts.yaml
+  deactivated:
+    $ref: DeactivatedArtifacts.yaml
+  languages:
+    type: array
+    items:
+      $ref: LanguageToken.yaml
+    description: >-
+      The project's languages, as authored; languages core derives are not sent. Absent means no language filter;
+      [] means no language.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/properties/languages'
+x-source:
+  path: contracts/offering/schemas/ActivationConfig.schema.json
+  symbol: '#'

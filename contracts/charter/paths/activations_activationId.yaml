@@ -1,0 +1,145 @@
+get:
+  operationId: getActivation
+  summary: Read an activation.
+  description: >-
+    The stored document, its revision as the ETag, and the summary derived for the offering (ADR-0020 D4). Reserved:
+    it answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/ActivationId.yaml
+  responses:
+    '200':
+      description: The activation.
+      headers:
+        Charter-Contract-Version: &id001
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree: &id002
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint: &id003
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag: &id004
+          $ref: ../headers/ActivationETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Activation.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+put:
+  operationId: replaceActivation
+  summary: Register an activation document under a client-chosen id.
+  description: >-
+    Mode 1, register (ADR-0020 D6): stores the document in canonical form. 201 with Location and ETag when it created
+    the activation, 200 when it replaced one; a PUT of a fetched config answers 200 with the same ETag. If-None-Match:
+    * creates only; If-Match makes the write conditional, and without it the write is last-writer-wins. A document
+    that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
+    is 422 with violations. Reserved: it answers 501 until it is built (ADR-0020 D8). Both If-Match and If-None-Match
+    on one request is 400. A stored document an offering change made stale (an id the offering no longer has, a
+    deny entry on an id now required) is open before the operation is built (amendment, open question 5).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/ActivationId.yaml
+  - $ref: ../parameters/IfMatch.yaml
+  - $ref: ../parameters/IfNoneMatchCreate.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ActivationConfig.yaml
+  responses:
+    '200':
+      description: The activation was replaced.
+      headers:
+        Charter-Contract-Version: *id001
+        Charter-Worktree: *id002
+        Charter-Source-Fingerprint: *id003
+        ETag: *id004
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Activation.yaml
+    '201':
+      description: The activation was created.
+      headers:
+        Charter-Contract-Version: *id001
+        Charter-Worktree: *id002
+        Charter-Source-Fingerprint: *id003
+        Location:
+          $ref: ../headers/Location.yaml
+        ETag: *id004
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Activation.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '409':
+      $ref: ../responses/ArtifactPolicyRefused.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: deleteActivation
+  summary: Remove an activation.
+  description: >-
+    Removes the document: 204, honouring If-Match. A second DELETE is 404 activation_not_found (ADR-0020 D6). Reserved:
+    it answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/ActivationId.yaml
+  - $ref: ../parameters/IfMatch.yaml
+  responses:
+    '204':
+      description: The activation was removed; no body.
+      headers:
+        Charter-Contract-Version: *id001
+        Charter-Worktree: *id002
+        Charter-Source-Fingerprint: *id003
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

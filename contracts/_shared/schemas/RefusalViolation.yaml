@@ -1,0 +1,31 @@
+title: RefusalViolation
+description: One part of a request body the service refuses (ADR-0020 D10).
+type: object
+additionalProperties: false
+required:
+  - pointer
+  - code
+  - detail
+properties:
+  pointer:
+    type: string
+    description: An RFC 6901 JSON Pointer into the request body, for example /deactivated/tactic/0; empty for the whole body.
+    x-derived:
+      rule: The JSON Pointer of the refused part of the request body.
+      inputs:
+        - the request body and the packs the activation names
+  code:
+    type: string
+    pattern: '^[a-z][a-z0-9_]*$'
+    description: A stable machine-readable reason, for example unknown_artifact or unknown_kind.
+    x-derived:
+      rule: The reason the service refused that part.
+      inputs:
+        - the request body and the packs the activation names
+  detail:
+    type: string
+    description: A human-readable explanation of this violation.
+    x-derived:
+      rule: Written by the service for that part.
+      inputs:
+        - the request body and the packs the activation names

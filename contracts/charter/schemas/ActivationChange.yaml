@@ -1,0 +1,41 @@
+title: ActivationChange
+description: 'The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6).'
+type: object
+additionalProperties: false
+required:
+- revision
+- applied
+- cleared
+- skipped
+- _links
+properties:
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: The activation's revision after the write.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig after the write.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  applied:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts and mission types whose state the write changed.
+    x-derived:
+      rule: The ids the write added to or removed from selected, deactivated or missionTypes.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  cleared:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: 'The exclusions the write cleared: by a select, by includeDeactivated or by a forced preset.'
+    x-derived:
+      rule: The ids removed from deactivated.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  skipped:
+    $ref: SkippedReport.yaml
+  _links:
+    $ref: Links.yaml

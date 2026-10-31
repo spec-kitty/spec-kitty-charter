@@ -1,0 +1,7 @@
+title: ArtifactPolicy
+description: The mutability level the owning pack declares for an artifact (ADR-0012).
+type: string
+enum:
+- open
+- extendable
+- locked

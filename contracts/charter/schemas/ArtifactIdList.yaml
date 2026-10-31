@@ -1,0 +1,5 @@
+title: ArtifactIdList
+description: Artifact ids of one kind. Empty means none of the kind.
+type: array
+items:
+  $ref: ArtifactId.yaml

@@ -1,0 +1,29 @@
+title: ArtifactReference
+description: >-
+  One artifact, by kind and declared id. As SharedSkip.referencedBy, it is the active artifact that still references the kept one.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+properties:
+  kind:
+    allOf:
+    - $ref: SelectableKind.yaml
+    description: The artifact's kind.
+    x-derived:
+      rule: The kind of the artifact the walk or the write reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The declared id of the artifact the walk or the write reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The kind and declared id of an artifact the walk or the write reached.
+  inputs:
+  - schemas/ActivationConfig.yaml

@@ -27,6 +27,10 @@ tags:
     description: The toolguides of a Charter Pack.
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
+  - name: Activation
+    description: >-
+      The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
+      effective reads. Declared in full and reserved: every operation answers 501 until it is built (ADR-0020 D8).
 paths:
   /info:
     $ref: paths/info.yaml
@@ -54,6 +58,24 @@ paths:
     $ref: paths/packs_packId_toolguides_toolguideId.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
+  /activations:
+    $ref: paths/activations.yaml
+  /activations/{activationId}:
+    $ref: paths/activations_activationId.yaml
+  /activations/{activationId}/selections/{kind}/{artifactId}:
+    $ref: paths/activations_activationId_selections_kind_artifactId.yaml
+  /activations/{activationId}/exclusions/{kind}/{artifactId}:
+    $ref: paths/activations_activationId_exclusions_kind_artifactId.yaml
+  /activations/{activationId}/presets/{presetId}:
+    $ref: paths/activations_activationId_presets_presetId.yaml
+  /activations/{activationId}/artifacts:
+    $ref: paths/activations_activationId_artifacts.yaml
+  /activations/{activationId}/skipped:
+    $ref: paths/activations_activationId_skipped.yaml
+  /activations/{activationId}/graph:
+    $ref: paths/activations_activationId_graph.yaml
+  /activations/{activationId}/mission-types/{missionType}/actions/{action}/context:
+    $ref: paths/activations_activationId_missionTypes_missionType_actions_action_context.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

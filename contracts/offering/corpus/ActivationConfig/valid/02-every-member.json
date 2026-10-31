@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "packId": "spec-kitty-internal",
+      "version": "1.2.0"
+    },
+    {
+      "packId": "event-driven"
+    }
+  ],
+  "activatedKinds": [
+    "directive",
+    "tactic"
+  ],
+  "missionTypes": [
+    "software-dev"
+  ],
+  "selected": {
+    "directive": [
+      "DIRECTIVE_001",
+      "EVD_001"
+    ],
+    "tactic": [
+      "domain-event-capture"
+    ]
+  },
+  "deactivated": {
+    "directive": [
+      "EVD_004"
+    ]
+  },
+  "languages": [
+    "java"
+  ]
+}

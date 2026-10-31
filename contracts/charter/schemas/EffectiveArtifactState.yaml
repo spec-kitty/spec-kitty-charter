@@ -1,0 +1,7 @@
+title: EffectiveArtifactState
+description: Whether an artifact is in force under an activation.
+type: string
+enum:
+- active
+- inactive
+- excluded

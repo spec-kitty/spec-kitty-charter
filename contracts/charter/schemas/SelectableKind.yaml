@@ -1,0 +1,22 @@
+title: SelectableKind
+description: >-
+  A kind a selection names: an ActivatableKind, or mission_type, which selects a mission type into ActivationConfig.missionTypes
+  and can be a cascade source (ADR-0020 D6). The artifact-kind tokens come from ArtifactKind; the extra token is
+  the contract's own.
+type: string
+enum:
+- directive
+- tactic
+- styleguide
+- toolguide
+- paradigm
+- procedure
+- agent_profile
+- mission_step_contract
+- glossary_pack
+- skill
+- anti_pattern
+- mission_type
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
+  symbol: ArtifactKind.token

@@ -13,7 +13,8 @@ description: >-
   changed while it was answered is refused with stale_input instead. A registration (POST, PUT) never
   sends it either: its 200 and 201 responses declare the header only because every response declares
   the three Charter headers, and the concurrency token of a write is its ETag, not this digest.
-  getOpenApiDocument never sends it either: it reads no pack file. Set
+  getOpenApiDocument never sends it either: it reads no pack file. Nor does an operation of the activation set
+  while it is reserved (ADR-0020 D8): its 501 reads nothing. Set
   once. The freshness work (#73) compares it; this version only reports it (ADR-0011).
 required: false
 schema:

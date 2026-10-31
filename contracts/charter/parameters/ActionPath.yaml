@@ -1,0 +1,6 @@
+name: action
+in: path
+required: true
+description: The action of the mission type, by id.
+schema:
+  $ref: ../schemas/Slug.yaml

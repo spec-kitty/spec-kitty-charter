@@ -1,0 +1,24 @@
+title: PackPin
+description: One pack the activation builds on (ADR-0033 D6).
+type: object
+additionalProperties: false
+required:
+- packId
+properties:
+  packId:
+    allOf:
+    - $ref: Slug.yaml
+    description: The pack's id, as the service's pack registry names it.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/PackPin/properties/packId'
+  version:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: >-
+      The pack version the activation builds on, as the pack declares it (pack_version). Absent means the version
+      the service holds; with several versions held side by side, the newest (ADR-0033 D7).
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/PackPin/properties/version'
