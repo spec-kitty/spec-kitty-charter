@@ -48,8 +48,9 @@ import org.jspecify.annotations.Nullable;
  * of the {@code yaml} form, the default of a {@code files} rule, is a file of its schema's bound kind. A file of the
  * {@code markdown} form is a bound kind's companion (a toolguide's guide, #194), which its artifact holds, or the pack
  * document ({@code pack.md}, #260); no store path reads any other. The walk is
- * the store's: {@link Files#walkFileTree} (hidden directories are entered, a directory link is not followed, an entry
- * that vanishes mid-walk is not listed), every regular file ({@link Files#isRegularFile} follows a file link)
+ * the store's: {@link Files#walkFileTree} from the root's real path (a root configured through a link is entered, #174;
+ * hidden directories are entered, a directory link below the root is not followed, an entry that vanishes mid-walk is
+ * not listed), every regular file ({@link Files#isRegularFile} follows a file link)
  * classified once, in {@link String} order. Every entry point normalizes the directory first, so a configured root such
  * as {@code packs/foo/.} classifies like the store's own normalized directory.
  */
@@ -464,6 +465,11 @@ final class PackFileSet {
      * entry that vanishes while the tree is walked (the temp file of an atomic save, an editor's scratch file) is not
      * listed; any other failure to list refuses.
      *
+     * <p>The walk starts at the directory's real path, so a pack root configured through a symbolic link is entered
+     * (#174); {@link Files#walkFileTree} does not follow a start that is a link, and the pack would list as empty. Links
+     * below the root are still not followed. The paths stay relative to the root, and the caller classifies them under
+     * the configured directory's name, so the link changes neither.
+     *
      * <p>Validate mode walks the pack too ({@code FileSystemPackInspector.yamlFiles}); it orders by path segment like
      * core's pathlib (#115), where this walk orders by {@link String}, the order the store has always loaded in; the two
      * differ on purpose.
@@ -471,7 +477,8 @@ final class PackFileSet {
     private static List<String> regularFiles(Path directory, String packName) {
         List<String> found = new ArrayList<>();
         try {
-            Files.walkFileTree(directory, new FileCollector(directory, found));
+            Path root = directory.toRealPath();
+            Files.walkFileTree(root, new FileCollector(root, found));
         } catch (IOException | UncheckedIOException e) {
             throw unlistable(packName, e);
         }
