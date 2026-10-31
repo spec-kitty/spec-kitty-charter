@@ -80,6 +80,9 @@
       "lane": "for_review",
       "last_event_id": "01M696CFJHDS7MF1792J9F3VRK",
       "last_transition_at": "2026-10-31T14:38:56.593339+00:00",
+      "notes": [
+        "Implementation commit 9e16201a was made before the runtime claim was recorded; red-first and verifyAll evidence in the commit (3504 tests, 0 failures)"
+      ],
       "subtasks": {
         "T009": "done",
         "T010": "done",
