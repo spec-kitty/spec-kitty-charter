@@ -45,12 +45,12 @@ public enum RelationType {
     /** Supersession; kept for older hand-authored fragments. */
     REPLACES(Directionality.DIRECTED),
     /**
-     * Directed and signed tension/reinforcement relation. It is the one symmetric relation in the
-     * catalogue and is {@link Directionality#BIDIRECTIONAL}; it is the ADR-0027 revisit trigger for
-     * the unordered-pair identity collapse.
+     * The signed {@code impacts} relation that ADR-0028 retires; its strength lives on the storage DSO. It is
+     * {@link Directionality#BIDIRECTIONAL}. It is not the tension between two rules: that is a {@link Tension}, held
+     * beside the relationships and outside their pair identity (ADR-0028 Decision 3, ADR-0045).
      */
     IMPACTS(Directionality.BIDIRECTIONAL),
-    /** From a reconciling artifact to one side of a tension pair. */
+    /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
     RECONCILES_TENSION(Directionality.DIRECTED),
     /** From a good artifact to an {@code anti_pattern} node. */
     REJECTS(Directionality.DIRECTED);
