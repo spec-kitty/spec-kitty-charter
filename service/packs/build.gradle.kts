@@ -165,6 +165,9 @@ tasks.test {
     // PlantedFilesTest and DivergenceRegisterTest read the register in both forms.
     val conformance = rootProject.layout.projectDirectory.dir("docs/conformance")
     inputs.dir(conformance).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("conformanceDocs")
+    // ProjectCharterYamlSchemaTest validates the project's own charter.yaml against the charter schema (#131).
+    val projectCharter = rootProject.layout.projectDirectory.file(".kittify/charter/charter.yaml")
+    inputs.file(projectCharter).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("projectCharterYaml")
     systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
     // VocabularyEqualityTest checks that every load-path wire code is in the contract's code enums.
     val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
