@@ -40,11 +40,16 @@ import org.springframework.stereotype.Service;
  * <p><strong>Filesystem assumption.</strong> The live directory, the staging directory and the aside directory are
  * all created under the same parent, hence on one filesystem, where a directory rename is atomic (POSIX
  * {@code rename(2)} within a mount). Where the platform cannot rename atomically the swap falls back to a plain move.
+ * The live directory is the pack's real path: for a pack whose directory is a symbolic link, the staging and aside
+ * copies sit beside the link's target and the target is swapped, so the link stays a link (#174, ADR-0038 decision 3
+ * as amended 2026-10-31).
  *
  * <p><strong>Crash window.</strong> The swap is two renames, so a process that dies between them leaves no live
- * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy). That state is repaired on the next
- * write: {@link #restoreInterruptedSwap(Path)} moves a sole aside copy back into place before the pack is resolved,
- * which restores the last committed state; the interrupted commit was never acknowledged.
+ * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy). {@link #restoreInterruptedSwap(Path)}
+ * moves a sole aside copy back into place before a write to a pack that is still resolved, which restores the last
+ * committed state; the interrupted commit was never acknowledged. A pack listed from the pack domain
+ * ({@link StorageRootLocations}) is not resolved in that state, plain or linked, so it is not repaired there yet: move
+ * the aside copy back by hand (for a linked pack, it sits beside the link's target and is named after the target).
  *
  * <p>This store never performs the per-child {@code save()} upsert of {@link DomainRepositoryService}; registration
  * goes load &rarr; mutate &rarr; revalidate the whole aggregate in memory &rarr; commit the delta here.
@@ -138,15 +143,11 @@ public final class PackCommitStore {
             @Nullable CharterArtifact artifact,
             @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
-        Resolved resolved = resolve(pack);
-        Path liveDir = resolved.directory;
-        if (!Files.isDirectory(liveDir)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
-        }
+        Path liveDir = realDirectory(resolve(pack).directory, pack);
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
-            if (ifMatch != null && !PackRevision.matches(ifMatch, revisionOf(liveDir))) {
+            if (ifMatch != null && !PackRevision.matches(ifMatch, revisionOf(liveDir, pack))) {
                 throw new PreconditionException(
                         PreconditionException.Kind.STALE, "The If-Match precondition is stale; read the pack again.");
             }
@@ -160,7 +161,7 @@ public final class PackCommitStore {
                 Files.writeString(
                         staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);
             }
-            PackRevision revision = revisionOf(staging);
+            PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir);
             staging = null; // swapped into place; there is nothing left to clean up
             return revision;
@@ -214,9 +215,10 @@ public final class PackCommitStore {
      * The revision of a staged directory: the digest over the bytes of every file the fingerprint would cover, so a
      * file that is not UTF-8 text (a binary payload) is digested, not refused.
      */
-    private static PackRevision revisionOf(Path packDir) throws IOException {
+    private static PackRevision revisionOf(Path packDir, PackIdentifier pack) throws IOException {
         List<byte[]> contents = new ArrayList<>();
-        for (String relative : PackFileSet.digested(packDir)) {
+        // Named after the pack, not the directory: the live directory may be a link's target, the staging copy a temp.
+        for (String relative : PackFileSet.digested(packDir, pack.value())) {
             contents.add(Files.readAllBytes(packDir.resolve(relative)));
         }
         return PackRevision.computeOverBytes(contents);
@@ -264,6 +266,23 @@ public final class PackCommitStore {
     }
 
     // ---- filesystem helpers --------------------------------------------------------------------------------------
+
+    /**
+     * The real path of a pack's live directory: the commit stages beside it and swaps it, so a pack whose configured
+     * directory is a symbolic link keeps the link and its target takes the new content (#174, ADR-0038 decision 3 as
+     * amended 2026-10-31). The staging and aside copies sit on the target's own file system, where the swap is atomic.
+     */
+    private static Path realDirectory(Path directory, PackIdentifier pack) {
+        if (!Files.isDirectory(directory)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
+        }
+        try {
+            return directory.toRealPath();
+        } catch (IOException unresolved) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be resolved", unresolved);
+        }
+    }
 
     private static Path requireParent(Path directory) {
         Path parent = directory.getParent();
