@@ -35,9 +35,11 @@ import ai.speckitty.charter.packs.domain.TacticStep;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,6 +79,9 @@ class ArtifactReadServiceTest {
             Pack.builder().id(BARE).descriptor(descriptor(BARE)).build());
 
     private final AtomicInteger digests = new AtomicInteger();
+    /** What a descriptor lookup does to the inputs as it answers; nothing, unless a test plants a change. */
+    private Runnable onFind = () -> {};
+
     private final ArtifactReadService service = serviceDigesting(() -> {
         digests.incrementAndGet();
         return D1;
@@ -271,6 +276,49 @@ class ArtifactReadServiceTest {
     @ValueSource(strings = {"tactic", "directive", "toolguide", "bogus"})
     void aConfiguredPackWithoutAReadableDescriptorIsUnreadableOnTheItem(String kind) {
         assertThat(codeOf(() -> service.item(BARE, kind, "rehearse"))).isEqualTo(RefusalCode.PACK_UNREADABLE);
+    }
+
+    /**
+     * The pack.yaml check and the artifact read are judged against one pair of digests: pack.yaml goes right after the
+     * check saw it, so the artifact read alone would see two agreeing digests of a state that must refuse. The item
+     * never answers 200 for it.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"tactic", "directive"})
+    void aPackYamlRemovedRightAfterTheItemCheckedItIsNeverAnswered200(String kind) {
+        AtomicBoolean removed = new AtomicBoolean();
+        onFind = () -> removed.set(true);
+        ArtifactReadService racing = serviceDigesting(() -> removed.get() ? D2 : D1);
+        String id = kind.equals("tactic") ? "Zeta" : "GUARD";
+
+        assertThatThrownBy(() -> racing.item(PACK, kind, id)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT);
+            assertThat(refused.getMessage())
+                    .isEqualTo("The inputs changed while the " + kind + " was read; read it again.");
+        });
+        assertThat(removed).as("the change happened during the read").isTrue();
+    }
+
+    @Test
+    void anItemIsAnsweredWithTheDigestTheDescriptorCheckWasJudgedAgainst() {
+        AtomicInteger calls = new AtomicInteger();
+        List<String> order = new ArrayList<>();
+        onFind = () -> order.add("find after digest " + calls.get());
+        ArtifactReadService spied = serviceDigesting(() -> {
+            calls.incrementAndGet();
+            order.add("digest " + calls.get());
+            return D1;
+        });
+
+        ConsistentRead.Verified<ArtifactReadService.Item> verified = spied.item(PACK, "tactic", "Zeta");
+
+        assertThat(verified.fingerprint()).isEqualTo(D1);
+        assertThat(order.indexOf("find after digest 1"))
+                .as("the descriptor is checked after the first digest: %s", order)
+                .isPositive();
+        assertThat(order.getLast())
+                .as("and the last digest comes after it: %s", order)
+                .startsWith("digest");
     }
 
     @Test
@@ -501,6 +549,7 @@ class ArtifactReadServiceTest {
 
         @Override
         public Optional<PackDescriptor> find(PackIdentifier pack) {
+            onFind.run();
             return pack.equals(BARE)
                     ? Optional.empty()
                     : Optional.of(contents(pack).descriptor());
