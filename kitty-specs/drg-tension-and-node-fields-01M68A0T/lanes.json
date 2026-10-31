@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "mission_slug": "drg-tension-and-node-fields-01M68A0T",
+  "mission_id": "01M68A0TEXMSGNRTQSR1X9C7ZE",
+  "mission_branch": "issue-235-236-drg-round-trip",
+  "target_branch": "issue-235-236-drg-round-trip",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/schemas/Relation.yaml",
+        "docs/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship.md",
+        "docs/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field.md",
+        "docs/adr/README.md",
+        "docs/architecture/logical-model.md",
+        "docs/changelog/2026-10-31-drg-tension-and-node-fields-round-trip.md",
+        "docs/changelog/README.md",
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/divergences.yaml",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/DoctrineGraph.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/DrgNode.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relation.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RelationType.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Tension.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/DoctrineGraphTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/DrgNodeTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/NodeKindPluralTest.java",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/TensionTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackContents.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GraphDocumentReader.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RelationshipMapper.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/RelationshipShard.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphDocumentReaderTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriterTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/RelationshipShardRoundTripTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VocabularyEqualityTest.java",
+        "service/packs/src/test/resources/load-fixtures/shard-impacts-on-legacy-tension-edge/**",
+        "service/packs/src/test/resources/load-fixtures/shard-legacy-tension-is-impacts-minus-one/**",
+        "service/packs/src/test/resources/whole-pack/expected-red.yaml"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-31T06:34:47.010737+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "5d371e011c9277d763ebdbc715563f545a550846"
+}

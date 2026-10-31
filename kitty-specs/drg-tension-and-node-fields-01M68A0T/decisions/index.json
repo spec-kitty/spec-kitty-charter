@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-31T06:24:20.428328Z",
+      "decision_id": "01M68A2TYC1VMDPCJ8B76602YH",
+      "final_answer": "A kernel Tension value held beside the structural relationships in DoctrineGraph (no RelationType, no HTTP contract change). Rationale: ADR-0028 D3 counts tension apart from the one-structural-relationship-per-pair identity, so it is not a Relationship of another type; it keeps RelationType, Relation and the Relation.yaml enum unchanged and /relationships neither accepts nor answers a new token (the brief reserves an HTTP contract change for the operator). The pack spelling in_tension_with stays a storage concern (ADR-0036 D4). Recorded by the mission agent under the brief's 'stop only at genuine decisions' rule; logged as an open review item for operator confirmation in the PR.",
+      "input_key": "tension_representation",
+      "mission_id": "01M68A0TEXMSGNRTQSR1X9C7ZE",
+      "mission_slug": "drg-tension-and-node-fields-01M68A0T",
+      "opened_by": "cli",
+      "options": [
+        "A kernel Tension value held beside the structural relationships in DoctrineGraph (no RelationType, no HTTP contract change)",
+        "A new RelationType constant (grows Relation and the Relation.yaml enum; /relationships accepts and answers it: HTTP contract change, operator decision)",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How is an ADR-0028 tension relationship held in the domain so that a shard's in_tension_with edge reads and writes back as written?",
+      "rationale": null,
+      "resolved_at": "2026-10-31T06:24:33.002779Z",
+      "resolved_by": null,
+      "slot_key": "specify.domain.tension-representation",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M68A0TEXMSGNRTQSR1X9C7ZE",
+  "version": 1
+}

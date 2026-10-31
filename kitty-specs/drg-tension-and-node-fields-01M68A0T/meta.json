@@ -1,0 +1,36 @@
+{
+  "accept_commit": "7955e66418967220acf8c1545651437a0085846f",
+  "acceptance_history": [
+    {
+      "accept_commit": "7955e66418967220acf8c1545651437a0085846f",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-31T07:09:44.403754+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "04f83f3af8a66423d85d4203fcf7827310c7c367"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-31T07:09:44.403754+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "04f83f3af8a66423d85d4203fcf7827310c7c367",
+  "baseline_merge_commit": "6e7ed5c5f004c54050c6af4edd6cc2a2c9cadf2e",
+  "contracts": "none",
+  "contracts_rationale": "A bugfix inside the domain and storage layers: no HTTP path, schema, enum value or wire shape changes (spec C-001); only descriptive text in contracts/charter/schemas/Relation.yaml and a CHANGELOG line are corrected.",
+  "created_at": "2026-10-31T06:23:15.350944+00:00",
+  "flattened": false,
+  "friendly_name": "DRG tension edges and node fields round-trip",
+  "merged_at": "2026-10-31T07:10:05.793993+00:00",
+  "merged_commit": "6e7ed5c5f004c54050c6af4edd6cc2a2c9cadf2e",
+  "mid8": "01M68A0T",
+  "mission_id": "01M68A0TEXMSGNRTQSR1X9C7ZE",
+  "mission_number": 13,
+  "mission_slug": "drg-tension-and-node-fields-01M68A0T",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 holds that open-packs YAML round-trips without loss of meaning (ADR-0036). The whole-pack gate found two DRG losses: #235, a tension edge (written in_tension_with) read as the retired signed impacts relation and written back as a plain impacts edge with no strength; and #236, graph-shard node tags and provenance and fragment node body_path dropped by the domain read and the shard writer. This bugfix keeps the tension relationship of ADR-0028 in the domain beside the structural relationships, writes it back as written, carries every declared node field through, and retires both expected-red entries through the gate's ratchet, with no HTTP contract change.",
+  "purpose_tldr": "A graph shard's tension edges and its node tags, provenance and body paths come back from a read and write exactly as the pack author wrote them.",
+  "slug": "drg-tension-and-node-fields-01M68A0T",
+  "status_phase": "1",
+  "target_branch": "issue-235-236-drg-round-trip",
+  "topology": "single_branch"
+}

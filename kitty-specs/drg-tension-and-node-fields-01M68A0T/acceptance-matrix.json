@@ -1,0 +1,119 @@
+{
+  "mission_slug": "drg-tension-and-node-fields-01M68A0T",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java#anInTensionWithEdgeBindsAsATensionAndNeverAsARelationship; service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/TensionTest.java; gate directive.graph.yaml green (/tmp gate log, UNEXPECTEDLY_GREEN then entry removed)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:01.139941+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriterTest.java#aTensionIsWrittenAsTheInTensionWithEdgeItWasWithNoStrength; DomainRoundTripTest#aShardWithNodeFieldsAndATensionBesideARequiresRoundTripsWithItsMeaning",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:04.969652+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java#aTensionAndAStructuralRelationshipOnTheSamePairBothBind; DomainRoundTripTest production-path fixture (tension + requires on one pair); pinned DIRECTIVE_024/025 green in the gate",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:08.497404+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java#anInTensionWithEdgeThatAlsoWritesImpactsIsAFindingWhileAValidTensionBesideItBinds (positive control on the same fixture)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:12.015082+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphDocumentReaderTest.java#aShardNodeIsReadWithItsProvenanceAndItsTagsInWrittenOrder; GraphShardWriterTest (tags b,a in order); DomainRoundTripTest swapped-tag control; gate anti_pattern.graph.yaml green (13 tagged nodes)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:15.714019+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java#aShardNodeBindsWithItsProvenanceAndItsTagsInOrder; GraphShardWriterTest#aShardNodeIsWrittenWithItsProvenanceAndTags...; DomainRoundTripTest production-path fixture",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:19.554955+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriterTest.java#aFragmentRoundTripsWithItsBodyPathAndTheGateComparatorSeesADroppedOne (writeFragment, helper-level by design: no production fragment writer yet); GraphDocumentReaderTest#aFragmentNodeIsReadWithItsBodyPath",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:23.021835+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GraphShardWriterTest.java#aShardNodeIsWrittenWithItsProvenanceAndTagsInKeyOrderAndANodeWithoutThemHasNeitherKey (text-level, same fixture as the present case)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:26.626156+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/resources/whole-pack/expected-red.yaml: both files: entries removed after :packs:wholePackRoundTrip reported UNEXPECTEDLY_GREEN for exactly anti_pattern.graph.yaml and directive.graph.yaml; gate green after",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:30.016675+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "docs/adr/0044-*.md; DIV-018; logical-model.md; Relation.yaml description; contracts CHANGELOG; kernel/packs javadoc; grep of docs/contracts/service main leaves only historical/core-seam mentions (WP03 review)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:33.436941+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackPolicyGraphTest.java#aRegisteredShardHoldsNoTensionSoATensionThereIsAFindingAndIsNotBound; RelationshipShardRoundTripTest#aTensionInARegisteredShardIsAFinding... (CommitStorePackWriteStore refuses on findings)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T07:09:36.764941+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

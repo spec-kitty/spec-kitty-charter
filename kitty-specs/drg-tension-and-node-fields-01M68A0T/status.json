@@ -1,0 +1,123 @@
+{
+  "event_count": 26,
+  "last_event_id": "01M68CPPVV53BBKB5X6J4PRJDX",
+  "materialized_at": "2026-10-31T07:10:08.763896+00:00",
+  "mission_number": "13",
+  "mission_slug": "drg-tension-and-node-fields-01M68A0T",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68CPMF2MR1CKHZVAK0BGWG6",
+      "last_transition_at": "2026-10-31T07:10:06.306301+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Kernel: Tension + DrgNode fields + NodeKind.plural; 33 kernel tests (3+5+16+9) seen red (compile) then green; :kernel:check clean",
+        "Review passed (independent reviewer-renata subagent); LOW findings folded"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/drg-tension-and-node-fields-01M68A0T/tasks/WP01-kernel-tension-and-node-fields/review-cycle-1.md",
+        "reference": "review-cycle://drg-tension-and-node-fields-01M68A0T/WP01-kernel-tension-and-node-fields/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 8486,
+      "shell_pid_created_at": "1793428702.5",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68CPNQF2VVEP9BEXVDEKWZA",
+      "last_transition_at": "2026-10-31T07:10:07.599265+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "16 behavioural reds recorded then green; gate UNEXPECTEDLY_GREEN for exactly the 2 files, entries removed, gate green; 9/9 half-by-half mutants killed; :packs:check + openPacksRoundTrip green",
+        "Review passed (independent reviewer-renata subagent). LOW-1 folded: gate re-bind non-vacuity proven (2 more mutants killed, commit 'prove the gate's read-back...'). LOW-2 fixture renames recorded as an out-of-map edit; LOW-3 'tensions' key carried into WP03 T015 runner draft."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/drg-tension-and-node-fields-01M68A0T/tasks/WP02-packs-round-trip-and-gate/review-cycle-1.md",
+        "reference": "review-cycle://drg-tension-and-node-fields-01M68A0T/WP02-packs-round-trip-and-gate/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15281,
+      "shell_pid_created_at": "1793429674.32",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M68CPPVV53BBKB5X6J4PRJDX",
+      "last_transition_at": "2026-10-31T07:10:08.763896+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "ADR-0044 (renumbered from planned 0045: docs gate refuses a numbering gap; 0044 free on main+open PRs); records updated; check_docs all ok, cspell docs 0, verifyAll+gate green",
+        "Review feedback 1 folded (logical-model row; DIV-018 pack schemas)",
+        "Re-review passed (independent reviewer-renata subagent): feedback 1 folded"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/kitty-specs/drg-tension-and-node-fields-01M68A0T/tasks/WP03-records-adr-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://drg-tension-and-node-fields-01M68A0T/WP03-records-adr-and-docs/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 20797,
+      "shell_pid_created_at": "1793430449.91",
+      "subtasks": {
+        "T013": "done",
+        "T014": "done",
+        "T015": "done"
+      }
+    }
+  }
+}
