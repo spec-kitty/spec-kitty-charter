@@ -118,10 +118,10 @@
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "Bundled build/contracts/contract/charter-openapi.yaml: Charter-Source-Fingerprint declared exactly 4 times, required:true, on 200 of GET /info, /offering, /packs/{packId}/artifacts, /packs/{packId}/artifacts/{kind}/{artifactId}; none on refusals/components/writes/root/openapi.yaml; CharterSteps.fingerprintHeaderIsTheVerifiedDigest after-hook; root/removed-routes/artifacts refusal scenarios assert no fingerprint; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:20.378659+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
