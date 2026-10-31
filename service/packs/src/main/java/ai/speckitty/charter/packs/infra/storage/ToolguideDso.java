@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

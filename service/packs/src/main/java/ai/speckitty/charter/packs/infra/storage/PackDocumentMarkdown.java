@@ -7,8 +7,8 @@ import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.util.List;
 

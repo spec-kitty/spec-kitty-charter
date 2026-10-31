@@ -1,7 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.math.BigDecimal;
 import java.util.ArrayList;

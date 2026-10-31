@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.storage.markdown;
+package ai.speckitty.charter.packs.domain.markdown;
 
 import java.util.ArrayList;
 import java.util.Collections;

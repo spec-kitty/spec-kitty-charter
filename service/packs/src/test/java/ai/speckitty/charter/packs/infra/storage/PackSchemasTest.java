@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import com.networknt.schema.InvalidSchemaException;
 import com.networknt.schema.InvalidSchemaRefException;
 import java.io.IOException;

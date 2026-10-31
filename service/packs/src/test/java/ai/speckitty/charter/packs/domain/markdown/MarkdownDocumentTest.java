@@ -1,10 +1,10 @@
-package ai.speckitty.charter.packs.infra.storage.markdown;
+package ai.speckitty.charter.packs.domain.markdown;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument.Section;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument.Section;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
