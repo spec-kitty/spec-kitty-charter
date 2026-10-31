@@ -147,6 +147,27 @@ class ContractConformanceTest {
     }
 
     @Test
+    void minItemsIsImplementedAnArrayShorterThanItIsAViolation() throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n  /x:\n    $ref: paths/x.yaml\n");
+        write("charter/paths/x.yaml", """
+                get:
+                  responses:
+                    '200':
+                      description: d
+                      content:
+                        application/json:
+                          schema: {type: array, minItems: 1, items: {type: string}}
+                """);
+
+        ContractConformance check = new ContractConformance(fixture);
+
+        assertThat(check.violations("get", "/x", 200, "application/json", json("[\"a\"]")))
+                .isEmpty();
+        assertThat(check.violations("get", "/x", 200, "application/json", json("[]")))
+                .containsExactly("$ holds fewer than 1 items");
+    }
+
+    @Test
     void aSchemaNoBodyWalksIsVettedWhenTheCheckIsBuilt() throws IOException {
         minimalContract();
         write("charter/schemas/Unused.yaml", "type: array\nitems: {type: string}\nuniqueItems: true\n");
@@ -190,6 +211,56 @@ class ContractConformanceTest {
         assertThatThrownBy(() -> new ContractConformance(fixture))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("multipleOf");
+    }
+
+    /** The one map the contract holds, _links (ADR-0019 D3): each relation is validated against Link. */
+    private ContractConformance linksContract() throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n  /x:\n    $ref: paths/x.yaml\n");
+        write("charter/paths/x.yaml", """
+                get:
+                  responses:
+                    '200':
+                      description: d
+                      content:
+                        application/json:
+                          schema: {$ref: ../schemas/Thing.yaml}
+                """);
+        write("charter/schemas/Thing.yaml", """
+                type: object
+                additionalProperties: false
+                required: [_links]
+                properties:
+                  _links: {$ref: Links.yaml}
+                """);
+        write("charter/schemas/Links.yaml", "title: Links\ntype: object\nadditionalProperties: {$ref: Link.yaml}\n");
+        write("charter/schemas/Link.yaml", """
+                title: Link
+                type: object
+                additionalProperties: false
+                required: [href]
+                properties:
+                  href: {type: string, pattern: '^/api/v1(/|$|\\{)'}
+                  method: {type: string}
+                """);
+        return new ContractConformance(fixture);
+    }
+
+    @Test
+    void eachRelationOfALinksMapIsValidatedAgainstLink() throws IOException {
+        ContractConformance check = linksContract();
+
+        assertThat(check.violations(
+                        "get", "/x", 200, "application/json", json("{\"_links\":{\"self\":{\"href\":\"/api/v1/x\"}}}")))
+                .isEmpty();
+        assertThat(check.violations("get", "/x", 200, "application/json", json("{\"_links\":{\"self\":{}}}")))
+                .containsExactly("$._links.self lacks the required member 'href'");
+        assertThat(check.violations(
+                        "get",
+                        "/x",
+                        200,
+                        "application/json",
+                        json("{\"_links\":{\"self\":{\"href\":\"/api/v1/x\",\"rel\":\"self\"}}}")))
+                .containsExactly("$._links.self has the undeclared member 'rel'");
     }
 
     @Test

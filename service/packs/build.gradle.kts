@@ -173,6 +173,11 @@ tasks.test {
     val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
     inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
     systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
+    // ActivationConfigSchemaParityTest validates the ActivationConfig corpus against the canonical JSON Schema and
+    // its OpenAPI mirror (#125).
+    val offering = rootProject.layout.projectDirectory.dir("contracts/offering")
+    inputs.dir(offering).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("offering")
+    systemProperty("charter.offering", offering.asFile.absolutePath)
 }
 tasks.check { dependsOn(openPacksRoundTrip) }
 

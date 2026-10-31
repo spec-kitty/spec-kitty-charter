@@ -75,9 +75,9 @@ public class ParadigmController implements ParadigmsApi {
                 body.getSchemaVersion(),
                 body.getName(),
                 body.getSummary(),
-                body.getDirectiveRefs(),
-                body.getReferences());
-        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
+                OptionalLists.orEmpty(body.getDirectiveRefs()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, false, null);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
@@ -98,9 +98,9 @@ public class ParadigmController implements ParadigmsApi {
                 body.getSchemaVersion(),
                 body.getName(),
                 body.getSummary(),
-                body.getDirectiveRefs(),
-                body.getReferences());
-        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
+                OptionalLists.orEmpty(body.getDirectiveRefs()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
