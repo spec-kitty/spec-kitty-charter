@@ -3,7 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

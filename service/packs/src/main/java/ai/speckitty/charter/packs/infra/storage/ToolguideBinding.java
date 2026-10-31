@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
-import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

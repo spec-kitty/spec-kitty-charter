@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage.markdown;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.OpenPacksCorpus;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec.Parsed;
 import java.io.IOException;
