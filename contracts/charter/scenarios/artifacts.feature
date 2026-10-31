@@ -10,7 +10,15 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   (FR-007). Each answer is one verified read and carries the fingerprint it verified.
 
   Background:
-    Given the org pack "qa" with the file "tactics/rehearse.tactic.yaml":
+    Given the org pack "qa" with the file "pack.yaml":
+      """
+      pack_id: qa
+      pack_version: 1.0.0
+      parent_pack: null
+      name: qa
+      pack_level: org
+      """
+    And the org pack "qa" with the file "tactics/rehearse.tactic.yaml":
       """
       schema_version: '1.0'
       id: rehearse
@@ -208,22 +216,66 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
 
   Scenario: A list without a filter is in the served-kind order, then by id in code-point order
-    Given the org pack "order" with the file "paradigms/p1.paradigm.yaml":
+    The files are named so that their order is not the ids' order. Within a kind the pack schemas fix the
+    case of an id (directives upper case, the other kinds lower case), so code-point order shows in the
+    punctuation: "-" (U+002D) before the digits, the digits before the letters, and "_" (U+005F) after the
+    upper-case letters, which a locale-aware collation that ignores punctuation would not give.
+    Given the org pack "order" with the file "pack.yaml":
+      """
+      pack_id: order
+      pack_version: 1.0.0
+      parent_pack: null
+      name: order
+      pack_level: org
+      """
+    And the org pack "order" with the file "paradigms/p1.paradigm.yaml":
       """
       schema_version: '1.0'
       id: p1
       name: First paradigm
       summary: One.
       """
-    And the org pack "order" with the file "directives/d1.directive.yaml":
+    And the org pack "order" with the file "directives/1.directive.yaml":
       """
       schema_version: '1.0'
-      id: D1
-      title: First directive
+      id: A_B
+      title: Directive A_B
       intent: One.
       enforcement: required
       """
-    And the org pack "order" with the file "tactics/alpha.tactic.yaml":
+    And the org pack "order" with the file "directives/2.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: AB
+      title: Directive AB
+      intent: One.
+      enforcement: required
+      """
+    And the org pack "order" with the file "directives/3.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A-B
+      title: Directive A-B
+      intent: One.
+      enforcement: required
+      """
+    And the org pack "order" with the file "directives/4.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A1
+      title: Directive A1
+      intent: One.
+      enforcement: required
+      """
+    And the org pack "order" with the file "tactics/a.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: zeta
+      name: Zeta
+      steps:
+        - title: Only step
+      """
+    And the org pack "order" with the file "tactics/b.tactic.yaml":
       """
       schema_version: '1.0'
       id: alpha
@@ -231,22 +283,17 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       steps:
         - title: Only step
       """
-    And the org pack "order" with the file "tactics/zeta.tactic.yaml":
-      """
-      schema_version: '1.0'
-      id: Zeta
-      name: Zeta
-      steps:
-        - title: Only step
-      """
     When I GET "/packs/order/artifacts"
     Then the response status is 200
-    And the field at "/items/0/id" is "Zeta"
-    And the field at "/items/1/id" is "alpha"
-    And the field at "/items/2/kind" is "directive"
-    And the field at "/items/2/id" is "D1"
-    And the field at "/items/3/kind" is "paradigm"
-    And the field at "/items/3/id" is "p1"
+    And following "next" links from the answer, the "items" ids are:
+      | kind      | id    |
+      | tactic    | alpha |
+      | tactic    | zeta  |
+      | directive | A-B   |
+      | directive | A1    |
+      | directive | AB    |
+      | directive | A_B   |
+      | paradigm  | p1    |
     And the field at "/page/hasNextPage" is false
 
   Scenario: An empty pack answers an empty page
@@ -274,7 +321,15 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
 
   Scenario: A kind the pack holds none of answers an empty page
-    Given the org pack "order" with the file "tactics/alpha.tactic.yaml":
+    Given the org pack "order" with the file "pack.yaml":
+      """
+      pack_id: order
+      pack_version: 1.0.0
+      parent_pack: null
+      name: order
+      pack_level: org
+      """
+    And the org pack "order" with the file "tactics/alpha.tactic.yaml":
       """
       schema_version: '1.0'
       id: alpha
@@ -336,7 +391,15 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the answer has no link "next"
 
   Scenario: A next link keeps the kind filter and the page size, and its page keeps first without the cursor
-    Given the org pack "order" with the file "tactics/alpha.tactic.yaml":
+    Given the org pack "order" with the file "pack.yaml":
+      """
+      pack_id: order
+      pack_version: 1.0.0
+      parent_pack: null
+      name: order
+      pack_level: org
+      """
+    And the org pack "order" with the file "tactics/alpha.tactic.yaml":
       """
       schema_version: '1.0'
       id: alpha
@@ -347,7 +410,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the org pack "order" with the file "tactics/zeta.tactic.yaml":
       """
       schema_version: '1.0'
-      id: Zeta
+      id: zeta
       name: Zeta
       steps:
         - title: Only step
@@ -362,16 +425,24 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       """
     When I GET "/packs/order/artifacts?kind=tactic&pageSize=1"
     Then the response status is 200
-    And the field at "/_links/next/href" is "/api/v1/packs/order/artifacts?kind=tactic&pageSize=1&pageCursor=dGFjdGljL1pldGE"
+    And the field at "/_links/next/href" is "/api/v1/packs/order/artifacts?kind=tactic&pageSize=1&pageCursor=dGFjdGljL2FscGhh"
     And following "next" links from the answer, the "items" ids are:
       | kind   | id    |
-      | tactic | Zeta  |
       | tactic | alpha |
-    And the field at "/_links/self/href" is "/api/v1/packs/order/artifacts?kind=tactic&pageSize=1&pageCursor=dGFjdGljL1pldGE"
+      | tactic | zeta  |
+    And the field at "/_links/self/href" is "/api/v1/packs/order/artifacts?kind=tactic&pageSize=1&pageCursor=dGFjdGljL2FscGhh"
     And the field at "/_links/first/href" is "/api/v1/packs/order/artifacts?kind=tactic&pageSize=1"
 
   Scenario: The anchor of a cursor deleted between two pages still pages on from its position
-    Given the org pack "order" with the file "tactics/alpha.tactic.yaml":
+    Given the org pack "order" with the file "pack.yaml":
+      """
+      pack_id: order
+      pack_version: 1.0.0
+      parent_pack: null
+      name: order
+      pack_level: org
+      """
+    And the org pack "order" with the file "tactics/alpha.tactic.yaml":
       """
       schema_version: '1.0'
       id: alpha
@@ -382,18 +453,18 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     And the org pack "order" with the file "tactics/zeta.tactic.yaml":
       """
       schema_version: '1.0'
-      id: Zeta
+      id: zeta
       name: Zeta
       steps:
         - title: Only step
       """
     When I GET "/packs/order/artifacts?pageSize=1"
     Then the response status is 200
-    And the field at "/items/0/id" is "Zeta"
-    When the file "tactics/zeta.tactic.yaml" of the pack "order" is deleted
+    And the field at "/items/0/id" is "alpha"
+    When the file "tactics/alpha.tactic.yaml" of the pack "order" is deleted
     And I follow the link "next"
     Then the response status is 200
-    And the field at "/items/0/id" is "alpha"
+    And the field at "/items/0/id" is "zeta"
     And the field at "/page/hasNextPage" is false
     And the answer has no link "next"
 
