@@ -48,10 +48,10 @@ jobs:
           printf 'changed files:\n%s\n' "$changed"
           # Mirror the path filters of service.yml, service-native.yml and docs-cleanliness.yml exactly; a
           # change to this gate workflow itself re-runs every group (fail-safe). The native group builds the four
-          # native executables (ADR-0046), so it runs only for what can change them: the service, the build and
-          # the release scripts.
+          # native executables (ADR-0046), so it runs only for what can change them: the contract the service
+          # bundles, the service, the build and the release scripts.
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service|ci|contract-release|service-release)\.yml$)'
-          native_re='^(service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service-native|ci)\.yml$)'
+          native_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service-native|ci)\.yml$)'
           docs_re='^(docs/|site/|scripts/docs/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$native_re"; then echo "native=true"; else echo "native=false"; fi >> "$GITHUB_OUTPUT"

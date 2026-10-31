@@ -113,7 +113,9 @@ base="http://127.0.0.1:$port/api/v1"
 token="$(od -An -tx1 -N20 /dev/urandom | tr -d ' \n')"
 [[ ${#token} -eq 40 ]] || fail "could not generate a 40-character token"
 export CHARTER_WORKTREE_TOKEN="$token"
-auth="Authorization: Bearer $token"
+# The header comes from a file (curl -H @file), so the token is on no command line.
+printf 'Authorization: Bearer %s\n' "$token" > "$work/authorization"
+auth="@$(native_path "$work/authorization")"
 
 cp -R "$here/smoke/config-root" "$work/root"
 root="$(native_path "$work/root")"

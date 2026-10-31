@@ -10,6 +10,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "contracts/**"
       - "service/**"
       - "build-logic/**"
       - "gradle/**"
@@ -61,6 +62,12 @@ jobs:
       run:
         shell: bash
     steps:
+      # Windows runners convert to CRLF on checkout (core.autocrlf), which breaks ./gradlew and the bash scripts
+      # under Git Bash; the repository's files are LF, so they are checked out as they are.
+      - name: Keep LF line endings on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
+
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -86,8 +93,8 @@ jobs:
         id: versions
         run: |
           set -euo pipefail
-          service="$(sed -n 's/^version=//p' gradle.properties)"
-          contract="$(sed -n '/^  version:/{s/^  version: *//p;q}' contracts/charter/openapi.yaml)"
+          service="$(awk -F= '$1 == "version" { print $2; exit }' gradle.properties)"
+          contract="$(awk '/^  version:/ { sub(/^  version: */, ""); print; exit }' contracts/charter/openapi.yaml)"
           echo "service=$service" >> "$GITHUB_OUTPUT"
           echo "contract=$contract" >> "$GITHUB_OUTPUT"
 

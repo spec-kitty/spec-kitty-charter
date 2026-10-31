@@ -125,6 +125,7 @@ jobs:
   # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
   # and checked like them before it is uploaded.
   jar:
+    if: github.workflow != 'Docs site'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -151,8 +152,8 @@ jobs:
         id: smoke
         run: |
           set -euo pipefail
-          service="$(sed -n 's/^version=//p' gradle.properties)"
-          contract="$(sed -n '/^  version:/{s/^  version: *//p;q}' contracts/charter/openapi.yaml)"
+          service="$(awk -F= '$1 == "version" { print $2; exit }' gradle.properties)"
+          contract="$(awk '/^  version:/ { sub(/^  version: */, ""); print; exit }' contracts/charter/openapi.yaml)"
           jar="service/deployable/build/libs/deployable-${service}.jar"
           scripts/release/smoke-service.sh "$jar" "$service" "$contract" 60
           echo "jar=$jar" >> "$GITHUB_OUTPUT"
@@ -196,7 +197,6 @@ jobs:
         run: |
           set -euo pipefail
           for rehearsal in scripts/release/rehearse-*.sh; do
-            echo "::group::$rehearsal"
+            echo "== $rehearsal"
             "$rehearsal"
-            echo "::endgroup::"
           done
