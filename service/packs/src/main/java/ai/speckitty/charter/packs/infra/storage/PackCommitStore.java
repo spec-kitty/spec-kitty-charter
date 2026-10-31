@@ -40,6 +40,9 @@ import org.springframework.stereotype.Service;
  * <p><strong>Filesystem assumption.</strong> The live directory, the staging directory and the aside directory are
  * all created under the same parent, hence on one filesystem, where a directory rename is atomic (POSIX
  * {@code rename(2)} within a mount). Where the platform cannot rename atomically the swap falls back to a plain move.
+ * The live directory is the pack's real path: for a pack whose directory is a symbolic link, the staging and aside
+ * copies sit beside the link's target and the target is swapped, so the link stays a link (#174, ADR-0038 decision 3
+ * as amended 2026-10-31).
  *
  * <p><strong>Crash window.</strong> The swap is two renames, so a process that dies between them leaves no live
  * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy). That state is repaired on the next
@@ -138,11 +141,7 @@ public final class PackCommitStore {
             @Nullable CharterArtifact artifact,
             @Nullable String relationshipShardText) {
         Objects.requireNonNull(pack, "pack");
-        Resolved resolved = resolve(pack);
-        Path liveDir = resolved.directory;
-        if (!Files.isDirectory(liveDir)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
-        }
+        Path liveDir = realDirectory(resolve(pack).directory, pack);
         Path parent = requireParent(liveDir);
         @Nullable Path staging = null;
         try {
@@ -264,6 +263,23 @@ public final class PackCommitStore {
     }
 
     // ---- filesystem helpers --------------------------------------------------------------------------------------
+
+    /**
+     * The real path of a pack's live directory: the commit stages beside it and swaps it, so a pack whose configured
+     * directory is a symbolic link keeps the link and its target takes the new content (#174, ADR-0038 decision 3 as
+     * amended 2026-10-31). The staging and aside copies sit on the target's own file system, where the swap is atomic.
+     */
+    private static Path realDirectory(Path directory, PackIdentifier pack) {
+        if (!Files.isDirectory(directory)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a directory");
+        }
+        try {
+            return directory.toRealPath();
+        } catch (IOException unresolved) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be resolved", unresolved);
+        }
+    }
 
     private static Path requireParent(Path directory) {
         Path parent = directory.getParent();
