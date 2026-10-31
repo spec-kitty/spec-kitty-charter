@@ -8,10 +8,10 @@
       "criterion_id": "FR-001",
       "description": "Verify FR-001 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "root.feature: 'The root answers its links and carries no fingerprint' (exact _links self/info/offering/artifacts templated/service-desc, all /api/v1), 'The info|offering|service-desc link of the root answers...', 'The artifacts template of the root, expanded with a configured pack|with a pack and a kind...', 'The root needs the worktree token' (401); bundled contract: GET / getApiRoot 200 ApiRoot requires _links; LinkChecks after-hook (relation table + resolution); verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2, CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:21:56.987249+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
