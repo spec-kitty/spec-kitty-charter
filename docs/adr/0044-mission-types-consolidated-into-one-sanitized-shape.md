@@ -292,7 +292,10 @@ listed in spec-kitty/spec-kitty-open-packs#96. A pinned step with no prompt, or 
 `mission_types/<t>.yaml`, `mission.yaml`, `mission-runtime.yaml`, `governance-profile.yaml`,
 `expected-artifacts.yaml`, `actions/<a>/index.yaml`, `mission-steps/**/step.yaml`, the `prompt.md` and
 `guidelines.md` beside a retired `step.yaml`, and `command-templates/*.md` are retired. Their `file-kinds.yaml`
-exclusions are removed (operator decision 5 of 2026-10-28) and replaced by `retired` rules, each with its reason. A
+exclusions are removed (operator decision 5 of 2026-10-28) and replaced by `retired` rules, each with its reason.
+Each rule is anchored to a layout the pinned packs held (the mission tier at the pack root, as qa and cave-kitty had
+it, or under `missions/`, as the built-in pack had it), so a payload that only shares a name, such as an asset called
+`governance-profile.yaml` or a template under `templates/mission-steps/`, is never retired. A
 retired file is classified as retired: the store's load and validate mode refuse it by name, the whole-pack gate
 reports it in its own `retired:` bucket, and it is digested in the fingerprint tail, so removing one changes the
 fingerprint. A stale file cannot hide. The `retired` rules are removed when the service is incorporated into core and
@@ -303,8 +306,12 @@ no supported pack holds the old layout.
 `MissionType`, `MissionStep` and their values live in a new Gradle module `:missions`
 (`ai.speckitty.charter.missions.domain`), plain Java over the kernel, as `:profiles` holds the agent profile
 ([ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/) decision 4). The domain holds no file paths
-(ADR-0037 decision 5): a step holds its prompt and guidelines as documents. The pack store binds the kind and depends
-on the module, never the other way; the ArchUnit slice rules cover it.
+(ADR-0037 decision 5): a step holds its prompt and guidelines as documents. One value is kept as written: an output's
+`template_path`, `templates/<path>` relative to the mission-type file, is a reference to a template the pack holds
+(the `Template` with the id `<type>/<path>`), checked to name one on read and on write, and not resolved to that
+entity in the domain; resolving it, and deciding which of a template's id and its mission type owns its place, is a
+recorded follow-up. The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
+rules cover it.
 
 ### 8. Migration by the service's own writer, then a re-pin
 
