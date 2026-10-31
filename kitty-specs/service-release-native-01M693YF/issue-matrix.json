@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#128": {
+      "evidence_ref": "cited only as the contract 1.0.0 milestone that ends the service's 0.x (ADR-0046 decision 2)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#234": {
       "evidence_ref": "container image out of scope (C-003); it builds on the service-v* line",
       "fr": null,
