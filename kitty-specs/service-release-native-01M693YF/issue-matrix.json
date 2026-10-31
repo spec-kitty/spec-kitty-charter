@@ -1,7 +1,7 @@
 {
   "rows": {
     "#234": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "container image out of scope (C-003); it builds on the service-v* line",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#241": {
