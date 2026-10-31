@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-charter repository and its documentation.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Changelog
 kind: Hub
 audience:
@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-31 — A pack linked into the configuration root is served and written through its target](/changelog/2026-10-31-linked-packs/)
 - [2026-10-30 — Mission types are one sanitized file each, and an artifact kind](/changelog/2026-10-30-mission-types-consolidated/)
 - [2026-10-30 — A pack's pack.md round-trips through the markdown content form](/changelog/2026-10-30-pack-document-round-trip/)
 - [2026-10-30 — The container profile reads its secrets from mounted files or env vars](/changelog/2026-10-30-container-profile-secrets/)
