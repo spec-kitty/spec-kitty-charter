@@ -1,0 +1,110 @@
+# Design sketch (revised after the plan-point squad; see research.md R-13..R-24) of the contract shapes this mission adds. This file is NOT the contract.
+# contracts/charter/ stays the source of record (ADR-0002); the WPs write the real split files
+# from this sketch, with the full descriptions, x-source citations and Charter headers.
+openapi: 3.1.0
+info: {title: Gate-A read surface sketch, version: 0.1.0-SNAPSHOT}
+paths:
+  /:
+    get: {operationId: getApiRoot, tags: [Service], responses: {'200': {description: The API root., content: {application/json: {schema: {$ref: '#/components/schemas/ApiRoot'}}}}}}
+  /offering:
+    get: {operationId: getOffering, tags: [Offering], responses: {'200': {description: The packs in force, in merge order., content: {application/json: {schema: {$ref: '#/components/schemas/Offering'}}}}}}
+  /packs/{packId}/artifacts:
+    get:
+      operationId: listPackArtifacts
+      tags: [Artifacts]
+      parameters:
+        - {name: packId, in: path, required: true, schema: {type: string}}
+        - {name: kind, in: query, required: false, schema: {$ref: '#/components/schemas/ArtifactKindToken'}}
+        - {name: pageSize, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+        - {name: pageCursor, in: query, required: false, schema: {type: string}}
+      responses: {'200': {description: One page of the pack's artifacts., content: {application/json: {schema: {$ref: '#/components/schemas/ArtifactPage'}}}}}
+  /packs/{packId}/artifacts/{kind}/{artifactId}:
+    get:
+      operationId: getPackArtifact
+      tags: [Artifacts]
+      parameters:
+        - {name: packId, in: path, required: true, schema: {type: string}}
+        - {name: kind, in: path, required: true, schema: {type: string}}
+        - {name: artifactId, in: path, required: true, schema: {type: string}}
+      responses: {'200': {description: One artifact., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}
+  /packs/{packId}/artifacts/directive:
+    post: {operationId: registerPackDirective, tags: [Directives], responses: {'201': {description: Registered., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}}
+  /packs/{packId}/artifacts/directive/{artifactId}:
+    put: {operationId: putPackDirective, tags: [Directives], responses: {'200': {description: Replaced., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}}
+  # ...and the same pair for styleguide, paradigm and toolguide.
+components:
+  schemas:
+    Link:
+      type: object
+      additionalProperties: false
+      required: [href]
+      properties:
+        href: {type: string, pattern: '^/api/v1(/|$|\{)'}
+        templated: {type: boolean}
+        method: {type: string, pattern: '^(GET|POST|PUT)$'}
+        title: {type: string}
+    Links:
+      type: object
+      additionalProperties: {$ref: '#/components/schemas/Link'}
+    ApiRoot:
+      type: object
+      additionalProperties: false
+      required: [_links]
+      properties: {_links: {$ref: '#/components/schemas/Links'}}
+    Offering:
+      type: object
+      additionalProperties: false
+      required: [packs, _links]
+      properties:
+        packs: {type: array, items: {$ref: '#/components/schemas/OfferingPack'}}
+        _links: {$ref: '#/components/schemas/Links'}
+    OfferingPack:
+      type: object
+      additionalProperties: false
+      required: [packId, level, _links]
+      properties:
+        packId: {type: string}
+        name: {type: string}
+        version: {type: string}
+        level: {description: $ref PackLevel}
+        _links: {$ref: '#/components/schemas/Links'}
+    ArtifactKindToken:
+      type: string
+      enum: [tactic, directive, styleguide, paradigm, toolguide]
+    ArtifactSummary:
+      type: object
+      additionalProperties: false
+      required: [kind, id, title, _links]
+      properties:
+        kind: {$ref: '#/components/schemas/ArtifactKindToken'}
+        id: {type: string}
+        title: {type: string}
+        _links: {$ref: '#/components/schemas/Links'}
+    ArtifactPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, _links]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ArtifactSummary'}}
+        page: {description: the shared PageInfo}
+        _links: {$ref: '#/components/schemas/Links'}
+    Artifact:
+      type: object
+      additionalProperties: false
+      required: [kind, id, packId, _links]
+      properties:
+        kind: {$ref: '#/components/schemas/ArtifactKindToken'}
+        id: {type: string}
+        packId: {type: string}
+        _links: {$ref: '#/components/schemas/Links'}
+        tactic: {description: the existing Tactic schema}
+        directive: {description: the existing Directive schema}
+        styleguide: {description: the existing Styleguide schema}
+        paradigm: {description: the existing Paradigm schema}
+        toolguide: {description: the existing Toolguide schema}
+      oneOf:
+        - required: [tactic]
+        - required: [directive]
+        - required: [styleguide]
+        - required: [paradigm]
+        - required: [toolguide]
