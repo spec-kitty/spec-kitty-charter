@@ -5,7 +5,7 @@ name: CI gate
 # GitHub cannot usefully require a path-filtered workflow: a PR that does not touch the workflow's
 # paths never posts its context, so a required check keyed on it waits forever and blocks the PR.
 # This workflow always runs on every PR, detects which concern groups the PR actually changed,
-# calls the real gate workflows (service, docs-cleanliness) only for the groups that changed, and
+# calls the real gate workflows (service, service-native, docs-cleanliness) only for the groups that changed, and
 # the `gate` job reports a single verdict. Branch protection requires only `CI gate / gate`.
 #
 # The called workflows keep their own `push` (main) and `workflow_dispatch` triggers for main CI;
@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       service: ${{ steps.detect.outputs.service }}
+      native: ${{ steps.detect.outputs.native }}
       docs: ${{ steps.detect.outputs.docs }}
     steps:
       - name: Check out
@@ -45,11 +46,15 @@ jobs:
           # branch point does not fold main-only files in and over-detect a group the PR never touched.
           changed="$(git diff --name-only "$BASE...$HEAD")"
           printf 'changed files:\n%s\n' "$changed"
-          # Mirror the path filters of service.yml and docs-cleanliness.yml exactly; a change to
-          # this gate workflow itself re-runs both groups (fail-safe).
-          service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service|ci|contract-release)\.yml$)'
+          # Mirror the path filters of service.yml, service-native.yml and docs-cleanliness.yml exactly; a
+          # change to this gate workflow itself re-runs every group (fail-safe). The native group builds the four
+          # native executables (ADR-0046), so it runs only for what can change them: the service, the build and
+          # the release scripts.
+          service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service|ci|contract-release|service-release)\.yml$)'
+          native_re='^(service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service-native|ci)\.yml$)'
           docs_re='^(docs/|site/|scripts/docs/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
+          if printf '%s\n' "$changed" | grep -Eq "$native_re"; then echo "native=true"; else echo "native=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"
 
   service:
@@ -57,6 +62,12 @@ jobs:
     needs: changes
     if: needs.changes.outputs.service == 'true'
     uses: ./.github/workflows/service.yml
+
+  native:
+    name: Native executables
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    uses: ./.github/workflows/service-native.yml
 
   docs:
     name: Docs cleanliness
@@ -66,7 +77,7 @@ jobs:
 
   gate:
     name: gate
-    needs: [changes, service, docs]
+    needs: [changes, service, native, docs]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -74,17 +85,18 @@ jobs:
         env:
           CHANGES: ${{ needs.changes.result }}
           SERVICE: ${{ needs.service.result }}
+          NATIVE: ${{ needs.native.result }}
           DOCS: ${{ needs.docs.result }}
         run: |
           set -uo pipefail
-          echo "changes=$CHANGES service=$SERVICE docs=$DOCS"
+          echo "changes=$CHANGES service=$SERVICE native=$NATIVE docs=$DOCS"
           # Fail closed if change detection itself did not complete.
           if [ "$CHANGES" != "success" ]; then
             echo "::error::change detection did not succeed (result: $CHANGES); refusing to pass the gate"
             exit 1
           fi
           fail=0
-          for pair in "service:$SERVICE" "docs:$DOCS"; do
+          for pair in "service:$SERVICE" "native:$NATIVE" "docs:$DOCS"; do
             name="${pair%%:*}"
             result="${pair#*:}"
             case "$result" in

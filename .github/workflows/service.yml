@@ -4,8 +4,9 @@ name: service
 # objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
 # contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
 # (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
-# The release-rehearsal job rehearses a contract release (scripts/release/rehearse-contract-release.sh):
-# it publishes nothing.
+# The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
+# `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
+# The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
 # Mutation testing is not here: it runs nightly only (mutation-nightly.yml).
 on:
@@ -24,12 +25,18 @@ on:
       - "gradlew"
       - ".github/workflows/service.yml"
       - ".github/workflows/contract-release.yml"
+      - ".github/workflows/service-release.yml"
       - "scripts/release/**"
       # The deployable's tests check the compose example, the env template and the ignore rules (#229).
       - "deploy/**"
       - ".gitignore"
       - "**/.env*"
   workflow_call:
+    inputs:
+      cache-disabled:
+        description: "Build without the Gradle cache (release runs)."
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -80,6 +87,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: ${{ inputs.cache-disabled || false }}
 
       - name: Verify
         run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
@@ -113,6 +122,49 @@ jobs:
             build/contracts/contract/charter-openapi.yaml.sha256
           if-no-files-found: error
 
+  # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
+  # and checked like them before it is uploaded.
+  jar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: ${{ inputs.cache-disabled || false }}
+
+      - name: Build the jar
+        run: ./gradlew :deployable:bootJar
+
+      - name: Start the jar and check it answers
+        id: smoke
+        run: |
+          set -euo pipefail
+          service="$(sed -n 's/^version=//p' gradle.properties)"
+          contract="$(sed -n '/^  version:/{s/^  version: *//p;q}' contracts/charter/openapi.yaml)"
+          jar="service/deployable/build/libs/deployable-${service}.jar"
+          scripts/release/smoke-service.sh "$jar" "$service" "$contract" 60
+          echo "jar=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the jar
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: service-jar
+          path: ${{ steps.smoke.outputs.jar }}
+          if-no-files-found: error
+          retention-days: 7
+
   # The release path of contract-release.yml, run on a synthetic release in a throwaway clone with no
   # remote: an unreleased commit is refused, a released one yields the three assets. Nothing is tagged
   # on this repository and nothing is published. Skipped when the docs site calls this workflow.
@@ -136,6 +188,15 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: ${{ inputs.cache-disabled || false }}
 
-      - name: Rehearse a contract release
-        run: scripts/release/rehearse-contract-release.sh
+      # Every release rehearsal, the contract's and the service's: each publishes nothing and pushes no tag.
+      - name: Rehearse the releases
+        run: |
+          set -euo pipefail
+          for rehearsal in scripts/release/rehearse-*.sh; do
+            echo "::group::$rehearsal"
+            "$rehearsal"
+            echo "::endgroup::"
+          done
