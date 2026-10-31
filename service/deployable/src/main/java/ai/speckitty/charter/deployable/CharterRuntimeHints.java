@@ -1,10 +1,10 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.packs.infra.fetch.GlobalAddressResolverProvider;
 import org.jspecify.annotations.Nullable;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.aot.hint.TypeReference;
 import org.springframework.boot.context.properties.bind.BindableRuntimeHintsRegistrar;
 
 /**
@@ -38,9 +38,6 @@ public class CharterRuntimeHints implements RuntimeHintsRegistrar {
         // The guide fetch's DNS-rebinding guard, a resolver provider the JDK loads with ServiceLoader. Without it the
         // service refuses to start with an allowlist set (GlobalAddressResolverProvider.installRequiringGuard).
         hints.resources().registerPattern("META-INF/services/java.net.spi.InetAddressResolverProvider");
-        hints.reflection()
-                .registerType(
-                        TypeReference.of("ai.speckitty.charter.packs.infra.fetch.GlobalAddressResolverProvider"),
-                        MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+        hints.reflection().registerType(GlobalAddressResolverProvider.class, MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
     }
 }
