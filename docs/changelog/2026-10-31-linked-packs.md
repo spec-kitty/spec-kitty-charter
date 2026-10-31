@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
-title: A pack linked into the configuration root is served and written through its target
-description: A symbolic link under packs/ to a directory is a pack; its files are listed and digested, and a commit keeps the link and changes the target.
+title: A pack linked into the configuration root is served
+description: A symbolic link under packs/ to a directory is a pack; its files are listed and digested. One linked from outside the configuration root is read-only.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
 type: Changelog
@@ -16,7 +16,7 @@ audience:
     guidance_text: Read this for the walk from a root's real path, the link rules of StorageRootLocations and the commit through a link's target.
 ---
 
-# 2026-10-31 — A pack linked into the configuration root is served and written through its target
+# 2026-10-31 — A pack linked into the configuration root is served
 
 **A pack can be linked in, not only copied in.** A symbolic link under `<config-root>/packs/` to a
 directory is now a pack named after the link, at the level its target's `pack.yaml` declares
@@ -29,8 +29,11 @@ real path. A root reached through a link used to list no file: no tactic was ans
 digested, while `pack.yaml` and the graph shards were still read. Links below a pack's root are
 still not followed.
 
-**A commit keeps the link.** A registration into a linked pack stages and swaps beside the link's
-real target. The link stays, and the target holds the new content.
+**A pack linked from outside the configuration root is read-only through the service.** A
+registration into it is refused (`PACK_UNREADABLE`, "is linked from outside the configuration root;
+it is read-only through the service"), and nothing is staged: the service does not replace a
+directory it does not own, such as your checkout. Edit the pack where it lives. A link whose target
+is inside the configuration root is written through the target, and the link stays.
 
 **What changes for an operator:**
 
@@ -40,10 +43,5 @@ real target. The link stays, and the target holds the new content.
   - a link into the configuration root outside `packs/`;
   - entries whose directories are one, or one inside the other (two links to one target, a link to
     a sibling pack or into it). None of them is served.
-- A commit to a linked pack replaces its target directory with a new one, owned by the service's
-  user. Everything in the target, `.git` included, is copied on each commit. With a target outside
-  the configuration root, the `.pack-commit-*` staging copy, and briefly the `<target>.pack-old-*`
-  aside copy, are written beside the target. Whether such commits stay allowed is an open review
-  item ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)).
 - A configuration root that already holds a linked pack now serves one more pack, so its
   `Charter-Source-Fingerprint` changes once.
