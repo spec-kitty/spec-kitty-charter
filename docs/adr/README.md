@@ -74,6 +74,7 @@ stands.
 | [0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) | ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store | Proposed | 2026-10-29 |
 | [0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) | ADR-0044: Mission types consolidated into one sanitized shape | Accepted (2026-10-31) | 2026-10-30 |
 | [0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/) | ADR-0045: A tension is held beside the relationships, and a graph node keeps every declared field | Proposed | 2026-10-31 |
+| [0046](/adr/0046-service-release-line-and-native-packaging/) | ADR-0046: The service releases on its own service-v* line, native per OS with the jar as fallback | Accepted | 2026-10-31 |
 
 ## Core decisions this repository builds on
 

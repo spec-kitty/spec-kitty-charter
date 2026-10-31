@@ -2,7 +2,7 @@
 title: Open questions
 description: Decisions the charter design depends on that are not made yet, each with the default this repository assumes until someone rules.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -11,6 +11,7 @@ related:
   - adr/0002-contract-source-of-record
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
+  - adr/0046-service-release-line-and-native-packaging
 audience:
   - profile: core-maintainer
     guidance_text: Read this to rule on the questions that are core's to decide.
@@ -29,7 +30,7 @@ decides. A ruling becomes an ADR here or in core; decided rows stay, marked with
 | 2 | **How does the Python charter reach this repository?** Move it here first and strangle it here, or rewrite in Java and replace it in core. | **Decided 2026-10-18:** rewrite and replace; it does not move. The service is built against its contract scenarios and the OpenAPI document, and the open-packs content must round-trip through the file-based infrastructure layer ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)) | Operator |
 | 3 | **Acceptance of core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler).** | **Decided 2026-10-18:** accepted, with Amendment 2026-10-18 (contract here, rewrite and replace) | Operator, in core |
 | 4 | **Does `kernel` ship first?** The charter depends on `kernel`; core ADR `2026-10-12-2` leaves this to epic #6099. | No longer relevant here: with question 2 decided, no Python package ships from this repository, and the Java service depends on no Python | Epic #6099 |
-| 5 | **Native binary or JVM artifact?** | Follow the Mission Status service (GraalVM native per OS) unless reflection-heavy YAML or MCP libraries make native impractical. Still open; since 2026-10-19 the service always runs as a daemon ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)), so cold start matters less | Implementation ADR |
+| 5 | **Native binary or JVM artifact?** | **Decided 2026-10-31 (operator):** native per OS for linux-x64, linux-arm64, macos-arm64 and windows-x64, with the jar as fallback on every other host (Java 25 needed only there), released on the service's own `service-v*` line ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)) | Operator |
 | 6 | **Which YAML codec** can pass codec identity (comments, anchors, scalar styles, null spellings)? | Undecided; a spike before any write migration | Implementation ADR |
 | 7 | **MCP adapter authorization.** | Not shipped until decided; expected to reuse loopback + Host check + worktree token (local option; hosted: standard login token, ADR-0034) | Operator |
 | 8 | **Launcher shape.** Daemon on first use, or one process per command? | **Decided 2026-10-19 (provisional):** daemon only, in CI too: started on first use per worktree, stopped when idle and with the worktree ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/)) | Operator; core builds it in `specify_cli` |
