@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * One node of the Doctrine Reference Graph, with every field a graph document declares for it (ADR-0036: a node's value
+ * One node of the Charter Reference Graph (CRG), with every field a graph document declares for it (ADR-0036: a node's value
  * is every declared field). {@code provenance} and {@code tags} are fields of a graph-shard node, {@code bodyPath} of an
  * org-fragment node; a writer refuses a field its document shape cannot hold rather than drop it.
  *

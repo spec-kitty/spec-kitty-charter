@@ -23,7 +23,8 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-31. Decider: Stijn Dejongh (operator), pending acceptance.
+**Proposed** — 2026-10-31, by the mission agent. Decider: Stijn Dejongh (operator); acceptance
+pending.
 
 - **Origin**: issues [#235](https://github.com/spec-kitty/spec-kitty-charter/issues/235) and
   [#236](https://github.com/spec-kitty/spec-kitty-charter/issues/236), part of epic
@@ -112,6 +113,12 @@ yet; the writer proves that a fragment node's `body_path` survives the round tri
 The service-written `registered.graph.yaml` holds registered, structural relationships only. A tension
 found there is a finding (`PackPolicy.registeredGraph`), and the store then refuses to rewrite the
 shard. Without the finding, the tension would be dropped in silence on the next registration.
+
+Loading and validating a pack (`PackPolicy.judge`) still read that file with the ordinary graph rules,
+so a hand-edited tension there loads and validates clean. Only a registration into the pack is refused
+(`pack_unreadable`). Making validation refuse it too would stop the whole pack from loading after a
+hand-edit. Carrying tensions through a registration rewrite would remove the refusal altogether.
+Choosing between those is left to the operator; until then the paths differ on purpose.
 
 ### 6. Deferred: pack consistency of tensions
 

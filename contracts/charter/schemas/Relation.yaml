@@ -2,7 +2,8 @@ title: Relation
 description: >-
   The relation of a DRG edge. Meanings are in docs/architecture/logical-model.md. impacts is a
   directed, signed edge whose strength runs from -1 (sabotages) to +1 (reinforces); ADR-0028
-  retires it as a relation. A tension between two rules is not a relation: the service holds a
+  retires it as a relation. A tension between two rules is not a value of this enum (not a
+  relation type of the service): the service holds a
   graph document's in_tension_with edge as a tension beside the relationships, never as impacts,
   and does not answer it as a relationship (ADR-0044). reconciles_tension points at the sides of a
   pair joined by a tension.
