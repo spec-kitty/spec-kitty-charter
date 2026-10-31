@@ -1,6 +1,8 @@
 plugins {
     id("charter.service-conventions")
     id("charter.hand-written")
+    // The native executable (ADR-0046 decision 5).
+    id("charter.native-image")
 }
 
 dependencies {

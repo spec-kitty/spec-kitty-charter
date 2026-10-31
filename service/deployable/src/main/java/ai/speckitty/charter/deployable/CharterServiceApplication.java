@@ -6,14 +6,17 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * The charter service: Spring wiring only. It listens on loopback ({@code server.address} in
- * {@code application.yaml}); the port and credentials arrive with the launcher work.
+ * {@code application.yaml}); the port and credentials arrive with the launcher work. What its native executable needs
+ * beyond what Spring AOT finds is in {@link CharterRuntimeHints} (ADR-0046).
  */
 @SpringBootApplication
 @EnableConfigurationProperties(CharterProperties.class)
 @Import(DeployableConfiguration.class)
+@ImportRuntimeHints(CharterRuntimeHints.class)
 public class CharterServiceApplication {
 
     /** For Spring, which instantiates the configuration class; nothing else constructs it. */
