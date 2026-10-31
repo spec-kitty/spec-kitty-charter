@@ -34,9 +34,9 @@ Feature: Journey 01 — an individual developer gets started
     And the field "sourceFingerprint" of the response body is a sha256 digest
 
   Scenario: The starter pack's directives can be read
-    When I GET "/packs/qa/directives"
+    When I GET "/packs/qa/artifacts?kind=directive"
     Then the response status is 200
-    And the response body is a list with an element whose field "id" is "GUARD"
+    And the field at "/items/0/id" is "GUARD"
 
   @WIP
   Scenario: A new project activates the sane-defaults preset of the minimal built-in pack

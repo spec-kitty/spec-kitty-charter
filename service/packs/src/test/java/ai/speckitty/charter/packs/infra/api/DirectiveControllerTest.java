@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.infra.api;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -13,8 +12,6 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.packs.application.ConsistentRead;
-import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
@@ -27,7 +24,6 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,17 +32,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-/** The HTTP contract of the directive routes: status, headers and body shape. The rules are the services' own tests. */
+/**
+ * The HTTP contract of the directive registrations: status, headers and the envelope they answer. The reads are
+ * {@code ArtifactControllerTest}'s; the rules are the services' own tests.
+ */
 class DirectiveControllerTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
-    private static final String DIGEST = "sha256:" + "7".repeat(64);
-    private static final String FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new DirectiveController(
-                    new DirectiveReadService(store, store, new ConsistentRead(() -> DIGEST), store),
-                    new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate())))
+                    new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate()),
+                    new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler())
             .build();
 
@@ -55,68 +52,27 @@ class DirectiveControllerTest {
     }
 
     @Test
-    void listsThePacksDirectivesAsJson() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/directives"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value("ALPHA"))
-                .andExpect(jsonPath("$[0].enforcement").value("required"))
-                .andExpect(jsonPath("$[0].relationships").isArray());
-    }
-
-    @Test
-    void returnsOneDirectiveWithAnEtag() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/directives/ALPHA"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("ALPHA"))
-                .andExpect(jsonPath("$.intent").value("Intent of ALPHA"));
-    }
-
-    @Test
-    void theItemEtagIsTheRevisionTheBodyWasReadAt() throws Exception {
-        String readAt = store.currentRevision(PACK).token();
-        AtomicInteger digests = new AtomicInteger();
-        // A commit lands just after the read's closing digest, which still saw the files the body came from.
-        ConsistentRead racing = new ConsistentRead(() -> {
-            if (digests.incrementAndGet() == 2) {
-                store.commits++;
-            }
-            return DIGEST;
-        });
-        MockMvcBuilders.standaloneSetup(new DirectiveController(
-                        new DirectiveReadService(store, store, racing, store),
-                        new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate())))
-                .build()
-                .perform(get("/api/v1/packs/pack-a/directives/ALPHA"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("ETag", "\"" + readAt + "\""));
-    }
-
-    @Test
-    void anAbsentDirectiveIsA404Problem() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/directives/MISSING"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("directive_not_found"));
-    }
-
-    @Test
     void registersANewDirectiveWithLocationAndEtag() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/directives")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("GUARD")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/directives/GUARD"))
+                .andExpect(
+                        header().string("Location", "http://localhost/api/v1/packs/pack-a/artifacts/directive/GUARD"))
                 .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("GUARD"));
+                .andExpect(jsonPath("$.kind").value("directive"))
+                .andExpect(jsonPath("$.id").value("GUARD"))
+                .andExpect(jsonPath("$.packId").value("pack-a"))
+                .andExpect(jsonPath("$.directive.id").value("GUARD"))
+                .andExpect(jsonPath("$.directive.intent").value("Intent"))
+                .andExpect(jsonPath("$._links.self.href").value("/api/v1/packs/pack-a/artifacts/directive/GUARD"))
+                .andExpect(jsonPath("$._links.collection.href").value("/api/v1/packs/pack-a/artifacts?kind=directive"))
+                .andExpect(jsonPath("$._links.edit").doesNotExist());
     }
 
     @Test
     void aDuplicateIdPostIsA409() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/directives")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("ALPHA")))
                 .andExpect(status().isConflict())
@@ -125,16 +81,20 @@ class DirectiveControllerTest {
 
     @Test
     void aPutReplacesAndAnswers200() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/directives/ALPHA")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/directive/ALPHA")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("ALPHA")))
                 .andExpect(status().isOk())
-                .andExpect(header().exists("ETag"));
+                .andExpect(header().exists("ETag"))
+                .andExpect(header().doesNotExist("Location"))
+                .andExpect(jsonPath("$.kind").value("directive"))
+                .andExpect(jsonPath("$.directive.title").value("Title"))
+                .andExpect(jsonPath("$._links.self.href").value("/api/v1/packs/pack-a/artifacts/directive/ALPHA"));
     }
 
     @Test
     void aStaleIfMatchOnAPutIsA412PlainProblem() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/directives/ALPHA")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/directive/ALPHA")
                         .header("If-Match", "sha256:" + "0".repeat(64))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("ALPHA")))
@@ -158,7 +118,7 @@ class DirectiveControllerTest {
             })
     void ifMatchIsAStrongComparison(String ifMatch, int expected) throws Exception {
         String current = store.currentRevision(PACK).token();
-        mvc.perform(put("/api/v1/packs/pack-a/directives/ALPHA")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/directive/ALPHA")
                         .header("If-Match", ifMatch.replace("CURRENT", current))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("ALPHA")))
@@ -170,7 +130,7 @@ class DirectiveControllerTest {
         String bad =
                 "{\"id\":\"GUARD\",\"schemaVersion\":\"1.0\",\"title\":\"Guard\",\"intent\":\"guard\",\"enforcement\":\"required\","
                         + "\"relationships\":[{\"from\":\"directive:GUARD\",\"to\":\"nonsense:x\",\"type\":\"requires\"}]}";
-        mvc.perform(post("/api/v1/packs/pack-a/directives")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
                 .andExpect(status().is(422))

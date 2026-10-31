@@ -102,11 +102,11 @@ class ProductionWiringTest {
 
     @Test
     void aConfiguredPackIsServedThroughTheRealWiringAndAnUnconfiguredOneIsNotFound() throws Exception {
-        HttpResponse<String> configured = get("/api/v1/packs/built-in/tactics");
+        HttpResponse<String> configured = get("/api/v1/packs/built-in/artifacts?kind=tactic");
         assertThat(configured.statusCode()).as(configured.body()).isEqualTo(200);
-        assertThat(JSON.readTree(configured.body())).isEqualTo(JSON.readTree("[]"));
+        assertThat(JSON.readTree(configured.body()).path("items")).isEqualTo(JSON.readTree("[]"));
 
-        HttpResponse<String> unconfigured = get("/api/v1/packs/not-configured/tactics");
+        HttpResponse<String> unconfigured = get("/api/v1/packs/not-configured/artifacts?kind=tactic");
         assertThat(unconfigured.statusCode()).isEqualTo(404);
         assertThat(JSON.readTree(unconfigured.body()).path("code").asString()).isEqualTo("pack_not_found");
     }

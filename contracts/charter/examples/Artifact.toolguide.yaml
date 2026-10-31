@@ -1,0 +1,21 @@
+summary: A toolguide in the envelope, as a registration answers it; the other four kind members are absent.
+value:
+  kind: toolguide
+  id: git
+  packId: qa
+  toolguide:
+    id: git
+    schemaVersion: '1.0'
+    tool: git
+    title: How to use git
+    guide: "# How to use git\n\n## Overview\n\nUse git under governance.\n"
+    summary: Using git under governance.
+    commands: []
+    appliesToLanguages: []
+    lastUpdated: null
+    references: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/toolguide/git
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=toolguide

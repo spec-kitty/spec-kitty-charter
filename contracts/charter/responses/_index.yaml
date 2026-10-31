@@ -1,6 +1,6 @@
 files:
   - ActionNotFound.yaml
+  - ArtifactNotFound.yaml
   - Forbidden.yaml
   - OfferingUnreadable.yaml
-  - TacticNotFound.yaml
   - Unauthorized.yaml

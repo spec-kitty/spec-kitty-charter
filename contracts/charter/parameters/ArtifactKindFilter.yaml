@@ -1,0 +1,8 @@
+name: kind
+in: query
+required: false
+description: >-
+  Lists only the artifacts of this served kind. Omit it to list every served kind. A value that is
+  not a served kind is a 400 Problem without a code.
+schema:
+  $ref: ../schemas/ArtifactKindToken.yaml

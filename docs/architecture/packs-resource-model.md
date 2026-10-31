@@ -2,7 +2,7 @@
 title: Packs resource model
 description: "The proposed REST resource tree for packs and their contents: the API root, the per-pack sub-resources, the link graph and example responses."
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -27,25 +27,29 @@ How a client finds a pack and its contents: start at the API root, follow links.
 design behind [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/); the conventions it
 follows are in [Development conventions](/development/).
 
-> **Status:** design only, decided (provisional) by ADR-0019. Today the contract serves
-> `GET /info` and the tactic reads (`/packs/{packId}/tactics[/{tacticId}]`); PR #139 removed
-> `GET /packs`, `POST /packs/refresh` and the action-context read, and no response carries links.
-> Aligning the routes with this design is
-> [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126).
+> **Status:** decided by ADR-0019, partly built. Since
+> [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126) the contract serves the API root
+> (`GET /`), `GET /info`, `GET /offering` (the configured packs only), the artifact reads
+> `GET /packs/{packId}/artifacts` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}` for the served kinds
+> (tactic, directive, styleguide, paradigm, toolguide), and the registrations under
+> `/packs/{packId}/artifacts/<kind>`. Every JSON success answer carries `_links`. The per-kind routes are removed.
+> `GET /packs`, `GET /packs/{packId}` and the other per-pack sub-resources are not built; PR #139 removed
+> `GET /packs` and `POST /packs/refresh`. The tree and the examples below mark what is built.
 > [What the labels mean](/#status).
 
 ## The resource tree
 
 ```text
-/                                         API root (proposed)
+/                                         API root (built)
 ├── info                                  service info (built)
-├── offering                              the offer side, merged: see Offering and activation (ADR-0020)
+├── offering                              the offer side, merged: see Offering and activation (ADR-0020); pack list built
 ├── activations                           the active charters (ADR-0020)
-└── packs                                 the packs this service knows (collection proposed; tactic reads under {packId} built)
+└── packs                                 the packs this service knows (collection proposed)
     ├── refresh                           controller: re-read the packs (removed by #139)
     └── {packId}                          one pack (proposed)
-        ├── artifacts                     ?kind=, paged
-        │   └── {kind}/{artifactId}       one artifact with its body
+        ├── artifacts                     ?kind=, paged (built)
+        │   ├── <kind>                    POST: register an artifact of a writable kind (built)
+        │   └── {kind}/{artifactId}       one artifact with its body (built); PUT on a writable kind (built)
         ├── graph                         the nodes and edges this pack declares
         ├── presets                       activation presets
         ├── assets                        the pack's asset paths
@@ -89,25 +93,26 @@ in [Hypermedia (HATEOAS)](/development/hypermedia-hateoas/#relation-names).
 
 ## Example responses
 
-`GET /`:
+`GET /`, as built:
 
 ```json
 {
-  "contractVersion": "0.2.0",
   "_links": {
     "self": { "href": "/api/v1/" },
     "info": { "href": "/api/v1/info" },
-    "packs": { "href": "/api/v1/packs" },
-    "offering": { "href": "/api/v1/offering" }
+    "offering": { "href": "/api/v1/offering" },
+    "artifacts": { "href": "/api/v1/packs/{packId}/artifacts{?kind}", "templated": true },
+    "service-desc": { "href": "/api/v1/openapi.yaml" }
   }
 }
 ```
 
-An `activations` link joins the root once the activation writes are built (ADR-0020 D8).
+A `packs` link joins the root once `GET /packs` is built, and an `activations` link once the activation writes
+are built (ADR-0020 D8).
 
 The action-context read is reached from `/offering`, not from the root.
 
-`GET /packs/01M4P01D5TWB5FKZGNNQG3943R`:
+`GET /packs/01M4P01D5TWB5FKZGNNQG3943R` (proposed):
 
 ```json
 {
@@ -139,11 +144,11 @@ The fields other than `_links` are today's `PackSummary`; the values are illustr
 
 | Resource | Application | Domain |
 |---|---|---|
-| `/`, `/info` | `ServiceInfoQuery` | none |
+| `/`, `/info` | `/info`: `ServiceInfoQuery` (built); `/` reads nothing, `InfoController` answers its links (built) | none |
 | `/offering…`, `/activations…` | see [Offering and activation](/architecture/offering-and-activation/#how-each-resource-maps-onto-the-service) | |
 | `/packs`, `/packs/refresh` | `PackListingQuery` | `CharterOffering`, `CharterPack` |
 | `/packs/{packId}` | a pack query over the same load | `CharterPack`, `PackDescriptor` |
-| `/packs/{packId}/artifacts…` | an artifact query | the artifact repositories (R2) |
+| `/packs/{packId}/artifacts…` | `ArtifactReadService`, which delegates an item to its kind's read service (built); the registration services of the writable kinds (built) | the artifact repositories (R2) |
 | `/packs/{packId}/graph` | a graph query | the pack's `DoctrineGraph` |
 | `/packs/{packId}/presets`, `assets` | pack content queries | pack content (R4, R11): the pack's `presets()` and asset files |
 | `POST /packs`, `/distributions`, `/resolution` | registration use cases | `RegisteredPack`, `PackResolver` ([Pack registration and distribution](/architecture/pack-registration-distribution/)) |

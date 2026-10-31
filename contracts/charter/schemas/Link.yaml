@@ -1,0 +1,45 @@
+title: Link
+description: >-
+  One hypermedia link (ADR-0019 D3). href is an absolute path under /api/v1 or an RFC 6570 template
+  (templated true). method is GET, POST or PUT and defaults to GET; ADR-0026 D2 rules out DELETE and PATCH.
+type: object
+additionalProperties: false
+required:
+  - href
+properties:
+  href:
+    type: string
+    pattern: '^/api/v1(/|$|\{)'
+    description: >-
+      Where the link points: an absolute path that includes the server prefix, for example
+      /api/v1/packs/qa/artifacts, or, with templated true, an RFC 6570 template of one, for example
+      /api/v1/packs/qa/artifacts{?kind}. A client follows it as given and never builds a path from parts.
+    x-derived:
+      rule: The server prefix followed by the path of the operation the relation names, each path segment percent-encoded.
+      inputs:
+        - openapi.yaml#/servers
+        - openapi.yaml#/paths
+  templated:
+    type: boolean
+    description: True when href is an RFC 6570 template the client expands before following it; absent otherwise.
+    x-derived:
+      rule: True exactly when href holds an RFC 6570 expression.
+      inputs:
+        - schemas/Link.yaml#/properties/href
+  method:
+    type: string
+    pattern: '^(GET|POST|PUT)$'
+    description: >-
+      The method to follow the link with, GET, POST or PUT; absent means GET. DELETE and PATCH are never
+      used (ADR-0026 D2).
+    x-derived:
+      rule: The method of the operation the relation names, omitted when it is GET.
+      inputs:
+        - openapi.yaml#/paths
+  title:
+    type: string
+    description: A human-readable label of the link. Clients never parse it.
+    x-derived:
+      rule: A label the server writes for the relation.
+      inputs:
+        - schemas/Link.yaml#/properties/href

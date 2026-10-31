@@ -121,3 +121,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
       symbol: Styleguide.relationships
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
+  symbol: Styleguide

@@ -9,8 +9,10 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -363,5 +365,83 @@ class DomainRepositoryServiceTest {
                 .containsExactlyElementsOf(loaded.assets().stream()
                         .map(AssetBinding.INSTANCE::toDso)
                         .toList());
+    }
+
+    // ---- PackCatalogRepository and the descriptor lookup ----------------------------------------------------------
+
+    /** The catalog lists every configured pack at the level it is configured at, whatever its pack.yaml declares. */
+    @Test
+    void theCatalogListsEachConfiguredPackAtItsConfiguredLevel(@TempDir Path host) throws IOException {
+        Path declaresOrg = Files.createDirectories(host.resolve("project/local"));
+        Files.writeString(
+                declaresOrg.resolve("pack.yaml"),
+                "pack_id: local\npack_version: 1.0.0\nname: local\npack_level: org\n");
+        Path bare = Files.createDirectories(host.resolve("built-in/bare"));
+        DomainRepositoryService catalog = new DomainRepositoryService(
+                () -> List.of(
+                        new PackLocation("local", PackLevel.PROJECT, declaresOrg),
+                        new PackLocation("bare", PackLevel.BUILT_IN, bare)),
+                new YamlSerializationStrategy());
+
+        assertThat(catalog.configured())
+                .containsExactly(
+                        new ConfiguredPack(new PackIdentifier("local"), PackLevel.PROJECT),
+                        new ConfiguredPack(new PackIdentifier("bare"), PackLevel.BUILT_IN));
+    }
+
+    /** A pack with a readable pack.yaml is found, as the descriptor get answers it (the positive control). */
+    @Test
+    void aReadableDescriptorIsFound() {
+        assertThat(service.find(BY_NAME)).contains(service.get(BY_NAME));
+        assertThat(service.find(BY_ID)).contains(service.get(BY_NAME));
+    }
+
+    /** A pack without pack.yaml has no descriptor to find: empty, where get refuses. */
+    @Test
+    void aPackWithoutPackYamlFindsNoDescriptor(@TempDir Path host) throws IOException {
+        Path bare = Files.createDirectories(host.resolve("bare"));
+        Files.writeString(bare.resolve("notes.md"), "Nothing to see.\n");
+        DomainRepositoryService over = overOne("bare", bare);
+
+        assertThat(over.find(new PackIdentifier("bare"))).isEmpty();
+        assertThatThrownBy(() -> over.get(new PackIdentifier("bare")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** A pack.yaml that is there but is no pack descriptor is refused, not taken for an absent one. */
+    @Test
+    void anInvalidPackYamlIsRefusedUnreadable(@TempDir Path host) throws IOException {
+        Path broken = Files.createDirectories(host.resolve("broken"));
+        Files.writeString(broken.resolve("pack.yaml"), "pack_id: broken\npack_version: [unclosed\n");
+
+        assertUnreadable(overOne("broken", broken), "broken");
+    }
+
+    /** A pack.yaml that is a directory cannot be read: refused, not absent. */
+    @Test
+    void aPackYamlThatIsADirectoryIsRefusedUnreadable(@TempDir Path host) throws IOException {
+        Path odd = Files.createDirectories(host.resolve("odd/pack.yaml")).getParent();
+
+        assertUnreadable(overOne("odd", odd), "odd");
+    }
+
+    /** A configured pack whose directory is missing is refused, as every read of it is. */
+    @Test
+    void aMissingPackDirectoryIsRefusedUnreadable(@TempDir Path host) {
+        assertUnreadable(overOne("gone", host.resolve("gone")), "gone");
+    }
+
+    private static DomainRepositoryService overOne(String name, Path directory) {
+        PackLocation location = new PackLocation(name, PackLevel.ORG, directory);
+        return new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy());
+    }
+
+    private static void assertUnreadable(DomainRepositoryService over, String pack) {
+        assertThatThrownBy(() -> over.find(new PackIdentifier(pack)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 }

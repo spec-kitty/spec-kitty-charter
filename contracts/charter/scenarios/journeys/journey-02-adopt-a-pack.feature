@@ -19,17 +19,17 @@ Feature: Journey 02 — an individual developer adopts a pack and deactivates on
       """
 
   Scenario: The adopted pack's directives are listed
-    When I PUT "/packs/qa/directives/GUARD" with the body:
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
       {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
       """
     Then the response status is 201
-    When I GET "/packs/qa/directives"
+    When I GET "/packs/qa/artifacts?kind=directive"
     Then the response status is 200
-    And the response body is a list with an element whose field "id" is "GUARD"
+    And the field at "/items/0/id" is "GUARD"
 
   Scenario: An unknown pack is refused, not read as empty
-    When I GET "/packs/no-such-pack/tactics"
+    When I GET "/packs/no-such-pack/artifacts"
     Then the response status is 404
     And the problem code is "pack_not_found"
 

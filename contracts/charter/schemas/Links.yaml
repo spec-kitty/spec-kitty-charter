@@ -1,0 +1,14 @@
+title: Links
+description: >-
+  The links of a resource: an open map from a relation key in the relation table of
+  docs/development/hypermedia-hateoas.md to a Link. Clients must tolerate a key they do not know.
+type: object
+additionalProperties:
+  $ref: Link.yaml
+x-derived:
+  rule: >-
+    The links the server writes for the answer, each keyed by its relation and built from the server
+    prefix and the paths of the operations the relations name.
+  inputs:
+    - openapi.yaml#/servers
+    - openapi.yaml#/paths

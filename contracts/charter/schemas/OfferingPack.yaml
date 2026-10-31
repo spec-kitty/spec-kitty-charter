@@ -1,0 +1,48 @@
+title: OfferingPack
+description: >-
+  One configured pack as the offering names it: its id, the level it is configured at, the name and
+  the version its pack.yaml gives, and the link to its artifacts. There is no self link: reading one
+  pack (GET /packs/{packId}) is not part of this version. Every listed pack has a readable pack.yaml:
+  a configured pack without one is not a readable canonical pack and refuses the offering with
+  pack_unreadable (operator ruling of 2026-10-31).
+type: object
+additionalProperties: false
+required:
+  - packId
+  - level
+  - name
+  - version
+  - _links
+properties:
+  packId:
+    type: string
+    description: >-
+      The identifier the pack is configured under, the packId of its artifact paths and the second
+      key of the offering's order.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfiguredPack.java
+      symbol: ConfiguredPack.id
+  level:
+    allOf:
+      - $ref: PackLevel.yaml
+    description: >-
+      The level the pack is configured at, the first key of the offering's order. It is the
+      configured level, never the pack_level its pack.yaml declares; the pack policy reports a
+      difference between the two.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfiguredPack.java
+      symbol: ConfiguredPack.level
+  name:
+    type: string
+    description: The human-readable name the pack's pack.yaml gives (name).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java
+      symbol: OfferingReadService.OfferingEntry.name
+  version:
+    type: string
+    description: The version the pack's pack.yaml gives (pack_version).
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java
+      symbol: OfferingReadService.OfferingEntry.version
+  _links:
+    $ref: Links.yaml

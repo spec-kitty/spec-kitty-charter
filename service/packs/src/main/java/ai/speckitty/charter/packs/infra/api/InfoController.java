@@ -1,16 +1,25 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ServiceApi;
+import ai.speckitty.charter.api.model.ApiRoot;
 import ai.speckitty.charter.api.model.ServiceInfo;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import java.util.EnumMap;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** {@code GET /info} and {@code GET /openapi.yaml}, the bundled contract the service was built from. */
+/**
+ * {@code GET /}, the API root; {@code GET /info}; and {@code GET /openapi.yaml}, the bundled contract the service was
+ * built from. The root and the info link the contract document as {@code service-desc} (RFC 8631); the info answer
+ * also names it in a {@code Link} header, the only answer that sends one (#208). Every link is built by
+ * {@link Hypermedia} from a {@link Relation}.
+ */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class InfoController implements ServiceApi {
@@ -18,27 +27,60 @@ public class InfoController implements ServiceApi {
     /** RFC 9512's media type, without a {@code charset}: it defines none. */
     private static final MediaType APPLICATION_YAML = MediaType.parseMediaType("application/yaml");
 
+    private static final String INFO = "info";
+    private static final String OPENAPI = "openapi.yaml";
+
     private final ServiceInfoQuery query;
     private final ContractDocument contract;
+    private final Hypermedia links;
 
     /**
      * A controller over the service info and the contract document.
      *
      * @param query the read use case it answers with
      * @param contract the bundled contract, loaded when the service started
+     * @param links the link builder
      */
-    public InfoController(ServiceInfoQuery query, ContractDocument contract) {
+    public InfoController(ServiceInfoQuery query, ContractDocument contract, Hypermedia links) {
         this.query = query;
         this.contract = contract;
+        this.links = links;
+    }
+
+    /**
+     * The API root: links only, to itself, the info, the offering, a pack's artifacts (an RFC 6570 template) and the
+     * contract document. It reads no pack file, so it carries no {@code Charter-Source-Fingerprint}.
+     *
+     * @return the root
+     */
+    @Override
+    public ResponseEntity<ApiRoot> getApiRoot() {
+        Map<Relation, Hypermedia.LinkValue> root = new EnumMap<>(Relation.class);
+        root.put(Relation.SELF, links.link());
+        root.put(Relation.INFO, links.link(INFO));
+        root.put(Relation.OFFERING, links.link("offering"));
+        root.put(Relation.ARTIFACTS, links.templated("{?kind}", "packs", "{packId}", "artifacts"));
+        root.put(Relation.SERVICE_DESC, links.link(OPENAPI));
+        return ResponseEntity.ok(new ApiRoot(Hypermedia.wire(root)));
     }
 
     @Override
     public ResponseEntity<ServiceInfo> getServiceInfo() {
         ai.speckitty.charter.packs.application.ServiceInfo info = query.answer();
+        Map<Relation, Hypermedia.LinkValue> infoLinks = new EnumMap<>(Relation.class);
+        infoLinks.put(Relation.SELF, links.link(INFO));
+        Hypermedia.LinkValue contractLink = links.link(OPENAPI);
+        infoLinks.put(Relation.SERVICE_DESC, contractLink);
+        HttpHeaders headers = CharterHeaders.fingerprint(info.sourceFingerprint());
+        headers.set(HttpHeaders.LINK, "<" + contractLink.href() + ">; rel=\"service-desc\"");
         return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(info.sourceFingerprint()))
+                .headers(headers)
                 .body(new ServiceInfo(
-                        ContractVersion.value(), ServiceVersion.value(), info.worktree(), info.sourceFingerprint()));
+                        ContractVersion.value(),
+                        ServiceVersion.value(),
+                        info.worktree(),
+                        info.sourceFingerprint(),
+                        Hypermedia.wire(infoLinks)));
     }
 
     /**

@@ -1,0 +1,34 @@
+get:
+  operationId: getApiRoot
+  summary: Read the API root, the links a client starts from.
+  description: >-
+    The one known place a client starts from (ADR-0019 D2 and D4): links to itself, to the service
+    info, to the offering, to the artifacts of a pack as an RFC 6570 template
+    (/api/v1/packs/{packId}/artifacts{?kind}, templated true) and to the contract document
+    (service-desc, RFC 8631). The root is /api/v1/, with the trailing slash; /api/v1 without it is
+    not mapped to the root and answers the 404 of a path no operation defines. The root reads no pack
+    file, so it never carries Charter-Source-Fingerprint and cannot be refused for a pack. Like every
+    operation it needs the worktree token.
+  tags:
+    - Service
+  responses:
+    '200':
+      description: The API root.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ApiRoot.yaml
+          examples:
+            links:
+              $ref: ../examples/ApiRoot.links.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

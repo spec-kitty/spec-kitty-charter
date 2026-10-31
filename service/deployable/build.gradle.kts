@@ -62,10 +62,15 @@ tasks.test {
 // test classpath from there, under the resource name `scenarios` the suite selects. The OpenAPI document,
 // its definitions and the vendored shared components go under `contract/`, where the suite checks every
 // response against the schema the contract declares for it. Nothing else of the contract tree is a test
-// resource: not the examples, the checker's sources or the lint fixtures.
+// resource: not the examples, the checker's sources or the lint fixtures. The hypermedia guide goes under `guide/`: its
+// relation table is the one source of the relation keys the scenario hook and RelationSetParityTest check (R-03 revised).
 tasks.processTestResources {
     val contracts = rootProject.layout.projectDirectory.dir("contracts")
     from(contracts.dir("charter")) { include("scenarios/**") }
+    from(rootProject.layout.projectDirectory.dir("docs/development")) {
+        include("hypermedia-hateoas.md")
+        into("guide")
+    }
     from(contracts) {
         include("charter/openapi.yaml", "charter/paths/**", "charter/responses/**", "charter/schemas/**")
         include("charter/parameters/**", "charter/headers/**", "_shared/responses/**", "_shared/schemas/**")

@@ -1,0 +1,24 @@
+summary: A tactic in the envelope; the other four kind members are absent.
+value:
+  kind: tactic
+  id: rehearse
+  packId: qa
+  tactic:
+    id: rehearse
+    schemaVersion: '1.0'
+    name: Rehearse
+    purpose: null
+    notes: null
+    steps:
+      - title: Only step
+        description: null
+        examples: []
+        references: []
+    failureModes: []
+    appliesToLanguages: []
+    references: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/tactic/rehearse
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=tactic

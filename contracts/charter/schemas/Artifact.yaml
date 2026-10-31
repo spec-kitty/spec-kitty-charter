@@ -1,0 +1,58 @@
+title: Artifact
+description: >-
+  One artifact of a pack in the common envelope: its kind, its id, the pack, its links, and exactly
+  one kind-named member holding the artifact in its kind's own representation, the member kind
+  names. The other four members are absent. The oneOf below documents the exactly-one rule; the
+  service fills the one member itself, whatever a generated client enforces of it.
+type: object
+additionalProperties: false
+required:
+  - kind
+  - id
+  - packId
+  - _links
+oneOf:
+  - required:
+      - tactic
+  - required:
+      - directive
+  - required:
+      - styleguide
+  - required:
+      - paradigm
+  - required:
+      - toolguide
+properties:
+  kind:
+    type: string
+    pattern: '^(tactic|directive|styleguide|paradigm|toolguide)$'
+    description: >-
+      The kind of the artifact, one of the ArtifactKindToken values, which names the one member that
+      holds it.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
+      symbol: ArtifactKind.token
+  id:
+    type: string
+    description: The artifact's id within its kind and pack.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
+      symbol: CharterArtifact.localId
+  packId:
+    type: string
+    description: The identity of the pack the artifact was read from, as the request named it.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
+      symbol: CharterArtifact.packId
+  _links:
+    $ref: Links.yaml
+  tactic:
+    $ref: Tactic.yaml
+  directive:
+    $ref: Directive.yaml
+  styleguide:
+    $ref: Styleguide.yaml
+  paradigm:
+    $ref: Paradigm.yaml
+  toolguide:
+    $ref: Toolguide.yaml

@@ -1,0 +1,7 @@
+name: artifactId
+in: path
+required: true
+description: The identity of the artifact within its kind and pack.
+schema:
+  type: string
+  minLength: 1

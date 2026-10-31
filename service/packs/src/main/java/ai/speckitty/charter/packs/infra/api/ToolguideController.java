@@ -1,14 +1,14 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ToolguidesApi;
-import ai.speckitty.charter.api.model.Toolguide;
+import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.GuideFormat;
-import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService.GuideSource;
 import ai.speckitty.charter.packs.domain.Guide;
@@ -28,13 +28,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * The inbound REST adapter for a pack's toolguides: {@code GET}/{@code POST} on the collection and
- * {@code GET}/{@code PUT} on one toolguide (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It
- * copies {@link DirectiveController}: the read is a thin projection of {@link ToolguideReadService}; the writes delegate
- * to {@link ToolguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
+ * The inbound REST adapter for registering a pack's toolguides under the artifact tree: {@code POST
+ * /packs/{packId}/artifacts/toolguide} and {@code PUT /packs/{packId}/artifacts/toolguide/{artifactId}} (ADR-0026
+ * functional registration; no {@code DELETE}/{@code PATCH}). It copies {@link DirectiveController}: a toolguide is read
+ * through the generic {@link ArtifactController}, each write answers the written toolguide in the same
+ * {@code Artifact} envelope, and the writes delegate to {@link ToolguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>A toolguide mints no relationships, so neither the request body nor the response carries a relationships array.
@@ -58,40 +58,39 @@ public class ToolguideController implements ToolguidesApi {
     /** The most items a registration's {@code commands}, {@code appliesToLanguages} or {@code references} holds. */
     static final int MAX_LIST_ITEMS = 256;
 
-    private final ToolguideReadService reads;
     private final ToolguideRegistrationService registrations;
+    private final Hypermedia links;
     private final GuideFormat guides;
     private final long maxGuideBytes;
 
     /**
-     * A controller over the toolguide read and registration use cases, with the default guide cap.
+     * A controller over the toolguide registration use case, with the default guide cap.
      *
-     * @param reads the read use case
      * @param registrations the registration use case
      * @param guides the guide's Markdown form, in which a guide is answered
+     * @param links the link builder of the answers
      */
-    public ToolguideController(
-            ToolguideReadService reads, ToolguideRegistrationService registrations, GuideFormat guides) {
-        this(reads, registrations, guides, DataSize.ofBytes(MAX_GUIDE_BYTES));
+    ToolguideController(ToolguideRegistrationService registrations, GuideFormat guides, Hypermedia links) {
+        this(registrations, guides, links, DataSize.ofBytes(MAX_GUIDE_BYTES));
     }
 
     /**
-     * A controller over the toolguide read and registration use cases.
+     * A controller over the toolguide registration use case.
      *
-     * @param reads the read use case
      * @param registrations the registration use case
      * @param guides the guide's Markdown form, in which a guide is answered
+     * @param links the link builder of the answers
      * @param maxGuideSize the largest inline guide, {@code charter.guide-fetch.max-size}: the cap the fetcher holds a
      *     fetched guide to
      */
     @Autowired
-    public ToolguideController(
-            ToolguideReadService reads,
+    ToolguideController(
             ToolguideRegistrationService registrations,
             GuideFormat guides,
+            Hypermedia links,
             @Value("${charter.guide-fetch.max-size:1MB}") DataSize maxGuideSize) {
-        this.reads = reads;
         this.registrations = registrations;
+        this.links = links;
         this.guides = guides;
         this.maxGuideBytes = maxGuideSize.toBytes();
         if (maxGuideBytes <= 0 || maxGuideBytes > Integer.MAX_VALUE - 8) {
@@ -100,43 +99,30 @@ public class ToolguideController implements ToolguidesApi {
     }
 
     @Override
-    public ResponseEntity<List<Toolguide>> listPackToolguides(String packId) {
-        var verified = reads.toolguidesOf(new PackIdentifier(packId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(this::toDto).toList());
-    }
-
-    @Override
-    public ResponseEntity<Toolguide> getPackToolguide(String packId, String toolguideId) {
-        var verified = reads.toolguideWithRevision(new PackIdentifier(packId), new ToolguideIdentifier(toolguideId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
-    }
-
-    @Override
-    public ResponseEntity<Toolguide> registerPackToolguide(String packId, ToolguideRegistration body) {
+    public ResponseEntity<Artifact> registerPackToolguide(String packId, ToolguideRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ToolguideRegistrationService.Registered result = register(pack, id, body, false, null);
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri())
+        Artifact written = written(pack, id, result);
+        return ResponseEntity.created(ArtifactDtos.location(written))
                 .eTag(result.revision().token())
-                .body(toDto(result.toolguide()));
+                .body(written);
     }
 
     @Override
-    public ResponseEntity<Toolguide> putPackToolguide(
-            String packId, String toolguideId, ToolguideRegistration body, @Nullable String ifMatch) {
-        ToolguideRegistrationService.Registered result =
-                register(new PackIdentifier(packId), toolguideId, body, true, ifMatch);
+    public ResponseEntity<Artifact> putPackToolguide(
+            String packId, String artifactId, ToolguideRegistration body, @Nullable String ifMatch) {
+        PackIdentifier pack = new PackIdentifier(packId);
+        ToolguideRegistrationService.Registered result = register(pack, artifactId, body, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(result.toolguide()));
+                .body(written(pack, artifactId, result));
+    }
+
+    /** The written toolguide in the envelope the item read answers, with its links. */
+    private Artifact written(PackIdentifier pack, String id, ToolguideRegistrationService.Registered result) {
+        return ArtifactDtos.envelope(ArtifactKind.TOOLGUIDE, pack, id, links)
+                .toolguide(ArtifactDtos.toolguide(result.toolguide(), guides));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -270,21 +256,5 @@ public class ToolguideController implements ToolguidesApi {
                     + MAX_LIST_ITEMS + " are accepted.");
         }
         return items;
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private Toolguide toDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
-        return new Toolguide(
-                toolguide.id().value(),
-                toolguide.schemaVersion().orElseThrow(),
-                toolguide.tool(),
-                toolguide.title(),
-                guides.write(toolguide.title(), toolguide.guide()),
-                toolguide.summary(),
-                toolguide.commands(),
-                toolguide.appliesToLanguages(),
-                toolguide.lastUpdated().orElse(null),
-                toolguide.references());
     }
 }

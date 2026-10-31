@@ -1,0 +1,111 @@
+put:
+  operationId: putPackToolguide
+  summary: Register (create or replace) a toolguide of a Charter Pack by identity.
+  description: >-
+    Idempotent create-or-replace of a toolguide by id (functional registration, ADR-0026): the whole pack
+    aggregate is revalidated and committed atomically. Answers 201 when it created the toolguide, 200 when it
+    replaced one, each with an ETag revision. If-Match carries optimistic concurrency: a stale precondition is
+    a 412 (a plain Problem, not a refusal code). The body carries exactly one of guide (the Markdown) or
+    guideUri, which every PUT fetches again before it takes the pack's write lock; the answer carries the
+    stored guide. A malformed body, an invalid guide or a refused fetch is a 422 validation_failed, and the
+    pack is left unchanged. A toolguide is replaced at PUT /packs/{packId}/artifacts/toolguide/{artifactId},
+    under the artifact tree; the answer is the toolguide in the Artifact envelope the item read of the same
+    path answers, with the same _links. Registration is not yet advertised by a link: no answer carries an
+    edit link.
+  tags:
+    - Toolguides
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+    - name: If-Match
+      in: header
+      required: false
+      description: Optimistic concurrency on the pack revision; a stale value is refused 412.
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ToolguideRegistration.yaml
+  responses:
+    '200':
+      description: The toolguide was replaced.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            toolguide:
+              $ref: ../examples/Artifact.toolguide.yaml
+    '201':
+      description: The toolguide was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            toolguide:
+              $ref: ../examples/Artifact.toolguide.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ToolguideNotFound.yaml
+    '409':
+      description: >-
+        The registration conflicts with the pack's current state (registration_conflict: a duplicate id on POST, or
+        the guide's file <id>.guide.md already claimed by another artifact of the pack).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '412':
+      $ref: ../../_shared/responses/Problem.yaml
+    '422':
+      description: >-
+        The registration is well-formed but breaks a pack invariant or schema (validation_failed): among others, it
+        carries both or neither of guide and guideUri, a null one or an empty guideUri; its body is over the body limit (7 MiB
+        by default); its guide is over the guide cap of UTF-8 (1 MiB by default, configurable via
+        charter.guide-fetch.max-size), holds an unpaired surrogate or is not a valid guide (the detail names the
+        rule); its id or title breaks a toolguide rule; or the service refused to fetch its guideUri (the
+        detail names the reason and the host). An empty guide or a list over 256 items breaks a constraint the
+        schema declares and is refused 400 Bad Request before the controller (ADR-0041 decision 2).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

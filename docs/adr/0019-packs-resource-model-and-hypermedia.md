@@ -2,7 +2,7 @@
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -39,14 +39,19 @@ resources: `/offering` and `/activations`.
 
 Decisions marked **(default)** follow the design squad's recommendation; they stand as decided until revisited.
 
-**Implementation note, 2026-10-24.** PR #139 rebuilt the service on one canonical `Pack` aggregate
-and serves tactics at `/packs/{packId}/tactics[/{tacticId}]`, one route per kind, rather than the
-generic `/packs/{packId}/artifacts/{kind}/{artifactId}` of D2. It also removed `GET /packs` and
-`POST /packs/refresh`. Aligning the routes with D2 before more kinds are exposed is tracked in
-[#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126) and
-[#169](https://github.com/spec-kitty/spec-kitty-charter/issues/169). The success schemas on `main` are now
-`ServiceInfo` and `Tactic`; D4's list of schemas that gain `_links` (`PackListing`, `PackSummary`,
-`ActionContext`) predates #139, and applies to whichever success schemas exist when #126 lands.
+**Implementation note, 2026-10-31** (replaces the note of 2026-10-24, which recorded that PR #139 served one
+route per kind). [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126) aligns the routes with D2:
+a pack's artifacts of the served kinds (tactic, directive, styleguide, paradigm, toolguide) are read at
+`GET /packs/{packId}/artifacts` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}`, and the per-kind routes
+are removed with no alias. The registrations moved into the same tree
+([ADR-0026](/adr/0026-write-surface-is-functional-registration/) D1.2, as amended 2026-10-31). The `Links`
+component, the root `GET /` and `GET /offering` (the configured packs only; ADR-0020 D1) landed in contract
+`0.1.0` (still the unreleased `0.1.0-SNAPSHOT`), and every JSON success answer carries a required `_links` (D3, D4). D4's list of schemas that gain
+`_links` (`PackListing`, `PackSummary`, `ActionContext`) predates #139; it was applied to the success schemas that
+exist now. Not built yet: `GET /packs`, `GET /packs/{packId}` and the other per-pack sub-resources of D2, so an
+offering entry links to its pack's artifacts and has no `self`; and no `edit` link, so registration is not yet
+advertised by a link. The decision text below is unchanged. The changes are listed in the contract
+[CHANGELOG](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/CHANGELOG.md).
 
 ## Context
 

@@ -1,0 +1,15 @@
+title: ArtifactKindToken
+description: >-
+  An artifact kind this service serves, as its lower-case token: tactic, directive, styleguide,
+  paradigm or toolguide, the served-kind order of a list. Other kernel kinds (procedure,
+  agent_profile and the rest) are not served yet.
+type: string
+enum:
+  - tactic
+  - directive
+  - styleguide
+  - paradigm
+  - toolguide
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
+  symbol: ArtifactKind.token

@@ -81,7 +81,7 @@ class ProblemResponsesTest {
     @Test
     void aRegistrationBodyWithoutARequiredFieldIsABadRequestProblemNotAServerError() throws Exception {
         mvc.perform(
-                        post("/api/v1/packs/qa/directives")
+                        post("/api/v1/packs/qa/artifacts/directive")
                                 .header("Authorization", BEARER)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(

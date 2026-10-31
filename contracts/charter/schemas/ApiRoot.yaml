@@ -1,0 +1,13 @@
+title: ApiRoot
+description: >-
+  The API root (ADR-0019 D2 and D4): the one known place a client starts from. It holds only links:
+  self, info (the service info), offering (the configured packs), artifacts (an RFC 6570 template
+  of a pack's artifact list, /api/v1/packs/{packId}/artifacts{?kind}, with templated true) and
+  service-desc (the contract document, RFC 8631). It reads no pack file.
+type: object
+additionalProperties: false
+required:
+  - _links
+properties:
+  _links:
+    $ref: Links.yaml
