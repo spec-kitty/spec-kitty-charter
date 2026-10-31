@@ -13,7 +13,7 @@ durable home; this copy is the mission's test oracle.
 | `spec-kitty-charter-service-<ver>-windows-x64.exe` | GraalVM native executable |
 | `spec-kitty-charter-service-<ver>.jar` | Spring Boot executable jar (fallback; Java 25) |
 | `<asset>.sha256` | One per asset above: `<64 lowercase hex>  <asset>` |
-| `SHA256SUMS` | Every asset above, `sha256sum` format, bare names, sorted with `LC_ALL=C` |
+| `SHA256SUMS` | The five assets above (not the `.sha256` files), `sha256sum` format, bare names, sorted with `LC_ALL=C` |
 
 Rules:
 
