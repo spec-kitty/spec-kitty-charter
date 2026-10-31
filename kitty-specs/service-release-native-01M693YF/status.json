@@ -20,6 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -28,7 +29,8 @@
       "last_transition_at": "2026-10-31T14:18:20.093329+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "ADR-0046 and plan updates; docs checks green"
+        "ADR-0046 and plan updates; docs checks green",
+        "Review passed (reviewer-renata). ADR-0046 (commit 17f686e4) verified against core: tag regex equals kernel/service_pin.py:92 _TAG_RE (used with fullmatch at :187, so the ADR's anchored form is equivalent), service-v0.0.0 placeholder refusal matches :93/:195; asset names equal vendor.py expected_names (:229-233) with ServiceTarget.asset_suffix (-<target>, .exe on Windows, .jar); prefix spec-kitty-charter-service matches :70-71; '<64 hex>  <name>' sha256sum format with bare names satisfies vendor.py:75 _SUMS_LINE_RE; contract relation matches ruling D1 incl. the pre-release -SNAPSHOT exception and final-release contract-charter-v<info.version> requirement; core work is attributed to spec-kitty#6909 only (C-002); all six related: slugs exist under docs/; SC-001's seven questions are each answered (decisions 1-6). Open question 5 decided, milestones #71/#241 and roadmap step 7 updated (D7 criterion moves recorded). check_docs.py all green; cspell 0 issues; markdownlint shows only pre-existing MD060 on the house |---| table style (advisory job). Checklist: 1 dead code N/A (docs only); 2 synthetic fixture N/A; 3 silent empty return N/A; 4 FR coverage PASS (FR-001..005 are documentation requirements, each verified in the ADR/plan text; no code to test); 5 frozen surface PASS (ADR-0011 untouched); 6 locked decision PASS (no contract archives, no core changes claimed); 7 shared-file ownership PASS with note: docs/adr/README.md index row is outside owned_files and lane write_scope, a necessary one-line index addition flagged in the commit message, no other WP touches it; 8 production fragility N/A. Non-blocking: ADR decision 4/6 and the contract both say SHA256SUMS lists 'every asset above', which can be read as including the .sha256 files; WP02's assembly script should settle this (research R1 implies the five deployables only)."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
