@@ -248,9 +248,10 @@ public class ToolguideController implements ToolguidesApi {
                     .summary(body.getSummary())
                     .guide(guide)
                     .lastUpdated(body.getLastUpdated());
-            bounded("commands", body.getCommands()).forEach(builder::command);
-            bounded("appliesToLanguages", body.getAppliesToLanguages()).forEach(builder::appliesToLanguage);
-            bounded("references", body.getReferences()).forEach(builder::reference);
+            bounded("commands", OptionalLists.orEmpty(body.getCommands())).forEach(builder::command);
+            bounded("appliesToLanguages", OptionalLists.orEmpty(body.getAppliesToLanguages()))
+                    .forEach(builder::appliesToLanguage);
+            bounded("references", OptionalLists.orEmpty(body.getReferences())).forEach(builder::reference);
             ai.speckitty.charter.packs.domain.Toolguide toolguide = builder.build();
             guides.write(toolguide.title(), guide);
             return toolguide;

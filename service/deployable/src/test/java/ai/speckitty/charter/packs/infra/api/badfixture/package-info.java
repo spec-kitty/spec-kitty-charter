@@ -1,4 +1,4 @@
-/** Known-bad classes inside the packs inbound adapter for {@code HexagonalArchitectureTest}. */
+/** Known-bad classes for the reserved-operation rule of {@code HexagonalArchitectureTest} (#125). */
 @NullMarked
 package ai.speckitty.charter.packs.infra.api.badfixture;
 

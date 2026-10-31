@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,8 +33,8 @@ import tools.jackson.databind.JsonNode;
  *
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
  * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
- * {@code additionalProperties: false}, {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength},
- * {@code maxItems}, {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
+ * {@code additionalProperties: false} (or a map of {@code Link.yaml}, the {@code Links} component of ADR-0019 D3), {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength},
+ * {@code minItems}, {@code maxItems}, {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
  * never ignored in silence: the check walks every schema of the contract once when it is built, not only the
  * ones a body reaches. The contract tree is a constructor argument, so the fail-closed branches are tested over
  * fixtures.
@@ -47,8 +48,17 @@ final class ContractConformance {
 
     private static final String OPENAPI = "charter/openapi.yaml";
     private static final String SHARED_PROBLEM = "_shared/responses/Problem.yaml";
-    private static final Set<String> CONSTRAINTS =
-            Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "maxItems", "minimum", "maximum");
+    private static final Set<String> CONSTRAINTS = Set.of(
+            "type",
+            "required",
+            "enum",
+            "pattern",
+            "minLength",
+            "maxLength",
+            "minItems",
+            "maxItems",
+            "minimum",
+            "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
 
     private final Path root;
@@ -139,6 +149,17 @@ final class ContractConformance {
         }
     }
 
+    /**
+     * Whether an {@code additionalProperties} is the one map the contract holds: the {@code Links} component's map of
+     * {@code Link} (ADR-0019 D3), whose relation keys are open and whose values are each a closed {@code Link}.
+     */
+    private static boolean isLinkMap(@Nullable Object argument) {
+        return argument instanceof Map<?, ?> map
+                && map.size() == 1
+                && map.get("$ref") instanceof String ref
+                && (ref.equals("Link.yaml") || ref.endsWith("/Link.yaml"));
+    }
+
     private void vetFile(String resource, Set<String> vetted) {
         if (vetted.add(resource)) {
             vetNode(new Located(document(resource), resource), vetted);
@@ -168,9 +189,14 @@ final class ContractConformance {
                 case "items" ->
                     vetNode(new Located(mapping(argument, schema.file() + " items"), schema.file()), vetted);
                 case "additionalProperties" -> {
-                    if (!Boolean.FALSE.equals(argument)) {
-                        throw new AssertionError(
-                                schema.file() + ": only additionalProperties: false is supported, not " + argument);
+                    if (isLinkMap(argument)) {
+                        vetNode(
+                                new Located(mapping(argument, schema.file() + " additionalProperties"), schema.file()),
+                                vetted);
+                    } else if (!Boolean.FALSE.equals(argument)) {
+                        throw new AssertionError(schema.file()
+                                + ": only additionalProperties: false is supported, or a map of Link.yaml, not "
+                                + argument);
                     }
                 }
                 default -> {
@@ -223,6 +249,73 @@ final class ContractConformance {
         List<String> violations = new ArrayList<>();
         validate(body, schema, "$", violations);
         return violations;
+    }
+
+    /**
+     * The violations of a value against one schema file of the contract, for a document that is not an exchange
+     * (the {@code ActivationConfig} corpus, for example).
+     *
+     * @param schemaResource the schema file, relative to the contract root, for example
+     *     {@code charter/schemas/ActivationConfig.yaml}
+     * @param value the value
+     * @return what does not conform, one sentence each; empty when it conforms
+     */
+    List<String> schemaViolations(String schemaResource, JsonNode value) {
+        List<String> violations = new ArrayList<>();
+        validate(value, new Located(document(schemaResource), schemaResource), "$", violations);
+        return violations;
+    }
+
+    /**
+     * The operation the contract declares for a method and a concrete path, with no fallback: a path or method the
+     * contract does not declare is empty, never the shared {@code Problem}.
+     *
+     * @param method the request method, for example {@code put}
+     * @param path the request path below the server prefix, without a query
+     * @return the declared operation, its {@code $ref}s of the path item resolved
+     */
+    Optional<DeclaredOperation> operation(String method, String path) {
+        Map<String, Object> paths = mapping(document(OPENAPI).get("paths"), "paths");
+        for (Map.Entry<String, Object> entry : paths.entrySet()) {
+            if (!template(entry.getKey()).matcher(path).matches()) {
+                continue;
+            }
+            Located item = resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
+            Object operation = item.node().get(method.toLowerCase(Locale.ROOT));
+            return operation == null
+                    ? Optional.empty()
+                    : Optional.of(new DeclaredOperation(entry.getKey(), mapping(operation, entry.getKey())));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * One operation as the contract declares it.
+     *
+     * @param pathTemplate the path template it is declared under, for example {@code /activations/{activationId}}
+     * @param node the operation object
+     */
+    record DeclaredOperation(String pathTemplate, Map<String, Object> node) {
+
+        /**
+         * Whether the operation carries {@code x-reserved} (ADR-0020 D8).
+         *
+         * @return true when it is reserved
+         */
+        boolean reserved() {
+            return node.get("x-reserved") != null;
+        }
+
+        /**
+         * Whether the operation declares a response for the status itself, not through {@code default}.
+         *
+         * @param status the status
+         * @return true when it lists the status
+         */
+        boolean declares(int status) {
+            Object responses = node.get("responses");
+            return responses instanceof Map<?, ?> map && map.containsKey(String.valueOf(status));
+        }
     }
 
     private Located response(String method, String path, int status) {
@@ -311,15 +404,27 @@ final class ContractConformance {
                     }
                 }
                 case "additionalProperties" -> {
-                    if (!Boolean.FALSE.equals(argument)) {
+                    boolean links = isLinkMap(argument);
+                    if (!links && !Boolean.FALSE.equals(argument)) {
                         throw new AssertionError(at + ": only additionalProperties: false is supported");
                     }
                     Set<String> declared = mapping(node.getOrDefault("properties", Map.of()), at)
                             .keySet();
                     if (value.isObject()) {
-                        value.propertyNames().stream()
-                                .filter(name -> !declared.contains(name))
-                                .forEach(name -> violations.add(at + " has the undeclared member '" + name + "'"));
+                        for (String name : value.propertyNames()) {
+                            if (declared.contains(name)) {
+                                continue;
+                            }
+                            if (links) {
+                                validate(
+                                        value.get(name),
+                                        new Located(mapping(argument, at), resolved.file()),
+                                        at + "." + name,
+                                        violations);
+                            } else {
+                                violations.add(at + " has the undeclared member '" + name + "'");
+                            }
+                        }
                     }
                 }
                 case "items" -> {
@@ -361,6 +466,11 @@ final class ContractConformance {
                                             .codePointCount(0, value.asString().length())
                                     > ((Number) argument).intValue()) {
                         violations.add(at + " is longer than " + argument);
+                    }
+                }
+                case "minItems" -> {
+                    if (value.isArray() && value.size() < ((Number) argument).intValue()) {
+                        violations.add(at + " holds fewer than " + argument + " items");
                     }
                 }
                 case "maxItems" -> {

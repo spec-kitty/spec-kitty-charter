@@ -57,7 +57,32 @@ public enum RefusalCode {
      * names a {@code from} the pack does not hold (ADR-0026). Answered as 409. Added for the registration write path
      * (WP05+).
      */
-    REGISTRATION_CONFLICT("registration_conflict");
+    REGISTRATION_CONFLICT("registration_conflict"),
+    /**
+     * The activation does not exist, or the client may not see it (ADR-0020 D9, D12). Answered as 404. Reserved for the
+     * activation set (#125): no operation of this version raises it; the activation operations answer 501 until built.
+     */
+    ACTIVATION_NOT_FOUND("activation_not_found"),
+    /** The activation's offering has no such artifact (ADR-0020 D9). Answered as 404. Reserved (#125). */
+    ARTIFACT_NOT_FOUND("artifact_not_found"),
+    /** The packs of the activation offer no such preset (ADR-0020 D9). Answered as 404. Reserved (#125). */
+    PRESET_NOT_FOUND("preset_not_found"),
+    /**
+     * A deactivation of an artifact a pack requires (ADR-0012 D7, ADR-0031); the refusal names every requiring pack.
+     * Answered as 409. Reserved (#125).
+     */
+    ARTIFACT_REQUIRED("artifact_required"),
+    /**
+     * A deactivation of an artifact a pack locks (ADR-0012); the refusal names every locking pack. Answered as 409.
+     * Reserved (#125).
+     */
+    ARTIFACT_LOCKED("artifact_locked"),
+    /**
+     * A well-formed activation document or body the service refuses: it fails the schema, or names an unknown pack,
+     * kind, artifact or mission type (ADR-0020 D9); the refusal lists each refused part. Answered as 422. Reserved
+     * (#125).
+     */
+    ACTIVATION_INVALID("activation_invalid");
 
     private final String token;
 
@@ -79,7 +104,8 @@ public enum RefusalCode {
      *
      * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND},
      *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
-     *     {@link #PARADIGM_NOT_FOUND} and {@link #TOOLGUIDE_NOT_FOUND}
+     *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #ACTIVATION_NOT_FOUND},
+     *     {@link #ARTIFACT_NOT_FOUND} and {@link #PRESET_NOT_FOUND}
      */
     public boolean notFound() {
         return this == MISSION_TYPE_NOT_FOUND
@@ -89,6 +115,9 @@ public enum RefusalCode {
                 || this == DIRECTIVE_NOT_FOUND
                 || this == STYLEGUIDE_NOT_FOUND
                 || this == PARADIGM_NOT_FOUND
-                || this == TOOLGUIDE_NOT_FOUND;
+                || this == TOOLGUIDE_NOT_FOUND
+                || this == ACTIVATION_NOT_FOUND
+                || this == ARTIFACT_NOT_FOUND
+                || this == PRESET_NOT_FOUND;
     }
 }

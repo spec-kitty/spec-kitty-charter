@@ -90,13 +90,13 @@ public class StyleguideController implements StyleguidesApi {
                 body.getTitle(),
                 body.getScope(),
                 body.getPrinciples(),
-                body.getPatterns(),
-                body.getAntiPatterns(),
-                body.getTooling(),
+                OptionalLists.orEmpty(body.getPatterns()),
+                OptionalLists.orEmpty(body.getAntiPatterns()),
+                OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
-                body.getAppliesToLanguages(),
-                body.getReferences());
+                OptionalLists.orEmpty(body.getAppliesToLanguages()),
+                OptionalLists.orEmpty(body.getReferences()));
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, false, null);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
@@ -118,13 +118,13 @@ public class StyleguideController implements StyleguidesApi {
                 body.getTitle(),
                 body.getScope(),
                 body.getPrinciples(),
-                body.getPatterns(),
-                body.getAntiPatterns(),
-                body.getTooling(),
+                OptionalLists.orEmpty(body.getPatterns()),
+                OptionalLists.orEmpty(body.getAntiPatterns()),
+                OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
-                body.getAppliesToLanguages(),
-                body.getReferences());
+                OptionalLists.orEmpty(body.getAppliesToLanguages()),
+                OptionalLists.orEmpty(body.getReferences()));
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)

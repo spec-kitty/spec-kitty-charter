@@ -181,6 +181,11 @@ tasks.test {
     // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a
     // cached result from a run without it never stands in for one with it.
     inputs.property("githubActions", providers.environmentVariable("GITHUB_ACTIONS").orElse(""))
+    // ActivationConfigSchemaParityTest validates the ActivationConfig corpus against the canonical JSON Schema and
+    // its OpenAPI mirror (#125).
+    val offering = rootProject.layout.projectDirectory.dir("contracts/offering")
+    inputs.dir(offering).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("offering")
+    systemProperty("charter.offering", offering.asFile.absolutePath)
 }
 tasks.check { dependsOn(openPacksRoundTrip) }
 
