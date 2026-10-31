@@ -571,8 +571,8 @@ class ClosureCheckerTest {
     @Nested
     class LinksMap {
 
-        private static final String LINKS = "/paths/~1probe/get/responses/200/content/application~1json/schema"
-                + "/properties/_links";
+        private static final String LINKS =
+                "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/_links";
         private static final String MAP = "additionalProperties holds a schema, so it is a map";
 
         @Test
@@ -599,8 +599,7 @@ class ClosureCheckerTest {
             assertThat(violations("links-map-open-link.yaml"))
                     .extracting(Violation::toString)
                     .containsExactly(
-                            LINKS + "/additionalProperties: no additionalProperties: false",
-                            LINKS + ": " + MAP);
+                            LINKS + "/additionalProperties: no additionalProperties: false", LINKS + ": " + MAP);
         }
     }
 
