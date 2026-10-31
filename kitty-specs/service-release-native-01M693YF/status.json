@@ -52,6 +52,9 @@
       "lane": "for_review",
       "last_event_id": "01M695F966EHCAJQDP7V2C0XWJ",
       "last_transition_at": "2026-10-31T14:22:59.782845+00:00",
+      "notes": [
+        "Implementation commit fab81302 was made before the runtime claim was recorded (claim recorded afterwards); red-first evidence and verifyAll green"
+      ],
       "subtasks": {
         "T005": "done",
         "T006": "done",
