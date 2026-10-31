@@ -1,0 +1,85 @@
+work_packages:
+  - id: WP01
+    title: "ADR-0046: the service release line, and the plan updates (PR 1)"
+    dependencies: []
+    owned_files:
+      - "docs/adr/0046-service-release-line-and-native-packaging.md"
+      - "docs/plans/open-questions.md"
+      - "docs/plans/milestones.md"
+      - "docs/plans/roadmap.md"
+    requirement_refs: [FR-001, FR-002, FR-003, FR-004, FR-005, C-002, C-006, C-007, SC-001]
+    plan_concern_refs: [IC-01]
+    subtasks: [T001, T002, T003, T004]
+    prompt_file: "tasks/WP01-adr-and-plan-updates.md"
+    agent_profile: "architect-alphonso"
+    role: "architect"
+    agent: "claude"
+  - id: WP02
+    title: "The container profile is decided at run time (D4a)"
+    dependencies: [WP01]
+    owned_files:
+      - "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerStartupCheck.java"
+      - "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerWiring.java"
+      - "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerProperties.java"
+      - "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java"
+      - "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java"
+      - "service/deployable/src/test/java/ai/speckitty/charter/deployable/NoBuildTimeProfilesTest.java"
+    requirement_refs: [FR-008]
+    plan_concern_refs: [IC-02]
+    subtasks: [T005, T006, T007, T008]
+    prompt_file: "tasks/WP02-container-profile-at-run-time.md"
+    agent_profile: "java-jenny"
+    role: "implementer"
+    agent: "claude"
+  - id: WP03
+    title: "Native build and runtime hints"
+    dependencies: [WP02]
+    owned_files:
+      - "gradle/libs.versions.toml"
+      - "gradle/verification-metadata.xml"
+      - "build-logic/build.gradle.kts"
+      - "service/deployable/build.gradle.kts"
+      - "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterServiceApplication.java"
+      - "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterRuntimeHints.java"
+      - "service/deployable/src/test/java/ai/speckitty/charter/deployable/CharterRuntimeHintsTest.java"
+    requirement_refs: [FR-006, FR-009, NFR-003]
+    plan_concern_refs: [IC-03]
+    subtasks: [T009, T010, T011, T012, T013]
+    prompt_file: "tasks/WP03-native-build-and-hints.md"
+    agent_profile: "java-jenny"
+    role: "implementer"
+    agent: "claude"
+  - id: WP04
+    title: "Smoke check, the jar job and the native CI matrix"
+    dependencies: [WP03]
+    owned_files:
+      - "scripts/release/smoke-service.sh"
+      - "scripts/release/smoke/**"
+      - ".github/workflows/service.yml"
+      - ".github/workflows/service-native.yml"
+      - ".github/workflows/ci.yml"
+    requirement_refs: [FR-007, FR-009, FR-010, NFR-001, NFR-002, C-005, SC-002]
+    plan_concern_refs: [IC-04]
+    subtasks: [T014, T015, T016, T017, T018, T019]
+    prompt_file: "tasks/WP04-smoke-and-native-ci.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "claude"
+  - id: WP05
+    title: "Release gate, assets, rehearsal, release workflow and procedure"
+    dependencies: [WP04]
+    owned_files:
+      - "build-logic/src/main/kotlin/ServiceReleaseGate.kt"
+      - "build-logic/src/test/kotlin/ServiceReleaseGateTest.kt"
+      - "build.gradle.kts"
+      - "scripts/release/service-release-assets.sh"
+      - "scripts/release/rehearse-service-release.sh"
+      - ".github/workflows/service-release.yml"
+      - "docs/guides/service-build.md"
+    requirement_refs: [FR-011, FR-012, FR-013, FR-014, NFR-004, C-001, C-005, SC-003, SC-004]
+    plan_concern_refs: [IC-05]
+    subtasks: [T020, T021, T022, T023, T024, T025]
+    prompt_file: "tasks/WP05-release-gate-and-workflow.md"
+    agent_profile: "implementer-ivan"
+    role: "implementer"
+    agent: "claude"
