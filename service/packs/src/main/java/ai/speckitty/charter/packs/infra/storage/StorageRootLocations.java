@@ -11,9 +11,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +27,10 @@ import org.slf4j.LoggerFactory;
  * an org pack, and the pack policy reports what is wrong with it.
  *
  * <p>The directory is listed on every call, so a pack copied in or removed while the service runs is seen on the next
- * read; a domain directory that does not exist yet holds no packs. A symbolic link to a directory is a pack named after
+ * read; a domain directory that does not exist yet holds no packs. A domain that is itself a symbolic link is followed
+ * (#285): its packs are read-only when it resolves outside the configuration root, and it holds no packs, warned once,
+ * when it resolves to no directory or to the configuration root or a directory above it. A symbolic link to a directory
+ * is a pack named after
  * the link (#174, ADR-0038 decision 3 as amended 2026-10-31): the store reads it through the link, and a commit stages
  * and swaps beside the link's real target, so the link stays a link ({@link PackCommitStore}). Links below a pack's
  * root are not followed. These entries are never packs:
@@ -33,8 +39,8 @@ import org.slf4j.LoggerFactory;
  *   <li>hidden entries, among them the {@code .pack-commit-*} staging directory of {@link PackCommitStore};
  *   <li>a {@code <name>.pack-old-*} entry, the aside copy a commit leaves when its swap is interrupted;
  *   <li>a file;
- *   <li>a link that resolves to no directory (a dangling link, a link to a file), or to the pack domain or a directory
- *       above it;
+ *   <li>a link that resolves to no directory (a dangling link, a link to a file), or to the pack domain, the
+ *       configuration root or a directory above either;
  *   <li>a link to a directory in the configuration root outside the pack domain (the activations domain);
  *   <li>two or more entries whose directories overlap, one directory or one inside the other (two links to one
  *       target, a link to a sibling pack or into it): a commit to one would copy and replace the other's files, and
@@ -55,6 +61,9 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
     /** Each refused entry's reason, as last warned, so a listing on every read warns once per entry and reason. */
     private final Map<String, String> reported = new ConcurrentHashMap<>();
 
+    /** Why the pack domain itself holds no packs, as last warned; null while it is served. */
+    private final AtomicReference<@Nullable String> domainReported = new AtomicReference<>();
+
     /**
      * The packs under {@code packs}.
      *
@@ -66,15 +75,17 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
 
     @Override
     public List<PackLocation> all() {
-        if (!Files.isDirectory(packs, LinkOption.NOFOLLOW_LINKS)) {
+        Optional<Path> domain = realDomain();
+        if (domain.isEmpty()) {
             return List.of();
         }
         List<Candidate> candidates = new ArrayList<>();
         try (Stream<Path> children = Files.list(packs)) {
-            Path domain = packs.toRealPath();
+            Path configRoot = realConfigRoot();
             for (Path entry :
                     children.filter(StorageRootLocations::isPack).sorted().toList()) {
-                directoryOf(entry, domain).ifPresent(real -> candidates.add(new Candidate(entry, real)));
+                directoryOf(entry, domain.get(), configRoot)
+                        .ifPresent(real -> candidates.add(new Candidate(entry, real)));
             }
         } catch (IOException e) {
             throw new UncheckedIOException("cannot list the pack domain", e);
@@ -98,20 +109,65 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
     }
 
     /**
-     * A pack whose real directory is outside the configuration root, a link's target elsewhere, is read-only through the
-     * service: a commit would replace a directory the service does not own (ADR-0038 as amended 2026-10-31).
+     * A pack whose real directory is outside the configuration root, a link's target elsewhere or a pack in a domain
+     * linked from elsewhere, is read-only through the service: a commit would replace a directory the service does not
+     * own (ADR-0038 as amended 2026-10-31).
      */
     @Override
     public Optional<String> whyReadOnly(Path realDirectory) {
-        Path configRoot = packs.getParent();
         try {
-            if (configRoot != null && realDirectory.startsWith(configRoot.toRealPath())) {
+            if (realDirectory.startsWith(realConfigRoot())) {
                 return Optional.empty();
             }
         } catch (IOException unresolved) {
             // A configuration root that cannot be resolved owns nothing to write.
         }
         return Optional.of("is linked from outside the configuration root; it is read-only through the service");
+    }
+
+    /**
+     * The pack domain's real directory, or empty when it holds no packs. A domain that does not exist yet, or is a
+     * file, holds none, silently. A domain that is a link is followed (#285, ADR-0038 as amended 2026-10-31); one that
+     * resolves to no directory, or to the configuration root or a directory above it, holds none and is warned once.
+     */
+    private Optional<Path> realDomain() {
+        boolean link = Files.isSymbolicLink(packs);
+        if (!link && !Files.isDirectory(packs, LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.empty();
+        }
+        Path real;
+        Optional<String> why;
+        try {
+            real = packs.toRealPath();
+            why = whyNotADomain(real);
+        } catch (IOException unresolved) {
+            real = packs;
+            why = Optional.of("is a link that does not resolve");
+        }
+        if (why.isPresent()) {
+            if (!why.get().equals(domainReported.getAndSet(why.get()))) {
+                LOG.warn("pack domain {} {}; no pack is served", packs, why.get());
+            }
+            return Optional.empty();
+        }
+        domainReported.set(null);
+        return Optional.of(real);
+    }
+
+    /** Why the domain's real directory holds no packs, or empty when it may. */
+    private Optional<String> whyNotADomain(Path real) throws IOException {
+        if (!Files.isDirectory(real)) {
+            return Optional.of("resolves to " + real + ", which is not a directory");
+        }
+        if (realConfigRoot().startsWith(real)) {
+            return Optional.of("resolves to " + real + ", which holds the configuration root");
+        }
+        return Optional.empty();
+    }
+
+    /** The configuration root's real path: the pack domain's parent, as {@code ConfigRoot.packs()} places it. */
+    private Path realConfigRoot() throws IOException {
+        return Objects.requireNonNullElse(packs.getParent(), packs).toRealPath();
     }
 
     /** An entry that resolves to a directory, with that directory's real path. */
@@ -127,7 +183,7 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
      * vanished, and a link that resolves to no directory, to one that holds the pack domain, or to one in the
      * configuration root outside the pack domain; such a link is refused.
      */
-    private Optional<Path> directoryOf(Path entry, Path domain) {
+    private Optional<Path> directoryOf(Path entry, Path domain, Path configRoot) {
         boolean link = Files.isSymbolicLink(entry);
         if (!link && !Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
             return Optional.empty();
@@ -141,21 +197,26 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
             }
             return Optional.empty();
         }
-        Optional<String> why = whyNotAPack(real, domain);
+        Optional<String> why = whyNotAPack(real, domain, configRoot);
         why.ifPresent(reason -> refuse(entry, reason));
         return why.isPresent() ? Optional.empty() : Optional.of(real);
     }
 
-    /** Why a link's real target is no pack directory, or empty when it may be one. */
-    private static Optional<String> whyNotAPack(Path real, Path domain) {
+    /**
+     * Why a link's real target is no pack directory, or empty when it may be one. {@code domain} and {@code configRoot}
+     * are real paths, so a domain linked from elsewhere is checked where it lives.
+     */
+    private static Optional<String> whyNotAPack(Path real, Path domain, Path configRoot) {
         if (!Files.isDirectory(real)) {
             return Optional.of("resolves to " + real + ", which is not a directory");
         }
         if (domain.startsWith(real)) {
             return Optional.of("resolves to " + real + ", which holds the pack domain");
         }
-        Path configRoot = domain.getParent();
-        if (configRoot != null && real.startsWith(configRoot) && !real.startsWith(domain)) {
+        if (configRoot.startsWith(real)) {
+            return Optional.of("resolves to " + real + ", which holds the configuration root");
+        }
+        if (real.startsWith(configRoot) && !real.startsWith(domain)) {
             return Optional.of("resolves to " + real + ", in the configuration root but outside the pack domain");
         }
         return Optional.empty();
