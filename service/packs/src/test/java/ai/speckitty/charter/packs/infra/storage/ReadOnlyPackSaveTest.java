@@ -95,6 +95,27 @@ class ReadOnlyPackSaveTest {
         assertThat(snapshot(target)).as("the target is unchanged").isEqualTo(before);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("everyWrite")
+    void aWriteIntoAPackOfADomainLinkedFromOutsideTheConfigRootIsRefusedAndChangesNothing(String name, Write write)
+            throws IOException {
+        Path config = Files.createDirectories(host.resolve("config"));
+        Path shared = Files.createDirectories(host.resolve("shared-packs"));
+        Path real = PackFixtures.copyOf("pack-a", shared).toRealPath();
+        Path packs = SymbolicLinks.create(config.resolve("packs"), shared);
+        DomainRepositoryService service = new DomainRepositoryService(new StorageRootLocations(packs), strategy);
+        Map<String, String> before = snapshot(real);
+
+        assertThatThrownBy(() -> write.into(service))
+                .as("the whole packs/ is linked from outside (#285)")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage(READ_ONLY);
+
+        assertThat(snapshot(real)).as("the pack is unchanged").isEqualTo(before);
+    }
+
     @Test
     @DisplayName("a pack linked from inside the configuration root is still written through its real target")
     void aPackLinkedFromInsideTheConfigRootIsWrittenThroughItsTarget() throws IOException {
