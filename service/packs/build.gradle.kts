@@ -178,6 +178,9 @@ tasks.test {
     val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
     inputs.property("requireSymlinks", requireSymlinks)
     systemProperty("charter.requireSymlinks", requireSymlinks.get())
+    // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a
+    // cached result from a run without it never stands in for one with it.
+    inputs.property("githubActions", providers.environmentVariable("GITHUB_ACTIONS").orElse(""))
 }
 tasks.check { dependsOn(openPacksRoundTrip) }
 
