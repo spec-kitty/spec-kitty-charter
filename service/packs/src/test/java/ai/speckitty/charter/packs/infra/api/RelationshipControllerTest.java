@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -30,14 +31,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-/** The HTTP contract of the relationship route: idempotent upsert, ETag, and the 412/428/409 refusals. */
+/**
+ * The HTTP contract of the relationship route: idempotent upsert, ETag, the {@code RelationshipRegistered} answer (the
+ * edge and the link to the pack's artifacts, no {@code self}), and the 412/428/409 refusals.
+ */
 class RelationshipControllerTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new RelationshipController(
-                    new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate())))
+                    new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate()),
+                    new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler())
             .build();
 
@@ -53,6 +58,21 @@ class RelationshipControllerTest {
                 .andExpect(header().exists("ETag"))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
         assertThat(store.edges).hasSize(1);
+    }
+
+    @Test
+    void answersTheRegisteredEdgeAndTheLinkToThePacksArtifactsWithoutSelf() throws Exception {
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY))
+                .andExpect(status().isCreated())
+                .andExpect(header().doesNotExist("Location"))
+                .andExpect(jsonPath("$.relationship.from").value("directive:DIR_A"))
+                .andExpect(jsonPath("$.relationship.to").value("procedure:p"))
+                .andExpect(jsonPath("$.relationship.type").value("requires"))
+                .andExpect(jsonPath("$._links.artifacts.href").value("/api/v1/packs/pack-a/artifacts"))
+                .andExpect(jsonPath("$._links.self").doesNotExist());
     }
 
     @Test
