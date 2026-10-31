@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class RefusalExamplesTest {
 
@@ -79,6 +81,55 @@ class RefusalExamplesTest {
         RefusalExamples.Report report = RefusalExamples.check(document);
         assertThat(report.violations()).isEmpty();
         assertThat(report.examples()).isEqualTo(1);
+    }
+
+    /**
+     * A code is named as a whole word, in backticks or not: {@code no_pack_level_mismatch} and {@code
+     * pack_level_mismatch_here} name none, a bare {@code pack_level_mismatch} names it.
+     */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "Refused as no_pack_level_mismatch.                 | 0",
+                "Refused as pack_level_mismatch_here.               | 0",
+                "Refused as pack_level_mismatches.                  | 0",
+                "Refused as pack_level_mismatch.                    | 1",
+                "Refused as pack_level_mismatch, or pack_unreadable. | 1",
+                "Refused as (pack_level_mismatch).                  | 1"
+            })
+    void aDescriptionNamesACodeOnlyAsAWholeWord(String description, int violations) {
+        Map<String, Object> code = Map.of(
+                "title",
+                "CharterRefusalCode",
+                "x-refusal",
+                Map.of(
+                        "pack_unreadable", Map.of("raised", true),
+                        "pack_level_mismatch", Map.of("raised", false)));
+        Map<String, Object> document = Map.of(
+                "paths",
+                Map.of(
+                        "/x",
+                        Map.of(
+                                "get",
+                                Map.of(
+                                        "responses",
+                                        Map.of(
+                                                "500",
+                                                Map.of(
+                                                        "description",
+                                                        description,
+                                                        "content",
+                                                        Map.of(
+                                                                "application/problem+json",
+                                                                Map.of(
+                                                                        "schema",
+                                                                        Map.of(
+                                                                                "title",
+                                                                                "CharterRefusal",
+                                                                                "allOf",
+                                                                                List.of(code))))))))));
+        assertThat(RefusalExamples.check(document).violations()).hasSize(violations);
     }
 
     @Test

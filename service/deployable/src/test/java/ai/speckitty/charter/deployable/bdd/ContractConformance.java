@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -57,6 +58,22 @@ final class ContractConformance {
     private static final Set<String> CONSTRAINTS =
             Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "maxItems", "minimum", "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
+    private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
+
+    /**
+     * One success answer the contract declares: an operation, by its method and path template, and a 2xx status.
+     *
+     * @param method the lower-case method, as the contract names it
+     * @param template the path template, for example {@code /packs/{packId}/artifacts}
+     * @param status the 2xx status
+     */
+    record Success(String method, String template, int status) {
+
+        @Override
+        public String toString() {
+            return method.toUpperCase(Locale.ROOT) + " " + template + " " + status;
+        }
+    }
 
     private final Path root;
     private final Map<String, Map<String, Object>> documents = new HashMap<>();
@@ -244,22 +261,66 @@ final class ContractConformance {
     }
 
     /**
-     * The response the contract declares for {@code method} on {@code path}. Every path template that matches the
-     * path is a candidate; among those that define the method, the concrete one wins (fewest template segments, as
-     * OpenAPI asks). When none defines it, the shared {@code Problem} response applies.
+     * The path template of the operation that answers {@code method} on {@code path}. Every path template that matches
+     * the path is a candidate; among those that define the method, the concrete one wins (fewest template segments, as
+     * OpenAPI asks). A segment of {@code path} may itself be a template expression such as {@code {packId}}: it
+     * matches a template's variable segment, never a literal one.
+     *
+     * @param method the lower-case method, for example {@code get}
+     * @param path the path below the server prefix, without a query
+     * @return the template, or empty when no operation of the contract defines the method on the path
+     */
+    Optional<String> operationTemplate(String method, String path) {
+        return paths().entrySet().stream()
+                .filter(entry -> template(entry.getKey()).matcher(path).matches())
+                .filter(entry -> pathItem(entry).node().get(method) != null)
+                .map(Map.Entry::getKey)
+                .min(Comparator.comparingLong(ContractConformance::templateSegments));
+    }
+
+    /**
+     * Every success answer the contract declares: each 2xx status of each operation.
+     *
+     * @return the successes, by method, path template and status
+     */
+    Set<Success> successResponses() {
+        Set<Success> successes = new HashSet<>();
+        for (Map.Entry<String, Object> entry : paths().entrySet()) {
+            Located item = pathItem(entry);
+            for (Map.Entry<String, Object> operation : item.node().entrySet()) {
+                if (!METHODS.contains(operation.getKey())) {
+                    continue;
+                }
+                mapping(mapping(operation.getValue(), entry.getKey()).get("responses"), entry.getKey() + " responses")
+                        .keySet()
+                        .stream()
+                        .filter(status -> status.matches("2\\d\\d"))
+                        .forEach(status -> successes.add(
+                                new Success(operation.getKey(), entry.getKey(), Integer.parseInt(status))));
+            }
+        }
+        return successes;
+    }
+
+    private Map<String, Object> paths() {
+        return mapping(document(OPENAPI).get("paths"), "paths");
+    }
+
+    private Located pathItem(Map.Entry<String, Object> entry) {
+        return resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
+    }
+
+    /**
+     * The response the contract declares for {@code method} on {@code path}: the one of the operation
+     * {@link #operationTemplate} names. When no operation defines the method, the shared {@code Problem} response
+     * applies.
      */
     private Located response(String method, String path, int status) {
-        Map<String, Object> paths = mapping(document(OPENAPI).get("paths"), "paths");
-        Optional<Map.Entry<String, Located>> chosen = paths.entrySet().stream()
-                .filter(entry -> template(entry.getKey()).matcher(path).matches())
-                .map(entry -> Map.entry(
-                        entry.getKey(), resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI))))
-                .filter(entry -> entry.getValue().node().get(method) != null)
-                .min(Comparator.comparingLong(entry -> templateSegments(entry.getKey())));
+        Optional<String> chosen = operationTemplate(method, path);
         if (chosen.isEmpty()) {
             return new Located(document(SHARED_PROBLEM), SHARED_PROBLEM);
         }
-        Located item = chosen.get().getValue();
+        Located item = pathItem(Map.entry(chosen.get(), paths().get(chosen.get())));
         Map<String, Object> responses =
                 mapping(mapping(item.node().get(method), path).get("responses"), path + " responses");
         Object declared =

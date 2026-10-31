@@ -208,9 +208,12 @@ class ContractConformanceTest {
                 .hasMessageContaining("multipleOf");
     }
 
-    /** The contract stays closed everywhere but a map: an additionalProperties that admits any member is refused. */
+    /**
+     * The contract stays closed everywhere but a map: an additionalProperties that admits any member is refused, and so
+     * is a mapping that holds only annotations or extensions, which constrains nothing either.
+     */
     @ParameterizedTest
-    @ValueSource(strings = {"true", "{}", "null"})
+    @ValueSource(strings = {"true", "{}", "null", "{description: anything}", "{title: Any, x-note: open}"})
     void anAdditionalPropertiesThatAdmitsAnyMemberIsRefused(String argument) throws IOException {
         minimalContract();
         write("charter/schemas/Open.yaml", "type: object\nadditionalProperties: " + argument + "\n");

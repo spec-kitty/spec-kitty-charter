@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.OfferingPack;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import jakarta.validation.constraints.Pattern;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
@@ -31,6 +33,9 @@ class WireTokenParityTest {
             List<String> domainTokens,
             List<String> contractValues,
             Function<String, ?> fromValue) {}
+
+    /** The {@code @Pattern} the generator put on {@code Artifact.getKind()}, from the contract's {@code pattern}. */
+    private static final String ARTIFACT_KIND_PATTERN = artifactKindPattern();
 
     private static List<Pair> pairs() {
         return List.of(
@@ -50,7 +55,37 @@ class WireTokenParityTest {
                         "PackLevel",
                         tokens(PackLevel.values(), PackLevel::token),
                         values(OfferingPack.LevelEnum.values(), OfferingPack.LevelEnum::getValue),
-                        OfferingPack.LevelEnum::fromValue));
+                        OfferingPack.LevelEnum::fromValue),
+                // The served kinds against the pattern of Artifact.kind, which lists the tokens as alternatives
+                // instead of referencing ArtifactKindToken (C-009): the generator keeps it as a @Pattern only.
+                new Pair(
+                        "Artifact.kind",
+                        tokens(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new), ArtifactKind::token),
+                        alternatives(ARTIFACT_KIND_PATTERN),
+                        token -> matching(ARTIFACT_KIND_PATTERN, token)));
+    }
+
+    private static String artifactKindPattern() {
+        try {
+            Pattern pattern = Artifact.class.getMethod("getKind").getAnnotation(Pattern.class);
+            assertThat(pattern).as("Artifact.getKind() carries a @Pattern").isNotNull();
+            return pattern.regexp();
+        } catch (NoSuchMethodException e) {
+            throw new AssertionError("the generated Artifact has no getKind()", e);
+        }
+    }
+
+    /** The alternatives of a pattern of the form {@code ^(a|b|c)$}. */
+    private static List<String> alternatives(String regexp) {
+        assertThat(regexp).as("Artifact.kind's pattern").matches("\\^\\([a-z_|]+\\)\\$");
+        return List.of(regexp.substring(2, regexp.length() - 2).split("\\|"));
+    }
+
+    private static String matching(String regexp, String token) {
+        if (!java.util.regex.Pattern.matches(regexp, token)) {
+            throw new IllegalArgumentException(token + " does not match " + regexp);
+        }
+        return token;
     }
 
     private static <E> List<String> tokens(E[] constants, Function<E, String> token) {
