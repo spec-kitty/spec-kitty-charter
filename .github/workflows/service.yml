@@ -81,8 +81,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
+      # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
       - name: Verify
-        run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+        run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
 
       # The aggregated Javadoc (:charter-reports:aggregateJavadoc), published by docs-site.yml.
       - name: Upload the Javadoc
