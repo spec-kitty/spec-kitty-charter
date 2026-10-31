@@ -35,8 +35,9 @@ missing (decision 4 below).
 Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28), under the container profile only: a configuration root that does not exist fails the start (decision 4).
 
 Amended 2026-10-31 ([#174](https://github.com/spec-kitty/spec-kitty-charter/issues/174), operator): a
-symbolic link under `packs/` to a directory is a pack, and a commit goes through its real target. This
-reverses the part of decision 3 that refused links. See
+symbolic link under `packs/` to a directory is a pack. A pack linked from outside the configuration
+root is read-only through the service, and one linked from inside it is committed through its real
+target. This reverses the part of decision 3 that refused links. See
 [Amendment 2026-10-31](#amendment-2026-10-31-a-linked-pack-is-a-pack).
 
 ## Context
@@ -71,7 +72,8 @@ a local directory, a shared drive or, later, a database behind the same ports.
    policy reports what is wrong with it. Hidden directories, a commit's `<name>.pack-old-*` aside copy
    and symbolic links are not packs: a commit stages a copy and swaps it in, which on a link would
    replace the link with a copy holding only the written file.
-   *(Amended 2026-10-31: a link to a directory is a pack, and a commit swaps its real target; see
+   *(Amended 2026-10-31: a link to a directory is a pack, read-only when it is linked from outside
+   the configuration root; see
    [the amendment](#amendment-2026-10-31-a-linked-pack-is-a-pack).)*
 4. **Nothing is created; a missing pack is simply not served.** The service creates no directory. A
    root or a domain directory that does not exist yet holds nothing; a pack directory that is
@@ -123,9 +125,16 @@ the part of decision 3 that refused symbolic links.
   target's `pack.yaml` declares. The store reads it through the link, and the walk of the pack's
   files starts at the root's real path, so a linked root is no longer an empty pack. Links *below*
   a pack's root are still not followed.
-- **A commit goes through the real target.** `PackCommitStore` stages its copy beside the link's
-  real target, on the target's own file system, and swaps the target. The link stays a link, and
-  the target holds the new content. The rename is atomic there, as it is for a plain pack.
+- **A pack linked from outside the configuration root is read-only through the service.** It is
+  read and digested wherever its target is, but `PackCommitStore` refuses a commit to it with
+  `PACK_UNREADABLE` ("is linked from outside the configuration root; it is read-only through the
+  service") before anything is staged. The service does not replace a directory it does not own,
+  such as a pack author's checkout. Edit such a pack where it lives.
+- **Inside the configuration root, a commit goes through the real target.** For a link whose target
+  is inside the configuration root (in practice, in a hidden directory of `packs/`, since any other
+  target there is refused below), `PackCommitStore` stages its copy beside the real target and swaps
+  the target. The link stays a link, and the target holds the new content. The rename is atomic
+  there, as it is for a plain pack.
 - **Some entries are still not packs.** Each of these is logged as a warning once per reason,
   naming the entry and the reason, and again if it is refused after it was served:
   - a link that does not resolve, or that resolves to a file;
@@ -140,29 +149,28 @@ the part of decision 3 that refused symbolic links.
 
 ### Consequences of the amendment
 
-- A pack checkout can be linked in and served in place.
-- A commit to a linked pack replaces the *target* directory with its staged copy. With a target
-  outside the configuration root, for example a pack author's checkout:
-  - the directory gets a new inode, owned by the service's user, so its author can lose write
-    access, and a shell or editor open in the old directory is left in a deleted one;
-  - everything in the target, `.git` included, is copied on every commit;
-  - the service needs write access to the target's parent, where the `.pack-commit-*` staging copy
-    and the `<target>.pack-old-*` aside copy are created while the commit runs.
+- A pack checkout can be linked in and served in place, but registrations into it are refused:
+  it changes only where it lives.
+- A commit to a pack linked from inside the configuration root replaces the *target* directory with
+  its staged copy, as it replaces a plain pack's directory.
 - **Crash window.** A crash between the swap's two renames leaves the target missing, the aside
   copy beside it, named after the target, and the link dangling. The link is then refused as one
   that does not resolve. As for a plain pack, whose missing directory is not listed either, the
   repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. Move
   the aside copy back by hand. Making that repair reachable is a follow-up for both kinds of pack.
 - **Residual race.** A link pointed elsewhere between the listing and a commit's own resolution is
-  committed to its new target without the listing's checks. Whoever can do that can already write
-  to `packs/`, so it is accepted.
+  committed to its new target without the listing's checks, the read-only check aside, which the
+  commit makes on the target it resolves. Whoever can do that can already write to `packs/`, so it
+  is accepted.
 
-### Open review item
+### Alternatives considered for linked packs
 
-Whether a commit to a linked pack whose target is outside the configuration root should be
-allowed, as built, or refused so that such a pack is read-only through the service, is open with
-the operator (#174). If it is refused, the conservative fallback is to admit only links whose target
-is inside the configuration root.
+- **Commit through any target** (built first, not chosen). Each commit would replace a directory
+  the service does not own: with a new inode owned by the service's user, so its author could lose
+  write access; with everything in it, `.git` included, copied on every commit; and with staging
+  and aside copies written beside it.
+- **Admit only links inside the configuration root** (not chosen). It would refuse to serve a
+  linked checkout at all, which is what #174 asked for.
 
 ## Alternatives considered
 
