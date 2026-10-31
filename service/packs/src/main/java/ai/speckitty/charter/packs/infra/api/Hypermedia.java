@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +38,9 @@ final class Hypermedia {
             String href,
             @Nullable Boolean templated,
             @Nullable String method) {}
+
+    /** One whole simple RFC 6570 expression, a path variable such as {@code {packId}}. */
+    private static final Pattern PATH_VARIABLE = Pattern.compile("\\{[A-Za-z0-9_]+}");
 
     private final String basePath;
 
@@ -87,10 +91,11 @@ final class Hypermedia {
 
     /**
      * A templated {@code GET} link: the path made of {@code segments} followed by an RFC 6570 expression, for
-     * example the query expression of {@code kind}. The expression is written as given.
+     * example the query expression of {@code kind}. The expression is written as given, and so is a segment that is
+     * one whole simple expression, a path variable such as {@code {packId}}; every other segment is percent-encoded.
      *
      * @param expression the RFC 6570 expression appended to the path, one braced expression
-     * @param segments   the path segments, unencoded
+     * @param segments   the path segments, unencoded, or a path variable
      * @return the link, with {@code templated} true
      * @throws IllegalArgumentException when {@code expression} is not an RFC 6570 expression
      */
@@ -98,7 +103,10 @@ final class Hypermedia {
         if (!expression.startsWith("{") || !expression.endsWith("}")) {
             throw new IllegalArgumentException("not an RFC 6570 expression: " + expression);
         }
-        return new LinkValue(href(segments) + expression, true, null);
+        String path = Arrays.stream(segments)
+                .map(segment -> "/" + (PATH_VARIABLE.matcher(segment).matches() ? segment : encodeSegment(segment)))
+                .collect(Collectors.joining());
+        return new LinkValue((path.isEmpty() ? basePath + "/" : basePath + path) + expression, true, null);
     }
 
     /**
@@ -144,7 +152,11 @@ final class Hypermedia {
         }
         return basePath
                 + Arrays.stream(segments)
-                        .map(segment -> "/" + UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8))
+                        .map(segment -> "/" + encodeSegment(segment))
                         .collect(Collectors.joining());
+    }
+
+    private static String encodeSegment(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }
