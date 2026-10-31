@@ -13,7 +13,7 @@ paths:
       responses:
         '200':
           description: The pack listing.
-          headers: &charter-headers
+          headers: &read-headers
             Charter-Contract-Version: &charter-contract-version
               description: The info.version of the contract the service was built against. On every response of the charter's operations (ADR-0011).
               required: true
@@ -26,10 +26,10 @@ paths:
                 type: string
             Charter-Source-Fingerprint:
               description: >-
-                The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. On every
-                response of the charter's operations, except when a pack file cannot be read; the read then
-                reports why. The freshness work (#73) compares it; this version only reports it (ADR-0011).
-              required: false
+                The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. Required on
+                the 200 of every verified read and declared on no other answer (#175). The freshness work (#73)
+                compares it; this version only reports it (ADR-0011).
+              required: true
               schema:
                 title: Sha256Digest
                 description: "A SHA-256 digest, sha256: followed by 64 lower-case hex digits. Opaque to consumers, who compare it and never parse it."
@@ -152,7 +152,9 @@ paths:
                                   symbol: Diagnostic.detail
         default:
           description: The read failed.
-          headers: *charter-headers
+          headers: &charter-headers
+            Charter-Contract-Version: *charter-contract-version
+            Charter-Worktree: *charter-worktree
           content:
             application/problem+json:
               schema:
@@ -196,7 +198,7 @@ paths:
       responses:
         '200':
           description: The action context.
-          headers: *charter-headers
+          headers: *read-headers
           content:
             application/json:
               schema:
