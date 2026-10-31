@@ -28,6 +28,7 @@ class RefusalHandlerTest {
         "ACTION_NOT_FOUND, 404",
         "PACK_NOT_FOUND, 404",
         "TACTIC_NOT_FOUND, 404",
+        "KIND_NOT_FOUND, 404",
         "VALIDATION_FAILED, 422",
         "REGISTRATION_CONFLICT, 409",
         "GOVERNANCE_POLICY_VIOLATION, 409",
@@ -50,6 +51,20 @@ class RefusalHandlerTest {
         assertThat(body.getCode().getValue()).isEqualTo(code.token());
         assertThat(body.getTitle()).isNotBlank();
         assertThat(body.getDetail()).isEqualTo("detail");
+    }
+
+    @Test
+    @DisplayName("an unserved path kind is a 404 titled Kind not found, with the kind_not_found token")
+    void anUnservedKindIsKindNotFound() {
+        ResponseEntity<CharterRefusal> response = handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(
+                RefusalCode.valueOf("KIND_NOT_FOUND"), "The service serves no artifact kind bogus."));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(404);
+        CharterRefusal body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getTitle()).isEqualTo("Kind not found");
+        assertThat(body.getCode().getValue()).isEqualTo("kind_not_found");
+        assertThat(RefusalCode.valueOf("KIND_NOT_FOUND").notFound()).as("a not-found code").isTrue();
     }
 
     @Test
