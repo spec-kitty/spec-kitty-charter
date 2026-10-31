@@ -128,10 +128,10 @@
       "criterion_id": "FR-013",
       "description": "Verify FR-013 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "lint/ruleset.yaml: charter-headers-on-every-response narrowed to Charter-Contract-Version + Charter-Worktree (fixture .missing-worktree), fingerprint-on-verified-reads (fixtures .yaml, .optional), fingerprint-only-on-verified-reads (fixtures .yaml, .write, .head); lintFixtures 18 rules/23 fixtures each fail only their rule, clean passes; lintContract green; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:25.388975+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
