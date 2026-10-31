@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import java.util.Arrays;
@@ -42,7 +44,13 @@ class WireTokenParityTest {
                         "ArtifactKindToken",
                         tokens(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new), ArtifactKind::token),
                         values(ArtifactSummary.KindEnum.values(), ArtifactSummary.KindEnum::getValue),
-                        ArtifactSummary.KindEnum::fromValue));
+                        ArtifactSummary.KindEnum::fromValue),
+                // The pack levels against PackLevel, as the generator types it on OfferingPack.level.
+                new Pair(
+                        "PackLevel",
+                        tokens(PackLevel.values(), PackLevel::token),
+                        values(OfferingPack.LevelEnum.values(), OfferingPack.LevelEnum::getValue),
+                        OfferingPack.LevelEnum::fromValue));
     }
 
     private static <E> List<String> tokens(E[] constants, Function<E, String> token) {
