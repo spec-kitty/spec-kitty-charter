@@ -71,7 +71,8 @@ Option A — follow it, under the #174 rules:
 
 - list the link's target; `whyReadOnly` already compares each pack's real path with the real config
   root, so a `packs/` linked from outside makes every pack read-only, and one linked to a directory
-  inside the config root (a hidden one, in practice) keeps its packs writable;
+  inside the config root keeps its packs writable (the pre-PR squad added: not one in
+  `activations/`, which is refused);
 - the overlap refusal is unchanged (it compares the candidates' real paths);
 - `whyNotAPack` must take the config root from `packs.getParent().toRealPath()`, not from the real
   domain's parent, which is the target's parent once `packs/` is a link;

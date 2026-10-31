@@ -164,20 +164,25 @@ served an empty pack set and gave no reason.
   above, checked against real paths: the domain's real directory and the configuration root's.
 - **Linked from outside the configuration root, every pack in it is read-only.** Each pack's real
   directory is outside the configuration root, so every write is refused as for a single pack linked
-  from outside. Linked to a directory inside the configuration root (a hidden one, in practice), its
-  packs stay writable.
+  from outside. Linked to a directory inside the configuration root, outside the activations domain,
+  its packs stay writable.
 - **The overlap refusal is unchanged.** It compares the entries' real directories.
-- **Some domain links hold no packs.** A `packs/` that resolves to no directory, or to the
-  configuration root or a directory above it, lists nothing. It is logged as a warning once per
-  reason, and again if it breaks after it was fixed. Listing the configuration root as the pack domain
-  would serve `activations/` and the domain itself as packs.
+- **Some domain links hold no packs.** A `packs/` that resolves to no directory, to the
+  configuration root or a directory above it, or into `activations/`, lists nothing. It is logged as
+  a warning once per reason, and again if it breaks after it was fixed. Listing the configuration
+  root as the pack domain would serve `activations/` and the domain itself as packs; listing
+  `activations/` would serve, and write, each activation directory as a pack. The refusal of
+  `activations/` is the rule for a single pack link into the configuration root outside `packs/`,
+  applied to the domain (pre-PR review of #285).
 - **A pack link that holds the configuration root is not a pack.** In a domain linked from elsewhere,
   the configuration root is no longer above the domain, so this is checked on its own.
-- **Every write path checks.** The per-file writes of `DomainRepositoryService` ask
-  `Locations.whyReadOnly` before they write, as `PackCommitStore` does (#287): the typed saves, the
-  descriptor save, and the whole-pack gate's asset, preset and pack-document writes. They are checked
-  rather than narrowed to the gate, because six of them implement the public domain ports
-  (`TacticRepository.save` and its siblings).
+- **Every write into a configured pack checks.** The per-file writes of `DomainRepositoryService`
+  ask `Locations.whyReadOnly` before they write, as `PackCommitStore` does (#287): the typed saves,
+  the descriptor save, and the whole-pack gate's asset, preset and pack-document writes. They are
+  checked rather than narrowed to the gate, because six of them implement the public domain ports
+  (`TacticRepository.save` and its siblings). `WholePackStore.write`, which creates a new pack
+  directory and has no production caller, does not check; a caller that wires it into `packs/` must
+  check first.
 
 Alternative considered for #285: **warn once that a linked `packs/` is not read** (not chosen). It is
 smaller, but the service would still look empty, with only a log line to explain why. It would also
@@ -192,13 +197,15 @@ refuse, for a whole domain, the layout the amendment already accepts for one pac
 - **Crash window.** A crash between the swap's two renames leaves the target missing, the aside
   copy beside it, named after the target, and the link dangling. The link is then refused as one
   that does not resolve. As for a plain pack, whose missing directory is not listed either, the
-  repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. Move
+  repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. In a
+  linked pack domain the aside copy is beside the pack, in the domain's real directory. Move
   the aside copy back by hand. Making that repair reachable, for both kinds of pack, is
   [#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281).
 - **Residual race.** A link pointed elsewhere between the listing and a commit's own resolution is
   committed to its new target without the listing's checks, the read-only check aside, which the
-  commit makes on the target it resolves. Whoever can do that can already write to `packs/`, so it
-  is accepted.
+  commit makes on the target it resolves. A per-file write (#287) checks the real path, then writes
+  through the link, so a link pointed elsewhere in between is written without the check. Whoever can
+  do either can already write to `packs/`, so both are accepted.
 
 ### Alternatives considered for linked packs
 
