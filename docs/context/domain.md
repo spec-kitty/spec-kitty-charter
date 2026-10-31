@@ -119,7 +119,7 @@ One file per mission type, `missions/<id>/<id>.mission-type.yaml`
 |---|---|
 | **Mission step** | [Glossary](/glossary/charter/#mission-step). A sub-item of its mission type's `steps` (in run order) or `on_demand_steps`: a role, a one-line description and the expected input and output artifacts that are its pre- and postconditions. A domain type (`MissionStep`), not an artifact kind: there is no `mission_steps` kind. |
 | **On-demand step** | A mission step invoked by an explicit command, outside the run order, listed in `on_demand_steps` (software-dev's `charter`, `tasks-outline`, `tasks-packages` and `tasks-finalize`; the documentation and research `retrospect` steps). |
-| **Step prompt** | The prompt fed to the agent when a step runs, `steps/<id>.prompt.md`; its frontmatter holds only its detailed description. The glossary's *Step template*. |
+| **Step template** | [Glossary](/glossary/charter/#step-template). The prompt fed to the agent when a step runs, the step's prompt file `steps/<id>.prompt.md`; its frontmatter holds only its detailed description. Not a template payload. |
 | **Step guidelines** | A step's working notes, `steps/<id>.guidelines.md`. Not the glossary's charter *Guideline*. |
 | **Recipe ingredients** | [Glossary](/glossary/charter/#recipe-ingredients). The mission type's own `references`; a step's `references` are its action-scoped guidance. |
 

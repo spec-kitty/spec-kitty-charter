@@ -22,7 +22,7 @@ public enum ArtifactKind {
     PROCEDURE("procedure", "procedures", true, true, true, InForceWhenAbsent.ALL),
     /** An agent profile: an agent's identity, specialization and governance references. */
     AGENT_PROFILE("agent_profile", "agent_profiles", true, true, true, InForceWhenAbsent.ALL),
-    /** A mission step contract: the steps of one action and what each delegates to. */
+    /** A mission step contract: the structural sub-steps of one mission step and what each delegates to. */
     MISSION_STEP_CONTRACT("mission_step_contract", "mission_step_contracts", true, true, true, InForceWhenAbsent.ALL),
     /** A glossary pack: terms contributed to the project's vocabulary; not selection-overlayable. */
     GLOSSARY_PACK("glossary_pack", "glossary_packs", true, true, false, InForceWhenAbsent.ALL),

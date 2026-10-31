@@ -8,7 +8,7 @@
       "sc": null,
       "scope": null,
       "source_file": null,
-      "title": null,
+      "title": "Promote mission types + step contracts to full charter artifact kinds",
       "verdict": "not-applicable",
       "wp": null
     },
@@ -20,7 +20,7 @@
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Epic: Whole-pack round trip — read all Charter Pack content into the domain and write it back",
       "verdict": "not-applicable",
       "wp": null
     },
@@ -32,21 +32,21 @@
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Load and write a whole pack through the Pack aggregate",
       "verdict": "not-applicable",
       "wp": null
     },
     "#194": {
       "evidence_ref": "PR-B: mission-type consolidation (ADR-0044)",
-      "fr": null,
+      "fr": "FR-001..FR-012",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Round-trip procedure, anti_pattern and mission types (read and write only)",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01-WP07"
     },
     "#260": {
       "evidence_ref": "sibling run; shared-file coordination only",
@@ -56,7 +56,7 @@
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Round-trip pack.md through #194's markdown content form",
       "verdict": "not-applicable",
       "wp": null
     }

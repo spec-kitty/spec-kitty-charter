@@ -2,7 +2,7 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -188,7 +188,8 @@ lists, in authored order. It derives three things:
 
 - `required()`: the must-have item ids of each artifact kind; a kind with none is absent;
 - `requiredMissionTypes()`: the must-have mission-type ids, kept apart because a mission type is
-  not an `ArtifactKind`;
+  not an `ArtifactKind` *(since ADR-0044, 2026-10-30, it is one; the slot stays apart because a
+  preset activates mission types in its own `activated_mission_types` list)*;
 - `governing()`: true when either is not empty.
 
 Its invariants refuse an id outside the grammar, an id twice in one list, a kind twice in the gate,

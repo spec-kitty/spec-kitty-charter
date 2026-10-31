@@ -54,13 +54,13 @@ control).
 4. **Given** a file carrying a retired field (`display_name`, `depends_on`, `agent_profile`, `sequence_index`, an empty
    list, `blocking: false`), **When** read, **Then** the schema refuses it naming the field; the sanitized neighbour is
    accepted.
+5. **Given** a step with `role: operator` and one with no role, **When** read and written, **Then** both round-trip as
+   authored.
 6. **Given** the round trip through the production writer, **When** a step title is changed, two steps are swapped, an
    on-demand step is dropped or a reference is reordered, **Then** the comparison reports a difference at that path
    (committed positive controls).
 7. **Given** a new mission type registered through the store, **When** written, **Then** it lands at
    `missions/<id>/<id>.mission-type.yaml` with its companions under `steps/`; an id with `/` or `..` is refused.
-5. **Given** a step with `role: operator` and one with no role, **When** read and written, **Then** both round-trip as
-   authored.
 
 ### User Story 2 - Step prompts and guidelines travel with their step (Priority: P1)
 
@@ -155,6 +155,12 @@ charter re-pins to it and re-vendors `packs/qa`.
 - Directive references by stem (`042-common-docs`) are migrated to ids (`DIRECTIVE_042`).
 - `missions/**/README.md` orientation notes and `missions/<type>/templates/**` stay outside the model (an exclusion and
   the narrowed expected-red entry).
+
+> **Note (2026-10-31).** ADR-0044 decision 5 and the plan superseded three statements below: mission templates are
+> `template` payloads (`*/missions/*/templates/**/*`, id `<type>/<path>`), not entries on a narrowed `other:missions`
+> expected-red entry, which is gone; and the README exclusions are named per place (`*/missions/README.md`,
+> `*/missions/*/README.md`, `*/missions/*/templates/**/README.md`), not `*/missions/**/README.md`. FR-003, FR-009 and
+> the out-of-scope line keep their original wording for the record.
 
 ## Requirements *(mandatory)*
 

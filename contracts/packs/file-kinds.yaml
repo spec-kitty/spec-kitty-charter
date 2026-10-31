@@ -20,7 +20,9 @@
 #                    in validate mode, YAML and Markdown alike, is never a companion, is bucketed
 #                    `retired:<match>` by the whole-pack gate and is digested in the fingerprint
 #                    tail. Optional; consulted after `exclusions` and before `payloads`, and
-#                    no file may match a `retired` rule and a `files` or `exclusions` rule.
+#                    no file may match a `retired` rule and a `files` or `exclusions` rule, but
+#                    for one known overlap, pinned by RetiredFilesTest: a README directly in the
+#                    old built-in `missions/mission-steps/` is excluded, never read either way.
 #   Any other top-level key fails when the table loads.
 #
 # Content form

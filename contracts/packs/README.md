@@ -3,17 +3,19 @@
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
 descriptor, graph shards, the org fragment, the org charter, the presets and the pack manifest,
 the twelve artifact kinds that have a schema (a template and an anti-pattern have none), the
-Markdown companions with a structure (a toolguide's guide, a mission step's prompt and
-guidelines), and the project `charter.yaml`.
+Markdown files with a structure (a toolguide's guide, the pack document `pack.md`, a mission
+step's prompt and guidelines), and the project `charter.yaml`.
 
 These schemas are canonical in this repository and are edited in place; core consumes them
 ([ADR-0015](../../docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md) decisions 1, 2
 and 5, ruling R20). Their history is a one-time import from core commit `9554e7b2` with changes C1-C16,
 recorded in the mission's
 [`research.md`](../../kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)
-and in git history. The two added later have their own sources: `skill` is core's
+and in git history. Of the schemas added later, two have outside sources: `skill` is core's
 `skill.schema.yaml` at `581b5c46da` as JSON, and `glossary-pack` is authored here from core's pydantic
-model, since core exports no schema for it. Where a schema differs from core's behavior, the
+model, since core exports no schema for it. The rest were designed here: `preset`, `pack-manifest`
+and `pack-document` (ADR-0042), `toolguide-guide` (ADR-0043), and `mission-type` with its two step
+schemas (ADR-0044). Where a schema differs from core's behavior, the
 [divergence register](../../docs/conformance/divergence-register.md) says why.
 
 ## Files

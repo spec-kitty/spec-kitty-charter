@@ -2,7 +2,7 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -211,7 +211,8 @@ Four facts force a decision:
    - `*/assets/**/*` is an `asset-payload` of the `bytes` form;
    - `*/templates/**/*` is a `template` of the `bytes` form. The single leading `*/` covers only a
      pack's top-level `templates/`: mission templates (`missions/*/templates/`) stay outside this
-     record (#194);
+     record (#194). *(Extended 2026-10-30 by ADR-0044 decision 5: `*/missions/*/templates/**/*` is a
+     `template` of the `bytes` form too, with the id `<type>/<path>`.)*
    - `*/assets/**/README.md` is excluded: an orientation note, not a payload (R4);
    - `*/assets/**/.*` and `*/templates/**/.*` are excluded: a hidden file at any depth (a
      `.DS_Store`, a `.gitkeep`, the store's own `.pack-write-*.tmp` temporary file) is not pack

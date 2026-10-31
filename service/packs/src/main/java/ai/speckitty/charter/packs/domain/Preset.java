@@ -43,7 +43,8 @@ public record Preset(
 
     /**
      * The artifact kinds a preset can carry an activation list of: the activatable kinds, less the skill and the
-     * glossary pack, which presets do not govern (core's {@code preset_activation_keys}).
+     * glossary pack, which presets do not govern (core's {@code preset_activation_keys}), and less the mission type,
+     * which a preset activates in its own {@code activated_mission_types} list ({@link #missionTypes()}, ADR-0044).
      */
     public static final Set<ArtifactKind> ACTIVATION_KINDS = Collections.unmodifiableSet(EnumSet.of(
             ArtifactKind.DIRECTIVE,
