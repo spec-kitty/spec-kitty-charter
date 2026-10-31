@@ -106,7 +106,8 @@ class StorageRootLocationsTest {
         StorageRootLocations locations = new StorageRootLocations(packs);
 
         try (LogCapture log = new LogCapture()) {
-            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
+            // List twice: the warning fires on the first listing; the second listing proves it is not re-logged.
+            locations.all();
             assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
 
             assertThat(log.warnings())
