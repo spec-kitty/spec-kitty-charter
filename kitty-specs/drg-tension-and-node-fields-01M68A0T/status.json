@@ -29,6 +29,9 @@
       "last_event_id": "01M68AW6WE0B4G5XB74T7E52F2",
       "last_transition_at": "2026-10-31T06:38:11.855004+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Kernel: Tension + DrgNode fields + NodeKind.plural; 33 kernel tests (3+5+16+9) seen red (compile) then green; :kernel:check clean"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 7251,
