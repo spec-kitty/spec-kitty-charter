@@ -195,7 +195,7 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
-    void theFullScopeEntersAPackRootThatIsALinkAndNoLinkBelowIt(@TempDir Path dir) throws IOException {
+    void theFullScopeEntersAPackRootThatIsALinkAndNoDirectoryLinkBelowIt(@TempDir Path dir) throws IOException {
         Path real = dir.resolve("checkout/qa");
         write(real, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(real, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
