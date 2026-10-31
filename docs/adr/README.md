@@ -72,6 +72,7 @@ stands.
 | [0041](/adr/0041-containerized-configuration-model/) | ADR-0041: The containerized service is configured through a container profile, validated properties and mounted secrets | Accepted | 2026-10-28 |
 | [0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) | ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest | Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added) | 2026-10-28 |
 | [0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) | ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store | Proposed | 2026-10-29 |
+| [0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) | ADR-0044: Mission types consolidated into one sanitized shape | Proposed | 2026-10-30 |
 
 ## Core decisions this repository builds on
 
