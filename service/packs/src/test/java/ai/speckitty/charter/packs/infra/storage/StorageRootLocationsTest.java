@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -217,11 +216,7 @@ class StorageRootLocationsTest {
     }
 
     private static void link(Path link, Path target) throws IOException {
-        try {
-            Files.createSymbolicLink(link, target);
-        } catch (UnsupportedOperationException | IOException noLinks) {
-            abort("the filesystem cannot create symbolic links");
-        }
+        SymbolicLinks.create(link, target);
     }
 
     /** The warnings {@link StorageRootLocations} logs while open. */
