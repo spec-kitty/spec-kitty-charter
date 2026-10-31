@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -7,14 +8,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -47,12 +55,24 @@ import org.slf4j.LoggerFactory;
  *       the per-pack write lock would not serialise them, so none of them is served.
  * </ul>
  *
+ * <p>Before it lists, it repairs a commit a crash interrupted between its swap's two renames (#281), under the pack's
+ * write lock ({@link PackWriteLocks}): a {@code <name>.pack-old-*} aside copy with no {@code <name>} entry, or a pack
+ * link that no longer resolves because its target was moved aside, is restored from a sole aside copy, in the pack
+ * domain's real directory, for a pack writable through the service, never into or around another pack. A listing that
+ * reads the domain while a commit in this JVM is between its renames waits for it (at most ten seconds) and is served
+ * its result; one that read it just before the first rename can still miss the pack once, as before. An aside copy
+ * beside a live pack, residue of a finished swap, is hidden so it is never restored later. So a read can rename
+ * directories in the pack domain.
+ *
  * <p>A refused entry is logged as a warning once for each reason, naming the entry and why, not on every listing; an
  * entry that is served again is warned again if it is refused later.
  */
 public final class StorageRootLocations implements DomainRepositoryService.Locations {
 
     private static final String ASIDE_MARKER = ".pack-old-";
+
+    /** How long a listing waits for a pack's write lock before it skips that pack for this listing. */
+    private static final Duration READ_WAIT = Duration.ofSeconds(10);
 
     private static final Logger LOG = LoggerFactory.getLogger(StorageRootLocations.class);
 
@@ -80,10 +100,16 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
             return List.of();
         }
         List<Candidate> candidates = new ArrayList<>();
-        try (Stream<Path> children = Files.list(packs)) {
+        try {
             Path configRoot = realConfigRoot();
-            for (Path entry :
-                    children.filter(StorageRootLocations::isPack).sorted().toList()) {
+            List<Path> entries = entries();
+            if (repairInterrupted(entries, domain.get())) {
+                entries = entries(); // list again, so the restored packs face every rule below
+            }
+            for (Path entry : entries.stream()
+                    .filter(StorageRootLocations::isPack)
+                    .sorted()
+                    .toList()) {
                 directoryOf(entry, domain.get(), configRoot)
                         .ifPresent(real -> candidates.add(new Candidate(entry, real)));
             }
@@ -106,6 +132,145 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
         out.sort(Comparator.comparing((PackLocation location) -> location.level() != PackLevel.BUILT_IN)
                 .thenComparing(PackLocation::name));
         return List.copyOf(out);
+    }
+
+    private List<Path> entries() throws IOException {
+        try (Stream<Path> children = Files.list(packs)) {
+            return children.toList();
+        }
+    }
+
+    /**
+     * Repairs every commit a crash interrupted between its swap's two renames (#281), so the pack is listed again with
+     * its last committed state, and hides the aside copies a finished swap left beside a live pack, so they are never
+     * restored later. Each runs under the pack's write lock, the one a registration holds, so a commit in flight in
+     * this JVM is waited for rather than mistaken for a crash. True when the domain must be listed again.
+     */
+    private boolean repairInterrupted(List<Path> entries, Path domain) {
+        Set<String> names = new HashSet<>();
+        entries.forEach(entry -> names.add(nameOf(entry)));
+        Set<Path> halfSwapped = new TreeSet<>();
+        Set<Path> stale = new TreeSet<>();
+        for (Path entry : entries) {
+            String name = nameOf(entry);
+            int marker = name.indexOf(ASIDE_MARKER);
+            if (marker > 0 && !name.startsWith(".")) {
+                String live = name.substring(0, marker);
+                (names.contains(live) ? stale : halfSwapped).add(packs.resolve(live));
+            } else if (isPack(entry) && Files.isSymbolicLink(entry) && !Files.exists(entry)) {
+                halfSwapped.add(entry);
+            }
+        }
+        if (halfSwapped.isEmpty() && stale.isEmpty()) {
+            return false;
+        }
+        List<Path> served = servedDirectories(entries);
+        boolean changed = false;
+        for (Path entry : halfSwapped) {
+            changed |= underLock(entry, () -> restore(entry, domain, served));
+        }
+        for (Path entry : stale) {
+            underLock(entry, () -> hideStale(entry, domain));
+        }
+        return changed;
+    }
+
+    /** The real directories of the entries that resolve now, which a restore must not overlap. */
+    private static List<Path> servedDirectories(List<Path> entries) {
+        List<Path> out = new ArrayList<>();
+        for (Path entry : entries) {
+            if (isPack(entry)) {
+                realPath(entry).ifPresent(out::add);
+            }
+        }
+        return out;
+    }
+
+    private static Optional<Path> realPath(Path entry) {
+        try {
+            return Optional.of(entry.toRealPath());
+        } catch (IOException unresolved) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Runs {@code work} under the pack's write lock and answers its result, or false when the lock was not taken. A
+     * thread that already holds a pack's lock only tries it, so two packs never wait on each other; any other waits at
+     * most {@link #READ_WAIT}, so a read is never held up by a registration for long. A failure is warned, never thrown:
+     * a read does not fail because a repair did.
+     */
+    private boolean underLock(Path entry, Supplier<Boolean> work) {
+        ReentrantLock lock = PackWriteLocks.of(entry);
+        try {
+            boolean locked = PackWriteLocks.heldByCurrentThread()
+                    ? lock.tryLock()
+                    : lock.tryLock(READ_WAIT.toMillis(), TimeUnit.MILLISECONDS);
+            if (!locked) {
+                return false;
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        try {
+            return work.get();
+        } catch (CharterRefusal failed) {
+            warnUnrepaired(entry, "cannot be repaired after an interrupted commit: " + failed.getMessage());
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Restores one half-swapped pack, after checking again: only into the pack domain's real directory, only for a
+     * pack writable through the service, never into or around another pack, and only from a sole aside copy. True
+     * when the pack now resolves: restored, or swapped into place by the commit this listing waited for.
+     */
+    private boolean restore(Path entry, Path domain, List<Path> served) {
+        Optional<Path> missing = PackCommitStore.missingLiveDirectory(entry);
+        if (missing.isEmpty() || !mayRestore(missing.get(), domain, served)) {
+            return Files.exists(entry);
+        }
+        if (PackCommitStore.restoreInterruptedSwap(missing.get())) {
+            reported.remove(nameOf(entry) + ASIDE_MARKER);
+            return true;
+        }
+        int asides = PackCommitStore.asidesOf(missing.get()).size();
+        if (asides > 1) {
+            warnUnrepaired(
+                    entry,
+                    "was interrupted mid-commit and has " + asides + " aside copies beside " + missing.get()
+                            + "; move the right one back by hand");
+        }
+        return false;
+    }
+
+    /** Hides the aside copies a finished swap left beside a live pack the service may write. */
+    private boolean hideStale(Path entry, Path domain) {
+        Optional<Path> live = realPath(entry).filter(real -> mayRestore(real, domain, List.of()));
+        return live.isPresent() && PackCommitStore.hideStaleAsides(live.get());
+    }
+
+    /**
+     * Whether the service may move a pack directory back into place: it lies in the pack domain's real directory, is
+     * writable through the service, and neither lies in nor holds another pack's directory (the overlap rule, applied
+     * before the move so a repair never changes another pack's files without its lock). An aside copy elsewhere is not
+     * one the service left.
+     */
+    private boolean mayRestore(Path live, Path domain, List<Path> served) {
+        return live.startsWith(domain)
+                && !live.equals(domain)
+                && whyReadOnly(live).isEmpty()
+                && served.stream().noneMatch(other -> live.startsWith(other) || other.startsWith(live));
+    }
+
+    /** Warns once per reason that a half-swapped entry is left for a hand repair, beside its other warnings. */
+    private void warnUnrepaired(Path entry, String reason) {
+        if (!reason.equals(reported.put(nameOf(entry) + ASIDE_MARKER, reason))) {
+            LOG.warn("pack entry {} {}; it is not served", nameOf(entry), reason);
+        }
     }
 
     /**

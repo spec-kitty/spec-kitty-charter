@@ -412,7 +412,9 @@ class PackCommitStoreTest {
     private static boolean noCommitResidue(Path packsRoot) throws IOException {
         try (var entries = Files.list(packsRoot)) {
             return entries.map(p -> String.valueOf(p.getFileName()))
-                    .noneMatch(name -> name.startsWith(".pack-commit-") || name.contains(".pack-old-"));
+                    .noneMatch(name -> name.startsWith(".pack-commit-")
+                            || name.startsWith(".pack-discard-")
+                            || name.contains(".pack-old-"));
         }
     }
 

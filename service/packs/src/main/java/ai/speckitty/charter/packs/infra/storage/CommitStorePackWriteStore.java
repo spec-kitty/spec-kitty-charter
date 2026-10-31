@@ -16,8 +16,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +32,7 @@ import org.springframework.stereotype.Service;
  * {@link PackCommitStore} do (a configured name wins, otherwise the location whose {@code pack.yaml} declares the
  * {@code pack_id}), and reads the revision and the shard text from that directory. It never mutates the pack itself;
  * {@link #commit} delegates the stage-and-swap to {@link PackCommitStore}, under the same per-pack in-JVM write lock
- * {@link #exclusively} holds across a registration's load, precondition and commit.
+ * ({@link PackWriteLocks}) {@link #exclusively} holds across a registration's load, precondition and commit.
  */
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore {
@@ -42,13 +40,6 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
     private final PackCommitStore commitStore;
-
-    /**
-     * One write lock per live pack directory (in this JVM), keyed by the resolved directory so a pack addressed by
-     * its configured name and by its declared id shares one lock. The set of configured packs is small and fixed, so
-     * the map stays bounded. Cross-process writers are not serialised by it.
-     */
-    private final ConcurrentMap<Path, ReentrantLock> locks = new ConcurrentHashMap<>();
 
     /**
      * An adapter over the configured locations and WP04's commit store.
@@ -109,11 +100,15 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
 
     @Override
     public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
+        // Keyed by the resolved entry, so a pack addressed by its configured name and by its declared id shares one
+        // lock,
+        // the lock the listing takes to repair an interrupted commit (#281).
         Path directory = resolve(pack);
-        ReentrantLock lock = locks.computeIfAbsent(directory, key -> new ReentrantLock());
+        ReentrantLock lock = PackWriteLocks.of(directory);
         lock.lock();
         try {
-            PackCommitStore.restoreInterruptedSwap(directory);
+            // StorageRootLocations repairs on the listing; this covers locations that do not list (a fixed set).
+            PackCommitStore.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
             return work.get();
         } finally {
             lock.unlock();
