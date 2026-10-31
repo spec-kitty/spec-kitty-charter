@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -151,6 +152,83 @@ class MissionTypeTest {
                         .build())
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("step id stands once");
+    }
+
+    private static ExpectedArtifact templated(String key, String templatePath) {
+        return new ExpectedArtifact(key, ArtifactClass.OUTPUT, "out.md", false, Optional.of(templatePath));
+    }
+
+    private static MissionStep producing(String id, ExpectedArtifact... outputs) {
+        return new MissionStep(
+                id,
+                "Step " + id,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                List.of(),
+                List.of(outputs),
+                List.of());
+    }
+
+    @Test
+    @DisplayName("#277: the templates a type names, the type's own first, then each step's, each with what names it")
+    void templateReferencesNameTheirStep() {
+        MissionType type = MissionType.builder()
+                .id(new MissionTypeIdentifier("research"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .title("Research")
+                .description("Conduct research.")
+                .expectedOutputArtifact(templated("output.report.main", "templates/report.md"))
+                .step(producing("scoping", templated("output.spec.main", "templates/spec-template.md")))
+                .step(step("methodology"))
+                .onDemandStep(producing("retrospect", templated("output.retro.main", "templates/retro/notes.md")))
+                .build();
+
+        assertThat(type.templateReferences())
+                .containsExactly(
+                        new TemplateReference(Optional.empty(), "templates/report.md"),
+                        new TemplateReference(Optional.of("scoping"), "templates/spec-template.md"),
+                        new TemplateReference(Optional.of("retrospect"), "templates/retro/notes.md"));
+        assertThat(type.templateReferences())
+                .extracting(reference -> reference.templateId(type.id()))
+                .containsExactly("research/report.md", "research/spec-template.md", "research/retro/notes.md");
+    }
+
+    @Test
+    @DisplayName("#277: a template path that names no template of its type is unresolved, naming the type, step and"
+            + " path")
+    void anUnresolvedTemplateNamesTheStepAndThePath() {
+        MissionType type = research()
+                .step(producing(
+                        "synthesis",
+                        templated("output.spec.main", "templates/spec-template.md"),
+                        templated("output.report.main", "templates/missing.md")))
+                .build();
+
+        assertThat(type.unresolvedTemplates(Set.of("research/spec-template.md", "plan/missing.md")))
+                .as("another type's template of the same path does not count")
+                .containsExactly(new UnresolvedTemplate(
+                        type.id(), new TemplateReference(Optional.of("synthesis"), "templates/missing.md")));
+        assertThat(type.unresolvedTemplates(Set.of("research/spec-template.md", "research/missing.md")))
+                .isEmpty();
+    }
+
+    @ParameterizedTest(name = "template path {0} is refused")
+    @ValueSource(strings = {"templates/./spec.md", "templates//spec.md", "templates/a/./spec.md", "templates/spec/"})
+    @DisplayName("#277: a template path is spelled as its template's id: a '.' or empty segment is refused")
+    void aTemplatePathIsSpelledAsItsId(String path) {
+        assertThatThrownBy(() -> templated("output.spec.main", path))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("spelled as its template's id");
+        assertThatThrownBy(() -> new TemplateReference(Optional.empty(), path))
+                .isInstanceOf(ConstraintBreachException.class);
+        assertThatCode(() -> templated("output.spec.main", "templates/a.b/spec..md"))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> new TemplateReference(Optional.empty(), "other/spec.md"))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("under templates/");
     }
 
     @Test
