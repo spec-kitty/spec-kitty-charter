@@ -176,8 +176,11 @@ class OpenApiDocumentTest {
 
     /** The served document's {@code info.version}, read from the build output, not from the service. */
     private static String infoVersion() {
-        Map<?, ?> document = (Map<?, ?>)
-                new Load(LoadSettings.builder().build()).loadFromString(new String(BUNDLE, StandardCharsets.UTF_8));
+        Map<?, ?> document = (Map<?, ?>) new Load(LoadSettings.builder()
+                        // The inlined bundle passed snakeyaml's default 3 MiB with the activation set (#125).
+                        .setCodePointLimit(64 * 1024 * 1024)
+                        .build())
+                .loadFromString(new String(BUNDLE, StandardCharsets.UTF_8));
         return (String) ((Map<?, ?>) document.get("info")).get("version");
     }
 

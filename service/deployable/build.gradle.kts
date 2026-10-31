@@ -71,6 +71,11 @@ tasks.processTestResources {
         include("charter/parameters/**", "charter/headers/**", "_shared/responses/**", "_shared/schemas/**")
         into("contract")
     }
+    // The ActivationConfig corpus (#125), which ActivationConfigConformanceTest runs through the scenario validator.
+    from(contracts.dir("offering")) {
+        include("corpus/**")
+        into("offering")
+    }
 }
 
 /**
