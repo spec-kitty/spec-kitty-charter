@@ -90,8 +90,9 @@ This is the one release procedure.
    together in one change.
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/contract-release.yml` rebuilds
-the bundle at the tag and attaches `charter-openapi.yaml`, `charter-openapi.yaml.sha256` and
-`charter-scenarios.tar.gz` (the contract scenarios) to a GitHub Release of the tag. It refuses,
+the bundle at the tag and attaches `charter-openapi.yaml`, `charter-openapi.yaml.sha256`,
+`charter-scenarios.tar.gz` (the contract scenarios) and `ActivationConfig.schema.json` (the canonical activation
+document) to a GitHub Release of the tag. It refuses,
 and publishes nothing, unless the tag, `info.version` and the top heading name one released
 version (`./gradlew :contracts:checkReleaseTag -PreleaseTag=<tag>`), the contract checks pass and
 the tagged commit is on `main`; it also refuses a tag that moved while the assets were built.
@@ -116,8 +117,12 @@ a rule silently.
 | `operation-id` | Every operation has an `operationId`. | Generated clients and servers name their methods after it. |
 | `operation-operationId-unique` | No two operations share one. | vacuum's built-in check, switched on by name: uniqueness across operations cannot be written with the core functions. |
 | `operation-tagged` | Every operation has a tag. | Generated interfaces are grouped by tag. |
-| `error-responses-are-problems` | A read answers 200 and a registration 200 or 201 (ADR-0018 D10 as amended 2026-10-25): every other response, `default` included, is `application/problem+json` and nothing else, with the shared `Problem` or a schema whose first `allOf` part is the `Problem` (as `CharterRefusal` extends it). A `304` is the one exception: it has no body. | Consumers read one error shape and branch on its `code`. |
+| `error-responses-are-problems` | A read answers 200, a registration 200 or 201 (ADR-0018 D10 as amended 2026-10-25) and a removal 204 (ADR-0020 D9): every other response, `default` included, is `application/problem+json` and nothing else, with the shared `Problem` or a schema whose first `allOf` part is the `Problem` (as `CharterRefusal` extends it). A `304` and a `204` are the exceptions: they have no body. | Consumers read one error shape and branch on its `code`. |
 | `not-modified-has-no-body` | A `304 Not Modified` declares no `content`. | RFC 9110 (section 15.4.5) forbids a 304 a body; the answer to a conditional read (`getOpenApiDocument`'s `If-None-Match`) is its headers. |
+| `no-content-has-no-body` | A `204 No Content` declares no `content`. | RFC 9110 (section 15.3.5) forbids a 204 a body; a removal (`deleteActivation`) answers with its headers only. |
+| `x-reserved-shape` | `x-reserved` is `{contractSet, issue}`: the contract set the operation belongs to and the issue that reserves it, as `#` and a number. | A reserved operation says which set it belongs to and where it is tracked (ADR-0020 D8). |
+| `reserved-operation-declares-501` | An operation that carries `x-reserved` declares a `501` response. | A reserved operation is declared in full and answers `501 Not Implemented` until it is built (ADR-0020 D8). |
+| `built-operation-declares-no-501` | An operation without `x-reserved` declares no `501`. | Building an operation removes its `501` and its `x-reserved` together, so neither outlives the other. |
 | `charter-headers-on-every-response` | Every response of every operation, `default` included, declares the `Charter-Contract-Version`, `Charter-Worktree` and `Charter-Source-Fingerprint` headers. `Charter-Source-Fingerprint` is not required on the wire, but it is still declared. | ADR-0018 D11: the headers are declared on every response and the fingerprint is present on 200 only, so the contract says so on each one and the shared `Problem` response cannot lose them. A fixture gives every response the three headers, written once per fixture under a YAML anchor. |
 | `property-described` | Every schema property has a description. A bare `const` or `enum` refinement holding nothing else (an `if` condition, or an `allOf` part narrowing a property) is exempt: it narrows a property described where it is declared. | The contract is read by people as well as generators. |
 | `enum-snake-case` | Enum values are snake_case. The pack level `built-in` is the one value with a hyphen. | One wire spelling for every code; `built-in` is the pack level as packs declare it. |
