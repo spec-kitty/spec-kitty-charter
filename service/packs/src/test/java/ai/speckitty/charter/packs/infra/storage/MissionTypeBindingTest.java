@@ -363,12 +363,16 @@ class MissionTypeBindingTest {
                 .satisfies(bad -> assertThat(PackPolicy.unreadable(PACK, bad))
                         .extracting(PackFinding::detail)
                         .containsExactly(PACK + "/" + FILE + " " + refusal));
-        // The store refuses by file; the domain (a step id standing twice) by the type's id.
+        // The store refuses by file; the domain (a step id standing twice) by the type's id. The two paths
+        // detect the one defect through their own checks, so their wording differs by design — parity is that
+        // the load raises exactly one violation, on the same file, with a stated reason (not that it is empty).
         assertThat(load(pack).violations())
-                .as("the load refuses the same mission type")
-                .isNotEmpty()
-                .extracting(PackElementViolation::file)
-                .allMatch(file -> file.equals(FILE) || file.equals("research"));
+                .as("the load refuses the same mission type with a single stated violation")
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.file()).isIn(FILE, "research");
+                    assertThat(violation.reason()).isNotBlank();
+                });
     }
 
     @Test
