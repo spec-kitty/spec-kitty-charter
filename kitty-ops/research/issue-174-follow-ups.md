@@ -5,7 +5,7 @@ The pre-PR squad deferred these. They are drafts for the operator to file in
 
 ## 1. The interrupted-commit repair is unreachable for packs listed from `packs/`
 
-Sent to the operator to file (2026-10-31); the PR references the issue number they file.
+Filed by the operator as #281 (2026-10-31).
 
 `PackCommitStore.restoreInterruptedSwap` runs in `CommitStorePackWriteStore.exclusively`, after the
 pack is resolved.
