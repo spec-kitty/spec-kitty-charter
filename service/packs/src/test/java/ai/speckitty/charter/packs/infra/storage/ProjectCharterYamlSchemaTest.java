@@ -104,6 +104,32 @@ class ProjectCharterYamlSchemaTest {
         assertThat(at(validate(MINIMAL + key + ": " + value + "\n"))).containsExactlyInAnyOrderElementsOf(expected);
     }
 
+    /**
+     * Every key of core's flat activation vocabulary, {@code ACTIVATION_YAML_KEYS} ({@code
+     * src/charter/activation/pack_manager.py:205} at core {@code 512567ee}), is declared: the closed root would refuse
+     * an undeclared one as an unknown key.
+     */
+    @ParameterizedTest(name = "{0} is declared")
+    @ValueSource(
+            strings = {
+                "activated_kinds",
+                "activated_directives",
+                "activated_tactics",
+                "activated_styleguides",
+                "activated_toolguides",
+                "activated_paradigms",
+                "activated_procedures",
+                "activated_agent_profiles",
+                "activated_mission_step_contracts",
+                "activated_glossary_packs",
+                "activated_skills",
+                "mission_type_activations",
+                "activated_anti_patterns",
+            })
+    void everyKeyOfCoresActivationVocabularyIsDeclared(String key) {
+        assertThat(validate(MINIMAL + key + ": []\n")).isEmpty();
+    }
+
     @ParameterizedTest(name = "{0} is not a declared key")
     @ValueSource(strings = {"activated_glossary_pack", "activated_skill", "activated_antipatterns", "activation"})
     void aMisspelledKeyIsStillRefused(String key) {
