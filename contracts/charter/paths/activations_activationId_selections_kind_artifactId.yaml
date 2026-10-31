@@ -10,7 +10,11 @@ put:
     mission_type, adds the mission type to missionTypes. With cascade, walks the graph into the named kinds from
     it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is true, which clears
     the exclusions it reaches. One write, one new revision; answers the ActivationChange and the new ETag. Requires
-    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). When selected holds no list
+    for the kind (absent: every artifact of the kind, or for skill the required ones), the write first makes the
+    default explicit: the list holds every artifact the default puts in force, then the verb applies. A path id
+    the offering does not have is 404 artifact_not_found (mission_type_not_found for kind mission_type); an unknown
+    id in the body is 422.
   tags:
   - Activation
   x-reserved:
@@ -65,7 +69,10 @@ delete:
   summary: Unselect an artifact or a mission type.
   description: >-
     Removes the artifact from selected, or the mission type from missionTypes, and changes nothing else. Requires
-    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). When selected holds no list
+    for the kind (absent: every artifact of the kind, or for skill the required ones), the write first makes the
+    default explicit: the list holds every artifact the default puts in force, then the verb applies. A write that
+    changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied.
   tags:
   - Activation
   x-reserved:
@@ -93,6 +100,8 @@ delete:
       $ref: ../responses/ActivationNotFound.yaml
     '412':
       $ref: ../responses/PreconditionFailed.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
     '428':
       $ref: ../responses/PreconditionRequired.yaml
     '500':

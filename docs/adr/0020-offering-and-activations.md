@@ -511,6 +511,20 @@ These need a ruling before 1.0.0, because each is a closed shape. Core's integra
    relations. *(Settled 2026-10-31: the shared `Links`/`Link` components, agreed with #126; the activation answers
    carry `self` until the writes are built.)*
 
+Added 2026-10-31 by the pre-PR review of #125; each needs a ruling before the operation it names is built:
+
+4. **The validator of an `Activation` answer.** Its `ETag` is the revision, but `summary` follows the offering
+   (`governanceFingerprint`), so the bytes can change under one strong `ETag` (RFC 9110). Either `summary` moves to
+   an effective read, or the answer's `ETag` covers both and `If-Match` keeps comparing the revision.
+5. **A stored document the offering made stale.** After a pack upgrade a stored document can name an id the offering
+   no longer has, or deny one that is now required. Is it served as stored and flagged in the skipped report, and
+   does a `PUT` of it still answer `200` (the round trip of D6), or `422`/`409`?
+6. **What a preset sets.** Core's presets replace the keys they list, `activated_kinds` and
+   `mission_type_activations` included. Does `applyActivationPreset` replace or unite each member, and does it set
+   `activatedKinds` and `missionTypes` (which `ActivationChange.applied` would then report)?
+7. **Conditional reads.** `getActivation` and the effective reads send a strong `ETag` but declare no
+   `If-None-Match` or `304`. A success status added after 1.0.0 is breaking (D8).
+
 ## Requests to core
 
 - **Map the document in one place.** Core keeps its file layout (D4). One seam module maps

@@ -22,3 +22,12 @@ writes and new issues go through it) and replaces its placeholder here.
 5. **Bundle size** — the inlined bundle core vendors grew from about 2.5 MB to 5.2 MB with the
    activation set; snakeyaml's default 3 MiB limit and vacuum's 5 s rule timeout were raised
    where the build reads it. A `components`-preserving bundle would cut the duplication.
+6. **Pre-PR squad residuals (2026-10-31).** Recorded, not folded:
+   - ADR-0020 open questions 4 to 7 (validator of an `Activation` answer, stale stored documents,
+     preset semantics, conditional reads): rulings needed before the operations are built.
+   - The corpus checks that an invalid document fails, not why; a per-file expected reason would
+     pin it.
+   - `no-content-has-no-body` lets a `204` sit on any method; a rule that only `DELETE` declares
+     `204` would close it.
+   - The 64 MiB snakeyaml limit is written in two modules; one constant would serve both.
+   - The activation slice and its ArchUnit rule come with the writes (draft issue).

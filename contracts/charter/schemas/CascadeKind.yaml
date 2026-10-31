@@ -1,5 +1,7 @@
 title: CascadeKind
-description: A kind a cascade reaches, or all for every kind.
+description: >-
+  A kind a cascade reaches, or all for every kind. The artifact-kind tokens come from ArtifactKind; the extra token
+  is the contract's own.
 type: string
 enum:
 - directive
@@ -16,4 +18,4 @@ enum:
 - all
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
-  symbol: ArtifactKind.activatable
+  symbol: ArtifactKind.token

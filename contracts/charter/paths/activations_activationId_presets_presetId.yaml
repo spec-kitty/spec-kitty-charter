@@ -7,7 +7,9 @@ put:
   description: >-
     Expands the preset into selected, so writing the document back never applies it twice. Without force it never
     removes a deny entry; with force true it clears the exclusions of the ids the preset lists and reports them
-    as cleared. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+    as cleared. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). Which
+    members a preset sets, and whether it replaces or unites them, is open before the operation is built (ADR-0020,
+    amendment of 2026-10-31, open question 6).
   tags:
   - Activation
   x-reserved:

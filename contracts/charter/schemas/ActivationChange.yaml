@@ -21,9 +21,9 @@ properties:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: The artifacts whose state the write changed.
+    description: The artifacts and mission types whose state the write changed.
     x-derived:
-      rule: The ids the write added to or removed from selected or deactivated.
+      rule: The ids the write added to or removed from selected, deactivated or missionTypes.
       inputs:
       - schemas/ActivationConfig.yaml
   cleared:

@@ -5,7 +5,8 @@ description: >-
   The revision the client holds, as the quoted ETag of an Activation answer, or * for any current revision. On a
   sub-resource write it is required: a write without it is answered 428; with a revision that is not current, 412,
   and the client fetches the activation again before it retries. On PUT and DELETE of the document it is optional:
-  without it the write is last-writer-wins (ADR-0020 D6).
+  without it the write is last-writer-wins (ADR-0020 D6). If-Match: * passes the 428 requirement and only asserts
+  that the activation exists; it gives no lost-update protection, by design.
 schema:
   type: string
   pattern: ^(\*|"sha256:[0-9a-f]{64}")$

@@ -10,9 +10,10 @@ description: >-
   registers unchanged.
 
   Canonical form, which the service stores and answers: ids in their declared spelling; id and token lists deduplicated
-  and sorted, except packs, which keeps merge order; empty deny lists left out; members in the order of this schema.
-  The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of the canonical
-  document.
+  and sorted, except packs, which keeps merge order; an empty selected or deactivated object left out, while selected.<kind>:
+  [] is kept; lists sorted by Unicode code point; members in the order of this schema. An empty deny list is refused
+  (422), never stored. The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization
+  of the canonical document.
 
   Not in the document, by ruling (2026-10-31): per-entry provenance, context activations and applied presets. Not
   stored because the packs derive it: the required floor, locked artifacts, the available artifacts and the skipped

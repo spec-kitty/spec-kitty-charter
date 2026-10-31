@@ -344,7 +344,9 @@ abstract class LintContract : ContractToolTask() {
             throw GradleException("vacuum loaded ${loaded ?: "no"} rules from ${ruleset.get().asFile.name}; " +
                 "it declares ${ruleCount.get()}:\n$output")
         }
-        if (code != 0 || output.lines().any { it.trimStart().startsWith("ERR") }) {
+        // A rule that times out is reported as "ERR Rule timed out, skipping"; both checks refuse it, so a skipped rule
+        // never passes the contract in silence.
+        if (code != 0 || output.lines().any { it.trimStart().startsWith("ERR") || it.contains("timed out") }) {
             throw GradleException("The charter contract breaks its lint rules:\n$output")
         }
         logger.lifecycle("The charter contract passes all ${ruleCount.get()} lint rules.")

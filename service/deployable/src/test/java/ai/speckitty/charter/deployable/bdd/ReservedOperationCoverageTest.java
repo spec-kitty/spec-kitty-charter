@@ -29,6 +29,7 @@ class ReservedOperationCoverageTest {
     private static final String FEATURE = "scenarios/activations.feature";
     private static final Pattern REQUEST =
             Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
+    private static final Pattern RESERVED_TAG = Pattern.compile("\n\\s*@reserved\\s*\n");
     private static final List<String> METHODS = List.of("get", "put", "post", "delete", "patch");
 
     private final ContractConformance contract = new ContractConformance();
@@ -63,6 +64,13 @@ class ReservedOperationCoverageTest {
 
     private Set<String> pinnedOperations() {
         Set<String> pinned = new TreeSet<>();
+        for (String scenario : RESERVED_TAG.splitAsStream(text(FEATURE)).toList()) {
+            if (scenario.contains("Scenario:")) {
+                assertThat(scenario)
+                        .as("every reserved scenario of %s ends in the 501 step", FEATURE)
+                        .contains("Then the operation is refused as not implemented");
+            }
+        }
         for (String line : text(FEATURE).lines().toList()) {
             Matcher request = REQUEST.matcher(line);
             if (!request.find()) {

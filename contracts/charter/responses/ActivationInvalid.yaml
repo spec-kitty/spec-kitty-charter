@@ -1,7 +1,8 @@
 description: >-
-  A well-formed request the service refuses, with 422 activation_invalid: a document or body that fails the schema,
-  or names an unknown pack, kind, artifact or mission type, a duplicate pack, or a cascade that mixes all with kinds.
-  violations lists each refused part by its JSON Pointer (ADR-0020 D9, D10).
+  A request the service refuses, with 422 activation_invalid: a body that is not JSON, a document or body that fails
+  the schema, or one that names an unknown pack, kind, artifact or mission type, a duplicate pack, or a cascade
+  that mixes all with kinds. violations lists each refused part by its JSON Pointer (ADR-0020 D9, D10). A kind outside
+  the path's enum is 422 too, with a violation at the path.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

@@ -44,12 +44,19 @@ has to change is said per item.
 - Added: `Activation`, `ActivationSummary`, `ActivationChange`, `SkippedReport` (`skippedByScope`,
   `skippedDeactivated`, `unreachedBehindDeactivated`, `skippedShared`), `ActivationSkippedReport`,
   `EffectiveArtifactList`, `EffectiveArtifact`, `EffectiveGraph`, `EffectiveActionContext`, the request bodies
-  `SelectionRequest`, `ExclusionRequest` and `PresetApplication`, the shared hypermedia components `Links` and `Link`
+  `SelectionRequest`, `ExclusionRequest` and `PresetApplication`, their parts (`PackPin`, `SelectedArtifacts`,
+  `DeactivatedArtifacts`, `ArtifactIdList`, `DeniedArtifactIdList`, `ArtifactId`, `ActivationId`, `LanguageToken`,
+  `ActivatableKind`, `SelectableKind`, `CascadeKind`, `CascadeScope`, `ArtifactReference`, `SkippedDeactivated`,
+  `SharedSkip`, `EffectiveGraphNode`, `EffectiveGraphEdge`, `EffectiveArtifactState`, `EffectiveArtifactReason`,
+  `ArtifactPolicy`), the vendored `PageInfo` (now used) and the new `RequiringPack` and `RefusalViolation`, the
+  shared hypermedia components `Links` and `Link`
   (ADR-0019 D3, shared with #126), and the conditional headers: `ETag` (the quoted revision, `sha256:` of the
   RFC 8785 serialization of the canonical document), an opaque `ETag` on the effective reads that changes with the
-  revision or the offering, `If-Match`, `If-None-Match: *`, and `Location` on a `201`. The writes declare `412`
-  (a stale or failed precondition), `415` (a body that is not JSON) and, for a sub-resource write without
-  `If-Match`, `428`, each a `Problem` with no code.
+  revision or the offering, `If-Match`, `If-None-Match: *`, and `Location` on a `201`. The conditional writes
+  declare `412` (a stale or failed precondition), every write with a body `415` (a body that is not JSON), and a
+  sub-resource write without `If-Match` `428`, each a `Problem` with no code. Four questions stay open until the
+  operations are built (ADR-0020, open questions 4 to 7): the validator of an `Activation` answer, a stored document
+  an offering change made stale, what a preset sets, and conditional reads.
 - Added: six refusal codes to `CharterRefusalCode`, each `raised: false`: `activation_not_found`,
   `artifact_not_found`, `preset_not_found` (404), `artifact_required`, `artifact_locked` (409) and
   `activation_invalid` (422). A closed enum gaining values is breaking for a generated client. Core's seam:

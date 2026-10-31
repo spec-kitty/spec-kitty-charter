@@ -9,7 +9,10 @@ put:
     Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, removes
     the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
     another active one still references (skippedShared). An artifact a pack requires or locks is 409, naming every
-    requiring pack. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+    requiring pack. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). A
+    cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
+    kind keeps its default, and the deny entry on the named artifact excludes it. A path id the offering does not
+    have is 404 artifact_not_found.
   tags:
   - Activation
   x-reserved:
@@ -66,7 +69,8 @@ delete:
   summary: Re-activate an artifact.
   description: >-
     Removes the artifact from deactivated and changes nothing else. Requires If-Match (ADR-0020 D6). Reserved: it
-    answers 501 until it is built (ADR-0020 D8).
+    answers 501 until it is built (ADR-0020 D8). A write that changes nothing (the id is not in the list) answers
+    200 with the same revision and an empty applied.
   tags:
   - Activation
   x-reserved:
@@ -94,6 +98,8 @@ delete:
       $ref: ../responses/ActivationNotFound.yaml
     '412':
       $ref: ../responses/PreconditionFailed.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
     '428':
       $ref: ../responses/PreconditionRequired.yaml
     '500':

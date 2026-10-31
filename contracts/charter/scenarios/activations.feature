@@ -99,10 +99,11 @@ Feature: The activation set is declared and reserved
 
   @reserved
   Scenario: A reserved operation answers 501 before it reads its request
-    The 501 comes before the body is bound or validated, so a body the built operation will refuse
-    with 422 activation_invalid is answered 501 while the operation is reserved.
+    The 501 comes before the body is bound or validated: this body cannot even be bound (a string
+    where the schema has an integer, a number where it has a list), which without the interceptor
+    is a 400 before the operation runs. While the operation is reserved it is answered 501.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 2, "selected": {"template": ["T"]}, "unknown": true}
+      {"schemaVersion": "two", "packs": 5}
       """
     Then the operation is refused as not implemented

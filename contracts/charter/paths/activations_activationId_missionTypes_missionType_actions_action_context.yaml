@@ -9,7 +9,8 @@ get:
     The effective context of the action: what applies under the activation, filtered, with exclusions and the skipped
     report (ADR-0020 D7). Never the offering's walk, which answers what the offering says. An unknown mission type
     or action is 404 mission_type_not_found or action_not_found. Reserved: it answers 501 until it is built (ADR-0020
-    D8).
+    D8). A mission type that the activation does not put in force answers the context with no artifacts, its reason
+    in the skipped report.
   tags:
   - Activation
   x-reserved:

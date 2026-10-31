@@ -47,7 +47,9 @@ put:
     the activation, 200 when it replaced one; a PUT of a fetched config answers 200 with the same ETag. If-None-Match:
     * creates only; If-Match makes the write conditional, and without it the write is last-writer-wins. A document
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
-    is 422 with violations. Reserved: it answers 501 until it is built (ADR-0020 D8).
+    is 422 with violations. Reserved: it answers 501 until it is built (ADR-0020 D8). Both If-Match and If-None-Match
+    on one request is 400. A stored document an offering change made stale (an id the offering no longer has, a
+    deny entry on an id now required) is open before the operation is built (amendment, open question 5).
   tags:
   - Activation
   x-reserved:
