@@ -109,7 +109,7 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
   value title, an open `Link`).
 - Added: `listPackArtifacts` (`GET /packs/{packId}/artifacts`, tag `Artifacts`) and `getPackArtifact`
   (`GET /packs/{packId}/artifacts/{kind}/{artifactId}`), the generic reads of the served kinds (tactic, directive,
-  styleguide, paradigm, toolguide), beside the per-kind routes, which stay for now (FR-003, FR-004). The list answers
+  styleguide, paradigm, toolguide), which replace the per-kind reads (removed below; FR-003, FR-004). The list answers
   `ArtifactPage`: `items` (`ArtifactSummary`: `kind`, `id`, `title`, `_links.self`), `page` (the shared `PageInfo`)
   and `_links` (`self`, the request with its query; `first`, without `pageCursor`; `next` only when
   `page.hasNextPage`). It is ordered by the served-kind order, then by id in code-point order; `kind` filters on one
@@ -154,6 +154,73 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
   "<json-pointer>" is ...`, `the answer has no link "<relation>"`, `the problem has no code`, `I follow the link
   "<relation>"`, `following "<relation>" links from the answer, the "<member>" ids are:` and `the file "<path>" of
   the pack "<name>" is deleted`.
+- Removed (FR-006), with no alias: every per-kind route. The reads `listPackTactics`, `getPackTactic`,
+  `listPackDirectives`, `getPackDirective`, `listPackStyleguides`, `getPackStyleguide`, `listPackParadigms`,
+  `getPackParadigm`, `listPackToolguides` and `getPackToolguide` are gone; a pack's artifacts are read through
+  `listPackArtifacts` and `getPackArtifact` only. Each removed path, `/packs/{packId}/{tactics,directives,styleguides,
+  paradigms,toolguides}` and the same with an id, answers the 404 of a path no operation defines: the shared
+  `Problem` without a code, whatever the method and the body. The tag `Tactics` is gone with its only operations.
+- Moved (FR-005): the eight writes, each keeping its operationId, tag, request body, `If-Match`, headers and
+  refusals (404, 409 `registration_conflict`, 412, 422 `validation_failed`, 500):
+  - `registerPackDirective`: `POST /packs/{packId}/directives` → `POST /packs/{packId}/artifacts/directive`;
+  - `putPackDirective`: `PUT /packs/{packId}/directives/{directiveId}` → `PUT
+    /packs/{packId}/artifacts/directive/{artifactId}`;
+  - `registerPackStyleguide`: `POST /packs/{packId}/styleguides` → `POST /packs/{packId}/artifacts/styleguide`;
+  - `putPackStyleguide`: `PUT /packs/{packId}/styleguides/{styleguideId}` → `PUT
+    /packs/{packId}/artifacts/styleguide/{artifactId}`;
+  - `registerPackParadigm`: `POST /packs/{packId}/paradigms` → `POST /packs/{packId}/artifacts/paradigm`;
+  - `putPackParadigm`: `PUT /packs/{packId}/paradigms/{paradigmId}` → `PUT
+    /packs/{packId}/artifacts/paradigm/{artifactId}`;
+  - `registerPackToolguide`: `POST /packs/{packId}/toolguides` → `POST /packs/{packId}/artifacts/toolguide`;
+  - `putPackToolguide`: `PUT /packs/{packId}/toolguides/{toolguideId}` → `PUT
+    /packs/{packId}/artifacts/toolguide/{artifactId}`.
+
+  The item parameter of every PUT is `artifactId` (`parameters/ArtifactId.yaml`). The literal write paths sit beside
+  the templated `/packs/{packId}/artifacts/{kind}/{artifactId}`: a `GET` on a write collection (for example
+  `/packs/{packId}/artifacts/directive`) and a `PUT` on the item of a kind without a write (a tactic) are a 405
+  `Problem` without a code, not `kind_not_found`.
+- Changed (ruling 2): the 200 and 201 of every write answer `Artifact`, the envelope the generic item answers, with
+  the same `_links` (`self` and `collection`), instead of the kind's bare schema; the kind's member is unchanged. The
+  path of a 201's `Location` is the answer's `_links.self.href`. Registration is not yet advertised by a link: no
+  answer carries an `edit` link (R-24).
+- Removed: the parameter `TacticId` and the response `TacticNotFound`, which only the tactic reads referenced (the
+  generic item's `ArtifactNotFound` keeps the `tactic-not-found` example). `DirectiveNotFound`, `StyleguideNotFound`,
+  `ParadigmNotFound` and `ToolguideNotFound` stay: the moved writes answer them for an unknown pack.
+- Changed (descriptions only): `Charter-Source-Fingerprint` names the verified reads that remain (`getServiceInfo`,
+  `listPackArtifacts`, `getPackArtifact`); the `stale-input` example of `OfferingUnreadable` reads "The inputs changed
+  while the artifacts were read; read them again.", the detail of the generic list; `getPackArtifact` says a writable
+  kind is replaced on its own path and a tactic's `PUT` is a 405.
+- Scenarios (NFR-004). The JUnit count of `CharterContractSuite` (outline examples expanded) is 141 before and 162
+  after. No scenario is removed or renamed; each one that called a per-kind route calls its successor on the
+  artifact tree under the same name, so it is its own successor:
+  - `directives.feature`, `styleguides.feature`, `paradigms.feature`, `toolguides.feature` (every scenario): writes
+    go to `POST /packs/qa/artifacts/<kind>` and `PUT /packs/qa/artifacts/<kind>/<id>`, reads to `GET
+    /packs/qa/artifacts/<kind>/<id>`, and fields are read in the envelope's member. "A duplicate id is a conflict on
+    POST while a distinct id is created" of each kind now also pins the exact envelope of the 201, its `ETag`, and
+    that the path of `Location` is `_links.self.href`.
+  - `tactics.feature` (every scenario): the list reads `GET /packs/qa/artifacts?kind=tactic` and the item `GET
+    /packs/qa/artifacts/tactic/<id>`; the stale list's detail is the generic list's ("…while the artifacts were
+    read…"). Its pack `qa` gains a `pack.yaml`. New: "One tactic of a pack whose directory is missing is refused with
+    pack_unreadable (#176)" (FR-015).
+  - `relationships.feature` (both scenarios), `service.feature` ("A refusal carries the contract version and the
+    worktree, not the fingerprint": `GET /packs/no-such-pack/artifacts`), `journeys/journey-01` ("The starter
+    pack's directives can be read"), `journey-02` (both runnable scenarios), `journey-03` ("The tactics a recipe can
+    draw on are readable"; its pack gains a `pack.yaml`), `journey-04`, `journey-05` and `journey-06` (every runnable
+    scenario): the same paths.
+  - `errors.feature`: "The refusal codes the contract marks raised are exactly those an operation raises" says the
+    generic item raises the kinds' not-found codes; its table is unchanged.
+  - New `removed-routes.feature`: the outlines "A removed per-kind read answers 404 without a code" (10 paths) and "A
+    removed per-kind write answers 404 without a code, whatever its body" (8 method and path pairs, each with a body
+    the successor accepts, and the kind's list still empty after it), and the scenarios "A GET on a write path is a
+    405 Problem without a code" and "A PUT on the item of a kind that has no write is a 405 Problem without a code,
+    not kind_not_found".
+  - Steps (scenario README): `the response body is a list with an element whose field "<field>" is "<text>"` is gone
+    (its uses read `the field at "/items/0/id" is …`); `the response body has <n> relationship(s)` and `a
+    relationship of the response body points to "<urn>"` become `the artifact in the response body has <n>
+    relationship(s)` and `a relationship of the artifact in the response body points to "<urn>"`; `the field
+    "<field>" of the response body is the lines:` becomes `the field at "<json-pointer>" is the lines:`. New: `the
+    field at "<json-pointer>" starts with "<text>"`, `the path of the Location header is the href of the link
+    "<relation>"` and `When I send <method> "<path>" as JSON with the body:`.
 
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
