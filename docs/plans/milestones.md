@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -132,7 +132,7 @@ operation at a time.
 |---|---|---|
 | #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
 | #70 Launcher and service lifecycle | 3 | The service runs wherever a routed operation needs it. Needed by the first switch, not before (ADR-0021 D5) |
-| #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact ([open question 5](/plans/open-questions/)) |
+| #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact: native for four targets plus the jar, on the `service-v*` line ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)). The launcher criterion moved to #70 and core's checksum check to spec-kitty#6909 |
 | #72 Conformance as a blocking gate | 3, 4 | A divergence on the supported corpus fails core's CI. It gates each operation's switch |
 | #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed per routed operation: a down or slow service is a named error, and stale input is refused |
 | #74 Java authoritative reads | 3, 4 | Every read is routed to the service |
@@ -162,7 +162,7 @@ issue:
 | #207, #208 to #214 | Epic and steps: read, fetch and try the contract | The service serves its own bundle at `GET /openapi.yaml` (token required, linked from the info operation with `rel=service-desc`), the docsite renders it with Redoc, and IntelliJ HTTP Client examples run in CI. No Swagger UI |
 | #217, #218 to #225 | Epic and steps: a generated Java client and client guidance | An openapi-generator `okhttp-gson` client (`ai.speckitty.charter.client`), released as a sources-only zip with the contract, plus a how-to for generating any client. It stays 0.x until `_links` lands (#126) |
 | #226, #227 to #232, #234 | Epic and steps: hosted configuration and the container image | Validated hosted properties, secrets only from env and mounted files, no Spring Cloud Config, and no setting that changes without a redeploy. A platform-neutral container. Tenancy is undecided. #233 moved to 4.x cutover |
-| #241 | ADR: service versioning and release tags | The service gets its own tags and SemVer, separate from `contract-charter-v*`; the container image (#234) builds on it |
+| #241 | ADR: service versioning and release tags | Decided in [ADR-0046](/adr/0046-service-release-line-and-native-packaging/): `service-v*` tags and the service's own SemVer, separate from `contract-charter-v*`; the container image (#234) builds on it |
 
 ### Backlog
 
