@@ -31,7 +31,7 @@ public record DrgNode(
         Objects.requireNonNull(urn, "urn");
         Objects.requireNonNull(label, "label");
         Objects.requireNonNull(provenance, "provenance");
-        tags = List.copyOf(tags);
+        tags = List.copyOf(Objects.requireNonNull(tags, "tags"));
         Objects.requireNonNull(bodyPath, "bodyPath");
     }
 

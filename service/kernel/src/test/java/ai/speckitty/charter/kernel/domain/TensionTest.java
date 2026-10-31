@@ -37,4 +37,17 @@ class TensionTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("directive:a");
     }
+
+    @Test
+    void aMissingFieldIsRefusedWithANullPointerExceptionNamingIt() {
+        assertThatThrownBy(() -> new Tension(null, B, Optional.empty(), Optional.empty()))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("from");
+        assertThatThrownBy(() -> new Tension(A, B, null, Optional.empty()))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("when");
+        assertThatThrownBy(() -> new Tension(A, B, Optional.empty(), null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("rationale");
+    }
 }
