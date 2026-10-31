@@ -2,7 +2,7 @@
 title: Offering and activation
 description: "The proposed /offering resource tree, the activation document the service stores, the two ways core builds one, the effective reads and how they map onto the service."
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -67,8 +67,9 @@ knows nothing of projects.
         └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
 ```
 
-Every resource under `activations` is declared in an early 0.x minor and answers `501` until it
-is built (ADR-0020 D8). The R-numbers are the read inventory's
+Every resource under `activations` is declared in the contract (#125) and answers `501` until it
+is built (ADR-0020 D8): each operation carries `x-reserved`, and one `@contract @reserved` scenario per operation
+pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
 ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
 
 ## Two answers for one action
@@ -90,28 +91,29 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
   "revision": "sha256:9c1e…",
   "config": {
     "schemaVersion": 1,
-    "packs": null,
+    "packs": [{ "packId": "spec-kitty-internal", "version": "1.2.0" }, { "packId": "event-driven" }],
     "missionTypes": ["software-dev"],
     "selected": {
       "directive": ["EVD_001", "EVD_002", "EVD_003"],
       "tactic": ["domain-event-capture"]
     },
     "deactivated": { "directive": ["EVD_004"] },
-    "languages": ["java"],
-    "appliedPresets": [{ "pack": "event-driven", "preset": "event-driven", "at": "2026-10-20T09:12:00Z" }]
+    "languages": ["java"]
   },
+  "governanceFingerprint": "sha256:51aa…",
   "summary": { "active": 41, "inactive": 212, "excluded": 1, "required": 1, "locked": 0, "skipped": 2 },
   "_links": {
-    "self": { "href": "/api/v1/activations/4b1f6c1e-6d2a-4bb5-9a1f-1c0f0c8d2e11" },
-    "offering": { "href": "/api/v1/offering" }
+    "self": { "href": "/api/v1/activations/4b1f6c1e-6d2a-4bb5-9a1f-1c0f0c8d2e11" }
   }
 }
 ```
 
-The values are illustrative and the field list is an outline; the schema issue fixes it.
+The values are illustrative; the schemas are in the contract (`Activation`, and `ActivationConfig`, canonical as
+JSON Schema 2020-12 in `contracts/offering/schemas/`). Per-entry provenance, context activations and applied presets
+are not part of the document (ADR-0020, amendment of 2026-10-31). `summary` is computed for that fingerprint, so an answer is byte-stable for one revision and one fingerprint.
 `config` is the `ActivationConfig`: the whole document a client authors. Core keeps its own file
 layout and maps it to and from `config` in one seam module. Everything else is the service's: `revision` (also the `ETag`), the derived `summary`
-and the links. Write links (`edit`, `select`, `exclude`, …) appear only once the writes are built.
+and the links. Write links (`edit`, `select`, `exclude`, …) appear only once the writes are built; until then `_links` holds `self`.
 
 **Canonical form.** The service stores ids as the offering's artifact ids, sorted and without
 duplicates, and omits empty deny lists. `revision` is the `sha256:` digest of the RFC 8785
@@ -190,7 +192,8 @@ built in the REST adapter, as for packs.
 
 ## Proposed scenarios
 
-These are proposed, not bound. They describe what a client does, not which endpoint it calls, so
+These are proposed, not bound: they stay proposed until the operations are built. What is bound today is one 501 pin
+per reserved operation (`contracts/charter/scenarios/activations.feature`). They describe what a client does, not which endpoint it calls, so
 they hold whatever the paths become; the step definitions map each step onto the contract.
 
 ```gherkin
