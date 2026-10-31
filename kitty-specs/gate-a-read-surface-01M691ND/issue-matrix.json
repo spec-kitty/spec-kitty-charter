@@ -108,6 +108,18 @@
       "verdict": "in-mission",
       "wp": "WP04"
     },
+    "#194": {
+      "evidence_ref": "Cited for context only; no work owed by this mission (see spec Dependencies / research)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#208": {
       "evidence_ref": "Cited for context only; no work owed by this mission (see spec Dependencies / research)",
       "fr": null,
