@@ -74,11 +74,7 @@ class ArtifactReadServiceTest {
             EMPTY,
             Pack.builder().id(EMPTY).descriptor(descriptor(EMPTY)).build(),
             BARE,
-            Pack.builder()
-                    .id(BARE)
-                    .descriptor(descriptor(BARE))
-                    .tactic(tactic("rehearse", "Rehearse"))
-                    .build());
+            Pack.builder().id(BARE).descriptor(descriptor(BARE)).build());
 
     private final AtomicInteger digests = new AtomicInteger();
     private final ArtifactReadService service = serviceDigesting(() -> {
