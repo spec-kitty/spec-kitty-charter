@@ -62,6 +62,9 @@
       "last_event_id": "01M68BTDWX52FD1TW4S9XTCF7W",
       "last_transition_at": "2026-10-31T06:54:42.077412+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "16 behavioural reds recorded then green; gate UNEXPECTEDLY_GREEN for exactly the 2 files, entries removed, gate green; 9/9 half-by-half mutants killed; :packs:check + openPacksRoundTrip green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 9807,
