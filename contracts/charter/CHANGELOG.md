@@ -103,13 +103,14 @@ No schema, operation, parameter, response or header changes (mission mission-typ
 - Scenarios: `relationships.feature` is new ("A relationship may be authored from a mission type") and holds "A
   relationship from a mission type of the pack is registered (ADR-0044, NFR-001)" and "A relationship from a mission
   type the pack does not hold is still a conflict". No step is new.
-### DRG tension and graph-node fields (issues #235 and #236)
+### CRG tension and graph-node fields (issues #235 and #236)
 
 - Changed (description only): the `Relation` description no longer says that a graph document's
   `in_tension_with` edge is read as `impacts` with strength -1. The service holds it as a tension
   beside the relationships and writes it back as written (ADR-0028, ADR-0044); it never answers
   `in_tension_with` as a relationship, as before. No enum value, path or wire shape changes. The
-  `Removed` entry below records the reading as it was then.
+  `Removed` entry and the reserved-`impacts` item under `Added` below record the reading as it was
+  then. The graph-node fields of #236 have no contract surface.
 
 ### Pack-level files round trip (issue #195)
 

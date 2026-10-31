@@ -41,13 +41,13 @@ Supersedes in part:
 - [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) decision 1:
   one relationship per pair, for `tension`.
 
+As far as this repository is concerned, it also supersedes the relation naming of core ADR
+`3.x/2026-07-26-3`. Core is not changed.
+
 Decision 5 is answered for the domain and the pack files by
 [ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)
 (2026-10-31, proposed): a tension is a domain value held beside the relationships, written
 `in_tension_with` in today's pack files, and the contract is unchanged.
-
-As far as this repository is concerned, it also supersedes the relation naming of core ADR
-`3.x/2026-07-26-3`. Core is not changed.
 
 ## Context
 

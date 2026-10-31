@@ -116,3 +116,30 @@ numbering ("no ADR 0044"), so 0045 would keep the docs gate red until PR-B lands
 The charter's rule picks the number "against `main` and the open PRs". PR-B is not an open PR, and
 0044 is free on `main`. The record is therefore **ADR-0044**. The collision with the PR-B branch is
 known and flagged in the PR hand-off: whoever lands second renumbers.
+
+## Pre-PR adversarial squad
+
+The squad reviewed the clean branch `issue-235-236-drg-round-trip-clean`. Cast (each profile-loaded,
+read-only):
+
+- `architect-alphonso`: HTTP, contract and layering;
+- `debugger-debbie`: edge cases and divergence;
+- `curator-carla`: records and glossary.
+
+All three verdicts: **SHIP-WITH-CHANGES**. Nothing blocks.
+
+| # | Sev | Lens | Finding | Disposition |
+| --- | --- | --- | --- | --- |
+| P1 | MEDIUM | architect, debugger | `PackPolicy.judge` reads `registered.graph.yaml` with `graph()`, so a hand-edited tension there loads and validates clean while a registration into the pack is refused (`pack_unreadable`) | **Recorded; operator decision.** Routing `judge` through `registeredGraph` would stop the whole pack from loading after a hand-edit, a wider observable change than this bugfix. ADR-0044 D5 documents the divergence. A test pins it (`PackPolicyTest.aHandEditedTensionInTheRegisteredShardLoadsCleanWhileARegistrationRewriteReportsIt`). The options go to the operator in the PR: refuse in validate, or carry tensions through a registration rewrite. |
+| P2 | MEDIUM | architect | Decided-language on a Proposed ADR | **Changed.** `logical-model.md` now says "proposed by ADR-0044". ADR-0044's Status names the mission agent as proposer and the operator as decider; acceptance is asked in the PR. |
+| P3 | MEDIUM | curator | `Relation.yaml` said "a tension … is not a relation", but the glossary names tension a CRG relation | **Changed.** It now reads "not a value of this enum (not a relation type of the service)". |
+| P4 | MEDIUM | curator | The contract CHANGELOG pointed only at `Removed`; `Added` still states the −1 reading in present tense | **Changed.** The entry now points at both, as records of the reading as it was then. The heading says "CRG" (terminology.yaml), and the entry says #236 has no contract surface. |
+| P5 | LOW | curator | The ADR-0028 note sat between "Supersedes" and the "also supersedes" paragraph | **Changed.** It moved after that paragraph. |
+| P6 | LOW | curator | `DrgNode` javadoc said "Doctrine Reference Graph", a retired term | **Changed** to "Charter Reference Graph (CRG)". |
+| P7 | LOW | architect | `Tension` javadoc said the spelling "is storage's"; ADR-0044 D2 says "the pack policy and the writers" | **Changed.** Aligned with D2. |
+| P8 | LOW | architect | A tension self-loop reports "a relationship cannot join X to itself" | **Kept.** Finding texts are stable on purpose (the load fixtures and tests pin them). A follow-up may reword it. |
+| P9 | LOW | debugger | `YamlFields.strings` skips non-string entries silently; only the schema guards it | **Deferred, follow-up drafted.** `YamlFields` is shared by every kind's reader, so hardening it to throw is out of this bugfix's scope. |
+| P10 | LOW | debugger | Two `GraphDocumentReaderTest` round trips use `DoctrineGraph.equals` (pair identity) | **No change.** Both already assert each relationship's type, `when` and rationale explicitly, and the tension and node fields by value. |
+| P11 | LOW | debugger | A node declared twice is dropped without a finding | **Deferred, follow-up drafted.** Behaviour unchanged; ADR-0044 D7 states it. |
+| P12 | LOW | curator | `tasks.md`, the WP03 prompt and `lanes.json` still say ADR-0045 | **Noted in the PR hand-off.** Editing them would make the recorded analysis stale and rewrite runtime-owned state. |
+| P13 | LOW | curator | "−1" and "-1" spellings are mixed | **No change.** Cosmetic. |

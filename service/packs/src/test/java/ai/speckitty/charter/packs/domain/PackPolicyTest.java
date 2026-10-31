@@ -182,6 +182,26 @@ class PackPolicyTest {
     }
 
     @Test
+    void aHandEditedTensionInTheRegisteredShardLoadsCleanWhileARegistrationRewriteReportsIt() {
+        // ADR-0044 decision 5: load and validation use the ordinary graph rules on registered.graph.yaml, so the pack
+        // stays loadable; only a registration rewrite, which would drop the tension, reports it. Deliberate until the
+        // operator chooses between refusing it in validation and carrying tensions through a rewrite.
+        RawGraph registered = shard(
+                "registered.graph.yaml", List.of(), List.of(edge("directive:a", "directive:b", "in_tension_with")));
+        PackContents c = withShard(
+                new FileRead.Read<>("registered.graph.yaml", registered),
+                EMPTY_FRAGMENT,
+                descriptor("qa", Optional.of(PackLevel.ORG)));
+
+        assertThat(PackPolicy.judge(c).findings()).isEmpty();
+        assertThat(PackPolicy.registeredGraph("qa", registered).findings())
+                .extracting(PackFinding::detail)
+                .containsExactly(
+                        "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with"
+                                + " is authored in a pack's graph shards");
+    }
+
+    @Test
     void loadRefusesAnUnreadableDescriptorWithItsOwnTextAndCode() {
         PackContents c = withShard(
                 new FileRead.Read<>("a.graph.yaml", shard("a.graph.yaml", List.of(), List.of())),

@@ -324,7 +324,7 @@ negative `impacts` edge (provisional, [ADR-0009](/adr/0009-contract-1-0-reservat
 Target: [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) supersedes that
 naming in part; the relation is `tension` and `impacts` is a per-value list on one artifact
 (see [Values and value impacts](#values-and-value-impacts)). The domain representation of the
-relationship is decided by [ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
+relationship is proposed by [ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
 a tension is a domain value held beside the relationships, outside their pair identity, written
 `in_tension_with` in today's pack files, and not on the contract. Candidate, undecided: how the list
 appears in the pack schemas and the contract, and whether the relationship reaches the contract.
