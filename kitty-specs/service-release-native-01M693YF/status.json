@@ -149,6 +149,9 @@
       "last_event_id": "01M697A24R22SGA5CA1FXXE39J",
       "last_transition_at": "2026-10-31T14:55:05.880351+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Gate (11 unit tests, red-first), assets, rehearsal (local pass), release workflow, procedure doc; implementation in 7adad8d6 plus the earlier wip commits cd74871e/2ad48f7b (squashed at closeout); verifyAll green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 29059,
