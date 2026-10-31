@@ -1,8 +1,8 @@
 ---
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
-doc_status: draft
-updated: 2026-10-30T00:00:00Z
+doc_status: active
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -26,11 +26,11 @@ audience:
 
 ## Status
 
-**Proposed** — 2026-10-30. Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
+**Accepted** — 2026-10-31 (proposed 2026-10-30). Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
 2026-10-30 on [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (part of epic
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), held as decision moments under
 `kitty-specs/mission-type-consolidation-01M65MCK/decisions/`. The second pull request of #194 (PR-B) implements it;
-the record stays Proposed pending the operator's acceptance, which that pull request asks for. The operator's rulings
+the operator accepted the record on 2026-10-31, on that pull request ([#275](https://github.com/spec-kitty/spec-kitty-charter/pull/275)). The operator's rulings
 Q1 (a step's description is for human display; the prompt is for the agent) and Q2 (a step's expected inputs and
 outputs close it as precondition, step, postcondition) followed the post-plan review squad's findings. The operator
 refined Q1 on 2026-10-30: the step description in the mission-type file is the description and is length-bound, and a
@@ -309,8 +309,8 @@ no supported pack holds the old layout.
 (ADR-0037 decision 5): a step holds its prompt and guidelines as documents. One value is kept as written: an output's
 `template_path`, `templates/<path>` relative to the mission-type file, is a reference to a template the pack holds
 (the `Template` with the id `<type>/<path>`), checked to name one on read and on write, and not resolved to that
-entity in the domain; resolving it, and deciding which of a template's id and its mission type owns its place, is a
-recorded follow-up. The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
+entity in the domain; resolving it is [#277](https://github.com/spec-kitty/spec-kitty-charter/issues/277), and
+deciding which of a template's id and its mission type owns its place is a recorded #186 follow-up. The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
 rules cover it.
 
 ### 8. Migration by the service's own writer, then a re-pin

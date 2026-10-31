@@ -105,7 +105,7 @@ holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 The `mission-type` schema and the structure schemas of a step's two Markdown companions were
 designed here, not imported: core has no mission-type artifact kind (DIV-501) and reads a mission
 type from files the service retires (DIV-502). All three are closed
-([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), proposed).
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), accepted 2026-10-31).
 [Descriptors](/architecture/descriptors/) explains the
 fields.
 

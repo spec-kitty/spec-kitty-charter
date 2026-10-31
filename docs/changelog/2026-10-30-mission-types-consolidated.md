@@ -25,7 +25,7 @@ audience:
 expected input and output artifacts (pre- and postconditions) and its references; its prompt and
 guidelines are Markdown companions under `steps/`. Fields:
 [Descriptors](/architecture/descriptors/); decision:
-[ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) (proposed).
+[ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) (accepted 2026-10-31).
 
 **Retired files.** `mission_types/<t>.yaml`, `mission.yaml`, `mission-runtime.yaml`,
 `governance-profile.yaml`, `expected-artifacts.yaml`, action indexes, `mission-steps/**` and
