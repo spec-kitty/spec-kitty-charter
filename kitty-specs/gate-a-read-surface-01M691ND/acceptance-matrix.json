@@ -158,10 +158,10 @@
       "criterion_id": "FR-016",
       "description": "Verify FR-016 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "service.feature 'The info answer links to itself and to the contract document, and says so in a Link header' (service-desc /api/v1/openapi.yaml, Link header once, followed answer has no Link); root.feature root body service-desc + 'has no Link header'; offering.feature and service.feature 500 assert no Link; bundle: Link header declared only on GET /info 200; InfoController only sender; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:39.672907+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
