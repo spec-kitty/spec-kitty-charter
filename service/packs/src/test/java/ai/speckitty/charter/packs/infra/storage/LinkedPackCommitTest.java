@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.domain.Guide;
@@ -26,8 +27,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * A commit to a pack whose directory under {@code <config-root>/packs} is a symbolic link (#174, ADR-0038 as amended
- * 2026-10-31): the commit stages beside the link's real target and swaps there, so the link stays a link and its
- * target holds the new content. Read and written through the production {@link StorageRootLocations}.
+ * 2026-10-31): for a target inside the configuration root, the commit stages beside the link's real target and swaps
+ * there, so the link stays a link and its target holds the new content; a pack linked from outside the configuration
+ * root is read, but read-only through the service. Read and written through the production
+ * {@link StorageRootLocations}.
  */
 class LinkedPackCommitTest {
 
@@ -45,19 +48,48 @@ class LinkedPackCommitTest {
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
 
     @BeforeEach
-    void aPackLinkedFromOutsideTheDomain() throws IOException {
+    void aPackLinkedFromInsideTheConfigRoot() throws IOException {
         packs = Files.createDirectories(host.resolve("config/packs"));
-        Path checkout = Files.createDirectories(host.resolve("checkout"));
+        // A hidden directory of the pack domain is no pack itself, so a link into it overlaps none.
+        linkTo(Files.createDirectories(packs.resolve(".vendor")));
+    }
+
+    /** Links {@code packs/pack-a} to a copy of the pack, under another name, in {@code checkout}. */
+    private void linkTo(Path checkout) throws IOException {
         // The target has another name than the link, so a write that confuses them shows.
         target = Files.move(PackFixtures.copyOf("pack-a", checkout), checkout.resolve("real-pack-a"))
                 .toRealPath();
         link = packs.resolve("pack-a");
+        Files.deleteIfExists(link);
         try {
             Files.createSymbolicLink(link, target);
         } catch (UnsupportedOperationException | IOException noLinks) {
             abort("the filesystem cannot create symbolic links");
         }
         locations = new StorageRootLocations(packs);
+    }
+
+    @Test
+    void aPackLinkedFromOutsideTheConfigRootIsReadButACommitToItIsRefusedAndChangesNothing() throws IOException {
+        linkTo(Files.createDirectories(host.resolve("checkout")));
+        Map<String, String> before = snapshot(target);
+        PackCommitStore store = new PackCommitStore(locations, strategy);
+
+        assertThat(new DomainRepositoryService(locations, strategy).load(PACK).tactics())
+                .as("read and served through the link")
+                .isNotEmpty();
+        assertThatThrownBy(() -> store.commit(PACK, null, toolguide("ripgrep"), SHARD))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessageContaining("pack-a")
+                .hasMessageContaining("read-only through the service");
+
+        assertThat(Files.isSymbolicLink(link)).isTrue();
+        assertThat(snapshot(target)).as("the target is unchanged").isEqualTo(before);
+        assertThat(residue(target.getParent()))
+                .as("nothing was staged beside the target")
+                .isEmpty();
     }
 
     @Test
