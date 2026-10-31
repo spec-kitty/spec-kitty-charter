@@ -302,8 +302,9 @@ contract.
   is stated for its future generated client (#13). No core code changes.
 - Within a level, packs are ordered by pack id. ADR-0020's "a later pack wins" holds once merge
   exists. Until then the order is stated, and the description says that merge is not yet applied.
-- A list with no `kind` orders summaries by the served-kind order (tactic, directive, styleguide,
-  paradigm, toolguide), then by the order the pack's storage lists them.
+- A list orders summaries by the served-kind order (tactic, directive, styleguide, paradigm,
+  toolguide), then by artifact id in code-point order, so a position cursor stays stable (plan
+  research R-06).
 - The page cursor is opaque. It stays valid across a change of unrelated artifacts, but makes no
   promise of a consistent snapshot across pages. Each page is verified against the fingerprint on its
   own.

@@ -1,0 +1,56 @@
+# Bulk-edit classification for the route move of mission gate-a-read-surface-01M691ND (DIRECTIVE_035).
+# The per-kind HTTP route families move into the generic artifacts tree (spec "Bulk-edit target").
+# The pack storage layout and pack-file keys that share the plural kind words are NOT renamed.
+target:
+  term: "/packs/{packId}/tactics"
+  replacement: "/packs/{packId}/artifacts"
+  operation: rename
+
+categories:
+  code_symbols:         { action: manual_review }          # operationIds and generated *Api interfaces change by design; domain types (Tactic, Directive, ...) keep their names
+  import_paths:         { action: manual_review }          # imports of generated TacticsApi etc. follow the contract tags; nothing else moves
+  filesystem_paths:     { action: do_not_change }          # pack storage directories (tactics/, directives/, ...) and pack file names are not routes
+  serialized_keys:      { action: manual_review }          # contract paths/operationIds change on purpose; pack YAML keys and JSON field names of the embedded schemas do not
+  cli_commands:         { action: do_not_change }          # no CLI surface involved
+  user_facing_strings:  { action: rename_if_user_visible } # docs and contract descriptions name the new routes
+  tests_fixtures:       { action: rename }                 # contract scenarios and controller/wiring tests move to the new routes
+  logs_telemetry:       { action: do_not_change }          # no log keys or metrics change
+
+exceptions:
+  - path: "packs/**"
+    action: do_not_change
+    reason: "Vendored and project pack content: storage paths, not HTTP routes"
+  - path: "contracts/packs/**"
+    action: do_not_change
+    reason: "Pack-file schemas: their directory and key names are not HTTP routes"
+  - path: "kitty-specs/**"
+    action: do_not_change
+    reason: "Other missions' records are history; only this mission's own directory is written"
+  - path: "kitty-ops/**"
+    action: do_not_change
+    reason: "Op records are history"
+  - path: "docs/changelog/**"
+    action: do_not_change
+    reason: "Dated changelog entries describe what landed then; a new entry is added instead"
+  - path: "docs/adr/**"
+    action: manual_review
+    reason: "ADRs are not rewritten; only ADR-0019's implementation note and an ADR-0026 D1.2 amendment note change"
+  - path: "contracts/charter/CHANGELOG.md"
+    action: manual_review
+    reason: "Earlier entries stay as written; the move is recorded in the 0.1.0-SNAPSHOT ### Breaking subsection"
+  - path: "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/**"
+    action: do_not_change
+    reason: "Storage adapter reads pack directories by kind plural; unrelated to routes"
+
+moves:
+  - from:
+      - contracts/charter/paths/packs_packId_directives.yaml
+      - contracts/charter/paths/packs_packId_styleguides.yaml
+      - contracts/charter/paths/packs_packId_paradigms.yaml
+      - contracts/charter/paths/packs_packId_toolguides.yaml
+      - contracts/charter/paths/packs_packId_directives_directiveId.yaml
+      - contracts/charter/paths/packs_packId_styleguides_styleguideId.yaml
+      - contracts/charter/paths/packs_packId_paradigms_paradigmId.yaml
+      - contracts/charter/paths/packs_packId_toolguides_toolguideId.yaml
+    to: contracts/charter/paths
+    reason: "The write operations move to packs_packId_artifacts_<kind>[_<kind>Id].yaml; the per-kind GET operations are removed (ruling 2)"
