@@ -136,7 +136,7 @@ class ContainerStartupCheckTest {
                         "charter.config-root=charter",
                         GuardWiring.INSECURE_PROPERTY + "=true",
                         "charter.project-config-dir=" + root)
-                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ContainerStartupCheck.class));
+                .run(context -> assertThat(context).hasNotFailed().hasSingleBean(ContainerStartupCheck.class));
     }
 
     // A config tree may set only its own keys, and the secrets directory is absolute (ADR-0041 decision 3, research
@@ -259,6 +259,6 @@ class ContainerStartupCheckTest {
     @Test
     void withoutTheContainerProfileAForeignFileInAConfigTreeDoesNotFailTheStart() throws IOException {
         withConfigTree(runner, root.resolve("secrets"), "server.address")
-                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ContainerStartupCheck.class));
+                .run(context -> assertThat(context).hasNotFailed().hasSingleBean(ContainerStartupCheck.class));
     }
 }
