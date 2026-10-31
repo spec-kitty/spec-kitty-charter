@@ -5,6 +5,8 @@ The pre-PR squad deferred these. They are drafts for the operator to file in
 
 ## 1. The interrupted-commit repair is unreachable for packs listed from `packs/`
 
+Sent to the operator to file (2026-10-31); the PR references the issue number they file.
+
 `PackCommitStore.restoreInterruptedSwap` runs in `CommitStorePackWriteStore.exclusively`, after the
 pack is resolved.
 
@@ -44,3 +46,12 @@ cannot create links. On Linux CI they always run.
 
 Wanted: a property that makes links mandatory in CI, so a CI file system without links fails the
 build instead of skipping these tests.
+
+## 5. The per-file repository saves do not check whether a pack is read-only
+
+`DomainRepositoryService.save(...)`, `saveArtifact` and the asset-file writes write through a
+pack's directory directly. Only `PackCommitStore` checks `Locations.whyReadOnly`. No production
+path calls those saves today: registration commits through `PackCommitStore`, and the whole-pack
+gate drives them in tests.
+
+Wanted: check `whyReadOnly` there as well, or narrow those saves to the gate.

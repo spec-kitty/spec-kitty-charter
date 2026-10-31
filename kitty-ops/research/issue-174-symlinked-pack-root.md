@@ -1,7 +1,8 @@
 # Research: a pack root configured through a symlink loads as an empty pack (#174)
 
 **Outcome (2026-10-31).** The operator ruled scope B: the walk fix, plus linked packs served by
-`StorageRootLocations` and committed through their real target. Recorded as the 2026-10-31
+`StorageRootLocations`. Then ruling (ii): a pack linked from outside the configuration root is
+read-only through the service, and one linked from inside it is committed through its real target. Recorded as the 2026-10-31
 amendment of ADR-0038. The pre-PR squad's folds and deferrals are in the PR description. Draft
 follow-up issues are in `kitty-ops/research/issue-174-follow-ups.md`.
 
