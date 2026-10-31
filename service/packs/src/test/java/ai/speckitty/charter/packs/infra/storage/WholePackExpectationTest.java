@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.Evaluation;
 import ai.speckitty.charter.packs.infra.storage.WholePackExpectation.FileResult;
@@ -875,11 +874,7 @@ class WholePackExpectationTest {
             Path pack = temp.resolve("built-in");
             Files.createDirectories(pack.resolve("tactics"));
             Files.writeString(pack.resolve("tactics/a.tactic.yaml"), "x");
-            try {
-                Files.createSymbolicLink(pack.resolve("link.tactic.yaml"), pack.resolve("tactics/a.tactic.yaml"));
-            } catch (UnsupportedOperationException | IOException noLinks) {
-                abort("the filesystem cannot create symbolic links");
-            }
+            SymbolicLinks.create(pack.resolve("link.tactic.yaml"), pack.resolve("tactics/a.tactic.yaml"));
 
             assertThat(WholePackCensus.of(pack))
                     .containsEntry("link.tactic.yaml", WholePackCensus.SYMLINK)
