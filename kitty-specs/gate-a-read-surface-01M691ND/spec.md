@@ -150,7 +150,7 @@ with each answer being the envelope with its links.
 ### User Story 4 - Read the offering (Priority: P2)
 
 A client reads `GET /offering`. It gets the configured packs in force, in merge order, each with its
-identity and configured level, its name and version when its `pack.yaml` gives them, and a link to
+identity, configured level, name and version, and a link to
 its artifacts.
 
 **Why this priority**: the offering is ADR-0020 D1's third top-level resource. The smallest Gate-A
@@ -224,7 +224,7 @@ contract.
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
 | FR-001 | API root | As a client, I want `GET /` to answer the API root with links to `info`, `offering`, `artifacts` (templated) and `service-desc`, plus `self`, so that I can start from one known place (ADR-0019 D2, D4). | High | Open | [build] | no — the path answers 404 today |
-| FR-002 | Offering pack list | As a client, I want `GET /offering` to answer the configured packs in force, ordered built-in, org, project and then by pack id, each with id, configured level, the name and version its `pack.yaml` gives (absent without one) and an `artifacts` link, from the canonical pack model (ADR-0020 D1). | High | Open | [build] | no — the path answers 404 today |
+| FR-002 | Offering pack list | As a client, I want `GET /offering` to answer the configured packs in force, ordered built-in, org, project and then by pack id, each with id, configured level, name, version and an `artifacts` link, from the canonical pack model (ADR-0020 D1). A configured pack whose `pack.yaml` is missing or invalid is not a readable canonical pack: `/offering`, the artifact list and the artifact item answer it with 500 `pack_unreadable`; 404 `pack_not_found` is only for an id that names no configured pack (operator ruling of 2026-10-31). | High | Open | [build] | no — the path answers 404 today |
 | FR-003 | Generic artifact list | As a client, I want `GET /packs/{packId}/artifacts`, filtered by an optional `kind` and paged with the shared page information and `first`/`next` links, to list the pack's artifacts of the served kinds as summaries that each link to their item (ADR-0019 D2). | High | Open | [build] | no — the path answers 404 today |
 | FR-004 | Generic artifact item | As a client, I want `GET /packs/{packId}/artifacts/{kind}/{artifactId}` to answer one artifact in a closed common envelope (kind, id, pack id, `_links`, and exactly one kind-named member holding that kind's representation) (ruling 1). | High | Open | [build] | no — positive control: each served kind is read on the same fixture |
 | FR-005 | Writes move into the tree | As a pack author, I want the eight registration and replacement operations at `POST /packs/{packId}/artifacts/{kind}` and `PUT /packs/{packId}/artifacts/{kind}/{artifactId}`, one typed operation per kind, keeping their bodies and refusals and answering the envelope (ruling 2, ADR-0026 D1.2 amended). | High | Open | [build] | no — the old-path scenarios are moved, and a no-op fails them |
@@ -271,7 +271,7 @@ contract.
 
 - **API root**: the entry resource. It carries only links.
 - **Offering**: the packs in force, in merge order. Each entry has the pack's id and configured level,
-  its name and version when its `pack.yaml` gives them, and an `artifacts` link. In this minor the order is declared, not merged; merging comes with #10 and
+  its name and version (required, from its `pack.yaml`; operator ruling of 2026-10-31), and an `artifacts` link. In this minor the order is declared, not merged; merging comes with #10 and
   #11.
 - **Artifact (envelope)**: one artifact of a served kind. It carries its kind token, id, pack id,
   `_links`, and exactly one kind-named member with that kind's representation (tactic, directive,
