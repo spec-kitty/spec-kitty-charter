@@ -1,7 +1,7 @@
 {
-  "event_count": 13,
-  "last_event_id": "01M68SKVY16Y8AHFD02220MB0J",
-  "materialized_at": "2026-10-31T10:55:47.137826+00:00",
+  "event_count": 14,
+  "last_event_id": "01M68SM1PM62MFT3GKER5XBFNE",
+  "materialized_at": "2026-10-31T10:55:53.044250+00:00",
   "mission_number": "",
   "mission_slug": "pack-document-round-trip-01M65MBW",
   "mission_type": "software-dev",
@@ -50,22 +50,22 @@
       }
     },
     "WP02": {
-      "actor": "claude",
+      "actor": "human",
       "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 1,
+      "force_count": 2,
       "implementer_of_record": "claude",
       "lane": "approved",
-      "last_event_id": "01M65P8SJJ21MAQ2HKPHPRCPVM",
-      "last_transition_at": "2026-10-30T05:59:35.250471+00:00",
+      "last_event_id": "01M68SM1PM62MFT3GKER5XBFNE",
+      "last_transition_at": "2026-10-31T10:55:53.044250+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Docs committed (3e483ec); check_docs all, markdownlint-cli2 0.18.1 and cspell 9.2.0 clean.",
         "Review by the curator-carla subagent; findings folded."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 15069,
       "shell_pid_created_at": "1793339826.04",
       "subtasks": {
