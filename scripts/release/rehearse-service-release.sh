@@ -28,7 +28,7 @@ git checkout --quiet --detach "$(git -C "$root" rev-parse HEAD)"
 git remote remove origin
 git tag -l | xargs -r git tag -d > /dev/null
 
-commit() { git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --message "rehearsal: $1"; }
+commit() { git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --allow-empty --message "rehearsal: $1"; }
 set_version() { sed -i "s/^version=.*/version=$1/" gradle.properties; }
 set_contract() { sed -i "0,/^  version: .*$/s//  version: $1/" contracts/charter/openapi.yaml; }
 
