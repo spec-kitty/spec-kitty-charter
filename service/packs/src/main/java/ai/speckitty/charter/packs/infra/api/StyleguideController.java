@@ -67,7 +67,7 @@ public class StyleguideController implements StyleguidesApi {
         var verified = reads.styleguidesOf(new PackIdentifier(packId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(StyleguideController::toDto).toList());
+                .body(verified.value().stream().map(ArtifactDtos::styleguide).toList());
     }
 
     @Override
@@ -76,7 +76,7 @@ public class StyleguideController implements StyleguidesApi {
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
+                .body(ArtifactDtos.styleguide(verified.value().value()));
     }
 
     @Override
@@ -104,7 +104,7 @@ public class StyleguideController implements StyleguidesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toDto(styleguide));
+                .body(ArtifactDtos.styleguide(styleguide));
     }
 
     @Override
@@ -129,7 +129,7 @@ public class StyleguideController implements StyleguidesApi {
                 registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(styleguide));
+                .body(ArtifactDtos.styleguide(styleguide));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -205,55 +205,5 @@ public class StyleguideController implements StyleguidesApi {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED, "structuralLintConfig is not valid JSON: " + malformed.getMessage());
         }
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Styleguide toDto(ai.speckitty.charter.packs.domain.Styleguide styleguide) {
-        return new Styleguide(
-                styleguide.id().value(),
-                styleguide.schemaVersion().orElseThrow(),
-                styleguide.title(),
-                styleguide.scope().token(),
-                styleguide.principles(),
-                styleguide.patterns().stream().map(StyleguideController::toDto).toList(),
-                styleguide.antiPatterns().stream()
-                        .map(StyleguideController::toDto)
-                        .toList(),
-                toToolingDto(styleguide.tooling()),
-                styleguide.qualityTest().orElse(null),
-                styleguide
-                        .structuralLintConfig()
-                        .map(StyleguideController::toConfigDto)
-                        .orElse(null),
-                styleguide.appliesToLanguages(),
-                styleguide.references(),
-                styleguide.relationships().stream()
-                        .map(RelationshipWire::toWire)
-                        .toList());
-    }
-
-    private static StyleguidePattern toDto(ai.speckitty.charter.packs.domain.StyleguidePattern pattern) {
-        return new StyleguidePattern(
-                pattern.name(),
-                pattern.description(),
-                pattern.badExample().orElse(null),
-                pattern.goodExample().orElse(null));
-    }
-
-    private static StyleguideAntiPattern toDto(ai.speckitty.charter.packs.domain.StyleguideAntiPattern antiPattern) {
-        return new StyleguideAntiPattern(
-                antiPattern.name(), antiPattern.description(), antiPattern.badExample(), antiPattern.goodExample());
-    }
-
-    private static List<StyleguideToolEntry> toToolingDto(Optional<Map<String, String>> tooling) {
-        return tooling.map(map -> map.entrySet().stream()
-                        .map(entry -> new StyleguideToolEntry(entry.getKey(), entry.getValue()))
-                        .toList())
-                .orElse(List.of());
-    }
-
-    private static String toConfigDto(ConfigValue config) {
-        return JSON.writeValueAsString(config.toParsed());
     }
 }

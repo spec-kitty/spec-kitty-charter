@@ -104,7 +104,9 @@ public class ToolguideController implements ToolguidesApi {
         var verified = reads.toolguidesOf(new PackIdentifier(packId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(this::toDto).toList());
+                .body(verified.value().stream()
+                        .map(toolguide -> ArtifactDtos.toolguide(toolguide, guides))
+                        .toList());
     }
 
     @Override
@@ -113,7 +115,7 @@ public class ToolguideController implements ToolguidesApi {
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
+                .body(ArtifactDtos.toolguide(verified.value().value(), guides));
     }
 
     @Override
@@ -126,7 +128,7 @@ public class ToolguideController implements ToolguidesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toDto(result.toolguide()));
+                .body(ArtifactDtos.toolguide(result.toolguide(), guides));
     }
 
     @Override
@@ -136,7 +138,7 @@ public class ToolguideController implements ToolguidesApi {
                 register(new PackIdentifier(packId), toolguideId, body, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(result.toolguide()));
+                .body(ArtifactDtos.toolguide(result.toolguide(), guides));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -270,21 +272,5 @@ public class ToolguideController implements ToolguidesApi {
                     + MAX_LIST_ITEMS + " are accepted.");
         }
         return items;
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private Toolguide toDto(ai.speckitty.charter.packs.domain.Toolguide toolguide) {
-        return new Toolguide(
-                toolguide.id().value(),
-                toolguide.schemaVersion().orElseThrow(),
-                toolguide.tool(),
-                toolguide.title(),
-                guides.write(toolguide.title(), toolguide.guide()),
-                toolguide.summary(),
-                toolguide.commands(),
-                toolguide.appliesToLanguages(),
-                toolguide.lastUpdated().orElse(null),
-                toolguide.references());
     }
 }

@@ -54,7 +54,7 @@ public class DirectiveController implements DirectivesApi {
         var verified = reads.directivesOf(new PackIdentifier(packId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(DirectiveController::toDto).toList());
+                .body(verified.value().stream().map(ArtifactDtos::directive).toList());
     }
 
     @Override
@@ -63,7 +63,7 @@ public class DirectiveController implements DirectivesApi {
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
+                .body(ArtifactDtos.directive(verified.value().value()));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class DirectiveController implements DirectivesApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toDto(directive));
+                .body(ArtifactDtos.directive(directive));
     }
 
     @Override
@@ -116,7 +116,7 @@ public class DirectiveController implements DirectivesApi {
                 registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(directive));
+                .body(ArtifactDtos.directive(directive));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -166,31 +166,5 @@ public class DirectiveController implements DirectivesApi {
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
         }
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Directive toDto(ai.speckitty.charter.packs.domain.Directive directive) {
-        return new Directive(
-                directive.id().value(),
-                directive.schemaVersion().orElseThrow(),
-                directive.title(),
-                directive.intent(),
-                directive.enforcement().token(),
-                directive.scope().orElse(null),
-                directive.procedures(),
-                directive.integrityRules(),
-                directive.validationCriteria(),
-                directive.explicitAllowances(),
-                directive.references().stream().map(DirectiveController::toDto).toList(),
-                directive.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static DirectiveReference toDto(ai.speckitty.charter.packs.domain.DirectiveReference reference) {
-        return new DirectiveReference(
-                reference.type(),
-                reference.id(),
-                reference.when().orElse(null),
-                reference.reason().orElse(null));
     }
 }

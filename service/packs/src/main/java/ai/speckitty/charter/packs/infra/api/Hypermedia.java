@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import ai.speckitty.charter.api.model.Link;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -70,6 +71,21 @@ final class Hypermedia {
     }
 
     /**
+     * A {@code GET} link to the path made of {@code segments} with a query: each parameter in the map's order, its
+     * name and value percent-encoded as query components. An empty map writes no {@code ?}.
+     *
+     * @param query    the query parameters, in the order they are written; a {@link java.util.LinkedHashMap} keeps it
+     * @param segments the path segments, unencoded
+     * @return the link
+     */
+    LinkValue link(Map<String, String> query, String... segments) {
+        String parameters = query.entrySet().stream()
+                .map(parameter -> encodeQuery(parameter.getKey()) + "=" + encodeQuery(parameter.getValue()))
+                .collect(Collectors.joining("&"));
+        return new LinkValue(parameters.isEmpty() ? href(segments) : href(segments) + "?" + parameters, null, null);
+    }
+
+    /**
      * A templated {@code GET} link: the path made of {@code segments} followed by an RFC 6570 expression, for
      * example the query expression of {@code kind}. The expression is written as given.
      *
@@ -97,6 +113,29 @@ final class Hypermedia {
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> byWireKey.put(entry.getKey().wireKey(), entry.getValue()));
         return byWireKey;
+    }
+
+    /**
+     * The {@code _links} of an answer as the contract's {@code Link} DTOs, keyed and ordered as {@link #links} keys
+     * them; a member a link does not have stays {@code null}, and the JSON mapper leaves it out.
+     *
+     * @param links the links by relation
+     * @return the wire links by wire key
+     */
+    static Map<String, Link> wire(Map<Relation, LinkValue> links) {
+        Map<String, Link> wire = new LinkedHashMap<>();
+        links(links)
+                .forEach((key, value) -> wire.put(
+                        key, new Link(value.href()).templated(value.templated()).method(value.method())));
+        return wire;
+    }
+
+    /**
+     * A query component percent-encoded so that it stays one name or one value: {@code &}, {@code =} and {@code +}
+     * are encoded as well as what a URI never holds.
+     */
+    private static String encodeQuery(String component) {
+        return UriUtils.encode(component, StandardCharsets.UTF_8);
     }
 
     private String href(String... segments) {

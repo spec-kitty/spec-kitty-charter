@@ -1,11 +1,13 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -42,14 +44,17 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -112,6 +117,7 @@ class ArtifactControllerTest {
                     .build())
             .build();
 
+    private final ArtifactController controller;
     private final MockMvc mvc;
 
     ArtifactControllerTest() {
@@ -126,8 +132,8 @@ class ArtifactControllerTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions));
-        mvc = MockMvcBuilders.standaloneSetup(
-                        new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat()))
+        controller = new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
+        mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
                 .build();
     }
@@ -277,7 +283,8 @@ class ArtifactControllerTest {
                 "pageCursor=***",
                 "pageCursor=dGFjdGlj",
                 "kind=tactic&pageCursor=ZGlyZWN0aXZlL0dVQVJE",
-                "pageSize=abc"
+                "pageSize=abc",
+                "pageCursor="
             })
     void aBadQueryIsA400ProblemWithoutACode(String query) throws Exception {
         mvc.perform(get(BASE + "?" + query))
@@ -286,6 +293,18 @@ class ArtifactControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.code").doesNotExist());
+    }
+
+    @Test
+    void aParameterOutOfItsDeclaredBoundsIsA400ProblemWithoutACode() {
+        // The generated interface is @Validated: in the service a method validation proxy refuses a pageSize of 0
+        // or 201 before the controller runs (pinned by artifacts.feature); this slice has no validator, so the
+        // handler is asked directly.
+        ResponseEntity<Object> answer = controller.outOfBounds(new ConstraintViolationException(Set.of()));
+
+        assertThat(answer.getStatusCode().value()).isEqualTo(400);
+        assertThat(answer.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(answer.getBody()).isEqualTo(new Problem("Bad Request", 400));
     }
 
     @Test

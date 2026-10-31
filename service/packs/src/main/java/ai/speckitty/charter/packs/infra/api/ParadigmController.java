@@ -53,7 +53,7 @@ public class ParadigmController implements ParadigmsApi {
         var verified = reads.paradigmsOf(new PackIdentifier(packId));
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(ParadigmController::toDto).toList());
+                .body(verified.value().stream().map(ArtifactDtos::paradigm).toList());
     }
 
     @Override
@@ -62,7 +62,7 @@ public class ParadigmController implements ParadigmsApi {
         return ResponseEntity.ok()
                 .headers(CharterHeaders.fingerprint(verified.fingerprint()))
                 .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
+                .body(ArtifactDtos.paradigm(verified.value().value()));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class ParadigmController implements ParadigmsApi {
                         .buildAndExpand(id)
                         .toUri())
                 .eTag(result.revision().token())
-                .body(toDto(paradigm));
+                .body(ArtifactDtos.paradigm(paradigm));
     }
 
     @Override
@@ -105,7 +105,7 @@ public class ParadigmController implements ParadigmsApi {
                 registrations.registerParadigm(pack, paradigm, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(paradigm));
+                .body(ArtifactDtos.paradigm(paradigm));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -140,22 +140,5 @@ public class ParadigmController implements ParadigmsApi {
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
         }
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Paradigm toDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
-        return new Paradigm(
-                paradigm.id().value(),
-                paradigm.schemaVersion().orElseThrow(),
-                paradigm.name(),
-                paradigm.summary(),
-                paradigm.directiveRefs(),
-                paradigm.references().stream().map(ParadigmController::toDto).toList(),
-                paradigm.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static ParadigmReference toDto(ai.speckitty.charter.packs.domain.ParadigmReference reference) {
-        return new ParadigmReference(reference.type(), reference.id());
     }
 }
