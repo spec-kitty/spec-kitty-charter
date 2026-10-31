@@ -18,9 +18,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The reader decides nothing. A document that is not YAML is {@link FileRead.Unreadable} with the parse failure; a
  * document that breaks its bundled schema ({@code graph-shard} or {@code org-fragment}) is {@link FileRead.Unreadable}
- * with the validator's facts; any other document is read as written, with nothing bound or defaulted. Every code and
- * every text is {@code PackPolicy}'s, including the legacy {@code in_tension_with} mapping, which stays the word on
- * the page here. It never throws on content.
+ * with the validator's facts; any other document is read as written, every declared node field included, with
+ * nothing bound or defaulted. Every code and every text is {@code PackPolicy}'s; {@code in_tension_with}, today's
+ * spelling of a tension (ADR-0036 Decision 4), stays the word on the page here and {@code PackPolicy} binds it. It
+ * never throws on content.
  */
 public final class GraphDocumentReader {
 
@@ -65,10 +66,7 @@ public final class GraphDocumentReader {
         List<RawNode> nodes = new ArrayList<>();
         for (Object item : items(root, "nodes")) {
             Map<?, ?> node = (Map<?, ?>) item;
-            nodes.add(
-                    shape == Shape.SHARD
-                            ? new RawNode(string(node, "urn"), string(node, "kind"), optionalString(node, "label"))
-                            : new RawNode(string(node, "id"), string(node, "kind"), optionalString(node, "title")));
+            nodes.add(shape == Shape.SHARD ? shardNode(node) : fragmentNode(node));
         }
         List<RawEdge> edges = new ArrayList<>();
         for (Object item : items(root, "edges")) {
@@ -82,6 +80,28 @@ public final class GraphDocumentReader {
                     optionalString(edge, "reason")));
         }
         return new RawGraph(file, shape == Shape.SHARD ? RawGraph.Shape.SHARD : RawGraph.Shape.FRAGMENT, nodes, edges);
+    }
+
+    /** A shard node: {@code urn, kind, label?, provenance?, tags?}; tags keep their written order (ADR-0036 E15). */
+    private static RawNode shardNode(Map<?, ?> node) {
+        return new RawNode(
+                string(node, "urn"),
+                string(node, "kind"),
+                optionalString(node, "label"),
+                optionalString(node, "provenance"),
+                YamlFields.strings(node, "tags"),
+                Optional.empty());
+    }
+
+    /** A fragment node: {@code id, kind, title?, body_path?}. */
+    private static RawNode fragmentNode(Map<?, ?> node) {
+        return new RawNode(
+                string(node, "id"),
+                string(node, "kind"),
+                optionalString(node, "title"),
+                Optional.empty(),
+                List.of(),
+                optionalString(node, "body_path"));
     }
 
     /** The list under {@code key}; the schema has checked that it is a list of mappings when it is there. */

@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Relation;
+import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
+import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
+import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.PackPolicy.GraphBuild;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -27,13 +32,14 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The vocabulary of the bundled schemas and the domain's vocabulary are the same words (T024): a kind added in
  * {@code file-kinds.yaml} and the schemas has to be added to {@code NodeKind} too, or one of these fails. The one
- * place the two differ on purpose is the legacy relation {@code in_tension_with}, which the schemas accept and the
- * domain reads as {@code impacts} with strength -1 (core ADR 2026-07-26-3, plan "Relation").
+ * place the two differ on purpose is {@code in_tension_with}, today's spelling of the tension relationship (ADR-0036
+ * Decision 4): the schemas accept it as a relation, and the domain binds it to a {@code Tension} held beside the
+ * relationships, not to a relation type (ADR-0028, ADR-0044).
  */
 class VocabularyEqualityTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String LEGACY_TENSION = "in_tension_with";
+    private static final String TENSION_SPELLING = "in_tension_with";
     private static final Pattern ALTERNATION = Pattern.compile("^\\^\\(([a-z_|]+)\\):");
 
     private static JsonNode schema(String kind) throws IOException {
@@ -217,7 +223,7 @@ class VocabularyEqualityTest {
     // ---- relations ---------------------------------------------------------------------------------
 
     @Test
-    void theSchemasRelationsAreTheDomainsRelationsPlusExactlyTheLegacyInTensionWith() throws IOException {
+    void theSchemasRelationsAreTheDomainsRelationsPlusExactlyTheTensionSpelling() throws IOException {
         Set<String> domain = new TreeSet<>(
                 Arrays.stream(Relation.values()).map(Relation::token).toList());
         Set<String> shard = new TreeSet<>(
@@ -225,13 +231,30 @@ class VocabularyEqualityTest {
         Set<String> fragment = new TreeSet<>(
                 texts(schema("org-fragment").get("$defs").get("Relation").get("enum")));
 
-        assertThat(domain).as("the domain has no " + LEGACY_TENSION).doesNotContain(LEGACY_TENSION);
+        assertThat(domain).as("the domain has no " + TENSION_SPELLING).doesNotContain(TENSION_SPELLING);
         Set<String> accepted = new TreeSet<>(domain);
-        accepted.add(LEGACY_TENSION);
+        accepted.add(TENSION_SPELLING);
         assertThat(shard)
-                .as("the shard schema accepts the domain's relations and exactly the legacy one")
+                .as("the shard schema accepts the domain's relations and exactly the tension spelling")
                 .isEqualTo(accepted);
         assertThat(fragment).isEqualTo(shard);
+        // The extra word is bound, not merely tolerated: the domain reads it as a tension.
+        GraphBuild build = PackPolicy.graph(
+                "qa",
+                new RawGraph(
+                        "x.graph.yaml",
+                        RawGraph.Shape.SHARD,
+                        List.of(),
+                        List.of(new RawEdge(
+                                "tactic:a",
+                                "tactic:b",
+                                TENSION_SPELLING,
+                                Optional.empty(),
+                                Optional.empty(),
+                                Optional.empty()))));
+        assertThat(build.findings()).isEmpty();
+        assertThat(build.graph().tensions()).hasSize(1);
+        assertThat(build.graph().relationships()).isEmpty();
     }
 
     // ---- the wire codes the load path projects onto ---------------------------------------------------

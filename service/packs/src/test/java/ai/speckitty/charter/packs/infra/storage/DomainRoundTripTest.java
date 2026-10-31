@@ -3,6 +3,12 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.DoctrineGraph;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -18,7 +24,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -208,6 +216,72 @@ class DomainRoundTripTest {
         assertThat(shard).contains("generated_by: drg-migration-v1").contains("relation: requires");
         assertThat(GraphDocumentReader.read(shard, GraphDocumentReader.Shape.SHARD, "tactic.graph.yaml"))
                 .isInstanceOf(FileRead.Read.class);
+    }
+
+    @Test
+    void aShardWithNodeFieldsAndATensionBesideARequiresRoundTripsWithItsMeaning() throws IOException {
+        // #235 and #236 on the production path: provenance and a tension's condition appear in no pinned shard.
+        String source = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes:
+                - urn: directive:a
+                  kind: directive
+                  label: A
+                  provenance: imported
+                  tags:
+                  - b
+                  - a
+                - urn: directive:b
+                  kind: directive
+                edges:
+                - source: directive:a
+                  target: directive:b
+                  relation: in_tension_with
+                  when: a change grows beyond its goal
+                  reason: both stay valid
+                - source: directive:b
+                  target: directive:a
+                  relation: requires
+                  reason: b builds on a
+                """;
+        put("directive.graph.yaml", "graph-shard", source);
+
+        String written = written(roundTrip(new YamlSerializationStrategy()).get("directive.graph.yaml"));
+
+        MeaningComparator comparator = MeaningComparator.adr0036();
+        assertThat(comparator.compareTexts("graph-shard", source, written)).isEmpty();
+        // Positive controls on the same fixture: the comparator sees a swapped tag order and a lost tension.
+        assertThat(comparator.compareTexts("graph-shard", source, written.replace("  - b\n  - a\n", "  - a\n  - b\n")))
+                .isPresent();
+        assertThat(comparator.compareTexts(
+                        "graph-shard", source, written.replace("relation: in_tension_with", "relation: impacts")))
+                .isPresent();
+    }
+
+    @Test
+    void theReadBackComparesRelationshipsFieldByFieldWhereRelationshipEqualityIsOnlyThePair() {
+        Urn a = new Urn(NodeKind.DIRECTIVE, "a");
+        Urn b = new Urn(NodeKind.DIRECTIVE, "b");
+        DoctrineGraph withReason = new DoctrineGraph(
+                List.of(), List.of(new Relationship(b, a, RelationType.REQUIRES, Optional.empty(), Optional.of("r"))));
+        DoctrineGraph withoutReason =
+                new DoctrineGraph(List.of(), List.of(Relationship.of(b, a, RelationType.REQUIRES)));
+        DoctrineGraph otherType = new DoctrineGraph(
+                List.of(), List.of(new Relationship(b, a, RelationType.SUGGESTS, Optional.empty(), Optional.of("r"))));
+
+        // Relationship equality is the unordered pair, so graph equality cannot see these losses; the read-back does.
+        assertThat(withReason).isEqualTo(withoutReason);
+        assertThat(DomainRoundTrip.sameGraph(withReason, withoutReason)).isFalse();
+        assertThat(DomainRoundTrip.sameGraph(withReason, otherType)).isFalse();
+        assertThat(DomainRoundTrip.sameGraph(withReason, withReason)).isTrue();
+        assertThat(DomainRoundTrip.sameGraph(
+                        withReason,
+                        new DoctrineGraph(
+                                withReason.nodes(),
+                                withReason.relationships(),
+                                List.of(new Tension(a, b, Optional.empty(), Optional.empty())))))
+                .isFalse();
     }
 
     @Test
