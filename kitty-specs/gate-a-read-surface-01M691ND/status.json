@@ -1,7 +1,7 @@
 {
-  "event_count": 21,
-  "last_event_id": "01M6959G8ATQ73A8QPSTTRW2XP",
-  "materialized_at": "2026-10-31T14:19:50.410865+00:00",
+  "event_count": 24,
+  "last_event_id": "01M695GGRNQPX0YNS3DSFN5XM8",
+  "materialized_at": "2026-10-31T14:23:40.298074+00:00",
   "mission_number": "",
   "mission_slug": "gate-a-read-surface-01M691ND",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
-    "in_review": 1,
+    "in_progress": 1,
+    "in_review": 0,
     "planned": 5
   },
   "work_packages": {
@@ -55,28 +55,35 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "reviewer-renata",
+      "agent": null,
+      "agent_profile": "java-jenny",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M6959G8ATQ73A8QPSTTRW2XP",
-      "last_transition_at": "2026-10-31T14:19:50.410865+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M695GGRNQPX0YNS3DSFN5XM8",
+      "last_transition_at": "2026-10-31T14:23:40.298074+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Link/Links schemas in the #125-agreed shape (+_index); structural _links closure exemption (LinksMap) with 4 fixtures, red-first; ContractConformance validates schema-valued additionalProperties (true/{}/null still refused) and matches path+method preferring the concrete template, red-first; Relation enum + Hypermedia builder (package-private LinkValue record) with HypermediaTest. verifyAll green: contracts 181, deployable 373, packs 2224 (3 skipped), kernel 841, missions 59, profiles 9; 0 failures. No new suppressions."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "reviewer",
-      "shell_pid": 28587,
-      "shell_pid_created_at": "1793456385.58",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP02-hypermedia-components-and-harness/review-cycle-1.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP02-hypermedia-components-and-harness/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done",
-        "T010": "done"
+        "T006": "planned",
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned",
+        "T010": "planned"
       }
     },
     "WP03": {
