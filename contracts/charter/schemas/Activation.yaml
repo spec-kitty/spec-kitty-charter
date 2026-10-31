@@ -1,0 +1,49 @@
+title: Activation
+description: >-
+  One stored activation document and what follows from it (ADR-0020 D4). The ETag of an Activation answer is the
+  quoted revision; summary is derived for governanceFingerprint, so an answer is byte-stable for one revision and
+  one fingerprint.
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- config
+- governanceFingerprint
+- summary
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  config:
+    $ref: ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The digest of the offering this answer was computed from, as ServiceInfo.sourceFingerprint; with revision,
+      it ties the answer to both the document and the packs.
+    x-derived:
+      rule: The source fingerprint of the packs the answer was computed from.
+      inputs:
+      - schemas/ServiceInfo.yaml#/properties/sourceFingerprint
+  summary:
+    $ref: ActivationSummary.yaml
+  _links:
+    $ref: Links.yaml

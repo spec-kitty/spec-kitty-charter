@@ -1,0 +1,64 @@
+title: ActivationSummary
+description: Counts of the activation's artifacts for the offering it was computed from; derived, never stored.
+type: object
+additionalProperties: false
+required:
+- active
+- inactive
+- excluded
+- required
+- locked
+- skipped
+properties:
+  active:
+    type: integer
+    minimum: 0
+    description: Artifacts in force.
+    x-derived:
+      rule: The count of effective artifacts in state active.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  inactive:
+    type: integer
+    minimum: 0
+    description: Artifacts the offering holds that are not in force.
+    x-derived:
+      rule: The count in state inactive.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  excluded:
+    type: integer
+    minimum: 0
+    description: Artifacts deactivated by the document.
+    x-derived:
+      rule: The count in state excluded.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  required:
+    type: integer
+    minimum: 0
+    description: Artifacts a pack requires; always active.
+    x-derived:
+      rule: The count of required artifacts.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  locked:
+    type: integer
+    minimum: 0
+    description: Artifacts a pack locks; always active.
+    x-derived:
+      rule: The count of locked artifacts.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  skipped:
+    type: integer
+    minimum: 0
+    description: Artifacts in the skipped report.
+    x-derived:
+      rule: The count of entries of the skipped report.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: Counted over the effective set of the activation's config and the offering; never stored.
+  inputs:
+  - schemas/ActivationConfig.yaml

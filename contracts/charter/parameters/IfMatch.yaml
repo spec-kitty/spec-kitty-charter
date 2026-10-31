@@ -1,0 +1,11 @@
+name: If-Match
+in: header
+required: false
+description: >-
+  The revision the client holds, as the quoted ETag of an Activation answer, or * for any current revision. On a
+  sub-resource write it is required: a write without it is answered 428; with a revision that is not current, 412,
+  and the client fetches the activation again before it retries. On PUT and DELETE of the document it is optional:
+  without it the write is last-writer-wins (ADR-0020 D6).
+schema:
+  type: string
+  pattern: ^(\*|"sha256:[0-9a-f]{64}")$

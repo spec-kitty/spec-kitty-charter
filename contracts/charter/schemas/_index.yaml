@@ -13,3 +13,38 @@ files:
   - TacticReference.yaml
   - TacticStep.yaml
   - Urn.yaml
+  - ActivatableKind.yaml
+  - Activation.yaml
+  - ActivationChange.yaml
+  - ActivationConfig.yaml
+  - ActivationId.yaml
+  - ActivationSkippedReport.yaml
+  - ActivationSummary.yaml
+  - ArtifactId.yaml
+  - ArtifactIdList.yaml
+  - ArtifactPolicy.yaml
+  - ArtifactReference.yaml
+  - CascadeKind.yaml
+  - CascadeScope.yaml
+  - DeactivatedArtifacts.yaml
+  - DeniedArtifactIdList.yaml
+  - EffectiveActionContext.yaml
+  - EffectiveArtifact.yaml
+  - EffectiveArtifactList.yaml
+  - EffectiveArtifactReason.yaml
+  - EffectiveArtifactState.yaml
+  - EffectiveGraph.yaml
+  - EffectiveGraphEdge.yaml
+  - EffectiveGraphNode.yaml
+  - ExclusionRequest.yaml
+  - LanguageToken.yaml
+  - Link.yaml
+  - Links.yaml
+  - PackPin.yaml
+  - PresetApplication.yaml
+  - SelectableKind.yaml
+  - SelectedArtifacts.yaml
+  - SelectionRequest.yaml
+  - SharedSkip.yaml
+  - SkippedDeactivated.yaml
+  - SkippedReport.yaml

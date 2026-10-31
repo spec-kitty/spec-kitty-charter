@@ -1,0 +1,104 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/ActivatableKindPath.yaml
+- $ref: ../parameters/ArtifactIdPath.yaml
+put:
+  operationId: deactivateActivationArtifact
+  summary: Deactivate an artifact, optionally with a cascade.
+  description: >-
+    Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, removes
+    the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
+    another active one still references (skippedShared). An artifact a pack requires or locks is 409, naming every
+    requiring pack. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ExclusionRequest.yaml
+  responses:
+    '200':
+      description: The artifact was deactivated.
+      headers:
+        Charter-Contract-Version: &id001
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree: &id002
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint: &id003
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag: &id004
+          $ref: ../headers/ActivationETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationChange.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '409':
+      $ref: ../responses/ArtifactPolicyRefused.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: reactivateActivationArtifact
+  summary: Re-activate an artifact.
+  description: >-
+    Removes the artifact from deactivated and changes nothing else. Requires If-Match (ADR-0020 D6). Reserved: it
+    answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  responses:
+    '200':
+      description: The exclusion was cleared.
+      headers:
+        Charter-Contract-Version: *id001
+        Charter-Worktree: *id002
+        Charter-Source-Fingerprint: *id003
+        ETag: *id004
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationChange.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

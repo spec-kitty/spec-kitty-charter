@@ -1,0 +1,26 @@
+description: >-
+  What the request names does not exist, refused with 404: the activation (activation_not_found, also for an activation
+  this client may not see, so ids do not leak), an artifact of the offering (artifact_not_found), a preset (preset_not_found),
+  a mission type (mission_type_not_found) or an action (action_not_found).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      activation-not-found:
+        $ref: ../examples/CharterRefusal.activation-not-found.yaml
+      artifact-not-found:
+        $ref: ../examples/CharterRefusal.artifact-not-found.yaml
+      preset-not-found:
+        $ref: ../examples/CharterRefusal.preset-not-found.yaml
+      mission-type-not-found:
+        $ref: ../examples/CharterRefusal.mission-type-not-found.yaml
+      action-not-found:
+        $ref: ../examples/CharterRefusal.action-not-found.yaml

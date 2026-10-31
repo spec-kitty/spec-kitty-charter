@@ -1,0 +1,9 @@
+summary: A pack requires the artifact, so it cannot be deactivated.
+value:
+  title: Artifact required
+  status: 409
+  code: artifact_required
+  detail: The pack internal requires the directive NO_FULL_HEAVY_SUITES_IN_MISSION.
+  requiredBy:
+  - packId: internal
+    via: []

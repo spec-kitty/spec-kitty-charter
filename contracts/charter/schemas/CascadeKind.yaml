@@ -1,0 +1,19 @@
+title: CascadeKind
+description: A kind a cascade reaches, or all for every kind.
+type: string
+enum:
+- directive
+- tactic
+- styleguide
+- toolguide
+- paradigm
+- procedure
+- agent_profile
+- mission_step_contract
+- glossary_pack
+- skill
+- anti_pattern
+- all
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
+  symbol: ArtifactKind.activatable

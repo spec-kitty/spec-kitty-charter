@@ -1,0 +1,16 @@
+title: ExclusionRequest
+description: The body of a deactivate (ADR-0020 D6). Send {} for no cascade.
+type: object
+additionalProperties: false
+required: []
+properties:
+  cascade:
+    allOf:
+    - $ref: CascadeScope.yaml
+    description: >-
+      The kinds the deactivation cascades into; absent means no cascade. A cascading deactivate removes the reached
+      artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact another active
+      one still references.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6

@@ -1,0 +1,5 @@
+description: The path of the created activation, /api/v1/activations/{activationId}.
+required: true
+schema:
+  type: string
+  minLength: 1

@@ -1,0 +1,18 @@
+description: >-
+  A well-formed request the service refuses, with 422 activation_invalid: a document or body that fails the schema,
+  or names an unknown pack, kind, artifact or mission type, a duplicate pack, or a cascade that mixes all with kinds.
+  violations lists each refused part by its JSON Pointer (ADR-0020 D9, D10).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      activation-invalid:
+        $ref: ../examples/CharterRefusal.activation-invalid.yaml

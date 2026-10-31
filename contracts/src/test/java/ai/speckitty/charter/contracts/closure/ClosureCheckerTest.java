@@ -110,6 +110,43 @@ class ClosureCheckerTest {
         }
     }
 
+    /** The one map a response may hold: _links, a map of Link (ADR-0019 D3, #125, shared with #126). */
+    @Nested
+    class TheLinksMap {
+
+        private static final String LINKS = "/paths/~1activations~1{activationId}/get/responses/200/content/"
+                + "application~1json/schema/properties/";
+
+        @Test
+        void aLinksMapUnderLinksPasses() {
+            assertPasses("links-map.yaml");
+        }
+
+        @Test
+        void itsLinkValueIsStillJudged() {
+            assertReports(
+                    "links-map-open-link.yaml",
+                    LINKS + "_links/allOf/0/additionalProperties",
+                    "additionalProperties: true admits any member");
+        }
+
+        @Test
+        void aMapUnderLinksWhoseValuesAreNotALinkIsAnOpenMap() {
+            assertReports(
+                    "links-map-other-title.yaml",
+                    LINKS + "_links",
+                    "additionalProperties holds a schema, so it is a map");
+        }
+
+        @Test
+        void aLinksMapAnywhereElseIsAnOpenMap() {
+            assertReports(
+                    "links-map-not-under-links.yaml",
+                    LINKS + "relations",
+                    "additionalProperties holds a schema, so it is a map");
+        }
+    }
+
     @Nested
     class RoundFiveProbes {
 
@@ -559,7 +596,8 @@ class ClosureCheckerTest {
         void theLintRulesetsCleanFixture() throws IOException {
             ClosureReport report = ClosureChecker.check(Path.of(System.getProperty("charter.lintCleanFixture")));
             assertThat(report.violations()).isEmpty();
-            assertThat(report.positions()).isEqualTo(19);
+            assertThat(report.positions())
+                    .isEqualTo(30); // WP01 of #125 added a reserved PUT and a 204 DELETE to the clean fixture
             assertThat(report.passes()).isTrue();
         }
     }

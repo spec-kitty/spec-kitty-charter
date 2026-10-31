@@ -1,0 +1,24 @@
+title: EffectiveGraphNode
+description: A node of the activation-filtered graph.
+type: object
+additionalProperties: false
+required:
+- urn
+- kind
+properties:
+  urn:
+    allOf:
+    - $ref: Urn.yaml
+    description: The node's identity.
+    x-derived:
+      rule: A node of the offering's graph left by the activation filter.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  kind:
+    allOf:
+    - $ref: NodeKind.yaml
+    description: The node's kind.
+    x-derived:
+      rule: The kind of the node.
+      inputs:
+      - schemas/ActivationConfig.yaml

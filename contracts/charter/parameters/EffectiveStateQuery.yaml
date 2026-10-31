@@ -1,0 +1,6 @@
+name: state
+in: query
+required: false
+description: Only artifacts in this state.
+schema:
+  $ref: ../schemas/EffectiveArtifactState.yaml

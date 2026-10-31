@@ -1,0 +1,7 @@
+name: artifactId
+in: path
+required: true
+description: >-
+  The artifact's id; another known spelling of it is accepted and normalized to the declared id (ADR-0020 D4).
+schema:
+  $ref: ../schemas/ArtifactId.yaml

@@ -1,0 +1,103 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/SelectableKindPath.yaml
+- $ref: ../parameters/ArtifactIdPath.yaml
+put:
+  operationId: selectActivationArtifact
+  summary: Select an artifact, or a mission type, optionally with a cascade.
+  description: >-
+    Adds the artifact to selected and clears its own exclusion, as charter activate does (ADR-0013 D3); with kind
+    mission_type, adds the mission type to missionTypes. With cascade, walks the graph into the named kinds from
+    it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is true, which clears
+    the exclusions it reaches. One write, one new revision; answers the ActivationChange and the new ETag. Requires
+    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/SelectionRequest.yaml
+  responses:
+    '200':
+      description: The selection was applied.
+      headers:
+        Charter-Contract-Version: &id001
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree: &id002
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint: &id003
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag: &id004
+          $ref: ../headers/ActivationETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationChange.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '415':
+      $ref: ../responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: unselectActivationArtifact
+  summary: Unselect an artifact or a mission type.
+  description: >-
+    Removes the artifact from selected, or the mission type from missionTypes, and changes nothing else. Requires
+    If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  responses:
+    '200':
+      description: The artifact was unselected.
+      headers:
+        Charter-Contract-Version: *id001
+        Charter-Worktree: *id002
+        Charter-Source-Fingerprint: *id003
+        ETag: *id004
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationChange.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '412':
+      $ref: ../responses/PreconditionFailed.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

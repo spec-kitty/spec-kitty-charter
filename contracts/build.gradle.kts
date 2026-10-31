@@ -332,8 +332,11 @@ abstract class LintContract : ContractToolTask() {
 
     @TaskAction
     fun lint() {
+        // The inlined bundle is large (#125 put it near 5 MB), and a rule over a recursive JSONPath needs more than
+        // vacuum's default 5 seconds; a rule that times out is skipped, which the ERR check below refuses.
         val (code, output) = run(vacuum.get().asFile.path, "lint", "--no-style", "--no-banner", "--no-update-check",
-            "--details", "--all-results", "--no-clip", "--ruleset", ruleset.get().asFile.path, bundle.get().asFile.path)
+            "--details", "--all-results", "--no-clip", "--timeout", "60", "--ruleset", ruleset.get().asFile.path,
+            bundle.get().asFile.path)
         report.get().asFile.writeText(output)
         // A ruleset vacuum could not read would lint against no rules and pass; the rule count rules that out.
         val loaded = Regex("containing (\\d+) rules").find(output)?.groupValues?.get(1)?.toInt()
@@ -756,6 +759,13 @@ tasks.test {
     // The checker must pass the lint ruleset's own positive control too.
     inputs.file(lintCleanFixture).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("lintCleanFixture")
     systemProperty("charter.lintCleanFixture", lintCleanFixture.asFile.absolutePath)
+    // ActivationConfigMirrorTest compares the canonical ActivationConfig JSON Schema with its OpenAPI mirror (#125).
+    val offeringSchemas = layout.projectDirectory.dir("offering/schemas")
+    val charterSchemas = layout.projectDirectory.dir("charter/schemas")
+    inputs.dir(offeringSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("offeringSchemas")
+    inputs.dir(charterSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("charterSchemas")
+    systemProperty("charter.offeringSchemas", offeringSchemas.asFile.absolutePath)
+    systemProperty("charter.charterSchemas", charterSchemas.asFile.absolutePath)
 }
 
 val checkClosedResponseObjects = tasks.register<CheckClosedResponseObjects>("checkClosedResponseObjects") {

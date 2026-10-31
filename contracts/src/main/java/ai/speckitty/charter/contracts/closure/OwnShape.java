@@ -82,12 +82,50 @@ final class OwnShape {
         String why;
         if (Boolean.TRUE.equals(additional)) {
             why = "additionalProperties: true admits any member";
+        } else if (additional instanceof Map<?, ?> && isLinksMap(schema)) {
+            return Closure.Facet.closed(
+                    "the _links map of ADR-0019 D3: open relation keys, each value a Link judged as a position");
         } else if (additional instanceof Map<?, ?>) {
             why = "additionalProperties holds a schema, so it is a map";
         } else {
             why = "additionalProperties is malformed, so nothing closes it";
         }
         return Closure.Facet.open(untyped + why, declared);
+    }
+
+    /**
+     * The one map a response may hold (ADR-0019 D3, {@code docs/development/hypermedia-hateoas.md}, shared with #126):
+     * the schema of a property named {@code _links}, directly or as an {@code allOf} part of it, whose
+     * {@code additionalProperties} is a schema titled {@code Link}. The relation keys are open, so a new relation is
+     * additive; the {@code Link} is a position of its own, so one that is not closed is still reported. The test is
+     * structural, because the checker reads the inlined bundle, where no {@code $ref} is left. A map with any other
+     * value, or under any other property, is open.
+     */
+    private static boolean isLinksMap(Node schema) {
+        boolean linkValues = schema.child("additionalProperties")
+                .flatMap(value -> value.child("title"))
+                .map(Node::value)
+                .filter("Link"::equals)
+                .isPresent();
+        if (!linkValues) {
+            return false;
+        }
+        List<String> tokens = schema.pointer().tokens();
+        int at = tokens.lastIndexOf("_links");
+        if (at < 1 || !"properties".equals(tokens.get(at - 1))) {
+            return false;
+        }
+        List<String> rest = tokens.subList(at + 1, tokens.size());
+        for (int i = 0; i < rest.size(); i += 2) {
+            if (!"allOf".equals(rest.get(i)) || i + 1 >= rest.size() || !isIndex(rest.get(i + 1))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isIndex(String token) {
+        return !token.isEmpty() && token.chars().allMatch(Character::isDigit);
     }
 
     private static Closure.Facet arrayFacet(Node schema, String untyped) {

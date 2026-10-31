@@ -1,0 +1,20 @@
+description: >-
+  A deactivation the pack policy forbids, refused with 409: by a deactivate, or by a document that holds a deny
+  entry on an artifact a pack requires (artifact_required) or locks (artifact_locked). Nothing is stored. requiredBy
+  names every requiring or locking pack (ADR-0020 D9, D10).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      artifact-required:
+        $ref: ../examples/CharterRefusal.artifact-required.yaml
+      artifact-locked:
+        $ref: ../examples/CharterRefusal.artifact-locked.yaml

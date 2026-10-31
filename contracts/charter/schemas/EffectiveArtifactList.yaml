@@ -1,0 +1,53 @@
+title: EffectiveArtifactList
+description: The artifacts of the offering under an activation, one page at a time (ADR-0020 D7).
+type: object
+additionalProperties: false
+required:
+- activationId
+- revision
+- governanceFingerprint
+- items
+- pageInfo
+- _links
+properties:
+  activationId:
+    allOf:
+    - $ref: ActivationId.yaml
+    description: The activation's id.
+    x-derived:
+      rule: The {activationId} path segment, or the ULID the service minted on POST (ADR-0020 D2, D3).
+      inputs:
+      - parameters/ActivationId.yaml
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+      config.
+    x-derived:
+      rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  governanceFingerprint:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: >-
+      The digest of the offering this answer was computed from, as ServiceInfo.sourceFingerprint; with revision,
+      it ties the answer to both the document and the packs.
+    x-derived:
+      rule: The source fingerprint of the packs the answer was computed from.
+      inputs:
+      - schemas/ServiceInfo.yaml#/properties/sourceFingerprint
+  items:
+    type: array
+    items:
+      $ref: EffectiveArtifact.yaml
+    description: The artifacts of this page.
+    x-derived:
+      rule: The effective set, filtered by kind and state and paged.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  pageInfo:
+    $ref: ../../_shared/schemas/PageInfo.yaml
+  _links:
+    $ref: Links.yaml

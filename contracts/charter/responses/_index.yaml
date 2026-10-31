@@ -4,3 +4,15 @@ files:
   - OfferingUnreadable.yaml
   - TacticNotFound.yaml
   - Unauthorized.yaml
+  - ActivationInvalid.yaml
+  - ActivationNotFound.yaml
+  - ArtifactPolicyRefused.yaml
+  - DirectiveNotFound.yaml
+  - NotImplemented.yaml
+  - PackNotFound.yaml
+  - ParadigmNotFound.yaml
+  - PreconditionFailed.yaml
+  - PreconditionRequired.yaml
+  - StyleguideNotFound.yaml
+  - ToolguideNotFound.yaml
+  - UnsupportedMediaType.yaml

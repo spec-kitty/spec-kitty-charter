@@ -1,0 +1,6 @@
+name: kind
+in: path
+required: true
+description: The kind of the artifact to deactivate or re-activate.
+schema:
+  $ref: ../schemas/ActivatableKind.yaml

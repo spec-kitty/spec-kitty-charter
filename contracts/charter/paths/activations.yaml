@@ -1,0 +1,52 @@
+post:
+  operationId: createActivation
+  summary: Create an activation with an id the service mints.
+  description: >-
+    Stores the document under a ULID the service mints and answers 201 with the Activation, its Location and its
+    ETag (ADR-0020 D3). A client with a stable id of its own uses PUT instead. Reserved: it answers 501 until it
+    is built (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ActivationConfig.yaml
+  responses:
+    '201':
+      description: The activation was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        Location:
+          $ref: ../headers/Location.yaml
+        ETag:
+          $ref: ../headers/ActivationETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Activation.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '409':
+      $ref: ../responses/ArtifactPolicyRefused.yaml
+    '415':
+      $ref: ../responses/UnsupportedMediaType.yaml
+    '422':
+      $ref: ../responses/ActivationInvalid.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

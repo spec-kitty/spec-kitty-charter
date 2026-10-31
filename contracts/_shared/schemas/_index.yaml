@@ -2,3 +2,5 @@ files:
   - PageCursor.yaml
   - PageInfo.yaml
   - Problem.yaml
+  - RefusalViolation.yaml
+  - RequiringPack.yaml
