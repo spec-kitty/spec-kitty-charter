@@ -73,4 +73,26 @@ class RelationshipShardRoundTripTest {
         assertThat(read.relationships()).isEmpty();
         assertThat(read.findings()).isNotEmpty();
     }
+
+    @Test
+    void aTensionInARegisteredShardIsAFindingSoTheNextRegistrationRefusesInsteadOfDroppingIt() {
+        String header = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: tactic:a, target: directive:b, relation: requires}
+                """;
+
+        ShardRead withTension = RelationshipShard.read(
+                "qa", header + "- {source: tactic:a, target: tactic:c, relation: in_tension_with}\n");
+        ShardRead without = RelationshipShard.read("qa", header);
+
+        assertThat(withTension.findings())
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).contains("never a tension"));
+        // Positive control: the same shard without the tension binds whole.
+        assertThat(without.findings()).isEmpty();
+        assertThat(without.relationships()).containsExactly(Relationship.of(A, B, RelationType.REQUIRES));
+    }
 }

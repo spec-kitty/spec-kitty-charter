@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Pep440;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
@@ -57,8 +58,13 @@ public final class PackPolicy {
 
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
-    private static final String LEGACY_TENSION = "in_tension_with";
-    private static final double LEGACY_TENSION_STRENGTH = -1.0;
+
+    /**
+     * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
+     * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
+     * a tension back with it.
+     */
+    public static final String TENSION = "in_tension_with";
 
     /*
      * The key order of each document kind is the order of the bundled schema's `properties`
@@ -419,25 +425,43 @@ public final class PackPolicy {
     }
 
     /**
-     * Builds the graph of one document and collects what does not bind: the URN binding, the legacy
-     * {@code in_tension_with} mapping (read as {@code impacts} with strength -1, as core ADR 2026-07-26-3 means it)
-     * and the {@code impacts} rules, NaN and the infinities included.
+     * Builds the graph of one document and collects what does not bind: the URN binding, the tension edges, which
+     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045), and the {@code impacts} rules, NaN and
+     * the infinities included. Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
      *
-     * <p>A node or edge with a finding is left out of the graph, so {@link Relationship}'s constructor check
-     * stays a programming-error guard and never fires. An edge reports its first fault only, checked in the
-     * order the adapter's reader used: relation, then {@code impacts}, then the endpoints, then a self-loop.
-     * The schema normally refuses these first; the domain check keeps the same text for a document that
-     * reaches here anyway. The {@code impacts} strength is validated here but is not carried on the bound
-     * {@link Relationship} (ADR-0025: the signed strength lives on the storage DSO, not on the domain type).
+     * <p>A node or edge with a finding is left out of the graph, so the constructor checks of {@link Relationship}
+     * and {@link Tension} stay programming-error guards and never fire. An edge reports its first fault only, checked
+     * in the order the adapter's reader used: relation, then {@code impacts}, then the endpoints, then a self-loop.
+     * The schema normally refuses these first; the domain check keeps the same text for a document that reaches here
+     * anyway. The {@code impacts} strength is validated here but is not carried on the bound {@link Relationship}
+     * (ADR-0025: the signed strength lives on the storage DSO, not on the domain type).
      *
      * @param packName the pack's configured name, which prefixes the origin in a text
      * @param raw the document as written
      * @return the graph and the findings
      */
     public static GraphBuild graph(String packName, RawGraph raw) {
+        return build(packName, raw, false);
+    }
+
+    /**
+     * Builds the graph of the registered-relationship shard, which holds structural relationships only: a tension is
+     * authored in a pack's graph shards and never registered, so one found here is a finding and is not bound. The
+     * store then refuses to rewrite the shard rather than drop the tension in silence.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param raw the registered shard as written
+     * @return the graph and the findings
+     */
+    public static GraphBuild registeredGraph(String packName, RawGraph raw) {
+        return build(packName, raw, true);
+    }
+
+    private static GraphBuild build(String packName, RawGraph raw, boolean registered) {
         String origin = packName + "/" + raw.file();
         List<DrgNode> nodes = new ArrayList<>();
         List<Relationship> relationships = new ArrayList<>();
+        List<Tension> tensions = new ArrayList<>();
         List<PackFinding> findings = new ArrayList<>();
         for (int i = 0; i < raw.nodes().size(); i++) {
             RawNode node = raw.nodes().get(i);
@@ -453,14 +477,17 @@ public final class PackPolicy {
         }
         for (int i = 0; i < raw.edges().size(); i++) {
             RawEdge edge = raw.edges().get(i);
-            Object outcome = edge(edge, origin);
-            if (outcome instanceof Relationship bound) {
-                relationships.add(bound);
-            } else {
-                findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
+            Object outcome = registered && TENSION.equals(edge.relation())
+                    ? origin + ": a registered relationship is never a tension; " + TENSION
+                            + " is authored in a pack's graph shards"
+                    : edge(edge, origin);
+            switch (outcome) {
+                case Relationship relationship -> relationships.add(relationship);
+                case Tension tension -> tensions.add(tension);
+                default -> findings.add(graphFinding(raw, EDGES, i, String.valueOf(outcome)));
             }
         }
-        return new GraphBuild(new DoctrineGraph(nodes, relationships), findings);
+        return new GraphBuild(new DoctrineGraph(nodes, relationships, tensions), findings);
     }
 
     private static PackFinding graphFinding(RawGraph raw, String list, int index, String detail) {
@@ -469,14 +496,19 @@ public final class PackPolicy {
     }
 
     private static Optional<DrgNode> shardNode(RawNode node) {
-        return Urn.parse(node.ref()).map(urn -> new DrgNode(urn, node.label()));
+        return Urn.parse(node.ref()).map(urn -> boundNode(urn, node));
+    }
+
+    /** The node with every field written for it; a fragment node has a body path, a shard node provenance and tags. */
+    private static DrgNode boundNode(Urn urn, RawNode node) {
+        return new DrgNode(urn, node.label(), node.provenance(), node.tags(), node.bodyPath());
     }
 
     private static Optional<DrgNode> fragmentNode(RawNode node) {
         if (node.ref().isEmpty()) {
             return Optional.empty();
         }
-        return NodeKind.fromPlural(node.kind()).map(kind -> new DrgNode(new Urn(kind, node.ref()), node.label()));
+        return NodeKind.fromPlural(node.kind()).map(kind -> boundNode(new Urn(kind, node.ref()), node));
     }
 
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
@@ -494,29 +526,47 @@ public final class PackPolicy {
     }
 
     /**
-     * Binds one edge; the result is the {@link Relationship}, or the finding text for the first fault. The
-     * {@code impacts} strength is validated here but not carried on the {@link Relationship} (ADR-0025: the
-     * signed strength is a storage-DSO concern); the legacy {@code in_tension_with} still reads as the
-     * {@code impacts} relation with the same validation and the same finding texts.
+     * Binds one edge; the result is the {@link Relationship}, the {@link Tension} of an {@code in_tension_with} edge, or
+     * the finding text for the first fault. The {@code impacts} strength is validated here but not carried on the
+     * {@link Relationship} (ADR-0025: the signed strength is a storage-DSO concern).
      */
     private static Object edge(RawEdge raw, String origin) {
-        boolean legacy = LEGACY_TENSION.equals(raw.relation());
-        Optional<RelationType> relation =
-                legacy ? Optional.of(RelationType.IMPACTS) : RelationType.fromToken(raw.relation());
+        if (TENSION.equals(raw.relation())) {
+            return tension(raw, origin);
+        }
+        Optional<RelationType> relation = RelationType.fromToken(raw.relation());
         if (relation.isEmpty()) {
             return origin + ": unknown relation '" + raw.relation() + "'";
         }
-        Optional<Double> impacts = raw.impacts();
-        if (legacy) {
-            if (impacts.isPresent()) {
-                return origin + ": an in_tension_with edge has no 'impacts'";
-            }
-            impacts = Optional.of(LEGACY_TENSION_STRENGTH);
-        }
-        Optional<String> strengthProblem = strengthProblem(relation.get(), impacts);
+        Optional<String> strengthProblem = strengthProblem(relation.get(), raw.impacts());
         if (strengthProblem.isPresent()) {
             return origin + ": " + strengthProblem.get();
         }
+        Object endpoints = endpoints(raw, origin);
+        return endpoints instanceof Endpoints bound
+                ? new Relationship(bound.from(), bound.to(), relation.get(), raw.when(), raw.reason())
+                : endpoints;
+    }
+
+    /**
+     * Binds a tension edge, kept as written (ADR-0036 Decision 4: the reader never turns it around). A tension has no
+     * strength (ADR-0028 Decision 1), so an {@code impacts} on it is a fault, never dropped.
+     */
+    private static Object tension(RawEdge raw, String origin) {
+        if (raw.impacts().isPresent()) {
+            return origin + ": an " + TENSION + " edge has no 'impacts'";
+        }
+        Object endpoints = endpoints(raw, origin);
+        return endpoints instanceof Endpoints bound
+                ? new Tension(bound.from(), bound.to(), raw.when(), raw.reason())
+                : endpoints;
+    }
+
+    /** The two endpoints of an edge, both URNs and not the same one. */
+    private record Endpoints(Urn from, Urn to) {}
+
+    /** The endpoints of an edge, or the finding text for the first that does not bind. */
+    private static Object endpoints(RawEdge raw, String origin) {
         Optional<Urn> source = Urn.parse(raw.source());
         if (source.isEmpty()) {
             return origin + ": edge endpoint '" + raw.source() + "' is not a URN";
@@ -528,7 +578,7 @@ public final class PackPolicy {
         if (source.get().equals(target.get())) {
             return origin + ": a relationship cannot join '" + source.get() + "' to itself";
         }
-        return new Relationship(source.get(), target.get(), relation.get(), raw.when(), raw.reason());
+        return new Endpoints(source.get(), target.get());
     }
 
     /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */

@@ -211,6 +211,46 @@ class DomainRoundTripTest {
     }
 
     @Test
+    void aShardWithNodeFieldsAndATensionBesideARequiresRoundTripsWithItsMeaning() throws IOException {
+        // #235 and #236 on the production path: provenance and a tension's condition appear in no pinned shard.
+        String source = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes:
+                - urn: directive:a
+                  kind: directive
+                  label: A
+                  provenance: imported
+                  tags:
+                  - b
+                  - a
+                - urn: directive:b
+                  kind: directive
+                edges:
+                - source: directive:a
+                  target: directive:b
+                  relation: in_tension_with
+                  when: a change grows beyond its goal
+                  reason: both stay valid
+                - source: directive:b
+                  target: directive:a
+                  relation: requires
+                """;
+        put("directive.graph.yaml", "graph-shard", source);
+
+        String written = written(roundTrip(new YamlSerializationStrategy()).get("directive.graph.yaml"));
+
+        MeaningComparator comparator = MeaningComparator.adr0036();
+        assertThat(comparator.compareTexts("graph-shard", source, written)).isEmpty();
+        // Positive controls on the same fixture: the comparator sees a swapped tag order and a lost tension.
+        assertThat(comparator.compareTexts("graph-shard", source, written.replace("  - b\n  - a\n", "  - a\n  - b\n")))
+                .isPresent();
+        assertThat(comparator.compareTexts(
+                        "graph-shard", source, written.replace("relation: in_tension_with", "relation: impacts")))
+                .isPresent();
+    }
+
+    @Test
     void aFieldOutsideTheSchemaIsRefusedAndNamedWhileSiblingsAreWritten() throws IOException {
         put("tactics/refactoring/refactoring-inline-temp.tactic.yaml", "tactic", TACTIC + "x_unknown: 1\n");
 

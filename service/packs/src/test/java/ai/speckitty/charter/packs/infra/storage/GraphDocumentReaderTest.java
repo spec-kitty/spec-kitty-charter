@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
@@ -94,7 +95,7 @@ class GraphDocumentReaderTest {
                                 Optional.of(-1.0),
                                 Optional.empty(),
                                 Optional.empty()),
-                        // The legacy relation is still the word on the page; the domain maps it.
+                        // The tension's spelling is still the word on the page; the domain binds it.
                         new RawEdge(
                                 "tactic:t",
                                 "tactic:u",
@@ -102,6 +103,47 @@ class GraphDocumentReaderTest {
                                 Optional.empty(),
                                 Optional.empty(),
                                 Optional.empty()));
+    }
+
+    @Test
+    void aShardNodeIsReadWithItsProvenanceAndItsTagsInWrittenOrder() {
+        RawGraph raw = read(HEADER + """
+                nodes:
+                - {urn: anti_pattern:a, kind: anti_pattern, provenance: imported, tags: [b, a, b]}
+                - {urn: anti_pattern:z, kind: anti_pattern}
+                edges: []
+                """, Shape.SHARD, SHARD);
+
+        assertThat(raw.nodes())
+                .containsExactly(
+                        new RawNode(
+                                "anti_pattern:a",
+                                "anti_pattern",
+                                Optional.empty(),
+                                Optional.of("imported"),
+                                List.of("b", "a", "b"),
+                                Optional.empty()),
+                        new RawNode("anti_pattern:z", "anti_pattern", Optional.empty()));
+    }
+
+    @Test
+    void aFragmentNodeIsReadWithItsBodyPath() {
+        RawGraph raw = read("""
+                nodes:
+                - {id: QA_001, kind: directives, body_path: directives/qa-001.directive.yaml}
+                - {id: QA_002, kind: directives}
+                """, Shape.FRAGMENT, FRAGMENT);
+
+        assertThat(raw.nodes())
+                .containsExactly(
+                        new RawNode(
+                                "QA_001",
+                                "directives",
+                                Optional.empty(),
+                                Optional.empty(),
+                                List.of(),
+                                Optional.of("directives/qa-001.directive.yaml")),
+                        new RawNode("QA_002", "directives", Optional.empty()));
     }
 
     @Test
@@ -141,16 +183,28 @@ class GraphDocumentReaderTest {
         DoctrineGraph graph =
                 PackPolicy.graph("qa", read(HEADER + """
                                 nodes:
-                                - {urn: tactic:t, kind: tactic, label: 'A: label'}
+                                - {urn: tactic:t, kind: tactic, label: 'A: label', provenance: p, tags: [y, x]}
                                 edges:
                                 - {source: tactic:t, target: directive:d, relation: requires, reason: because}
                                 - {source: tactic:t, target: tactic:u, relation: suggests, when: always}
+                                - {source: directive:d, target: tactic:t, relation: in_tension_with, when: w, reason: r}
                                 """, Shape.SHARD, SHARD)).graph();
 
         RawGraph reread = read(GraphShardWriter.write(graph), Shape.SHARD, "w.graph.yaml");
         DoctrineGraph rebuilt = PackPolicy.graph("qa", reread).graph();
 
         assertThat(rebuilt).isEqualTo(graph);
+        // Graph equality is not enough on its own: relationship equality is pair identity, so every field is named.
+        assertThat(rebuilt.nodes()).singleElement().satisfies(node -> {
+            assertThat(node.provenance()).contains("p");
+            assertThat(node.tags()).containsExactly("y", "x");
+        });
+        assertThat(rebuilt.tensions())
+                .containsExactly(new Tension(
+                        new Urn(NodeKind.DIRECTIVE, "d"),
+                        new Urn(NodeKind.TACTIC, "t"),
+                        Optional.of("w"),
+                        Optional.of("r")));
         // The round-trip keeps relation, condition and rationale, present-vs-absent distinct (NFR-003).
         assertThat(rebuilt.relationships())
                 .satisfiesExactly(

@@ -8,20 +8,7 @@ kinds:
   - kind: other:missions
     reason: Mission types, mission steps, actions and mission templates are not modelled yet.
     issue: "#194"
-files:
-  - path: anti_pattern.graph.yaml
-    at: 'nodes{anti_pattern:anemic-domain-model}.tags ; nodes{anti_pattern:big-ball-of-mud}.tags ; nodes{anti_pattern:big-bang-rewrite}.tags ; nodes{anti_pattern:big-upfront-design}.tags ; nodes{anti_pattern:code-is-the-documentation}.tags ; nodes{anti_pattern:database-driven-design}.tags ; nodes{anti_pattern:feature-envy}.tags ; nodes{anti_pattern:global-data}.tags ; nodes{anti_pattern:implicit-concept}.tags ; nodes{anti_pattern:misplaced-field}.tags ; nodes{anti_pattern:repeated-switches-on-state}.tags ; nodes{anti_pattern:single-diagram-architecture}.tags ; nodes{anti_pattern:unencapsulated-record}.tags'
-    reason: >-
-      Node tags are dropped: the DRG node model has no tags, so the reader loses them and the shard writer cannot
-      write them back (ADR-0036 E10). Every tagged node is pinned in at.
-    issue: "#236"
-  - path: directive.graph.yaml
-    at: 'edges{{"reason"="Locality of Change bounds new work to the minimum scope the goal requires; Boy Scout Rule endorses opportunistic improvement of touched areas, which can justify expanding a change beyond that boundary. Both remain valid, co-activatable rules -- the tension is resolved per-change by keeping adjacent campsite cleaning inside the touched area while deferring genuinely broad refactors with an explicit rationale, not by retiring either rule. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="in_tension_with","source"="directive:DIRECTIVE_024","target"="directive:DIRECTIVE_025"}} ; edges{{"reason"="The Boy Scout Rule encourages leaving touched code better than found, which can justify changes beyond the smallest viable diff the tactic prescribes. Both remain valid, co-activatable rules -- apply smallest-viable-diff discipline for goal delivery, and fold in only the touched-area fixes Boy Scout Rule requires, deferring broader opportunistic improvement to an explicit task. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="in_tension_with","source"="directive:DIRECTIVE_025","target"="tactic:change-apply-smallest-viable-diff"}} ; edges{{"reason"="Locality of Change bounds new work to the minimum scope the goal requires; Boy Scout Rule endorses opportunistic improvement of touched areas, which can justify expanding a change beyond that boundary. Both remain valid, co-activatable rules -- the tension is resolved per-change by keeping adjacent campsite cleaning inside the touched area while deferring genuinely broad refactors with an explicit rationale, not by retiring either rule. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="impacts","source"="directive:DIRECTIVE_024","target"="directive:DIRECTIVE_025"}} ; edges{{"reason"="The Boy Scout Rule encourages leaving touched code better than found, which can justify changes beyond the smallest viable diff the tactic prescribes. Both remain valid, co-activatable rules -- apply smallest-viable-diff discipline for goal delivery, and fold in only the touched-area fixes Boy Scout Rule requires, deferring broader opportunistic improvement to an explicit task. See directive:RECONCILE_CHANGE_SCOPE_TENSIONS.","relation"="impacts","source"="directive:DIRECTIVE_025","target"="tactic:change-apply-smallest-viable-diff"}}'
-    reason: >-
-      The tension relationship (written in_tension_with, ADR-0036 Decision 4) is read as the retired relation
-      impacts with strength -1 and written back as impacts without a strength (ADR-0028): a service defect, not a
-      pack inconsistency. Both tension edges are pinned in at, lost and added.
-    issue: "#235"
+files: []
 empty_kinds:
   - kind: skill
     reason: >-
