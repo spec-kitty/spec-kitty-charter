@@ -3,6 +3,8 @@ files:
   - CharterRefusalCode.yaml
   - Diagnostic.yaml
   - DiagnosticCode.yaml
+  - Link.yaml
+  - Links.yaml
   - NodeKind.yaml
   - PackLevel.yaml
   - Relation.yaml

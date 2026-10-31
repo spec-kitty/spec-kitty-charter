@@ -1,0 +1,7 @@
+title: Links
+description: >-
+  The links of a resource: an open map from a relation key in the relation table of
+  docs/development/hypermedia-hateoas.md to a Link. Clients must tolerate a key they do not know.
+type: object
+additionalProperties:
+  $ref: Link.yaml
