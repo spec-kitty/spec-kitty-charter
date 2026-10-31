@@ -19,7 +19,7 @@ import org.snakeyaml.engine.v2.common.FlowStyle;
  * Writes a {@link DoctrineGraph} as a graph shard, or as an org fragment, in the canonical key order of the packs. Each
  * {@link Relationship} is mapped to its {@link DrgEdge} DSO via {@link RelationshipMapper} and emitted in the edge key
  * order ({@code source, target, relation, impacts?, when?, reason?}); each {@link Tension} is written back as the
- * {@code in_tension_with} edge it was read from, with no strength (ADR-0028, ADR-0036 Decision 4, ADR-0045).
+ * {@code in_tension_with} edge it was read from, with no strength (ADR-0028, ADR-0036 Decision 4, ADR-0044).
  *
  * <p>Every field the document shape holds is written, and a field it cannot hold is refused rather than dropped
  * (ADR-0036: a node's value is every declared field). A shard node is written {@code urn, kind, label?, provenance?,

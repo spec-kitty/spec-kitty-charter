@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The shard and fragment writers write every field the document shape holds, in the packs' key order, and refuse a
- * field the shape cannot hold instead of dropping it (#235, #236; ADR-0036, ADR-0045).
+ * field the shape cannot hold instead of dropping it (#235, #236; ADR-0036, ADR-0044).
  */
 class GraphShardWriterTest {
 

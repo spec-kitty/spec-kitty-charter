@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * unordered {@code {from, to}} pair (ADR-0027 Decision 1), so this list is pair-sensitive in order but not a
  * multigraph index; a transitive walk is the {@code packs.application} walker's job, not an edge index here.
  *
- * <p>Beside the relationships the graph holds its {@link Tension}s, in declared order (ADR-0028 Decision 3, ADR-0045): a
+ * <p>Beside the relationships the graph holds its {@link Tension}s, in declared order (ADR-0028 Decision 3, ADR-0044): a
  * tension is not a relationship and is outside the pair identity, so a pair may hold one structural relationship and a
  * tension. A node declared twice keeps its first declaration whole, tags and provenance included.
  */

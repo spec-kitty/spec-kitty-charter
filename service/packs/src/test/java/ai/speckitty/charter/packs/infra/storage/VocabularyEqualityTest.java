@@ -34,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code file-kinds.yaml} and the schemas has to be added to {@code NodeKind} too, or one of these fails. The one
  * place the two differ on purpose is {@code in_tension_with}, today's spelling of the tension relationship (ADR-0036
  * Decision 4): the schemas accept it as a relation, and the domain binds it to a {@code Tension} held beside the
- * relationships, not to a relation type (ADR-0028, ADR-0045).
+ * relationships, not to a relation type (ADR-0028, ADR-0044).
  */
 class VocabularyEqualityTest {
 

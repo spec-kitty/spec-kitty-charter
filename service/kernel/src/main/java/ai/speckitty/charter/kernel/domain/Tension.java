@@ -11,7 +11,7 @@ import java.util.Optional;
  * beside it, a tension (ADR-0028 Decision 3), so a tension is held beside the relationships of a
  * {@link DoctrineGraph} and is outside their unordered-pair identity (ADR-0027). It is compared as written, orientation
  * included (ADR-0036 Decision 4: the reader never turns an edge around). Today's pack files write it
- * {@code in_tension_with}; that spelling is storage's, not the kernel's (ADR-0045).
+ * {@code in_tension_with}; that spelling is storage's, not the kernel's (ADR-0044).
  *
  * @param from the rule the tension is authored from
  * @param to the rule the tension is authored to

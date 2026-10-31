@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -326,9 +326,9 @@ ruling, its status and the evidence.
 ### DIV-018: The impacts relation and the edge impacts strength
 
 - **Core:** Has neither yet. The relation enum has no impacts member (offering/drg/models.py:83-148).
-- **Service:** Models both. The schema's Relation enum is core's 15 values, including the legacy in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. The legacy in_tension_with stays in the schema and is read by the service as impacts with strength -1.
-- **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference.
-- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11
+- **Service:** Models both. The schema's Relation enum is core's 15 values, including in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. in_tension_with is today's spelling of the ADR-0028 tension: the service holds it as a tension beside the relationships and writes it back as written (ADR-0044); it is never read as impacts.
+- **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference: a tension is not a relation type (ADR-0044).
+- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0044
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:83-148`

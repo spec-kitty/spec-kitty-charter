@@ -106,3 +106,13 @@ and no HTTP path renders a `DoctrineGraph`.
 tension as the relation ADR-0028 retires, inside the structural pair identity that D3 says it is not
 part of. Today no `impacts` strength is carried at all (ADR-0025), so the writer could not tell an
 authored `impacts: -1` from a tension.
+
+## Implementation note: the ADR number is 0044, not 0045
+
+WP03 planned ADR-0045, because ADR-0044 exists on the #194 PR-B branch
+(`issue-194-mission-type-consolidation`). `scripts/docs/check_docs.py adr` refuses a gap in the
+numbering ("no ADR 0044"), so 0045 would keep the docs gate red until PR-B lands.
+
+The charter's rule picks the number "against `main` and the open PRs". PR-B is not an open PR, and
+0044 is free on `main`. The record is therefore **ADR-0044**. The collision with the PR-B branch is
+known and flagged in the PR hand-off: whoever lands second renumbers.

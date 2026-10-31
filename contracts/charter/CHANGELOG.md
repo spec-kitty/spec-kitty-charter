@@ -77,6 +77,14 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+### DRG tension and graph-node fields (issues #235 and #236)
+
+- Changed (description only): the `Relation` description no longer says that a graph document's
+  `in_tension_with` edge is read as `impacts` with strength -1. The service holds it as a tension
+  beside the relationships and writes it back as written (ADR-0028, ADR-0044); it never answers
+  `in_tension_with` as a relationship, as before. No enum value, path or wire shape changes. The
+  `Removed` entry below records the reading as it was then.
+
 ### Pack-level files round trip (issue #195)
 
 - Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036

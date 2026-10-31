@@ -33,7 +33,7 @@ public enum Relation {
      * Directed and signed: the edge's {@code impacts} strength runs from -1 (sabotages) to +1 (reinforces), carried on
      * the storage DSO ({@code packs.infra.storage.DrgEdge}), not on a kernel type. ADR-0028 retires it as a relation;
      * a tension between two rules is a {@link Tension}, written {@code in_tension_with} in today's pack files, never an
-     * {@code impacts} edge (ADR-0045).
+     * {@code impacts} edge (ADR-0044).
      */
     IMPACTS,
     /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
