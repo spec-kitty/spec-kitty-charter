@@ -56,7 +56,7 @@ stands.
 | [0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) | ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories | Accepted; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27) | 2026-10-25 |
 | [0026](/adr/0026-write-surface-is-functional-registration/) | ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage | Accepted; superseded in part by ADR-0030 (2026-10-26) | 2026-10-25 |
 | [0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) | ADR-0027: CRG relationship identity is a bounded, conditional unidirectional collapse | Accepted; superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27) | 2026-10-25 |
-| [0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) | ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules | Accepted | 2026-10-26 |
+| [0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) | ADR-0028: `impacts` is an artifact's per-value list, and `tension` is the relationship between two rules | Accepted; decision 5 answered for the domain and the pack files by ADR-0044 (2026-10-31, proposed) | 2026-10-26 |
 | [0029](/adr/0029-charter-glossary-is-owned-here/) | ADR-0029: This repository owns the charter glossary | Accepted | 2026-10-26 |
 | [0030](/adr/0030-removal-is-distinct-from-deactivation/) | ADR-0030: Removal by a derived pack is distinct from deactivation by a project | Accepted | 2026-10-26 |
 | [0031](/adr/0031-requirement-is-authored-as-a-preset/) | ADR-0031: Requirement is authored as a preset, and the required set is derived from it | Accepted, with Amendment 2026-10-28; open questions answered by ADR-0042 (2026-10-28) | 2026-10-26 |
@@ -73,6 +73,7 @@ stands.
 | [0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) | ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest | Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added) | 2026-10-28 |
 | [0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/) | ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store | Proposed | 2026-10-29 |
 | [0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) | ADR-0044: Mission types consolidated into one sanitized shape | Accepted (2026-10-31) | 2026-10-30 |
+| [0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/) | ADR-0045: A tension is held beside the relationships, and a graph node keeps every declared field | Proposed | 2026-10-31 |
 
 ## Core decisions this repository builds on
 
