@@ -18,10 +18,10 @@
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "offering.feature: 'The packs are ordered by configured level, then by pack id in code-point order' (exact body: built-in,org,project; code-point ids; packId/level/name/version/_links.artifacts; self; fingerprint once), 'The configured level wins over the level pack.yaml declares', 'Without configured packs the offering is empty', 'The artifacts link of every pack answers its artifacts', 'A pack whose pack.yaml is invalid|A configured pack without pack.yaml|A configured pack whose directory is missing refuses the offering with pack_unreadable'; artifacts.feature outline 'A configured pack without pack.yaml is pack_unreadable, on the list and on the item' (5 paths) and 'An unknown pack is pack_not_found' (4 paths); OfferingReadServiceTest, ArtifactReadServiceTest (aConfiguredPackWithoutAReadableDescriptor...); OfferingPack name/version required. NOTE defect: contract schemas/CharterRefusalCode.yaml description still says 'A missing or invalid pack.yaml never refuses a tactic read' and 'Every built read (the service info and both tactic reads)', contradicting ruling s.8 - behaviour passes, contract prose stale. verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:22:15.399633+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
