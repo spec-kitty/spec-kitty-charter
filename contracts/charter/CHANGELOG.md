@@ -77,6 +77,18 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+### The charter schema declares `activated_skills` and `activated_anti_patterns` (issue #283)
+
+No schema, operation, parameter, response or header changes in this contract; the change is to the pack schema
+`contracts/packs/schemas/charter.schema.json`, which now declares all thirteen activation keys core writes.
+
+- Added: `activated_skills` and `activated_anti_patterns`, root keys core's activation writer puts in `charter.yaml`,
+  in the shape of the other `activated_*` keys: absent or `null`, `[]` (none) or a list of ids. An absent or `null`
+  `activated_skills` puts only the org packs' required skills in force, not every skill; the key's description says
+  so. Additive, not breaking (ADR-0022). A `charter.yaml` found inside a pack that holds either key was refused as
+  `artifact_schema_error`, `unknown key '<key>'`; it now validates, and a value that is not a list of strings is
+  refused at the key.
+
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
 No schema, operation, parameter, response or header changes in this contract; the change is to the pack schema

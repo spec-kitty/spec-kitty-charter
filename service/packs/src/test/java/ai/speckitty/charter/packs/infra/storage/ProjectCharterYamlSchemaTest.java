@@ -8,22 +8,28 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The {@code charter} schema against the project's own {@code .kittify/charter/charter.yaml} (#131), and the shape of
- * {@code activated_glossary_packs}: like every other {@code activated_*} key it is three-state, absent or {@code null}
- * (unrestricted), {@code []} (none) or a list of glossary pack ids, which is what core's activation writer puts at the
- * root of {@code charter.yaml}.
+ * the activation keys core's activation writer puts at the root of {@code charter.yaml} that the schema declared late:
+ * {@code activated_glossary_packs} (#131), {@code activated_skills} and {@code activated_anti_patterns} (#283). Like
+ * every other {@code activated_*} key each is three-state: absent or {@code null}, {@code []} (none) or a list of ids.
  */
-@DisplayName("The project charter.yaml and the charter schema (#131)")
+@DisplayName("The project charter.yaml and the charter schema (#131, #283)")
 class ProjectCharterYamlSchemaTest {
 
     private static final String CHARTER = "charter";
+
+    /** The activation keys this test pins, each declared in the shape of the other {@code activated_*} keys. */
+    private static final List<String> KEYS =
+            List.of("activated_glossary_packs", "activated_skills", "activated_anti_patterns");
 
     /** The smallest charter.yaml the schema accepts: {@code catalog} is its one required key. */
     private static final String MINIMAL = """
@@ -52,34 +58,56 @@ class ProjectCharterYamlSchemaTest {
     }
 
     @Test
-    @DisplayName("an absent activated_glossary_packs is accepted (unrestricted)")
+    @DisplayName("a charter.yaml without the keys is accepted")
     void absentIsAccepted() {
         assertThat(validate(MINIMAL)).isEmpty();
     }
 
-    @ParameterizedTest(name = "activated_glossary_packs: {0} is accepted")
-    @ValueSource(strings = {"null", "[]", "[spec-kitty-core]", "[spec-kitty-core, spk-internal]"})
-    void theThreeStatesAreAccepted(String value) {
-        assertThat(validate(MINIMAL + "activated_glossary_packs: " + value + "\n"))
-                .isEmpty();
+    static Stream<Arguments> acceptedValues() {
+        return KEYS.stream()
+                .flatMap(key -> Stream.of("null", "[]", "[first-id]", "[first-id, second-id]")
+                        .map(value -> Arguments.of(key, value)));
+    }
+
+    @ParameterizedTest(name = "{0}: {1} is accepted")
+    @MethodSource("acceptedValues")
+    void theThreeStatesAreAccepted(String key, String value) {
+        assertThat(validate(MINIMAL + key + ": " + value + "\n")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("all three keys together are accepted")
+    void allThreeKeysTogetherAreAccepted() {
+        assertThat(validate(MINIMAL + """
+                        activated_glossary_packs: [spec-kitty-core]
+                        activated_skills: []
+                        activated_anti_patterns: [crud-affordance-echo]
+                        """)).isEmpty();
+    }
+
+    static Stream<Arguments> refusedValues() {
+        return KEYS.stream()
+                .flatMap(key -> Stream.of(
+                        // Not a list: neither anyOf branch (array, null) matches the value.
+                        Arguments.of(key, "first-id", List.of("type at /" + key, "type at /" + key)),
+                        Arguments.of(key, "{first-id: true}", List.of("type at /" + key, "type at /" + key)),
+                        // A list whose item is not an id string: the array branch fails at the item, the null branch
+                        // at the key.
+                        Arguments.of(key, "[{id: first-id}]", List.of("type at /" + key + "/0", "type at /" + key)),
+                        Arguments.of(key, "[1]", List.of("type at /" + key + "/0", "type at /" + key))));
     }
 
     /** Refused at the key (one violation per anyOf branch), never as an unknown root key. */
-    @ParameterizedTest(name = "activated_glossary_packs: {0} is refused with {1}")
-    @CsvSource(
-            delimiter = '|',
-            value = {
-                // Not a list: neither anyOf branch (array, null) matches the value.
-                "spec-kitty-core|type at /activated_glossary_packs;type at /activated_glossary_packs",
-                "'{spec-kitty-core: true}'|type at /activated_glossary_packs;type at /activated_glossary_packs",
-                // A list whose item is not an id string: the array branch fails at the item, the null branch at the
-                // key.
-                "'[{id: spec-kitty-core}]'|type at /activated_glossary_packs/0;type at /activated_glossary_packs",
-                "'[1]'|type at /activated_glossary_packs/0;type at /activated_glossary_packs",
-            })
-    void anythingButAListOfIdsIsRefused(String value, String expected) {
-        assertThat(at(validate(MINIMAL + "activated_glossary_packs: " + value + "\n")))
-                .containsExactlyInAnyOrder(expected.split(";"));
+    @ParameterizedTest(name = "{0}: {1} is refused with {2}")
+    @MethodSource("refusedValues")
+    void anythingButAListOfIdsIsRefused(String key, String value, List<String> expected) {
+        assertThat(at(validate(MINIMAL + key + ": " + value + "\n"))).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @ParameterizedTest(name = "{0} is not a declared key")
+    @ValueSource(strings = {"activated_glossary_pack", "activated_skill", "activated_antipatterns", "activation"})
+    void aMisspelledKeyIsStillRefused(String key) {
+        assertThat(at(validate(MINIMAL + key + ": []\n"))).containsExactly("additionalProperties at / [" + key + "]");
     }
 
     /** Each violation as {@code <keyword> at /<pointer>}, with {@code [<property>]} when it names one. */
