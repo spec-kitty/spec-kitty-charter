@@ -90,7 +90,7 @@ executable starting and answering the info operation, and the job fails when it 
 5. **Given** a pack in the configuration root, **When** the check reads it through the native executable,
    **Then** the pack is validated against its schema and served.
 6. **Given** a request with an invalid body, **When** it reaches the native executable, **Then** the answer
-   is the same 400 problem the jar gives.
+   is the same 422 `validation_failed` problem the jar gives.
 
 ### User Story 3: The operator cuts or rehearses a release (Priority: P1)
 
@@ -149,7 +149,7 @@ nothing.
 | FR-004 | The ADR records the checksum format and the build-provenance attestation, with the command that verifies it. | Proposed | [build] | no |
 | FR-005 | Open question 5 is marked decided (native per OS, jar as fallback), and the milestone and roadmap entries for #71 and #241 are updated. | Proposed | [build] | no |
 | FR-006 | The build produces a native executable of the service for the host it runs on, from the same sources and version as the jar. | Proposed | [build] | no |
-| FR-007 | A check starts a built artifact (native or jar) with a worktree token and a temporary configuration root holding one fixture pack. It passes only if all of these hold: the info operation answers with the build's service version and contract version; the fixture pack is served; an invalid request body gets a 400 problem. | Proposed | [build] | no |
+| FR-007 | A check starts a built artifact (native or jar) with a worktree token and a temporary configuration root holding one fixture pack. It passes only if all of these hold: the info operation answers with the build's service version and contract version; the fixture pack is served; an invalid request body gets a 422 `validation_failed` problem. | Proposed | [build] | no |
 | FR-008 | The `container` profile's settings check runs when the profile is active at run time, whether the service runs as a jar or a native executable. | Proposed | [build] | no |
 | FR-009 | The DNS-rebinding guard of the guide fetch is installed in the native executable, or the executable refuses to start with an allowlist set. A check proves which. | Proposed | [build] | no |
 | FR-010 | CI builds and checks the native executable for linux-x64, linux-arm64, macos-arm64 and windows-x64 on a release, on a push to `main`, and on pull requests that touch the service, the build or the native workflow. It checks the jar on every pull request. | Proposed | [build] | no |
