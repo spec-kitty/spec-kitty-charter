@@ -12,5 +12,7 @@
   "purpose_tldr": "A graph shard's tension edges and its node tags, provenance and body paths come back from a read and write exactly as the pack author wrote them.",
   "slug": "drg-tension-and-node-fields-01M68A0T",
   "target_branch": "issue-235-236-drg-round-trip",
-  "topology": "single_branch"
+  "topology": "single_branch",
+  "contracts": "none",
+  "contracts_rationale": "A bugfix inside the domain and storage layers: no HTTP path, schema, enum value or wire shape changes (spec C-001); only descriptive text in contracts/charter/schemas/Relation.yaml and a CHANGELOG line are corrected."
 }
