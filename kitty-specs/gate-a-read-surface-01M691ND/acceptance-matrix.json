@@ -68,10 +68,10 @@
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "artifacts.feature outline 'A path kind the service does not serve is kind_not_found' (procedure, bogus; positive control tactic 200 first), 'A path kind that is not a slug is a 400 Problem without a code, before the pack is judged', 'A kind filter the service does not know is a 400 Problem without a code' (control ?kind=tactic 200), 'An unknown id of a served kind is that kind's not-found refusal' (5 codes); CharterRefusalCode enum + x-refusal kind_not_found 404 raised:true; errors.feature 'The refusal codes the contract marks raised are exactly those an operation raises'; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:22:57.116826+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
