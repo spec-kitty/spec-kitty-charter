@@ -178,3 +178,22 @@ The `### Breaking` seam line for core is therefore forward-looking:
 
      If decision 2 is "move" and tasks-outline shows the diff is too large to review, the writes'
      move becomes a stacked second PR.
+
+## 7. Operator rulings (2026-10-31, relayed by the orchestrator)
+
+1. Artifact shape: the closed `Artifact` envelope, plus `ArtifactPage` and `ArtifactSummary`, as
+   recommended.
+2. Writes move into the generic tree, one typed operation per kind:
+   `POST /packs/{packId}/artifacts/{kind}` and `PUT /packs/{packId}/artifacts/{kind}/{id}`. ADR-0026
+   D1.2 gets an amendment note (paths only). If tasks-outline shows the diff is too large, a stacked
+   second PR is allowed; tell the orchestrator.
+3. Offering reads: the smallest Gate-A set, as recommended. The deferrals stand, and no link points
+   to an unbuilt operation.
+4. #175: the fingerprint is required on verified GET 200s only, as recommended, with the lint
+   changes and planted fixtures.
+5. #46: no effect.
+6. Also ruled:
+   - (a) Version: #126 and #125 both land inside `0.1.0-SNAPSHOT`, under its `### Breaking`
+     subsection. There is no 0.2.0.
+   - (b) An unknown path kind is a 404 with `kind_not_found`; a bad `?kind=` is a 400.
+   - (c) One PR, of about five work packages.
