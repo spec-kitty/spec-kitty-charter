@@ -97,7 +97,8 @@ class ArtifactReadServiceTest {
 
     @Test
     void listsInTheServedKindOrderThenByIdInCodePointOrder() {
-        ArtifactReadService.Page page = service.list(PACK, Optional.empty(), Optional.empty(), 50).value();
+        ArtifactReadService.Page page =
+                service.list(PACK, Optional.empty(), Optional.empty(), 50).value();
 
         assertThat(page.items())
                 .extracting(ArtifactReadService.Summary::position)
@@ -113,10 +114,12 @@ class ArtifactReadServiceTest {
 
     @Test
     void aSummaryTitleIsTheNameOfATacticOrParadigmAndTheTitleOfTheOthers() {
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 50).value().items())
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 50)
+                        .value()
+                        .items())
                 .extracting(ArtifactReadService.Summary::title)
-                .containsExactly("Zeta", "Alpha", "Title of GUARD", "Title of java-style", "Name of layered",
-                        "How to use git");
+                .containsExactly(
+                        "Zeta", "Alpha", "Title of GUARD", "Title of java-style", "Name of layered", "How to use git");
     }
 
     @Test
@@ -128,8 +131,10 @@ class ArtifactReadServiceTest {
 
         assertThat(ArtifactPosition.ORDER.compare(bmp, supplementary)).isNegative();
         assertThat(ArtifactPosition.ORDER.compare(supplementary, bmp)).isPositive();
-        assertThat(ArtifactPosition.ORDER.compare(bmp, position(ArtifactKind.TACTIC, "ﬁ"))).isZero();
-        assertThat(ArtifactPosition.ORDER.compare(position(ArtifactKind.TACTIC, "ab"), position(ArtifactKind.TACTIC, "a")))
+        assertThat(ArtifactPosition.ORDER.compare(bmp, position(ArtifactKind.TACTIC, "ﬁ")))
+                .isZero();
+        assertThat(ArtifactPosition.ORDER.compare(
+                        position(ArtifactKind.TACTIC, "ab"), position(ArtifactKind.TACTIC, "a")))
                 .as("a longer id after its prefix")
                 .isPositive();
         assertThat(ArtifactPosition.ORDER.compare(
@@ -151,7 +156,8 @@ class ArtifactReadServiceTest {
 
         assertThat(page.items())
                 .extracting(ArtifactReadService.Summary::position)
-                .containsExactly(position(ArtifactKind.DIRECTIVE, "GUARD"), position(ArtifactKind.STYLEGUIDE, "java-style"));
+                .containsExactly(
+                        position(ArtifactKind.DIRECTIVE, "GUARD"), position(ArtifactKind.STYLEGUIDE, "java-style"));
         assertThat(page.hasMore()).isTrue();
     }
 
@@ -169,11 +175,19 @@ class ArtifactReadServiceTest {
 
     @Test
     void aPageOfExactlyTheRemainingItemsHasNoMore() {
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6).value().hasMore()).isFalse();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5).value().hasMore()).isTrue();
-        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5).value().items()).hasSize(5);
-        assertThat(service.list(
-                                PACK, Optional.empty(), Optional.of(position(ArtifactKind.TOOLGUIDE, "git")), 5)
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 6)
+                        .value()
+                        .hasMore())
+                .isFalse();
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5)
+                        .value()
+                        .hasMore())
+                .isTrue();
+        assertThat(service.list(PACK, Optional.empty(), Optional.empty(), 5)
+                        .value()
+                        .items())
+                .hasSize(5);
+        assertThat(service.list(PACK, Optional.empty(), Optional.of(position(ArtifactKind.TOOLGUIDE, "git")), 5)
                         .value())
                 .as("after the last item")
                 .isEqualTo(new ArtifactReadService.Page(List.of(), false));
@@ -188,8 +202,8 @@ class ArtifactReadServiceTest {
 
     @Test
     void theKindFilterListsThatKindOnly() {
-        ArtifactReadService.Page tactics =
-                service.list(PACK, Optional.of(ArtifactKind.TACTIC), Optional.empty(), 50).value();
+        ArtifactReadService.Page tactics = service.list(PACK, Optional.of(ArtifactKind.TACTIC), Optional.empty(), 50)
+                .value();
         ArtifactReadService.Page afterZeta = service.list(
                         PACK, Optional.of(ArtifactKind.TACTIC), Optional.of(position(ArtifactKind.TACTIC, "Zeta")), 50)
                 .value();
@@ -200,7 +214,8 @@ class ArtifactReadServiceTest {
         assertThat(afterZeta.items())
                 .extracting(ArtifactReadService.Summary::position)
                 .containsExactly(position(ArtifactKind.TACTIC, "alpha"));
-        assertThat(service.list(EMPTY, Optional.of(ArtifactKind.DIRECTIVE), Optional.empty(), 50).value())
+        assertThat(service.list(EMPTY, Optional.of(ArtifactKind.DIRECTIVE), Optional.empty(), 50)
+                        .value())
                 .isEqualTo(new ArtifactReadService.Page(List.of(), false));
     }
 
@@ -226,8 +241,9 @@ class ArtifactReadServiceTest {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(refused.getMessage()).isEqualTo("Pack absent was not found.");
                     assertThat(refused.getCause())
-                            .isInstanceOfSatisfying(CharterRefusal.class, cause -> assertThat(cause.code())
-                                    .isEqualTo(RefusalCode.PACK_UNREADABLE));
+                            .isInstanceOfSatisfying(
+                                    CharterRefusal.class,
+                                    cause -> assertThat(cause.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
                 });
     }
 
@@ -257,9 +273,9 @@ class ArtifactReadServiceTest {
     @Test
     void eachWritableKindItemCarriesItsRevision() {
         assertThat(service.item(PACK, "directive", "GUARD").value())
-                .isInstanceOfSatisfying(ArtifactReadService.Item.OfDirective.class, item -> assertThat(
-                                item.artifact().id())
-                        .isEqualTo(new DirectiveIdentifier("GUARD")));
+                .isInstanceOfSatisfying(
+                        ArtifactReadService.Item.OfDirective.class,
+                        item -> assertThat(item.artifact().id()).isEqualTo(new DirectiveIdentifier("GUARD")));
         assertThat(service.item(PACK, "styleguide", "java-style").value())
                 .isInstanceOf(ArtifactReadService.Item.OfStyleguide.class);
         assertThat(service.item(PACK, "paradigm", "layered").value())
@@ -278,11 +294,23 @@ class ArtifactReadServiceTest {
     @Test
     void anUnknownIdIsTheNotFoundOfItsKind() {
         assertThat(codeOf(() -> service.item(PACK, "tactic", "nope"))).isEqualTo(RefusalCode.TACTIC_NOT_FOUND);
-        assertThat(codeOf(() -> service.item(PACK, "directive", "nope"))).isEqualTo(RefusalCode.DIRECTIVE_NOT_FOUND);
-        assertThat(codeOf(() -> service.item(PACK, "styleguide", "nope")))
-                .isEqualTo(RefusalCode.STYLEGUIDE_NOT_FOUND);
+        assertThat(codeOf(() -> service.item(PACK, "directive", "NOPE"))).isEqualTo(RefusalCode.DIRECTIVE_NOT_FOUND);
+        assertThat(codeOf(() -> service.item(PACK, "styleguide", "nope"))).isEqualTo(RefusalCode.STYLEGUIDE_NOT_FOUND);
         assertThat(codeOf(() -> service.item(PACK, "paradigm", "nope"))).isEqualTo(RefusalCode.PARADIGM_NOT_FOUND);
         assertThat(codeOf(() -> service.item(PACK, "toolguide", "nope"))).isEqualTo(RefusalCode.TOOLGUIDE_NOT_FOUND);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"directive", "styleguide", "paradigm", "toolguide"})
+    void anIdTheKindsRulesRefuseIsTheNotFoundOfItsKindNotAServerError(String kind) {
+        // "Not an id" breaks every writable kind's identifier pattern; it names no artifact of the kind.
+        assertThatThrownBy(() -> service.item(PACK, kind, "Not an id"))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code().token()).isEqualTo(kind + "_not_found");
+                    assertThat(refused.getMessage()).isEqualTo("Pack pack-a has no " + kind + " Not an id.");
+                });
+        assertThat(digests).as("the pack is judged inside one verified read").hasValue(2);
+        assertThat(codeOf(() -> service.item(ABSENT, kind, "Not an id"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @ParameterizedTest
@@ -418,27 +446,37 @@ class ArtifactReadServiceTest {
 
         @Override
         public Optional<Tactic> load(PackIdentifier pack, TacticIdentifier tactic) {
-            return load(pack).tactics().stream().filter(t -> t.id().equals(tactic)).findFirst();
+            return load(pack).tactics().stream()
+                    .filter(t -> t.id().equals(tactic))
+                    .findFirst();
         }
 
         @Override
         public Optional<Directive> load(PackIdentifier pack, DirectiveIdentifier directive) {
-            return load(pack).directives().stream().filter(d -> d.id().equals(directive)).findFirst();
+            return load(pack).directives().stream()
+                    .filter(d -> d.id().equals(directive))
+                    .findFirst();
         }
 
         @Override
         public Optional<Styleguide> load(PackIdentifier pack, StyleguideIdentifier styleguide) {
-            return load(pack).styleguides().stream().filter(s -> s.id().equals(styleguide)).findFirst();
+            return load(pack).styleguides().stream()
+                    .filter(s -> s.id().equals(styleguide))
+                    .findFirst();
         }
 
         @Override
         public Optional<Paradigm> load(PackIdentifier pack, ParadigmIdentifier paradigm) {
-            return load(pack).paradigms().stream().filter(p -> p.id().equals(paradigm)).findFirst();
+            return load(pack).paradigms().stream()
+                    .filter(p -> p.id().equals(paradigm))
+                    .findFirst();
         }
 
         @Override
         public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
-            return load(pack).toolguides().stream().filter(t -> t.id().equals(toolguide)).findFirst();
+            return load(pack).toolguides().stream()
+                    .filter(t -> t.id().equals(toolguide))
+                    .findFirst();
         }
 
         @Override

@@ -76,8 +76,8 @@ class RefusalHandlerTest {
     })
     @DisplayName("each code is answered with its title")
     void eachCodeHasItsTitle(RefusalCode code, String title) {
-        CharterRefusal body =
-                handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "d")).getBody();
+        CharterRefusal body = handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "d"))
+                .getBody();
 
         assertThat(body).isNotNull();
         assertThat(body.getTitle()).isEqualTo(title);
@@ -94,7 +94,9 @@ class RefusalHandlerTest {
         assertThat(body).isNotNull();
         assertThat(body.getTitle()).isEqualTo("Kind not found");
         assertThat(body.getCode().getValue()).isEqualTo("kind_not_found");
-        assertThat(RefusalCode.valueOf("KIND_NOT_FOUND").notFound()).as("a not-found code").isTrue();
+        assertThat(RefusalCode.valueOf("KIND_NOT_FOUND").notFound())
+                .as("a not-found code")
+                .isTrue();
     }
 
     @Test
