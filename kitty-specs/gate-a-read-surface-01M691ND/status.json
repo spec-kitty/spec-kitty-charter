@@ -90,7 +90,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -100,7 +100,8 @@
       "last_transition_at": "2026-10-31T15:17:00.845424+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Generic artifact reads added beside the per-kind routes: listPackArtifacts/getPackArtifact (contract, ArtifactReadService, ArtifactController, ArtifactCursor, ArtifactDtos), kind_not_found raised. Red first: CharterContractSuite 141/35 failed -> 141/0. verifyAll --rerun-tasks green (deployable 413, kernel 841, packs 2274 (3 skipped), missions 59, profiles 9, contracts 181). CC max 15 clean (top new: ArtifactReadService.item 7). Deviations: no ArtifactKindTokenConverter (generator types ?kind= as String); Artifact.kind is a pattern (generator cannot compile an inline enum on a oneOf model); Zeta/alpha impossible per pack id schemas, code-point order pinned via A-B<A1<AB<A_B; list/pack-check need pack.yaml (aggregate load); out-of-map: errors.feature, 5 kind schemas + Links.yaml citations, fingerprint header op list, ProblemJson mix-in. Last code commit 7092be9d."
+        "Generic artifact reads added beside the per-kind routes: listPackArtifacts/getPackArtifact (contract, ArtifactReadService, ArtifactController, ArtifactCursor, ArtifactDtos), kind_not_found raised. Red first: CharterContractSuite 141/35 failed -> 141/0. verifyAll --rerun-tasks green (deployable 413, kernel 841, packs 2274 (3 skipped), missions 59, profiles 9, contracts 181). CC max 15 clean (top new: ArtifactReadService.item 7). Deviations: no ArtifactKindTokenConverter (generator types ?kind= as String); Artifact.kind is a pattern (generator cannot compile an inline enum on a oneOf model); Zeta/alpha impossible per pack id schemas, code-point order pinned via A-B<A1<AB<A_B; list/pack-check need pack.yaml (aggregate load); out-of-map: errors.feature, 5 kind schemas + Links.yaml citations, fingerprint header op list, ProblemJson mix-in. Last code commit 7092be9d.",
+        "Review passed: listPackArtifacts/getPackArtifact + kind_not_found match FR-003/004/007, NFR-005, C-005/008/009. contracts:check, contracts:test (181), deployable:test (413, incl. 41 artifacts.feature cases) and ArchUnit (43) green; packs:test green except the pre-existing PackFileSetExactnessTest CPU-budget timing check (10.1-10.6s vs 10s under suite load, passes alone; WP03 touches no storage). Red-first order holds; complexity max 9; no suppressions; refusal titles byte-identical (18-row pin). Paging scenarios collect ids across pages against the full table; pack_not_found before kind_not_found pinned; fingerprint on every 200; ETag on writable kinds only; _links exact, no edit. Deviations 1-4 and 6 accepted. Spec gap flagged, not a WP03 defect: a configured pack without pack.yaml answers 404 pack_not_found on the generic list (PackRepository.load), the same as the per-kind directive/styleguide/paradigm/toolguide lists, but the tactic list point-reads it as 200, and R-18 has the offering link such packs to /artifacts. WP04 (migrating tactics.feature, whose qa pack has no pack.yaml) and WP05 must decide this. Shared-file note: RefusalHandler, CharterSteps, CHANGELOG, errors.feature and the five kind schemas (top-level citation only) are edited in sequential lane-a; WP04 rebases on them."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
