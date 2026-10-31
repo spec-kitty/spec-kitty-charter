@@ -86,9 +86,9 @@ provenance, and a fragment whose node carries a `body_path`. Compare the written
 - **Duplicate tags or an empty tag list**: kept as written, in order. An absent list and an empty list
   mean the same (`GraphDocument` rule).
 - **A registered-relationships shard**:
-  - It is service-written and never holds a tension, so it is unaffected.
-  - A hand-edited one holding a tension no longer reads it as an `impacts` relationship (it was never
-    registrable).
+  - It is service-written and never holds a tension.
+  - A hand-edited one that holds a tension is reported (tension is authored, never registered), so the
+    store refuses to rewrite it instead of dropping the tension silently.
 
 ## Requirements *(mandatory)*
 
@@ -105,6 +105,7 @@ provenance, and a fragment whose node carries a `body_path`. Compare the written
 | FR-007 | Fragment node body path kept | As a pack author, I want an org-fragment node's `body_path` kept through read and a fragment write. | High | Open | [build] | no |
 | FR-008 | Absent stays absent | As a pack author, I want a node without tags, provenance or body path written without those keys. | Medium | Open | [ratchet] | yes — paired with FR-005/FR-006 on the same fixture, where the fields are present |
 | FR-009 | Expected-red entries retired by the ratchet | As a maintainer, I want the `directive.graph.yaml` and `anti_pattern.graph.yaml` expected-red entries removed because the gate reports them green, so that the baseline stays honest. | High | Open | [build] | no — the ratchet fails a listed file that turns green and an unlisted red |
+| FR-011 | No silent tension drop in the registered shard | As a maintainer, I want a tension found in the registered-relationships shard reported, so that a registration rewrite never drops it silently. | Medium | Open | [build] | no — positive control: the same shard without the tension binds |
 | FR-010 | Records stay true | As a reader of the docs, contract text and divergence register, I want no record to still say the service reads `in_tension_with` as `impacts` −1, so that the documentation matches the behaviour. | Medium | Open | [build] | no — grep for the old claim |
 
 ### Non-Functional Requirements

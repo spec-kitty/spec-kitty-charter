@@ -6,8 +6,8 @@
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `source` | `Urn` | required; as written |
-| `target` | `Urn` | required; not equal to `source` |
+| `from` | `Urn` | required; the edge's `source`, as written |
+| `to` | `Urn` | required; the edge's `target`; not equal to `from` |
 | `when` | `Optional<String>` | as written; never `null` |
 | `rationale` | `Optional<String>` | the edge's `reason`, as written; never `null` |
 
@@ -51,3 +51,16 @@ with three arguments is kept for callers with no extra fields.
 | fragment `nodes[].{id, kind, title, body_path}` | `DrgNode` (`Urn(kind, id)`) | `GraphShardWriter.writeFragment` (key order: id, kind, title, body_path) |
 | edge `relation: in_tension_with` (+ `when`, `reason`; no `impacts`) | `Tension` | the same edge, `relation: in_tension_with` |
 | any other edge | `Relationship` (unchanged) | unchanged |
+
+### Shape rules for the writers
+
+- `GraphShardWriter.write` refuses a node that has a `bodyPath`.
+- `GraphShardWriter.writeFragment` refuses a node that has `provenance` or `tags`, and a relationship or
+  tension that has a `when`.
+- `writeFragment` writes no root header and writes edges as `source, target, relation, impacts?, reason?`.
+
+### The registered shard
+
+`PackPolicy.registeredGraph` reports a tension in `registered.graph.yaml` as a finding, because tension
+is authored in a pack's graph shards and never registered. The store then refuses to rewrite the shard
+instead of dropping the tension.

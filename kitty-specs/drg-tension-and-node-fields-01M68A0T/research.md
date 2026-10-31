@@ -67,3 +67,42 @@ records the plan-phase decisions and the dispositions of the plan-point adversar
 ## Plan-point adversarial squad
 
 Findings and dispositions are recorded below.
+
+Point-cut: plan. Question: does the design hold against ADR-0028 and ADR-0036 and the code, avoid any
+HTTP contract change, and leave no loss, consumer or fakeable test unaddressed? Cast (each
+profile-loaded, read-only):
+
+- `architect-alphonso`: domain and ADR fit;
+- `java-jenny`: static gates and implementation traps;
+- `reviewer-renata`: non-vacuity and the ratchet.
+
+All three verdicts: **APPROVE-WITH-CHANGES**. The lenses agree on the HTTP contract question: no change,
+and no HTTP path renders a `DoctrineGraph`.
+
+| # | Sev | Lens(es) | Finding | Disposition |
+| --- | --- | --- | --- | --- |
+| S1 | HIGH | architect, jenny, renata | `RelationshipShard.read` keeps only relationships, so a hand-edited `registered.graph.yaml` tension would be dropped silently on the next registration rewrite | **Accepted, changed.** `PackPolicy.registeredGraph` reports a tension in the registered shard as a finding: tension is authored in a pack's graph shards and is never registered. `CommitStorePackWriteStore`'s existing "does not bind … refusing to rewrite it" refusal then fires, so nothing is dropped. Red test in `RelationshipShardRoundTripTest`. The spec edge case is corrected. |
+| S2 | HIGH | renata | The pinned pack has no node provenance and no tension `when`, and no writer-side test exists, so the gate cannot prove FR-006 or a tension's `when` | **Accepted.** A production-path case in `DomainRoundTripTest`: a shard with provenance, `tags: [b, a]`, `A in_tension_with B` (with `when` and `reason`) and `B requires A`. It asserts the gate comparator reports nothing, with a mutated control that it does report. |
+| S3 | HIGH | jenny | The fragment edge schema has no `when` and the fragment root has no header, so `writeFragment` could emit an invalid document | **Accepted.** `writeFragment` writes no root header and writes edges as `source, target, relation, impacts?, reason?`. A graph holding what a fragment cannot hold (a `when`, a node `provenance` or `tags`) is refused with `IllegalArgumentException`. Tested. |
+| S4 | HIGH | renata | `GraphDocumentReaderTest`'s graph-equality round trip is vacuous if `equals` leaves out tensions or node fields; `Relationship.equals` ignores `type` | **Accepted.** `DoctrineGraphTest` asserts that graphs differing only by a tension, or only in a node's tag order, are unequal. Round-trip tests assert `tensions()` and each relationship's `type()` explicitly. |
+| S5 | MEDIUM | architect | The shard writer would drop `bodyPath` silently, and the fragment writer would drop `provenance`/`tags` | **Accepted.** Each writer refuses a node carrying a field its shape cannot hold, as a programming error. Recorded in the ADR. |
+| S6 | MEDIUM | architect | ADR-0028 D3 "at most one tension" per pair and canonical orientation are not enforced | **Deferred, recorded.** The reader keeps what is written (ADR-0036 D4). Pack consistency (a second tension on a pair, a non-canonical orientation) is reported by the gate and fixed in open-packs. The ADR names the deferral; the pinned pack has neither. |
+| S7 | MEDIUM | architect | `Tension` used `source`/`target`, the DSO's words; the kernel `Relationship` says `from`/`to` | **Accepted.** `Tension(from, to, when, rationale)`. |
+| S8 | MEDIUM | architect, renata, jenny | Records list incomplete | **Accepted.** FR-010 covers: `logical-model.md`; `Relation` IMPACTS and RECONCILES_TENSION javadoc; `RelationType` IMPACTS ("the one symmetric relation"); `GraphDocumentReader` class javadoc; `PackPolicy` `graph` and `edge` javadoc; DIV-018; `Relation.yaml` description; CHANGELOG; the `VocabularyEqualityTest` name and javadoc. The check is a grep for `-1`, `−1` and "strength -1" in tension context. |
+| S9 | MEDIUM | renata | FR-008 is blind through the comparator (absent, null and `[]` compare equal) | **Accepted.** Assert on the written text that the keys are absent, on the same fixture as the present case. |
+| S10 | MEDIUM | renata | The gate's read-back never re-binds the written shard | **Accepted.** `DomainRoundTrip.shard` refuses a written shard that does not build without findings into the same nodes, relationships (with types) and tensions. |
+| S11 | MEDIUM | renata | The IMPACTS −1 tests must be rewritten red-first, not deleted; `relationships().isEmpty()` goes blind | **Accepted.** Rewritten to assert one `Tension` and no relationship. The impacts-on-tension finding test also asserts `tensions()` is empty, with the valid tension on the same fixture as positive control. |
+| S12 | MEDIUM | renata | `VocabularyEqualityTest` name and javadoc state the −1 reading | **Accepted.** Renamed to `…PlusExactlyTheTensionSpelling`. It also asserts that `PackPolicy` binds that spelling. |
+| S13 | MEDIUM | jenny | The `edge` shape | **Accepted.** An early `tension(raw, origin)` branch, with endpoint and self-loop checks shared in one helper; `LEGACY_TENSION_STRENGTH` removed. |
+| S14 | MEDIUM | jenny, renata | Orphaned load fixtures still record −1 | **Accepted, changed.** Both fixtures are corrected to the new meaning. Their runner was deleted in `2bb3f762` (63 orphaned cases); restoring it is filed as a follow-up draft, not done here. |
+| S15 | MEDIUM | jenny | Read `tags` with `YamlFields.strings`, as `GraphDocumentYaml` does; extract node helpers | **Accepted.** |
+| S16 | LOW | architect, jenny | `DoctrineGraph` `putIfAbsent`: the first declaration wins for all node fields; tensions are not de-duplicated | **Recorded** in the ADR and pinned by a test. `merge` has no production caller. |
+| S17 | LOW | jenny | Doclint for the new record components and constructors; `NodeKind.plural()` round-trip property test | **Accepted.** |
+| S18 | LOW | architect | research D1's rationale for rejecting "IMPACTS −1 + writer special case" was imprecise | **Accepted.** Reworded below. |
+| S19 | LOW | jenny | Complexity ≤ 15 is not enforced by any tool | **Accepted.** Held by review; noted in the PR. |
+| S20 | LOW | renata | `writeFragment` has no production caller, so its write half is helper-level | **Accepted, labelled.** Its javadoc says it exists to prove the fragment round trip; it is compared through `MeaningComparator` with a dropped-`body_path` control. |
+
+**D1 rationale, corrected (S18).** Keeping IMPACTS −1 and special-casing the writer would still model
+tension as the relation ADR-0028 retires, inside the structural pair identity that D3 says it is not
+part of. Today no `impacts` strength is carried at all (ADR-0025), so the writer could not tell an
+authored `impacts: -1` from a tension.

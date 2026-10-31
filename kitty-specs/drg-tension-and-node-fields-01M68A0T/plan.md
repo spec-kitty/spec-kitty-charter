@@ -104,7 +104,7 @@ flowchart LR
   G -->|GraphShardWriter.writeFragment| F["fragment text<br/>body_path"]
 ```
 
-- **`Tension` (kernel record)**: `source: Urn`, `target: Urn`, `when: Optional<String>`,
+- **`Tension` (kernel record)**: `from: Urn`, `to: Urn`, `when: Optional<String>`,
   `rationale: Optional<String>`.
   - Record equality is the directed triple plus texts (ADR-0036: compared as written).
   - Its constructor refuses a self-loop and `null`s, like `Relationship`.
@@ -132,6 +132,18 @@ flowchart LR
 - **Order in a written shard**: edges are compared as a set (ADR-0036), so tensions after relationships
   changes no meaning.
 
+## Squad changes (plan point-cut; see research.md S1–S20)
+
+- **Registered shard**: `PackPolicy.registeredGraph` reports a tension as a finding, and
+  `RelationshipShard.read` uses it (S1).
+- **Writer shape rules**: the fragment root and edge key set are fixed (S3, S5).
+- **Gate adapter**: re-binds the written shard and compares the graphs (S10).
+- **Production-path fixture**: provenance, tags, a tension with `when` and a coexisting `requires`
+  (S2).
+- **Equality guards**: in `DoctrineGraphTest` (S4).
+- **Text-level absent-key assertions** (S9).
+- **Records list**: completed (S8).
+
 ## Implementation Concern Map
 
 ### IC-01 — Node fields through the domain (#236)
@@ -148,8 +160,8 @@ flowchart LR
 ### IC-02 — Tension relationship (#235)
 
 - **Purpose**: read `in_tension_with` as the ADR-0028 tension, hold it beside the relationships, and write it back as written.
-- **Relevant requirements**: FR-001, FR-002, FR-003, FR-004
-- **Affected surfaces**: new `Tension`; `DoctrineGraph`; `PackPolicy.edge`, `graph`; `GraphShardWriter`; `VocabularyEqualityTest` (meaning of the extra spelling); `PackPolicyGraphTest`; orphaned load fixtures `shard-legacy-tension-is-impacts-minus-one`, `shard-impacts-on-legacy-tension-edge`
+- **Relevant requirements**: FR-001, FR-002, FR-003, FR-004, FR-011
+- **Affected surfaces**: new `Tension`; `RelationshipShard` + `PackPolicy.registeredGraph` (S1); `DomainRoundTrip.shard` re-bind (S10); `DoctrineGraph`; `PackPolicy.edge`, `graph`; `GraphShardWriter`; `VocabularyEqualityTest` (meaning of the extra spelling); `PackPolicyGraphTest`; orphaned load fixtures `shard-legacy-tension-is-impacts-minus-one`, `shard-impacts-on-legacy-tension-edge`
 - **Sequencing/depends-on**: none (it shares `GraphShardWriter` and `PackPolicy` with IC-01, so it lands in the same lane)
 - **Risks**: `PackPolicy.edge` returns `Object` (a `Relationship` or a finding). A third outcome type
   must keep the method readable and its complexity ≤ 15, so tension binding goes in a helper.
