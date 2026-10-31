@@ -2,7 +2,7 @@
 title: "ADR-0038: The service keeps its files under one configuration root, a directory per domain"
 description: charter.config-root holds packs/ and activations/; every registered pack lives in packs/ at its declared level, so one layout serves a local machine and a hosted store.
 doc_status: active
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -33,6 +33,11 @@ decision 11 as amended 2026-10-24, where they refuse every read for a configured
 missing (decision 4 below).
 
 Superseded in part by [ADR-0041](/adr/0041-containerized-configuration-model/) (2026-10-28), under the container profile only: a configuration root that does not exist fails the start (decision 4).
+
+Amended 2026-10-31 ([#174](https://github.com/spec-kitty/spec-kitty-charter/issues/174), operator): a
+symbolic link under `packs/` to a directory is a pack, and a commit goes through its real target. This
+reverses the part of decision 3 that refused links. See
+[Amendment 2026-10-31](#amendment-2026-10-31-a-linked-pack-is-a-pack).
 
 ## Context
 
@@ -66,6 +71,8 @@ a local directory, a shared drive or, later, a database behind the same ports.
    policy reports what is wrong with it. Hidden directories, a commit's `<name>.pack-old-*` aside copy
    and symbolic links are not packs: a commit stages a copy and swaps it in, which on a link would
    replace the link with a copy holding only the written file.
+   *(Amended 2026-10-31: a link to a directory is a pack, and a commit swaps its real target; see
+   [the amendment](#amendment-2026-10-31-a-linked-pack-is-a-pack).)*
 4. **Nothing is created; a missing pack is simply not served.** The service creates no directory. A
    root or a domain directory that does not exist yet holds nothing; a pack directory that is
    removed stops being listed on the next read. A root that names something other than a directory,
@@ -104,6 +111,30 @@ a local directory, a shared drive or, later, a database behind the same ports.
 
 - A launcher that still passes `charter.packs` fails at start. Mitigation: decision 6 names the
   replacement.
+
+## Amendment 2026-10-31: a linked pack is a pack
+
+Operator ruling on [#174](https://github.com/spec-kitty/spec-kitty-charter/issues/174). It reverses
+the part of decision 3 that refused symbolic links.
+
+- **A link to a directory is a pack.** It is named after the link, not its target, at the level the
+  target's `pack.yaml` declares. The store reads it through the link, and the walk of the pack's
+  files starts at the root's real path, so a linked root is no longer an empty pack. Links *below*
+  a pack's root are still not followed.
+- **A commit goes through the real target.** `PackCommitStore` stages its copy beside the link's
+  real target, on the target's own file system, and swaps the target. The link stays a link, and
+  the target holds the new content. The rename is atomic there, as it is for a plain pack.
+- **Some links are still not packs.** Each of these is logged as a warning once, naming the entry
+  and the reason:
+  - a link that does not resolve, or that resolves to a file;
+  - a link to the pack domain or to a directory above it;
+  - two or more entries that resolve to one directory (two links to one target, or a link to a
+    sibling pack). A commit to one name would change the pack under the other, and the per-pack
+    write lock would not serialize them, so none of them is served.
+- **Unchanged.** `<root>/packs` itself is still not followed when it is a link. With a target
+  outside the configuration root, a commit's staging and aside copies appear beside that target
+  while the commit runs, and a crash between the swap's two renames leaves the aside copy there.
+  As for a plain pack, the pack is then not listed until the aside copy is moved back.
 
 ## Alternatives considered
 
