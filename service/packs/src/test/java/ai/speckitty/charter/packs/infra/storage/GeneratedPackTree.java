@@ -65,6 +65,12 @@ import org.jspecify.annotations.Nullable;
  * <tr><td>a directory symlink to an external directory that holds a valid tactic</td><td>decoy</td></tr>
  * </table>
  *
+ * <p>A pack's configured root takes one of three forms ({@link RootForm}): the pack directory itself, the directory
+ * written as {@code <dir>/.}, or a symbolic link at {@code <home>/<directory name>} to the real directory, which lives
+ * elsewhere under another name (#174). Every form loads and digests the same files: the link is followed at the root
+ * only, so a directory link inside the pack stays a decoy, and the files are classified under the configured name, not
+ * the real directory's.
+ *
  * <p>Directory names that are both a files rule and an exclusion ({@code mission_types}, {@code missions},
  * {@code actions}) are kept out of the alphabet, so a verdict never depends on which rule comes first; so are
  * {@code assets} and {@code templates}, which only the payload shapes plant.
@@ -83,6 +89,16 @@ final class GeneratedPackTree {
         MANIFEST,
         /** A file or directory the service neither loads nor digests. */
         DECOY
+    }
+
+    /** How a pack's root is configured. */
+    enum RootForm {
+        /** The pack directory, absolute and normalized. */
+        DIRECTORY,
+        /** The pack directory written as {@code <dir>/.}. */
+        DOT_SUFFIX,
+        /** A symbolic link to the real pack directory, which has another name (#174). */
+        SYMLINK
     }
 
     /** The loaded kinds, spelled as the file names spell them. */
@@ -237,14 +253,17 @@ final class GeneratedPackTree {
         private final String name;
         private final String directoryName;
         private final Path directory;
+        private final RootForm rootForm;
         private final PackLocation location;
         private final Map<String, Planted> planted = new LinkedHashMap<>();
         private final List<Target> externalDecoys = new ArrayList<>();
 
-        private Pack(String name, String directoryName, Path directory, Path configuredRoot) {
+        private Pack(String name, String directoryName, Path directory, RootForm rootForm) {
             this.name = name;
             this.directoryName = directoryName;
             this.directory = directory;
+            this.rootForm = rootForm;
+            Path configuredRoot = rootForm == RootForm.DOT_SUFFIX ? directory.resolve(".") : directory;
             this.location = new PackLocation(name, PackLevel.ORG, configuredRoot);
         }
 
@@ -258,12 +277,17 @@ final class GeneratedPackTree {
             return directoryName;
         }
 
-        /** The pack directory, absolute and normalized. */
+        /** The pack directory, absolute and normalized; the link, for a {@link RootForm#SYMLINK} root. */
         Path directory() {
             return directory;
         }
 
-        /** The configured location; its root may be written as {@code <dir>/.}. */
+        /** How the pack's root is configured. */
+        RootForm rootForm() {
+            return rootForm;
+        }
+
+        /** The configured location; its root takes the pack's {@link #rootForm()}. */
         PackLocation location() {
             return location;
         }
@@ -309,6 +333,7 @@ final class GeneratedPackTree {
     private final int index;
     private final List<Pack> packs = new ArrayList<>();
     private final Set<Shape> shapes = EnumSet.noneOf(Shape.class);
+    private final Set<RootForm> rootForms = EnumSet.noneOf(RootForm.class);
     private final Path home;
     private Random random;
     private int counter;
@@ -362,6 +387,11 @@ final class GeneratedPackTree {
         return shapes;
     }
 
+    /** The root forms of this tree's packs. */
+    Set<RootForm> rootForms() {
+        return rootForms;
+    }
+
     /** The configured locations, in pack order. */
     List<PackLocation> locations() {
         return packs.stream().map(Pack::location).toList();
@@ -377,10 +407,18 @@ final class GeneratedPackTree {
     private Pack plantPack(int i, boolean exhaustive) throws IOException {
         String directoryName = "pk" + i + (random.nextBoolean() ? "-x" : "");
         Path directory = home.resolve(directoryName).toAbsolutePath().normalize();
-        Files.createDirectories(directory);
         String name = (random.nextBoolean() || (exhaustive && i == 0)) ? "cfg-" + directoryName : directoryName;
-        boolean rawRoot = (exhaustive && i == 0) || random.nextInt(4) == 0;
-        Pack pack = new Pack(name, directoryName, directory, rawRoot ? directory.resolve(".") : directory);
+        RootForm rootForm = rootForm(i, exhaustive);
+        if (rootForm == RootForm.SYMLINK) {
+            // The real directory has another name, so a classification by the real name would show (#174).
+            Path real = home.resolve("linked-roots").resolve("real-" + directoryName);
+            Files.createDirectories(real);
+            Files.createSymbolicLink(directory, real);
+        } else {
+            Files.createDirectories(directory);
+        }
+        rootForms.add(rootForm);
+        Pack pack = new Pack(name, directoryName, directory, rootForm);
         Files.writeString(directory.resolve("pack.yaml"), PACK_YAML, StandardCharsets.UTF_8);
         for (Kind kind : Kind.values()) {
             plantLoaded(pack, Shape.LOADED_PLAIN, kind);
@@ -392,6 +430,18 @@ final class GeneratedPackTree {
             }
         }
         return pack;
+    }
+
+    /**
+     * The form of a pack's root: in the exhaustive tree, {@code <dir>/.} for the first pack and a link for the second;
+     * otherwise {@code <dir>/.} one time in four and a link one time in eight.
+     */
+    private RootForm rootForm(int i, boolean exhaustive) {
+        if (exhaustive && i < 2) {
+            return i == 0 ? RootForm.DOT_SUFFIX : RootForm.SYMLINK;
+        }
+        int roll = random.nextInt(8);
+        return roll < 2 ? RootForm.DOT_SUFFIX : roll == 2 ? RootForm.SYMLINK : RootForm.DIRECTORY;
     }
 
     /** How many files of a shape one pack gets: small packs keep 200 trees fast, the table is covered across trees. */
