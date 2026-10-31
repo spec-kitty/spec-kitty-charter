@@ -192,17 +192,6 @@ class GuardWiringTest {
     }
 
     @Test
-    void aTokenFromSpringApplicationJsonOnTheCommandLineRefusesTheStart(CapturedOutput output) {
-        runner.withInitializer(context -> {
-                    context.getEnvironment()
-                            .getPropertySources()
-                            .addFirst(new SimpleCommandLinePropertySource("--spring.application.json=" + JSON_TOKEN));
-                    unpackApplicationJson(context);
-                })
-                .run(context -> assertRefusedWithoutTheToken(context, output));
-    }
-
-    @Test
     void aTokenFromSpringApplicationJsonInASystemPropertyRefusesTheStart(CapturedOutput output) {
         runner.withSystemProperties("spring.application.json=" + JSON_TOKEN)
                 .withInitializer(GuardWiringTest::unpackApplicationJson)
@@ -216,10 +205,11 @@ class GuardWiringTest {
         return "{\"charter\":{" + charterMembers + "}}";
     }
 
-    /** Each of these is JSON Boot unpacks to {@code charter.worktree-token}; none of them has the token first. */
+    /** Each is JSON Boot unpacks to {@code charter.worktree-token}: the bare key, then shapes where it is not first. */
     static java.util.stream.Stream<String> jsonThatBindsTheToken() {
         String quoted = "\"" + TOKEN + "\"";
         return java.util.stream.Stream.of(
+                tokenJson("\"worktree-token\":" + quoted),
                 tokenJson("\"worktree-id\":\"wt\",\"worktree-token\":" + quoted),
                 tokenJson("\"worktree-token\":" + quoted + ",\"worktree-id\":\"wt\""),
                 tokenJson("\"worktree-id\":\"wt\",\"worktree\\u002dtoken\":" + quoted),
