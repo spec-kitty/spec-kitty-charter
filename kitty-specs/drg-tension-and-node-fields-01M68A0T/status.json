@@ -1,7 +1,7 @@
 {
-  "event_count": 2,
-  "last_event_id": "01M68ANX340A6ZSB793Z9T0223",
-  "materialized_at": "2026-10-31T06:34:45.220889+00:00",
+  "event_count": 3,
+  "last_event_id": "01M68ANY4K2EC867GCYRPK90K4",
+  "materialized_at": "2026-10-31T06:34:46.291822+00:00",
   "mission_number": "",
   "mission_slug": "drg-tension-and-node-fields-01M68A0T",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -31,6 +31,13 @@
       "lane": "planned",
       "last_event_id": "01M68ANX340A6ZSB793Z9T0223",
       "last_transition_at": "2026-10-31T06:34:45.220889+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M68ANY4K2EC867GCYRPK90K4",
+      "last_transition_at": "2026-10-31T06:34:46.291822+00:00"
     }
   }
 }
