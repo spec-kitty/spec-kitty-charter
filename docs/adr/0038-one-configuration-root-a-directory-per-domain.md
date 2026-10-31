@@ -43,6 +43,10 @@ target. This reverses the part of decision 3 that refused links. See
 itself a link is followed under the same rules, and every write path, not only the commit, keeps a
 read-only pack read-only ([#287](https://github.com/spec-kitty/spec-kitty-charter/issues/287)). See
 [A linked pack domain](#a-linked-pack-domain-and-every-write-path-285-287).
+Extended again ([#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281)): a commit that a
+crash interrupted between its swap's two renames is repaired on the next listing of `packs/`, for a
+plain and a linked pack. See
+[The interrupted commit is repaired on the listing](#the-interrupted-commit-is-repaired-on-the-listing-281).
 
 ## Context
 
@@ -194,18 +198,81 @@ refuse, for a whole domain, the layout the amendment already accepts for one pac
   it changes only where it lives.
 - A commit to a pack linked from inside the configuration root replaces the *target* directory with
   its staged copy, as it replaces a plain pack's directory.
-- **Crash window.** A crash between the swap's two renames leaves the target missing, the aside
-  copy beside it, named after the target, and the link dangling. The link is then refused as one
-  that does not resolve. As for a plain pack, whose missing directory is not listed either, the
-  repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. In a
-  linked pack domain the aside copy is beside the pack, in the domain's real directory. Move
-  the aside copy back by hand. Making that repair reachable, for both kinds of pack, is
-  [#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281).
+- **Crash window.** A crash between the swap's two renames leaves the live directory missing (for a
+  linked pack, its target), with the `<name>.pack-old-*` aside copy beside it (for a linked pack,
+  named after the target). A linked pack's link then dangles. The next listing of `packs/` repairs it
+  ([#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281), below), so it is no longer
+  restored by hand.
 - **Residual race.** A link pointed elsewhere between the listing and a commit's own resolution is
   committed to its new target without the listing's checks, the read-only check aside, which the
   commit makes on the target it resolves. A per-file write (#287) checks the real path, then writes
   through the link, so a link pointed elsewhere in between is written without the check. Whoever can
   do either can already write to `packs/`, so both are accepted.
+
+### The interrupted commit is repaired on the listing (#281)
+
+Decided 2026-10-31 in [#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281) under the
+rulings above. Before it, the repair ran only after a write had resolved the pack, which a pack in
+that state never did, so the pack silently stopped being served.
+
+- **Every listing of `packs/` looks for an interrupted commit.** There are two cases:
+  - **A plain pack:** a `<name>.pack-old-*` directory with no `<name>` entry.
+  - **A linked pack:** a link that does not resolve. Its chain is followed hop by hop with
+    `Files.readSymbolicLink`, each hop resolved against the real directory that holds the link, to
+    the missing target.
+- **The repair runs under the pack's write lock** (`PackWriteLocks`), the lock a registration holds,
+  and checks again once the lock is held. It moves a sole aside copy back into place and lists
+  again. Only that one aside copy is moved, and nothing is created, so decision 4 holds. The
+  interrupted commit was never acknowledged, so the restored state is the last one acknowledged.
+- **A read can therefore rename directories in the pack domain.** A replica that shares the
+  configuration root read-only is still a writer here; a read-only mount only makes the repair fail,
+  which is warned.
+- **A read that meets the half-swapped state is served the restored pack.**
+  - A listing that reads the domain while a commit in the same process is between its renames waits
+    for that pack's lock and is served the commit's result. It waits at most ten seconds, then skips
+    the pack for that listing.
+  - A listing that read the domain just before the first rename can still miss the pack once, as
+    before.
+  - A listing made while it already holds another pack's write lock only tries the lock, and skips
+    the pack if the lock is held, so two packs cannot each wait on the other.
+- **Not every half-swapped pack is repaired.** Nothing is guessed in these cases:
+  - zero aside copies;
+  - several aside copies, which is warned once with the instruction to restore one by hand;
+  - a restore target outside the pack domain's real directory;
+  - a restore target in or around another listed pack's directory (the overlap rule, applied before
+    the move, so a repair never changes another pack's files without its lock);
+  - a pack that is read-only through the service. The service never commits outside the
+    configuration root, so an aside copy there is not its own.
+
+  Such a pack stays unserved, and a dangling link is refused as before.
+- **A restore that fails is warned once** and the pack is skipped. It does not fail the read.
+- **A stale aside copy is hidden, never restored.** An aside copy beside a pack that exists is
+  residue of a swap that finished: a crash after the second rename, or a delete that failed. Left
+  as `.pack-old-*`, it would be restored if the pack were later removed on purpose. It is therefore
+  renamed to a hidden `.pack-discard-*`, not deleted:
+  - by a successful commit, before the commit deletes its own aside copy;
+  - by the next commit to that pack, beside its real directory, which covers a linked pack;
+  - by the next listing, for a plain pack.
+
+  A copy that cannot be hidden is left whole, not half-deleted under the name the repair trusts.
+- **Accepted residuals:**
+  - **A crash between the second rename and the hiding.** A crash at that instant, followed by the
+    pack's removal before any listing or commit, still restores the older copy.
+  - **Another process.** Another process's listing during this process's swap can restore the old
+    copy. This process's second rename then fails and the commit is refused, unacknowledged: the
+    state after a crash. The write lock never serialized processes (ADR-0026).
+  - **An empty directory made in the window.** An empty directory created at the restore path
+    between the check and the move is replaced by it, because `rename(2)` replaces an empty
+    directory and Java has no `RENAME_NOREPLACE`. Whoever can do that can already write to `packs/`.
+  - **A link chain through an outside hop.** A chain that leaves the configuration root and comes
+    back is judged by its final real path, as a commit already is.
+
+Alternatives considered:
+
+- **Repair only before a write** (not chosen). Reads would answer `PACK_NOT_FOUND` until something
+  wrote, and a client that reads first would never write.
+- **Serve the aside copy read-only** (not chosen). An aside copy is not a pack (decision 3), and its
+  name is not the pack's.
 
 ### Alternatives considered for linked packs
 

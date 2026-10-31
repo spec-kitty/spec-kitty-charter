@@ -19,6 +19,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,12 +46,17 @@ import org.springframework.stereotype.Service;
  * as amended 2026-10-31).
  *
  * <p><strong>Crash window.</strong> The swap is two renames, so a process that dies between them leaves no live
- * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy). {@link #restoreInterruptedSwap(Path)}
- * moves a sole aside copy back into place before a write to a pack that is still resolved, which restores the last
- * committed state; the interrupted commit was never acknowledged. A pack listed from the pack domain
- * ({@link StorageRootLocations}) is not resolved in that state, plain or linked, so it is not repaired there yet: move
- * the aside copy back by hand (for a linked pack, it sits beside the link's target and is named after the target). Making the repair reachable is
- * <a href="https://github.com/spec-kitty/spec-kitty-charter/issues/281">#281</a>.
+ * directory, only the {@code <name>.pack-old-*} aside copy (and the staging copy); for a linked pack the target is
+ * missing, its aside copy sits beside it and is named after it, and the link dangles. The next listing of the pack
+ * domain repairs it under the pack's write lock ({@link StorageRootLocations}, {@link PackWriteLocks},
+ * <a href="https://github.com/spec-kitty/spec-kitty-charter/issues/281">#281</a>): {@link #missingLiveDirectory(Path)}
+ * finds the missing directory, following a dangling link to its target, and {@link #restoreInterruptedSwap(Path)} moves
+ * a sole aside copy back, which restores the last committed state; the interrupted commit was never acknowledged. A
+ * successful swap hides its aside copy ({@code .pack-discard-*}) before deleting it, and an aside copy found beside a
+ * live directory (a crash after the second rename) is hidden by the next listing or commit
+ * ({@link #hideStaleAsides(Path)}), so a stale copy is not restored over a pack that is later removed on purpose. A
+ * crash in the instant between the second rename and that hiding, followed by the pack's removal before any listing,
+ * is the one case left.
  *
  * <p>This store never performs the per-child {@code save()} upsert of {@link DomainRepositoryService}; registration
  * goes load &rarr; mutate &rarr; revalidate the whole aggregate in memory &rarr; commit the delta here.
@@ -90,8 +96,11 @@ public final class PackCommitStore {
             }
             throw swapFailed;
         }
-        deleteTree(aside);
+        deleteTree(hidden(aside));
     };
+
+    /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
+    private static final int MAX_LINK_HOPS = 40;
 
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
@@ -156,6 +165,7 @@ public final class PackCommitStore {
                 throw new PreconditionException(
                         PreconditionException.Kind.STALE, "The If-Match precondition is stale; read the pack again.");
             }
+            hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
             if (artifact != null) {
@@ -180,38 +190,108 @@ public final class PackCommitStore {
     }
 
     /**
+     * The directory a crash between the swap's two renames may have left missing for a pack entry: the entry itself
+     * for a plain pack, the final target of its link chain for a linked one. It is written as the real path of its
+     * parent plus its name, which is where the swap left the aside copy, since a commit swaps the real path. Each link
+     * is read with {@link Files#readSymbolicLink} and resolved against the real path of the directory that holds it,
+     * since {@code toRealPath} fails on a dangling link and a lexical {@code ..} under a linked directory goes wrong.
+     *
+     * @param entry the pack's entry under the pack domain
+     * @return the missing directory, or empty when it exists or the chain cannot be followed
+     */
+    static Optional<Path> missingLiveDirectory(Path entry) {
+        Path current = entry;
+        try {
+            for (int hop = 0; hop <= MAX_LINK_HOPS; hop++) {
+                Path parent = current.getParent();
+                Path name = current.getFileName();
+                if (parent == null || name == null) {
+                    return Optional.empty();
+                }
+                if (!Files.isSymbolicLink(current)) {
+                    boolean missing = !Files.exists(current, LinkOption.NOFOLLOW_LINKS)
+                            && !".".equals(name.toString())
+                            && !"..".equals(name.toString());
+                    return missing ? Optional.of(parent.toRealPath().resolve(name)) : Optional.empty();
+                }
+                current = parent.toRealPath().resolve(Files.readSymbolicLink(current));
+            }
+        } catch (IOException unresolved) {
+            // A parent that does not resolve holds no aside copy the service left.
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Repairs a swap a crash interrupted between its two renames: when {@code live} is missing and exactly one
      * {@code <name>.pack-old-*} directory sits beside it, that aside copy (the last committed state) is moved back into
      * place. With zero or several candidates nothing is guessed. The caller must hold the pack's write lock, since a
      * commit in flight is in that same state for an instant.
      *
-     * @param live the pack's live directory
+     * @param live the pack's live directory, not a link: for a linked pack, its target
+     * @return whether an aside copy was moved back
      * @throws CharterRefusal with {@code PACK_UNREADABLE} when the restore fails
      */
-    static void restoreInterruptedSwap(Path live) {
+    static boolean restoreInterruptedSwap(Path live) {
         Path parent = live.getParent();
         if (parent == null || Files.exists(live, LinkOption.NOFOLLOW_LINKS) || !Files.isDirectory(parent)) {
-            return;
+            return false;
+        }
+        List<Path> asides = asidesOf(live);
+        if (asides.size() != 1) {
+            return false;
+        }
+        try {
+            moveDirectory(asides.getFirst(), live);
+            return true;
+        } catch (IOException failure) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "cannot restore " + live + " after an interrupted commit", failure);
+        }
+    }
+
+    /**
+     * The {@code <name>.pack-old-*} aside copies beside a live directory.
+     *
+     * @param live the pack's live directory, not a link: for a linked pack, its target
+     * @return the aside copies, in no particular order
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the parent cannot be listed
+     */
+    static List<Path> asidesOf(Path live) {
+        Path parent = live.getParent();
+        if (parent == null || !Files.isDirectory(parent)) {
+            return List.of();
         }
         String prefix = live.getFileName() + ".pack-old-";
-        List<Path> asides;
         try (Stream<Path> siblings = Files.list(parent)) {
-            asides = siblings.filter(
+            return siblings.filter(
                             sibling -> String.valueOf(sibling.getFileName()).startsWith(prefix))
                     .filter(sibling -> Files.isDirectory(sibling, LinkOption.NOFOLLOW_LINKS))
                     .toList();
         } catch (IOException failure) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot inspect the parent of " + live, failure);
         }
-        if (asides.size() != 1) {
-            return;
+    }
+
+    /**
+     * Hides the aside copies beside a live directory that exists: they are residue of a swap that finished (a crash
+     * after its second rename, or a delete that failed), never a state to restore, and left under their
+     * {@code .pack-old-*} name they would be restored if the pack were later removed on purpose. The caller must hold
+     * the pack's write lock, since a commit in flight has its aside copy beside the new live directory for an instant.
+     *
+     * @param live the pack's live directory, not a link: for a linked pack, its target
+     * @return whether any aside copy was hidden
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the parent cannot be listed
+     */
+    static boolean hideStaleAsides(Path live) {
+        if (!Files.isDirectory(live, LinkOption.NOFOLLOW_LINKS)) {
+            return false;
         }
-        try {
-            moveDirectory(asides.getFirst(), live);
-        } catch (IOException failure) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "cannot restore " + live + " after an interrupted commit", failure);
+        boolean hidden = false;
+        for (Path aside : asidesOf(live)) {
+            hidden |= hidden(aside) != null;
         }
+        return hidden;
     }
 
     // ---- revision ------------------------------------------------------------------------------------------------
@@ -332,6 +412,23 @@ public final class PackCommitStore {
             });
         } catch (IOException ignored) {
             // A failure to clean the scratch directory never masks the real outcome of the commit.
+        }
+    }
+
+    /**
+     * Hides an aside copy as {@code .pack-discard-*}, so a delete that fails half-way leaves inert hidden residue,
+     * never a {@code .pack-old-*} copy the listing's repair would bring back. Where it cannot be renamed it is left as
+     * it is, whole, rather than half-deleted under a name the repair trusts; the next listing or commit hides it.
+     *
+     * @return the hidden copy, or null when it could not be hidden
+     */
+    private static @Nullable Path hidden(Path aside) {
+        Path discard = aside.resolveSibling(".pack-discard-" + unique());
+        try {
+            moveDirectory(aside, discard);
+            return discard;
+        } catch (IOException notHidden) {
+            return null;
         }
     }
 
