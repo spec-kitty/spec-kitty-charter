@@ -169,6 +169,30 @@ Feature: The offering lists the configured packs in force
     And the response has no "Charter-Source-Fingerprint" header
     And the response has no "Link" header
 
+  Scenario: A configured pack without pack.yaml refuses the offering with pack_unreadable
+    Operator ruling of 2026-10-31: a configured pack without a readable pack.yaml is not a readable
+    canonical pack, so the offering cannot name it and answers nothing rather than a partial list.
+    Given the org pack "qa" with the file "pack.yaml":
+      """
+      pack_id: qa
+      pack_version: 1.0.0
+      parent_pack: null
+      name: qa pack
+      pack_level: org
+      """
+    And the org pack "bare" with the file "tactics/rehearse.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: rehearse
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the response has no "Charter-Source-Fingerprint" header
+
   Scenario: A configured pack whose directory is missing refuses the offering with pack_unreadable
     Given the org pack "qa" with the file "pack.yaml":
       """

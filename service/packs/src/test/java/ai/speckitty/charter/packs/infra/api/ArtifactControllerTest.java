@@ -11,6 +11,7 @@ import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.ConsistentRead;
@@ -21,6 +22,7 @@ import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.TacticReadService;
 import ai.speckitty.charter.packs.application.ToolguideReadService;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
@@ -28,6 +30,8 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -131,6 +135,8 @@ class ArtifactControllerTest {
     private ArtifactController controller(ConsistentRead read, PackRevisions revisions) {
         InMemoryStore store = new InMemoryStore();
         ArtifactReadService reads = new ArtifactReadService(
+                store,
+                store,
                 store,
                 read,
                 new TacticReadService(store, store, read),
@@ -368,7 +374,9 @@ class ArtifactControllerTest {
                     DirectiveRepository,
                     StyleguideRepository,
                     ParadigmRepository,
-                    ToolguideRepository {
+                    ToolguideRepository,
+                    PackCatalogRepository,
+                    PackDescriptorRepository {
 
         @Override
         public Pack load(PackIdentifier asked) {
@@ -376,6 +384,26 @@ class ArtifactControllerTest {
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + asked.value());
             }
             return pack;
+        }
+
+        @Override
+        public List<ConfiguredPack> configured() {
+            return List.of(new ConfiguredPack(PACK, PackLevel.ORG));
+        }
+
+        @Override
+        public PackDescriptor get(PackIdentifier asked) {
+            return load(asked).descriptor();
+        }
+
+        @Override
+        public Optional<PackDescriptor> find(PackIdentifier asked) {
+            return Optional.of(get(asked));
+        }
+
+        @Override
+        public void save(PackIdentifier asked, PackDescriptor descriptor) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

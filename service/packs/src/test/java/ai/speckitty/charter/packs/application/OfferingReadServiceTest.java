@@ -86,21 +86,20 @@ class OfferingReadServiceTest {
         assertThat(entry.level())
                 .as("the configured level, not the declared one")
                 .isEqualTo(PackLevel.PROJECT);
-        assertThat(entry.name()).contains("local pack");
-        assertThat(entry.version()).contains("1.0.5");
+        assertThat(entry.name()).isEqualTo("local pack");
+        assertThat(entry.version()).isEqualTo("1.0.5");
     }
 
     @Test
-    void aPackWithoutADescriptorHasNoNameAndNoVersion() {
+    void aPackWithoutADescriptorRefusesTheWholeOfferingAsUnreadable() {
+        // Operator ruling of 2026-10-31: a configured pack without pack.yaml is no readable canonical pack.
         descriptors.put("bare", Optional.empty());
+        List<ConfiguredPack> packs = List.of(configured("qa", PackLevel.ORG), configured("bare", PackLevel.ORG));
 
-        OfferingReadService.OfferingEntry entry = service(List.of(configured("bare", PackLevel.ORG)))
-                .offering()
-                .value()
-                .getFirst();
-
-        assertThat(entry.name()).isEmpty();
-        assertThat(entry.version()).isEmpty();
+        assertThatThrownBy(() -> service(packs).offering()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.getMessage()).isEqualTo("pack bare has no pack.yaml");
+        });
     }
 
     @Test

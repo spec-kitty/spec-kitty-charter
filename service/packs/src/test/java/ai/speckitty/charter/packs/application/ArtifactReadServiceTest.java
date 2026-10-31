@@ -7,7 +7,9 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
@@ -15,6 +17,8 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -48,6 +52,8 @@ class ArtifactReadServiceTest {
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final PackIdentifier EMPTY = new PackIdentifier("empty");
     private static final PackIdentifier ABSENT = new PackIdentifier("absent");
+    // Configured, but without a readable pack.yaml: its files can be read one by one, the pack aggregate cannot.
+    private static final PackIdentifier BARE = new PackIdentifier("bare");
     private static final String D1 = "sha256:" + "1".repeat(64);
     private static final String D2 = "sha256:" + "2".repeat(64);
     private static final PackRevision REVISION = PackRevision.compute(List.of("committed"));
@@ -66,7 +72,13 @@ class ArtifactReadServiceTest {
                     .tactic(tactic("Zeta", "Zeta"))
                     .build(),
             EMPTY,
-            Pack.builder().id(EMPTY).descriptor(descriptor(EMPTY)).build());
+            Pack.builder().id(EMPTY).descriptor(descriptor(EMPTY)).build(),
+            BARE,
+            Pack.builder()
+                    .id(BARE)
+                    .descriptor(descriptor(BARE))
+                    .tactic(tactic("rehearse", "Rehearse"))
+                    .build());
 
     private final AtomicInteger digests = new AtomicInteger();
     private final ArtifactReadService service = serviceDigesting(() -> {
@@ -79,6 +91,8 @@ class ArtifactReadServiceTest {
         ConsistentRead read = new ConsistentRead(sources);
         PackRevisions revisions = pack -> REVISION;
         return new ArtifactReadService(
+                store,
+                store,
                 store,
                 read,
                 new TacticReadService(store, store, read),
@@ -245,6 +259,28 @@ class ArtifactReadServiceTest {
                                     CharterRefusal.class,
                                     cause -> assertThat(cause.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
                 });
+    }
+
+    // ---- a configured pack without a readable pack.yaml (operator ruling of 2026-10-31) -----------------------
+
+    @Test
+    void aConfiguredPackWithoutAReadableDescriptorIsUnreadableOnTheListNotNotFound() {
+        assertThatThrownBy(() -> service.list(BARE, Optional.empty(), Optional.empty(), 50))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"tactic", "directive", "toolguide", "bogus"})
+    void aConfiguredPackWithoutAReadableDescriptorIsUnreadableOnTheItem(String kind) {
+        assertThat(codeOf(() -> service.item(BARE, kind, "rehearse"))).isEqualTo(RefusalCode.PACK_UNREADABLE);
+    }
+
+    @Test
+    void anUnconfiguredPackIsStillNotFoundOnTheItemOfAServedKind() {
+        assertThat(codeOf(() -> service.item(ABSENT, "tactic", "rehearse"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+        assertThat(codeOf(() -> service.item(ABSENT, "directive", "GUARD"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @Test
@@ -433,10 +469,21 @@ class ArtifactReadServiceTest {
                     DirectiveRepository,
                     StyleguideRepository,
                     ParadigmRepository,
-                    ToolguideRepository {
+                    ToolguideRepository,
+                    PackCatalogRepository,
+                    PackDescriptorRepository {
 
+        /** The aggregate needs pack.yaml: {@link #BARE} has none, so it cannot be assembled. */
         @Override
         public Pack load(PackIdentifier pack) {
+            if (pack.equals(BARE)) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack bare has no pack.yaml");
+            }
+            return contents(pack);
+        }
+
+        /** A pack's files, as the per-kind loads read them one by one, with or without a pack.yaml. */
+        private Pack contents(PackIdentifier pack) {
             Pack found = stored.get(pack);
             if (found == null) {
                 throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
@@ -445,36 +492,60 @@ class ArtifactReadServiceTest {
         }
 
         @Override
+        public List<ConfiguredPack> configured() {
+            return stored.keySet().stream()
+                    .map(id -> new ConfiguredPack(id, PackLevel.ORG))
+                    .toList();
+        }
+
+        @Override
+        public PackDescriptor get(PackIdentifier pack) {
+            return find(pack).orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack.yaml"));
+        }
+
+        @Override
+        public Optional<PackDescriptor> find(PackIdentifier pack) {
+            return pack.equals(BARE)
+                    ? Optional.empty()
+                    : Optional.of(contents(pack).descriptor());
+        }
+
+        @Override
+        public void save(PackIdentifier pack, PackDescriptor descriptor) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Optional<Tactic> load(PackIdentifier pack, TacticIdentifier tactic) {
-            return load(pack).tactics().stream()
+            return contents(pack).tactics().stream()
                     .filter(t -> t.id().equals(tactic))
                     .findFirst();
         }
 
         @Override
         public Optional<Directive> load(PackIdentifier pack, DirectiveIdentifier directive) {
-            return load(pack).directives().stream()
+            return contents(pack).directives().stream()
                     .filter(d -> d.id().equals(directive))
                     .findFirst();
         }
 
         @Override
         public Optional<Styleguide> load(PackIdentifier pack, StyleguideIdentifier styleguide) {
-            return load(pack).styleguides().stream()
+            return contents(pack).styleguides().stream()
                     .filter(s -> s.id().equals(styleguide))
                     .findFirst();
         }
 
         @Override
         public Optional<Paradigm> load(PackIdentifier pack, ParadigmIdentifier paradigm) {
-            return load(pack).paradigms().stream()
+            return contents(pack).paradigms().stream()
                     .filter(p -> p.id().equals(paradigm))
                     .findFirst();
         }
 
         @Override
         public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
-            return load(pack).toolguides().stream()
+            return contents(pack).toolguides().stream()
                     .filter(t -> t.id().equals(toolguide))
                     .findFirst();
         }

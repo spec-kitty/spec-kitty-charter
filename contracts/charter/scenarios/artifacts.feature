@@ -511,6 +511,31 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       | /packs/nope/artifacts/tactic/rehearse |
       | /packs/nope/artifacts/bogus/x         |
 
+  Scenario Outline: A configured pack without pack.yaml is pack_unreadable, on the list and on the item (<path>)
+    Operator ruling of 2026-10-31: a configured pack without a readable pack.yaml is not a readable
+    canonical pack. It is configured, so it is not pack_not_found; it cannot be read, whatever its
+    other files hold, so every read of it is a 500 pack_unreadable, never a partial answer.
+    Given the org pack "bare" with the file "tactics/rehearse.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: rehearse
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    When I GET "<path>"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the response has no "Charter-Source-Fingerprint" header
+
+    Examples:
+      | path                                  |
+      | /packs/bare/artifacts                 |
+      | /packs/bare/artifacts?kind=tactic     |
+      | /packs/bare/artifacts/tactic/rehearse |
+      | /packs/bare/artifacts/tactic/nope     |
+      | /packs/bare/artifacts/bogus/x         |
+
   Scenario Outline: A path kind the service does not serve is kind_not_found (<kind>)
     When I GET "/packs/qa/artifacts/tactic/rehearse"
     Then the response status is 200
