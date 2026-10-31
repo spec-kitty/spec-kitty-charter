@@ -55,15 +55,18 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M69584627D0VY2RDDJZPEX15",
       "last_transition_at": "2026-10-31T14:19:05.282219+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Link/Links schemas in the #125-agreed shape (+_index); structural _links closure exemption (LinksMap) with 4 fixtures, red-first; ContractConformance validates schema-valued additionalProperties (true/{}/null still refused) and matches path+method preferring the concrete template, red-first; Relation enum + Hypermedia builder (package-private LinkValue record) with HypermediaTest. verifyAll green: contracts 181, deployable 373, packs 2224 (3 skipped), kernel 841, missions 59, profiles 9; 0 failures. No new suppressions."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 22841,
