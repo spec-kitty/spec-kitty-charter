@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-10-27T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -287,7 +287,9 @@ kebab-case.
 
 ### Mission step contract — `*.step-contract.yaml`
 
-The steps of one action of one mission type.
+The structural sub-steps of one mission step and what each delegates to. The step's role and
+expected artifacts live on the mission step in its mission-type file, not here
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) decision 2).
 
 - **Fields:** `schema_version`, `id`, `action`, `mission`, `steps[]`. Each step has `id`,
   `description` and either a `command` or a `delegates_to` block (`kind` plus `candidates`).
@@ -322,18 +324,57 @@ Describes one blob. Model: `AssetManifest` (frozen, extra keys forbidden).
 - **Naming:** `<blob-file-name>.asset.yaml` beside the blob.
 - **CRG:** `asset:<id>`.
 
-### Mission type — `missions/mission_types/<id>.yaml`
+### Mission type — `missions/<id>/<id>.mission-type.yaml`
 
-Declares a mission type (`schema_version`, `id`, `display_name`, and its workflow). Its
-actions and governance are graph data: `mission_type:<id>` `requires` its actions and
-`scope`s type-wide governance. `mission-type` is an operator token, not an `ArtifactKind`.
+One file per mission type, holding its steps as sub-items. Schema: `mission-type.schema.json`,
+closed at every level, the sanitized shape of
+[ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) decision 3. A mission
+type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
+
+- **Required:** `schema_version` (`"1.0"`), `id` (`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, the file
+  stem), `title`, `description`, `steps` (at least one).
+- **Key fields:** `content` (standing context for every step's agent),
+  `requires_substantive_spec` (only `true`; absent means not required), `path_conventions`
+  (workspace directories: `workspace`, `tests`, `deliverables`, `documentation`, `data`),
+  `expected_output_artifacts` (the mission's postconditions), `references`, `on_demand_steps`.
+  An optional list holds at least one entry when present.
+- **Steps:** `steps` is the one run order; `on_demand_steps` are invoked by a command, outside
+  the sequence, and keep their authored order. Step ids are unique across both lists. A step is
+  `{id, title, description?, role?, prompt_path?, guidelines_path?, expected_input_artifacts?,
+  expected_output_artifacts?, references?}`. `description` is a one-line summary of at most 160
+  characters; `role` is a role token, never a profile
+  ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
+- **Expected artifacts:** a step's inputs are its preconditions and its outputs its
+  postconditions. An input is `{artifact_key, path_pattern, blocking?}`; an output adds
+  `artifact_class` (`input`, `output`, `evidence`, `workflow` or `runtime`) and `template_path`
+  (relative to the mission-type file, for example `templates/spec-template.md`). `artifact_key`
+  is an opaque dotted key, unique within one list; `path_pattern` is a glob in the mission's
+  workspace, not a pack file; `blocking` is only `true`.
+- **References:** `{type, id, when?, reason?}`, `type` one of `directive`, `tactic`, `paradigm`,
+  `styleguide`, `toolguide`, `procedure`. The type's references are its recipe ingredients; a
+  step's are its action-scoped guidance. They are kept but never minted as relationships (#189).
+- **Companions:** `prompt_path` is `steps/<id>.prompt.md` and `guidelines_path` is
+  `steps/<id>.guidelines.md`, both derived from the step id: whether a step has one is authored,
+  any other value is refused. Both are Markdown companions (schemas `mission-step-prompt` and
+  `mission-step-guidelines`). A prompt's frontmatter holds only `description`, the prompt's
+  detailed description; guidelines have no frontmatter.
+- **Templates:** files under `missions/<id>/templates/` are template payloads, held as bytes,
+  with the id `<id>/<path>`.
+- **Placement:** a `*.mission-type.yaml` anywhere but `missions/<id>/<id>.mission-type.yaml` is
+  refused by the load and in validate mode.
+- **Retired:** `mission_types/<t>.yaml`, `mission.yaml`, `mission-runtime.yaml`,
+  `governance-profile.yaml`, `expected-artifacts.yaml`, `actions/<a>/index.yaml`,
+  `mission-steps/**` and `command-templates/*` are refused by name (DIV-502).
+- **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node until
+  edge authority is ruled ([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)).
 
 ### Anti-pattern and template
 
 - **Anti-pattern** has no descriptor file. It is a node re-kinded as `anti_pattern` inside
   another kind's graph shard, the target of `rejects` edges.
-- **Template** has no descriptor pattern. Templates are mission-type content resolved
-  through the template chain and linked with `instantiates` edges.
+- **Template** has no descriptor pattern. A file under a pack's `templates/` is a template
+  whose id is its path there; a file under `missions/<type>/templates/` is one whose id is
+  `<type>/<path>`. Both are held as bytes and linked with `instantiates` edges.
 
 ## Project-side configuration
 

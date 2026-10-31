@@ -27,7 +27,7 @@ How to build the charter service and run every check CI runs.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
   (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. The checkout must be
   clean and at `openPacksRef` in `gradle.properties` (currently
-  `5df92a5d02e47e8877364de5e2deb06c016d30a9`); the build refuses otherwise, and prints the
+  `86d9284695a18a71f9f7cc934f0305b1b03de19e`); the build refuses otherwise, and prints the
   command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
   stash or clean the checkout).
 - **The full Git history and tags.** The breaking-change check compares the contract with its

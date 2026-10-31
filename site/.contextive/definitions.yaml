@@ -94,17 +94,21 @@ contexts:
       - name: "Living Documentation Sync (Directive)"
         definition: "Directive DIRECTIVE_037. Requires behavior-describing artifacts to evolve together: when observable behavior changes, the canonical examples, acceptance checks, narrative specs, user docs, glossary entries, code-level docs, and architecture records are updated in the same change."
       - name: "Mission step"
-        definition: "One step of a mission type's recipe. A step names the role it needs, never a profile."
+        definition: "One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its references (its action-scoped guidance) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Mission type"
-        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model and endpoints."
+        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model and endpoints. Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Mission-Type Profile"
         definition: "Superseded by the recipe's ingredients of a Mission type. Today's shipped `governance-profile.yaml` per mission type, read by core as \"while a mission of this type runs, these artifacts are in scope\". In the new model a mission type names the guidance it calls for by id, activating the mission type is the consent, and it names no profiles (steps ask for roles; `selected_agent_profiles` is dropped). Former definition, kept for history: Shipped governance profile per mission type (`software-dev`, `documentation`, `research`, `plan`) at `packs/built-in/missions/<type>/governance-profile.yaml`. Declares default selections and default activations for that mission type. The charter resolver reads `meta.json mission_type`, picks the matching profile, and unions its declarations into the project + org selections. No `software-dev-default` fallback for non-software missions — the resolver hard-fails if a mission's `mission_type` has no matching profile and the project has not declared its own."
         meta:
           status: "deprecated"
+      - name: "On-demand step"
+        definition: "A mission step invoked by an explicit command, outside its mission type's run order, listed in the type's `on_demand_steps`; for example software-dev's `charter` and `tasks-outline`. Its authored order is kept, but it is not a run order (ADR-0044)."
+        meta:
+          status: "canonical"
       - name: "Organization Tier"
         definition: "The middle layer of the three-layer CRG model, contributed by one or more org Charter Packs configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Each pack ships an `org-charter.yaml` (governance policies and required artifact selections) and an optional `drg/fragment.yaml` (CRG extension nodes and edges). Organization-tier content propagates to all consumer projects via `apply_org_charter_to_interview` and the standard charter pre-fill path."
       - name: "Overlay Enhancement — `enhances` (CRG Relation)"
@@ -132,7 +136,7 @@ contexts:
       - name: "Ratchet Baseline"
         definition: "A snapshot of a quality metric (failure count, symbol count, dead-module count) recorded in `tests/architectural/ratchet-baseline-*.md` and enforced by the corresponding architectural gate. A ratchet baseline only moves in the decreasing direction during normal development; any increase fails CI. Org packs may declare additional ratchet metrics via governance policies, but cannot lower an existing shipped baseline."
       - name: "Recipe ingredients"
-        definition: "The guidance a mission type names by id (today in `governance-profile.yaml`). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile."
+        definition: "The guidance a mission type names by id: the `references` of its mission-type file (core reads them from `governance-profile.yaml`, which the service retires). They are kept by id and mint no relationship until edge authority is ruled (#189); until then the graph's `scope` edges carry their activation meaning. While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile."
         meta:
           status: "canonical"
       - name: "Reconciliation — `reconciles_tension` (CRG Relation)"
@@ -164,11 +168,15 @@ contexts:
       - name: "Specification by Example (Paradigm)"
         definition: "A paradigm that builds shared understanding of behavior through concrete, business-readable examples which become the canonical source of truth for requirements, acceptance checks, and living documentation."
       - name: "Step contract"
-        definition: "The detailed version of a mission step: what the step does, its inputs and outputs, and the role it asks for."
+        definition: "The structural sub-steps of one mission step and what each delegates to (the `mission_step_contract` kind). The step's role and expected artifacts live on the mission step, not on its contract (ADR-0044)."
+        meta:
+          status: "canonical"
+      - name: "Step guidelines"
+        definition: "A mission step's working notes for the agent: the Markdown companion `steps/<id>.guidelines.md`, named by `guidelines_path`, with no frontmatter. Not the charter Guideline, which is a governance rule (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Step template"
-        definition: "The prompt fed to the agent when a mission step runs."
+        definition: "The prompt fed to the agent when a mission step runs: the step's Markdown companion `steps/<id>.prompt.md`, named by `prompt_path`. Its frontmatter holds only `description`, a detailed description longer than the step's one-line one. Not a template payload: a template is a file under `templates/` (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Styleguide"
@@ -244,7 +252,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Template (pack)"
-        definition: "A file under a pack's top-level `templates/` directory, read as an artifact whose local id is its path under that directory (`writing/meeting-minutes.md`, URN `template:writing/meeting-minutes.md`) and held as its exact bytes, frontmatter included. Not activatable. Mission templates under `missions/<mission>/templates/` are mission-type content, not pack templates (ADR-0040)."
+        definition: "A file under a pack's top-level `templates/` directory, read as an artifact whose local id is its path under that directory (`writing/meeting-minutes.md`, URN `template:writing/meeting-minutes.md`) and held as its exact bytes, frontmatter included. Not activatable. A mission template, a file under `missions/<type>/templates/`, is a template too, with the id `<type>/<path>` (ADR-0040, ADR-0044)."
         meta:
           status: "canonical"
       - name: "Preset item"

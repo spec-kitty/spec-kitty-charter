@@ -88,6 +88,8 @@ overrides
 pack
 paradigm
 policy
+postcondition
+postconditions
 precedence
 preset
 procedure

@@ -77,6 +77,22 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+### Mission types are an artifact kind (issue #194)
+
+No schema, operation, parameter, response or header changes (mission mission-type-consolidation, ADR-0044).
+
+- Changed: `putPackRelationship` (`PUT /packs/{packId}/relationships`) registers an edge whose `from` is
+  `mission_type:<id>` when the pack holds that mission type's file, `missions/<id>/<id>.mission-type.yaml`. Until
+  now every such edge was refused 409 `registration_conflict`: a mission type was a node kind only, so no artifact of
+  the pack had that URN. A `from` naming a mission type the pack does not hold is still 409. The
+  `NodeKind` schema's description, "every artifact kind plus action and mission_type", is kept: `mission_type` is
+  now one of the artifact kinds, so the enum is unchanged. Recorded as DIV-503 in the divergence register.
+- Changed: the source fingerprint and the pack revision (`ETag`) of a pack with mission content change once, as the
+  mission-type file replaces the retired mission files.
+- Scenarios: `relationships.feature` is new ("A relationship may be authored from a mission type") and holds "A
+  relationship from a mission type of the pack is registered (ADR-0044, NFR-001)" and "A relationship from a mission
+  type the pack does not hold is still a conflict". No step is new.
+
 ### Pack-level files round trip (issue #195)
 
 - Changed: the `DiagnosticCode` value `pack_unknown_key` is retired and never raised (ADR-0036

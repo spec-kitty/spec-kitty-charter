@@ -3,8 +3,8 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..202, ADR-0020, proposed), pack-level files (DIV-301..399, ADR-0042) and procedures and
-# toolguide guides (DIV-401..499, ADR-0043). Consumers: the
+# (DIV-201..202, ADR-0020, proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
+# toolguide guides (DIV-401..499, ADR-0043) and mission types (DIV-501..599, ADR-0044). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
 # enforced.
@@ -671,3 +671,63 @@
   evidence:
     - "charter: contracts/packs/schemas/toolguide-guide.schema.json; GuideMarkdown; FileSystemPackInspectorTest; ToolguideGuideTest"
     - "corpus case: the 24 pinned guides at openPacksRef 5df92a5d"
+
+# Mission types (DIV-501..599), mission mission-type-consolidation-01M65MCK (#194, ADR-0044).
+# Core paths at spec-kitty c678037c.
+- id: DIV-501
+  surface: A mission type is an artifact kind
+  core: >-
+    mission-type is a charter kind token but not an ArtifactKind: from_operator_token raises
+    MissionTypeNotAnArtifactKind, and callers route it to the mission-tier path
+    (offering/artifact_kinds.py).
+  service: >-
+    mission_type is an artifact kind (ArtifactKind.MISSION_TYPE, plural mission_types), bound in
+    the kind registry and a pack-manifest constituent kind; its node kind is artifact-backed. One
+    file per type, missions/<id>/<id>.mission-type.yaml, holds the steps as sub-items of steps and
+    on_demand_steps; a mission step is a domain type with no artifact kind or fragment plural.
+  rationale: >-
+    A mission type is offered and activated like an artifact and has its own domain model (#148);
+    bindings, CharterArtifact.kind() and the pack aggregate are keyed by ArtifactKind (ADR-0037).
+  ruling: operator rulings on #194 (2026-10-28, 2026-10-30); #186 "as if core does not exist"
+  status: open
+  since: 2026-10-30
+  evidence:
+    - "core: offering/artifact_kinds.py:53-61 (MissionTypeNotAnArtifactKind) and 325-329 (from_operator_token)"
+    - "charter: ArtifactKind.MISSION_TYPE; ArtifactKindTest; NodeKindTest; VocabularyEqualityTest; contracts/packs/schemas/mission-type.schema.json; MissionTypeSchemaTest; MissionTypeBindingTest"
+    - "corpus case: the six mission types of the open packs (built-in 4, cave-kitty 1, qa 1), migrated by the service's own writer (spec-kitty/spec-kitty-open-packs#95) and re-pinned at openPacksRef 86d92846"
+- id: DIV-502
+  surface: The retired mission files
+  core: >-
+    Reads a mission type from up to eight file families: mission_types/<t>.yaml, mission.yaml,
+    mission-runtime.yaml, governance-profile.yaml, expected-artifacts.yaml, actions/<a>/index.yaml,
+    mission-steps/**/step.yaml with prompt.md and guidelines.md, and command-templates/*.md.
+  service: >-
+    The families are retired: each has a retired rule in contracts/packs/file-kinds.yaml with its
+    reason. The load and validate mode refuse a retired file by name, it is never a companion, the
+    whole-pack gate buckets it as retired:, and it is digested in the fingerprint tail.
+  rationale: >-
+    One file says what a mission type is (ADR-0044 decisions 2 and 6); a stale file is refused, not
+    skipped.
+  ruling: operator ruling on #194 (2026-10-28), decision 5
+  status: open
+  since: 2026-10-30
+  evidence:
+    - "core: offering/missions/action_index.py:61; offering/missions/mission_step_repository.py:158 and 270; offering/missions/repository.py:394; offering/missions/mission_type_repository.py:449; activation/mission_type_profile_repository.py:50"
+    - "charter: contracts/packs/file-kinds.yaml (retired); RetiredFilesTest"
+    - "corpus case: the 153 retired files of the pinned built-in (121), cave-kitty (13) and qa (19) packs, removed by the migration (spec-kitty/spec-kitty-open-packs#95, at openPacksRef 86d92846)"
+- id: DIV-503
+  surface: A relationship from a mission type
+  core: >-
+    Has no relationship registration; an edge from mission_type:<id> is authored in a graph shard or
+    an org fragment and resolves when the graph declares the node.
+  service: >-
+    PUT /packs/{packId}/relationships registers an edge from mission_type:<id> when the pack holds
+    that mission type's file; before ADR-0044 every such edge was refused 409 registration_conflict.
+    A mission type the pack does not hold is still refused 409. No schema or operation changes.
+  rationale: The from of a registered edge must resolve to an artifact of the pack; a mission type is now one (DIV-501).
+  ruling: ADR-0044 (consequences); spec NFR-001 of the mission
+  status: open
+  since: 2026-10-30
+  evidence:
+    - "charter: contracts/charter/scenarios/relationships.feature; RelationshipRegistrationService"
+    - "charter: contracts/charter/CHANGELOG.md, 0.1.0-SNAPSHOT, Mission types are an artifact kind (issue #194)"

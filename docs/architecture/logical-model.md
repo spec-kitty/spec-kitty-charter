@@ -243,6 +243,7 @@ facts; it does not restate them.
 | `anti_pattern` | `anti-pattern` | no | yes | no | no | all |
 | `asset` | `asset` | no | no | yes | no | all |
 | `template` | `template` | no | no | no | no | all |
+| `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
 
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
@@ -258,10 +259,13 @@ facts; it does not restate them.
   commands accept. It drops `template`, `asset` and `anti_pattern` and adds `mission-type`.
   An anti-pattern is a re-kinded node inside another kind's graph fragment, never a
   standalone file, so it is activatable but not hand-written.
-- Current state: `mission-type` is in `CHARTER_KIND_TOKENS` but is not an artifact kind;
-  `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
-  mission-type path. Target: a mission type is activated through the same lever as the kinds
-  above, and keeps its own domain model ([Mission types](#mission-types-actions-and-step-contracts)).
+- `mission_type`: in core, `mission-type` is in `CHARTER_KIND_TOKENS` but is not an artifact
+  kind; `from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and it routes to the
+  mission-type path. The service makes it an artifact kind
+  ([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), DIV-501), with its
+  own domain model ([Mission types](#mission-types-actions-and-step-contracts)). It is activatable
+  because a preset lists it in its own `activated_mission_types` slot, not among its activated
+  kinds.
 
 ## The Charter Reference Graph (CRG)
 
@@ -275,12 +279,14 @@ carries its signed `impacts` strength (see the note under [Relations](#relations
 
 ### Node kinds
 
-The CRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it has:
+The CRG's `NodeKind` is wider than `ArtifactKind`. Beyond the artifact kinds it has `action`;
+the `mission_type` node is listed here too, because its edges carry the action sequence. In the
+service it is the node of the `mission_type` artifact kind (DIV-501):
 
 | Node kind | URN example | Role |
 |---|---|---|
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
-| `mission_type` | `mission_type:software-dev` | A mission type. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
+| `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
 | `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations
@@ -442,23 +448,39 @@ and toolguides.
 **What this means:** [Mission types and roles](/context/conceptual-model/#mission-types-and-roles).
 
 A **mission type** (for example `software-dev`, `documentation`, `research`, `plan`) defines a
-workflow as a sequence of **actions** (`action:<mission-type>/<action>`). A **mission step
-contract** describes the steps of one action and, per step, the kind of artifact the step
-delegates to and its candidates. Action-scoped context answers "what governs this action of
-this mission type in this project".
+workflow as an ordered list of **mission steps**, plus **on-demand steps** invoked by a command
+outside that order. In the graph a step is an **action** (`action:<mission-type>/<step>`). A
+**mission step contract** describes the structural sub-steps of one mission step and, per
+sub-step, the kind of artifact it delegates to and its candidates. Action-scoped context answers
+"what governs this action of this mission type in this project".
 
-- **Steps name roles** (target, [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)).
-  Current state: steps carry an `agent_profile:` field, and some packs pin a profile id per step.
-- **Activated and its own concept** (target). A mission type is offered and activated like any
-  artifact (today through `mission_type_activations`, not an `ArtifactKind`), and it has its own
-  domain model, separate from the charter kinds and from profiles, matching the mission-types
-  and profiles slices of [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
-- **Recipe ingredients.** Current state: a pack's `governance-profile.yaml` (core
-  `MissionTypeProfile`) lists the artifacts in scope while a mission of the type runs.
-- **Folder layout** (candidate, undecided). Today the layout differs between packs
-  (`missions/`, `mission-steps/`, `mission_types/`). Candidate target:
-  `missions/<type>/mission.yaml`, `missions/<type>/steps/<step>/` and
-  `missions/<type>/steps/<step>/template.md`.
+The service stores a mission type in one file, `missions/<id>/<id>.mission-type.yaml`, its steps
+as sub-items, each step's prompt and guidelines as Markdown companions in `steps/`
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/); fields in
+[Descriptors](/architecture/descriptors/)). The domain is the `:missions` module
+(`ai.speckitty.charter.missions.domain`): `MissionType`, `MissionStep`, `ExpectedInput`,
+`ExpectedArtifact` with `ArtifactClass`, `MissionReference`, `PathConventions`, and
+`StepDocument` with `StepSection` for a prompt or guidelines. It holds no file paths; the pack
+store binds the kind and depends on the module.
+
+- **Steps name roles** ([ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/)). A
+  step of a mission-type file has a `role`, never a profile. Core's step files still carry an
+  `agent_profile:` field; the migration mapped each profile to its primary role.
+- **Activated and its own concept.** A mission type is offered and activated like any artifact:
+  it is an artifact kind in the service (DIV-501), activated through a preset's
+  `activated_mission_types`, and it has its own domain model, separate from the charter kinds and
+  from profiles, matching the mission-types and profiles slices of
+  [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
+- **Recipe ingredients.** The mission type's own `references`, kept by id and never minted as
+  relationships until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) rules;
+  until then the graph's `scope` edges, which equal them, carry their activation meaning. Core
+  reads them from `governance-profile.yaml` (`MissionTypeProfile`), a file the service retires
+  (DIV-502).
+- **Folder layout** (decided, ADR-0044 decision 5). `missions/<type>/<type>.mission-type.yaml`,
+  `missions/<type>/steps/<step>.prompt.md`, `missions/<type>/steps/<step>.guidelines.md` and
+  `missions/<type>/templates/`. The eight older file families (`mission_types/<t>.yaml`,
+  `mission.yaml`, `mission-runtime.yaml`, `governance-profile.yaml`, `expected-artifacts.yaml`,
+  action indexes, `mission-steps/**` and `command-templates/*`) are refused by name (DIV-502).
 - **The `CharterArtifact` home** (target, [ADR-0035](/adr/0035-charter-artifact-interface-lives-in-the-kernel/),
   [#171](https://github.com/spec-kitty/spec-kitty-charter/issues/171)). With separate domain
   models for mission types and profiles, a shared artifact interface lives in `kernel.domain`, the
@@ -491,9 +513,10 @@ these are resources, used rather than followed.
   does not exist is refused. `mime` is metadata; it does not decide how the payload is read.
 - A **template** under a pack's top-level `templates/` is an artifact whose id is its path under
   that directory (`templates/writing/meeting-minutes.md` is
-  `template:writing/meeting-minutes.md`), held as its exact bytes, frontmatter included. Mission
-  templates (`missions/<mission>/templates/`) are mission-type content that resolves specially;
-  they are not modelled yet.
+  `template:writing/meeting-minutes.md`), held as its exact bytes, frontmatter included. A
+  mission template (`missions/<type>/templates/<path>`) is a template too, with the id
+  `<type>/<path>`, the id the graph's `template:` URNs already use (ADR-0044 decision 5). An
+  expected output of a step names its template with `template_path`.
 - How a pack file is read, written and compared is its **content form**, declared by its
   rule in `contracts/packs/file-kinds.yaml`, never chosen by its extension: asset payloads and
   templates are `bytes` ([ADR-0040](/adr/0040-content-form-and-payload-kinds/)).
