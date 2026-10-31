@@ -418,20 +418,29 @@ final class ContractConformance {
 
     /** The length, size and range bounds. */
     private static void bound(JsonNode value, String key, Number limit, String at, List<String> violations) {
-        int length = value.isString()
-                ? value.asString().codePointCount(0, value.asString().length())
-                : -1;
+        if (key.equals("minLength") || key.equals("maxLength")) {
+            lengthBound(value, key, limit, at, violations);
+        } else {
+            sizeOrRangeBound(value, key, limit, at, violations);
+        }
+    }
+
+    /** {@code minLength} and {@code maxLength}, in code points; a value that is not a string passes. */
+    private static void lengthBound(JsonNode value, String key, Number limit, String at, List<String> violations) {
+        if (!value.isString()) {
+            return;
+        }
+        int length = value.asString().codePointCount(0, value.asString().length());
+        if (key.equals("minLength") && length < limit.intValue()) {
+            violations.add(at + " is shorter than " + limit);
+        } else if (key.equals("maxLength") && length > limit.intValue()) {
+            violations.add(at + " is longer than " + limit);
+        }
+    }
+
+    /** {@code maxItems}, {@code minimum} and {@code maximum}. */
+    private static void sizeOrRangeBound(JsonNode value, String key, Number limit, String at, List<String> violations) {
         switch (key) {
-            case "minLength" -> {
-                if (length >= 0 && length < limit.intValue()) {
-                    violations.add(at + " is shorter than " + limit);
-                }
-            }
-            case "maxLength" -> {
-                if (length > limit.intValue()) {
-                    violations.add(at + " is longer than " + limit);
-                }
-            }
             case "maxItems" -> {
                 if (value.isArray() && value.size() > limit.intValue()) {
                     violations.add(at + " holds more than " + limit + " items");
