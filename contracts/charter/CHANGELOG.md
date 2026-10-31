@@ -99,6 +99,14 @@ the 0.x line, which ADR-0022 allows; no release carried the old shape.
 - Added: a raised-code check, `checkRefusalExamples` in `:contracts:check`. It reads the raised codes from
   `CharterRefusalCode`'s `x-refusal` map and fails a `CharterRefusal` example whose `code` is not raised, and a
   response description that names a code of the map that is not raised (#176).
+- Added: schemas `Link` (closed: `href` required, an absolute path under `/api/v1` or an RFC 6570 template;
+  `templated`; `method`, a string matching `^(GET|POST|PUT)$`, no enum; `title`) and `Links` (an open map from a
+  relation key to a `Link`), the hypermedia components of ADR-0019 D3. No operation references them yet, so they are
+  not in the bundle.
+- Changed (closure check): the one exemption ADR-0019 D3 names. A schema reached as the property `_links`, typed
+  `object` alone, whose `additionalProperties` is a schema titled `Link` that the checker proves closed, is closed.
+  Every other map is still reported; fixtures pin the exemption and three lookalikes (another property name, another
+  value title, an open `Link`).
 
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
