@@ -1,8 +1,8 @@
 ---
 title: Building the service
-description: How to build and test the charter service locally, what each verification task checks, and how to change the contract or a dependency.
+description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -10,6 +10,7 @@ related:
   - architecture/contract-and-dtos
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
+  - adr/0046-service-release-line-and-native-packaging
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -253,6 +254,85 @@ Releasing a contract version is a short procedure with its own rules, kept in on
 `contracts/_shared/` started as a copy of core's shared vocabulary. This repository's copy is
 canonical ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)): change
 it here when there is reason to, and list the change in `contracts/_shared/VENDORED.md`.
+
+## Release a service version
+
+The service releases on its own line, `service-v<version>`, separate from the contract's
+([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)). A release attaches:
+
+- a native executable for each of linux-x64, linux-arm64, macos-arm64 and windows-x64;
+- the jar, for every other host with Java 25;
+- one `.sha256` file per asset, and `SHA256SUMS`;
+- a build-provenance attestation of every asset.
+
+Core's service pin fetches and verifies these assets by name.
+
+1. **Choose the version** by the service's own SemVer (ADR-0046 decision 2):
+   - **major:** a command-line option, configuration key, environment variable or token rule is removed or
+     changed;
+   - **minor:** a new contract minor, or a new capability;
+   - **patch:** fixes only.
+
+   The service stays at 0.x until contract 1.0.0. A pre-release uses only letters, digits and dots
+   (`0.2.0-rc.1`), because core's tag rule refuses `0.2.0-rc-1` and any `+build` metadata.
+2. **For a final release, release the bundled contract first.** It is `info.version` of
+   `contracts/charter/openapi.yaml`, released as `contract-charter-v<info.version>`
+   ([Release a contract version](#release-a-contract-version)). A pre-release may bundle an unreleased
+   contract; its release notes say so.
+3. **In a pull request, set `version` in `gradle.properties` to the release** (`0.2.0`, no `-SNAPSHOT`). Check
+   the gate locally:
+
+   ```bash
+   git fetch --tags origin
+   ./gradlew checkServiceReleaseTag -PreleaseTag=service-v0.2.0
+   ```
+
+   It names the cause of a refusal, or writes `build/service-release/gate.properties`.
+4. **Merge the pull request.** The operator then tags the merge commit on `main` and pushes the tag:
+
+   ```bash
+   git tag service-v0.2.0 <merge-commit> && git push origin service-v0.2.0
+   ```
+
+   A tag ruleset on `service-v*` limits who can push one.
+5. **Set the next development version.** In a follow-up pull request, set `version` to the next
+   `-SNAPSHOT`.
+
+Pushing the tag runs `.github/workflows/service-release.yml`.
+
+- **What it does:**
+  - judges the tag;
+  - runs `verifyAll`;
+  - builds the jar and the four native executables, and starts each one with
+    `scripts/release/smoke-service.sh`;
+  - assembles the assets with `scripts/release/service-release-assets.sh`;
+  - checks them, attests them, and creates a GitHub release that is never marked latest. A tag with a
+    pre-release suffix makes a pre-release.
+- **When it publishes nothing:**
+  - the tag's form is wrong;
+  - the commit is not on `main`;
+  - the tag is not the build version;
+  - a final release's contract is unreleased;
+  - any target fails;
+  - the tag moved while the assets were built;
+  - a release of the tag already exists.
+- **Rehearsals:**
+  - A manual run of the workflow with a tag name builds the assets as a workflow artifact and publishes
+    nothing.
+  - `scripts/release/rehearse-service-release.sh` rehearses every gate refusal and the asset set without
+    any remote. It runs in CI on every change.
+
+To check a download:
+
+```bash
+sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kitty/spec-kitty-charter \
+  --signer-workflow spec-kitty/spec-kitty-charter/.github/workflows/service-release.yml \
+  --source-ref refs/tags/service-v0.2.0
+```
+
+The native executables are built in CI only, on each runner. Locally, `./gradlew :deployable:nativeCompile`
+needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.
 
 ## Change a dependency
 

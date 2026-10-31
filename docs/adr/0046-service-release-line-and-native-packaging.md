@@ -97,7 +97,7 @@ Core's requests that follow from it are
    | `spec-kitty-charter-service-<ver>-windows-x64.exe` | GraalVM native executable |
    | `spec-kitty-charter-service-<ver>.jar` | Spring Boot executable jar, the fallback (Java 25) |
    | `<asset>.sha256` | One per asset above: `<64 lowercase hex>  <asset>` |
-   | `SHA256SUMS` | Every asset above, in `sha256sum` format, bare names, sorted with `LC_ALL=C` |
+   | `SHA256SUMS` | The five assets above (not the `.sha256` files), in `sha256sum` format, bare names, sorted with `LC_ALL=C` |
 
    - The prefix `spec-kitty-charter-service` is no longer provisional.
    - The native executables are raw files, not archives: core runs them directly.
