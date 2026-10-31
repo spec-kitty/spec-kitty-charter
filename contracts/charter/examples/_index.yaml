@@ -2,3 +2,10 @@ files:
   - CharterRefusal.action-not-found.yaml
   - CharterRefusal.tactic-not-found.yaml
   - ServiceInfo.one-worktree.yaml
+  - CharterRefusal.activation-invalid.yaml
+  - CharterRefusal.activation-not-found.yaml
+  - CharterRefusal.artifact-locked.yaml
+  - CharterRefusal.artifact-not-found.yaml
+  - CharterRefusal.artifact-required.yaml
+  - CharterRefusal.preset-not-found.yaml
+  - CharterRefusal.mission-type-not-found.yaml

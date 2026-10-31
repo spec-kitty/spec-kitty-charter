@@ -1,0 +1,39 @@
+title: Link
+description: >-
+  One relation of a _links map (ADR-0019 D3, docs/development/hypermedia-hateoas.md): where it points and, when
+  the method is not GET, how to follow it. Shared with #126.
+type: object
+additionalProperties: false
+required:
+- href
+properties:
+  href:
+    type: string
+    pattern: ^/api/v1(/|$|\{)
+    description: An absolute path that includes the server prefix, or an RFC 6570 template of one.
+    x-derived:
+      rule: Built by the REST adapter from the operation the relation names.
+      inputs:
+      - openapi.yaml#/servers/0/url
+  templated:
+    type: boolean
+    description: True when href is an RFC 6570 template.
+    x-derived:
+      rule: True when the REST adapter writes href as a template.
+      inputs:
+      - openapi.yaml#/servers/0/url
+  method:
+    type: string
+    pattern: ^(GET|POST|PUT)$
+    description: The method to follow the relation with, when it is not GET; GET, POST or PUT. A DELETE relation waits for the activation writes (#291).
+    x-derived:
+      rule: The method of the operation the relation names.
+      inputs:
+      - openapi.yaml#/paths
+  title:
+    type: string
+    description: A human-readable label; never parsed.
+    x-derived:
+      rule: Written by the REST adapter.
+      inputs:
+      - openapi.yaml#/paths

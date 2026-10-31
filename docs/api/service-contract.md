@@ -172,7 +172,7 @@ when they return).
 These change closed response schemas, so they are breaking after 1.0.0. With open relation keys
 (ADR-0019 D3), the per-pack operations and their relations can follow additively.
 
-## Decided, not built: offering and activations (ADR-0020)
+## Offering and activations (ADR-0020): the activation set declared, the offering decided
 
 [ADR-0020](/adr/0020-offering-and-activations/) adds two top-level resources:
 `/offering`, the offer side (what can be used, merged from the packs in force), and
@@ -187,20 +187,24 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/offering/graph`, `/offering/presets`, `/offering/kinds` | The merged graph, offered presets, the kind taxonomy | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97), [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) |
 | `GET` | `/offering/mission-types…` | Mission types and the action index | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) |
 | `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
-| `POST` | `/activations` | Create an empty activation; the service mints the id. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44) |
-| `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | Register or replace, read, remove an activation. Reserved | [#44](https://github.com/spec-kitty/spec-kitty-charter/issues/44), [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
-| `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | Change one choice, with `If-Match`. Reserved | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
-| `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | The effective reads (R9). Reserved; R9 gates cutover stage 3 | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) |
+| `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 
-**Before 1.0.0** (the activation set first, in an early 0.x minor): the move of the action-context read; every activation operation declared
-in full with `x-reserved` and a `501`; the `ActivationConfig`, `Activation`, `ActivationChange`
-and skipped-report schemas; `ETag`, `If-Match` and `If-None-Match`; the activation refusal codes
-and `CharterRefusal`'s `requiredBy` and `violations`; and the hosted-first reshape of the security
+**The activation set is in the contract** (#125, inside `0.1.0-SNAPSHOT` by the operator's ruling of 2026-10-31):
+every activation operation is declared in full under the tag `Activation`, with `x-reserved` and a `501`, and
+answers `501` until it is built; the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
+`contracts/offering/schemas/`), `Activation`, `ActivationChange`, the skipped report and the effective-read schemas;
+`ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes, declared and not raised; and the shared
+`Problem`'s `requiredBy` and `violations`. The rulings are in ADR-0020's amendment of 2026-10-31.
+
+**Before 1.0.0, still to come:** the move of the action-context read and the hosted-first reshape of the security
 scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
 
 ## Planned write surface (later)
 
-The activation writes are declared in an early 0.x minor and built before cutover stage 3 (ADR-0020). The other
+The activation writes are declared and reserved (#125) and are built before cutover stage 3 (ADR-0020). The other
 writes come after the read stages, one at a time: charter document save and compile. See
 [Strangler transition](/architecture/strangler-transition/).
 

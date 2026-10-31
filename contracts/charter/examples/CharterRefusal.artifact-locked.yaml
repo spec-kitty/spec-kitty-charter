@@ -1,0 +1,10 @@
+summary: A pack locks the artifact, so it cannot be deactivated.
+value:
+  title: Artifact locked
+  status: 409
+  code: artifact_locked
+  detail: The pack internal locks the directive DIRECTIVE_001, through the pack team.
+  requiredBy:
+  - packId: internal
+    via:
+    - team

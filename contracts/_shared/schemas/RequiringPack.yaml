@@ -1,0 +1,30 @@
+title: RequiringPack
+description: A pack that requires or locks an artifact, and the extends chain it does so through (ADR-0020 D10).
+type: object
+additionalProperties: false
+required:
+  - packId
+  - via
+properties:
+  packId:
+    type: string
+    pattern: '^[a-z0-9][a-z0-9_-]*$'
+    maxLength: 64
+    description: The id of the pack that requires or locks the artifact.
+    x-derived:
+      rule: The pack whose presets mark the artifact must-have, or whose policy locks it (ADR-0031, ADR-0012).
+      inputs:
+        - the request body and the packs the activation names
+  via:
+    type: array
+    description: >-
+      The extends chain the requirement or lock is inherited through, from the pack the activation names to
+      packId; empty when that pack declares it itself.
+    items:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9_-]*$'
+      maxLength: 64
+    x-derived:
+      rule: The extends chain from a pack the activation names to packId.
+      inputs:
+        - the request body and the packs the activation names

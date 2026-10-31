@@ -2,6 +2,10 @@ title: PageInfo
 description: Pagination state returned with every paginated list.
 type: object
 additionalProperties: false
+x-derived:
+  rule: The paging of a listing, from the request's page parameters and the listing's length.
+  inputs:
+    - the pageSize and pageCursor query parameters
 required:
   - hasNextPage
   - nextPageCursor
@@ -10,12 +14,24 @@ properties:
   hasNextPage:
     type: boolean
     description: True when another page follows this one.
+    x-derived:
+      rule: True when the listing holds items after this page.
+      inputs:
+        - the pageSize and pageCursor query parameters
   nextPageCursor:
     description: The token that fetches the next page, or null when this is the last page.
     oneOf:
       - $ref: PageCursor.yaml
       - type: 'null'
+    x-derived:
+      rule: An opaque token for the position after this page, or null on the last page.
+      inputs:
+        - the pageSize and pageCursor query parameters
   pageSize:
     type: integer
     minimum: 1
     description: The number of items the service applied as the page size for this response.
+    x-derived:
+      rule: The page size the request asked for, capped by the service's maximum.
+      inputs:
+        - the pageSize and pageCursor query parameters

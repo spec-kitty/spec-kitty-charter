@@ -1,0 +1,12 @@
+description: 'A request body that is not application/json: 415, a Problem with no code.'
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../../_shared/schemas/Problem.yaml

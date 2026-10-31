@@ -85,6 +85,10 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.
+- `Then the operation is refused as not implemented` — the last request's operation is declared in `../openapi.yaml`
+  with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
+  `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
+  `Charter-Contract-Version` and `Charter-Worktree` headers and no `Charter-Source-Fingerprint` (ADR-0020 D8).
 - `Then the field "<field>" of the response body is the lines:` followed by a doc string — the field's text is the
   doc string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
@@ -111,6 +115,7 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   `guideUri`, and their refusals.
 - `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
   `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
+- `activations.feature`: the activation set (ADR-0020), declared in full and reserved: one 501 pin per operation.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
@@ -122,10 +127,17 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
 - `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
   it. It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.
-- `@reserved`: the scenario pins a *declaration*, never behavior. It must also carry `@contract`, call no
-  operation, and name in its description the unit test that enforces "raised by no operation of this version" and
-  the issue that will raise the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #55). The
-  charter's refusal score is therefore reported as eight behavioral codes plus one declared.
+- `@reserved`: the scenario pins something the contract declares before it is built. It must also carry
+  `@contract`. It takes one of two forms:
+  - A *declaration pin* pins a reserved refusal code, never behavior. It calls no operation, and names in its
+    description the unit test that enforces "raised by no operation of this version" and the issue that will raise
+    the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #55).
+  - A *501 pin* pins a reserved operation (ADR-0020 D8). It sends one well-formed request to the operation and ends
+    with `Then the operation is refused as not implemented`. Its feature names `ReservedOperationCoverageTest`, which
+    keeps the 501 pins and the operations that carry `x-reserved` one to one, and the issue that will build the
+    operation. The pin is removed, with the operation's `501` and `x-reserved`, when the operation is built.
+
+  The charter's refusal score counts behavioral codes apart from the declared ones.
 - `@WIP`: the scenario needs a surface the contract does not have yet (activation, presets, roles and profiles, pins,
   removal, mission types, values and creeds, upgrades, hosting, cold start). The suite excludes it
   (`@ExcludeTags("WIP")` beside `@IncludeTags("contract")`), so its steps need not be bound; when the surface lands,

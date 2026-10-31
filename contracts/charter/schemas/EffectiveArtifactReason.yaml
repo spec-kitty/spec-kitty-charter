@@ -1,0 +1,12 @@
+title: EffectiveArtifactReason
+description: Why an artifact has its state.
+type: string
+enum:
+- selected
+- kind_default
+- required
+- locked
+- deactivated
+- not_selected
+- kind_not_activated
+- language_filtered

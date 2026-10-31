@@ -78,12 +78,12 @@ public class DirectiveController implements DirectivesApi {
                 body.getIntent(),
                 body.getEnforcement(),
                 body.getScope(),
-                body.getProcedures(),
-                body.getIntegrityRules(),
-                body.getValidationCriteria(),
-                body.getExplicitAllowances(),
-                body.getReferences());
-        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
+                OptionalLists.orEmpty(body.getProcedures()),
+                OptionalLists.orEmpty(body.getIntegrityRules()),
+                OptionalLists.orEmpty(body.getValidationCriteria()),
+                OptionalLists.orEmpty(body.getExplicitAllowances()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, false, null);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
@@ -106,12 +106,12 @@ public class DirectiveController implements DirectivesApi {
                 body.getIntent(),
                 body.getEnforcement(),
                 body.getScope(),
-                body.getProcedures(),
-                body.getIntegrityRules(),
-                body.getValidationCriteria(),
-                body.getExplicitAllowances(),
-                body.getReferences());
-        List<Relationship> relationships = RelationshipWire.fromWire(body.getRelationships());
+                OptionalLists.orEmpty(body.getProcedures()),
+                OptionalLists.orEmpty(body.getIntegrityRules()),
+                OptionalLists.orEmpty(body.getValidationCriteria()),
+                OptionalLists.orEmpty(body.getExplicitAllowances()),
+                OptionalLists.orEmpty(body.getReferences()));
+        List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)

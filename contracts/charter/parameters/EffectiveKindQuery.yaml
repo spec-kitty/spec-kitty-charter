@@ -1,0 +1,6 @@
+name: kind
+in: query
+required: false
+description: Only artifacts of this kind.
+schema:
+  $ref: ../schemas/ActivatableKind.yaml

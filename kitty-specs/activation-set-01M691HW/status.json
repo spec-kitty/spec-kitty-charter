@@ -1,0 +1,101 @@
+{
+  "event_count": 49,
+  "last_event_id": "01M696JZV1YZSRS2FJ288627CS",
+  "materialized_at": "2026-10-31T14:42:29.857363+00:00",
+  "mission_number": "",
+  "mission_slug": "activation-set-01M691HW",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M696JKF4N87CZ88F3DYKEQPE",
+      "last_transition_at": "2026-10-31T14:42:17.188143+00:00",
+      "review_result": {
+        "reference": "review-cycle://activation-set-01M691HW/WP01-lint-rules-for-the-reserved-shape/review-cycle-1.md",
+        "reviewer": "reviewer-renata-subagent",
+        "verdict": "approved"
+      },
+      "shell_pid": 8398,
+      "shell_pid_created_at": "1793453549.8"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M696JPJC5GQW2JY3TYJD1Q45",
+      "last_transition_at": "2026-10-31T14:42:20.364323+00:00",
+      "review_result": {
+        "reference": "review-cycle://activation-set-01M691HW/WP02-scenarios-first-a-501-pin-per-operation/review-cycle-1.md",
+        "reviewer": "qa-test-designer-tessa-subagent",
+        "verdict": "approved"
+      },
+      "shell_pid": 10627,
+      "shell_pid_created_at": "1793453686.91"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M696JSYBSFRNX9EYRMM85HMP",
+      "last_transition_at": "2026-10-31T14:42:23.819413+00:00",
+      "review_result": {
+        "reference": "review-cycle://activation-set-01M691HW/WP03-the-activation-schemas-and-their-parity/review-cycle-2.md",
+        "reviewer": "reviewer-renata-subagent",
+        "verdict": "approved"
+      },
+      "shell_pid": 15482,
+      "shell_pid_created_at": "1793454085.15"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M696JWRNHXE96XRWYYPQ54V0",
+      "last_transition_at": "2026-10-31T14:42:26.709080+00:00",
+      "review_result": {
+        "reference": "review-cycle://activation-set-01M691HW/WP04-the-reserved-operations-declared-and-answering-501/review-cycle-2.md",
+        "reviewer": "reviewer-renata-subagent",
+        "verdict": "approved"
+      },
+      "shell_pid": 26938,
+      "shell_pid_created_at": "1793455670.99"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M696JZV1YZSRS2FJ288627CS",
+      "last_transition_at": "2026-10-31T14:42:29.857363+00:00",
+      "review_result": {
+        "reference": "review-cycle://activation-set-01M691HW/WP05-version-changelog-adr-0020-and-docs/review-cycle-2.md",
+        "reviewer": "architect-alphonso-subagent",
+        "verdict": "approved"
+      },
+      "shell_pid": 3742,
+      "shell_pid_created_at": "1793457045.0"
+    }
+  }
+}

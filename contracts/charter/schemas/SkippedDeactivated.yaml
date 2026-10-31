@@ -1,0 +1,45 @@
+title: SkippedDeactivated
+description: An artifact a cascade reached and skipped because it is deactivated (ADR-0013 D4).
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- viaRequires
+- requiredBy
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind.
+    x-derived:
+      rule: The kind of the skipped artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The id of the skipped artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  viaRequires:
+    type: boolean
+    description: >-
+      True when the walk reached it over a requires edge, so an artifact that requires it is active without it.
+    x-derived:
+      rule: Whether an edge that reached it is requires.
+      inputs:
+      - schemas/Relation.yaml
+  requiredBy:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The artifacts whose edges reached it (ArtifactReference items). Not CharterRefusal.requiredBy, which lists
+      packs.
+    x-derived:
+      rule: The sources of the edges that reached the skipped artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml

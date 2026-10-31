@@ -28,3 +28,18 @@ properties:
   code:
     type: string
     description: A stable machine-readable code for the problem, such as the name of a refusal reason. Consumers branch on it, never on the title.
+  requiredBy:
+    type: array
+    description: >-
+      Only on a 409 artifact_required or artifact_locked: one entry per pack that requires or locks the
+      artifact, so a client can name every one (ADR-0020 D10, ADR-0012 D7). Packs, not artifacts: a skipped
+      report's requiredBy lists artifacts.
+    items:
+      $ref: RequiringPack.yaml
+  violations:
+    type: array
+    description: >-
+      Only on a 422 activation_invalid: one entry per part of the request body the service refuses, so a client
+      need not parse detail (ADR-0020 D10).
+    items:
+      $ref: RefusalViolation.yaml

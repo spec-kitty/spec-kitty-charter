@@ -41,6 +41,16 @@ class ContractDescriptionsTest {
     }
 
     @Test
+    void theRefusalCodeSaysTheActivationCodesAreReservedAndGivesEveryStatus() throws IOException {
+        assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
+                .contains("Six codes are reserved for the activation set (ADR-0020 D9, D10, #125)")
+                .contains("No operation of this version raises them")
+                .contains("artifact_required and artifact_locked are 409")
+                .contains("validation_failed and activation_invalid are 422")
+                .doesNotContain("are no longer raised: the action-context operation");
+    }
+
+    @Test
     void theRefusedResponseCoversStaleInput() throws IOException {
         assertThat(description("contract/charter/responses/OfferingUnreadable.yaml"))
                 .contains("the packs changed while the read was answered")

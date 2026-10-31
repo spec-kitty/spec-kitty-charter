@@ -1,7 +1,8 @@
 # Changelog
 
 All notable changes to the `charter` contract are recorded here, newest first. The module
-version is the `info.version` of `openapi.yaml`. The contract scenarios under `scenarios/` are
+version is the `info.version` of `openapi.yaml`; the canonical JSON Schemas of `../offering/schemas/`
+(`ActivationConfig.schema.json`) are versioned with it. The contract scenarios under `scenarios/` are
 half of the contract, and an OpenAPI diff cannot see them, so every scenario change gets a line
 here too.
 
@@ -16,6 +17,68 @@ was cut under either label. `Added` lists what this version holds that the first
 `Changed` lists what differs from that draft.
 
 ### Breaking
+
+The activation set, declared and reserved (mission activation-set, issue #125; ADR-0020; operator rulings of
+2026-10-31). It lands inside this unreleased version, beside #126, by the operator's ruling, so `info.version` stays
+`0.1.0-SNAPSHOT`. Breaking on the 0.x line, which ADR-0022 allows; no release carried the old shape. What core's seam
+has to change is said per item.
+
+- Added: 13 operations under the new tag `Activation`, each declared in full (request body, success statuses,
+  refusals, conditional headers) and reserved: `x-reserved: {contractSet: activation, issue: "#125"}` and a `501`
+  `Problem` with no code, which the service answers before it reads the request (ADR-0020 D8). They are
+  `createActivation` (`POST /activations`); `replaceActivation`, `getActivation` and `deleteActivation`
+  (`PUT`, `GET`, `DELETE /activations/{activationId}`); `selectActivationArtifact` and `unselectActivationArtifact`
+  (`…/selections/{kind}/{artifactId}`); `deactivateActivationArtifact` and `reactivateActivationArtifact`
+  (`…/exclusions/{kind}/{artifactId}`); `applyActivationPreset` (`…/presets/{presetId}`); and the effective reads
+  `listEffectiveArtifacts` (`…/artifacts`, paged with the shared `PageInfo`), `getActivationSkippedReport`
+  (`…/skipped`), `getEffectiveGraph` (`…/graph`) and `getEffectiveActionContext`
+  (`…/mission-types/{missionType}/actions/{action}/context`). Core's seam: generate the `ActivationApi` client;
+  treat `501` as "not built yet" and keep its in-process backend.
+- Added: the activation document `ActivationConfig` (closed; `schemaVersion`, `packs` as `{packId, version?}` in
+  merge order, `activatedKinds`, `missionTypes`, `selected`, `deactivated`, `languages`), canonical as JSON Schema
+  2020-12 at `contracts/offering/schemas/ActivationConfig.schema.json` (ADR-0017's pattern), which this CHANGELOG
+  versions too, and mirrored in `schemas/ActivationConfig.yaml`. Per-entry provenance, `contextActivations` and
+  `appliedPresets` are left out by ruling. `selected` and `deactivated` hold one member per activatable kind (11).
+  Core's seam: map `.kittify/charter/activation.yaml`, `config.yaml` and `charter.yaml` to and from it (content
+  alignment, not file shape).
+- Added: `Activation`, `ActivationSummary`, `ActivationChange`, `SkippedReport` (`skippedByScope`,
+  `skippedDeactivated`, `unreachedBehindDeactivated`, `skippedShared`), `ActivationSkippedReport`,
+  `EffectiveArtifactList`, `EffectiveArtifact`, `EffectiveGraph`, `EffectiveActionContext`, the request bodies
+  `SelectionRequest`, `ExclusionRequest` and `PresetApplication`, their parts (`PackPin`, `SelectedArtifacts`,
+  `DeactivatedArtifacts`, `ArtifactIdList`, `DeniedArtifactIdList`, `ArtifactId`, `ActivationId`, `LanguageToken`,
+  `ActivatableKind`, `SelectableKind`, `CascadeKind`, `CascadeScope`, `ArtifactReference`, `SkippedDeactivated`,
+  `SharedSkip`, `EffectiveGraphNode`, `EffectiveGraphEdge`, `EffectiveArtifactState`, `EffectiveArtifactReason`,
+  `ArtifactPolicy`), the vendored `PageInfo` (now used) and the new `RequiringPack` and `RefusalViolation`, the
+  shared hypermedia components `Links` and `Link`
+  (ADR-0019 D3, shared with #126), and the conditional headers: `ETag` (the quoted revision, `sha256:` of the
+  RFC 8785 serialization of the canonical document), an opaque `ETag` on the effective reads that changes with the
+  revision or the offering, `If-Match`, `If-None-Match: *`, and `Location` on a `201`. The conditional writes
+  declare `412` (a stale or failed precondition), every write with a body `415` (a body that is not JSON), and a
+  sub-resource write without `If-Match` `428`, each a `Problem` with no code. Four questions stay open until the
+  operations are built (ADR-0020, open questions 4 to 7): the validator of an `Activation` answer, a stored document
+  an offering change made stale, what a preset sets, and conditional reads.
+- Added: six refusal codes to `CharterRefusalCode`, each `raised: false`: `activation_not_found`,
+  `artifact_not_found`, `preset_not_found` (404), `artifact_required`, `artifact_locked` (409) and
+  `activation_invalid` (422). A closed enum gaining values is breaking for a generated client. Core's seam:
+  regenerate; nothing raises them yet.
+- Changed: the shared `Problem` gains two optional members, `requiredBy` (a list of `RequiringPack`, only on a 409
+  `artifact_required`/`artifact_locked`) and `violations` (a list of `RefusalViolation`, only on a 422
+  `activation_invalid`), because `CharterRefusal` extends the closed `Problem` (`_shared/VENDORED.md`). Every
+  generated `Problem` gains them; no answer of this version carries them. Core's seam: regenerate.
+- Changed: `mission_type_not_found` and `action_not_found` are reserved for the effective context of an activation
+  again, not described as gone.
+- Changed: the answer to a method the service does not support (`TRACE`) lists `DELETE` in `Allow`: the reserved
+  activation set routes it.
+- Changed: the bundled contract core vendors (`charter-openapi.yaml`, every `$ref` inlined) grows from about
+  2.5 MB to about 5.2 MB. A YAML reader with snakeyaml's default limit (3 MiB of code points) refuses it; the
+  build's own readers raise the limit. Core's seam: raise the limit where it parses the bundle, if it does.
+- Lint: new rules `x-reserved-shape`, `reserved-operation-declares-501`, `built-operation-declares-no-501` and
+  `no-content-has-no-body`; `error-responses-are-problems` admits `204` (ADR-0020 D9 supersedes ADR-0018 D10's
+  "200 only"). The closure check exempts `_links`, a map of `Link`, as the one open map (ADR-0019 D3).
+- Scenarios: `activations.feature` holds one `@contract @reserved` 501 pin per operation, a second for selecting a
+  mission type, and one for a malformed body; `errors.feature` pins the six codes as declarations. The `@reserved` tag now has two forms, a declaration pin
+  and a 501 pin (`scenarios/README.md`). The functional scenarios of `docs/architecture/offering-and-activation.md`
+  stay proposed until the operations are built.
 
 Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, issue #194; operator rulings of
 2026-10-28 and 2026-10-29). Breaking on the 0.x line, which ADR-0022 allows; no release carried the old shape.

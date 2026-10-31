@@ -52,7 +52,10 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       {@code enum} are not an object (a {@code const}/{@code enum} that lists an object admits only that object,
  *       so it is closed). A schema whose type admits objects (a type naming {@code object}, or no type) is closed
  *       only by {@code additionalProperties: false} with no {@code patternProperties};
- *       {@code additionalProperties: true} and a schema-valued {@code additionalProperties} (a map) are open. Each
+ *       {@code additionalProperties: true} and a schema-valued {@code additionalProperties} (a map) are open, with
+ *       one exemption: the schema of a property named {@code _links} whose {@code additionalProperties} is a schema
+ *       titled {@code Link} (ADR-0019 D3), whose relation keys are open on purpose; the {@code Link} is still a
+ *       position. Each
  *       {@code properties}, {@code patternProperties} and schema-valued {@code additionalProperties} value is a
  *       position.</li>
  *   <li><b>Arrays.</b> {@code items} and each {@code prefixItems} entry are positions. A schema whose type admits
@@ -110,6 +113,11 @@ public final class ClosureChecker {
 
     private ClosureChecker() {}
 
+    // The bundle inlines every $ref, so each operation repeats its shared responses; with the activation set (#125) it
+    // passed snakeyaml's default limit of 3 MiB of code points. The file is the build's own output, not input from
+    // outside, so a larger limit admits nothing untrusted.
+    private static final int BUNDLE_CODE_POINT_LIMIT = 64 * 1024 * 1024;
+
     /**
      * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document.
      *
@@ -119,8 +127,11 @@ public final class ClosureChecker {
      */
     public static ClosureReport check(Path bundle) throws IOException {
         try (InputStream in = Files.newInputStream(bundle)) {
-            return check(
-                    new Load(LoadSettings.builder().setLabel(bundle.toString()).build()).loadFromInputStream(in));
+            return check(new Load(LoadSettings.builder()
+                            .setLabel(bundle.toString())
+                            .setCodePointLimit(BUNDLE_CODE_POINT_LIMIT)
+                            .build())
+                    .loadFromInputStream(in));
         }
     }
 
