@@ -41,6 +41,8 @@ enum TemplateBinding {
      * @param content the file's bytes
      * @return the template, its id {@link PackFileSet#templateId}
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the path is no template id
+     * @throws IllegalArgumentException when the place is under neither templates directory, or a mission type's id
+     *     does not start the template's id (the {@code Template} invariant)
      */
     Template toEntityAt(PackIdentifier pack, String place, Payload content) {
         String id = PackFileSet.templateId(place);

@@ -288,7 +288,12 @@ public final class FileSystemPackInspector implements PackInspector {
             FileRead<Object> read = read(path, file, name, text -> parseAndValidate(text, file, kind));
             switch (read) {
                 case FileRead.Unreadable<Object> bad -> unreadable.add(bad);
-                case FileRead.Read<Object> good -> factsOf(file, kind, good.value());
+                case FileRead.Read<Object> good -> {
+                    factsOf(file, kind, good.value());
+                    MissionTypeChecks.refusal(directory, file, kind, good.value(), table)
+                            .ifPresent(refusal -> unreadable.add(
+                                    new FileRead.Unreadable<>(file, ParseFailure.refused(file, refusal), List.of())));
+                }
                 case FileRead.Absent<Object> absent -> {}
             }
         }

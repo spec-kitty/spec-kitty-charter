@@ -18,7 +18,9 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackInspector;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
 import java.io.IOException;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -165,7 +168,7 @@ class MissionTypeBindingTest {
     }
 
     @ParameterizedTest(name = "the id ''{0}'' does not name a place in the pack")
-    @ValueSource(strings = {"../escape", "a/b"})
+    @ValueSource(strings = {"../escape", "a/b", "a\\b"})
     void anIdThatLeavesItsPlaceIsRefusedOnCreate(String id) throws IOException {
         PackFixtures.copyOf(PACK, host);
         MissionTypeDso fixture = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
@@ -176,9 +179,24 @@ class MissionTypeBindingTest {
         assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, escaping))
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessageContaining("mission_type id '" + id + "' does not name a file in the pack");
-        assertThat(fixture.id())
-                .as("the accepted neighbour, read from its place")
-                .isEqualTo("research");
+
+        // The accepted neighbour: the same shape under a valid new id is written at its place and reads back.
+        MissionTypeDso neighbour = new MissionTypeDso(
+                "neighbour",
+                "1.0",
+                "T",
+                "D",
+                Optional.empty(),
+                false,
+                Map.of(),
+                List.of(),
+                List.of(),
+                fixture.steps(),
+                List.of());
+        store.write(PACK_ID, MissionTypeBinding.INSTANCE, neighbour);
+        assertThat(read().dsos(MissionTypeBinding.INSTANCE))
+                .extracting(MissionTypeDso::id)
+                .containsExactlyInAnyOrder("research", "neighbour");
     }
 
     // ---- placement and derived paths ----------------------------------------------------------------------------
@@ -258,6 +276,118 @@ class MissionTypeBindingTest {
                 .extracting(PackElementViolation::reason)
                 .as("the schema refuses a template path that climbs, before the store looks for it")
                 .containsExactly("not violated at /steps/0/expected_output_artifacts/0/template_path");
+    }
+
+    @Test
+    @DisplayName(
+            "an output template must be a template of the pack: an excluded file, a directory or no file is refused;"
+                    + " a link inside the pack is followed")
+    void anOutputTemplateIsATemplateOfThePack() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        String withTemplate = Files.readString(pack.resolve(FILE))
+                .replace(
+                        "    path_pattern: spec.md\n    blocking: true\n",
+                        "    path_pattern: spec.md\n    blocking: true\n    template_path: templates/spec-template.md\n");
+        Path templates = Files.createDirectories(pack.resolve("missions/research/templates"));
+        Files.writeString(templates.resolve("real.md"), "# Spec\n");
+
+        Files.writeString(pack.resolve(FILE), withTemplate.replace("spec-template.md", "README.md"));
+        Files.writeString(templates.resolve("README.md"), "notes\n");
+        assertThat(read().violations())
+                .extracting(PackElementViolation::reason)
+                .as("an excluded README is no template, so it is not digested and cannot be named")
+                .containsExactly("templates/README.md (named by step 'scoping'): is not a template of the pack");
+
+        Files.writeString(pack.resolve(FILE), withTemplate.replace("spec-template.md", "folder"));
+        Files.createDirectories(templates.resolve("folder"));
+        assertThat(read().violations())
+                .extracting(PackElementViolation::reason)
+                .containsExactly("templates/folder (named by step 'scoping'): is not a regular file");
+
+        Files.writeString(pack.resolve(FILE), withTemplate);
+        Files.createSymbolicLink(templates.resolve("spec-template.md"), templates.resolve("real.md"));
+        assertThat(read().violations())
+                .as("a link whose real place is a template of the pack")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("a write that names an output template the pack does not hold is refused before anything is written")
+    void aWriteNamingNoTemplateIsRefused() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        String withTemplate = Files.readString(pack.resolve(FILE))
+                .replace(
+                        "    path_pattern: spec.md\n    blocking: true\n",
+                        "    path_pattern: spec.md\n    blocking: true\n    template_path: templates/spec-template.md\n");
+        Files.writeString(pack.resolve(FILE), withTemplate);
+        Files.createDirectories(pack.resolve("missions/research/templates"));
+        Files.writeString(pack.resolve("missions/research/templates/spec-template.md"), "# Spec\n");
+        MissionTypeDso held = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        Files.delete(pack.resolve("missions/research/templates/spec-template.md"));
+        String before = Files.readString(pack.resolve(FILE));
+        FilesystemPackStore store = new FilesystemPackStore(host, strategy);
+
+        assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, held))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("mission_type 'research' names templates/spec-template.md (named by step 'scoping'):"
+                        + " missing");
+        assertThat(pack.resolve(FILE)).hasContent(before);
+    }
+
+    @ParameterizedTest(name = "[{index}] {2}")
+    @CsvSource(
+            delimiter = '|',
+            quoteCharacter = '~',
+            value = {
+                "- id: retrospect | - id: scoping | step 'scoping' stands twice across steps and on_demand_steps",
+                "prompt_path: steps/methodology.prompt.md | prompt_path: steps/scoping.prompt.md"
+                        + " | step 'methodology' names steps/scoping.prompt.md, not its derived path"
+                        + " steps/methodology.prompt.md",
+                "prompt_path: steps/methodology.prompt.md | prompt_path: steps/methodology.prompt.md\\n"
+                        + "  expected_output_artifacts:\\n  - artifact_key: output.method.research\\n"
+                        + "    artifact_class: output\\n    path_pattern: method.md\\n"
+                        + "    template_path: templates/nowhere.md"
+                        + " | names templates/nowhere.md (named by step 'methodology'): missing",
+            })
+    @DisplayName("validate mode refuses what the load refuses of a schema-valid mission type, naming why")
+    void validateModeRefusesWhatTheLoadRefuses(String from, String to, String refusal) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.writeString(
+                pack.resolve(FILE), Files.readString(pack.resolve(FILE)).replace(from, to.replace("\\n", "\n")));
+
+        PackContents validated = new FileSystemPackInspector()
+                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+
+        assertThat(validated.unreadableFiles())
+                .singleElement()
+                .satisfies(bad -> assertThat(PackPolicy.unreadable(PACK, bad))
+                        .extracting(PackFinding::detail)
+                        .containsExactly(PACK + "/" + FILE + " " + refusal));
+        // The store refuses by file; the domain (a step id standing twice) by the type's id.
+        assertThat(load(pack).violations())
+                .as("the load refuses the same mission type")
+                .isNotEmpty()
+                .extracting(PackElementViolation::file)
+                .allMatch(file -> file.equals(FILE) || file.equals("research"));
+    }
+
+    @Test
+    @DisplayName("validate mode refuses a mission type whose step names a prompt that is not there, as the load does")
+    void validateModeRefusesAMissingPrompt() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.delete(pack.resolve(PROMPT));
+
+        PackContents validated = new FileSystemPackInspector()
+                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+
+        assertThat(validated.unreadableFiles())
+                .singleElement()
+                .satisfies(bad -> assertThat(PackPolicy.unreadable(PACK, bad))
+                        .extracting(PackFinding::detail)
+                        .containsExactly(PACK + "/" + FILE + " step 'scoping' names steps/scoping.prompt.md: missing"));
+        assertThat(load(pack).violations())
+                .extracting(PackElementViolation::file)
+                .containsOnly(FILE);
     }
 
     @Test

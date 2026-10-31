@@ -319,8 +319,8 @@ class PackPolicyTest {
                 PackContents.ParseFailure.retired("mission-steps/plan/specify/prompt.md", "folded into the steps");
         PackContents.ParseFailure broken = new PackContents.ParseFailure("tactics/x.tactic.yaml", "mapping expected");
 
-        assertThat(retired.retiredReason()).contains("folded into the mission-type file");
-        assertThat(broken.retiredReason()).isEmpty();
+        assertThat(retired.refusal()).contains("is retired: folded into the mission-type file");
+        assertThat(broken.refusal()).isEmpty();
         assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(retired.file(), retired, List.of())))
                 .extracting(PackFinding::detail)
                 .containsExactly("qa/missions/plan/mission.yaml is retired: folded into the mission-type file");

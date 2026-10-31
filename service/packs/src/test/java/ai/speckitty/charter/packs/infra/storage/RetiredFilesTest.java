@@ -67,25 +67,32 @@ class RetiredFilesTest {
         @DisplayName(
                 "a README under a retired directory is retired, not excluded; one beside a mission type is excluded")
         void aReadmeUnderARetiredDirectoryIsRetired() {
-            assertThat(TABLE.classify("qa/missions/plan/mission-steps/specify/README.md"))
+            assertThat(TABLE.classify("qa/mission-steps/qa/specify/README.md"))
                     .isInstanceOf(PackFileKind.Retired.class);
             assertThat(TABLE.classify("qa/missions/plan/command-templates/README.md"))
                     .isInstanceOf(PackFileKind.Retired.class);
             assertThat(TABLE.classify("qa/missions/plan/README.md")).isInstanceOf(PackFileKind.Excluded.class);
             assertThat(TABLE.classify("qa/missions/plan/templates/divio/README.md"))
                     .isInstanceOf(PackFileKind.Excluded.class);
-            assertThat(TABLE.matchingRules("qa/missions/plan/mission-steps/specify/README.md"))
-                    .containsExactly("**/mission-steps/**/*");
-            assertThat(TABLE.classify("built-in/mission-steps/plan/specify/README.md"))
-                    .isInstanceOf(PackFileKind.Retired.class);
+            assertThat(TABLE.matchingRules("qa/mission-steps/qa/specify/README.md"))
+                    .containsExactly("*/mission-steps/**/*");
             assertThat(TABLE.classify("built-in/missions/mission-steps/plan/specify/README.md"))
                     .isInstanceOf(PackFileKind.Retired.class);
             // The one overlap: a README directly in the old built-in missions/mission-steps/ is read as one beside a
             // mission type named mission-steps. Exclusions come first, so it is excluded, never read either way.
             assertThat(TABLE.matchingRules("built-in/missions/mission-steps/README.md"))
-                    .containsExactly("*/missions/*/README.md", "**/mission-steps/**/*");
+                    .containsExactly("*/missions/*/README.md", "*/missions/mission-steps/**/*");
             assertThat(TABLE.classify("built-in/missions/mission-steps/README.md"))
                     .isInstanceOf(PackFileKind.Excluded.class);
+        }
+
+        @Test
+        @DisplayName("a payload that only shares a name with a retired family is never retired: the rules are anchored")
+        void aNamesakeIsNotRetired() {
+            for (String path : RetiredFileFixture.NAMESAKES) {
+                assertThat(TABLE.classify("qa/" + path)).as(path).isInstanceOf(PackFileKind.Mapped.class);
+                assertThat(TABLE.matchingRules("qa/" + path)).as(path).isEmpty();
+            }
         }
 
         @Test
@@ -202,7 +209,7 @@ class RetiredFilesTest {
                     .isEqualTo("qa/missions/plan/mission-runtime.yaml is retired: folded into the mission-type file"
                             + " (ADR-0044)");
             assertThat(findings)
-                    .filteredOn(f -> f.file().equals("mission-steps/review/prompt.md"))
+                    .filteredOn(f -> f.file().equals("mission-steps/qa/review/prompt.md"))
                     .singleElement()
                     .extracting(PackFinding::detail)
                     .asString()
@@ -219,7 +226,7 @@ class RetiredFilesTest {
         void aRetiredPathIsNoCompanion(@TempDir Path host) {
             Path pack = host.resolve("qa").toAbsolutePath().normalize();
             KindBinding.Companion companion = new KindBinding.Companion(
-                    "../mission-steps/review/prompt.md", Optional.empty(), ContentForm.TEXT, Optional.empty());
+                    "../mission-steps/qa/review/prompt.md", Optional.empty(), ContentForm.TEXT, Optional.empty());
 
             assertThat(Companions.resolve(
                             new Companions.Rules(TABLE, PackSchemas::bundled),
@@ -228,7 +235,7 @@ class RetiredFilesTest {
                             companion))
                     .isEqualTo(
                             new Companions.Refused(
-                                    "is retired by file-kinds rule '**/mission-steps/**/*'"
+                                    "is retired by file-kinds rule '*/mission-steps/**/*'"
                                             + " (folded into the mission-type steps and their companions (ADR-0044)), not a companion"));
         }
 

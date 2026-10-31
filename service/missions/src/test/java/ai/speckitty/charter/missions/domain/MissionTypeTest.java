@@ -145,6 +145,12 @@ class MissionTypeTest {
         assertThatThrownBy(() -> research().step(step("scoping")).build())
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("step id stands once");
+        assertThatThrownBy(() -> research()
+                        .onDemandStep(step("retrospect"))
+                        .onDemandStep(step("retrospect"))
+                        .build())
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("step id stands once");
     }
 
     @Test
@@ -179,12 +185,15 @@ class MissionTypeTest {
                         .expectedOutputArtifact(artifact("output.spec.main"))
                         .expectedOutputArtifact(artifact("output.spec.main"))
                         .build())
-                .isInstanceOf(ConstraintBreachException.class);
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("stands once");
         assertThatThrownBy(() -> withArtifacts(
                         List.of(), List.of(artifact("output.tasks.per_wp"), artifact("output.tasks.per_wp"))))
-                .isInstanceOf(ConstraintBreachException.class);
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("stands once");
         assertThatThrownBy(() -> withArtifacts(List.of(input("input.spec.main"), input("input.spec.main")), List.of()))
-                .isInstanceOf(ConstraintBreachException.class);
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("stands once");
 
         assertThatCode(() -> research()
                         .expectedOutputArtifact(artifact("output.tasks.per_wp"))
@@ -261,5 +270,7 @@ class MissionTypeTest {
     void equalityIsIdentity() {
         assertThat(research().build()).isEqualTo(research().title("Other").build());
         assertThat(research().build()).hasSameHashCodeAs(research().build());
+        assertThat(research().build())
+                .isNotEqualTo(research().id(new MissionTypeIdentifier("plan")).build());
     }
 }

@@ -205,6 +205,14 @@ exclusions:
     reason: >-
       Hidden files under assets/ (a file manager's .DS_Store, a .gitkeep, the store's own
       .pack-write-*.tmp temporary file) are not pack content and not asset payloads (#193).
+  - match: "*/missions/*/.*"
+    reason: >-
+      Hidden files beside a mission type (the store's own .pack-write-*.tmp temporary file, a .DS_Store) are not pack
+      content (#194).
+  - match: "*/missions/*/steps/.*"
+    reason: >-
+      Hidden files beside a mission type's step companions (the store's own .pack-write-*.tmp temporary file) are not
+      pack content (#194).
   - match: "*/missions/*/templates/**/.*"
     reason: >-
       Hidden files under a mission type's templates/ are not pack content and not templates (#194).
@@ -214,24 +222,34 @@ exclusions:
       .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
 
 # The retired mission tier (#194, ADR-0044 decision 6): files of these families are refused by name, in the load and in
-# validate mode, so a stale one cannot hide. Removed when the service is incorporated into core and no supported pack
-# holds the old layout.
+# validate mode, so a stale one cannot hide. Each rule is anchored to a layout the pinned packs held (the mission tier at
+# the pack root, as qa and cave-kitty had it, or under missions/, as the built-in pack had it), so a payload elsewhere
+# that merely shares a name (an asset called governance-profile.yaml, a template under templates/mission-steps/) is
+# never retired. Removed when the service is incorporated into core and no supported pack holds the old layout.
 retired:
-  - match: "**/mission_types/*.yaml"
+  - match: "*/mission_types/*.yaml"
     reason: the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)
-  - match: "**/missions/*/mission.yaml"
+  - match: "*/missions/mission_types/*.yaml"
+    reason: the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)
+  - match: "*/missions/*/mission.yaml"
     reason: folded into the mission-type file (ADR-0044)
-  - match: "**/missions/*/mission-runtime.yaml"
+  - match: "*/missions/*/mission-runtime.yaml"
     reason: folded into the mission-type file (ADR-0044)
-  - match: "**/governance-profile.yaml"
+  - match: "*/missions/*/governance-profile.yaml"
     reason: folded into the mission-type file (ADR-0044)
-  - match: "**/missions/*/expected-artifacts.yaml"
+  - match: "*/mission_types/*/governance-profile.yaml"
+    reason: folded into the mission-type file (ADR-0044)
+  - match: "*/missions/mission_types/*/governance-profile.yaml"
+    reason: folded into the mission-type file (ADR-0044)
+  - match: "*/missions/*/expected-artifacts.yaml"
     reason: folded into the mission-type steps (ADR-0044)
-  - match: "**/actions/*/index.yaml"
+  - match: "*/missions/*/actions/*/index.yaml"
     reason: folded into the mission-type steps' references (ADR-0044)
-  - match: "**/mission-steps/**/*"
+  - match: "*/mission-steps/**/*"
     reason: folded into the mission-type steps and their companions (ADR-0044)
-  - match: "**/missions/*/command-templates/*"
+  - match: "*/missions/mission-steps/**/*"
+    reason: folded into the mission-type steps and their companions (ADR-0044)
+  - match: "*/missions/*/command-templates/*"
     reason: folded into the mission-type steps' prompts (ADR-0044)
 
 # Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
