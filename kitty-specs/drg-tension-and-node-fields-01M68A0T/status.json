@@ -63,7 +63,8 @@
       "last_transition_at": "2026-10-31T06:59:01.371151+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "16 behavioural reds recorded then green; gate UNEXPECTEDLY_GREEN for exactly the 2 files, entries removed, gate green; 9/9 half-by-half mutants killed; :packs:check + openPacksRoundTrip green"
+        "16 behavioural reds recorded then green; gate UNEXPECTEDLY_GREEN for exactly the 2 files, entries removed, gate green; 9/9 half-by-half mutants killed; :packs:check + openPacksRoundTrip green",
+        "Review passed (independent reviewer-renata subagent). LOW-1 folded: gate re-bind non-vacuity proven (2 more mutants killed, commit 'prove the gate's read-back...'). LOW-2 fixture renames recorded as an out-of-map edit; LOW-3 'tensions' key carried into WP03 T015 runner draft."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
