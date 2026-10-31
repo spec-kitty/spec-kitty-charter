@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "mission_slug": "activation-set-01M691HW",
+  "mission_id": "01M691HWY6ZRY0NVZYDYZ7ZD77",
+  "mission_branch": "kitty/mission-activation-set-01M691HW",
+  "target_branch": "issue-125-activation-set",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "contracts/lint/README.md",
+        "contracts/lint/fixtures/**",
+        "contracts/lint/ruleset.yaml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/activations.feature",
+        "contracts/charter/scenarios/errors.feature",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractConformance.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractConformanceTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationSteps.java",
+        "service/deployable/src/test/resources/conformance/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "build-logic/src/main/kotlin/charter.contract-api.gradle.kts",
+        "contracts/_shared/VENDORED.md",
+        "contracts/_shared/schemas/Problem.yaml",
+        "contracts/_shared/schemas/RefusalViolation.yaml",
+        "contracts/_shared/schemas/RequiringPack.yaml",
+        "contracts/build.gradle.kts",
+        "contracts/charter/schemas/ActivatableKind.yaml",
+        "contracts/charter/schemas/Activation*.yaml",
+        "contracts/charter/schemas/ArtifactId.yaml",
+        "contracts/charter/schemas/ArtifactIdList.yaml",
+        "contracts/charter/schemas/ArtifactReference.yaml",
+        "contracts/charter/schemas/CascadeKind.yaml",
+        "contracts/charter/schemas/CascadeScope.yaml",
+        "contracts/charter/schemas/DeactivatedArtifacts.yaml",
+        "contracts/charter/schemas/DeniedArtifactIdList.yaml",
+        "contracts/charter/schemas/Effective*.yaml",
+        "contracts/charter/schemas/ExclusionRequest.yaml",
+        "contracts/charter/schemas/LanguageToken.yaml",
+        "contracts/charter/schemas/Link.yaml",
+        "contracts/charter/schemas/Links.yaml",
+        "contracts/charter/schemas/PackPin.yaml",
+        "contracts/charter/schemas/PresetApplication.yaml",
+        "contracts/charter/schemas/SelectableKind.yaml",
+        "contracts/charter/schemas/SelectedArtifacts.yaml",
+        "contracts/charter/schemas/SelectionRequest.yaml",
+        "contracts/charter/schemas/SharedSkip.yaml",
+        "contracts/charter/schemas/SkippedDeactivated.yaml",
+        "contracts/charter/schemas/SkippedReport.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "contracts/offering/**",
+        "contracts/src/main/java/ai/speckitty/charter/contracts/closure/**",
+        "contracts/src/test/java/ai/speckitty/charter/contracts/closure/**",
+        "contracts/src/test/java/ai/speckitty/charter/contracts/offering/**",
+        "contracts/src/test/resources/closure/**",
+        "service/packs/build.gradle.kts",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ActivationJson.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ActivationJsonTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/examples/**",
+        "contracts/charter/headers/**",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/parameters/**",
+        "contracts/charter/paths/activations*.yaml",
+        "contracts/charter/responses/**",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationConfigConformanceTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ActivationController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RefusalHandler.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ReservedOperation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ReservedOperationInterceptor.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/config/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        ".github/workflows/contract-release.yml",
+        "contracts/charter/CHANGELOG.md",
+        "docs/adr/0020-offering-and-activations.md",
+        "docs/adr/README.md",
+        "docs/api/service-contract.md",
+        "docs/architecture/offering-and-activation.md",
+        "docs/development/http-status-codes.md",
+        "docs/development/rest-resource-conventions.md"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-10-31T13:31:52.364711+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "9557ef986a7c22148e402f95acfa6f5ffc7d0b2a"
+}

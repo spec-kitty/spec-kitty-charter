@@ -1,0 +1,199 @@
+{
+  "mission_slug": "activation-set-01M691HW",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/offering/schemas/ActivationConfig.schema.json; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java (corpus 11 valid/16 invalid, kind alignment)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:39:33.400547+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/src/test/java/ai/speckitty/charter/contracts/offering/ActivationConfigMirrorTest.java (structural + negative control); ActivationConfigSchemaParityTest (networknt both); service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationConfigConformanceTest.java",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:39:39.082924+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/schemas/Activation.yaml; checkClosedResponseObjects; lintContract (resource-property-cited); service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ActivationJsonTest.java",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:39:44.588233+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/schemas/ActivationChange.yaml, SkippedReport.yaml, SkippedDeactivated.yaml, SharedSkip.yaml; checkClosedResponseObjects",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:39:50.357035+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/paths/activations*.yaml (13 operations); service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java (13 = 13)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:39:56.050084+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/schemas/EffectiveArtifactList.yaml, ActivationSkippedReport.yaml, EffectiveGraph.yaml, EffectiveActionContext.yaml; scenarios activations.feature (4 read pins)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:02.394283+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "lint rules x-reserved-shape, reserved-operation-declares-501, built-operation-declares-no-501 over the contract; activations.feature 501 step reads x-reserved and 501 with no default fallback",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:08.281859+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/parameters/IfMatch.yaml, IfNoneMatchCreate.yaml; headers/ActivationETag.yaml, EffectiveETag.yaml, Location.yaml; ADR-0020 amendment (JCS revision)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:14.120823+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/schemas/SelectionRequest.yaml, ExclusionRequest.yaml, PresetApplication.yaml, CascadeScope.yaml; SelectableKind under selections only",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:19.755144+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/schemas/CharterRefusalCode.yaml (six codes raised: false); service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java (parametrized + bite probes); WireTokenParityTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:25.563983+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/_shared/schemas/Problem.yaml, RequiringPack.yaml, RefusalViolation.yaml; contracts/_shared/VENDORED.md; examples CharterRefusal.artifact-required/activation-invalid",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:31.256422+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/lint/ruleset.yaml + fixtures (x-reserved-shape incl. .empty/.null, reserved-operation-declares-501, built-operation-declares-no-501); lintFixtures 17 rules",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:37.047435+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "error-responses-are-problems admits 204; no-content-has-no-body + fixture; clean.yaml 204 control",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:42.839417+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/activations.feature (15 @contract @reserved pins); service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationSteps.java; scenarios README",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:48.645779+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/.../infra/api/ActivationController.java, ReservedOperationInterceptor.java; service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java#aReservedControllerReadsAndStoresNothing",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:40:54.775163+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/scenarios/errors.feature: six declaration pins",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:41:00.162810+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "contracts/charter/CHANGELOG.md under 0.1.0-SNAPSHOT ### Breaking (operator ruling 2026-10-31); release gate in :contracts:check",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:41:06.025530+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/adr/0020-offering-and-activations.md amendment 2026-10-31 + inline notes; docs/adr/README.md; reviewed by architect-alphonso subagent",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:41:11.681588+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/architecture/offering-and-activation.md, docs/api/service-contract.md, docs/development/http-status-codes.md, rest-resource-conventions.md; check_docs all ok",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-31T14:41:16.964896+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
