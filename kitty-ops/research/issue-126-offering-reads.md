@@ -197,3 +197,14 @@ The `### Breaking` seam line for core is therefore forward-looking:
      subsection. There is no 0.2.0.
    - (b) An unknown path kind is a 404 with `kind_not_found`; a bad `?kind=` is a 400.
    - (c) One PR, of about five work packages.
+
+## 8. Operator ruling found during implementation (2026-10-31, relayed by the orchestrator)
+
+A configured pack whose `pack.yaml` is missing or invalid is not a readable canonical pack. This was option A
+of the question the WP03 review raised.
+
+- `/offering`, the generic artifact list and the generic artifact item answer it with 500 `pack_unreadable`.
+- Offering entries require `name` and `version`.
+- 404 `pack_not_found` is answered only for an id that names no configured pack.
+
+This supersedes plan research R-18's "name and version optional".
