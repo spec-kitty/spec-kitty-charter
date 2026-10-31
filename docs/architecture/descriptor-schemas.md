@@ -158,7 +158,7 @@ every level.
 - `+ schema_version`: `"1.0"`
 - `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, equal to the file stem
 - `+ description`: not empty
-- `- activated_kinds`: `[1..]` unique kind plurals, from the 13 gateable kinds (every artifact kind but
+- `- activated_kinds`: `[1..]` unique kind plurals, from the 13 kinds a preset can gate (every artifact kind but
   `mission_type`, which a preset activates in its own `activated_mission_types` list)
 - `- activated_directives`, `activated_tactics`, `activated_styleguides`, `activated_toolguides`,
   `activated_paradigms`, `activated_procedures`, `activated_agent_profiles`,
