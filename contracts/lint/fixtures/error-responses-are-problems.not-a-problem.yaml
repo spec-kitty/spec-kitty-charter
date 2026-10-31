@@ -37,12 +37,47 @@ paths:
                 pattern: '^sha256:[0-9a-f]{64}$'
           content:
             application/json:
+              examples:
+                two-packs:
+                  summary: The packs and the link to the listing itself.
+                  value:
+                    packs:
+                      - name: qa
+                        level: org
+                    _links:
+                      self:
+                        href: /api/v1/packs
               schema:
                 title: PackListing
                 description: The packs of the offering.
                 type: object
                 additionalProperties: false
+                required:
+                  - _links
                 properties:
+                  _links: &links
+                    title: Links
+                    description: The links of the answer, keyed by a relation of the hypermedia guide's table.
+                    type: object
+                    x-derived:
+                      rule: The links the server writes for the answer.
+                      inputs:
+                        - openapi.yaml#/paths
+                    additionalProperties:
+                      title: Link
+                      description: One hypermedia link.
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          description: Where the link points, an absolute path under /api/v1.
+                          x-derived:
+                            rule: The server prefix followed by the path of the operation the relation names.
+                            inputs:
+                              - openapi.yaml#/paths
                   packs:
                     type: array
                     description: The loaded packs.
@@ -202,12 +237,24 @@ paths:
           headers: *read-headers
           content:
             application/json:
+              examples:
+                implement:
+                  summary: The context of one action and the link to it.
+                  value:
+                    action: action:software-dev/implement
+                    missionType: mission_type:software-dev
+                    _links:
+                      self:
+                        href: /api/v1/mission-types/software-dev/actions/implement/context
               schema:
                 title: ActionContext
                 description: The guidance of one action.
                 type: object
                 additionalProperties: false
+                required:
+                  - _links
                 properties:
+                  _links: *links
                   action:
                     description: The action node.
                     allOf:
