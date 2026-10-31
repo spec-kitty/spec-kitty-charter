@@ -77,7 +77,7 @@ class PackFileSetExactnessTest {
     /** Writes the trees once, so that no check is charged for them; {@link #generatingTheTreesIsWithinBudget()}. */
     @BeforeAll
     static void generateTheTrees() throws IOException {
-        if (!symlinksWork(home)) {
+        if (!SymbolicLinks.supported(home)) {
             return;
         }
         long start = cpuNanos();
@@ -99,7 +99,7 @@ class PackFileSetExactnessTest {
     @Test
     @Timeout(HANG_CAP_SECONDS)
     void theFingerprintChangesIfAndOnlyIfAFileIsPackYamlLoadedAPayloadOrAGraphInput() throws IOException {
-        assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
+        SymbolicLinks.requireSupport(home);
         Set<Shape> seen = EnumSet.noneOf(Shape.class);
         Set<RootForm> roots = EnumSet.noneOf(RootForm.class);
         long start = cpuNanos();
@@ -121,7 +121,7 @@ class PackFileSetExactnessTest {
     @Test
     @Timeout(HANG_CAP_SECONDS)
     void theStoreLoadsExactlyThePlantedFilesOfEveryKind() throws IOException {
-        assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
+        SymbolicLinks.requireSupport(home);
         long start = cpuNanos();
         for (int i = 0; i < TREES; i++) {
             assertLoadIsExact(tree(i));
@@ -145,7 +145,7 @@ class PackFileSetExactnessTest {
     @Test
     @Timeout(HANG_CAP_SECONDS)
     void theProductionFingerprintPassesTheWholeOracleOnTheExhaustiveTree() throws IOException {
-        assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
+        SymbolicLinks.requireSupport(home);
         assertExact(tree(0), PackFileSetExactnessTest::fingerprintOf);
     }
 
@@ -160,7 +160,7 @@ class PackFileSetExactnessTest {
     @Timeout(HANG_CAP_SECONDS)
     void aDigestThatOmitsOneLoadedKindFailsTheOracleNamingAPlantedFileOfThatKind(ArtifactKind omitted)
             throws IOException {
-        assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
+        SymbolicLinks.requireSupport(home);
         GeneratedPackTree tree = tree(0);
         Set<ArtifactKind> kept = EnumSet.complementOf(EnumSet.of(omitted));
         Function<List<PackLocation>, String> mutant =
@@ -509,19 +509,5 @@ class PackFileSetExactnessTest {
                 .filter(p -> p.verdict() == Verdict.LOADED && !p.valid())
                 .map(Planted::path)
                 .collect(Collectors.toSet());
-    }
-
-    private static boolean symlinksWork(Path dir) throws IOException {
-        Path target = Files.createTempFile(dir, "probe", ".tmp");
-        Path link = dir.resolve(target.getFileName() + ".lnk");
-        try {
-            Files.createSymbolicLink(link, target);
-            return true;
-        } catch (UnsupportedOperationException | IOException e) {
-            return false;
-        } finally {
-            Files.deleteIfExists(link);
-            Files.delete(target);
-        }
     }
 }
