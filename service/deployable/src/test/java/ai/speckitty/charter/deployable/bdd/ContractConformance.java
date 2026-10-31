@@ -213,7 +213,8 @@ final class ContractConformance {
      * @param path the request path below the server prefix, without a query
      * @param status the response status
      * @param contentType the response content type, or {@code null} when there is none
-     * @param body the response body as JSON, or {@code null} when it is empty or not JSON
+     * @param body the response body as JSON, or {@code null} when it is empty or not JSON; a declared media type that is
+     *     not JSON (YAML text) is not read as JSON
      * @return what does not conform, one sentence each
      */
     List<String> violations(
@@ -227,13 +228,19 @@ final class ContractConformance {
                     + "; it declares " + content.keySet());
         }
         if (body == null) {
-            return List.of("the " + status + " body is not JSON");
+            // A text type (the contract document's application/yaml) is not read as JSON; a JSON type must be JSON.
+            return isJson(mediaType) ? List.of("the " + status + " body is not JSON") : List.of();
         }
         Located schema = new Located(
                 mapping(mapping(media, response.file()).get("schema"), response.file() + " schema"), response.file());
         List<String> violations = new ArrayList<>();
         validate(body, schema, "$", violations);
         return violations;
+    }
+
+    /** Whether a media type is JSON: {@code application/json} or a {@code +json} type such as a problem. */
+    private static boolean isJson(String mediaType) {
+        return mediaType.equals("application/json") || mediaType.endsWith("+json");
     }
 
     /**

@@ -132,7 +132,10 @@ public class ReadConsistencySteps {
     public void observedRefusalsAgreeWithTheContract() throws Exception {
         for (ScenarioHttp.Exchange exchange : http.exchanges()) {
             String text = exchange.result().getResponse().getContentAsString();
-            JsonNode body = text.isBlank() ? JSON.createObjectNode() : JSON.readTree(text);
+            String type = exchange.result().getResponse().getContentType();
+            // A refusal is JSON; a text answer (the contract document's YAML) carries no code.
+            boolean json = type != null && (type.startsWith("application/json") || type.contains("+json"));
+            JsonNode body = text.isBlank() || !json ? JSON.createObjectNode() : JSON.readTree(text);
             if (!body.has("code")) {
                 continue;
             }
