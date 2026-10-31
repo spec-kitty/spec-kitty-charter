@@ -25,7 +25,7 @@ properties:
   method:
     type: string
     pattern: ^(GET|POST|PUT)$
-    description: The method to follow the relation with, when it is not GET; GET, POST or PUT. A DELETE relation waits for the activation writes (#125 follow-up 3).
+    description: The method to follow the relation with, when it is not GET; GET, POST or PUT. A DELETE relation waits for the activation writes (#291).
     x-derived:
       rule: The method of the operation the relation names.
       inputs:

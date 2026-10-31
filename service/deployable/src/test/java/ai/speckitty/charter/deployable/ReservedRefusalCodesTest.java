@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  *
  * <p>The six codes reserved for the activation set (#125, ADR-0020 D9, D10) are pinned the same way: the activation
  * operations answer 501 until they are built, so nothing raises them, and their {@code x-refusal} says
- * {@code raised: false}. The issue that builds the writes deletes their rules as it raises each code.
+ * {@code raised: false}. #291, which builds the writes, deletes their rules as it raises each code.
  *
  * <p>The companion {@code governance_policy_violation} pin is gone: the mutability-policy epic #55 (ADR-0012, steps
  * #57 to #61) landed as the {@code @Primary PackMutabilityPolicy}, which names and raises the code, and this test's

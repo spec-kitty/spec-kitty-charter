@@ -511,7 +511,8 @@ These need a ruling before 1.0.0, because each is a closed shape. Core's integra
    relations. *(Settled 2026-10-31: the shared `Links`/`Link` components, agreed with #126; the activation answers
    carry `self` until the writes are built.)*
 
-Added 2026-10-31 by the pre-PR review of #125; each needs a ruling before the operation it names is built:
+Added 2026-10-31 by the pre-PR review of #125; each needs a ruling before the operation it names is built
+([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them):
 
 4. **The validator of an `Activation` answer.** Its `ETag` is the revision, but `summary` follows the offering
    (`governanceFingerprint`), so the bytes can change under one strong `ETag` (RFC 9110). Either `summary` moves to

@@ -109,7 +109,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "activation_not_found"
     And the contract says "activation_not_found" is answered with status 404
@@ -121,7 +121,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "artifact_not_found"
     And the contract says "artifact_not_found" is answered with status 404
@@ -133,7 +133,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "preset_not_found"
     And the contract says "preset_not_found" is answered with status 404
@@ -145,7 +145,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "artifact_required"
     And the contract says "artifact_required" is answered with status 409
@@ -157,7 +157,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "artifact_locked"
     And the contract says "artifact_locked" is answered with status 409
@@ -169,7 +169,7 @@ Feature: Failures outside the charter's refusals
     A declaration pin, not behavior. No operation of this version raises the code: the activation
     operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
     test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. The activation build that follows #125 raises it and deletes this pin. Nothing here
+    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
     calls the service.
     Then the contract declares the refusal code "activation_invalid"
     And the contract says "activation_invalid" is answered with status 422

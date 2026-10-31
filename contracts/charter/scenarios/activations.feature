@@ -6,8 +6,7 @@ Feature: The activation set is declared and reserved
   has no code, before it reads its request (ADR-0020 D8). Each scenario below is a 501 pin: it
   sends a well-formed request to one operation and is removed when that operation is built.
   ReservedOperationCoverageTest keeps the pins and the reserved operations one to one. The four
-  effective reads are built with R9 (#103); the nine writes with the activation build that
-  follows #125.
+  effective reads are built with R9 (#103); the nine writes by #291.
 
   @reserved
   Scenario: Creating an activation with a service-minted id is reserved
