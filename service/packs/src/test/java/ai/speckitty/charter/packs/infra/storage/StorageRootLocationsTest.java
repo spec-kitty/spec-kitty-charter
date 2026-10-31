@@ -215,6 +215,122 @@ class StorageRootLocationsTest {
         }
     }
 
+    /** Makes {@code <config-root>/packs} a link to {@code target}, a directory holding the packs qa and built-in. */
+    private void linkTheDomainTo(Path target) throws IOException {
+        Files.delete(packs);
+        Path real = Files.createDirectories(target);
+        for (String name : List.of("qa", "built-in")) {
+            Files.createDirectories(real.resolve(name));
+            Files.writeString(
+                    real.resolve(name + "/pack.yaml"),
+                    "pack_id: " + name + "\npack_level: " + (name.equals("qa") ? "org" : "built-in") + "\n");
+        }
+        link(packs, real);
+    }
+
+    @Test
+    void aPackDomainLinkedFromOutsideTheConfigRootIsListedAndEveryPackInItIsReadOnly(@TempDir Path elsewhere)
+            throws IOException {
+        linkTheDomainTo(elsewhere.resolve("shared-packs"));
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        List<PackLocation> listed = locations.all();
+
+        assertThat(listed)
+                .as("the linked domain is followed (#285), each pack named and placed under the configured domain")
+                .containsExactly(
+                        new PackLocation("built-in", PackLevel.BUILT_IN, packs.resolve("built-in")),
+                        new PackLocation("qa", PackLevel.ORG, packs.resolve("qa")));
+        for (PackLocation location : listed) {
+            assertThat(locations.whyReadOnly(location.root().toRealPath()))
+                    .as("%s lives outside the configuration root", location.name())
+                    .contains("is linked from outside the configuration root; it is read-only through the service");
+        }
+    }
+
+    @Test
+    void aPackDomainLinkedInsideTheConfigRootIsListedAndWritable() throws IOException {
+        linkTheDomainTo(packs.resolveSibling(".store/packs"));
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        List<PackLocation> listed = locations.all();
+
+        assertThat(listed).extracting(PackLocation::name).containsExactly("built-in", "qa");
+        for (PackLocation location : listed) {
+            assertThat(locations.whyReadOnly(location.root().toRealPath())).isEmpty();
+        }
+    }
+
+    @Test
+    void inALinkedPackDomainTheLinkRulesStillHold(@TempDir Path elsewhere) throws IOException {
+        linkTheDomainTo(elsewhere.resolve("shared-packs"));
+        link(packs.resolve("qa-alias"), packs.resolve("qa"));
+        link(packs.resolve("acts"), Files.createDirectories(packs.resolveSibling("activations")));
+        link(packs.resolve("root"), packs.getParent());
+        link(packs.resolve("home"), host);
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(new StorageRootLocations(packs).all())
+                    .extracting(PackLocation::name)
+                    .containsExactly("built-in");
+            assertThat(log.warnings())
+                    .anySatisfy(warning -> assertThat(warning).contains("qa-alias", "overlaps", "qa"))
+                    .anySatisfy(warning -> assertThat(warning).contains("acts", "outside the pack domain"))
+                    .anySatisfy(warning -> assertThat(warning).contains("root", "configuration root"))
+                    .anySatisfy(warning -> assertThat(warning).contains("home", "holds the configuration root"));
+        }
+    }
+
+    @Test
+    void aPackDomainLinkedToTheConfigRootOrAboveItListsNothingAndIsReportedOnce() throws IOException {
+        Files.delete(packs);
+        link(packs, host);
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(locations.all()).isEmpty();
+            assertThat(locations.all()).isEmpty();
+
+            assertThat(log.warnings())
+                    .as("one warning, however often the domain is listed")
+                    .singleElement()
+                    .satisfies(warning -> assertThat(warning).contains("pack domain", "holds the configuration root"));
+        }
+        Files.delete(packs);
+        link(packs, packs.getParent());
+        try (LogCapture log = new LogCapture()) {
+            assertThat(new StorageRootLocations(packs).all()).isEmpty();
+            assertThat(log.warnings())
+                    .singleElement()
+                    .satisfies(warning -> assertThat(warning).contains("pack domain", "holds the configuration root"));
+        }
+    }
+
+    @Test
+    void aPackDomainLinkThatResolvesToNoDirectoryListsNothingAndIsReportedOnceUntilItIsFixed(@TempDir Path elsewhere)
+            throws IOException {
+        Files.delete(packs);
+        link(packs, elsewhere.resolve("gone"));
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(locations.all()).isEmpty();
+            assertThat(locations.all()).isEmpty();
+            Files.createDirectories(elsewhere.resolve("gone/qa"));
+            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
+            Files.delete(elsewhere.resolve("gone/qa"));
+            Files.delete(elsewhere.resolve("gone"));
+            Files.writeString(elsewhere.resolve("gone"), "a file");
+            assertThat(locations.all()).isEmpty();
+
+            assertThat(log.warnings())
+                    .as("reported when it breaks, and again when it breaks after it was fixed")
+                    .satisfiesExactly(
+                            warning -> assertThat(warning).contains("pack domain", "does not resolve"),
+                            warning -> assertThat(warning).contains("pack domain", "not a directory"));
+        }
+    }
+
     private static void link(Path link, Path target) throws IOException {
         SymbolicLinks.create(link, target);
     }

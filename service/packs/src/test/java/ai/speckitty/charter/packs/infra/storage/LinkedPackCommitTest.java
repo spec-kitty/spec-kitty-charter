@@ -88,6 +88,32 @@ class LinkedPackCommitTest {
     }
 
     @Test
+    void aPackDomainLinkedFromOutsideTheConfigRootIsReadButEveryCommitToItIsRefused() throws IOException {
+        Path config = Files.createDirectories(host.resolve("linked-domain-config"));
+        Path shared = Files.createDirectories(host.resolve("shared-packs"));
+        Path real = PackFixtures.copyOf("pack-a", shared).toRealPath();
+        Path domain = SymbolicLinks.create(config.resolve("packs"), shared);
+        StorageRootLocations linkedDomain = new StorageRootLocations(domain);
+        Map<String, String> before = snapshot(real);
+
+        assertThat(new DomainRepositoryService(linkedDomain, strategy)
+                        .load(PACK)
+                        .tactics())
+                .as("read and served through the linked domain (#285)")
+                .isNotEmpty();
+        assertThatThrownBy(() ->
+                        new PackCommitStore(linkedDomain, strategy).commit(PACK, null, toolguide("ripgrep"), SHARD))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasMessage("pack pack-a is linked from outside the configuration root; it is read-only through the"
+                        + " service");
+
+        assertThat(snapshot(real)).as("the pack is unchanged").isEqualTo(before);
+        assertThat(residue(shared)).as("nothing was staged beside it").isEmpty();
+    }
+
+    @Test
     void aCommitKeepsTheLinkAndWritesTheNewContentIntoItsTarget() throws IOException {
         Map<String, String> before = snapshot(target);
         PackCommitStore store = new PackCommitStore(locations, strategy);
