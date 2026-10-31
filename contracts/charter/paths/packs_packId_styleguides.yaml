@@ -65,8 +65,6 @@ post:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
         Location:
           description: The URI of the created styleguide.
           schema:
@@ -92,8 +90,6 @@ post:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/problem+json:
           schema:
@@ -105,8 +101,6 @@ post:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/problem+json:
           schema:

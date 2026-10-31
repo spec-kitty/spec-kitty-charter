@@ -86,8 +86,6 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag:
           description: The pack revision after the write.
           schema:
@@ -103,8 +101,6 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag:
           description: The pack revision after the write.
           schema:
@@ -126,8 +122,6 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/problem+json:
           schema:
@@ -141,8 +135,6 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/problem+json:
           schema:

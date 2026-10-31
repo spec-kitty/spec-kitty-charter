@@ -9,12 +9,12 @@ description: >-
   (getServiceInfo; listPackTactics and getPackTactic; listPackDirectives and getPackDirective;
   listPackStyleguides and getPackStyleguide; listPackParadigms and getPackParadigm;
   listPackToolguides and getPackToolguide), the digest that read verified: it digested the inputs
-  before and after loading them and they agreed. Never on a refusal or a failure; a read whose inputs
-  changed while it was answered is refused with stale_input instead. A registration (POST, PUT) never
-  sends it either: its 200 and 201 responses declare the header only because every response declares
-  the three Charter headers, and the concurrency token of a write is its ETag, not this digest.
-  getOpenApiDocument never sends it either: it reads no pack file. Set
-  once. The freshness work (#73) compares it; this version only reports it (ADR-0011).
-required: false
+  before and after loading them and they agreed. It is sent on, and required on, the 200 of every
+  verified read, and on no other answer, so only those 200s declare it (#175). Never on a refusal or a
+  failure; a read whose inputs changed while it was answered is refused with stale_input instead. A
+  registration (POST, PUT) never sends it: the concurrency token of a write is its ETag, not this
+  digest. getOpenApiDocument never sends it: it reads no pack file. Set once. The freshness work (#73)
+  compares it; this version only reports it (ADR-0011).
+required: true
 schema:
   $ref: ../schemas/Sha256Digest.yaml
