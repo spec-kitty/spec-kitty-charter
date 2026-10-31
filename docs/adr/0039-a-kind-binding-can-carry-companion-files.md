@@ -153,6 +153,9 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    companion.
    *(Amended 2026-10-27, see Status: `is a pack file of kind <kind>, not a companion` joins this
    list, a consequence of decision 3's one-owner rule.)*
+   *(Amended 2026-10-31, #273: a companion whose bytes are not UTF-8 is `is not valid UTF-8`, the
+   wording validate mode and the store's load share for every file; one whose bytes cannot be read
+   is `cannot be read`.)*
    *(Amended 2026-10-29, see Status: the excluded-path and classified-path reasons, a Markdown
    refusal and a structure-schema breach join this list.)*
 5. **Upsert.** `FilesystemPackStore.write` checks every companion before writing any. Each must
