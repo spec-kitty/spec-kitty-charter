@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -10,6 +10,7 @@ related:
   - architecture/contract-and-dtos
   - architecture/resolution-model
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0044-mission-types-consolidated-into-one-sanitized-shape
 audience:
   - profile: pack-author
     guidance_text: Read this for entity diagrams of the descriptor schemas and their edges.
@@ -19,7 +20,7 @@ audience:
 
 The structural authority for every descriptor file is the set of JSON Schemas in
 [`contracts/packs/schemas/`](https://github.com/spec-kitty/spec-kitty-charter/tree/main/contracts/packs/schemas)
-(18 schemas), canonical here and edited in place under
+(23 schemas), canonical here and edited in place under
 [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) and
 [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) (first imported from core's models;
 the import's changes are tabled in the
@@ -54,7 +55,8 @@ file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may c
 `provenance`; an edge may not. `charter.schema.json` is not drawn: it validates
 the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level
 `preset` and `pack-manifest` schemas are not drawn yet; they are described in
-[Pack-level schemas](#pack-level-schemas).
+[Pack-level schemas](#pack-level-schemas). Nor is the `mission-type` schema with its step
+companions; it is described in [Mission type](#mission-type).
 
 ## Kinds, containment and edges
 
@@ -95,6 +97,38 @@ Sources: `src/charter/offering/missions/step_contracts.py`,
 `src/charter/offering/glossary_packs/models.py`. In core, the mission-step contract and the
 glossary pack have no JSON Schema file; their Pydantic models are the schema. This repository
 holds a closed JSON Schema for each (`contracts/packs/schemas/`).
+
+## Mission type
+
+The `mission-type` schema and the structure schemas of a step's two Markdown companions were
+designed here, not imported: core has no mission-type artifact kind (DIV-501) and reads a mission
+type from files the service retires (DIV-502). All three are closed
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), proposed).
+[Descriptors](/architecture/descriptors/) explains the
+fields.
+
+**`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
+
+- `+ schema_version`: `"1.0"`
+- `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, equal to the file stem
+- `+ title`, `+ description`; `- content`
+- `- requires_substantive_spec`: only `true`
+- `- path_conventions`: at least one of `workspace`, `tests`, `deliverables`, `documentation`,
+  `data`
+- `- expected_output_artifacts`, `- references`: each `[1..]`
+- `+ steps`: `[1..]` steps, in run order; `- on_demand_steps`: `[1..]` steps
+- a step: `+ id` (the id grammar), `+ title`, `- description` (1 to 160 characters), `- role`
+  (`~ ^[a-z][a-z0-9-]*$`), `- prompt_path`, `- guidelines_path`, `- expected_input_artifacts`,
+  `- expected_output_artifacts`, `- references`
+- an input: `+ artifact_key`, `+ path_pattern`, `- blocking` (only `true`)
+- an output: `+ artifact_key`, `+ artifact_class`, `+ path_pattern`, `- blocking`,
+  `- template_path`
+- a reference: `+ type` (a guidance kind), `+ id`, `- when`, `- reason`
+
+**`mission-step-prompt`** and **`mission-step-guidelines`** (`steps/<id>.prompt.md`,
+`steps/<id>.guidelines.md`) are structure schemas over the Markdown model: an optional H1, a
+preamble and H2 sections `{title, content}`. A prompt may have frontmatter holding only
+`+ description`, its detailed description; guidelines have none.
 
 ## Pack, CRG and charter configuration
 

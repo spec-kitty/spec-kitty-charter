@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-30 — Mission types are one sanitized file each, and an artifact kind](/changelog/2026-10-30-mission-types-consolidated/)
 - [2026-10-30 — A pack's pack.md round-trips through the markdown content form](/changelog/2026-10-30-pack-document-round-trip/)
 - [2026-10-30 — The container profile reads its secrets from mounted files or env vars](/changelog/2026-10-30-container-profile-secrets/)
 - [2026-10-29 — Procedures and toolguide guides round-trip, and a toolguide registration carries its guide](/changelog/2026-10-29-procedures-and-toolguide-guides-round-trip/)

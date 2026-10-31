@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -101,14 +101,27 @@ contract").
 ## Node kinds in an org fragment
 
 One name per concept, with no aliases. A fragment node names its kind with the plural of an
-artifact kind, or with `mission_types`, `actions` or `anti_patterns`.
+artifact kind (`mission_types` and `anti_patterns` included), or with `actions`.
 
 | Term | Meaning |
 |---|---|
-| **Mission step contract** | The steps of one action of one mission type; the fragment kind is `mission_step_contracts`. Avoid `mission_steps`. In core `mission_steps` is the canonical name and `mission_step_contracts` its back-compat alias; the service's canonical choice is the reverse, and it refuses `mission_steps`. |
-| **Action** | One step of a mission type's workflow, the node `action:<mission-type>/<action>`; the fragment kind is `actions`. Core refuses it in a fragment. |
+| **Mission step contract** | The structural sub-steps of one mission step and what each delegates to; the fragment kind is `mission_step_contracts`. The step's role and expected artifacts live on the mission step, not here. Avoid `mission_steps`. In core `mission_steps` is the canonical name and `mission_step_contracts` its back-compat alias; the service's canonical choice is the reverse, and it refuses `mission_steps`. |
+| **Action** | A mission step as the graph names it, the node `action:<mission-type>/<step>`; the fragment kind is `actions`. Core refuses it in a fragment. The node stays until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) rules on edge authority; until then the action and the mission step name the same thing. |
 | **Anti-pattern** | A node that good artifacts `reject`; it has no descriptor file. The fragment kind is `anti_patterns`. Core refuses it in a fragment. |
-| **Mission type** | A declared kind of mission, the node `mission_type:<id>`; the fragment kind is `mission_types`. Avoid the singular `mission_type` as a kind name in a fragment: it is refused. |
+| **Mission type** | [Glossary](/glossary/charter/#mission-type). An artifact kind in the service (`mission_type`, ADR-0044), the node `mission_type:<id>`; the fragment kind is `mission_types`. Avoid the singular `mission_type` as a kind name in a fragment: it is refused. |
+
+## Mission types and steps
+
+One file per mission type, `missions/<id>/<id>.mission-type.yaml`
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)).
+
+| Term | Meaning |
+|---|---|
+| **Mission step** | [Glossary](/glossary/charter/#mission-step). A sub-item of its mission type's `steps` (in run order) or `on_demand_steps`: a role, a one-line description and the expected input and output artifacts that are its pre- and postconditions. A domain type (`MissionStep`), not an artifact kind: there is no `mission_steps` kind. |
+| **On-demand step** | A mission step invoked by an explicit command, outside the run order, listed in `on_demand_steps` (software-dev's `charter`, `tasks-outline`, `tasks-packages` and `tasks-finalize`; the documentation and research `retrospect` steps). |
+| **Step prompt** | The prompt fed to the agent when a step runs, `steps/<id>.prompt.md`; its frontmatter holds only its detailed description. The glossary's *Step template*. |
+| **Step guidelines** | A step's working notes, `steps/<id>.guidelines.md`. Not the glossary's charter *Guideline*. |
+| **Recipe ingredients** | [Glossary](/glossary/charter/#recipe-ingredients). The mission type's own `references`; a step's `references` are its action-scoped guidance. |
 
 The authored pack files are drawn in the
 [pack write model](/architecture/descriptor-schemas/#pack-write-model).

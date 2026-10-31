@@ -3,10 +3,11 @@ okf_version: "0.2"
 title: Epic 186 sanitized-shape follow-ups
 description: The merged pack schemas and storage objects that break the sanitized-shape rules of ADR-0042 and ADR-0043, each with its file, the issue that owns it and the proposed change.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Guide
 kind: Reference
 related:
+  - adr/0044-mission-types-consolidated-into-one-sanitized-shape
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - adr/0036-round-trip-fidelity-is-equality-of-meaning
@@ -26,7 +27,10 @@ artifact kinds with S9 to S16. Both changed only the objects they shaped. This l
 already merged and breaks a rule. It comes from the #194 architect review (the mission's
 `research/squad/architect.md`, section 4) and the operator's `content` ruling of 2026-10-28. The
 items are for epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186); #194
-changes none of them but the toolguide id grammar, recorded below as fixed.
+changes none of them but the toolguide id grammar and core's mission step pointers (item 13), both
+recorded below as fixed. #194's second pull request applies the rules to the mission tier
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)); what it leaves is
+under [Residuals of the mission types](#residuals-of-the-mission-types).
 
 Each change is made the same way: the schema here first, then the pack content in
 `spec-kitty-open-packs` with the service's own writer, then a re-pin (ADR-0043 decision 6). Schemas
@@ -53,7 +57,7 @@ issue, filed with that pull request.
 | 10 | `charter.schema.json` | `mission_type_activations` where every other list is `activated_<plural>`; `org-charter.schema.json` has `required_*` for twelve kinds and none for mission types | S3 | #186; [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206) for the `required_*` lists | `activated_mission_types`; the org lists move to presets under #206 |
 | 11 | `org-fragment.schema.json` | the edge lacks the `when` the graph shard's edge has; nodes are `id` and `title` where shard nodes are `urn` and `label` | S3, S6 | #186 | one node and edge vocabulary for shards and fragments |
 | 12 | `pack-descriptor.schema.json` | `additionalProperties: true` | S4 | done by #195 ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) decision 4) | none left |
-| 13 | core's mission step (`prompt_template`, `template_file`) | pointers not named `<role>_path` | S13 | the mission-type kind, when it is built | `prompt_path`, and an `output` `path`; `guidelines.md` gets a `guidelines_path` |
+| 13 | core's mission step (`prompt_template`, `template_file`) | pointers not named `<role>_path` | S13 | fixed by #194 ([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)) | done: a step has `prompt_path` and `guidelines_path`, both derived from its id, and an expected output names its template with `template_path` |
 | 14 | open-packs `packs/built-in/missions/built_in_step_contracts/__init__.py` and `packs/built-in/toolguides/system_tools/__init__.py` | empty Python package markers in a content pack, which no file-kind rule classifies | S5 | [open-packs#94](https://github.com/spec-kitty/spec-kitty-open-packs/issues/94) | remove it from the pack |
 
 ## Renames to `content`
@@ -81,3 +85,16 @@ The toolguide YAML kept its merged shape apart from `guide_path`:
 | `toolguide.schema.json`, `ToolguideIdentifier` | the id pattern admitted a trailing or doubled hyphen (`a-`, `a--b`), whose guide file `<id>.guide.md` the `guide_path` pattern refuses: a registration was accepted, then the toolguide dropped out of the next load and could not be repaired through the API | S1 | fixed by #194 | done: the id is `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` in the schema and `ToolguideIdentifier`, and the API refuses `a-` and `a--b` with 422 |
 | toolguide store and validate mode | no rule ties a toolguide's `id` to its file stem, as A1 does for procedures | S1 | #186 | add the stem rule (`KindBinding.idIsFileStem`) for toolguides once the two qa files below are fixed; added now, it would refuse pinned content |
 | open-packs `packs/qa/toolguides/qa-promise-trace-lint.toolguide.yaml` and `qa-result-ingest.toolguide.yaml` | the ids `qa-promise-trace-lint-guide` and `qa-result-ingest-guide` differ from their file stems, so each guide (`<id>.guide.md`) does not sit by the toolguide's stem | S1 | [open-packs#93](https://github.com/spec-kitty/spec-kitty-open-packs/issues/93) | rename the ids to the file stems (and the guides with them), or the files to the ids |
+
+## Residuals of the mission types
+
+The second pull request of #194 consolidated the mission tier into one mission-type file per type
+([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)). It left these as they
+were:
+
+| File | What breaks a rule or is left outside the model | Rule | Issue | Proposed change |
+|---|---|---|---|---|
+| mission templates, `missions/<type>/templates/**` | held as template payloads, byte for byte, with the id `<type>/<path>`; no sidecar describes one. The whole-pack gate counts them as templates and round-trips their bytes | none: outside the model | #186 | decide whether a mission template gets a modelled shape; while it has none, a step output's `template_path` is the only file reference to it |
+| open-packs `packs/qa/missions/qa/templates/plan-field-declaration.yaml` | excluded with no schema; core has no model for it either | none: outside the model | #186 | model it with the qa mission type, or move it out of the pack |
+| `mission-step-contract.schema.json` | `action` and `mission` name the step and its mission type in a third key vocabulary, beside the mission type's `id` and the step's `id` | S3, S5 | #186 | key the contract by the mission type's id and the step's id, with item 9 |
+| the graph's `action:<type>/<step>` node and the `mission_step` domain type | two names for one step; a step's `references` mint no relationship | S3 | [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) | settle once #189 rules on edge authority |
