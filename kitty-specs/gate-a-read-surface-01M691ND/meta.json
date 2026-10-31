@@ -27,6 +27,7 @@
   "purpose_context": "The charter contract still serves artifacts on one route family per kind and carries no links. ADR-0019 and ADR-0020 D1 settle a root, an offering resource and generic artifact routes with required links; this 0.x change lands them inside the unreleased 0.1.0, together with the fingerprint-declaration fix (#175) and the corrected refusal examples (#176), so core's future generated client can start at the root and follow links.",
   "purpose_tldr": "Give the charter API the read surface core adopts at Gate A: an API root, the offering, one generic route family for every artifact kind, and hypermedia links on every answer.",
   "slug": "gate-a-read-surface-01M691ND",
+  "status_phase": "1",
   "target_branch": "issue-126-offering-reads",
   "topology": "coord",
   "vcs": "git",
