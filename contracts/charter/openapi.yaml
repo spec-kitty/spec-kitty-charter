@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Charter API
   version: 0.1.0-SNAPSHOT
-  summary: Read-only answers of the charter of one project.
+  summary: The charter of one project, its offering and its packs' artifacts.
   description: >-
     The contract of the charter service. This file holds the document header and the map from
     each path to the file that defines it; every definition lives in a small file next to it.

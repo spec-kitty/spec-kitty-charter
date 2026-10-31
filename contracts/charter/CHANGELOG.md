@@ -212,6 +212,9 @@ contract has 15 operations.
   `x-derived` (`_shared/VENDORED.md`); the generator types `nextPageCursor` as a nullable string, so it is not
   narrowed. `Links`, `RelationshipRegistration` and the five kind schemas carry a top-level citation, which
   `resource-property-cited` reads where they are a property of another schema.
+  `CharterRefusalCode`'s description follows the 2026-10-31 ruling (a configured pack whose `pack.yaml` is
+  missing or invalid is `pack_unreadable` on the offering and every artifact read) and names the four verified
+  reads; `info.summary` no longer calls the contract read-only.
 - Changed (closure check, FR-010): the one exemption ADR-0019 D3 names. A schema reached as the property `_links`,
   typed `object` alone, whose `additionalProperties` is a schema titled `Link` that the checker proves closed, is
   closed. Every other map is still reported; fixtures pin the exemption and three lookalikes (another property name,
