@@ -37,7 +37,7 @@
       "wp": null
     },
     "#235": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Kernel half delivered in WP01; read/policy/writer and the gate ratchet in WP02",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP02"
     },
     "#236": {
       "evidence_ref": "<link or commit>",
