@@ -43,6 +43,20 @@ class HypermediaTest {
     }
 
     @Test
+    void aTemplatedLinkKeepsAPathVariableSegmentAndEncodesTheOthers() {
+        Hypermedia.LinkValue link = hypermedia.templated("{?kind}", "packs", "{packId}", "artifacts");
+
+        assertThat(link.href()).isEqualTo("/api/v1/packs/{packId}/artifacts{?kind}");
+        assertThat(link.templated()).isTrue();
+        assertThat(hypermedia.templated("{?kind}", "a{b}", "{x").href())
+                .as("only a whole-segment simple expression is kept")
+                .isEqualTo("/api/v1/a%7Bb%7D/%7Bx{?kind}");
+        assertThat(hypermedia.link("packs", "{packId}").href())
+                .as("an untemplated link encodes every segment")
+                .isEqualTo("/api/v1/packs/%7BpackId%7D");
+    }
+
+    @Test
     void aTemplateIsRefusedWhenItIsNotAnRfc6570Expression() {
         assertThatThrownBy(() -> hypermedia.templated("/x", "packs"))
                 .isInstanceOf(IllegalArgumentException.class)
