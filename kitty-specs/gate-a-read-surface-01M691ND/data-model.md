@@ -50,7 +50,8 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 | A path kind that is not served | 404 `kind_not_found` (new, `raised: true`) |
 | Unknown id of a served kind | 404 with that kind's code (`tactic_not_found`, `directive_not_found`, `styleguide_not_found`, `paradigm_not_found`, `toolguide_not_found`) |
 | Unknown `?kind=`, a malformed cursor or a cursor for another kind, `pageSize` out of range | 400 Problem without a code |
-| A removed per-kind path, or a literal write path read with GET | 404 or 405 Problem without a code |
+| A removed per-kind path (any method) | 404 Problem without a code |
+| GET on a literal write path, or PUT on `/artifacts/tactic/{id}` | 405 Problem without a code |
 | Unreadable inputs | 500 `pack_unreadable` |
 | Inputs that change during the read | 500 `stale_input` |
 

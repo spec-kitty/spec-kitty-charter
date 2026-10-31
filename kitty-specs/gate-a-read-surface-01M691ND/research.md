@@ -47,7 +47,7 @@ operator ruling.
 - **Alternatives.** A custom vacuum function. That needs a JS runtime the build does not verify
   (supply chain), so it was rejected.
 
-## R-04 Artifact envelope and summary shapes
+## R-04 Artifact envelope and summary shapes (item links superseded by R-24: no `edit`)
 
 - **Decision.**
   - `Artifact`: `kind` (`ArtifactKindToken`), `id`, `packId`, `_links`, and the five optional
@@ -96,7 +96,7 @@ operator ruling.
 - **Alternatives.** An offset cursor. It skips or repeats items when an earlier artifact is added
   or removed, so it was rejected.
 
-## R-07 Offering order and source
+## R-07 Offering order and source (superseded by R-18)
 
 - **Decision.**
   - A new domain port `PackCatalog.configured()` returns the configured pack identifiers.
@@ -134,7 +134,7 @@ operator ruling.
   - The relation table gains `service-desc` (RFC 8631), `first` and `next` (IANA).
 - **Rationale.** The #208 hand-over in the #126 comment. #209 has landed.
 
-## R-10 Service structure: dispatch, not a registry refactor
+## R-10 Service structure: dispatch, not a registry refactor (class placement superseded by R-19)
 
 - **Decision.**
   - The generic reads live in `ArtifactController` (generated `ArtifactsApi`, tag `Artifacts`).
@@ -161,7 +161,7 @@ operator ruling.
 - **Rationale.** The root is about the service itself, like `/info`. The offering is the second
   top-level resource of ADR-0020 D1.
 
-## R-12 Work-package slicing and lanes
+## R-12 Work-package slicing and lanes (superseded by R-12 revised)
 
 - **Decision.** One lane of five sequential work packages. Each WP leaves `verifyAll` green:
   - WP01: headers, refusals, links infrastructure;

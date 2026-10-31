@@ -22,7 +22,7 @@ unreleased `0.1.0-SNAPSHOT`.
   The lint rules are narrowed and added to match.
 - **500 examples (#176).** `OfferingUnreadable`'s examples name only raised codes. A scenario pins
   `pack_unreadable` on an item read.
-- **Approach.** The work runs red-first (ATDD) in one lane of five work packages. Each leaves
+- **Approach.** The work runs red-first (ATDD) in one lane of seven work packages (tasks.md). Each leaves
   `verifyAll` green.
 
 ## Technical Context
@@ -109,12 +109,12 @@ contracts/
 └── src/main/java/.../closure/ClosureChecker.java (+ test fixtures)   # Links exemption
 service/kernel/.../RefusalCode.java                         # KIND_NOT_FOUND
 service/packs/src/main/java/ai/speckitty/charter/packs/
-├── domain/PackCatalog.java                                 # new port: configured packs
-├── application/OfferingReadService.java, ArtifactCatalogReadService.java, ArtifactPosition (cursor)   # new
-├── infra/api/ArtifactController.java, OfferingController.java, ArtifactKinds.java, Hypermedia.java (link building)   # new
+├── domain/PackCatalogRepository.java, ConfiguredPack.java  # new port: configured packs (R-18)
+├── application/OfferingReadService.java, ArtifactReadService.java, ArtifactPosition.java   # new (R-19)
+├── infra/api/ArtifactController.java, OfferingController.java, ArtifactDtos.java, ArtifactCursor.java, Hypermedia.java, Relation.java   # new
 ├── infra/api/{Tactic,Directive,Styleguide,Paradigm,Toolguide}Controller.java   # reads removed; writes answer the envelope
 ├── infra/api/InfoController.java, RelationshipController.java, RefusalHandler.java
-└── infra/storage/DomainRepositoryService.java              # implements PackCatalog
+└── infra/storage/DomainRepositoryService.java              # implements PackCatalogRepository
 service/deployable/src/test/java/.../bdd/                   # CharterSteps fingerprint hook reads the contract; _links.self hook
 docs/development/hypermedia-hateoas.md, docs/api/service-contract.md, docs/adr/0019-*.md, docs/adr/0026-*.md, docs/changelog/
 ```
@@ -131,9 +131,9 @@ flowchart LR
   C -->|GET /packs/p/artifacts?kind| AL[ArtifactController.list]
   C -->|GET /packs/p/artifacts/k/id| AI[ArtifactController.item]
   C -->|POST/PUT /packs/p/artifacts/kind...| W[per-kind controllers: writes only]
-  O --> ORS[OfferingReadService] --> PC[(PackCatalog + PackDescriptorRepository)]
-  AL --> ACR[ArtifactCatalogReadService] --> PR[(PackRepository)]
-  AI --> K[ArtifactKinds dispatch] --> RS[per-kind read services]
+  O --> ORS[OfferingReadService] --> PC[(PackCatalogRepository + PackDescriptorRepository)]
+  AL --> ACR[ArtifactReadService.list] --> PR[(PackRepository)]
+  AI --> K[ArtifactReadService.item] --> RS[per-kind read services]
   W --> REG[per-kind registration services]
   ORS & ACR & RS -.-> CR[ConsistentRead: fingerprint]
 ```
