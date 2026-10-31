@@ -5,7 +5,7 @@ description: >-
   retires it as a relation. A tension between two rules is not a value of this enum (not a
   relation type of the service): the service holds a
   graph document's in_tension_with edge as a tension beside the relationships, never as impacts,
-  and does not answer it as a relationship (ADR-0044). reconciles_tension points at the sides of a
+  and does not answer it as a relationship (ADR-0045). reconciles_tension points at the sides of a
   pair joined by a tension.
 type: string
 enum:

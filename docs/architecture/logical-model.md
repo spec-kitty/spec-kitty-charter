@@ -307,8 +307,8 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `replaces` | Supersession; kept for older hand-authored fragments. |
 | `supports` | A resource helps check a rule (an asset supports a directive). Target ([conceptual model](/context/conceptual-model/#relationships)); candidate, undecided as a relation name in the schemas. |
 | `tension` | Two rules pull against each other. Authored, never derived from value impacts; it may sit beside one structural relationship on the same pair. Target ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)); it replaces `in_tension_with` and the signed `impacts` edge. |
-| `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
-| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0044). |
+| `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
+| `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 
 An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
@@ -324,7 +324,7 @@ negative `impacts` edge (provisional, [ADR-0009](/adr/0009-contract-1-0-reservat
 Target: [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) supersedes that
 naming in part; the relation is `tension` and `impacts` is a per-value list on one artifact
 (see [Values and value impacts](#values-and-value-impacts)). The domain representation of the
-relationship is proposed by [ADR-0044](/adr/0044-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
+relationship is proposed by [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/):
 a tension is a domain value held beside the relationships, outside their pair identity, written
 `in_tension_with` in today's pack files, and not on the contract. Candidate, undecided: how the list
 appears in the pack schemas and the contract, and whether the relationship reaches the contract.

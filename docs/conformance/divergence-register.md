@@ -328,9 +328,9 @@ ruling, its status and the evidence.
 ### DIV-018: The impacts relation and the edge impacts strength
 
 - **Core:** Has neither yet. The relation enum has no impacts member (offering/drg/models.py:83-148).
-- **Service:** Models both. The pack schemas' Relation enum is core's 15 values, including in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. in_tension_with is today's spelling of the ADR-0028 tension: the service holds it as a tension beside the relationships and writes it back as written (ADR-0044); it is never read as impacts.
-- **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference: a tension is not a relation type (ADR-0044).
-- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0044
+- **Service:** Models both. The pack schemas' Relation enum is core's 15 values, including in_tension_with, plus impacts, 16 in all, and an edge may carry a numeric impacts strength. in_tension_with is today's spelling of the ADR-0028 tension: the service holds it as a tension beside the relationships and writes it back as written (ADR-0045); it is never read as impacts.
+- **Rationale:** The contract leads and core aligns at the cutover. The service's own Relation type has 15 values, the same set without in_tension_with, which is a known difference: a tension is not a relation type (ADR-0045).
+- **Ruling:** ADR-0009 D1; ADR-0014 D-2; plan call P11; ADR-0028; ADR-0045
 - **Status:** open, since 2026-10-19
 - **Evidence:**
   - Core: `offering/drg/models.py:83-148`

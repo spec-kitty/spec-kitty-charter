@@ -1,5 +1,5 @@
 ---
-title: "ADR-0044: A tension is held beside the relationships, and a graph node keeps every declared field"
+title: "ADR-0045: A tension is held beside the relationships, and a graph node keeps every declared field"
 description: Decides the domain representation of the ADR-0028 tension relationship and of the graph-node fields, so a graph document round-trips without loss of meaning.
 doc_status: draft
 updated: 2026-10-31T00:00:00Z
@@ -19,7 +19,7 @@ audience:
     guidance_text: Read this for why tension is not a relationship type on the HTTP contract.
 ---
 
-# ADR-0044: A tension is held beside the relationships, and a graph node keeps every declared field
+# ADR-0045: A tension is held beside the relationships, and a graph node keeps every declared field
 
 ## Status
 

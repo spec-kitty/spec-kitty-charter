@@ -183,7 +183,7 @@ class PackPolicyTest {
 
     @Test
     void aHandEditedTensionInTheRegisteredShardLoadsCleanWhileARegistrationRewriteReportsIt() {
-        // ADR-0044 decision 5: load and validation use the ordinary graph rules on registered.graph.yaml, so the pack
+        // ADR-0045 decision 5: load and validation use the ordinary graph rules on registered.graph.yaml, so the pack
         // stays loadable; only a registration rewrite, which would drop the tension, reports it. Deliberate until the
         // operator chooses between refusing it in validation and carrying tensions through a rewrite.
         RawGraph registered = shard(

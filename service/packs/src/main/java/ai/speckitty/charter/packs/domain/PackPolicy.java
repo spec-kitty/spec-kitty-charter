@@ -61,7 +61,7 @@ public final class PackPolicy {
 
     /**
      * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
-     * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0044); the writers spell
+     * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
      * a tension back with it.
      */
     public static final String TENSION = "in_tension_with";
@@ -426,7 +426,7 @@ public final class PackPolicy {
 
     /**
      * Builds the graph of one document and collects what does not bind: the URN binding, the tension edges, which
-     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0044), and the {@code impacts} rules, NaN and
+     * bind to {@link Tension}s beside the relationships (ADR-0028, ADR-0045), and the {@code impacts} rules, NaN and
      * the infinities included. Every declared node field is carried onto its {@link DrgNode} (ADR-0036).
      *
      * <p>A node or edge with a finding is left out of the graph, so the constructor checks of {@link Relationship}

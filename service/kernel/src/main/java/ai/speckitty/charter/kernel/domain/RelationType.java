@@ -47,7 +47,7 @@ public enum RelationType {
     /**
      * The signed {@code impacts} relation that ADR-0028 retires; its strength lives on the storage DSO. It is
      * {@link Directionality#BIDIRECTIONAL}. It is not the tension between two rules: that is a {@link Tension}, held
-     * beside the relationships and outside their pair identity (ADR-0028 Decision 3, ADR-0044).
+     * beside the relationships and outside their pair identity (ADR-0028 Decision 3, ADR-0045).
      */
     IMPACTS(Directionality.BIDIRECTIONAL),
     /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
