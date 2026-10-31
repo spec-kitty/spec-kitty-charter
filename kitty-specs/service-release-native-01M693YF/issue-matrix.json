@@ -36,6 +36,18 @@
       "verdict": "in-mission",
       "wp": "WP01"
     },
+    "#6909": {
+      "evidence_ref": "spec-kitty/spec-kitty#6909: core's requests (provisional comment, default repository, help texts, attestation verification); filed by the orchestrator",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#70": {
       "evidence_ref": "launcher out of scope (C-003)",
       "fr": null,
