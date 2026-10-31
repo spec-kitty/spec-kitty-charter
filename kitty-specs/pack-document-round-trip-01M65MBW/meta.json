@@ -1,6 +1,8 @@
 {
+  "accept_commit": "73495735d5858786becdc5f15b37b9a764b82866",
   "acceptance_history": [
     {
+      "accept_commit": "73495735d5858786becdc5f15b37b9a764b82866",
       "acceptance_mode": "local",
       "accepted_at": "2026-10-31T10:56:08.514285+00:00",
       "accepted_by": "stijn-dejongh",
