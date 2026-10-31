@@ -282,7 +282,7 @@ class PackManifestRoundTripTest {
                                 binary,
                                 host.resolve("out3").resolve(FIXTURE))
                         .get(PackFileSet.MANIFEST))
-                .isEqualTo(new Refused("the file cannot be read as UTF-8 text"));
+                .isEqualTo(new Refused("the file is not valid UTF-8"));
         assertThat(refusedUnreadable.get(PackFileSet.MANIFEST))
                 .isEqualTo(new Refused("additionalProperties violated at the document: undeclared key 'charter'; "
                         + "additionalProperties violated at the document: undeclared key 'generated_by'"));

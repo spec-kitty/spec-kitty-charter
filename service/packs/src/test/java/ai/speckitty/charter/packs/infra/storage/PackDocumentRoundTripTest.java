@@ -267,19 +267,30 @@ class PackDocumentRoundTripTest {
         });
     }
 
+    @Test
+    @DisplayName("#273: a pack.md that is not UTF-8 is refused by the load and by validate mode in the one wording")
+    void notUtf8IsWordedOnce(@TempDir Path host) throws IOException {
+        Path refused = documentedPack(host, "");
+        Files.write(refused.resolve(PackDocumentMarkdown.FILE), new byte[] {'#', ' ', 'T', '\n', (byte) 0xff, '\n'});
+
+        assertThat(store.load(refused).pack().violations())
+                .extracting(PackElementViolation::reason)
+                .containsExactly("the file is not valid UTF-8");
+        assertThat(validateFindings(refused))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).endsWith(": the file is not valid UTF-8"));
+    }
+
     /**
      * Each way a pack.md is refused when read: its name, the file's bytes, and validate mode's reason when it is not the
-     * load's own. A file that is not UTF-8 is refused by both in each one's existing wording for every file kind (the
-     * store: "cannot be read as UTF-8 text"; validate mode: "is not valid UTF-8"); every Markdown refusal is the same.
+     * load's own (an empty one: it is the same). Every refusal is worded the same by both, a file that is not UTF-8
+     * included (#273): one wording for every file kind, {@code FilesystemPackStore.NOT_UTF8}.
      */
     static Stream<Arguments> refusedTexts() {
         return Stream.of(
                 Arguments.of("crlf", utf8(WITHOUT_FRONTMATTER.replace("\n", "\r\n")), ""),
                 Arguments.of("bom", utf8("\uFEFF" + WITHOUT_FRONTMATTER), ""),
-                Arguments.of(
-                        "not UTF-8",
-                        new byte[] {'#', ' ', 'T', '\n', (byte) 0xff, '\n'},
-                        "the file is not valid UTF-8"),
+                Arguments.of("not UTF-8", new byte[] {'#', ' ', 'T', '\n', (byte) 0xff, '\n'}, ""),
                 Arguments.of("frontmatter that is a list", utf8("---\n- a\n---\n" + WITHOUT_FRONTMATTER), ""),
                 Arguments.of(
                         "binary scalar in frontmatter",

@@ -437,7 +437,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private Outcome manifest(Path source, Path target, String path, Map<String, String> written) {
         Optional<String> text = FilesystemPackStore.readText(source.resolve(path));
         if (text.isEmpty()) {
-            return new Refused("the file cannot be read as UTF-8 text");
+            return new Refused(FilesystemPackStore.NOT_UTF8);
         }
         FileRead<PackManifestDso> read = strategy.readManifest(text.get(), path);
         if (read instanceof FileRead.Unreadable<PackManifestDso> bad) {

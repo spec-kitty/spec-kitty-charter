@@ -259,9 +259,12 @@ final class Companions {
         if (!FilesystemPackStore.realPathContained(packDir, at.file())) {
             return new Refused("leaves the pack");
         }
-        Optional<String> text = FilesystemPackStore.readText(at.file());
+        Optional<byte[]> bytes = FilesystemPackStore.readBytes(at.file());
+        Optional<String> text = bytes.flatMap(FilesystemPackStore::decodeUtf8);
         if (text.isEmpty()) {
-            return new Refused("cannot be read as UTF-8 text");
+            // The file's own wording (#273), said of the companion's path: "<path>: is not valid UTF-8".
+            return new Refused(
+                    bytes.isEmpty() ? FilesystemPackStore.UNREADABLE_REASON : FilesystemPackStore.NOT_UTF8_REASON);
         }
         return new Found(at, new CompanionContent.Text(text.get()));
     }

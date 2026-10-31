@@ -104,7 +104,7 @@ class CompanionFilesTest {
                 .containsExactlyInAnyOrder(
                         "absolute.tactic.yaml: /etc/hostname: leaves the pack",
                         "backslash.tactic.yaml: a\\..\\x.md: is not a valid path",
-                        "binary.tactic.yaml: binary.md: cannot be read as UTF-8 text",
+                        "binary.tactic.yaml: binary.md: is not valid UTF-8",
                         "dot.tactic.yaml: escape.tactic.yaml/.: is a YAML file",
                         "escape.tactic.yaml: ../outside.md: leaves the pack",
                         "link.tactic.yaml: link.md: is not a regular file",
