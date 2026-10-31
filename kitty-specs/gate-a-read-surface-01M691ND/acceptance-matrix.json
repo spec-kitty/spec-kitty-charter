@@ -88,10 +88,10 @@
       "criterion_id": "FR-009",
       "description": "Verify FR-009 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "LinkChecks (every link href under /api/v1/ resolves to a contract operation for its method, templated flag) run on every 2xx JSON answer by CharterSteps after-hook; LinkChecksTest (aLinkToAPathNoOperationDefinesIsReported etc.); OperationCoverage @AfterAll fails on any unexercised declared success; root.feature follow-link scenarios and offering.feature 'The artifacts link of every pack answers its artifacts' expect 200; no edit/reserved links (R-24); verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:06.519738+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
