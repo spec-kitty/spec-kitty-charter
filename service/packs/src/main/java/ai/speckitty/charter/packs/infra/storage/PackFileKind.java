@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -148,7 +150,23 @@ final class PackFileKind {
      */
     record RetiredRule(String match, String reason) {}
 
-    private record Compiled(String match, Pattern pattern) {}
+    /**
+     * A rule's glob, compiled as written and case-folded.
+     *
+     * @param match the glob as the table writes it
+     * @param pattern the glob, matched as written
+     * @param folded the glob in lower case ({@link Locale#ROOT}), matched against a path folded the same way
+     */
+    private record Compiled(String match, Pattern pattern, Pattern folded) {
+        /**
+         * Compiles a glob both ways.
+         *
+         * @param match the glob as the table writes it
+         */
+        Compiled(String match) {
+            this(match, glob(match), glob(match.toLowerCase(Locale.ROOT)));
+        }
+    }
 
     private final String schemaDir;
     private final List<String> nodeKinds;
@@ -193,13 +211,12 @@ final class PackFileKind {
         this.payloadRules = List.copyOf(table.payloadRules());
         this.retiredRules = List.copyOf(table.retiredRules());
         List<Compiled> all = new ArrayList<>();
-        fileRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
-        exclusionRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
-        retiredRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
+        fileRules.forEach(r -> all.add(new Compiled(r.match())));
+        exclusionRules.forEach(r -> all.add(new Compiled(r.match())));
+        retiredRules.forEach(r -> all.add(new Compiled(r.match())));
         this.compiled = List.copyOf(all);
-        this.payloadsCompiled = payloadRules.stream()
-                .map(r -> new Compiled(r.match(), glob(r.match())))
-                .toList();
+        this.payloadsCompiled =
+                payloadRules.stream().map(r -> new Compiled(r.match())).toList();
     }
 
     private record Table(
@@ -255,6 +272,20 @@ final class PackFileKind {
         return matching(compiled, path);
     }
 
+    /**
+     * {@link #matchingRules} with the path and the globs case-folded, as {@link #classifyFolded} matches.
+     *
+     * @param path the path relative to the directory that holds the pack directories, with forward slashes
+     * @return the matching {@code files}, {@code exclusions} or {@code retired} rule globs, as the table writes them
+     */
+    List<String> matchingRulesFolded(String path) {
+        String folded = path.toLowerCase(Locale.ROOT);
+        return compiled.stream()
+                .filter(c -> c.folded().matcher(folded).matches())
+                .map(Compiled::match)
+                .toList();
+    }
+
     /** Every {@code payloads} rule glob that matches {@code path}; the table promises at most one. */
     List<String> matchingPayloadRules(String path) {
         return matching(payloadsCompiled, path);
@@ -274,15 +305,32 @@ final class PackFileKind {
      * @return how the path is handled
      */
     Classification classify(String path) {
+        return classify(path, Compiled::pattern);
+    }
+
+    /**
+     * Classifies a path case-folded: the path and every rule's glob in lower case ({@link Locale#ROOT}), the fold the
+     * write's claim check applies to a written path ({@code Companions.Inside#claim}). It is how a companion's path is
+     * classified (#272, ADR-0039 decision 3): on a case-insensitive file system {@code PACK.md} is {@code pack.md}, so
+     * a rule owns every spelling of its file. A real file is classified as written ({@link #classify}).
+     *
+     * @param path the path relative to the directory that holds the pack directories, with forward slashes
+     * @return how the path would be handled in any letter case
+     */
+    Classification classifyFolded(String path) {
+        return classify(path.toLowerCase(Locale.ROOT), Compiled::folded);
+    }
+
+    private Classification classify(String path, Function<Compiled, Pattern> glob) {
         // `compiled` holds the files rules, then the exclusions, then the retired rules, each compiled once when the
         // table was built.
         for (int i = 0; i < compiled.size(); i++) {
-            if (compiled.get(i).pattern().matcher(path).matches()) {
+            if (glob.apply(compiled.get(i)).matcher(path).matches()) {
                 return ruleAt(i);
             }
         }
         for (int i = 0; i < payloadsCompiled.size(); i++) {
-            if (payloadsCompiled.get(i).pattern().matcher(path).matches()) {
+            if (glob.apply(payloadsCompiled.get(i)).matcher(path).matches()) {
                 PayloadRule rule = payloadRules.get(i);
                 return new Mapped(rule.kind(), Optional.empty(), rule.contentForm());
             }
