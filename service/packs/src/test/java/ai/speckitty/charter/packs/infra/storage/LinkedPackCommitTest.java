@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -61,11 +60,7 @@ class LinkedPackCommitTest {
                 .toRealPath();
         link = packs.resolve("pack-a");
         Files.deleteIfExists(link);
-        try {
-            Files.createSymbolicLink(link, target);
-        } catch (UnsupportedOperationException | IOException noLinks) {
-            abort("the filesystem cannot create symbolic links");
-        }
+        SymbolicLinks.create(link, target);
         locations = new StorageRootLocations(packs);
     }
 

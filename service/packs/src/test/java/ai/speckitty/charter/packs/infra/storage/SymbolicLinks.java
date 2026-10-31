@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.abort;
 
 import java.io.IOException;
@@ -47,6 +48,24 @@ final class SymbolicLinks {
         }
     }
 
+    /**
+     * Whether a link can be made in {@code dir}, for setup that only prepares link fixtures; a test checks with
+     * {@link #requireSupport}, which skips or fails.
+     */
+    static boolean supported(Path dir) throws IOException {
+        Path target = Files.createTempFile(dir, "probe", ".tmp");
+        Path link = dir.resolve(target.getFileName() + ".lnk");
+        try {
+            Files.createSymbolicLink(link, target);
+            return true;
+        } catch (UnsupportedOperationException | FileSystemException noLinks) {
+            return false;
+        } finally {
+            Files.deleteIfExists(link);
+            Files.delete(target);
+        }
+    }
+
     /** Whether this test JVM was told that link support is mandatory. */
     static boolean required() {
         return Boolean.getBoolean(REQUIRED);
@@ -57,7 +76,11 @@ final class SymbolicLinks {
         try {
             maker.make();
         } catch (UnsupportedOperationException | FileSystemException noLinks) {
-            abort("the file system cannot create symbolic links: " + noLinks);
+            String why = "the file system cannot create symbolic links: " + noLinks;
+            if (required) {
+                fail(why + " (" + REQUIRED + " is true, so link support is mandatory)", noLinks);
+            }
+            abort(why);
         }
     }
 }
