@@ -35,6 +35,10 @@ public record ContainerProperties(
      */
     static final String SECRETS_DIR_PROPERTY = "charter.container.secrets-dir";
 
-    /** The secrets directory when {@link #SECRETS_DIR_PROPERTY} is not set. */
+    /**
+     * The secrets directory when {@link #SECRETS_DIR_PROPERTY} is not set. Kept in sync with the
+     * {@code configtree:${charter.container.secrets-dir:/run/secrets}/} default in
+     * {@code application-container.yaml}; drift between the two is caught by {@code ShippedConfigurationTest}.
+     */
     static final String DEFAULT_SECRETS_DIR = "/run/secrets";
 }
