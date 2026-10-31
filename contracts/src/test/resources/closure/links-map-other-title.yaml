@@ -1,0 +1,33 @@
+# Must report: a _links map whose values are not titled Link is an open map.
+openapi: 3.1.0
+info:
+  title: Charter closure fixture
+  version: 1.0.0-SNAPSHOT
+paths:
+  /activations/{activationId}:
+    get:
+      operationId: getActivation
+      responses:
+        '200':
+          description: The activation.
+          content:
+            application/json:
+              schema:
+                title: Activation
+                type: object
+                additionalProperties: false
+                properties:
+                  _links:
+                    description: The relations of the answer.
+                    allOf:
+                      - title: Links
+                        type: object
+                        additionalProperties:
+                          title: Href
+                          type: object
+                          additionalProperties: false
+                          required:
+                            - href
+                          properties:
+                            href:
+                              type: string

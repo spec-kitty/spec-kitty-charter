@@ -22,7 +22,7 @@ class CheckClosedResponseObjectsTest {
     void aClosedBundlePassesAndSaysHowManyResponseSchemasItJudged() {
         int code = CheckClosedResponseObjects.run(List.of(System.getProperty("charter.lintCleanFixture")), out);
         assertThat(code).isZero();
-        assertThat(printed()).isEqualTo("All 19 response schemas are closed.\n");
+        assertThat(printed()).isEqualTo("All 30 response schemas are closed.\n");
     }
 
     @Test

@@ -47,13 +47,15 @@ rules:
               minItems: 1
 
   # A read answers 200, a registration answers 200 (replace) or 201 (create) with the resource and an ETag
-  # (ADR-0018 D10 as amended 2026-10-25, reconciling with ADR-0026's write surface); every non-success answer
-  # (every 4xx/5xx and the shared default) is a problem. A 304 Not Modified has no body (RFC 9110, section
-  # 15.4.5), so it is not a problem either (ADR-0018 D10 amendment 2026-10-28); not-modified-has-no-body holds it to that.
+  # (ADR-0018 D10 as amended 2026-10-25, reconciling with ADR-0026's write surface), and a removal answers 204
+  # with no body (ADR-0020 D9, which supersedes ADR-0018 D10's "200 only"); every non-success answer (every
+  # 4xx/5xx and the shared default) is a problem. A 304 Not Modified has no body (RFC 9110, section 15.4.5), so it
+  # is not a problem either (ADR-0018 D10 amendment 2026-10-28). not-modified-has-no-body and
+  # no-content-has-no-body hold the 304 and the 204 to having no body.
   error-responses-are-problems:
-    description: Every response other than the 200/201 successes and a 304 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
+    description: Every response other than the 200/201/204 successes and a 304 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
     severity: error
-    given: "$.paths[*][*].responses[?(@property != '200' && @property != '201' && @property != '304')]"
+    given: "$.paths[*][*].responses[?(@property != '200' && @property != '201' && @property != '204' && @property != '304')]"
     then:
       - field: content
         function: truthy
@@ -95,6 +97,70 @@ rules:
     then:
       field: content
       function: falsy
+
+  # A removal's 204 carries headers only: RFC 9110 (section 15.3.5) forbids it a body (ADR-0020 D9).
+  no-content-has-no-body:
+    description: A 204 No Content response declares no content.
+    severity: error
+    given: "$.paths[*][*].responses['204']"
+    then:
+      field: content
+      function: falsy
+
+  # ADR-0020 D8: an operation declared ahead of being built carries x-reserved, naming the contract set it
+  # belongs to and the issue that reserves it. It is removed, with the 501, when the operation is built.
+  # The marker is judged on the operation that carries it, so a null marker (which a path to the marker itself
+  # would never visit) is refused too.
+  x-reserved-shape:
+    description: An x-reserved marker is a mapping with the contract set the operation belongs to and the issue that reserves it ('#' and a number).
+    severity: error
+    given: "$.paths[*][?(@.responses)]"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          properties:
+            x-reserved:
+              type: object
+              additionalProperties: false
+              required: [contractSet, issue]
+              properties:
+                contractSet: { type: string, pattern: '^[a-z][a-z0-9_-]*$' }
+                issue: { type: string, pattern: '^#[0-9]+$' }
+
+  # ADR-0020 D8: a reserved operation answers 501 Not Implemented until it is built, and says so.
+  reserved-operation-declares-501:
+    description: An operation that carries x-reserved declares a 501 response.
+    severity: error
+    given: "$.paths[*][?(@.responses)]"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          if: { required: [x-reserved] }
+          then:
+            properties:
+              responses: { required: ['501'] }
+
+  # ADR-0020 D8: building an operation removes its 501 and its x-reserved together, so a 501 never outlives the
+  # marker and an unmarked operation never claims to be unbuilt.
+  built-operation-declares-no-501:
+    description: An operation without x-reserved declares no 501 response.
+    severity: error
+    given: "$.paths[*][?(@.responses)]"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          if:
+            not: { required: [x-reserved] }
+          then:
+            properties:
+              responses:
+                not: { required: ['501'] }
 
   # ADR-0011: every response of every operation, the shared default Problem included, declares the three
   # Charter headers (#90). Fingerprint is not required on the wire, but its absence is still declared.
