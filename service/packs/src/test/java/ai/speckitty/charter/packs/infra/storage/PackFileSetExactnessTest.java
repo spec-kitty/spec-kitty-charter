@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Kind;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Pack;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Planted;
+import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.RootForm;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Shape;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Target;
 import ai.speckitty.charter.packs.infra.storage.GeneratedPackTree.Verdict;
@@ -100,16 +101,21 @@ class PackFileSetExactnessTest {
     void theFingerprintChangesIfAndOnlyIfAFileIsPackYamlLoadedAPayloadOrAGraphInput() throws IOException {
         assumeTrue(symlinksWork(home), "the file system cannot create symbolic links");
         Set<Shape> seen = EnumSet.noneOf(Shape.class);
+        Set<RootForm> roots = EnumSet.noneOf(RootForm.class);
         long start = cpuNanos();
         for (int i = 0; i < TREES; i++) {
             GeneratedPackTree tree = tree(i);
             assertDigestIsExact(tree, PackFileSetExactnessTest::fingerprintOf);
             seen.addAll(tree.shapes());
+            roots.addAll(tree.rootForms());
         }
         assertWithinCpuBudget(start, "digest checks over " + TREES + " trees");
         assertThat(seen)
                 .as("every row of the name-shape table was planted at least once")
                 .containsExactlyInAnyOrder(Shape.values());
+        assertThat(roots)
+                .as("every form of a configured root, a symbolic link among them (#174), was planted at least once")
+                .containsExactlyInAnyOrder(RootForm.values());
     }
 
     @Test
@@ -475,7 +481,7 @@ class PackFileSetExactnessTest {
     // ---- helpers -------------------------------------------------------------------------------------------------
 
     private static String where(GeneratedPackTree tree, Pack pack) {
-        return "seed=%d tree=%d pack=%s".formatted(tree.seed(), tree.index(), pack.name());
+        return "seed=%d tree=%d pack=%s root=%s".formatted(tree.seed(), tree.index(), pack.name(), pack.rootForm());
     }
 
     private static <D> Set<String> ids(List<D> dsos, Function<D, String> id) {
