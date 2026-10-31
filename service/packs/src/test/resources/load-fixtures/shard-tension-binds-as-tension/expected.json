@@ -10,8 +10,9 @@
     }
   ],
   "nodeCount": 0,
-  "edgeCount": 1,
-  "edges": [
-    "directive:a impacts directive:b -1.0"
+  "edgeCount": 0,
+  "edges": [],
+  "tensions": [
+    "directive:a in_tension_with directive:b"
   ]
 }

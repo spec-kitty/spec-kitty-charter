@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -49,6 +50,38 @@ class PackPolicyGraphTest {
                 PackPolicy.graph("qa", shard(List.of(new RawNode("tactic:a", "tactic", Optional.of("A"))), List.of()));
         assertThat(build.findings()).isEmpty();
         assertThat(build.graph().nodes()).containsExactly(new DrgNode(A, Optional.of("A")));
+    }
+
+    @Test
+    void aShardNodeBindsWithItsProvenanceAndItsTagsInOrder() {
+        GraphBuild build = PackPolicy.graph(
+                "qa",
+                shard(
+                        List.of(new RawNode(
+                                "tactic:a",
+                                "tactic",
+                                Optional.empty(),
+                                Optional.of("imported"),
+                                List.of("y", "x"),
+                                Optional.empty())),
+                        List.of()));
+
+        assertThat(build.graph().nodes())
+                .containsExactly(
+                        new DrgNode(A, Optional.empty(), Optional.of("imported"), List.of("y", "x"), Optional.empty()));
+    }
+
+    @Test
+    void aFragmentNodeBindsWithItsBodyPath() {
+        GraphBuild build = PackPolicy.graph(
+                "qa",
+                fragment(
+                        List.of(new RawNode(
+                                "b", "directives", Optional.of("B"), Optional.empty(), List.of(), Optional.of("b.md"))),
+                        List.of()));
+
+        assertThat(build.graph().nodes())
+                .containsExactly(new DrgNode(B, Optional.of("B"), Optional.empty(), List.of(), Optional.of("b.md")));
     }
 
     @Test
@@ -140,21 +173,93 @@ class PackPolicyGraphTest {
     }
 
     @Test
-    void aLegacyInTensionWithEdgeBecomesTheImpactsRelation() {
-        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "in_tension_with", null)));
+    void anInTensionWithEdgeBindsAsATensionAndNeverAsARelationship() {
+        GraphBuild build = build(List.of(new RawEdge(
+                "tactic:a",
+                "directive:b",
+                "in_tension_with",
+                Optional.empty(),
+                Optional.of("always"),
+                Optional.of("both stay valid"))));
+
         assertThat(build.findings()).isEmpty();
+        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(build.graph().tensions())
+                .containsExactly(new Tension(A, B, Optional.of("always"), Optional.of("both stay valid")));
+    }
+
+    @Test
+    void aTensionAndAStructuralRelationshipOnTheSamePairBothBind() {
+        GraphBuild build = build(List.of(
+                edge("tactic:a", "directive:b", "in_tension_with", null),
+                edge("directive:b", "tactic:a", "requires", null)));
+
+        assertThat(build.findings()).isEmpty();
+        assertThat(build.graph().tensions()).containsExactly(new Tension(A, B, Optional.empty(), Optional.empty()));
         assertThat(build.graph().relationships()).singleElement().satisfies(relationship -> {
-            assertThat(relationship.from()).isEqualTo(A);
-            assertThat(relationship.to()).isEqualTo(B);
-            assertThat(relationship.type()).isEqualTo(RelationType.IMPACTS);
+            assertThat(relationship.from()).isEqualTo(B);
+            assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES);
         });
     }
 
     @Test
-    void aLegacyInTensionWithEdgeThatAlsoWritesImpactsIsAFinding() {
-        GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "in_tension_with", -0.5)));
+    void anInTensionWithEdgeThatAlsoWritesImpactsIsAFindingWhileAValidTensionBesideItBinds() {
+        GraphBuild build = build(List.of(
+                edge("tactic:a", "directive:b", "in_tension_with", -0.5),
+                edge("tactic:a", "directive:c", "in_tension_with", null)));
+
         assertThat(build.graph().relationships()).isEmpty();
+        assertThat(build.graph().tensions())
+                .containsExactly(new Tension(A, new Urn(NodeKind.DIRECTIVE, "c"), Optional.empty(), Optional.empty()));
         assertThat(details(build)).containsExactly("qa/tactic.graph.yaml: an in_tension_with edge has no 'impacts'");
+    }
+
+    @Test
+    void aTensionWhoseEndpointIsNotAUrnOrThatJoinsARuleToItselfIsAFinding() {
+        GraphBuild build = build(List.of(
+                edge("nonsense", "directive:b", "in_tension_with", null),
+                edge("tactic:a", "tactic:a", "in_tension_with", null)));
+
+        assertThat(build.graph().tensions()).isEmpty();
+        assertThat(details(build))
+                .containsExactly(
+                        "qa/tactic.graph.yaml: edge endpoint 'nonsense' is not a URN",
+                        "qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+    }
+
+    @Test
+    void aRegisteredShardHoldsNoTensionSoATensionThereIsAFindingAndIsNotBound() {
+        RawGraph registered = new RawGraph(
+                "registered.graph.yaml",
+                RawGraph.Shape.SHARD,
+                List.of(),
+                List.of(
+                        edge("tactic:a", "directive:b", "requires", null),
+                        edge("tactic:a", "directive:c", "in_tension_with", null)));
+
+        GraphBuild build = PackPolicy.registeredGraph("qa", registered);
+
+        assertThat(build.graph().tensions()).isEmpty();
+        assertThat(build.graph().relationships())
+                .singleElement()
+                .satisfies(relationship -> assertThat(relationship.type()).isEqualTo(RelationType.REQUIRES));
+        assertThat(build.findings())
+                .containsExactly(new PackFinding(
+                        PackFindingCode.DRG_SCHEMA_ERROR,
+                        "registered.graph.yaml",
+                        List.of("edges", "1"),
+                        "qa/registered.graph.yaml: a registered relationship is never a tension; in_tension_with is"
+                                + " authored in a pack's graph shards"));
+        // Positive control: the same shard without the tension binds whole.
+        assertThat(PackPolicy.registeredGraph(
+                                "qa",
+                                new RawGraph(
+                                        "registered.graph.yaml",
+                                        RawGraph.Shape.SHARD,
+                                        List.of(),
+                                        List.of(edge("tactic:a", "directive:b", "requires", null))))
+                        .findings())
+                .isEmpty();
     }
 
     @Test

@@ -271,20 +271,46 @@ public record PackContents(
      *
      * @param ref the URN of a shard node, or the id of a fragment node
      * @param kind the kind as written
-     * @param label the label, when there is one
+     * @param label the label (a shard's {@code label}, a fragment's {@code title}), when there is one
+     * @param provenance a shard node's {@code provenance}, when written
+     * @param tags a shard node's {@code tags} in written order; empty when none are written
+     * @param bodyPath a fragment node's {@code body_path}, when written
      */
-    public record RawNode(String ref, String kind, Optional<String> label) {
+    public record RawNode(
+            String ref,
+            String kind,
+            Optional<String> label,
+            Optional<String> provenance,
+            List<String> tags,
+            Optional<String> bodyPath) {
         /**
-         * Checks the fields.
+         * Checks the fields and copies the tags.
          *
          * @param ref the URN or id
          * @param kind the kind as written
          * @param label the label, possibly empty
+         * @param provenance the provenance, possibly empty
+         * @param tags the tags, possibly empty
+         * @param bodyPath the body path, possibly empty
          */
         public RawNode {
             Objects.requireNonNull(ref, "ref");
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(label, "label");
+            Objects.requireNonNull(provenance, "provenance");
+            tags = List.copyOf(Objects.requireNonNull(tags, "tags"));
+            Objects.requireNonNull(bodyPath, "bodyPath");
+        }
+
+        /**
+         * A node with no provenance, no tags and no body path.
+         *
+         * @param ref the URN or id
+         * @param kind the kind as written
+         * @param label the label, possibly empty
+         */
+        public RawNode(String ref, String kind, Optional<String> label) {
+            this(ref, kind, label, Optional.empty(), List.of(), Optional.empty());
         }
     }
 

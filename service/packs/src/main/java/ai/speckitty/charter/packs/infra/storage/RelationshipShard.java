@@ -64,8 +64,9 @@ public final class RelationshipShard {
 
     /**
      * What a shard read yielded: the relationships that bound, and one finding for anything that did not
-     * (a malformed document, or an edge whose endpoint is not a URN, whose relation is unknown, or that is a
-     * self-loop). A fault is a finding, never a silent drop and never a throw (ADR-0027).
+     * (a malformed document, or an edge whose endpoint is not a URN, whose relation is unknown, that is a self-loop,
+     * or that is a tension, which is authored in a pack's graph shards and never registered). A fault is a finding,
+     * never a silent drop and never a throw (ADR-0027).
      *
      * @param relationships the relationships that bound, in document order
      * @param findings one finding per thing that did not bind, in document order
@@ -96,7 +97,7 @@ public final class RelationshipShard {
         return switch (read) {
             case FileRead.Unreadable<RawGraph> bad -> new ShardRead(List.of(), PackPolicy.unreadable(packName, bad));
             case FileRead.Read<RawGraph> ok -> {
-                GraphBuild build = PackPolicy.graph(packName, ok.value());
+                GraphBuild build = PackPolicy.registeredGraph(packName, ok.value());
                 yield new ShardRead(build.graph().relationships(), build.findings());
             }
             case FileRead.Absent<RawGraph> absent -> new ShardRead(List.of(), List.of());

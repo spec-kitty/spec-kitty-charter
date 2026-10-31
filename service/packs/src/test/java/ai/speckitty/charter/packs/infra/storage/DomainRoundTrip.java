@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
@@ -567,10 +568,33 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 : null;
         String writtenText = GraphShardWriter.write(build.graph(), generatedBy);
         write(target.resolve(path), writtenText);
-        if (!(GraphDocumentReader.read(writtenText, Shape.SHARD, path) instanceof FileRead.Read<RawGraph>)) {
+        if (!(GraphDocumentReader.read(writtenText, Shape.SHARD, path) instanceof FileRead.Read<RawGraph> reread)) {
             return new Refused("read-back: the written shard does not read");
         }
+        PackPolicy.GraphBuild rebuilt = PackPolicy.graph(name, reread.value());
+        if (!rebuilt.findings().isEmpty()) {
+            return new Refused("read-back: the written shard does not build: " + rebuilt.findings());
+        }
+        if (!sameGraph(build.graph(), rebuilt.graph())) {
+            return new Refused("read-back: the written shard builds into another graph");
+        }
         return new Written(path);
+    }
+
+    /**
+     * Whether two graphs hold the same nodes, tensions and relationships. Relationships are compared field by field:
+     * {@code Relationship.equals} is pair identity and ignores the relation, the condition and the rationale.
+     */
+    static boolean sameGraph(DoctrineGraph source, DoctrineGraph written) {
+        return List.copyOf(source.nodes()).equals(List.copyOf(written.nodes()))
+                && source.tensions().equals(written.tensions())
+                && relationshipFields(source).equals(relationshipFields(written));
+    }
+
+    private static List<List<Object>> relationshipFields(DoctrineGraph graph) {
+        return graph.relationships().stream()
+                .map(r -> List.<Object>of(r.from(), r.to(), r.type(), r.when(), r.rationale()))
+                .toList();
     }
 
     // ---- files ---------------------------------------------------------------------------------
