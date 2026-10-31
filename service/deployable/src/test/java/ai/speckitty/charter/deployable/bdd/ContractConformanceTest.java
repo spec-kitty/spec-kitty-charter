@@ -114,6 +114,16 @@ class ContractConformanceTest {
                 .containsExactly("the 406 body is not JSON");
     }
 
+    @Test
+    void aTextBodyOfANonJsonMediaTypeIsNotReadAsJson() {
+        // The contract document is YAML text: its 200 declares application/yaml, a string, so no JSON is expected.
+        assertThat(contract.violations("get", "/openapi.yaml", 200, "application/yaml", null))
+                .isEmpty();
+        assertThat(contract.violations("get", "/openapi.yaml", 200, "application/json", null))
+                .as("a JSON type the operation does not declare is still a violation")
+                .hasSize(1);
+    }
+
     /** The refusal codes as the schema's enum prints, built from the domain's tokens, not kept by hand. */
     private static String codes() {
         return Arrays.stream(RefusalCode.values())
