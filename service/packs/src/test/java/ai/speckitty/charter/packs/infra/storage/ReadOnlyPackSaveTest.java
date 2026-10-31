@@ -171,10 +171,13 @@ class ReadOnlyPackSaveTest {
         assertThat(snapshot(target)).as("the target is unchanged").isEqualTo(before);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("everyWrite")
-    void aWriteIntoAPackOfADomainLinkedFromOutsideTheConfigRootIsRefusedAndChangesNothing(String name, Write write)
-            throws IOException {
+    @Test
+    @DisplayName("a write into a pack of a domain linked from outside the configuration root is refused (#285)")
+    void aWriteIntoAPackOfADomainLinkedFromOutsideTheConfigRootIsRefusedAndChangesNothing() throws IOException {
+        // One representative write: the read-only refusal is decided in writable() before any port's write dispatch,
+        // so every port is equivalent here; the per-port coverage lives in the sibling parameterized test above, and
+        // the distinct behaviour this guards — a linked packs/ domain making its packs read-only (#285) — is proven
+        // once. The commit surface of the same scenario is in LinkedPackCommitTest.
         Path config = Files.createDirectories(host.resolve("config"));
         Path shared = Files.createDirectories(host.resolve("shared-packs"));
         Path real = PackFixtures.copyOf("pack-a", shared).toRealPath();
@@ -182,7 +185,7 @@ class ReadOnlyPackSaveTest {
         DomainRepositoryService service = new DomainRepositoryService(new StorageRootLocations(packs), strategy);
         Map<String, String> before = snapshot(real);
 
-        assertThatThrownBy(() -> write.into(service))
+        assertThatThrownBy(() -> service.writeAssetFile(PACK, new AssetFile("logo.png", Payload.of(new byte[] {1}))))
                 .as("the whole packs/ is linked from outside (#285)")
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
