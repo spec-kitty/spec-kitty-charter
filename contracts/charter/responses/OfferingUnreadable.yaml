@@ -4,8 +4,8 @@ description: >-
   reason, and it is one of three: pack_unreadable, when a configured pack's directory is missing or a
   file the fingerprint covers cannot be read or a directory cannot be listed; stale_input, when the
   packs or the project configuration changed while the read was answered, which may be retried; and
-  internal_error, an unexpected failure, which may be retried. A refusal carries no
-  Charter-Source-Fingerprint.
+  internal_error, an unexpected failure, which may be retried. A refusal carries no source
+  fingerprint header.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
