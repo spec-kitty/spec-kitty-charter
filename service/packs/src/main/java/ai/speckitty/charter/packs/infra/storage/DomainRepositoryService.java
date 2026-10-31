@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
@@ -34,11 +35,14 @@ import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -310,7 +314,8 @@ public final class DomainRepositoryService
      * The one assembly of a read into the aggregate, shared by {@link #load(PackIdentifier)} and
      * {@link WholePackStore#load}: the descriptor, the read violations, every bound kind (through {@link #collect}),
      * the asset files, the templates and the presets. Each added artifact's file is put in {@code places} under its
-     * URN; a preset is no artifact and has none, its place being {@code presets/<id>.yaml} by the stem rule.
+     * URN; a preset is no artifact and has none, its place being {@code presets/<id>.yaml} by the stem rule. The
+     * templates are built first, so that a mission type whose output template names none of them is refused (#277).
      *
      * @param pack the pack the artifacts belong to
      * @param read what the store read
@@ -321,20 +326,26 @@ public final class DomainRepositoryService
         Pack.Builder builder =
                 Pack.builder().id(pack).descriptor(read.descriptor().toDescriptor());
         read.violations().forEach(builder::violation);
-        for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, places);
-        }
-        read.assetFiles().forEach(builder::assetFile);
+        Map<String, Template> templates = new LinkedHashMap<>();
+        List<PackElementViolation> templateViolations = new ArrayList<>();
         for (FilesystemPackStore.TemplateFile file : read.templates()) {
             String place = file.place();
             try {
-                Template template = TemplateBinding.INSTANCE.toEntityAt(pack, file.place(), file.content());
-                builder.artifact(template);
-                places.put(template.urn(), place);
+                templates.put(place, TemplateBinding.INSTANCE.toEntityAt(pack, place, file.content()));
             } catch (ConstraintBreachException | IllegalArgumentException breach) {
-                builder.violation(new PackElementViolation(place, "domain", String.valueOf(breach.getMessage())));
+                templateViolations.add(new PackElementViolation(place, "domain", String.valueOf(breach.getMessage())));
             }
         }
+        Set<String> namable = MissionTemplates.namable(templates.values());
+        for (KindBinding<?, ?> kind : KindBindings.all()) {
+            collect(pack, kind, read, builder, places, namable);
+        }
+        read.assetFiles().forEach(builder::assetFile);
+        templates.forEach((place, template) -> {
+            builder.artifact(template);
+            places.put(template.urn(), place);
+        });
+        templateViolations.forEach(builder::violation);
         for (FilesystemPackStore.Stored<PresetDso> stored : read.presets()) {
             try {
                 builder.preset(PresetFiles.toPreset(stored.dso()));
@@ -357,18 +368,26 @@ public final class DomainRepositoryService
 
     /**
      * Adds each readable element of one kind to the aggregate, failing closed: a domain-invalid element is recorded as
-     * a violation, named by its id, rather than aborting assembly. Each added element's file is put in {@code places}
-     * under its URN.
+     * a violation, named by its id, rather than aborting assembly. A mission type whose output template names no
+     * template of the pack (#277) is left out with a {@code reference} violation of its file, as the read's own check of
+     * a named file words it. Each added element's file is put in {@code places} under its URN.
      */
     static <D, E extends CharterArtifact> void collect(
             PackIdentifier pack,
             KindBinding<D, E> kind,
             FilesystemPackStore.PackRead read,
             Pack.Builder builder,
-            Map<Urn, String> places) {
+            Map<Urn, String> places,
+            Set<String> namableTemplates) {
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
+                Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
+                if (unresolved.isPresent()) {
+                    builder.violation(new PackElementViolation(
+                            stored.file(), "reference", MissionTemplates.reason(unresolved.get())));
+                    continue;
+                }
                 Urn urn = entity.urn();
                 builder.artifact(entity);
                 places.put(urn, stored.file());

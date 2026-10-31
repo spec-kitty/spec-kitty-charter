@@ -287,7 +287,8 @@ public final class WholePackStore {
      *
      * @param loaded the pack, its layout and its DRG documents
      * @param target the directory to create
-     * @throws CharterRefusal with {@code VALIDATION_FAILED} when the pack has read violations; with
+     * @throws CharterRefusal with {@code VALIDATION_FAILED} when the pack has read violations, or a mission type names
+     *     an output template the pack does not hold (#277); with
      *     {@code PACK_UNREADABLE} when the target exists, a path leaves the target, two parts
      *     share a path, or the write fails. In every case no staging directory remains, and no target unless it was
      *     there before.
@@ -300,6 +301,7 @@ public final class WholePackStore {
                     "pack " + pack.id().value() + " has " + pack.violations().size()
                             + " unreadable files; writing it would drop them");
         }
+        MissionTemplates.requireResolved(pack);
         Path destination = target.toAbsolutePath().normalize();
         Path parent = destination.getParent();
         if (parent == null) {

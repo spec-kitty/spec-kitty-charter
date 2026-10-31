@@ -37,10 +37,19 @@ public record ExpectedArtifact(
             .must(Constraints.of(
                     "An expected artifact's path pattern is relative and stays in the workspace.",
                     ExpectedArtifact::isRelativeInside));
-    private static final ModularRuleset<String> TEMPLATE_RULES = ModularRuleset.<String>emptyRules()
+    /** The directory beside its mission type that a template path starts with. */
+    static final String TEMPLATES = "templates/";
+
+    /** A {@code .} or empty segment: a spelling of a path that is not the template's own (#277). */
+    private static final Pattern NON_CANONICAL = Pattern.compile("(^|/)\\.?(/|$)");
+
+    static final ModularRuleset<String> TEMPLATE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
                     "An expected artifact's template path is under templates/ beside its mission type and stays there.",
-                    path -> path.startsWith("templates/") && isRelativeInside(path)));
+                    path -> path.startsWith(TEMPLATES) && isRelativeInside(path)))
+            .must(Constraints.of(
+                    "An expected artifact's template path is spelled as its template's id: no '.' or empty segment.",
+                    path -> !NON_CANONICAL.matcher(path).find()));
 
     /**
      * Checks every component.
@@ -51,7 +60,8 @@ public record ExpectedArtifact(
      * @param blocking whether it blocks
      * @param templatePath the template path, possibly empty
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the key is not dotted, a path is
-     *     absolute, climbs out or uses a backslash or a drive, or the template path is not under {@code templates/}
+     *     absolute, climbs out or uses a backslash or a drive, or the template path is not under {@code templates/} or
+     *     has a {@code .} or empty segment
      */
     public ExpectedArtifact {
         KEY_RULES.guard(Objects.requireNonNull(artifactKey, "artifactKey"));

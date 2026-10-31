@@ -26,7 +26,7 @@ audience:
 
 ## Status
 
-**Accepted** — 2026-10-31 (proposed 2026-10-30). Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
+**Accepted** — 2026-10-31 (proposed 2026-10-30). Amended 2026-10-31 (#277). Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
 2026-10-30 on [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (part of epic
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), held as decision moments under
 `kitty-specs/mission-type-consolidation-01M65MCK/decisions/`. The second pull request of #194 (PR-B) implements it;
@@ -46,6 +46,35 @@ note.
 
 It **takes up** [#148](https://github.com/spec-kitty/spec-kitty-charter/issues/148) for the mission type: the mission
 type becomes an artifact kind. Step contracts stay as they are.
+
+### Amendment 2026-10-31 (#277): an output's template path is resolved, and kept as written
+
+Made by [#277](https://github.com/spec-kitty/spec-kitty-charter/issues/277). It changes decision 7 and no other
+decision. The issue offered two forms; the record takes the second.
+
+- **Kept: the path, as written.** An expected output still holds `template_path` verbatim, so the round trip stays
+  byte for byte with no path derived on write. The path must be spelled as its template's id: a `.` or empty segment
+  (`templates/./x.md`, `templates//x.md`) is refused when the output is built, so the read's file check and the
+  resolution below cannot disagree on a spelling.
+- **Added: resolution, in the missions domain.** A mission type lists the templates it names
+  (`MissionType.templateReferences()`, each with the step that names it, or the type) and resolves them against the
+  ids of the pack's templates (`unresolvedTemplates`). A path resolves when the pack holds the template
+  `<type>/<path after templates/>`, the template URN's local part. Only a mission type's own template counts, one
+  filed under `missions/<type>/templates/`: a template of the same id under the pack's top-level `templates/` is
+  written there, where the path does not lead.
+- **Refused, with a typed violation.** An output template that resolves to no template of its type is an
+  `UnresolvedTemplate` of the type, the step and the path. The pack store enforces it in one place
+  (`MissionTemplates`), which words it as it words a named file:
+  `<path> (named by step '<id>'): is not a template of the type`. When the pack is assembled, the type is left out
+  with a `reference` violation of its file. Before a whole-pack write, the write is refused `VALIDATION_FAILED`,
+  `mission_type '<id>' names <that reason>`, and nothing is written. The read's, the per-file write's and validate
+  mode's check that the path names a template file of the pack stays. On a case-insensitive file system that check
+  admits a path that differs from its template only in case, which the load then refuses; validate mode does not
+  build the domain, so it does not resolve.
+- **Rejected: a typed reference with the path derived on write.** `ExpectedArtifact` lives in `:missions`, which
+  depends on the kernel only, and `TemplateIdentifier` lives in `packs.domain`; holding one would reverse this
+  record's dependency direction, or need a new kernel type. Every `template_path` at the open-packs pin, 13 in all,
+  resolves and is spelled as its id, so the amendment refuses nothing that loads.
 
 ## Context
 
@@ -310,7 +339,10 @@ no supported pack holds the old layout.
 `template_path`, `templates/<path>` relative to the mission-type file, is a reference to a template the pack holds
 (the `Template` with the id `<type>/<path>`), checked to name one on read and on write, and not resolved to that
 entity in the domain; resolving it is [#277](https://github.com/spec-kitty/spec-kitty-charter/issues/277), and
-deciding which of a template's id and its mission type owns its place is a recorded #186 follow-up. The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
+deciding which of a template's id and its mission type owns its place is a recorded #186 follow-up.
+*(Amended 2026-10-31, #277, see Status: the path is kept as written, spelled as its template's id, and resolved in
+the missions domain against the type's own templates; an unresolved one refuses the type at assembly and before a
+whole-pack write.)* The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
 rules cover it.
 
 ### 8. Migration by the service's own writer, then a re-pin

@@ -228,6 +228,38 @@ public final class MissionType implements CharterArtifact {
                 .findFirst();
     }
 
+    /**
+     * Every output template the type names (#277): the type's own outputs first, then each step's in the sequence,
+     * then each on-demand step's, each in authored order, the order the stored shape names them.
+     *
+     * @return the references, with the step that names each
+     */
+    public List<TemplateReference> templateReferences() {
+        List<TemplateReference> references = new ArrayList<>();
+        expectedOutputArtifacts.forEach(artifact -> artifact.templatePath()
+                .ifPresent(path -> references.add(new TemplateReference(Optional.empty(), path))));
+        Stream.concat(steps.stream(), onDemandSteps.stream())
+                .forEach(step -> step.expectedOutputArtifacts()
+                        .forEach(artifact -> artifact.templatePath()
+                                .ifPresent(
+                                        path -> references.add(new TemplateReference(Optional.of(step.id()), path)))));
+        return List.copyOf(references);
+    }
+
+    /**
+     * The output templates that name no template of the pack (#277, ADR-0044 decision 7 as amended): a path resolves
+     * when the pack holds a template whose id is {@link TemplateReference#templateId}, the path kept as written.
+     *
+     * @param templateIds the ids of the templates the pack holds
+     * @return the unresolved references, in {@link #templateReferences} order; empty when every one resolves
+     */
+    public List<UnresolvedTemplate> unresolvedTemplates(Set<String> templateIds) {
+        return templateReferences().stream()
+                .filter(reference -> !templateIds.contains(reference.templateId(id)))
+                .map(reference -> new UnresolvedTemplate(id, reference))
+                .toList();
+    }
+
     @Override
     public boolean equals(@Nullable Object other) {
         return other instanceof MissionType type && id.equals(type.id);
