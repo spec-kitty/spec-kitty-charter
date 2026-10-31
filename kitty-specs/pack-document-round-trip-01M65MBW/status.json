@@ -1,7 +1,7 @@
 {
-  "event_count": 12,
-  "last_event_id": "01M65P8SJJ21MAQ2HKPHPRCPVM",
-  "materialized_at": "2026-10-30T05:59:35.250471+00:00",
+  "event_count": 13,
+  "last_event_id": "01M68SKVY16Y8AHFD02220MB0J",
+  "materialized_at": "2026-10-31T10:55:47.137826+00:00",
   "mission_number": "",
   "mission_slug": "pack-document-round-trip-01M65MBW",
   "mission_type": "software-dev",
@@ -19,15 +19,15 @@
   },
   "work_packages": {
     "WP01": {
-      "actor": "claude",
+      "actor": "human",
       "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 2,
+      "force_count": 3,
       "implementer_of_record": "claude",
       "lane": "approved",
-      "last_event_id": "01M65P3Y3GTRS7YHDGG0RWT7AW",
-      "last_transition_at": "2026-10-30T05:56:56.077278+00:00",
+      "last_event_id": "01M68SKVY16Y8AHFD02220MB0J",
+      "last_transition_at": "2026-10-31T10:55:47.137826+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Tests drafted first (red at compile, then green); analyze ran after the code was drafted (analysis P1). :packs:test, openPacksRoundTrip, wholePackRoundTrip and verifyAll green.",
@@ -36,7 +36,7 @@
         "Review by the reviewer-renata subagent; findings folded in the fix commit."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 10788,
       "shell_pid_created_at": "1793339245.79",
       "subtasks": {
