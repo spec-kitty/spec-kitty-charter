@@ -25,6 +25,7 @@
   "purpose_context": "Issue #260, split from #195 under epic #186: the pack's Markdown description is the last pack-level file the whole-pack round-trip gate lists as other:pack.md. #194's first PR built the markdown content form (MarkdownDocument, MarkdownCodec); this mission uses that form to hold pack.md in the Pack aggregate, write it in WholePackStore, cover it in the source fingerprint between the presets and pack-manifest.yaml (ADR-0042 decision 9) and model it in the gate as pack-document.",
   "purpose_tldr": "Each pack's pack.md is read into the Pack aggregate as a Markdown document and written back with the same meaning, so the whole-pack gate goes green on it.",
   "slug": "pack-document-round-trip-01M65MBW",
+  "status_phase": "1",
   "target_branch": "issue-260-pack-md-round-trip",
   "topology": "single_branch"
 }
