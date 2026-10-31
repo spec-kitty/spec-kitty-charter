@@ -157,15 +157,18 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M69BPY0Q95HB9VZEV2FYD1PJ",
       "last_transition_at": "2026-10-31T16:12:01.944067+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "GET / (getApiRoot) and GET /offering (getOffering), ServiceInfo._links and the service-desc Link header (info 200 only), PackCatalogRepository/ConfiguredPack port, PackDescriptorRepository.find (absent vs invalid), OfferingReadService (configured level, then code-point id). Fingerprint hook: GET+200+JSON+path != / (own rule). verifyAll green: deployable 462 (CharterContractSuite 162 -> 186), packs 2294 (3 skipped), kernel 841, missions 59, profiles 9, 0 failing; ArchUnit unchanged. Option A (operator ruling of 2026-10-31, configured pack without pack.yaml is 500 pack_unreadable on /offering, the list and the item) in commit 17bd12ab, red b0e1f3d1, fixture fix 27189f83. Complexity max 8 on changed methods."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 26183,
