@@ -1,21 +1,21 @@
 {
-  "event_count": 46,
-  "last_event_id": "01M69CB9F9Z5D87TN6VCDC54S8",
-  "materialized_at": "2026-10-31T16:23:09.033138+00:00",
+  "event_count": 49,
+  "last_event_id": "01M69CHXN3MKTDN0K6SXPGGPGD",
+  "materialized_at": "2026-10-31T16:26:46.295825+00:00",
   "mission_number": "",
   "mission_slug": "gate-a-read-surface-01M691ND",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 4,
+    "approved": 5,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
-    "in_review": 1,
-    "planned": 2
+    "in_progress": 1,
+    "in_review": 0,
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -157,26 +157,27 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M69CB9F9Z5D87TN6VCDC54S8",
-      "last_transition_at": "2026-10-31T16:23:09.033138+00:00",
+      "lane": "approved",
+      "last_event_id": "01M69CGV65DJSB5N2MWCYTBDMR",
+      "last_transition_at": "2026-10-31T16:26:11.014043+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "GET / (getApiRoot) and GET /offering (getOffering), ServiceInfo._links and the service-desc Link header (info 200 only), PackCatalogRepository/ConfiguredPack port, PackDescriptorRepository.find (absent vs invalid), OfferingReadService (configured level, then code-point id). Fingerprint hook: GET+200+JSON+path != / (own rule). verifyAll green: deployable 462 (CharterContractSuite 162 -> 186), packs 2294 (3 skipped), kernel 841, missions 59, profiles 9, 0 failing; ArchUnit unchanged. Option A (operator ruling of 2026-10-31, configured pack without pack.yaml is 500 pack_unreadable on /offering, the list and the item) in commit 17bd12ab, red b0e1f3d1, fixture fix 27189f83. Complexity max 8 on changed methods.",
-        "Cycle 2: pack.yaml check inside the item's verified read; race test added. Red bff203cd (3 failing: race answered 200 for tactic and directive; lookup before any digest), fix 61c824eb (outer read.read around judgeDescriptor + kind read, stale unless the kind fingerprint equals the outer digest). verifyAll green: deployable 462 (suite 186), packs 2297 (3 skipped), kernel 841, missions 59, profiles 9. Complexity max=15 clean; item 3, servedItem 6."
+        "Cycle 2: pack.yaml check inside the item's verified read; race test added. Red bff203cd (3 failing: race answered 200 for tactic and directive; lookup before any digest), fix 61c824eb (outer read.read around judgeDescriptor + kind read, stale unless the kind fingerprint equals the outer digest). verifyAll green: deployable 462 (suite 186), packs 2297 (3 skipped), kernel 841, missions 59, profiles 9. Complexity max=15 clean; item 3, servedItem 6.",
+        "Review passed (cycle 2): item judges pack.yaml and reads the artifact inside one outer ConsistentRead whose digest must equal the kind's fingerprint, closing the cycle-1 TOCTOU; red race test genuine (fails at bff203cd); changed tests keep intent; packs 2297/0, deployable 462/0; CC<=15; no suppressions. NITs: spec FR-002 stale text, 40f60bed backslash, item now 4 digests (acceptable)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP05-api-root-and-offering/review-cycle-1.md",
-        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP05-api-root-and-offering/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP05-api-root-and-offering/review-cycle-2.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP05-api-root-and-offering/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
       "role": "reviewer",
       "shell_pid": 7679,
@@ -190,11 +191,20 @@
       }
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "java-jenny",
+      "agent_profile_version": "1.0",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6932PV27761H4Y9DFXSST79",
-      "last_transition_at": "2026-10-31T13:41:10.626113+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M69CHXN3MKTDN0K6SXPGGPGD",
+      "last_transition_at": "2026-10-31T16:26:46.295825+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 9246,
+      "shell_pid_created_at": "1793464001.51"
     },
     "WP07": {
       "actor": "finalize-tasks",
