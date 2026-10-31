@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "mission_slug": "service-release-native-01M693YF",
+  "mission_id": "01M693YFV1BKNCN56N0MXYRFXP",
+  "mission_branch": "issue-241-71-service-release-native",
+  "target_branch": "issue-241-71-service-release-native",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04",
+        "WP05"
+      ],
+      "write_scope": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/service-native.yml",
+        ".github/workflows/service-release.yml",
+        ".github/workflows/service.yml",
+        "build-logic/build.gradle.kts",
+        "build-logic/src/main/kotlin/ServiceReleaseGate.kt",
+        "build-logic/src/test/kotlin/ServiceReleaseGateTest.kt",
+        "build.gradle.kts",
+        "docs/adr/0046-service-release-line-and-native-packaging.md",
+        "docs/guides/service-build.md",
+        "docs/plans/milestones.md",
+        "docs/plans/open-questions.md",
+        "docs/plans/roadmap.md",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "scripts/release/rehearse-service-release.sh",
+        "scripts/release/service-release-assets.sh",
+        "scripts/release/smoke-service.sh",
+        "scripts/release/smoke/**",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterRuntimeHints.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterServiceApplication.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerProperties.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerStartupCheck.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerWiring.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/CharterRuntimeHintsTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerStartupCheckTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/NoBuildTimeProfilesTest.java"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-31T14:12:11.988452+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP01"
+  ],
+  "planning_commit_sha": "43eab615791fe3642f8d81fa22a392b605ca175a"
+}

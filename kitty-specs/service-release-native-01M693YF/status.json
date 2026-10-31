@@ -1,0 +1,175 @@
+{
+  "event_count": 28,
+  "last_event_id": "01M697G2XR6GF0XPZTQGWRSMPE",
+  "materialized_at": "2026-10-31T14:58:23.288859+00:00",
+  "mission_number": "",
+  "mission_slug": "service-release-native-01M693YF",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 5,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6956R1XENQJ53KNHW8WNGW9",
+      "last_transition_at": "2026-10-31T14:18:20.093329+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "ADR-0046 and plan updates; docs checks green",
+        "Review passed (reviewer-renata). ADR-0046 (commit 17f686e4) verified against core: tag regex equals kernel/service_pin.py:92 _TAG_RE (used with fullmatch at :187, so the ADR's anchored form is equivalent), service-v0.0.0 placeholder refusal matches :93/:195; asset names equal vendor.py expected_names (:229-233) with ServiceTarget.asset_suffix (-<target>, .exe on Windows, .jar); prefix spec-kitty-charter-service matches :70-71; '<64 hex>  <name>' sha256sum format with bare names satisfies vendor.py:75 _SUMS_LINE_RE; contract relation matches ruling D1 incl. the pre-release -SNAPSHOT exception and final-release contract-charter-v<info.version> requirement; core work is attributed to spec-kitty#6909 only (C-002); all six related: slugs exist under docs/; SC-001's seven questions are each answered (decisions 1-6). Open question 5 decided, milestones #71/#241 and roadmap step 7 updated (D7 criterion moves recorded). check_docs.py all green; cspell 0 issues; markdownlint shows only pre-existing MD060 on the house |---| table style (advisory job). Checklist: 1 dead code N/A (docs only); 2 synthetic fixture N/A; 3 silent empty return N/A; 4 FR coverage PASS (FR-001..005 are documentation requirements, each verified in the ADR/plan text; no code to test); 5 frozen surface PASS (ADR-0011 untouched); 6 locked decision PASS (no contract archives, no core changes claimed); 7 shared-file ownership PASS with note: docs/adr/README.md index row is outside owned_files and lane write_scope, a necessary one-line index addition flagged in the commit message, no other WP touches it; 8 production fragility N/A. Non-blocking: ADR decision 4/6 and the contract both say SHA256SUMS lists 'every asset above', which can be read as including the .sha256 files; WP02's assembly script should settle this (research R1 implies the five deployables only)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://service-release-native-01M693YF/WP01-adr-and-plan-updates/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done"
+      }
+    },
+    "WP02": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M695K5QTXQM32X3YVDPZTN4E",
+      "last_transition_at": "2026-10-31T14:25:07.322404+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation commit fab81302 was made before the runtime claim was recorded (claim recorded afterwards); red-first evidence and verifyAll green",
+        "APPROVE (reviewer-renata) fab81302. Behaviour under the container profile is unchanged: ContainerStartupCheck runs every rule after a matchesProfiles(container) guard (same semantics as @Profile, incl. default profiles); ContainerWiring binds charter.container with Binder.get(env).bindOrCreate + IgnoreTopLevelConverterNotFoundBindHandler + ValidationBindHandler(SpringValidatorAdapter), the same handler chain Boot's ConfigurationPropertiesBinder uses for a @Validated value-object record with its own JSR-303 validator, so the @NotEmpty/@NotBlank property-naming messages and BindValidationException/failure analyzer are unchanged; no secret is a component; both beans have LazyInitializationExcludeFilter (strengthened: the record bean was lazy-skippable before; new lazy test). Without the profile neither binds nor checks (tests assert start passes and properties() empty). Closing the ValidatorFactory after a completed bind is safe (immutable record). Deviation from plan D-2 (ContainerWiring kept instead of deleted, own ValidatorFactory not the context validator) is acceptable: ruling D4a's substance (always-present beans, run-time profile) holds and Boot itself validates @ConfigurationProperties with its own validator, not the context's. NoBuildTimeProfilesTest would fail on the old code (both ArchUnit rules hit the two classes; bean-set test lacks containerWiring/containerStartupCheck without the profile). Checklist: 1 Dead code PASS (ContainerWiring is Spring-registered; properties() is a test-observation seam replacing the former ContainerProperties bean, which also had no production consumer); 2 Synthetic fixture PASS (context-runner and shipped-service starts); 3 Silent empty return PASS (early returns are the documented no-profile path; Optional.empty documented); 4 FR-008 coverage PASS (missing allowed-hosts fails under profile, incl. shipped service; no-profile start passes; bean set identical); 5 Frozen surface N/A; 6 Locked decision PASS; 7 Shared-file ownership PASS with note: ContainerSecretsTest.java is outside WP02's owned_files, a 3-line assertion adaptation forced by removing the ContainerProperties bean, owned by no other WP; WP03 must register BindableRuntimeHintsRegistrar.forTypes(ContainerProperties.class) (ContainerWiring Javadoc relies on it) and its native smoke under the container profile (ADR-0046 d5) must exercise the Validation.buildDefaultValidatorFactory path; 8 Production fragility PASS (BindException is the documented fail-loud start refusal). Nits, non-blocking: ContainerProperties.java:11 Javadoc line is 153 chars (not reflowed). verifyAll green per /tmp/sk/verify-wp02.log."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://service-release-native-01M693YF/WP02-container-profile-at-run-time/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T005": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done"
+      }
+    },
+    "WP03": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M696FWH64YCW00AN91P7BA00",
+      "last_transition_at": "2026-10-31T14:40:48.166312+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation commit 9e16201a was made before the runtime claim was recorded; red-first and verifyAll evidence in the commit (3504 tests, 0 failures)",
+        "APPROVE (reviewer-renata, commit 9e16201a). Checklist: 1 dead code PASS (CharterRuntimeHints via @ImportRuntimeHints on CharterServiceApplication; ProblemRuntimeHints via @ImportRuntimeHints on ProblemJson; ProblemJson.omitAbsentMembers() called by ProblemRuntimeHints). 2 synthetic fixture PASS (CharterRuntimeHintsTest/ProblemRuntimeHintsTest apply RuntimeHintsPredicates to hints filled by the real registrars; empty registrar fails 8/8). 3 silent empty return PASS (none). 4 FR coverage PASS (FR-006: plugin+imageName+bootJar/processAot in verify-wp03c; FR-009: service file + public ctor hint asserted, native runtime proof deferred to WP04 smoke per plan; NFR-003: SHA-256 only, no trust entries). 5 frozen surface PASS. 6 locked decision PASS. 7 shared-file ownership PASS with note: out-of-map edits disclosed (build-logic charter.native-image.gradle.kts, packs ProblemJson.java, ProblemRuntimeHints[Test].java, forced by TRANSPORT_STAYS_IN_ADAPTER); gradle/verification-metadata.xml may be extended by WP04 when CI resolves nativeCompile artifacts, coordinate there. 8 production fragility PASS (no new raise). Supply chain: native-gradle-plugin, utils, graalvm-reachability-metadata (jar/module/repository zip), openjson 1.0.13, all 1.1.8 = native-build-tools-plugin.version in spring-boot-dependencies-4.1.1. AOT exemption scoped to compileAotJava/compileAotTestJava/checkstyleAot/checkstyleAotTest only (SKIPPED in logs); main/test keep every gate. Hints cover every self-opened resource (PackSchemas:373, PackFileKind:457, ServiceVersion:30, ContractVersion:29, ContractDocumentWiring:44), networknt names match json-schema-validator-3.0.8.jar (draft/2020-12/schema, meta/*, jsv-messages; no META-INF/services in jar). Configuration cache entry stored (verify-wp03b). Non-blocking: (a) charter.hand-written header says no gate is relaxed anywhere else; native-image now relaxes for generated AOT sets, consider a cross-reference; (b) GlobalAddressResolverProvider is public and deployable may depend on packs.infra.fetch, so TypeReference.of(String) could be a class literal; (c) native resolver/validation behaviour still needs the WP04 native smoke (N2, N4)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://service-release-native-01M693YF/WP03-native-build-and-hints/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
+    },
+    "WP04": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M69758RFAFGNBYRMMTJQDKDK",
+      "last_transition_at": "2026-10-31T14:52:28.816004+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implementation commit 5a716994 (claim base not recorded by the single-branch runtime claim). Smoke check green on the jar in both modes, with negative controls including the pre-WP02 fail-open regression; the native jobs prove themselves on the PR's CI",
+        "Rework after review: CRLF on Windows (autocrlf off before checkout), portable awk instead of GNU sed, contracts/ on native paths, token header from a file, fixture README, jar job skipped for the docs site; jar smoke green",
+        "APPROVE (re-review of a387c0d7 over 5a716994). Both blockers fixed: (1) service-native.yml:65-69 sets git config --global core.autocrlf false on Windows before actions/checkout (bash default shell; checkout uses the runner's git CLI and carries the global config into its temp HOME); .gitattributes has no text/eol rules, so every file, gradlew and smoke-service.sh included, lands LF. (2) GNU sed replaced with awk in service-native.yml:96-97 and service.yml:155-156, identical in both, POSIX-only constructs (-F=, sub, exit); locally both print 0.1.0-SNAPSHOT with no trailing CR/space. Non-blocking notes addressed: contracts/ in native paths and native_re (parity kept), token via curl -H @<native_path> from a file in the 0700 mktemp dir, smoke/README.md, jar job skipped for Docs site, rehearsal loop without dangling ::group::. Smoke script re-run on the jar: all 7 checks pass, first answer 3.0 s. Checklist: 1 dead code PASS; 2 synthetic fixture PASS (smoke drives the real artifact); 3 silent empty return PASS; 4 FR coverage PASS (FR-009/FR-010 via smoke checks, SC-002 pending CI); 5 frozen surface PASS; 6 locked decision PASS; 7 shared-file ownership PASS - all edits inside WP04 owned_files; service.yml is consumed (not modified) by WP05's release workflow, whose name is not 'Docs site', so the jar job still runs there; 8 production fragility N/A (CI/script only, fail() is fail-loud by design). Final proof is the PR CI run of the four native jobs (Windows CRLF fix, BSD awk, MSVC env from setup-graalvm, mingw curl reading @C:\\ path)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://service-release-native-01M693YF/WP04-smoke-and-native-ci/review-cycle-2.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP05": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M697G2XR6GF0XPZTQGWRSMPE",
+      "last_transition_at": "2026-10-31T14:58:23.288859+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Gate (11 unit tests, red-first), assets, rehearsal (local pass), release workflow, procedure doc; implementation in 7adad8d6 plus the earlier wip commits cd74871e/2ad48f7b (squashed at closeout); verifyAll green",
+        "APPROVE (reviewer-renata). Checklist: 1 dead code PASS, 2 synthetic fixture PASS, 3 silent empty return PASS, 4 FR coverage PASS, 5 frozen surface PASS, 6 locked decision PASS, 7 shared-file ownership PASS (with note), 8 production fragility PASS. Evidence: ServiceReleaseGateTest 9/9 green; rehearse-service-release.sh green locally (12.5 s: 8 refusals, 2 passes, 11 files verifying, missing-target refusal); docs checks all ok; checkServiceReleaseTag reuses the configuration cache. Gate regex equals core's _TAG_RE (matchEntire = fullmatch); placeholder, -SNAPSHOT, version mismatch, unreleased/unmerged contract all refused before jvm/native/assemble/publish run; only publish writes (contents, id-token, attestations), runs no build, checks out nothing; tag-moved check peels annotated tags; --verify-tag, --latest=false, --prerelease, only the 11 listed files; inputs and tag passed through env after a regex check; service.yml and service-native.yml both declare workflow_call input cache-disabled and upload service-jar / native-<target> in the same run; download layout matches the assets script. Non-blocking: (a) the release path calls service.yml's verify job, whose two checkouts (service.yml:57-62, 75-80) lack persist-credentials: false (C-005) and which checks out spec-kitty-open-packs at the pinned SHA (test data, not code; research R2 says no outside checkout on release runs) - service.yml is WP04-owned and WP04 is back in planned: fold the persist-credentials fix there, and either document or skip the open-packs checkout on release runs; (b) rehearsal output does not print the two not-rehearsed workflow checks (only its header comment does), T023; (c) the GITHUB_SHA comparison in the tag-moved check fails closed if github.sha ever were a tag object - confirm on the first real tag; (d) the guide asserts a service-v* tag ruleset exists - operator to create it; (e) actionlint and the workflow_dispatch rehearsal remain open DoD items (post-merge, dispatch runs from the default branch only). Coordination: WP05 edited WP01-owned docs/adr/0046 and the mission contract (one-line SHA256SUMS clarification, consistent with WP01 review's open point), and added build-logic/src/main/kotlin/charter.service-release.gradle.kts outside its owned_files (new file, no conflict); build.gradle.kts and docs/guides/service-build.md are touched only by WP05 in this mission."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://service-release-native-01M693YF/WP05-release-gate-and-workflow/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 29059,
+      "shell_pid_created_at": "1793458486.67",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    }
+  }
+}
