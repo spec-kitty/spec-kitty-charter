@@ -3,9 +3,12 @@ description: >-
   Why the charter refused a read. Codes are part of the contract; consumers branch on them,
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
-  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and toolguide_not_found are 404; validation_failed is 422; registration_conflict and
+  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found and
+  kind_not_found are 404; validation_failed is 422; registration_conflict and
   governance_policy_violation are 409; every other code is 500. pack_not_found means the identifier matches no configured pack, neither by its
-  configured name nor by the pack_id its pack.yaml declares. A missing or invalid pack.yaml never
+  configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
+  artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm and
+  toolguide); the pack is judged first, so an unknown pack with an unknown kind is pack_not_found. A missing or invalid pack.yaml never
   refuses a tactic read: the identifier lookup skips that pack. A configured pack whose directory is
   missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
   cannot be listed, is pack_unreadable (500) on every read, because the first digest covers every configured pack. A change to pack.yaml
@@ -64,6 +67,7 @@ enum:
   - styleguide_not_found
   - paradigm_not_found
   - toolguide_not_found
+  - kind_not_found
   - validation_failed
   - registration_conflict
 x-refusal:
@@ -127,6 +131,11 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
+  kind_not_found:
+    status: 404
+    retryable: false
+    raised: true
+    description: the path names an artifact kind this service does not serve
   validation_failed:
     status: 422
     retryable: false

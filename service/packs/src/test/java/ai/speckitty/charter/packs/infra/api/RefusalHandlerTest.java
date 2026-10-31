@@ -53,6 +53,36 @@ class RefusalHandlerTest {
         assertThat(body.getDetail()).isEqualTo("detail");
     }
 
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+        "MISSION_TYPE_NOT_FOUND, Mission type not found",
+        "ACTION_NOT_FOUND, Action not found",
+        "PACK_LEVEL_MISMATCH, Pack level mismatch",
+        "PACK_UNREADABLE, Pack unreadable",
+        "DRG_SCHEMA_ERROR, Invalid DRG document",
+        "UNRESOLVED_EDGE_ENDPOINT, Unresolved edge endpoint",
+        "INTERNAL_ERROR, Internal error",
+        "GOVERNANCE_POLICY_VIOLATION, Governance policy violation",
+        "STALE_INPUT, Stale input",
+        "PACK_NOT_FOUND, Pack not found",
+        "TACTIC_NOT_FOUND, Tactic not found",
+        "DIRECTIVE_NOT_FOUND, Directive not found",
+        "STYLEGUIDE_NOT_FOUND, Styleguide not found",
+        "PARADIGM_NOT_FOUND, Paradigm not found",
+        "TOOLGUIDE_NOT_FOUND, Toolguide not found",
+        "KIND_NOT_FOUND, Kind not found",
+        "VALIDATION_FAILED, Validation failed",
+        "REGISTRATION_CONFLICT, Registration conflict",
+    })
+    @DisplayName("each code is answered with its title")
+    void eachCodeHasItsTitle(RefusalCode code, String title) {
+        CharterRefusal body =
+                handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "d")).getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getTitle()).isEqualTo(title);
+    }
+
     @Test
     @DisplayName("an unserved path kind is a 404 titled Kind not found, with the kind_not_found token")
     void anUnservedKindIsKindNotFound() {
