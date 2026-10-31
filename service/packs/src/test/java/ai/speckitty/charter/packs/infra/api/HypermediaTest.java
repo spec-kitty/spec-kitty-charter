@@ -25,7 +25,9 @@ class HypermediaTest {
 
     @Test
     void eachSegmentIsPercentEncoded() {
-        assertThat(hypermedia.link("packs", "my pack", "artifacts", "directive", "a/b").href())
+        assertThat(hypermedia
+                        .link("packs", "my pack", "artifacts", "directive", "a/b")
+                        .href())
                 .isEqualTo("/api/v1/packs/my%20pack/artifacts/directive/a%2Fb");
     }
 
@@ -49,7 +51,9 @@ class HypermediaTest {
     void theMethodIsOmittedWhenItIsGet() {
         assertThat(hypermedia.link("info").method()).isNull();
         assertThat(hypermedia.link(Hypermedia.Method.GET, "info").method()).isNull();
-        assertThat(hypermedia.link(Hypermedia.Method.PUT, "packs", "qa", "relationships").method())
+        assertThat(hypermedia
+                        .link(Hypermedia.Method.PUT, "packs", "qa", "relationships")
+                        .method())
                 .isEqualTo("PUT");
         assertThat(hypermedia.link(Hypermedia.Method.POST, "packs").method()).isEqualTo("POST");
     }
