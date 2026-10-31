@@ -1,0 +1,77 @@
+{
+  "rows": {
+    "#128": {
+      "evidence_ref": "cited only as the contract 1.0.0 milestone that ends the service's 0.x (ADR-0046 decision 2)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#234": {
+      "evidence_ref": "container image out of scope (C-003); it builds on the service-v* line",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#241": {
+      "evidence_ref": "docs/adr/0046-service-release-line-and-native-packaging.md; procedure in WP05",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": "WP01"
+    },
+    "#6909": {
+      "evidence_ref": "spec-kitty/spec-kitty#6909: core's requests (provisional comment, default repository, help texts, attestation verification); filed by the orchestrator",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#70": {
+      "evidence_ref": "launcher out of scope (C-003)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#71": {
+      "evidence_ref": "native artifacts per OS built and smoke-checked (WP03-WP05); launcher criterion moved to #70, core checksum criterion to spec-kitty#6909 (D7)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": "WP04"
+    }
+  },
+  "schema_version": 1
+}
