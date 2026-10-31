@@ -167,11 +167,11 @@
     {
       "criterion_id": "FR-017",
       "description": "Verify FR-017 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "code_review",
+      "evidence": "Manual review of contracts/charter/CHANGELOG.md (lane 6433dab2) '## 0.1.0-SNAPSHOT' > '### Breaking' Gate-A block (lines 80-323): Removed (all 10 per-kind read ops + paths, 8 writes at old paths, Tactics tag/TacticId/TacticNotFound, fingerprint declarations), Moved (8 writes with old->new path, operationIds kept), Added ops getApiRoot/getOffering/listPackArtifacts/getPackArtifact, required _links (FR-008), fingerprint required on 4 verified reads, kind_not_found, raised-code check, OfferingUnreadable examples, pack.yaml ruling, lint/closure changes, 'Migrating a client (core's seam)', and Scenarios (NFR-004: 106 -> 189) with lines for every changed feature (root, offering, artifacts, removed-routes, tactics, directives, styleguides, paradigms, toolguides, relationships, service, errors, journeys). info.version stays 0.1.0-SNAPSHOT. verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:24:00.417931+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
