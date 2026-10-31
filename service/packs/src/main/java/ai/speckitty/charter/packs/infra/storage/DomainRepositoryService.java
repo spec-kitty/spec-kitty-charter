@@ -31,6 +31,7 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -162,7 +163,7 @@ public final class DomainRepositoryService
      * No port names it yet: profile selection (ADR-0032) adds one to the profiles slice.
      *
      * @param profile the profile to save
-     * @throws CharterRefusal when the pack is not stored here or the file cannot be written
+     * @throws CharterRefusal when the pack is not stored here or is read-only, or the file cannot be written
      */
     public void save(AgentProfile profile) {
         saveArtifact(profile);
@@ -184,10 +185,10 @@ public final class DomainRepositoryService
      * @param pack the pack to write into
      * @param artifact the artifact
      * @throws IllegalArgumentException when the artifact is of a kind this store does not persist
-     * @throws CharterRefusal when the pack is not configured or the write fails
+     * @throws CharterRefusal when the pack is not configured or is read-only, or the write fails
      */
     void saveArtifact(PackIdentifier pack, CharterArtifact artifact) {
-        Resolved resolved = resolve(pack);
+        Resolved resolved = writable(pack);
         writeArtifact(resolved.store, resolved.key, artifact);
     }
 
@@ -196,10 +197,10 @@ public final class DomainRepositoryService
      *
      * @param pack the pack to write into
      * @param file the asset file
-     * @throws CharterRefusal when the pack is not configured or the write fails
+     * @throws CharterRefusal when the pack is not configured or is read-only, or the write fails
      */
     void writeAssetFile(PackIdentifier pack, AssetFile file) {
-        Resolved resolved = resolve(pack);
+        Resolved resolved = writable(pack);
         resolved.store.writePayload(
                 resolved.key, PackFileSet.ASSETS + file.path(), file.payload(), PackFileKind.ASSET_PAYLOAD);
     }
@@ -209,10 +210,10 @@ public final class DomainRepositoryService
      *
      * @param pack the pack to write into
      * @param preset the preset
-     * @throws CharterRefusal when the pack is not configured or the write fails
+     * @throws CharterRefusal when the pack is not configured or is read-only, or the write fails
      */
     void writePreset(PackIdentifier pack, Preset preset) {
-        Resolved resolved = resolve(pack);
+        Resolved resolved = writable(pack);
         resolved.store.writePreset(resolved.key, PresetFiles.toDso(preset));
     }
 
@@ -224,10 +225,10 @@ public final class DomainRepositoryService
      * @param pack the pack to write into
      * @param document the document
      * @throws CharterRefusal with {@code VALIDATION_FAILED} when a part of the document cannot stand in a Markdown
-     *     document; when the pack is not configured or the write fails
+     *     document; when the pack is not configured or is read-only, or the write fails
      */
     void writePackDocument(PackIdentifier pack, PackDocument document) {
-        Resolved resolved = resolve(pack);
+        Resolved resolved = writable(pack);
         resolved.store.writePackDocument(resolved.key, PackDocumentMarkdown.toWritableText(pack, document));
     }
 
@@ -247,7 +248,7 @@ public final class DomainRepositoryService
 
     @Override
     public void save(PackIdentifier pack, PackDescriptor descriptor) {
-        Resolved resolved = resolve(pack);
+        Resolved resolved = writable(pack);
         resolved.store.writeDescriptor(resolved.key, PackDescriptorDso.of(descriptor));
     }
 
@@ -379,8 +380,28 @@ public final class DomainRepositoryService
 
     // ---- identifier to directory ---------------------------------------------------------------------------------
 
-    /** A pack's store and the directory-name key the store addresses it by. */
-    private record Resolved(FilesystemPackStore store, PackIdentifier key) {}
+    /** A pack's store, the directory-name key the store addresses it by, and the pack's directory. */
+    private record Resolved(FilesystemPackStore store, PackIdentifier key, Path directory) {}
+
+    /**
+     * Resolves a pack to write into, refusing one its {@link Locations} keeps read-only before anything is written: the
+     * check and the refusal of {@link PackCommitStore}, so a pack linked from outside the configuration root is
+     * read-only through every write path (ADR-0038 as amended 2026-10-31, #287).
+     */
+    private Resolved writable(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        Path real;
+        try {
+            real = resolved.directory.toRealPath();
+        } catch (IOException unresolved) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " cannot be resolved", unresolved);
+        }
+        locations.whyReadOnly(real).ifPresent(why -> {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " " + why);
+        });
+        return resolved;
+    }
 
     private Resolved resolve(PackIdentifier pack) {
         List<PackLocation> configured = locations.all();
@@ -407,7 +428,8 @@ public final class DomainRepositoryService
         }
         return new Resolved(
                 new FilesystemPackStore(parent, strategy),
-                new PackIdentifier(directory.getFileName().toString()));
+                new PackIdentifier(directory.getFileName().toString()),
+                directory);
     }
 
     private static boolean declaresId(Resolved candidate, PackIdentifier pack) {
