@@ -1,0 +1,65 @@
+{
+  "rows": {
+    "#186": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#187": {
+      "evidence_ref": "Cited for context only (the whole-pack gate / the in-flight PR-B overlap); no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#194": {
+      "evidence_ref": "Cited for context only (the whole-pack gate / the in-flight PR-B overlap); no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#235": {
+      "evidence_ref": "PackPolicy binds in_tension_with to Tension; GraphShardWriter writes it back as written; gate: directive.graph.yaml UNEXPECTEDLY_GREEN then entry removed (commit ce5b9c67)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP02"
+    },
+    "#236": {
+      "evidence_ref": "Reader/PackPolicy/writer carry provenance, ordered tags, fragment body_path; gate: anti_pattern.graph.yaml UNEXPECTEDLY_GREEN then entry removed (commit ce5b9c67)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP02"
+    }
+  },
+  "schema_version": 1
+}
