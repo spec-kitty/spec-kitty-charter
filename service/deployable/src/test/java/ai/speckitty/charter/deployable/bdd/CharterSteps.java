@@ -10,15 +10,22 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.util.UriUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -38,6 +45,7 @@ public class CharterSteps {
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
     private static final String BASE = "/api/v1";
     private static final String LINKS = "_links";
+    private static final Pattern EXPRESSION = Pattern.compile("\\{(\\??)([^}]*)}");
 
     private final ScenarioHttp http;
     private final ScenarioPacks packs;
@@ -83,11 +91,14 @@ public class CharterSteps {
     }
 
     /**
-     * Every 200 of a <em>read</em> (a GET) carries exactly one {@code Charter-Source-Fingerprint}, the digest that read
-     * verified: for {@code /info} the {@code sourceFingerprint} of its own body, for another read the one {@code /info}
-     * gave right after it (the inputs had not changed); every other read answer carries none. A write (a POST or PUT) is
-     * exempt: it reports the pack's post-write revision as an {@code ETag}, not a read's source fingerprint (ADR-0026),
-     * so the fingerprint header is simply not part of a write's answer and is neither required nor forbidden on it.
+     * The hook's own fingerprint rule, independent of the contract's declarations (R-08 revised): a verified read, a
+     * {@code GET} answered 200 with a JSON body on any path but the root {@code /}, carries exactly one
+     * {@code Charter-Source-Fingerprint}, the digest that read verified: for {@code /info} the {@code sourceFingerprint}
+     * of its own body, for another read the one {@code /info} gave right after it (the inputs had not changed). Every
+     * other {@code GET} answer carries none: a refusal, the root, which reads no pack file, and {@code /openapi.yaml},
+     * whose body is YAML. A write (a POST or PUT) is exempt: it reports the pack's post-write revision as an
+     * {@code ETag}, not a read's source fingerprint (ADR-0026), so the fingerprint header is simply not part of a
+     * write's answer and is neither required nor forbidden on it.
      */
     @After
     public void fingerprintHeaderIsTheVerifiedDigest() throws Exception {
@@ -98,9 +109,11 @@ public class CharterSteps {
             MockHttpServletResponse response = exchange.result().getResponse();
             List<String> values = response.getHeaders(FINGERPRINT);
             String what = exchange.method().toUpperCase(Locale.ROOT) + " " + exchange.path();
-            if (response.getStatus() != HttpStatus.OK.value()) {
+            if (!isVerifiedRead(exchange.path(), response)) {
                 assertThat(values)
-                        .as("%s answered %d and must carry no fingerprint", what, response.getStatus())
+                        .as(
+                                "%s answered %d, not a verified read, and must carry no fingerprint",
+                                what, response.getStatus())
                         .isEmpty();
                 continue;
             }
@@ -117,6 +130,15 @@ public class CharterSteps {
                     .matches(SHA256)
                     .isEqualTo(expected);
         }
+    }
+
+    /** A {@code GET} answer of a verified read: 200, a JSON body, and any path but the root. */
+    private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
+        String type = response.getContentType();
+        return response.getStatus() == HttpStatus.OK.value()
+                && !path.equals("/")
+                && type != null
+                && MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type));
     }
 
     @When("the file {string} of the pack {string} is deleted")
@@ -338,6 +360,38 @@ public class CharterSteps {
     }
 
     /**
+     * Expands the RFC 6570 template of a link of the last answer with the table's values and follows it. The link must
+     * say it is templated. A simple expression {@code {name}} is replaced by its percent-encoded value; a form-style
+     * query expression {@code {?a,b}} writes {@code ?a=..&b=..} for the names the table gives, and nothing when it gives
+     * none of them.
+     */
+    @When("I follow the templated link {string} with:")
+    public void followTemplated(String relation, DataTable values) throws Exception {
+        JsonNode link = JSON.readTree(http.body()).path(LINKS).path(relation);
+        assertThat(link.path("templated").asBoolean(false))
+                .as("the link %s is templated: %s", relation, link)
+                .isTrue();
+        http.get(belowBase(expand(linkOf(JSON.readTree(http.body()), relation), values.asMap())));
+    }
+
+    /** Follows the link {@code relation} of every element of the array {@code member} of the last answer. */
+    @Then("following the link {string} of every element of {string} answers {int}")
+    public void followEveryElementLink(String relation, String member, int status) throws Exception {
+        JsonNode elements = JSON.readTree(http.body()).path(member);
+        assertThat(elements.isArray() && !elements.isEmpty())
+                .as("the answer has elements in %s: %s", member, http.body())
+                .isTrue();
+        List<String> hrefs =
+                elements.valueStream().map(element -> linkOf(element, relation)).toList();
+        for (String href : hrefs) {
+            http.get(belowBase(href));
+            assertThat(http.response().getStatus())
+                    .as("%s answers: %s", href, http.body())
+                    .isEqualTo(status);
+        }
+    }
+
+    /**
      * Collects the {@code kind} and {@code id} of every element of {@code member} on this page and on every page its
      * {@code relation} link leads to, following the link until a page has none, and compares them with the table in
      * order: every artifact is served exactly once, none skipped and none repeated.
@@ -383,6 +437,30 @@ public class CharterSteps {
     private static String belowBase(String href) {
         assertThat(href).as("a link's href starts with the server prefix").startsWith(BASE + "/");
         return href.substring(BASE.length());
+    }
+
+    /** The RFC 6570 expansion of the simple and the form-style query expressions of {@code template}. */
+    private static String expand(String template, Map<String, String> values) {
+        Matcher expression = EXPRESSION.matcher(template);
+        StringBuilder expanded = new StringBuilder();
+        while (expression.find()) {
+            boolean query = !expression.group(1).isEmpty();
+            List<String> named = Arrays.stream(expression.group(2).split(","))
+                    .filter(values::containsKey)
+                    .toList();
+            String replacement = query
+                    ? named.stream()
+                            .map(name -> name + "=" + encode(values.get(name)))
+                            .collect(Collectors.joining("&", named.isEmpty() ? "" : "?", ""))
+                    : named.stream().map(name -> encode(values.get(name))).collect(Collectors.joining(","));
+            expression.appendReplacement(expanded, Matcher.quoteReplacement(replacement));
+        }
+        expression.appendTail(expanded);
+        return expanded.toString();
+    }
+
+    private static String encode(@Nullable String value) {
+        return UriUtils.encode(String.valueOf(value), StandardCharsets.UTF_8);
     }
 
     private static @Nullable JsonNode json(String text) {

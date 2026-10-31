@@ -88,6 +88,13 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `Then the answer has no link "<relation>"` — the body's `_links` has no member of that relation key.
 - `When I follow the link "<relation>"` — GET the `href` of that relation in the last answer's `_links`, with the
   `/api/v1` server prefix taken off as the request steps expect.
+- `When I follow the templated link "<relation>" with:` followed by a two-column table of `| name | value |` rows —
+  the link must carry `templated: true`; its RFC 6570 `href` is expanded with the table's values (a simple `{name}`
+  becomes the percent-encoded value, a form-style query `{?a,b}` becomes `?a=..&b=..` for the names the table gives,
+  and nothing when it gives none) and followed like `I follow the link`.
+- `Then following the link "<relation>" of every element of "<member>" answers <n>` — GETs the `href` of that
+  relation in the `_links` of every element of the array `<member>` of the last answer, which must hold at least one,
+  and expects each to answer `<n>`.
 - `Then following "<relation>" links from the answer, the "<member>" ids are:` followed by a table with the header
   `| kind | id |` — collects the `kind` and `id` of every element of `<member>` on the last answer and on every page
   its `<relation>` link leads to, following it until a page has none, and compares them with the table in order, so
@@ -117,14 +124,21 @@ Every scenario that calls an operation is also checked against `../openapi.yaml`
 for every request it sent, not only the last: the response's content type must be one the operation declares for the status, or for its
 `default` response, and the body must validate against that content's schema. A path no
 operation defines must answer the shared `Problem` response. A binding of the steps in another
-language makes the same check. It also checks the fingerprint header of every exchange: a 200 carries
-exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for `/info` and to what
-`/info` answers right after for another read; no other answer carries one.
+language makes the same check. It also checks the fingerprint header of every `GET` exchange, by its own rule
+and never from the contract's declarations: a verified read, a `GET` answered 200 with a JSON body on any path
+but the root `/`, carries exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for
+`/info` and to what `/info` answers right after for another read; every other `GET` answer (a refusal, the root,
+`/openapi.yaml`, whose body is YAML) carries none. A write (`POST`, `PUT`) is exempt.
 
 ## Features
 
-- `service.feature`, `errors.feature`, `security.feature`: the service info, the failures outside the refusals, and
-  the worktree guard.
+- `service.feature`, `errors.feature`, `security.feature`: the service info (with its `self` and `service-desc` links
+  and the `Link` header only it sends), the failures outside the refusals, and the worktree guard.
+- `root.feature`: the API root, `GET /` (`/api/v1/`, with the trailing slash), its links and that each one resolves
+  (FR-001). The server prefix without the slash, `/api/v1`, is not mapped to the root: it answers the 404 of a path
+  no operation defines, a `Problem` without a code, and no second mapping is added for it.
+- `offering.feature`: the configured packs in force, `GET /offering`, in the merge order (configured level, then
+  pack id in code-point order), at their configured level, and its refusals (FR-002).
 - `directives.feature`, `styleguides.feature`, `paradigms.feature`, `toolguides.feature`: the registrations of the
   writable kinds under the artifact tree (`POST /packs/{packId}/artifacts/<kind>`, `PUT
   /packs/{packId}/artifacts/<kind>/{artifactId}`), each answering the envelope of the generic item, their read-back
