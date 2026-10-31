@@ -28,10 +28,10 @@
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "artifacts.feature: 'A list filtered by a served kind answers that kind's summaries', 'A list without a filter is in the served-kind order, then by id in code-point order', 'A summary's title is...', 'An empty pack answers an empty page', 'A kind the pack holds none of answers an empty page', 'A page of exactly pageSize items is the last page', 'Pages of one item cross the kind boundary and serve every artifact exactly once' (follows next until absent), 'A next link keeps the kind filter and the page size...', 'The anchor of a cursor deleted between two pages...', outlines 'A bad page cursor is a 400' and 'A page size out of range or not a number is a 400' (0,201,abc); bundle: GET /packs/{packId}/artifacts listPackArtifacts -> ArtifactPage; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:22:20.625365+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
