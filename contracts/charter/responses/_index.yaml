@@ -3,5 +3,4 @@ files:
   - ArtifactNotFound.yaml
   - Forbidden.yaml
   - OfferingUnreadable.yaml
-  - TacticNotFound.yaml
   - Unauthorized.yaml

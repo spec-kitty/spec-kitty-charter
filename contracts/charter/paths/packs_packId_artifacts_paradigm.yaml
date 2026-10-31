@@ -1,0 +1,75 @@
+post:
+  operationId: registerPackParadigm
+  summary: Register a new paradigm in a Charter Pack.
+  description: >-
+    Registers a net-new paradigm (functional registration, ADR-0026): the whole pack aggregate is revalidated
+    and committed atomically. The id is optional in the body; the server answers 201 with a Location to the
+    created paradigm and an ETag revision. A body that names an already-registered id is a 409
+    registration_conflict; a malformed body, or a relationship not authored from the paradigm, is a 422
+    validation_failed, and the pack is left unchanged. The paradigms of a pack are registered at POST
+    /packs/{packId}/artifacts/paradigm, under the artifact tree; the answer is the paradigm in the Artifact
+    envelope the item read answers (GET /packs/{packId}/artifacts/paradigm/{artifactId}), with the same
+    _links, and the path of Location is its _links.self.href. Registration is not yet advertised by a link: no
+    answer carries an edit link.
+  tags:
+    - Paradigms
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/ParadigmRegistration.yaml
+  responses:
+    '201':
+      description: The paradigm was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Location:
+          description: The URI of the created paradigm; its path is the _links.self.href of the answer.
+          schema:
+            type: string
+        ETag:
+          description: The pack revision after the write, for optimistic concurrency.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ParadigmNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

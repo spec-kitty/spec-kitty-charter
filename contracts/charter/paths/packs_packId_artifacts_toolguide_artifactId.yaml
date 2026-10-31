@@ -1,51 +1,3 @@
-get:
-  operationId: getPackToolguide
-  summary: Get one toolguide of a Charter Pack by identity.
-  description: >-
-    One toolguide of one pack (FR-015), with its guide's Markdown as content, its H1 written from the title; a
-    toolguide mints no relationships. An identifier that matches no
-    configured pack is a 404 pack_not_found; a pack without that toolguide is a 404 toolguide_not_found.
-    A pack whose files cannot be read is a 500 pack_unreadable. The answer is verified against the source
-    fingerprint and carries it.
-  tags:
-    - Toolguides
-  parameters:
-    - $ref: ../parameters/PackId.yaml
-    - name: toolguideId
-      in: path
-      required: true
-      description: The identity of the toolguide within its pack.
-      schema:
-        type: string
-        minLength: 1
-  responses:
-    '200':
-      description: The toolguide.
-      headers:
-        Charter-Contract-Version:
-          $ref: ../headers/CharterContractVersion.yaml
-        Charter-Worktree:
-          $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
-        ETag:
-          description: The pack revision, for optimistic concurrency on a later write.
-          schema:
-            type: string
-      content:
-        application/json:
-          schema:
-            $ref: ../schemas/Toolguide.yaml
-    '401':
-      $ref: ../responses/Unauthorized.yaml
-    '403':
-      $ref: ../responses/Forbidden.yaml
-    '404':
-      $ref: ../responses/ToolguideNotFound.yaml
-    '500':
-      $ref: ../responses/OfferingUnreadable.yaml
-    default:
-      $ref: ../../_shared/responses/Problem.yaml
 put:
   operationId: putPackToolguide
   summary: Register (create or replace) a toolguide of a Charter Pack by identity.
@@ -54,20 +6,17 @@ put:
     aggregate is revalidated and committed atomically. Answers 201 when it created the toolguide, 200 when it
     replaced one, each with an ETag revision. If-Match carries optimistic concurrency: a stale precondition is
     a 412 (a plain Problem, not a refusal code). The body carries exactly one of guide (the Markdown) or
-    guideUri, which every PUT fetches again before it takes the pack's write lock; the answer carries the stored
-    guide. A malformed body, an invalid guide or a refused fetch is a 422 validation_failed, and the pack is
-    left unchanged.
+    guideUri, which every PUT fetches again before it takes the pack's write lock; the answer carries the
+    stored guide. A malformed body, an invalid guide or a refused fetch is a 422 validation_failed, and the
+    pack is left unchanged. A toolguide is replaced at PUT /packs/{packId}/artifacts/toolguide/{artifactId},
+    under the artifact tree; the answer is the toolguide in the Artifact envelope the item read of the same
+    path answers, with the same _links. Registration is not yet advertised by a link: no answer carries an
+    edit link.
   tags:
     - Toolguides
   parameters:
     - $ref: ../parameters/PackId.yaml
-    - name: toolguideId
-      in: path
-      required: true
-      description: The identity of the toolguide within its pack.
-      schema:
-        type: string
-        minLength: 1
+    - $ref: ../parameters/ArtifactId.yaml
     - name: If-Match
       in: header
       required: false
@@ -95,7 +44,7 @@ put:
       content:
         application/json:
           schema:
-            $ref: ../schemas/Toolguide.yaml
+            $ref: ../schemas/Artifact.yaml
     '201':
       description: The toolguide was created.
       headers:
@@ -110,7 +59,7 @@ put:
       content:
         application/json:
           schema:
-            $ref: ../schemas/Toolguide.yaml
+            $ref: ../schemas/Artifact.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

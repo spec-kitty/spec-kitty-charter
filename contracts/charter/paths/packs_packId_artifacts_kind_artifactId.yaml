@@ -12,8 +12,10 @@ get:
     read or a directory that cannot be listed, is a 500 pack_unreadable. The answer is verified against
     the source fingerprint and carries it; inputs that change while it is read are stale_input. A
     directive, a styleguide, a paradigm or a toolguide also carries the pack revision as its ETag, for
-    a later write; a tactic, which has no write, carries none. There is no write on this path: a PUT
-    is a 405.
+    a later write; a tactic, which has no write, carries none. There is no write on this templated
+    path: a writable kind is replaced on its own path, PUT /packs/{packId}/artifacts/<kind>/{artifactId},
+    and a PUT to the item of a kind that has no write (a tactic) is a 405 Problem without a code, not
+    kind_not_found.
   tags:
     - Artifacts
   parameters:

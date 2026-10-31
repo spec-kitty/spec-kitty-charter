@@ -107,9 +107,10 @@ Feature: Failures outside the charter's refusals
   Scenario: The refusal codes the contract marks raised are exactly those an operation raises
     The contract's machine-readable x-refusal map agrees with the behavior of this suite: each
     refusal a scenario observes has the status and the raised flag the contract declares for its
-    code, and these are all the codes raised. The per-kind reads add directive_not_found,
-    styleguide_not_found, paradigm_not_found and toolguide_not_found; the generic item read adds
-    kind_not_found; the registration writes add validation_failed and registration_conflict. mission_type_not_found and action_not_found are no
+    code, and these are all the codes raised. The generic item read adds the not-found code of each
+    served kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and
+    toolguide_not_found) and kind_not_found; the registration writes add validation_failed and
+    registration_conflict. mission_type_not_found and action_not_found are no
     longer raised: the operations that answered them are gone. unresolved_edge_endpoint, and, with the
     load that judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation.
     Then the contract says exactly these refusal codes are raised by an operation:

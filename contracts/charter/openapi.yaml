@@ -13,8 +13,6 @@ servers:
 security:
   - charterWorktreeToken: []
 tags:
-  - name: Tactics
-    description: The tactics of a Charter Pack.
   - name: Service
     description: What the service says about itself.
   - name: Directives
@@ -36,30 +34,26 @@ paths:
     $ref: paths/info.yaml
   /openapi.yaml:
     $ref: paths/openapi.yaml
-  /packs/{packId}/tactics:
-    $ref: paths/packs_packId_tactics.yaml
-  /packs/{packId}/tactics/{tacticId}:
-    $ref: paths/packs_packId_tactics_tacticId.yaml
-  /packs/{packId}/directives:
-    $ref: paths/packs_packId_directives.yaml
-  /packs/{packId}/directives/{directiveId}:
-    $ref: paths/packs_packId_directives_directiveId.yaml
-  /packs/{packId}/styleguides:
-    $ref: paths/packs_packId_styleguides.yaml
-  /packs/{packId}/styleguides/{styleguideId}:
-    $ref: paths/packs_packId_styleguides_styleguideId.yaml
-  /packs/{packId}/paradigms:
-    $ref: paths/packs_packId_paradigms.yaml
-  /packs/{packId}/paradigms/{paradigmId}:
-    $ref: paths/packs_packId_paradigms_paradigmId.yaml
-  /packs/{packId}/toolguides:
-    $ref: paths/packs_packId_toolguides.yaml
-  /packs/{packId}/toolguides/{toolguideId}:
-    $ref: paths/packs_packId_toolguides_toolguideId.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
   /packs/{packId}/artifacts:
     $ref: paths/packs_packId_artifacts.yaml
+  /packs/{packId}/artifacts/directive:
+    $ref: paths/packs_packId_artifacts_directive.yaml
+  /packs/{packId}/artifacts/directive/{artifactId}:
+    $ref: paths/packs_packId_artifacts_directive_artifactId.yaml
+  /packs/{packId}/artifacts/styleguide:
+    $ref: paths/packs_packId_artifacts_styleguide.yaml
+  /packs/{packId}/artifacts/styleguide/{artifactId}:
+    $ref: paths/packs_packId_artifacts_styleguide_artifactId.yaml
+  /packs/{packId}/artifacts/paradigm:
+    $ref: paths/packs_packId_artifacts_paradigm.yaml
+  /packs/{packId}/artifacts/paradigm/{artifactId}:
+    $ref: paths/packs_packId_artifacts_paradigm_artifactId.yaml
+  /packs/{packId}/artifacts/toolguide:
+    $ref: paths/packs_packId_artifacts_toolguide.yaml
+  /packs/{packId}/artifacts/toolguide/{artifactId}:
+    $ref: paths/packs_packId_artifacts_toolguide_artifactId.yaml
   /packs/{packId}/artifacts/{kind}/{artifactId}:
     $ref: paths/packs_packId_artifacts_kind_artifactId.yaml
 components:
