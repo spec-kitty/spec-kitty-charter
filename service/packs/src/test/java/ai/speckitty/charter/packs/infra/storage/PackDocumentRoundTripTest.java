@@ -303,44 +303,29 @@ class PackDocumentRoundTripTest {
     }
 
     @Test
-    @DisplayName("a document that cannot stand as Markdown refuses the write, naming pack.md, and leaves no target")
+    @DisplayName("a document whose frontmatter does not read back refuses the write, naming pack.md, and leaves no"
+            + " target")
     void anUnwritableDocumentRefusesTheWrite(@TempDir Path host) throws IOException {
+        // #271: the Markdown rules hold when a document is built (PackDocumentTest); what the codec still refuses at
+        // the
+        // write is a frontmatter value that does not read back as itself, such as a long that reads back as an int.
         Path pack = documentedPack(host.resolve("source"), WITHOUT_FRONTMATTER);
         WholePackStore.LoadedPack loaded = store.load(pack);
         PackDocument held = loaded.pack().document().orElseThrow();
-        PackDocument broken = new PackDocument(held.frontmatter(), held.title(), "# A second title", held.sections());
-        Path clean = host.resolve("clean").resolve("documented");
+        PackDocument broken =
+                new PackDocument(Optional.of(Map.of("count", 5L)), held.title(), held.preamble(), held.sections());
+        PackDocument sound =
+                new PackDocument(Optional.of(Map.of("count", 5)), held.title(), held.preamble(), held.sections());
         Path refused = host.resolve("refused").resolve("documented");
 
-        store.write(loaded, clean);
+        store.write(withDocument(loaded, sound), host.resolve("clean").resolve("documented"));
 
-        assertThat(clean.resolve(PackDocumentMarkdown.FILE)).exists();
         assertThatThrownBy(() -> store.write(withDocument(loaded, broken), refused))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                    assertThat(refusal.getMessage()).contains("pack.md cannot be written as Markdown: preamble");
-                });
-        assertThat(refused).doesNotExist();
-    }
-
-    @Test
-    @DisplayName("a title the codec cannot read back (a closing # sequence) refuses the write as VALIDATION_FAILED")
-    void aTitleTheCodecCannotWriteRefusesTheWrite(@TempDir Path host) throws IOException {
-        Path pack = documentedPack(host.resolve("source"), WITHOUT_FRONTMATTER);
-        WholePackStore.LoadedPack loaded = store.load(pack);
-        PackDocument held = loaded.pack().document().orElseThrow();
-        PackDocument closed =
-                new PackDocument(held.frontmatter(), Optional.of("Release #"), held.preamble(), held.sections());
-        PackDocument open =
-                new PackDocument(held.frontmatter(), Optional.of("Release 1"), held.preamble(), held.sections());
-        Path refused = host.resolve("refused").resolve("documented");
-
-        store.write(withDocument(loaded, open), host.resolve("clean").resolve("documented"));
-
-        assertThatThrownBy(() -> store.write(withDocument(loaded, closed), refused))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                    assertThat(refusal.getMessage()).contains("pack.md cannot be written as Markdown");
+                    assertThat(refusal.getMessage())
+                            .contains("pack.md cannot be written as Markdown")
+                            .contains("[frontmatter]");
                 });
         assertThat(refused).doesNotExist();
     }

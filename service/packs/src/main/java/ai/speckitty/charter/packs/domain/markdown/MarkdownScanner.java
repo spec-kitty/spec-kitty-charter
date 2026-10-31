@@ -229,6 +229,25 @@ public final class MarkdownScanner {
         }
     }
 
+    /**
+     * Why a text would not read back as an H2's text, if it would not: the line {@code ## <text>} is refused as
+     * ambiguous (a closing {@code #} sequence), or reads back as another text. The text is a single, trimmed, non-blank
+     * line; the H1 reads its text by the same rule.
+     *
+     * @param text the heading's text
+     * @return the problem; empty when {@code ## <text>} reads back as an H2 whose text is {@code text}
+     */
+    static Optional<String> headingProblem(String text) {
+        try {
+            Line line = heading("## " + text, 1);
+            return line != null && line.title().equals(text)
+                    ? Optional.empty()
+                    : Optional.of("it does not read back as a heading's text");
+        } catch (Refused e) {
+            return Optional.of(e.reason());
+        }
+    }
+
     /** The opener a line is, if it opens a fence. */
     static @Nullable Fence opener(String line, int number) {
         String rest = line.substring(leadingSpaces(line));

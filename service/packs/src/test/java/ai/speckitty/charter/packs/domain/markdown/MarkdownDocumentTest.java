@@ -47,8 +47,20 @@ class MarkdownDocumentTest {
                     .withMessageStartingWith("section title ");
         }
 
+        @ParameterizedTest(name = "title {0} is refused")
+        @ValueSource(strings = {"Title ##", "#", "Release #", "Tabbed\t#"})
+        @DisplayName("#271: a title that would not read back as a heading's text (a closing # sequence) is refused")
+        void titlesThatDoNotReadBackAreRefused(String title) {
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> withTitle(title))
+                    .withMessage("title cannot be a heading's text: an H2 with a closing # sequence is ambiguous");
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> new Section(title, ""))
+                    .withMessageStartingWith("section title cannot be a heading's text");
+        }
+
         @ParameterizedTest(name = "title {0} is accepted")
-        @ValueSource(strings = {"Two lines", "Carriage return", "x", "Inner  spaces", "C#"})
+        @ValueSource(strings = {"Two lines", "Carriage return", "x", "Inner  spaces", "C#", "Release #1", "#hashtag"})
         @DisplayName("the single-line, non-blank, unpadded neighbours are accepted")
         void acceptedTitles(String title) {
             assertThat(withTitle(title).title()).contains(title);

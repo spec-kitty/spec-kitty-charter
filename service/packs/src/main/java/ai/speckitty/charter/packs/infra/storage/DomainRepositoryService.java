@@ -347,7 +347,7 @@ public final class DomainRepositoryService
         read.document().ifPresent(stored -> {
             try {
                 builder.document(PackDocumentMarkdown.toDomain(stored.dso()));
-            } catch (IllegalArgumentException breach) {
+            } catch (ConstraintBreachException | IllegalArgumentException breach) {
                 builder.violation(
                         new PackElementViolation(stored.file(), "domain", String.valueOf(breach.getMessage())));
             }

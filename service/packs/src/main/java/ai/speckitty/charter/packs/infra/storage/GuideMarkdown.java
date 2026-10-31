@@ -37,9 +37,14 @@ public final class GuideMarkdown {
      * @param title the toolguide's title, written as the H1
      * @param guide the guide
      * @return the document, in write order
-     * @throws IllegalArgumentException when the title cannot be an H1 (blank, or more than one line)
+     * @throws IllegalArgumentException when the title cannot be an H1 by the Markdown model's rule: blank, more than one
+     *     line, or a text the Markdown reader would not read back as itself (one that ends in a closing {@code #}
+     *     sequence)
      */
     public static MarkdownDocument toDocument(String title, Guide guide) {
+        MarkdownDocument.headingProblem(title).ifPresent(problem -> {
+            throw new IllegalArgumentException("the title '" + title + "' cannot be the guide's H1: it " + problem);
+        });
         List<MarkdownDocument.Section> sections = new ArrayList<>();
         guide.blocks().forEach((block, content) -> {
             if (block.leading()) {
@@ -62,18 +67,10 @@ public final class GuideMarkdown {
      * @param title the toolguide's title, written as the H1
      * @param guide the guide
      * @return the Markdown text
-     * @throws IllegalArgumentException when the title cannot be an H1: blank, more than one line, or a text the
-     *     Markdown reader would not read back as itself (one that ends in a closing {@code #} sequence)
+     * @throws IllegalArgumentException when the title cannot be an H1 ({@link #toDocument})
      */
     public static String write(String title, Guide guide) {
-        MarkdownDocument document = toDocument(title, guide);
-        try {
-            return MarkdownCodec.write(document);
-        } catch (IllegalStateException unreadable) {
-            throw new IllegalArgumentException(
-                    "the title '" + title + "' cannot be the guide's H1: Markdown would not read it back as written",
-                    unreadable);
-        }
+        return MarkdownCodec.write(toDocument(title, guide));
     }
 
     /**

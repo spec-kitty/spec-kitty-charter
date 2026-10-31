@@ -70,8 +70,7 @@ final class PackDocumentMarkdown {
      * The Markdown model of a domain document, to write through the codec.
      *
      * @param document the domain document
-     * @return the same parts as a Markdown model
-     * @throws IllegalArgumentException when a part cannot stand in a Markdown document (the model's own invariants)
+     * @return the same parts as a Markdown model; a domain document keeps the model's rules (#271), so it always is one
      */
     static MarkdownDocument toMarkdown(PackDocument document) {
         return new MarkdownDocument(
@@ -84,11 +83,10 @@ final class PackDocumentMarkdown {
     }
 
     /**
-     * The canonical text of a document about to be written, or a refusal naming {@code pack.md}: a domain document
-     * holds the model's shape only, so a part that cannot stand in a Markdown document is refused here, before any byte
-     * is written. The model refuses a part it cannot hold (a column-0 H1 in the preamble, a carriage return, an open
-     * fence); the codec refuses a text it cannot read back as the same document (a title ending in a closing {@code #}
-     * sequence).
+     * The canonical text of a document about to be written, or a refusal naming {@code pack.md}, before any byte is
+     * written. A domain document keeps the Markdown model's rules when it is built (#271); what is left to refuse here
+     * is a document the codec cannot read back as itself: a frontmatter value that reads back as another value (a
+     * {@code long} reads back as an {@code int}).
      *
      * @param pack the pack, named in the refusal
      * @param document the document
@@ -98,7 +96,7 @@ final class PackDocumentMarkdown {
     static String toWritableText(PackIdentifier pack, PackDocument document) {
         try {
             return MarkdownCodec.write(toMarkdown(document));
-        } catch (IllegalArgumentException | IllegalStateException breach) {
+        } catch (IllegalStateException breach) {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
                     pack.value() + "/" + FILE + " cannot be written as Markdown: " + breach.getMessage(),

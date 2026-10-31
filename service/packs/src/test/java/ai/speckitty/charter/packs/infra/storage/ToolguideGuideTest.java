@@ -401,8 +401,11 @@ class ToolguideGuideTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"Search for #", "C #", "#"})
     @DisplayName(
-            "a stored toolguide whose title cannot be the guide's H1 is refused at load, never when it is answered")
+            "a stored toolguide whose title cannot be the guide's H1 can never match the stored H1: it is refused at"
+                    + " load, never when it is answered")
     void aStoredTitleThatCannotBeTheH1IsRefusedAtLoad(String title) throws IOException {
+        // #271: no guide document can carry such an H1 (the Markdown model refuses it, as the codec always did), so
+        // the stored guide keeps an H1 the title cannot equal.
         PackFixtures.copyOf(PACK, host);
         ToolguideDso read = new FilesystemPackStore(host, strategy)
                 .read(PACK_ID, List.of(ToolguideBinding.INSTANCE))
@@ -421,12 +424,15 @@ class ToolguideGuideTest {
                         read.lastUpdated(),
                         read.references(),
                         Optional.empty())
-                .withGuide(Optional.of(new MarkdownDocument(
-                        guide.frontmatter(), Optional.of(title), guide.preamble(), guide.sections())));
+                .withGuide(Optional.of(guide));
 
         assertThatThrownBy(() -> ToolguideBinding.INSTANCE.toEntity(PACK_ID, retitled))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("cannot be the guide's H1");
+                .hasMessageContaining("which differs from the toolguide title '" + title + "'");
+        assertThatThrownBy(() -> GuideMarkdown.write(title, Guide.of("O.")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("the title '" + title + "' cannot be the guide's H1: it cannot be a heading's text: an H2"
+                        + " with a closing # sequence is ambiguous");
         assertThatCode(() -> ToolguideBinding.INSTANCE.toEntity(PACK_ID, read))
                 .as("the stored title")
                 .doesNotThrowAnyException();

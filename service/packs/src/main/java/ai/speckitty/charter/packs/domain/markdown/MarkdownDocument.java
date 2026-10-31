@@ -49,10 +49,10 @@ public record MarkdownDocument(
         Objects.requireNonNull(preamble, "preamble");
         Objects.requireNonNull(sections, "sections");
         frontmatter = frontmatter.map(mapping -> Collections.unmodifiableMap(new LinkedHashMap<>(mapping)));
-        title.ifPresent(t -> requireTitle("title", t));
-        requireBlock("preamble", preamble);
+        title.ifPresent(t -> require("title", headingProblem(t)));
+        require("preamble", blockProblem(preamble));
         if (frontmatter.isEmpty() && title.isEmpty()) {
-            requireOpening(preamble);
+            require("preamble", openingProblem(preamble));
         }
         sections = List.copyOf(sections);
     }
@@ -72,8 +72,8 @@ public record MarkdownDocument(
          * @param content the section's content
          */
         public Section {
-            requireTitle("section title", title);
-            requireBlock("section content", content);
+            require("section title", headingProblem(title));
+            require("section content", blockProblem(content));
         }
     }
 
@@ -122,49 +122,78 @@ public record MarkdownDocument(
         return List.copyOf(paths);
     }
 
-    private static void requireTitle(String field, String title) {
-        Objects.requireNonNull(title, field);
+    /**
+     * Why a text cannot be a title (the H1's or an H2's text), if it cannot: it must be a single line, not blank,
+     * without leading or trailing whitespace, and read back as the heading's text (no closing {@code #} sequence).
+     * Every domain value that holds a heading of the form checks it with this rule (#271).
+     *
+     * @param title the text
+     * @return the problem, worded to follow the field's name ({@code must be a single line}); empty when it can
+     */
+    public static Optional<String> headingProblem(String title) {
+        Objects.requireNonNull(title, "title");
         if (title.indexOf('\n') >= 0 || title.indexOf('\r') >= 0) {
-            throw new IllegalArgumentException(field + " must be a single line");
+            return Optional.of("must be a single line");
         }
         if (title.isBlank()) {
-            throw new IllegalArgumentException(field + " must not be blank");
+            return Optional.of("must not be blank");
         }
         if (!title.strip().equals(title)) {
-            throw new IllegalArgumentException(field + " must not have leading or trailing whitespace");
+            return Optional.of("must not have leading or trailing whitespace");
         }
+        return MarkdownScanner.headingProblem(title).map(problem -> "cannot be a heading's text: " + problem);
     }
 
-    /** A preamble that opens the written text must not read back as frontmatter or be refused as a file's start. */
-    private static void requireOpening(String preamble) {
-        if (preamble.equals("---") || preamble.startsWith("---\n")) {
-            throw new IllegalArgumentException(
-                    "preamble must not start with a --- line when there is neither frontmatter nor a title:"
-                            + " it would read back as frontmatter");
-        }
-        if (!preamble.isEmpty() && preamble.charAt(0) == '\uFEFF') {
-            throw new IllegalArgumentException(
-                    "preamble must not start with a byte order mark when there is neither frontmatter nor a title");
-        }
-    }
-
-    private static void requireBlock(String field, String block) {
-        Objects.requireNonNull(block, field);
+    /**
+     * Why a text cannot be a block (the preamble or a section's content), if it cannot: no carriage return, no leading
+     * or trailing blank line, and it could stand inside a document unchanged by the scanner's line rules (no column-0
+     * H1 or H2 outside a fence, no fence left open, nothing the scanner refuses as ambiguous). The empty block can.
+     * Every domain value that holds a block of the form checks it with this rule (#271).
+     *
+     * @param block the text
+     * @return the problem, worded to follow the field's name ({@code must not start with a blank line}); empty when it
+     *     can
+     */
+    public static Optional<String> blockProblem(String block) {
+        Objects.requireNonNull(block, "block");
         if (block.isEmpty()) {
-            return;
+            return Optional.empty();
         }
         if (block.indexOf('\r') >= 0) {
-            throw new IllegalArgumentException(field + " must not contain a carriage return");
+            return Optional.of("must not contain a carriage return");
         }
         String[] lines = block.split("\n", -1);
         if (lines[0].isBlank()) {
-            throw new IllegalArgumentException(field + " must not start with a blank line");
+            return Optional.of("must not start with a blank line");
         }
         if (lines[lines.length - 1].isBlank()) {
-            throw new IllegalArgumentException(field + " must not end with a blank line");
+            return Optional.of("must not end with a blank line");
         }
-        MarkdownScanner.blockProblem(block).ifPresent(problem -> {
-            throw new IllegalArgumentException(field + " cannot stand inside a document: " + problem);
+        return MarkdownScanner.blockProblem(block).map(problem -> "cannot stand inside a document: " + problem);
+    }
+
+    /**
+     * Why a preamble cannot open the written text, if it cannot: when a document has neither frontmatter nor a title,
+     * its preamble must not start with a {@code ---} line (it would read back as frontmatter) or a byte order mark.
+     *
+     * @param preamble the preamble of a document with neither frontmatter nor a title
+     * @return the problem, worded to follow the field's name; empty when it can
+     */
+    public static Optional<String> openingProblem(String preamble) {
+        Objects.requireNonNull(preamble, "preamble");
+        if (preamble.equals("---") || preamble.startsWith("---\n")) {
+            return Optional.of("must not start with a --- line when there is neither frontmatter nor a title:"
+                    + " it would read back as frontmatter");
+        }
+        if (!preamble.isEmpty() && preamble.charAt(0) == '\uFEFF') {
+            return Optional.of("must not start with a byte order mark when there is neither frontmatter nor a title");
+        }
+        return Optional.empty();
+    }
+
+    private static void require(String field, Optional<String> problem) {
+        problem.ifPresent(why -> {
+            throw new IllegalArgumentException(field + " " + why);
         });
     }
 }

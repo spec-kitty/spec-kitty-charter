@@ -1,44 +1,33 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * The guide of a {@link Toolguide} (#194, research D5): the fixed {@link GuideBlock blocks} it holds, each with its
  * Markdown content, and its freeform {@link GuideSection sections} in authored order. It holds no title: the toolguide's
  * {@code title} is the one home of that, and the stored file's H1 is written from it.
  *
- * <p>Content rules, the Markdown model's own (data-model "MarkdownDocument"), so that every block and section can stand
- * as an H2 section of the stored file unchanged: no carriage return, no leading or trailing blank line, no H1 or H2 at
- * column 0 outside a fenced code block, and no fence left open. Headings of level 3 and deeper stay inside content. A
- * fence opens on a line whose first non-space characters are at least three backticks (with no backtick after them)
- * or at least three tildes, at any indentation, and closes on a line of at least as many of the same character
- * followed by nothing but spaces.
+ * <p>Content rules: the Markdown model's own, applied by that model ({@link MarkdownDocument#blockProblem}, #271), so
+ * that every block and section can stand as an H2 section of the stored file unchanged and the guide refuses, when it
+ * is built, exactly the content the Markdown codec refuses. In short: no carriage return, no leading or trailing blank
+ * line, no H1 or H2 outside a fenced code block, no fence left open, and nothing the form refuses as ambiguous (an
+ * indented, empty or tab-separated H1 or H2, one with a closing {@code #} sequence, a setext underline). Headings of
+ * level 3 and deeper stay inside content.
  *
  * @param blocks the fixed blocks the guide holds and their content; {@link GuideBlock#OVERVIEW} is present and not
  *     blank; copied, unmodifiable, iterated in block order
  * @param sections the freeform sections in authored order; copied, unmodifiable
  */
 public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections) {
-
-    /** A column-0 H1 or H2: one or two {@code #}, then the end of the line, a space or a tab. */
-    private static final Pattern HEADING = Pattern.compile("^#{1,2}(?:[ \\t].*)?$");
-
-    private static final int MIN_FENCE = 3;
-
-    /** The content rules every block and section obeys. */
-    static final ModularRuleset<String> CONTENT_RULES = ModularRuleset.<String>emptyRules()
-            .must(Constraints.of(
-                    "Guide content has no carriage return, no leading or trailing blank line, no column-0 H1 or H2"
-                            + " outside a fence, and no fence left open.",
-                    Guide::standsAsSectionContent));
 
     private static final ModularRuleset<String> OVERVIEW_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of("A guide needs an overview that is not blank.", overview -> !overview.isBlank()));
@@ -58,7 +47,7 @@ public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections)
         blocks.forEach((block, content) ->
                 copy.put(Objects.requireNonNull(block, "block"), Objects.requireNonNull(content, "content")));
         OVERVIEW_RULES.guard(copy.getOrDefault(GuideBlock.OVERVIEW, ""));
-        copy.values().forEach(CONTENT_RULES::guard);
+        copy.values().forEach(Guide::guardContent);
         blocks = Collections.unmodifiableMap(copy);
         sections = List.copyOf(sections);
     }
@@ -92,57 +81,15 @@ public record Guide(Map<GuideBlock, String> blocks, List<GuideSection> sections)
         return Optional.ofNullable(blocks.get(block));
     }
 
-    /** Whether {@code content} obeys the content rules (see the class comment). */
-    private static boolean standsAsSectionContent(String content) {
-        if (content.isEmpty()) {
-            return true;
-        }
-        if (content.indexOf('\r') >= 0) {
-            return false;
-        }
-        String[] lines = content.split("\n", -1);
-        if (lines[0].isBlank() || lines[lines.length - 1].isBlank()) {
-            return false;
-        }
-        char fence = 0;
-        int fenceLength = 0;
-        for (String line : lines) {
-            String body = line.substring(indent(line));
-            if (fence != 0) {
-                int run = run(body, fence);
-                if (run >= fenceLength && body.substring(run).chars().allMatch(c -> c == ' ')) {
-                    fence = 0;
-                }
-                continue;
-            }
-            int ticks = run(body, '`');
-            int tildes = run(body, '~');
-            if (ticks >= MIN_FENCE && body.indexOf('`', ticks) < 0) {
-                fence = '`';
-                fenceLength = ticks;
-            } else if (tildes >= MIN_FENCE) {
-                fence = '~';
-                fenceLength = tildes;
-            } else if (HEADING.matcher(line).matches()) {
-                return false;
-            }
-        }
-        return fence == 0;
-    }
-
-    private static int indent(String line) {
-        int i = 0;
-        while (i < line.length() && line.charAt(i) == ' ') {
-            i++;
-        }
-        return i;
-    }
-
-    private static int run(String text, char c) {
-        int i = 0;
-        while (i < text.length() && text.charAt(i) == c) {
-            i++;
-        }
-        return i;
+    /**
+     * Checks a block's or a section's content against the content rules (see the class comment).
+     *
+     * @param content the content
+     * @throws ConstraintBreachException naming why the content cannot stand as an H2 section of the stored file
+     */
+    static void guardContent(String content) {
+        MarkdownDocument.blockProblem(content).ifPresent(problem -> {
+            throw new ConstraintBreachException("Guide content " + problem);
+        });
     }
 }

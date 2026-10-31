@@ -82,10 +82,10 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalArgumentException also when the shape holds no guide, the guide breaks a rule of
-     *     {@link GuideMarkdown#fromStored} (a stored guide carries its H1), or the title cannot be written as the
-     *     guide's H1 ({@link GuideMarkdown#write}): such a toolguide is a read violation, never a failure when it is
-     *     answered
+     * @throws IllegalArgumentException also when the shape holds no guide, or the guide breaks a rule of
+     *     {@link GuideMarkdown#fromStored}: a stored guide carries its H1, which equals the title, so a title that cannot
+     *     be the guide's H1 is refused here too (the Markdown model holds no such H1, #271). Such a toolguide is a read
+     *     violation, never a failure when it is answered
      */
     @Override
     public Toolguide toEntity(PackIdentifier pack, ToolguideDso dso) {
@@ -105,10 +105,7 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
         dso.commands().forEach(builder::command);
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
         dso.references().forEach(builder::reference);
-        Toolguide toolguide = builder.build();
-        // The guide is answered with its H1 written from the title: refuse at load a title that cannot be one.
-        GuideMarkdown.write(toolguide.title(), toolguide.guide());
-        return toolguide;
+        return builder.build();
     }
 
     @Override

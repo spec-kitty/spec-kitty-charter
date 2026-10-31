@@ -348,13 +348,14 @@ class MarkdownCodecTest {
         }
 
         @Test
-        @DisplayName("write refuses a model whose output reads back differently: a title ending in a closing sequence")
-        void writeChecksTitleReadBack() {
-            MarkdownDocument document = new MarkdownDocument(Optional.empty(), Optional.of("Title ##"), "", List.of());
+        @DisplayName("write refuses a model whose output reads back differently: a frontmatter number of another type")
+        void writeChecksFrontmatterReadBack() {
+            MarkdownDocument document =
+                    new MarkdownDocument(Optional.of(Map.of("count", 5L)), Optional.empty(), "", List.of());
 
             assertThatIllegalStateException()
                     .isThrownBy(() -> MarkdownCodec.write(document))
-                    .withMessageContaining("closing # sequence");
+                    .withMessageContaining("reads back differently at [frontmatter]");
         }
 
         @Test
