@@ -141,6 +141,10 @@ Core's requests that follow from it are
    - A release is never marked latest, and a `-` suffix makes it a GitHub pre-release.
    - An existing release is never replaced.
    - A manual run of the workflow is a rehearsal: it assembles the assets and publishes nothing.
+   - The workflow runs from the tagged commit, so its checks guard against mistakes, not against someone who can
+     push a tag. Before the first tag, the operator therefore creates a tag ruleset on `service-v*`: it restricts
+     who may create a tag and blocks updating or deleting one. The publishing job runs in the `service-release`
+     environment, on which the operator may also require reviewers.
    - The procedure is in [Building the service](/guides/service-build/).
 
 ## Consequences
