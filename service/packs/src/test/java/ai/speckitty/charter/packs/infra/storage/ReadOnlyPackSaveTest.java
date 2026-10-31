@@ -7,10 +7,26 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.Directive;
+import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.Enforcement;
+import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.Paradigm;
+import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.Styleguide;
+import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
+import ai.speckitty.charter.packs.domain.StyleguideScope;
 import ai.speckitty.charter.packs.domain.Tactic;
+import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.TemplateIdentifier;
+import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -53,8 +69,68 @@ class ReadOnlyPackSaveTest {
 
     static Stream<Arguments> everyWrite() {
         return Stream.of(
-                write("save(Tactic), the typed saves' path", service -> service.save(tacticOf(service))),
+                write("save(Tactic)", service -> service.save(tacticOf(service))),
+                write(
+                        "save(Directive)",
+                        service -> service.save(Directive.builder()
+                                .id(new DirectiveIdentifier("DIRECTIVE_900"))
+                                .packId(PACK)
+                                .schemaVersion("1.0")
+                                .title("Close the class")
+                                .intent("Fix the class of defect.")
+                                .enforcement(Enforcement.REQUIRED)
+                                .build())),
+                write(
+                        "save(Styleguide)",
+                        service -> service.save(Styleguide.builder()
+                                .id(new StyleguideIdentifier("house-style"))
+                                .packId(PACK)
+                                .schemaVersion("1.0")
+                                .title("House style")
+                                .scope(StyleguideScope.CODE)
+                                .principle("Prefer clarity")
+                                .build())),
+                write(
+                        "save(Toolguide)",
+                        service -> service.save(Toolguide.builder()
+                                .id(new ToolguideIdentifier("ripgrep"))
+                                .packId(PACK)
+                                .schemaVersion("1.0")
+                                .tool("ripgrep")
+                                .title("Use ripgrep")
+                                .guide(Guide.of("How to use the tool."))
+                                .summary("How to search.")
+                                .build())),
+                write(
+                        "save(Paradigm)",
+                        service -> service.save(Paradigm.builder()
+                                .id(new ParadigmIdentifier("tdd"))
+                                .packId(PACK)
+                                .schemaVersion("1.0")
+                                .name("TDD")
+                                .summary("Tests first.")
+                                .build())),
+                write(
+                        "save(AgentProfile)",
+                        service -> service.save(AgentProfile.builder()
+                                .id(new AgentProfileIdentifier("implementer"))
+                                .packId(PACK)
+                                .name("implementer")
+                                .role("implementer")
+                                .purpose("Implements.")
+                                .specialization(new Specialization(
+                                        "Focus", Optional.empty(), Optional.empty(), Optional.empty()))
+                                .build())),
                 write("saveArtifact", service -> service.saveArtifact(PACK, tacticOf(service))),
+                write(
+                        "saveArtifact(Template)",
+                        service -> service.saveArtifact(
+                                PACK,
+                                Template.builder()
+                                        .id(new TemplateIdentifier("writing/plan.md"))
+                                        .packId(PACK)
+                                        .content(Payload.of(new byte[] {'#'}))
+                                        .build())),
                 write("save(PackIdentifier, PackDescriptor)", service -> service.save(PACK, service.get(PACK))),
                 write(
                         "writeAssetFile",
