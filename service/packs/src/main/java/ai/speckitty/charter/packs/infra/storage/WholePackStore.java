@@ -257,7 +257,9 @@ public final class WholePackStore {
     /**
      * Every regular file of the pack that is not in {@code modelled}, pack-relative and sorted. The walk starts at the
      * directory's real path, as {@code PackFileSet}'s does, so a pack root that is a symbolic link is entered (#284);
-     * links below the root are not followed.
+     * links below the root are not followed. Unlike {@code PackFileSet}, a file that is itself a link is not listed
+     * here ({@code NOFOLLOW_LINKS}): the whole-pack census classifies in-pack symlinks separately, so they are not
+     * counted among the unmodelled regular files.
      */
     private static List<String> unmodelled(Path packDir, Set<String> modelled, PackIdentifier key) {
         Path root;
