@@ -222,6 +222,8 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
         if (domain.startsWith(real)) {
             return Optional.of("resolves to " + real + ", which holds the pack domain");
         }
+        // Belt-and-suspenders: the pack domain is always under the configuration root, so a target that holds the
+        // configuration root also holds the domain and is already refused above; this guards the invariant directly.
         if (configRoot.startsWith(real)) {
             return Optional.of("resolves to " + real + ", which holds the configuration root");
         }
