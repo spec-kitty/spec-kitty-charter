@@ -22,7 +22,7 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 | `ApiRoot` | `_links` | `self` `/api/v1/`, `info`, `offering`, `artifacts` (templated `/api/v1/packs/{packId}/artifacts{?kind}`), `service-desc` |
 | `ServiceInfo` (changed) | the existing four fields and `_links` | `self` `/api/v1/info`, `service-desc` |
 | `Offering` | `packs` (an array of `OfferingPack`, in merge order), `_links` | `self` `/api/v1/offering` |
-| `OfferingPack` | `packId`, `level` (a `$ref` to `PackLevel`; the configured level), optional `name` and `version` (from `pack.yaml`; absent without one), `_links` | `artifacts` `/api/v1/packs/{packId}/artifacts` (no `self`: `GET /packs/{packId}` is deferred) |
+| `OfferingPack` | `packId`, `level` (a `$ref` to `PackLevel`; the configured level), required `name` and `version` (from `pack.yaml`; a missing or invalid `pack.yaml` is 500 `pack_unreadable`, operator ruling of 2026-10-31), `_links` | `artifacts` `/api/v1/packs/{packId}/artifacts` (no `self`: `GET /packs/{packId}` is deferred) |
 | `ArtifactPage` | `items` (an array of `ArtifactSummary`), `page` (`PageInfo`), `_links` | `self` (the request, with its query), `first`, and `next` only when `page.hasNextPage` is true |
 | `ArtifactSummary` | `kind` (`ArtifactKindToken`), `id`, `title`, `_links` | `self` `/api/v1/packs/{packId}/artifacts/{kind}/{id}` |
 | `Artifact` | `kind`, `id`, `packId`, `_links`, and exactly one of `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide` | `self` and `collection` (`…/artifacts?kind=<kind>`). No `edit` link in this minor (R-24). |

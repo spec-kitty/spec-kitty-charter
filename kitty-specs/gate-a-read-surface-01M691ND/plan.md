@@ -244,7 +244,7 @@ inside each WP the scenarios and fixtures are written red first.
 
 - `GET /` (`getApiRoot`, Service tag) answering `ApiRoot`.
 - `GET /offering` (`getOffering`, Offering tag) answering `Offering`/`OfferingPack`, with `level` as a
-  `$ref` to `PackLevel`, and `name` and `version` optional.
+  `$ref` to `PackLevel`, and `name` and `version` required (operator ruling of 2026-10-31).
 - `ServiceInfo._links` (`self`, `service-desc`).
 - The `Link` header on the info 200 only.
 
