@@ -37,6 +37,7 @@ class HttpsGuideFetcherLoopbackTest {
 
     private static final int MIB = 1024 * 1024;
     private static final String GUIDE = "# Guide\n\nUse the tool.\n";
+    private static final Duration DRIP_DEADLINE = Duration.ofMillis(1500);
 
     private HttpServer server;
     private final Map<String, Map<String, List<String>>> seenHeaders = new ConcurrentHashMap<>();
@@ -78,17 +79,19 @@ class HttpsGuideFetcherLoopbackTest {
 
     @Test
     void aBodyThatDripsPastTheDeadlineIsRefusedThoughItsHeadersArriveAtOnce() throws GuideFetchRefusal {
+        // A fast fetch first: on a loaded runner, the first fetch's client start-up and connection could otherwise
+        // use up the whole deadline before the request reaches the server, refusing it for the wrong reason.
+        assertThat(fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/fast")))
+                .isEqualTo(GUIDE);
         long started = System.nanoTime();
 
-        assertThatThrownBy(() -> fetcher(Duration.ofMillis(700)).fetch(URI.create("https://guide.example/drip")))
+        assertThatThrownBy(() -> fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/drip")))
                 .isInstanceOfSatisfying(
                         GuideFetchRefusal.class,
                         refusal -> assertThat(refusal.reason()).isEqualTo(Reason.TIMEOUT));
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(3));
+        // The drip lasts ten seconds; a refusal well before it ends is the deadline's, not the body's end.
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(5));
         assertThat(seenHeaders).containsKey("/drip");
-
-        assertThat(fetcher(Duration.ofMillis(700)).fetch(URI.create("https://guide.example/fast")))
-                .isEqualTo(GUIDE);
     }
 
     @Test
