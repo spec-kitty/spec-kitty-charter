@@ -168,10 +168,13 @@ final class Companions {
 
     /**
      * Why a rule of the table owns the path rather than the companion, or empty when no rule does or the rule is the
-     * companion's own. A claimed file is a pack inconsistency, refused rather than resolved by precedence.
+     * companion's own. A claimed file is a pack inconsistency, refused rather than resolved by precedence. The path is
+     * classified case-folded, as the write's claim check folds it ({@link Inside#claim}): a name that differs from a
+     * ruled file only in case is that file on a case-insensitive file system, so it is refused like the exact name
+     * (#272).
      */
     private static Optional<String> claimedByRule(PackFileKind table, String path, KindBinding.Companion companion) {
-        return switch (table.classify(path)) {
+        return switch (table.classifyFolded(path)) {
             case PackFileKind.Unclassified unclassified -> Optional.empty();
             case PackFileKind.Excluded excluded ->
                 Optional.of("is excluded by file-kinds rule '" + excluded.exclusionClass() + "', not a companion");
@@ -189,7 +192,7 @@ final class Companions {
                 yield own
                         ? Optional.empty()
                         : Optional.of("is a pack file of kind " + mapped.kind() + " (file-kinds rule '"
-                                + String.join("', '", table.matchingRules(path)) + "'), not a companion");
+                                + String.join("', '", table.matchingRulesFolded(path)) + "'), not a companion");
             }
         };
     }
