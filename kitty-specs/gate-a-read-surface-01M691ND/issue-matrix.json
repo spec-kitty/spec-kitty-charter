@@ -37,7 +37,7 @@
       "wp": null
     },
     "#126": {
-      "evidence_ref": "Delivered across WP01-WP07",
+      "evidence_ref": "WP01-WP07 approved: GET /, GET /offering, generic artifact routes (reads+moved writes, per-kind removed), Links + required _links with self, relation-key lint; offering reads for this minor: GET /offering pack list only (ruling 3)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,7 +45,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP07"
     },
     "#13": {
