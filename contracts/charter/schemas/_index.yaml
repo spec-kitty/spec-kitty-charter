@@ -1,4 +1,8 @@
 files:
+  - Artifact.yaml
+  - ArtifactKindToken.yaml
+  - ArtifactPage.yaml
+  - ArtifactSummary.yaml
   - CharterRefusal.yaml
   - CharterRefusalCode.yaml
   - Diagnostic.yaml

@@ -1,4 +1,6 @@
 files:
+  - Artifact.tactic.yaml
+  - ArtifactPage.first-page.yaml
   - CharterRefusal.action-not-found.yaml
   - CharterRefusal.tactic-not-found.yaml
   - ServiceInfo.one-worktree.yaml

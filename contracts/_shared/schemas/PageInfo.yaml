@@ -10,12 +10,30 @@ properties:
   hasNextPage:
     type: boolean
     description: True when another page follows this one.
+    x-derived:
+      rule: True exactly when the list holds more items after the last item of this page.
+      inputs:
+        - schemas/PageInfo.yaml#/properties/pageSize
   nextPageCursor:
     description: The token that fetches the next page, or null when this is the last page.
     oneOf:
       - $ref: PageCursor.yaml
       - type: 'null'
+    x-derived:
+      rule: The opaque position of the last item of this page when hasNextPage is true; null otherwise.
+      inputs:
+        - schemas/PageInfo.yaml#/properties/hasNextPage
+        - parameters/PageCursor.yaml
   pageSize:
     type: integer
     minimum: 1
     description: The number of items the service applied as the page size for this response.
+    x-derived:
+      rule: The request's pageSize, or its default when the request names none.
+      inputs:
+        - parameters/PageSize.yaml
+x-derived:
+  rule: The paging state of the page the response holds, computed from the request's paging parameters.
+  inputs:
+    - parameters/PageSize.yaml
+    - parameters/PageCursor.yaml

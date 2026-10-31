@@ -66,3 +66,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
       symbol: Tactic.references
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Tactic.java
+  symbol: Tactic

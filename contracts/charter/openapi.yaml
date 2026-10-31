@@ -27,6 +27,10 @@ tags:
     description: The toolguides of a Charter Pack.
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
+  - name: Artifacts
+    description: >-
+      The artifacts of a Charter Pack of every served kind, read through one paged list and one
+      item.
 paths:
   /info:
     $ref: paths/info.yaml
@@ -54,6 +58,10 @@ paths:
     $ref: paths/packs_packId_toolguides_toolguideId.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
+  /packs/{packId}/artifacts:
+    $ref: paths/packs_packId_artifacts.yaml
+  /packs/{packId}/artifacts/{kind}/{artifactId}:
+    $ref: paths/packs_packId_artifacts_kind_artifactId.yaml
 components:
   securitySchemes:
     charterWorktreeToken:

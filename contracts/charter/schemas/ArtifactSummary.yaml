@@ -1,0 +1,30 @@
+title: ArtifactSummary
+description: >-
+  One artifact of a pack as a list names it: its kind, its id, a title to show, and the link to read
+  it whole.
+type: object
+additionalProperties: false
+required:
+  - kind
+  - id
+  - title
+  - _links
+properties:
+  kind:
+    $ref: ArtifactKindToken.yaml
+  id:
+    type: string
+    description: The artifact's id within its kind and pack.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
+      symbol: CharterArtifact.localId
+  title:
+    type: string
+    description: >-
+      The artifact's human-readable name: the name of a tactic or a paradigm, the title of a
+      directive, a styleguide or a toolguide.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
+      symbol: CharterArtifact.label
+  _links:
+    $ref: Links.yaml

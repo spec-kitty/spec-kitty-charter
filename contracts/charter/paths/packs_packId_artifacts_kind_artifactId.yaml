@@ -1,0 +1,58 @@
+get:
+  operationId: getPackArtifact
+  summary: Get one artifact of a Charter Pack by kind and identity.
+  description: >-
+    One artifact of one pack in the common envelope: kind, id, packId, _links, and exactly one
+    kind-named member holding the artifact in its kind's own representation, the member kind names.
+    _links holds self and collection, the list of the pack's artifacts of that kind. The pack is
+    judged first: an identifier that matches no configured pack, by name or by declared pack_id, is a
+    404 pack_not_found, whatever the kind. Then a kind the service does not serve is a 404
+    kind_not_found, and an id the pack does not hold is the not-found code of its kind. A configured
+    pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be
+    read or a directory that cannot be listed, is a 500 pack_unreadable. The answer is verified against
+    the source fingerprint and carries it; inputs that change while it is read are stale_input. A
+    directive, a styleguide, a paradigm or a toolguide also carries the pack revision as its ETag, for
+    a later write; a tactic, which has no write, carries none. There is no write on this path: a PUT
+    is a 405.
+  tags:
+    - Artifacts
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactKind.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+  responses:
+    '200':
+      description: The artifact.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: >-
+            The pack revision, for optimistic concurrency on a later write. Sent for the writable kinds
+            only (directive, styleguide, paradigm and toolguide); a tactic carries none.
+          required: false
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            tactic:
+              $ref: ../examples/Artifact.tactic.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ArtifactNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -5,3 +5,10 @@ description: >-
 type: object
 additionalProperties:
   $ref: Link.yaml
+x-derived:
+  rule: >-
+    The links the server writes for the answer, each keyed by its relation and built from the server
+    prefix and the paths of the operations the relations name.
+  inputs:
+    - openapi.yaml#/servers
+    - openapi.yaml#/paths

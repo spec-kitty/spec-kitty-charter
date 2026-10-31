@@ -1,0 +1,56 @@
+get:
+  operationId: listPackArtifacts
+  summary: List one page of a Charter Pack's artifacts of the served kinds.
+  description: >-
+    The artifacts of one pack of the served kinds (tactic, directive, styleguide, paradigm and
+    toolguide) as summaries, each with the link to read it whole. They are ordered by the served-kind
+    order, then by id in code-point order, so Zeta comes before alpha. kind filters on one served
+    kind; a value that is not one is a 400 Problem without a code. The list is paged: pageSize items
+    at most (1 to 200, 50 by default; a value out of range or not a number is a 400 Problem without a
+    code), and pageCursor, the nextPageCursor of the page before, asks for the items strictly after the
+    position it names, so an artifact added or removed elsewhere, or the anchor itself deleted, neither
+    skips nor repeats one. A cursor that is malformed, or that names a kind other than the kind filter,
+    is a 400 Problem without a code. _links holds self (the request, with its query), first (the same
+    without pageCursor) and next only when page.hasNextPage is true; a page of exactly pageSize items
+    that ends the list has no next. A pack, or a kind filtered on, without artifacts answers an empty
+    page. An identifier that matches no configured pack, by name or by declared pack_id, is a 404
+    pack_not_found; a configured pack whose directory is missing, or a pack holding a file the
+    fingerprint covers that cannot be read or a directory that cannot be listed, is a 500
+    pack_unreadable. Each page is one read verified against the source fingerprint, and carries it;
+    inputs that change while it is read are stale_input.
+  tags:
+    - Artifacts
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactKindFilter.yaml
+    - $ref: ../../_shared/parameters/PageSize.yaml
+    - $ref: ../../_shared/parameters/PageCursor.yaml
+  responses:
+    '200':
+      description: One page of the pack's artifacts.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ArtifactPage.yaml
+          examples:
+            first-page:
+              $ref: ../examples/ArtifactPage.first-page.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
