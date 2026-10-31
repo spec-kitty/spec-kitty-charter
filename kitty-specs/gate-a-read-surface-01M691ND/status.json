@@ -124,7 +124,7 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -134,7 +134,8 @@
       "last_transition_at": "2026-10-31T15:42:53.318155+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Writes moved to POST/PUT /packs/{packId}/artifacts/<kind>[/{artifactId}] answering the Artifact envelope (Location path = _links.self.href); all 10 per-kind routes removed (404 no code), 405s pinned; #176 item pack_unreadable pinned. CharterContractSuite 141 -> 162 (red: 61/162 failing before contract/service change). verifyAll green: deployable 434, kernel 841, missions 59, packs 2263 (3 skipped), profiles 9. pack.yaml added to tactics.feature and journey-03 fixtures. Last code commit 1823c21d."
+        "Writes moved to POST/PUT /packs/{packId}/artifacts/<kind>[/{artifactId}] answering the Artifact envelope (Location path = _links.self.href); all 10 per-kind routes removed (404 no code), 405s pinned; #176 item pack_unreadable pinned. CharterContractSuite 141 -> 162 (red: 61/162 failing before contract/service change). verifyAll green: deployable 434, kernel 841, missions 59, packs 2263 (3 skipped), profiles 9. pack.yaml added to tactics.feature and journey-03 fixtures. Last code commit 1823c21d.",
+        "Review passed: 8 writes moved with operationIds/tags/bodies/If-Match/refusals unchanged (structural YAML diff: only response schema->Artifact and param->artifactId); all 10 per-kind routes removed, grep clean outside CHANGELOG; every old scenario kept under the same name on successor paths (scenario names diffed per feature), write 201s pin exact envelope + ETag + Location path==self; removed-routes 10+8 404 no-code + 2x405; #176 item pack_unreadable pinned; deleted unit read tests have ArtifactControllerTest successors. Verified :contracts:check :contracts:test :packs:test (2263/0 fail) :deployable:test (434/0 fail, Cucumber 162/0, ArchUnit 43 green unchanged) with --rerun-tasks; CC<=15 on changed Java; no new suppressions; trailers ok. NOTE for WP05: tactics.feature and journey-03 gained pack.yaml - old tactic scenarios implicitly exercised a pack without pack.yaml (generic list maps missing pack.yaml to pack_not_found); nothing now pins either behaviour, pending operator ruling."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
