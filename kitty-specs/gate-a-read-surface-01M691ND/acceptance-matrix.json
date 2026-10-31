@@ -58,10 +58,10 @@
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "removed-routes.feature outlines 'A removed per-kind read answers 404 without a code' (10 paths) and 'A removed per-kind write answers 404 without a code, whatever its body' (8 POST/PUT, plus no side effect); bundle has 15 ops, none on per-kind paths; grep of service/*/src/main for old paths/operationIds: none; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:22:35.673022+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
