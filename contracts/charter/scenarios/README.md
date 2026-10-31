@@ -79,6 +79,20 @@ Keep it small; add a step only when a scenario cannot be written without it.
   these refusal codes are raised by an operation:` with a one-column table lists the codes whose `raised` is true.
   After every scenario, each refusal it observed must have the status and `raised: true` the map declares.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
+- `Then the problem has no code` — an `application/problem+json` body without a `code` member (absent, not empty): a
+  transport or routing failure, not a charter refusal.
+- `Then the field at "<json-pointer>" is "<text>"`, `... is <integer>` and `... is true` or `... is false` — the
+  member an RFC 6901 JSON Pointer names (for example `/page/hasNextPage` or `/items/0/id`), which must be there and
+  of that JSON type.
+- `Then the answer has no link "<relation>"` — the body's `_links` has no member of that relation key.
+- `When I follow the link "<relation>"` — GET the `href` of that relation in the last answer's `_links`, with the
+  `/api/v1` server prefix taken off as the request steps expect.
+- `Then following "<relation>" links from the answer, the "<member>" ids are:` followed by a table with the header
+  `| kind | id |` — collects the `kind` and `id` of every element of `<member>` on the last answer and on every page
+  its `<relation>` link leads to, following it until a page has none, and compares them with the table in order, so
+  every element is served exactly once. Each followed page must answer 200; the last one is the step's answer.
+- `When the file "<path>" of the pack "<name>" is deleted` — deletes one existing file of a configured pack, between
+  two requests (a cursor's anchor that goes away between pages).
 - `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
   body:` — a registration with a JSON doc string, and its `If-Match` precondition.
@@ -109,6 +123,8 @@ exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` f
   the worktree guard.
 - `toolguides.feature`: the toolguide reads and registrations, with the guide sent as content or fetched from a
   `guideUri`, and their refusals.
+- `artifacts.feature`: the generic artifact reads, the paged list of a pack's artifacts of the served kinds and one
+  artifact in its envelope, with their paging edge cases and refusals (FR-003, FR-004, FR-007).
 - `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
   `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it

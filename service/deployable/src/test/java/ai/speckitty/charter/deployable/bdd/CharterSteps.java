@@ -3,11 +3,13 @@ package ai.speckitty.charter.deployable.bdd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +35,8 @@ public class CharterSteps {
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
+    private static final String BASE = "/api/v1";
+    private static final String LINKS = "_links";
 
     private final ScenarioHttp http;
     private final ScenarioPacks packs;
@@ -112,6 +116,11 @@ public class CharterSteps {
                     .matches(SHA256)
                     .isEqualTo(expected);
         }
+    }
+
+    @When("the file {string} of the pack {string} is deleted")
+    public void deletePackFile(String path, String pack) {
+        packs.deleteFile(pack, path);
     }
 
     @Given("the service fails unexpectedly while it reads the packs")
@@ -258,6 +267,85 @@ public class CharterSteps {
     public void problemCode(String code) throws Exception {
         assertThat(http.response().getContentType()).startsWith("application/problem+json");
         assertThat(JSON.readTree(http.body()).path("code").asString()).isEqualTo(code);
+    }
+
+    @Then("the field at {string} is {string}")
+    public void fieldAt(String pointer, String value) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isString()).as("%s is a string: %s", pointer, field).isTrue();
+        assertThat(field.asString()).isEqualTo(value);
+    }
+
+    @Then("the field at {string} is {int}")
+    public void numberAt(String pointer, int value) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isIntegralNumber()).as("%s is an integer: %s", pointer, field).isTrue();
+        assertThat(field.asInt()).isEqualTo(value);
+    }
+
+    @Then("^the field at \"([^\"]*)\" is (true|false)$")
+    public void booleanAt(String pointer, String value) throws Exception {
+        JsonNode field = at(pointer);
+        assertThat(field.isBoolean()).as("%s is a boolean: %s", pointer, field).isTrue();
+        assertThat(field.asBoolean()).isEqualTo(Boolean.parseBoolean(value));
+    }
+
+    @Then("the answer has no link {string}")
+    public void noLink(String relation) throws Exception {
+        JsonNode links = JSON.readTree(http.body()).path(LINKS);
+        assertThat(links.isObject()).as("the answer has _links: %s", http.body()).isTrue();
+        assertThat(links.has(relation)).as("the answer has the link %s", relation).isFalse();
+    }
+
+    @Then("the problem has no code")
+    public void problemWithoutCode() throws Exception {
+        assertThat(http.response().getContentType()).startsWith("application/problem+json");
+        assertThat(JSON.readTree(http.body()).has("code")).as("the problem has a code: %s", http.body()).isFalse();
+    }
+
+    @When("I follow the link {string}")
+    public void follow(String relation) throws Exception {
+        http.get(belowBase(linkOf(JSON.readTree(http.body()), relation)));
+    }
+
+    /**
+     * Collects the {@code kind} and {@code id} of every element of {@code member} on this page and on every page its
+     * {@code relation} link leads to, following the link until a page has none, and compares them with the table in
+     * order: every artifact is served exactly once, none skipped and none repeated.
+     */
+    @Then("following {string} links from the answer, the {string} ids are:")
+    public void followingLinks(String relation, String member, DataTable expected) throws Exception {
+        List<List<String>> seen = new ArrayList<>();
+        JsonNode page = JSON.readTree(http.body());
+        while (true) {
+            assertThat(http.response().getStatus()).as("a followed page answers 200: %s", http.body()).isEqualTo(200);
+            page.path(member).valueStream().forEach(item -> seen.add(
+                    List.of(item.path("kind").asString(), item.path("id").asString())));
+            if (!page.path(LINKS).has(relation)) {
+                break;
+            }
+            http.get(belowBase(linkOf(page, relation)));
+            page = JSON.readTree(http.body());
+        }
+        assertThat(seen).isEqualTo(expected.cells().subList(1, expected.height()));
+    }
+
+    private JsonNode at(String pointer) throws Exception {
+        JsonNode field = JSON.readTree(http.body()).at(pointer);
+        assertThat(field.isMissingNode()).as("the body has %s: %s", pointer, http.body()).isFalse();
+        return field;
+    }
+
+    private static String linkOf(JsonNode answer, String relation) {
+        JsonNode href = answer.path(LINKS).path(relation).path("href");
+        assertThat(href.isString()).as("the answer has the link %s: %s", relation, answer).isTrue();
+        return href.asString();
+    }
+
+    /** A link's href with the server prefix taken off, as the request steps expect a path below it. */
+    private static String belowBase(String href) {
+        assertThat(href).as("a link's href starts with the server prefix").startsWith(BASE + "/");
+        return href.substring(BASE.length());
     }
 
     private static @Nullable JsonNode json(String text) {
