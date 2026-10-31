@@ -17,6 +17,7 @@ class RelationSetParityTest {
     void everyRelationTheServiceBuildsIsInTheGuidesTable() {
         assertThat(RelationTable.keys())
                 .as("the relation keys of %s", RelationTable.RESOURCE)
-                .containsAll(Arrays.stream(Relation.values()).map(Relation::wireKey).toList());
+                .containsAll(
+                        Arrays.stream(Relation.values()).map(Relation::wireKey).toList());
     }
 }

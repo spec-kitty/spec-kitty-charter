@@ -7,13 +7,28 @@ package ai.speckitty.charter.packs.infra.api;
  * the enum and its wire key are public.
  */
 public enum Relation {
+    /** The resource itself. */
     SELF("self"),
+
+    /** The collection the resource belongs to: an artifact's kind list. */
     COLLECTION("collection"),
+
+    /** The service info. */
     INFO("info"),
+
+    /** The configured packs in force. */
     OFFERING("offering"),
+
+    /** A pack's artifact list, or its template. */
     ARTIFACTS("artifacts"),
+
+    /** The contract document (RFC 8631). */
     SERVICE_DESC("service-desc"),
+
+    /** The first page of a paged list. */
     FIRST("first"),
+
+    /** The next page of a paged list, absent on the last. */
     NEXT("next");
 
     private final String wireKey;

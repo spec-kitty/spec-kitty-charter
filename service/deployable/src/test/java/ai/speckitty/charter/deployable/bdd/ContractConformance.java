@@ -59,7 +59,8 @@ final class ContractConformance {
     private static final Set<String> CONSTRAINTS =
             Set.of("type", "required", "enum", "pattern", "minLength", "maxLength", "maxItems", "minimum", "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
-    private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
+    private static final Set<String> METHODS =
+            Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
 
     /**
      * One success answer the contract declares: an operation, by its method and path template, and a 2xx status.

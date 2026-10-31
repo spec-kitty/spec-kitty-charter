@@ -167,7 +167,8 @@ final class LinkChecks {
         }
         String rest = href.substring(BASE.length());
         String template = FORM_QUERY.matcher(rest).replaceFirst("");
-        boolean expressions = !template.equals(rest) || SEGMENT_VARIABLE.matcher(template).find();
+        boolean expressions =
+                !template.equals(rest) || SEGMENT_VARIABLE.matcher(template).find();
         String unread = SEGMENT_VARIABLE.matcher(template).replaceAll("");
         if (unread.contains("{") || unread.contains("}")) {
             violations.add(at + ": the href " + href + " holds an RFC 6570 form the check does not read");

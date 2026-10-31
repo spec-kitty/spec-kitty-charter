@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -54,9 +53,8 @@ class LinkChecksTest {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
                           "up": {"href": "/api/v1/packs/{packId}", "templated": true}
                         }}"""))
-                .anySatisfy(violation -> assertThat(violation)
-                        .contains("/api/v1/packs/{packId}")
-                        .contains("no GET operation"));
+                .anySatisfy(violation ->
+                        assertThat(violation).contains("/api/v1/packs/{packId}").contains("no GET operation"));
     }
 
     @Test
@@ -73,8 +71,7 @@ class LinkChecksTest {
                           "offering": {"href": "/api/v1/offering"},
                           "artifacts": {"href": "/api/v1/packs/{packId}/artifacts{?kind}", "templated": true},
                           "service-desc": {"href": "/api/v1/openapi.yaml"}
-                        }}"""))
-                .isEmpty();
+                        }}""")).isEmpty();
     }
 
     @Test
@@ -105,15 +102,19 @@ class LinkChecksTest {
         String registered = """
                 {"relationship": {"from": "directive:A", "to": "procedure:p", "type": "requires"},
                  "_links": {"artifacts": {"href": "/api/v1/packs/qa/artifacts"}}}""";
-        assertThat(check("put", "/packs/qa/relationships", null, 201, null, registered)).isEmpty();
+        assertThat(check("put", "/packs/qa/relationships", null, 201, null, registered))
+                .isEmpty();
         assertThat(check(
                         "put",
                         "/packs/qa/relationships",
                         null,
                         201,
                         null,
-                        registered.replace("\"artifacts\":", "\"self\": {\"href\": \"/api/v1/packs/qa/relationships\"}, \"artifacts\":")))
-                .anySatisfy(violation -> assertThat(violation).contains("no GET").contains("self"));
+                        registered.replace(
+                                "\"artifacts\":",
+                                "\"self\": {\"href\": \"/api/v1/packs/qa/relationships\"}, \"artifacts\":")))
+                .anySatisfy(
+                        violation -> assertThat(violation).contains("no GET").contains("self"));
     }
 
     @Test
@@ -141,8 +142,11 @@ class LinkChecksTest {
 
     @Test
     void aLinkWithAMethodIsResolvedAgainstThatMethod() {
-        String body = "{" + ITEM_LINKS.replace(
-                "\"collection\"", "\"edit\": {\"href\": \"/api/v1/packs/qa/artifacts/tactic/rehearse\", \"method\": \"PUT\"},\n  \"collection\"") + "}";
+        String body = "{"
+                + ITEM_LINKS.replace(
+                        "\"collection\"",
+                        "\"edit\": {\"href\": \"/api/v1/packs/qa/artifacts/tactic/rehearse\", \"method\": \"PUT\"},\n  \"collection\"")
+                + "}";
         assertThat(get(ITEM, null, body))
                 .anySatisfy(violation -> assertThat(violation).contains("no PUT operation"));
     }
@@ -164,8 +168,10 @@ class LinkChecksTest {
         assertThat(RelationTable.keys())
                 .contains("self", "collection", "first", "next", "service-desc", "select", "unselect")
                 .doesNotContain("Relation");
-        assertThat(Set.copyOf(RelationTable.keys(
-                        "## Relation names\n\n| Relation | On |\n|---|---|\n| `a`, `b` | x |\n\n## Next\n\n| `c` | y |\n")))
+        assertThat(
+                        Set.copyOf(
+                                RelationTable.keys(
+                                        "## Relation names\n\n| Relation | On |\n|---|---|\n| `a`, `b` | x |\n\n## Next\n\n| `c` | y |\n")))
                 .containsExactlyInAnyOrder("a", "b");
     }
 }
