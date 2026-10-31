@@ -149,7 +149,11 @@ text below is unchanged; the record stays Proposed.
   equality is not applied. This is sound while one reader compares a source and its own canonical
   write: the writer emits the loaded values, so a faithful write is equal and a stricter rule can
   only turn a real loss red, never hide one. It is not ADR-0036 meaning, and it is revisited when a
-  second reader compares two separately authored documents. Open for the operator's review.
+  second reader compares two separately authored documents. *(Ruled by the operator, 2026-10-31:
+  kept. The service decides equality on the logical domain model, not on the storage form: two pack
+  documents are equal when their `PackDocument` values are, never by their YAML or Markdown text.
+  The gate's comparison of the Markdown model gives the same answer, because `PackDocument` maps it
+  part for part.)*
 - **A pack author's `pack.md` is now judged.** A carriage return (for example from a
   `core.autocrlf` checkout), a byte order mark or an ambiguous heading in `pack.md` is now a load
   violation and a validate-mode finding, where the file was ignored before. Core does not read
