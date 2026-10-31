@@ -146,6 +146,9 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    `is a pack file of kind <kind>, not a companion`.)*
    *(Amended 2026-10-29, see Status: a companion may not claim any path a file-kind rule
    classifies, except at its own `files` rule.)*
+   *(Amended 2026-10-31, #272: that path is classified case-folded, the fold the write's claim
+   check applies, so a name that differs from a ruled file only in case, such as `PACK.md`, is
+   refused at load like the exact name.)*
 4. **Read.** An artifact whose companion breaks the rule is left out, and the store records a
    `companion` violation of its file, `<path>: <reason>` (`is empty`, `is not a valid path`,
    `missing`, `leaves the pack`, `is a YAML file`, `is not a regular file`,

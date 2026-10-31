@@ -620,6 +620,33 @@ class WholePackStoreTest {
     }
 
     /**
+     * #272: the load classifies a companion path case-folded, as the write's claim check does, so a name that differs
+     * from a ruled file only in case is refused at load like the exact name. On a case-insensitive file system
+     * {@code PACK.md} reads the bytes of {@code pack.md}; the load must not admit what the write then refuses as two
+     * parts written to one file. The refusal is by name, so it holds on any file system.
+     */
+    @ParameterizedTest(name = "body_path {0}")
+    @ValueSource(strings = {"../PACK.md", "../Pack.md", "../pack.MD"})
+    @DisplayName("a companion that names the pack document in another letter case is refused at load")
+    void aCompanionThatIsThePackDocumentInAnotherCaseIsRefused(String bodyPath, @TempDir Path host) throws IOException {
+        Path claimed = richPack(host.resolve("claimed"));
+        write(claimed, SKILL_FILE, SKILL.replace("body_path: land-pr.skill.md", "body_path: " + bodyPath));
+        write(claimed, PackDocumentMarkdown.FILE, "# P\n\nThe pack.\n");
+
+        WholePackStore.LoadedPack loaded = store.load(claimed);
+
+        assertThat(loaded.pack().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(SKILL_FILE);
+            assertThat(violation.kind()).isEqualTo("companion");
+            assertThat(violation.reason())
+                    .isEqualTo(bodyPath + ": is a pack file of kind pack-document (file-kinds rule '*/pack.md'), not a"
+                            + " companion");
+        });
+        assertThat(loaded.pack().artifacts(ArtifactKind.SKILL)).isEmpty();
+        assertThat(loaded.pack().document()).isPresent();
+    }
+
+    /**
      * One file has one owner (ADR-0039 decision 3): a skill whose body names a file the {@code payloads} rules classify
      * (a template, an asset file) is a pack inconsistency. The file stays with the rule that classifies it; the skill
      * is refused as a {@code companion} violation, so the pack is never written as if whole, and the fingerprint lists

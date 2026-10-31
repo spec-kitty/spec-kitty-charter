@@ -496,7 +496,8 @@ class ToolguideGuideTest {
     }
 
     @Test
-    @DisplayName("a companion naming the guide in another letter case is refused; a distinct name reads clean")
+    @DisplayName("a companion naming the guide in another letter case is refused as the guide's file; a distinct name"
+            + " reads clean")
     void aCaseOnlyCollisionWithTheGuideIsRefused() throws IOException {
         Path pack = PackFixtures.copyOf(PACK, host);
         Files.createDirectories(pack.resolve("skills"));
@@ -511,9 +512,13 @@ class ToolguideGuideTest {
         Files.writeString(
                 pack.resolve("skills/s.skill.yaml"),
                 skill("../toolguides/" + ID.toUpperCase(java.util.Locale.ROOT) + ".GUIDE.MD"));
+        // #272: the path is classified case-folded, so the guide's rule owns it, as it owns the exact name.
         assertThat(store.read(PACK_ID, kinds).violations())
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.reason()).endsWith("named by two artifacts"));
+                .satisfies(violation -> assertThat(violation.reason())
+                        .isEqualTo("../toolguides/" + ID.toUpperCase(java.util.Locale.ROOT) + ".GUIDE.MD: is a pack"
+                                + " file of kind toolguide-guide (file-kinds rule '**/toolguides/*.guide.md'), not a"
+                                + " companion"));
     }
 
     @Test
