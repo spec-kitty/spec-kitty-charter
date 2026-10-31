@@ -578,7 +578,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * Whether two graphs hold the same nodes, tensions and relationships. Relationships are compared field by field:
      * {@code Relationship.equals} is pair identity and ignores the relation, the condition and the rationale.
      */
-    private static boolean sameGraph(DoctrineGraph source, DoctrineGraph written) {
+    static boolean sameGraph(DoctrineGraph source, DoctrineGraph written) {
         return List.copyOf(source.nodes()).equals(List.copyOf(written.nodes()))
                 && source.tensions().equals(written.tensions())
                 && relationshipFields(source).equals(relationshipFields(written));

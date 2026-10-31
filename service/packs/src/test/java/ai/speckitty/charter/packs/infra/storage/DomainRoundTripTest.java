@@ -3,6 +3,12 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.DoctrineGraph;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Tension;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -18,7 +24,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -235,6 +243,7 @@ class DomainRoundTripTest {
                 - source: directive:b
                   target: directive:a
                   relation: requires
+                  reason: b builds on a
                 """;
         put("directive.graph.yaml", "graph-shard", source);
 
@@ -248,6 +257,31 @@ class DomainRoundTripTest {
         assertThat(comparator.compareTexts(
                         "graph-shard", source, written.replace("relation: in_tension_with", "relation: impacts")))
                 .isPresent();
+    }
+
+    @Test
+    void theReadBackComparesRelationshipsFieldByFieldWhereRelationshipEqualityIsOnlyThePair() {
+        Urn a = new Urn(NodeKind.DIRECTIVE, "a");
+        Urn b = new Urn(NodeKind.DIRECTIVE, "b");
+        DoctrineGraph withReason = new DoctrineGraph(
+                List.of(), List.of(new Relationship(b, a, RelationType.REQUIRES, Optional.empty(), Optional.of("r"))));
+        DoctrineGraph withoutReason =
+                new DoctrineGraph(List.of(), List.of(Relationship.of(b, a, RelationType.REQUIRES)));
+        DoctrineGraph otherType = new DoctrineGraph(
+                List.of(), List.of(new Relationship(b, a, RelationType.SUGGESTS, Optional.empty(), Optional.of("r"))));
+
+        // Relationship equality is the unordered pair, so graph equality cannot see these losses; the read-back does.
+        assertThat(withReason).isEqualTo(withoutReason);
+        assertThat(DomainRoundTrip.sameGraph(withReason, withoutReason)).isFalse();
+        assertThat(DomainRoundTrip.sameGraph(withReason, otherType)).isFalse();
+        assertThat(DomainRoundTrip.sameGraph(withReason, withReason)).isTrue();
+        assertThat(DomainRoundTrip.sameGraph(
+                        withReason,
+                        new DoctrineGraph(
+                                withReason.nodes(),
+                                withReason.relationships(),
+                                List.of(new Tension(a, b, Optional.empty(), Optional.empty())))))
+                .isFalse();
     }
 
     @Test
