@@ -39,6 +39,8 @@ public class CharterSteps {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final ContractConformance CONTRACT = new ContractConformance();
+    private static final LinkChecks LINK_CHECKS = new LinkChecks(CONTRACT, RelationTable.keys());
+    private static final int MAX_PAGES = 100;
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
@@ -88,6 +90,42 @@ public class CharterSteps {
                             exchange.method().toUpperCase(Locale.ROOT), exchange.path(), body)
                     .isEmpty();
         }
+    }
+
+    /**
+     * Every success answer with a JSON body is linked as {@link LinkChecks} requires: its {@code self}, every link
+     * resolving to an operation of the contract, a 201's {@code Location} and every relation key (R-20). Every success
+     * answer, JSON or not, is recorded for the operation-coverage check that runs after the last scenario
+     * ({@link OperationCoverage}).
+     */
+    @After
+    public void everySuccessAnswerIsLinked() throws Exception {
+        for (ScenarioHttp.Exchange exchange : http.exchanges()) {
+            MockHttpServletResponse response = exchange.result().getResponse();
+            OperationCoverage.record(CONTRACT, exchange.method(), exchange.path(), response.getStatus());
+            JsonNode body = json(response.getContentAsString());
+            if (!isSuccess(response) || body == null || !isJson(response.getContentType())) {
+                continue;
+            }
+            LinkChecks.Answer answer = new LinkChecks.Answer(
+                    exchange.method(),
+                    exchange.path(),
+                    exchange.query(),
+                    response.getStatus(),
+                    response.getHeader(HttpHeaders.LOCATION),
+                    body);
+            assertThat(LINK_CHECKS.violations(answer))
+                    .as("the links of %s %s", exchange.method().toUpperCase(Locale.ROOT), exchange.path())
+                    .isEmpty();
+        }
+    }
+
+    private static boolean isSuccess(MockHttpServletResponse response) {
+        return HttpStatus.valueOf(response.getStatus()).is2xxSuccessful();
+    }
+
+    private static boolean isJson(@Nullable String type) {
+        return type != null && MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type));
     }
 
     /**
@@ -394,13 +432,17 @@ public class CharterSteps {
     /**
      * Collects the {@code kind} and {@code id} of every element of {@code member} on this page and on every page its
      * {@code relation} link leads to, following the link until a page has none, and compares them with the table in
-     * order: every artifact is served exactly once, none skipped and none repeated.
+     * order: every artifact is served exactly once, none skipped and none repeated. It follows at most
+     * {@value #MAX_PAGES} pages, so a {@code next} that loops fails the step instead of hanging it.
      */
     @Then("following {string} links from the answer, the {string} ids are:")
     public void followingLinks(String relation, String member, DataTable expected) throws Exception {
         List<List<String>> seen = new ArrayList<>();
         JsonNode page = JSON.readTree(http.body());
-        while (true) {
+        for (int pages = 1; ; pages++) {
+            assertThat(pages)
+                    .as("following %s links ends within %d pages", relation, MAX_PAGES)
+                    .isLessThanOrEqualTo(MAX_PAGES);
             assertThat(http.response().getStatus())
                     .as("a followed page answers 200: %s", http.body())
                     .isEqualTo(200);

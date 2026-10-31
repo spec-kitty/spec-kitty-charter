@@ -97,7 +97,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   and expects each to answer `<n>`.
 - `Then following "<relation>" links from the answer, the "<member>" ids are:` followed by a table with the header
   `| kind | id |` — collects the `kind` and `id` of every element of `<member>` on the last answer and on every page
-  its `<relation>` link leads to, following it until a page has none, and compares them with the table in order, so
+  its `<relation>` link leads to, following it until a page has none (at most 100 pages, so a looping `next` fails
+  the step instead of hanging it), and compares them with the table in order, so
   every element is served exactly once. Each followed page must answer 200; the last one is the step's answer.
 - `When the file "<path>" of the pack "<name>" is deleted` — deletes one existing file of a configured pack, between
   two requests (a cursor's anchor that goes away between pages).
@@ -129,6 +130,23 @@ and never from the contract's declarations: a verified read, a `GET` answered 20
 but the root `/`, carries exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for
 `/info` and to what `/info` answers right after for another read; every other `GET` answer (a refusal, the root,
 `/openapi.yaml`, whose body is YAML) carries none. A write (`POST`, `PUT`) is exempt.
+
+Every 2xx answer with a JSON body is also checked for its links (R-20), statically, with no further request:
+
+- **Self.** When the contract has a `GET` for the request path, `_links.self.href` is `/api/v1` plus the request path,
+  plus the query for a `GET` with one. Otherwise a 201 with a `Location` has the `Location`'s path as its `self`, and
+  any other answer (the relationships `PUT`, whose path has no `GET`) has no `self`.
+- **Resolution.** Every link, at any depth, has an `href` under `/api/v1/` that, with its query and a trailing
+  `{?...}` expression cut off, matches a path template of `../openapi.yaml` defining the link's `method` (`GET` when
+  absent); a whole-segment `{name}` matches a template variable. Another RFC 6570 form fails the check.
+  `templated` is `true` exactly when the `href` holds an expression.
+- **Location.** On a 201 with a `Location`, its path is `_links.self.href`.
+- **Relations.** Every key of every `_links` is a relation of the table in
+  `docs/development/hypermedia-hateoas.md`, which the build copies onto the test classpath.
+
+After the last scenario, the suite fails when a success answer the contract declares, a 2xx status of an
+operation, was exercised by no scenario, and lists the gaps: a new operation or success status needs a scenario
+that calls it. A run that selects only some scenarios reports the others' operations as gaps.
 
 ## Features
 

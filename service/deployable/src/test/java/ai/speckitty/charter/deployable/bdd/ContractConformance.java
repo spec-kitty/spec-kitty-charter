@@ -37,7 +37,8 @@ import tools.jackson.databind.JsonNode;
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
  * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
  * {@code additionalProperties} ({@code false}, or a schema each undeclared member is checked against: a map such as
- * {@code Links}; {@code true}, {@code {}} and {@code null} are refused, so the contract stays closed),
+ * {@code Links}; {@code true}, {@code {}}, a mapping of annotations only and {@code null} are refused, so the contract
+ * stays closed),
  * {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength}, {@code maxItems},
  * {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
  * never ignored in silence: the check walks every schema of the contract once when it is built, not only the
@@ -447,9 +448,15 @@ final class ContractConformance {
         }
     }
 
-    /** A schema-valued {@code additionalProperties}: a mapping that constrains something; {@code {}} admits all. */
+    /**
+     * A schema-valued {@code additionalProperties}: a mapping that constrains something, with a keyword that is neither
+     * an annotation nor an {@code x-} extension. {@code {}}, or a mapping of annotations only, admits all.
+     */
     private static boolean isSchema(@Nullable Object argument) {
-        return argument instanceof Map<?, ?> map && !map.isEmpty();
+        return argument instanceof Map<?, ?> map
+                && map.keySet().stream()
+                        .map(String::valueOf)
+                        .anyMatch(key -> !ANNOTATIONS.contains(key) && !key.startsWith("x-"));
     }
 
     /** The scalar and size constraints, which never descend into the value. */

@@ -552,16 +552,17 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       | procedure |
       | bogus     |
 
-  Scenario Outline: A path kind that is not a slug is a 400 Problem without a code, not kind_not_found (<kind>)
-    When I GET "/packs/qa/artifacts/<kind>/rehearse"
+  Scenario Outline: A path kind that is not a slug is a 400 Problem without a code, before the pack is judged (<path>)
+    When I GET "<path>"
     Then the response status is 400
     And the problem has no code
     And the response has no "Charter-Source-Fingerprint" header
 
     Examples:
-      | kind    |
-      | Tactic  |
-      | -tactic |
+      | path                                  |
+      | /packs/qa/artifacts/Tactic/rehearse   |
+      | /packs/qa/artifacts/-tactic/rehearse  |
+      | /packs/nope/artifacts/Tactic/rehearse |
 
   Scenario Outline: An unknown id of a served kind is that kind's not-found refusal (<kind>)
     When I GET "/packs/qa/artifacts/<kind>/nope"
