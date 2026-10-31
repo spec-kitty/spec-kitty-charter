@@ -225,7 +225,7 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 0,
@@ -235,7 +235,8 @@
       "last_transition_at": "2026-10-31T17:15:48.261138+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Records: CHANGELOG Gate-A block consolidated (Removed/Moved/Added/Changed incl. 2026-10-31 pack.yaml ruling option A/Not yet linked/Migrating core's seam/Scenarios 106->189); ADR-0019 note, ADR-0026 D1.2 paths amendment, ADR-0018 #175 amendment (out-of-map); service-contract, architecture, roadmap, hypermedia example (out-of-map), glossary, dated changelog entry + index. check_docs all: 8/8 ok; markdownlint-cli2@0.18.1: 0 errors; cspell@9.2.0: 0 in docs (4 pre-existing in contracts CHANGELOG, outside CI scope); contracts:check green; removed-route grep: only historical hits. Last commit 7d13b5da."
+        "Records: CHANGELOG Gate-A block consolidated (Removed/Moved/Added/Changed incl. 2026-10-31 pack.yaml ruling option A/Not yet linked/Migrating core's seam/Scenarios 106->189); ADR-0019 note, ADR-0026 D1.2 paths amendment, ADR-0018 #175 amendment (out-of-map); service-contract, architecture, roadmap, hypermedia example (out-of-map), glossary, dated changelog entry + index. check_docs all: 8/8 ok; markdownlint-cli2@0.18.1: 0 errors; cspell@9.2.0: 0 in docs (4 pre-existing in contracts CHANGELOG, outside CI scope); contracts:check green; removed-route grep: only historical hits. Last commit 7d13b5da.",
+        "Review passed: CHANGELOG Gate-A block cross-checked against openapi.yaml (15 ops, removed/moved/added exact, fingerprint required only on getServiceInfo/getOffering/listPackArtifacts/getPackArtifact 200s, Link header on info 200 only, 20 2xx statuses, kind_not_found raised, OfferingPack name+version required per 2026-10-31 option-A ruling, no edit link); scenario counts 106->189 verified statically (133/216 @contract minus 27 @WIP); 5 new lint rules + narrowed one match ruleset (13->18) and README; ADR-0019 note, ADR-0026 D1.2 paths-only amendment, ADR-0018 dated #175 note, decision texts unchanged, no new ADR; docs, glossary, changelog entry + index OK, no older dated entries edited; check_docs all ok, markdownlint 0, cspell 0, :contracts:check green. Shared-file note: CHANGELOG.md and hypermedia-hateoas.md also touched by WP01-WP06 in the same lane (sequential, consolidated here). Follow-up (outside WP07 map): CharterRefusalCode.yaml description still says a missing/invalid pack.yaml never refuses a tactic read and names 'both tactic reads' - stale after the 2026-10-31 ruling."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
