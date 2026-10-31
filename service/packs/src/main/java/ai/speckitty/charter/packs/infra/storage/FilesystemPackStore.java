@@ -63,6 +63,18 @@ import org.jspecify.annotations.Nullable;
  */
 final class FilesystemPackStore {
 
+    /** Why bytes that are not UTF-8 are not read, said of a file or of a companion's path (#273). */
+    static final String NOT_UTF8_REASON = "is not valid UTF-8";
+
+    /** Why bytes that cannot be read at all are not read, said of a file or of a companion's path. */
+    static final String UNREADABLE_REASON = "cannot be read";
+
+    /** Why a file whose bytes are not UTF-8 is not read: one wording for the store's load and validate mode (#273). */
+    static final String NOT_UTF8 = "the file " + NOT_UTF8_REASON;
+
+    /** Why a file whose bytes cannot be read at all is not read. */
+    static final String UNREADABLE = "the file " + UNREADABLE_REASON;
+
     /**
      * The failure-injection seam: the second step of a write, moving the fully written temporary file over the
      * target. The default is an {@code ATOMIC_MOVE}; a test supplies one that throws.
@@ -1006,12 +1018,22 @@ final class FilesystemPackStore {
     // ---- reading -------------------------------------------------------------------------------------------------
 
     private static <T> FileRead<T> readFile(Path path, String file, Function<String, FileRead<T>> reader) {
-        Optional<String> text = readText(path);
+        Optional<byte[]> bytes = readBytes(path);
+        Optional<String> text = bytes.flatMap(FilesystemPackStore::decodeUtf8);
         if (text.isEmpty()) {
-            return new FileRead.Unreadable<>(
-                    file, new ParseFailure(file, "the file cannot be read as UTF-8 text"), List.of());
+            return new FileRead.Unreadable<>(file, new ParseFailure(file, notText(bytes)), List.of());
         }
         return reader.apply(text.get());
+    }
+
+    /**
+     * Why a file has no text: its bytes cannot be read ({@link #UNREADABLE}), or they are not UTF-8 ({@link #NOT_UTF8}).
+     *
+     * @param bytes the file's bytes, as {@link #readBytes} read them
+     * @return the reason, as the store's load and validate mode word it
+     */
+    static String notText(Optional<byte[]> bytes) {
+        return bytes.isEmpty() ? UNREADABLE : NOT_UTF8;
     }
 
     /**
@@ -1031,18 +1053,27 @@ final class FilesystemPackStore {
 
     /** The file's text; empty when its bytes are not UTF-8 or it cannot be read. */
     static Optional<String> readText(Path path) {
-        return readBytes(path).flatMap(bytes -> {
-            try {
-                return Optional.of(StandardCharsets.UTF_8
-                        .newDecoder()
-                        .onMalformedInput(CodingErrorAction.REPORT)
-                        .onUnmappableCharacter(CodingErrorAction.REPORT)
-                        .decode(ByteBuffer.wrap(bytes))
-                        .toString());
-            } catch (CharacterCodingException e) {
-                return Optional.empty();
-            }
-        });
+        return readBytes(path).flatMap(FilesystemPackStore::decodeUtf8);
+    }
+
+    /**
+     * A strict UTF-8 view over bytes: a malformed or unmappable sequence is refused, never replaced. The one decoder of
+     * the store's load and validate mode, so the two refuse the same files (#273).
+     *
+     * @param bytes the bytes
+     * @return the text; empty when the bytes are not valid UTF-8
+     */
+    static Optional<String> decodeUtf8(byte[] bytes) {
+        try {
+            return Optional.of(StandardCharsets.UTF_8
+                    .newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes))
+                    .toString());
+        } catch (CharacterCodingException e) {
+            return Optional.empty();
+        }
     }
 
     /**

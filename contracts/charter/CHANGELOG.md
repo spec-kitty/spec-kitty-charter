@@ -140,6 +140,13 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+### One wording for a pack file that is not UTF-8 (issue #273)
+
+No schema, operation, parameter, response or header changes in this contract. A pack file whose bytes are not valid
+UTF-8 is refused by validate mode with the detail `<pack>/<file> is not valid YAML: the file is not valid UTF-8`, as
+before. The service's own load now words the refusal the same way: it said `the file cannot be read as UTF-8 text`.
+That reason is not answered by any operation of this contract.
+
 ### The charter schema declares `activated_skills` and `activated_anti_patterns` (issue #283)
 
 No schema, operation, parameter, response or header changes in this contract; the change is to the pack schema

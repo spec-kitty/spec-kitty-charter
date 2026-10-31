@@ -18,10 +18,6 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -76,8 +72,6 @@ public final class FileSystemPackInspector implements PackInspector {
 
     private static final String RESERVED_SHARD = RelationshipShard.SHARD_PATH
             + " is reserved for registered relationships and cannot be a source graph shard; rename the shard";
-
-    private static final String NOT_UTF8 = "the file is not valid UTF-8";
 
     private static final String MARKDOWN = ".md";
 
@@ -579,18 +573,10 @@ public final class FileSystemPackInspector implements PackInspector {
         } catch (IOException e) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, packName + "/" + file + " cannot be read", e);
         }
-        String text;
-        try {
-            text = StandardCharsets.UTF_8
-                    .newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(bytes))
-                    .toString();
-        } catch (CharacterCodingException e) {
-            return new FileRead.Unreadable<>(file, new ParseFailure(file, NOT_UTF8), List.of());
-        }
-        return reader.apply(text);
+        return FilesystemPackStore.decodeUtf8(bytes)
+                .map(reader)
+                .orElseGet(() -> new FileRead.Unreadable<>(
+                        file, new ParseFailure(file, FilesystemPackStore.NOT_UTF8), List.of()));
     }
 
     /** A root shard; the name the registration store writes to is reserved, so a source shard under it is refused. */

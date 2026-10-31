@@ -219,11 +219,12 @@ public final class WholePackStore {
 
     /** The manifest's text read through the format, or why it cannot be read; the store never parses it. */
     private FileRead<PackManifestDso> readManifest(Path file) {
-        return FilesystemPackStore.readText(file)
+        Optional<byte[]> bytes = FilesystemPackStore.readBytes(file);
+        return bytes.flatMap(FilesystemPackStore::decodeUtf8)
                 .map(text -> strategy.readManifest(text, PackFileSet.MANIFEST))
                 .orElseGet(() -> new FileRead.Unreadable<>(
                         PackFileSet.MANIFEST,
-                        new ParseFailure(PackFileSet.MANIFEST, "the file cannot be read as UTF-8 text"),
+                        new ParseFailure(PackFileSet.MANIFEST, FilesystemPackStore.notText(bytes)),
                         List.of()));
     }
 
