@@ -282,6 +282,27 @@ class StorageRootLocationsTest {
     }
 
     @Test
+    void aPackDomainLinkedIntoTheActivationsDomainListsNothingAndIsReportedOnce() throws IOException {
+        Path activations = Files.createDirectories(packs.resolveSibling(ConfigRoot.ACTIVATIONS));
+        Files.createDirectories(activations.resolve("01ACTIVATION/nested"));
+        for (Path target : List.of(activations, activations.resolve("01ACTIVATION"))) {
+            Files.deleteIfExists(packs);
+            link(packs, target);
+            StorageRootLocations locations = new StorageRootLocations(packs);
+
+            try (LogCapture log = new LogCapture()) {
+                assertThat(locations.all())
+                        .as("an activation directory is never served, nor written, as a pack (%s)", target)
+                        .isEmpty();
+                locations.all();
+                assertThat(log.warnings())
+                        .singleElement()
+                        .satisfies(warning -> assertThat(warning).contains("pack domain", "activations domain"));
+            }
+        }
+    }
+
+    @Test
     void aPackDomainLinkedToTheConfigRootOrAboveItListsNothingAndIsReportedOnce() throws IOException {
         Files.delete(packs);
         link(packs, host);
