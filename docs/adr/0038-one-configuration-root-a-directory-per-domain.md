@@ -157,7 +157,8 @@ the part of decision 3 that refused symbolic links.
   copy beside it, named after the target, and the link dangling. The link is then refused as one
   that does not resolve. As for a plain pack, whose missing directory is not listed either, the
   repair `PackCommitStore` runs before a write is not reached for a pack listed from `packs/`. Move
-  the aside copy back by hand. Making that repair reachable is a follow-up for both kinds of pack.
+  the aside copy back by hand. Making that repair reachable, for both kinds of pack, is
+  [#281](https://github.com/spec-kitty/spec-kitty-charter/issues/281).
 - **Residual race.** A link pointed elsewhere between the listing and a commit's own resolution is
   committed to its new target without the listing's checks, the read-only check aside, which the
   commit makes on the target it resolves. Whoever can do that can already write to `packs/`, so it
