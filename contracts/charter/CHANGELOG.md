@@ -77,6 +77,29 @@ Toolguide guide over HTTP (mission procedure-antipattern-toolguide-round-trip, i
   with:`; a binding answers the guide host itself and opens no socket. The scenario check now implements
   `maxItems`.
 
+Gate-A read surface (mission gate-a-read-surface, #126, #175, #176; operator rulings of 2026-10-31). Breaking on
+the 0.x line, which ADR-0022 allows; no release carried the old shape.
+
+- Changed: `Charter-Source-Fingerprint` is declared `required: true` on the 200 of every verified read
+  (`getServiceInfo` and the pack reads: `listPackTactics`, `getPackTactic`, `listPackDirectives`,
+  `getPackDirective`, `listPackStyleguides`, `getPackStyleguide`, `listPackParadigms`, `getPackParadigm`,
+  `listPackToolguides`, `getPackToolguide`), where it was optional (#175, ruling 4). It is no longer declared on any
+  other response: not on a refusal (401, 403, 404, 409, 422, 500 and the shared `default` `Problem`), not on a
+  registration's 200 or 201, and not on `getOpenApiDocument`'s 200 or 304. The service already sent it only on
+  those 200s; the contract now says so.
+- Changed (lint): `charter-headers-on-every-response` requires only `Charter-Contract-Version` and
+  `Charter-Worktree`. Two new rules govern the fingerprint: `fingerprint-on-verified-reads` (the 200 of every `GET`
+  other than `/` and `/openapi.yaml` declares it `required: true`) and `fingerprint-only-on-verified-reads` (no
+  other response, write, refusal, contract-document answer or shared component response declares it). Each has
+  planted fixtures; the `missing-fingerprint` fixture of the narrowed rule is now `missing-worktree`.
+- Changed: `OfferingUnreadable` (the 500 of every read and registration) carries the examples `pack-unreadable`
+  and `stale-input`, and its description names only the codes the service raises with 500: `pack_unreadable`,
+  `stale_input` and `internal_error`. It named `pack_level_mismatch` and `drg_schema_error`, which no operation
+  raises (#176). The toolguide registrations' 409 no longer names the reserved `governance_policy_violation`.
+- Added: a raised-code check, `checkRefusalExamples` in `:contracts:check`. It reads the raised codes from
+  `CharterRefusalCode`'s `x-refusal` map and fails a `CharterRefusal` example whose `code` is not raised, and a
+  response description that names a code of the map that is not raised (#176).
+
 ### The charter schema declares `activated_glossary_packs` (issue #131)
 
 No schema, operation, parameter, response or header changes in this contract; the change is to the pack schema
