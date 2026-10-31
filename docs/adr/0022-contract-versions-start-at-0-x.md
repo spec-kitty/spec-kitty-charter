@@ -2,7 +2,7 @@
 title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable"
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -110,6 +110,11 @@ The first release does not wait for the reshape of ADR-0019 and ADR-0020. The or
 2. **The next minors:** the activation set and its document first, because core's deny-list work
    depends on it; then the `/offering` move, the API root and `_links`; then the hosted-first
    reshape. The exact grouping is planned in the tracker.
+
+*Note, 2026-10-31 (operator ruling on #125 and #126):* 0.1.0 was held, so the activation set (#125) and the
+offering reads, API root and `_links` (#126) land inside the unreleased `0.1.0-SNAPSHOT`, under its `### Breaking`
+subsection, instead of in the minors after it. The order of step 2 holds; it now falls before the first release.
+See ADR-0020's amendment of 2026-10-31.
 
 This cuts the time core waits for its first client from "the whole reshape" to "one defect fix".
 Rejected: publishing nothing until the reshape is done, which delays the feedback this record
