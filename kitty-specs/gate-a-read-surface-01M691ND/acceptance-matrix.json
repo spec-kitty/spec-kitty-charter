@@ -2,7 +2,7 @@
   "mission_slug": "gate-a-read-surface-01M691ND",
   "mission_number": "",
   "mission_type": "",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -177,11 +177,11 @@
     {
       "criterion_id": "FR-018",
       "description": "Verify FR-018 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "code_review",
+      "evidence": "Manual review (lane 6433dab2): grep for removed per-kind routes/operationIds over docs/development/hypermedia-hateoas.md, docs/api/service-contract.md, docs/adr/0019-*.md, docs/adr/0026-*.md, contracts/charter/scenarios/README.md, contracts/lint/README.md, contracts/_shared/VENDORED.md -> 0 hits; all 7 changed vs main; ADR-0019 implementation note 2026-10-31 describes generic tree, root, offering, Links, no edit link; ADR-0026 D1.2 amendment note (paths only); hypermedia guide relation table gains first/next/service-desc (RelationTableParityTest green). Observation outside FR-018's named records: contracts/charter/schemas/CharterRefusalCode.yaml description keeps stale sentences (pack.yaml never refuses a tactic read; 'both tactic reads'). verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:24:05.536046+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     }
   ],
