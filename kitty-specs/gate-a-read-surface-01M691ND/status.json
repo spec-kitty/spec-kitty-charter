@@ -157,7 +157,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -168,7 +168,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "GET / (getApiRoot) and GET /offering (getOffering), ServiceInfo._links and the service-desc Link header (info 200 only), PackCatalogRepository/ConfiguredPack port, PackDescriptorRepository.find (absent vs invalid), OfferingReadService (configured level, then code-point id). Fingerprint hook: GET+200+JSON+path != / (own rule). verifyAll green: deployable 462 (CharterContractSuite 162 -> 186), packs 2294 (3 skipped), kernel 841, missions 59, profiles 9, 0 failing; ArchUnit unchanged. Option A (operator ruling of 2026-10-31, configured pack without pack.yaml is 500 pack_unreadable on /offering, the list and the item) in commit 17bd12ab, red b0e1f3d1, fixture fix 27189f83. Complexity max 8 on changed methods.",
-        "Cycle 2: pack.yaml check inside the item's verified read; race test added. Red bff203cd (3 failing: race answered 200 for tactic and directive; lookup before any digest), fix 61c824eb (outer read.read around judgeDescriptor + kind read, stale unless the kind fingerprint equals the outer digest). verifyAll green: deployable 462 (suite 186), packs 2297 (3 skipped), kernel 841, missions 59, profiles 9. Complexity max=15 clean; item 3, servedItem 6."
+        "Cycle 2: pack.yaml check inside the item's verified read; race test added. Red bff203cd (3 failing: race answered 200 for tactic and directive; lookup before any digest), fix 61c824eb (outer read.read around judgeDescriptor + kind read, stale unless the kind fingerprint equals the outer digest). verifyAll green: deployable 462 (suite 186), packs 2297 (3 skipped), kernel 841, missions 59, profiles 9. Complexity max=15 clean; item 3, servedItem 6.",
+        "Review passed (cycle 2): item judges pack.yaml and reads the artifact inside one outer ConsistentRead whose digest must equal the kind's fingerprint, closing the cycle-1 TOCTOU; red race test genuine (fails at bff203cd); changed tests keep intent; packs 2297/0, deployable 462/0; CC<=15; no suppressions. NITs: spec FR-002 stale text, 40f60bed backslash, item now 4 digests (acceptable)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
