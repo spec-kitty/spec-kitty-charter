@@ -76,6 +76,18 @@ public final class DomainRepositoryService
          * @return every configured pack location
          */
         List<PackLocation> all();
+
+        /**
+         * Why a commit may not write the pack whose live directory is {@code realDirectory}, or empty when it may. The
+         * default writes every configured pack; the pack domain keeps a pack linked from outside the configuration root
+         * read-only (ADR-0038 as amended 2026-10-31).
+         *
+         * @param realDirectory the pack's live directory, its real path
+         * @return the reason, to follow the pack's name in a refusal; empty when it may be written
+         */
+        default Optional<String> whyReadOnly(Path realDirectory) {
+            return Optional.empty();
+        }
     }
 
     private final Locations locations;

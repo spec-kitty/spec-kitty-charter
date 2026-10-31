@@ -97,6 +97,23 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
         return List.copyOf(out);
     }
 
+    /**
+     * A pack whose real directory is outside the configuration root, a link's target elsewhere, is read-only through the
+     * service: a commit would replace a directory the service does not own (ADR-0038 as amended 2026-10-31).
+     */
+    @Override
+    public Optional<String> whyReadOnly(Path realDirectory) {
+        Path configRoot = packs.getParent();
+        try {
+            if (configRoot != null && realDirectory.startsWith(configRoot.toRealPath())) {
+                return Optional.empty();
+            }
+        } catch (IOException unresolved) {
+            // A configuration root that cannot be resolved owns nothing to write.
+        }
+        return Optional.of("is linked from outside the configuration root; it is read-only through the service");
+    }
+
     /** An entry that resolves to a directory, with that directory's real path. */
     private record Candidate(Path entry, Path real) {
         /** Whether the two resolve to one directory, or one's directory holds the other's. */
