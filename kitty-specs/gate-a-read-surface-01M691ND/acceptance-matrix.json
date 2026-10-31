@@ -78,10 +78,10 @@
       "criterion_id": "FR-008",
       "description": "Verify FR-008 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "schemas/Links.yaml (open map -> Link) + Link.yaml (closed, href required); bundle: every 2xx application/json schema (20 responses, ApiRoot/ServiceInfo/Offering/ArtifactPage/Artifact/RelationshipRegistered) requires _links; lint rule success-schemas-carry-links + fixture; CharterSteps.everySuccessAnswerIsLinked after-hook (LinkChecks self check, R-13 relationships exemption); ContractConformance after-hook; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:02.100104+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
