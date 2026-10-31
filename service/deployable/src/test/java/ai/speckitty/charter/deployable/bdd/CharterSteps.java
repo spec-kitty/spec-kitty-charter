@@ -307,7 +307,9 @@ public class CharterSteps {
     @Then("the path of the Location header is the href of the link {string}")
     public void locationIsLink(String relation) throws Exception {
         String location = http.response().getHeader(HttpHeaders.LOCATION);
-        assertThat(location).as("the response carries a Location: %s", http.body()).isNotNull();
+        assertThat(location)
+                .as("the response carries a Location: %s", http.body())
+                .isNotNull();
         assertThat(URI.create(location).getRawPath()).isEqualTo(linkOf(JSON.readTree(http.body()), relation));
     }
 

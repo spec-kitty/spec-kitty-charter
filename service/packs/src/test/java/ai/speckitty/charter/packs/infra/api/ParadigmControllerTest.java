@@ -1,6 +1,5 @@
 package ai.speckitty.charter.packs.infra.api;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -13,11 +12,9 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
-import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -33,17 +30,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-/** The HTTP contract of the paradigm routes: status, headers and body shape. The rules are the services' own tests. */
+/**
+ * The HTTP contract of the paradigm registrations: status, headers and the envelope they answer. The reads are
+ * {@code ArtifactControllerTest}'s; the rules are the services' own tests.
+ */
 class ParadigmControllerTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
-    private static final String DIGEST = "sha256:" + "7".repeat(64);
-    private static final String FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ParadigmController(
-                    new ParadigmReadService(store, store, new ConsistentRead(() -> DIGEST), store),
-                    new ParadigmRegistrationService(store, store, new PermissiveWritePolicyGate())))
+                    new ParadigmRegistrationService(store, store, new PermissiveWritePolicyGate()),
+                    new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler())
             .build();
 
@@ -52,49 +50,25 @@ class ParadigmControllerTest {
     }
 
     @Test
-    void listsThePacksParadigmsAsJson() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/paradigms"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value("clean-architecture"))
-                .andExpect(jsonPath("$[0].name").value("Clean Architecture"))
-                .andExpect(jsonPath("$[0].relationships").isArray())
-                .andExpect(jsonPath("$[0].relationships[0].to").value("directive:ALPHA"));
-    }
-
-    @Test
-    void returnsOneParadigmWithAnEtag() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/paradigms/clean-architecture"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("clean-architecture"))
-                .andExpect(jsonPath("$.summary").value("Summary of clean-architecture"));
-    }
-
-    @Test
-    void anAbsentParadigmIsA404Problem() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/paradigms/missing"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("paradigm_not_found"));
-    }
-
-    @Test
     void registersANewParadigmWithLocationAndEtag() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/paradigms")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("hexagonal")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/paradigms/hexagonal"))
+                .andExpect(header().string(
+                                "Location", "http://localhost/api/v1/packs/pack-a/artifacts/paradigm/hexagonal"))
                 .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("hexagonal"));
+                .andExpect(jsonPath("$.kind").value("paradigm"))
+                .andExpect(jsonPath("$.id").value("hexagonal"))
+                .andExpect(jsonPath("$.packId").value("pack-a"))
+                .andExpect(jsonPath("$.paradigm.id").value("hexagonal"))
+                .andExpect(jsonPath("$._links.self.href").value("/api/v1/packs/pack-a/artifacts/paradigm/hexagonal"))
+                .andExpect(jsonPath("$._links.collection.href").value("/api/v1/packs/pack-a/artifacts?kind=paradigm"));
     }
 
     @Test
     void aDuplicateIdPostIsA409() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/paradigms")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("clean-architecture")))
                 .andExpect(status().isConflict())
@@ -103,7 +77,7 @@ class ParadigmControllerTest {
 
     @Test
     void aPutReplacesAndAnswers200() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/paradigms/clean-architecture")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/clean-architecture")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("clean-architecture")))
                 .andExpect(status().isOk())
@@ -112,7 +86,7 @@ class ParadigmControllerTest {
 
     @Test
     void aStaleIfMatchOnAPutIsA412PlainProblem() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/paradigms/clean-architecture")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/clean-architecture")
                         .header("If-Match", "sha256:" + "0".repeat(64))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("clean-architecture")))
@@ -124,7 +98,7 @@ class ParadigmControllerTest {
     void aBodyRelationshipOfAnUnknownKindIsA422() throws Exception {
         String bad = "{\"id\":\"hexagonal\",\"schemaVersion\":\"1.0\",\"name\":\"Hexagonal\",\"summary\":\"ports\","
                 + "\"relationships\":[{\"from\":\"paradigm:hexagonal\",\"to\":\"nonsense:x\",\"type\":\"requires\"}]}";
-        mvc.perform(post("/api/v1/packs/pack-a/paradigms")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
                 .andExpect(status().is(422))

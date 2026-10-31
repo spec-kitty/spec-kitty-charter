@@ -80,7 +80,9 @@ public class RegistrationSteps {
     @Then("the field at {string} is the lines:")
     public void fieldLines(String pointer, String lines) throws Exception {
         JsonNode field = JSON.readTree(http.body()).at(pointer);
-        assertThat(field.isString()).as("%s is a string: %s", pointer, http.body()).isTrue();
+        assertThat(field.isString())
+                .as("%s is a string: %s", pointer, http.body())
+                .isTrue();
         assertThat(field.asString()).isEqualTo(lines + "\n");
     }
 

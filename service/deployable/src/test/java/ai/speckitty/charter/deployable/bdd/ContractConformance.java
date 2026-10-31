@@ -43,8 +43,10 @@ import tools.jackson.databind.JsonNode;
  * ones a body reaches. The contract tree is a constructor argument, so the fail-closed branches are tested over
  * fixtures.
  *
- * <p>Not routed through here, as no scenario can provoke them: the {@code 405} of a method the path does not have
- * and the container's {@code /error} page, pinned in {@code ProblemResponsesTest}; and what Tomcat answers before
+ * <p>A {@code 405} of a method a path of the contract does not define ({@code removed-routes.feature}) is routed through
+ * here as a path no operation defines for the method: the shared {@code Problem}; its {@code Allow} header is pinned in
+ * {@code ProblemResponsesTest}. Not routed through here, as no scenario can provoke them: the container's
+ * {@code /error} page, pinned in {@code ProblemResponsesTest}; and what Tomcat answers before
  * routing (a malformed path, a missing {@code Host}, an oversized header, {@code TRACE}), pinned in
  * {@code ConnectorErrorsTest}. Both assert the closed {@code Problem} body literally.
  */

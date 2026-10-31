@@ -22,7 +22,8 @@ class ContractConformanceTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String PROBLEM_JSON = "application/problem+json";
-    private static final String CONTEXT = "/packs/p1/tactics/t1";
+    private static final String CONTEXT = "/packs/p1/artifacts/tactic/t1";
+    private static final String LIST = "/packs/p1/artifacts";
 
     private final ContractConformance contract = new ContractConformance();
 
@@ -64,7 +65,7 @@ class ContractConformanceTest {
 
     @Test
     void aContentTypeTheResponseDoesNotDeclareIsAViolation() {
-        assertThat(contract.violations("get", "/packs/p1/tactics", 200, "text/plain", json("{}")))
+        assertThat(contract.violations("get", LIST, 200, "text/plain", json("{}")))
                 .singleElement()
                 .asString()
                 .contains("declares no content of type 'text/plain'");
@@ -72,10 +73,9 @@ class ContractConformanceTest {
 
     @Test
     void aStatusTheOperationDoesNotListIsCheckedAgainstItsDefaultProblem() {
-        assertThat(contract.violations(
-                        "get", "/packs/p1/tactics", 406, PROBLEM_JSON, json("{\"title\":\"t\",\"status\":406}")))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, json("{\"title\":\"t\",\"status\":406}")))
                 .isEmpty();
-        assertThat(contract.violations("get", "/packs/p1/tactics", 406, PROBLEM_JSON, json("{\"title\":\"t\"}")))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, json("{\"title\":\"t\"}")))
                 .containsExactly("$ lacks the required member 'status'");
     }
 
@@ -94,20 +94,23 @@ class ContractConformanceTest {
         String tactic = "{\"id\":\"t1\",\"schemaVersion\":\"1\",\"name\":\"n\",\"purpose\":null,"
                 + "\"notes\":null,\"steps\":[{\"title\":\"s\",\"description\":null,\"examples\":[],"
                 + "\"references\":[]}],\"failureModes\":[],\"appliesToLanguages\":[],\"references\":[]}";
-        assertThat(contract.violations("get", "/packs/p1/tactics", 200, "application/json", json("[" + tactic + "]")))
+        String envelope = "{\"kind\":\"tactic\",\"id\":\"t1\",\"packId\":\"p1\",\"tactic\":%s,"
+                + "\"_links\":{\"self\":{\"href\":\"/api/v1/packs/p1/artifacts/tactic/t1\"},"
+                + "\"collection\":{\"href\":\"/api/v1/packs/p1/artifacts?kind=tactic\"}}}";
+        assertThat(contract.violations("get", CONTEXT, 200, "application/json", json(envelope.formatted(tactic))))
                 .isEmpty();
         assertThat(contract.violations(
                         "get",
-                        "/packs/p1/tactics/t1",
+                        CONTEXT,
                         200,
                         "application/json",
-                        json(tactic.replace("\"notes\":null,", ""))))
-                .containsExactly("$ lacks the required member 'notes'");
+                        json(envelope.formatted(tactic.replace("\"notes\":null,", "")))))
+                .containsExactly("$.tactic lacks the required member 'notes'");
     }
 
     @Test
     void aBodyThatIsNotJsonIsAViolation() {
-        assertThat(contract.violations("get", "/packs/p1/tactics", 406, PROBLEM_JSON, null))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, null))
                 .containsExactly("the 406 body is not JSON");
     }
 

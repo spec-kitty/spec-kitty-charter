@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -61,8 +62,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The HTTP shape of the generic artifact reads: the envelope of each kind, the links, the cursor round trip and the
- * 400s the adapter answers. The read rules are {@code ArtifactReadServiceTest}'s.
+ * The HTTP shape of the generic artifact reads, the only reads of a pack's artifacts: the envelope of each kind, the
+ * links, the ETag of a writable kind, the refusals, the cursor round trip and the 400s the adapter answers. The read rules are {@code ArtifactReadServiceTest}'s.
  */
 class ArtifactControllerTest {
 
@@ -121,9 +122,14 @@ class ArtifactControllerTest {
     private final MockMvc mvc;
 
     ArtifactControllerTest() {
+        controller = controller(new ConsistentRead(() -> DIGEST), ignored -> REVISION);
+        mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
+                .build();
+    }
+
+    private ArtifactController controller(ConsistentRead read, PackRevisions revisions) {
         InMemoryStore store = new InMemoryStore();
-        ConsistentRead read = new ConsistentRead(() -> DIGEST);
-        PackRevisions revisions = ignored -> REVISION;
         ArtifactReadService reads = new ArtifactReadService(
                 store,
                 read,
@@ -132,10 +138,7 @@ class ArtifactControllerTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions));
-        controller = new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
-        mvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
-                .build();
+        return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
     // ---- the item ---------------------------------------------------------------------------------------------
@@ -152,6 +155,10 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.packId").value("qa"))
                 .andExpect(jsonPath("$.tactic.name").value("Rehearse"))
                 .andExpect(jsonPath("$.tactic.purpose").value((Object) null))
+                .andExpect(jsonPath("$.tactic.notes").value((Object) null))
+                .andExpect(jsonPath("$.tactic.steps.length()").value(1))
+                .andExpect(jsonPath("$.tactic.steps[0].title").value("Only step"))
+                .andExpect(jsonPath("$.tactic.failureModes.length()").value(0))
                 .andExpect(jsonPath("$.directive").doesNotExist())
                 .andExpect(jsonPath("$._links.self.href").value(BASE + "/tactic/rehearse"))
                 .andExpect(jsonPath("$._links.self.templated").doesNotExist())
@@ -182,6 +189,27 @@ class ArtifactControllerTest {
     }
 
     @Test
+    void theItemEtagIsTheRevisionTheBodyWasReadAt() throws Exception {
+        AtomicInteger commits = new AtomicInteger();
+        String readAt = PackRevision.compute(List.of("commit:0")).token();
+        AtomicInteger digests = new AtomicInteger();
+        // A commit lands just after the read's closing digest, which still saw the files the body came from.
+        ConsistentRead racing = new ConsistentRead(() -> {
+            if (digests.incrementAndGet() == 2) {
+                commits.incrementAndGet();
+            }
+            return DIGEST;
+        });
+        MockMvcBuilders.standaloneSetup(
+                        controller(racing, ignored -> PackRevision.compute(List.of("commit:" + commits.get()))))
+                .build()
+                .perform(get(BASE + "/directive/GUARD"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("ETag", "\"" + readAt + "\""));
+        assertThat(commits.get()).as("the commit landed during the read").isEqualTo(1);
+    }
+
+    @Test
     void aToolguideMemberCarriesItsGuideWithTheH1FromItsTitle() throws Exception {
         mvc.perform(get(BASE + "/toolguide/git"))
                 .andExpect(status().isOk())
@@ -204,6 +232,22 @@ class ArtifactControllerTest {
         mvc.perform(get("/api/v1/packs/nope/artifacts/bogus/x"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("pack_not_found"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "tactic, tactic_not_found",
+        "directive, directive_not_found",
+        "styleguide, styleguide_not_found",
+        "paradigm, paradigm_not_found",
+        "toolguide, toolguide_not_found",
+    })
+    void anUnknownIdOfAServedKindIsThatKindsNotFound(String kind, String code) throws Exception {
+        mvc.perform(get(BASE + "/" + kind + "/missing"))
+                .andExpect(status().isNotFound())
+                .andExpect(header().doesNotExist(FINGERPRINT))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value(code));
     }
 
     // ---- the list ---------------------------------------------------------------------------------------------
@@ -311,7 +355,10 @@ class ArtifactControllerTest {
     void anUnknownPackIsPackNotFoundOnTheList() throws Exception {
         mvc.perform(get("/api/v1/packs/nope/artifacts"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("pack_not_found"));
+                .andExpect(header().doesNotExist(FINGERPRINT))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("pack_not_found"))
+                .andExpect(jsonPath("$.status").value(404));
     }
 
     /** Every port the reads ask, over the one pack; another pack is unreadable, as storage refuses it. */

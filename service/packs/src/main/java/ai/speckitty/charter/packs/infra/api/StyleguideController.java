@@ -1,16 +1,16 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.StyleguidesApi;
-import ai.speckitty.charter.api.model.Styleguide;
+import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.StyleguideReadService;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.ConfigValue;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
@@ -24,16 +24,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The inbound REST adapter for a pack's styleguides: {@code GET}/{@code POST} on the collection and
- * {@code GET}/{@code PUT} on one styleguide (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). A
- * faithful copy of {@link ai.speckitty.charter.packs.infra.api.DirectiveController}, substituting the styleguide
- * types. The read is a thin projection of {@link StyleguideReadService}; the writes delegate to
- * {@link StyleguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
+ * The inbound REST adapter for registering a pack's styleguides under the artifact tree: {@code POST
+ * /packs/{packId}/artifacts/styleguide} and {@code PUT /packs/{packId}/artifacts/styleguide/{artifactId}} (ADR-0026
+ * functional registration; no {@code DELETE}/{@code PATCH}). A faithful copy of
+ * {@link ai.speckitty.charter.packs.infra.api.DirectiveController}, substituting the styleguide types. A styleguide is
+ * read through the generic {@link ArtifactController}; each write answers the written styleguide in the same
+ * {@code Artifact} envelope. The writes delegate to {@link StyleguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). A styleguide mints no
@@ -48,39 +48,22 @@ public class StyleguideController implements StyleguidesApi {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    private final StyleguideReadService reads;
     private final StyleguideRegistrationService registrations;
+    private final Hypermedia links;
 
     /**
-     * A controller over the styleguide read and registration use cases.
+     * A controller over the styleguide registration use case.
      *
-     * @param reads the read use case
      * @param registrations the registration use case
+     * @param links the link builder of the answers
      */
-    public StyleguideController(StyleguideReadService reads, StyleguideRegistrationService registrations) {
-        this.reads = reads;
+    StyleguideController(StyleguideRegistrationService registrations, Hypermedia links) {
         this.registrations = registrations;
+        this.links = links;
     }
 
     @Override
-    public ResponseEntity<List<Styleguide>> listPackStyleguides(String packId) {
-        var verified = reads.styleguidesOf(new PackIdentifier(packId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(ArtifactDtos::styleguide).toList());
-    }
-
-    @Override
-    public ResponseEntity<Styleguide> getPackStyleguide(String packId, String styleguideId) {
-        var verified = reads.styleguideWithRevision(new PackIdentifier(packId), new StyleguideIdentifier(styleguideId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(verified.value().revision().token())
-                .body(ArtifactDtos.styleguide(verified.value().value()));
-    }
-
-    @Override
-    public ResponseEntity<Styleguide> registerPackStyleguide(String packId, StyleguideRegistration body) {
+    public ResponseEntity<Artifact> registerPackStyleguide(String packId, StyleguideRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Styleguide styleguide = assemble(
@@ -99,21 +82,20 @@ public class StyleguideController implements StyleguidesApi {
                 body.getReferences());
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, false, null);
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri())
+        Artifact written = ArtifactDtos.envelope(ArtifactKind.STYLEGUIDE, pack, id, links)
+                .styleguide(ArtifactDtos.styleguide(styleguide));
+        return ResponseEntity.created(ArtifactDtos.location(written))
                 .eTag(result.revision().token())
-                .body(ArtifactDtos.styleguide(styleguide));
+                .body(written);
     }
 
     @Override
-    public ResponseEntity<Styleguide> putPackStyleguide(
-            String packId, String styleguideId, StyleguideRegistration body, @Nullable String ifMatch) {
+    public ResponseEntity<Artifact> putPackStyleguide(
+            String packId, String artifactId, StyleguideRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Styleguide styleguide = assemble(
                 pack,
-                styleguideId,
+                artifactId,
                 body.getSchemaVersion(),
                 body.getTitle(),
                 body.getScope(),
@@ -129,7 +111,8 @@ public class StyleguideController implements StyleguidesApi {
                 registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(ArtifactDtos.styleguide(styleguide));
+                .body(ArtifactDtos.envelope(ArtifactKind.STYLEGUIDE, pack, artifactId, links)
+                        .styleguide(ArtifactDtos.styleguide(styleguide)));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------

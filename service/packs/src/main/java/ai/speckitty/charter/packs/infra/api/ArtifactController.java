@@ -27,7 +27,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * {@code GET /packs/{packId}/artifacts} and {@code GET /packs/{packId}/artifacts/{kind}/{artifactId}}: the generic
- * reads of {@link ArtifactReadService}, beside the per-kind routes. A refusal the service throws is answered by
+ * reads of {@link ArtifactReadService}, the only reads of a pack's artifacts. The writable kinds are registered under
+ * the same tree by their own controllers ({@link DirectiveController} and its siblings). A refusal the service throws is answered by
  * {@link RefusalHandler}. The adapter answers the 400s itself, as plain problems without a code: a kind filter that
  * is not a served kind, a page cursor {@link ArtifactCursor} cannot read, and a parameter out of the bounds the
  * generated interface declares (a page size out of range), which bean validation refuses.
@@ -95,13 +96,11 @@ public class ArtifactController implements ArtifactsApi {
     @Override
     public ResponseEntity<Artifact> getPackArtifact(String packId, String kind, String artifactId) {
         var verified = reads.item(new PackIdentifier(packId), kind, artifactId);
-        Map<Relation, Hypermedia.LinkValue> itemLinks = new EnumMap<>(Relation.class);
-        itemLinks.put(Relation.SELF, links.link(PACKS, packId, ARTIFACTS, kind, artifactId));
-        itemLinks.put(Relation.COLLECTION, links.link(Map.of(KIND, kind), PACKS, packId, ARTIFACTS));
         ResponseEntity.BodyBuilder answer =
                 ResponseEntity.ok().headers(CharterHeaders.fingerprint(verified.fingerprint()));
         verified.value().revision().ifPresent(revision -> answer.eTag(revision.token()));
-        return answer.body(ArtifactDtos.artifact(verified.value(), guides, Hypermedia.wire(itemLinks)));
+        return answer.body(ArtifactDtos.artifact(
+                verified.value(), guides, ArtifactDtos.itemLinks(kind, packId, artifactId, links)));
     }
 
     /**
