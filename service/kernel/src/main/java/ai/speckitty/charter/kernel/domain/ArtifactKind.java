@@ -33,7 +33,14 @@ public enum ArtifactKind {
     /** An asset: a blob described by a sidecar manifest; org-requirable but never activated. */
     ASSET("asset", "assets", false, true, false, InForceWhenAbsent.ALL),
     /** A template: mission-scoped content that resolves specially; never activated or required. */
-    TEMPLATE("template", "templates", false, false, false, InForceWhenAbsent.ALL);
+    TEMPLATE("template", "templates", false, false, false, InForceWhenAbsent.ALL),
+    /**
+     * A mission type: one file holding the type's steps, their prompts and expected artifacts (ADR-0044). It is
+     * activatable because a preset carries an {@code activated_mission_types} list (ADR-0042), kept in the preset's own
+     * slot rather than among its activated kinds; it is neither org-requirable nor selection-overlayable. Core has no
+     * such artifact kind (a recorded divergence).
+     */
+    MISSION_TYPE("mission_type", "mission_types", true, false, false, InForceWhenAbsent.ALL);
 
     /** What is in force while a kind's activation key is absent. */
     public enum InForceWhenAbsent {

@@ -340,9 +340,15 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      */
     private static Map<String, String> writtenByKindAndId(Path target) {
         Map<String, String> written = new HashMap<>();
-        try (Stream<Path> files = Files.list(target)) {
+        // A kind placed at its own path (a mission type, ADR-0044) is written below the pack directory; every other
+        // kind
+        // directly in it, so only the former is looked for in subdirectories.
+        try (Stream<Path> files = Files.walk(target)) {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
-                String fileName = String.valueOf(file.getFileName());
+                boolean nested = !target.equals(file.getParent());
+                String fileName = nested
+                        ? target.relativize(file).toString().replace('\\', '/')
+                        : String.valueOf(file.getFileName());
                 if (!fileName.endsWith(".yaml")) {
                     continue;
                 }
@@ -352,7 +358,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 }
                 String token = stem.substring(stem.lastIndexOf('.') + 1);
                 for (KindBinding<?, ?> binding : KindBindings.all()) {
-                    @Nullable String elementId = binding.fileToken().equals(token) ? idOf(read(file), binding.idKey()) : null;
+                    boolean candidate = binding.fileToken().equals(token) && (!nested || binding.placedAtItsFileName());
+                    @Nullable String elementId = candidate ? idOf(read(file), binding.idKey()) : null;
                     if (elementId != null) {
                         written.put(binding.schemaName() + "/" + elementId, fileName);
                     }
@@ -421,7 +428,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
     private static boolean holds(Pack pack, String path) {
         return pack.assetFiles().stream().anyMatch(file -> path.equals(PackFileSet.ASSETS + file.path()))
                 || pack.templates().stream()
-                        .anyMatch(template -> path.equals(PackFileSet.TEMPLATES + template.localId()));
+                        .anyMatch(template -> path.equals(TemplateBinding.INSTANCE.pathOf(template)));
     }
 
     // ---- the manifest (#195) -------------------------------------------------------------------

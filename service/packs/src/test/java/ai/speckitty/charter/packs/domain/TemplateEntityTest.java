@@ -72,6 +72,65 @@ class TemplateEntityTest {
     }
 
     @Test
+    @DisplayName("a mission type's template keeps its type when its id starts with '<type>/'")
+    void aMissionTypesTemplateKeepsItsType() {
+        Template template = valid().id(new TemplateIdentifier("plan/spec.md"))
+                .missionType("plan")
+                .build();
+
+        assertThat(template.missionType()).contains("plan");
+        assertThat(template.localId()).isEqualTo("plan/spec.md");
+    }
+
+    @Test
+    @DisplayName("a mission type's template whose id does not start with '<type>/' is refused")
+    void aMissionTypesTemplateOutsideItsTypeIsRefused() {
+        assertThatThrownBy(() -> valid().id(new TemplateIdentifier("research/spec.md"))
+                        .missionType("plan")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("a mission type's template id starts with '<type>/': 'research/spec.md' of 'plan'");
+        assertThatThrownBy(() -> valid().id(new TemplateIdentifier("plan.md"))
+                        .missionType("plan")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> valid().id(new TemplateIdentifier("planning/spec.md"))
+                        .missionType("plan")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("a mission type holding '/' is refused, even when the id starts with it")
+    void aMissionTypeWithASlashIsRefused() {
+        assertThatThrownBy(() -> valid().id(new TemplateIdentifier("plan/sub/spec.md"))
+                        .missionType("plan/sub")
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("a mission type's template id starts with '<type>/': 'plan/sub/spec.md' of 'plan/sub'");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " "})
+    @DisplayName("a blank mission type is refused")
+    void aBlankMissionTypeIsRefused(String type) {
+        assertThatThrownBy(() -> valid().id(new TemplateIdentifier("plan/spec.md"))
+                        .missionType(type)
+                        .build())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"plan.md", "plan/spec.md", "research/deep/notes.md"})
+    @DisplayName("a top-level template, with no mission type, accepts any template identifier")
+    void aTopLevelTemplateAcceptsAnyId(String id) {
+        Template template = valid().id(new TemplateIdentifier(id)).build();
+
+        assertThat(template.missionType()).isEmpty();
+        assertThat(template.localId()).isEqualTo(id);
+    }
+
+    @Test
     @DisplayName("two templates are equal by identity")
     void equalByIdentity() {
         assertThat(valid().build())

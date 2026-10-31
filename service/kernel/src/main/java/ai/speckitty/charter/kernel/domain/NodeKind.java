@@ -3,7 +3,7 @@ package ai.speckitty.charter.kernel.domain;
 import java.util.Arrays;
 import java.util.Optional;
 
-/** The kind of a DRG node: every artifact kind plus {@code action} and {@code mission_type}. */
+/** The kind of a CRG node: every artifact kind plus {@code action}. */
 public enum NodeKind {
     /** A node of the artifact kind {@link ArtifactKind#DIRECTIVE}. */
     DIRECTIVE,
@@ -33,7 +33,7 @@ public enum NodeKind {
     TEMPLATE,
     /** One action of one mission type, for example {@code action:software-dev/plan}; action-scoped context starts here. */
     ACTION,
-    /** A mission type, for example {@code mission_type:software-dev}. */
+    /** A node of the artifact kind {@link ArtifactKind#MISSION_TYPE}, for example {@code mission_type:software-dev}. */
     MISSION_TYPE;
 
     /**
@@ -48,7 +48,7 @@ public enum NodeKind {
     /**
      * The artifact kind this node kind stands for.
      *
-     * @return the artifact kind; empty for {@link #ACTION} and {@link #MISSION_TYPE}
+     * @return the artifact kind; empty for {@link #ACTION}
      */
     public Optional<ArtifactKind> artifactKind() {
         return ArtifactKind.fromToken(token());
@@ -83,7 +83,6 @@ public enum NodeKind {
      */
     public static Optional<NodeKind> fromPlural(String plural) {
         return switch (plural) {
-            case "mission_types" -> Optional.of(MISSION_TYPE);
             case "actions" -> Optional.of(ACTION);
             default -> ArtifactKind.fromPlural(plural).map(NodeKind::of);
         };

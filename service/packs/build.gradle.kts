@@ -9,6 +9,8 @@ dependencies {
     api(project(":kernel"))
     // The profiles slice's domain: the pack store binds the agent-profile kind (ADR-0037, amendment of 2026-10-27).
     api(project(":profiles"))
+    // The missions slice's domain: the pack store binds the mission-type kind (ADR-0044).
+    api(project(":missions"))
 
     // infra.storage: YAML codec and pack-file schema validation (confined to this module, ADR-0017).
     implementation(catalog.lib("snakeyaml-engine"))
@@ -170,3 +172,4 @@ tasks.test {
     systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
 }
 tasks.check { dependsOn(openPacksRoundTrip) }
+

@@ -52,15 +52,18 @@ class HexagonalArchitectureTest {
     private static final String PACKS_FETCH = ROOT + ".packs.infra.fetch..";
 
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
+    /** The missions slice's domain (ADR-0044). */
+    private static final String MISSIONS_DOMAIN = ROOT + ".missions.domain..";
+
     private static final String GENERATED_API = ROOT + ".api..";
     private static final String DEPLOYABLE = ROOT + ".deployable..";
     private static final String JAVA = "java..";
     private static final String FRAMEWORK = "org.springframework..";
     private static final String JSPECIFY = "org.jspecify.annotations..";
     /** Every slice domain and the shared kernel (including {@code kernel.validation}). */
-    private static final String[] DOMAIN_RINGS = {KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN};
+    private static final String[] DOMAIN_RINGS = {KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, MISSIONS_DOMAIN};
     /** The vertical slices; each slice's domain may depend only on itself and the kernel. */
-    private static final List<String> SLICES = List.of("packs", "profiles");
+    private static final List<String> SLICES = List.of("packs", "profiles", "missions");
 
     private static void assertBites(ArchRule rule, String fixturePackage, String... violators) {
         JavaClasses fixtures = new ClassFileImporter().importPackages(fixturePackage);
@@ -149,6 +152,14 @@ class HexagonalArchitectureTest {
             .dependOnClassesThat()
             .resideOutsideOfPackages(PROFILES_DOMAIN, KERNEL, JAVA, JSPECIFY);
 
+    /** The missions slice's domain (ADR-0044): only itself, the kernel, {@code java} and JSpecify. */
+    private static final ArchRule MISSIONS_DOMAIN_IS_PURE = noClasses()
+            .that()
+            .resideInAPackage(MISSIONS_DOMAIN)
+            .should()
+            .dependOnClassesThat()
+            .resideOutsideOfPackages(MISSIONS_DOMAIN, KERNEL, JAVA, JSPECIFY);
+
     /** DOMAIN_IS_PURE, annotation half: no domain class, field, method or constructor carries a framework annotation. */
     private static final ArchRule NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN = classes()
             .that()
@@ -174,6 +185,7 @@ class HexagonalArchitectureTest {
         KERNEL_IS_PURE.check(classes);
         PACKS_DOMAIN_IS_PURE.check(classes);
         PROFILES_DOMAIN_IS_PURE.check(classes);
+        MISSIONS_DOMAIN_IS_PURE.check(classes);
         NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN.check(classes);
     }
 
@@ -182,6 +194,7 @@ class HexagonalArchitectureTest {
         assertBites(
                 PACKS_DOMAIN_IS_PURE, ROOT + ".packs.domain.badfixture", "DomainUsesSpring", "DomainReachesOutward");
         assertBites(PROFILES_DOMAIN_IS_PURE, ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(MISSIONS_DOMAIN_IS_PURE, ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
         assertBites(
                 NO_FRAMEWORK_ANNOTATIONS_IN_DOMAIN,
                 ROOT + ".packs.domain.badfixture",
@@ -376,14 +389,14 @@ class HexagonalArchitectureTest {
 
     /**
      * ENTRYPOINT_STAYS_IN_ITS_SLICE (ADR-0037, amendment of 2026-10-27): the pack store binds the kinds of other slices,
-     * so {@code packs.infra.storage} may name the profiles domain; the inbound adapter may not.
+     * so {@code packs.infra.storage} may name the profiles and missions domains; the inbound adapter may not.
      */
     private static final ArchRule ENTRYPOINT_STAYS_IN_ITS_SLICE = noClasses()
             .that()
             .resideInAPackage(PACKS_API)
             .should()
             .dependOnClassesThat()
-            .resideInAPackage(PROFILES_DOMAIN);
+            .resideInAnyPackage(PROFILES_DOMAIN, MISSIONS_DOMAIN);
 
     @Test
     @DisplayName("ENTRYPOINT_STAYS_IN_ITS_SLICE")
@@ -434,6 +447,8 @@ class HexagonalArchitectureTest {
         assertBites(sliceDomainDoesNotCross("packs"), ROOT + ".packs.domain.badfixture", "DomainCrossesSlice");
         assertBites(
                 sliceDomainDoesNotCross("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(
+                sliceDomainDoesNotCross("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
     }
 
     /**

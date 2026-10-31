@@ -5,9 +5,6 @@
 # kinds: a whole gate kind with no adapter yet. files: one file of a modelled kind that is known to differ.
 # empty_kinds: a modelled kind the pinned pack has no file of; it goes stale when the pack gains one.
 kinds:
-  - kind: other:missions
-    reason: Mission types, mission steps, actions and mission templates are not modelled yet.
-    issue: "#194"
 files:
   - path: anti_pattern.graph.yaml
     at: 'nodes{anti_pattern:anemic-domain-model}.tags ; nodes{anti_pattern:big-ball-of-mud}.tags ; nodes{anti_pattern:big-bang-rewrite}.tags ; nodes{anti_pattern:big-upfront-design}.tags ; nodes{anti_pattern:code-is-the-documentation}.tags ; nodes{anti_pattern:database-driven-design}.tags ; nodes{anti_pattern:feature-envy}.tags ; nodes{anti_pattern:global-data}.tags ; nodes{anti_pattern:implicit-concept}.tags ; nodes{anti_pattern:misplaced-field}.tags ; nodes{anti_pattern:repeated-switches-on-state}.tags ; nodes{anti_pattern:single-diagram-architecture}.tags ; nodes{anti_pattern:unencapsulated-record}.tags'

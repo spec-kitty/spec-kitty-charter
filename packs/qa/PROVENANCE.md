@@ -28,9 +28,13 @@ them. Read them there for the reasoning behind each artifact.
 | Internal finding ids (`SK-NNN`) replaced by plain descriptions. | They point at a ledger outside this repository. |
 | Not ported: `scripts/`, `kitty-specs/`, `_rnd/`, `kitty-ops/`, `.kittify/`, `docs/install/`, `CONVENTIONS.md`. | History and tooling pinned to older Spec Kitty builds; `pack_ci.py` imports APIs that no longer exist (`DoctrineService`, `save_pack_registry`). This repository does not yet reproduce that pack-validation step (tracked as a follow-up). |
 
-`mission-steps/` stays although its `step.yaml` files name a `prompt.md` that is not shipped: the
-runtime builds the `qa` action sequence from those files (without them, mission creation fails
-with "empty action sequence"), and the step prompts come from `missions/qa/command-templates/`.
+At port time `mission-steps/` stayed although its `step.yaml` files named a `prompt.md` that was not
+shipped: the runtime built the `qa` action sequence from those files, and the step prompts came from
+`missions/qa/command-templates/`. Since spec-kitty/spec-kitty-open-packs#95 (2026-10-31) the mission tier is
+one file, `missions/qa/qa.mission-type.yaml`, with its seven steps in run order and each step's prompt beside it
+as `missions/qa/steps/<step>.prompt.md` (the former command templates); `mission-steps/`, the command templates,
+the governance profile and the expected-artifacts manifest are retired (charter ADR-0044). Core still reads the
+old layout, so the port-time verification below no longer applies as written.
 
 ## Verified at port time
 
@@ -56,4 +60,4 @@ under `charter_packs.org.packs`:
 
 ## Vendored copy
 
-Re-vendored from `spec-kitty-open-packs` `packs/qa` at commit `5df92a5d02e47e8877364de5e2deb06c016d30a9` (main, after PR #91 landed: procedures and toolguide guides in the charter's sanitized shapes) on 2026-10-29. This file and `README.md` are local and differ from upstream on purpose; everything else in this directory is the upstream copy. The commit is pinned by `openPacksRef` in `gradle.properties`.
+Re-vendored from `spec-kitty-open-packs` `packs/qa` at commit `86d9284695a18a71f9f7cc934f0305b1b03de19e` (main, after PR #95 landed: the mission tier consolidated into one mission-type file, charter ADR-0044) on 2026-10-31. This file and `README.md` are local and differ from upstream on purpose; everything else in this directory is the upstream copy. The commit is pinned by `openPacksRef` in `gradle.properties`.

@@ -8,10 +8,13 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -132,7 +135,9 @@ class PackFileSetTest {
         assertThat(PackFileSet.files(withPayloads, ArtifactKind.ASSET)).containsExactly("assets/logo.png.asset.yaml");
         assertThat(PackFileSet.assetFiles(withPayloads))
                 .containsExactly("assets/a/b/nested.bin", "assets/lint.config.yaml", "assets/logo.png");
-        assertThat(PackFileSet.templates(withPayloads)).containsExactly("templates/writing/minutes.md");
+        assertThat(PackFileSet.templates(withPayloads))
+                .as("a mission type's template is a template too (#194)")
+                .containsExactly("missions/m/templates/t.md", "templates/writing/minutes.md");
         assertThat(PackFileSet.digested(withPayloads))
                 .containsExactly(
                         "pack.yaml",
@@ -142,6 +147,7 @@ class PackFileSetTest {
                         "assets/a/b/nested.bin",
                         "assets/lint.config.yaml",
                         "assets/logo.png",
+                        "missions/m/templates/t.md",
                         "templates/writing/minutes.md");
     }
 
@@ -286,5 +292,37 @@ class PackFileSetTest {
         assertThatThrownBy(() -> new PackFileKind(table.formatted("yaml")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("the payloads rule for '*/assets/**/*' declares content_form 'yaml'");
+    }
+
+    /**
+     * A-3 (#194, FR-008): a retired file is digested in the tail, after the manifest, in path order, so a pack without
+     * one keeps its exact digest list under a table with {@code retired} rules, and planting one moves the fingerprint.
+     */
+    @Test
+    void retiredFilesAreDigestedLastInPathOrderAndAPackWithoutOneKeepsItsDigest(@TempDir Path host) throws IOException {
+        PackFileKind unretiring = new PackFileKind(bundledText().replaceAll("(?m)^retired:\n(?:  .*\n)+", ""));
+        assertThat(unretiring.retiredRules()).isEmpty();
+        assertThat(PackFileSet.digested(pack)).isEqualTo(PackFileSet.digested(pack, unretiring));
+
+        Path stale = RetiredFileFixture.plant(
+                host.resolve("stale/qa"),
+                List.of("pack-manifest.yaml", "missions/plan/mission.yaml", "a.tactic.yaml", "mission_types/qa.yaml"));
+
+        assertThat(PackFileSet.listing(stale, PackFileKind.bundled()).retired().keySet())
+                .containsExactly("mission_types/qa.yaml", "missions/plan/mission.yaml");
+        assertThat(PackFileSet.digested(stale))
+                .containsExactly(
+                        "pack.yaml",
+                        "a.tactic.yaml",
+                        "pack-manifest.yaml",
+                        "mission_types/qa.yaml",
+                        "missions/plan/mission.yaml");
+        assertThat(PackFileSet.digested(stale, unretiring)).doesNotContain("mission_types/qa.yaml");
+    }
+
+    private static String bundledText() throws IOException {
+        try (InputStream in = PackFileSetTest.class.getClassLoader().getResourceAsStream(PackFileKind.RESOURCE)) {
+            return new String(Objects.requireNonNull(in, PackFileKind.RESOURCE).readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 }

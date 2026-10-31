@@ -223,6 +223,7 @@ class FileSystemPackInspectorTest {
         write(dir, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
         write(dir, "tactics-b/y.tactic.yaml", TACTIC.formatted("y"));
         write(dir, "missions/m/mission.yaml", "anything: goes\n");
+        write(dir, "missions/m/templates/plan-field-declaration.yaml", "anything: goes\n");
         write(dir, "notes.yaml", "no: rule\n");
         write(dir, "readme.md", "# not yaml\n");
         Files.createDirectories(dir.resolve("dir.tactic.yaml"));
@@ -231,7 +232,10 @@ class FileSystemPackInspectorTest {
                 .containsExactly(
                         classified("a.graph.yaml", "graph-shard"),
                         classified("drg/fragment.yaml", "org-fragment"),
-                        excluded("missions/m/mission.yaml", "**/missions/*/mission.yaml"),
+                        // A retired file (#194) is refused by name, never listed; an excluded one is listed.
+                        excluded(
+                                "missions/m/templates/plan-field-declaration.yaml",
+                                "**/templates/plan-field-declaration.yaml"),
                         classified("org-charter.yaml", "org-charter"),
                         classified("pack.yaml", "pack-descriptor"),
                         classified("tactics/x.tactic.yaml", "tactic"),
@@ -546,7 +550,9 @@ class FileSystemPackInspectorTest {
                 .as("283 for the manifest (272 provenance_path, six root keys, schema_version, two preset entries keyed"
                         + " name without id), 10 for minimal.yaml, 4 for default.yaml")
                 .hasSize(297);
-        assertThat(verdict.files()).hasSize(386);
+        // 386 at the previous pin, 5df92a5d; the mission-type migration (#194, open-packs#95) retired 74 YAML files of
+        // the pack and added its 4 mission-type files.
+        assertThat(verdict.files()).hasSize(386 - 74 + 4);
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));

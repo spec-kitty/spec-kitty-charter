@@ -20,9 +20,6 @@ import java.util.stream.Stream;
  */
 public final class OpenPacksCorpus {
 
-    /** Every {@code *.yaml} file under {@code packs/} at the pinned head (re-counted at 5df92a5). */
-    static final int YAML_FILE_COUNT = 516;
-
     /**
      * The load diagnostics of every pack of the pinned corpus, under the ratified strict rule: a pack without
      * pack.yaml is diagnosed at every level. A pack added to or fixed in the corpus changes this table on purpose.

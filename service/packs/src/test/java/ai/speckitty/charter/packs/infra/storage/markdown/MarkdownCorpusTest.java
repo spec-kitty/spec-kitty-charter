@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Every Markdown file of the pinned open-packs checkout that the {@code markdown} form covers reads and writes back
  * byte for byte (SC-006): the toolguide guides ({@code packs/*}{@code /toolguides/**}), each pack's {@code pack.md},
- * and the mission step prompts and guidelines ({@code packs/*}{@code /missions/mission-steps/**}).
+ * and the mission step prompts and guidelines ({@code packs/*}{@code /missions/*}{@code /steps/*.md}, #194).
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
  * skips. A refused or non-canonical pinned file is a finding for open-packs, never a reason to loosen a rule.
@@ -35,13 +35,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Every pinned Markdown file reads and writes back byte for byte (SC-006)")
 class MarkdownCorpusTest {
 
-    /** The covered Markdown files at the pin: 24 guides, pack.md and 47 mission step prompts and guidelines. */
-    private static final int PINNED_COUNT = 72;
+    /** The covered Markdown files at the pin: 24 guides, pack.md and 60 mission step prompts and guidelines (#194). */
+    private static final int PINNED_COUNT = 85;
 
     private static final List<PathMatcher> COVERED = Stream.of(
-                    "glob:packs/*/toolguides/**.md",
-                    "glob:packs/*/pack.md",
-                    "glob:packs/*/missions/mission-steps/**.md")
+                    "glob:packs/*/toolguides/**.md", "glob:packs/*/pack.md", "glob:packs/*/missions/*/steps/*.md")
             .map(FileSystems.getDefault()::getPathMatcher)
             .toList();
 
@@ -51,7 +49,7 @@ class MarkdownCorpusTest {
     }
 
     @Test
-    @DisplayName("the 72 covered Markdown files parse, and write(parse(bytes)) equals the bytes")
+    @DisplayName("the 85 covered Markdown files parse, and write(parse(bytes)) equals the bytes")
     void everyCoveredFileIsCanonical() throws IOException {
         List<Path> files = coveredFiles();
         List<String> problems = new ArrayList<>();
@@ -66,8 +64,7 @@ class MarkdownCorpusTest {
     }
 
     @Test
-    @DisplayName(
-            "the corpus exercises frontmatter, titles, sections, fences and empty files, so the check is not vacuous")
+    @DisplayName("the corpus exercises frontmatter, titles, sections and fences, so the check is not vacuous")
     void corpusIsNotVacuous() throws IOException {
         List<MarkdownDocument> documents = new ArrayList<>();
         for (Path file : coveredFiles()) {
@@ -90,9 +87,8 @@ class MarkdownCorpusTest {
                         .count())
                 .as("documents whose blocks hold a column-0 H1 or H2 line, which the model admits only inside a fence")
                 .isPositive();
-        assertThat(documents.stream().filter(MarkdownDocument.empty()::equals).count())
-                .as("empty documents")
-                .isPositive();
+        // No empty file is left at the pin: the two empty retrospect prompts were not carried by the mission-type
+        // migration (#194); MarkdownCodecTest covers the empty document.
     }
 
     private static boolean hidesHeadingInFence(MarkdownDocument document) {

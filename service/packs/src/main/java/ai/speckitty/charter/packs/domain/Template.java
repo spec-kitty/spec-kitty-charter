@@ -11,26 +11,38 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A template of a {@link Pack}: one file under the pack's top-level {@code templates/} directory, identified by its
- * path there and carried as opaque bytes (frontmatter is not parsed). Two templates are equal when they have the same
- * identity. Build one with {@link #builder()}.
+ * path there, or under a mission type's {@code templates/} directory, identified by {@code <type>/<path>} and naming
+ * the {@link #missionType()} it belongs to (#194, ADR-0044), the id the CRG's {@code template:} URNs use. It is carried
+ * as opaque bytes (frontmatter is not parsed). Two templates are equal when they have the same identity. Build one with
+ * {@link #builder()}.
  */
 public final class Template implements CharterArtifact {
 
     private final TemplateIdentifier id;
     private final PackIdentifier packId;
     private final Payload content;
+    private final Optional<String> missionType;
 
     /**
      * Reconstructs a template from its parts; reachable only inside the domain package.
      *
-     * @param id the template's identity, its path under {@code templates/}
+     * @param id the template's identity, its path under {@code templates/} ({@code <type>/<path>} for a mission type's)
      * @param packId the pack that owns the template
      * @param content the file's exact bytes
+     * @param missionType the mission type whose {@code templates/} holds it, empty for the top-level one
+     * @throws IllegalArgumentException when a mission type's template id does not start with {@code <type>/}
      */
-    Template(TemplateIdentifier id, PackIdentifier packId, Payload content) {
+    Template(TemplateIdentifier id, PackIdentifier packId, Payload content, Optional<String> missionType) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.content = Objects.requireNonNull(content, "content");
+        this.missionType = Objects.requireNonNull(missionType, "missionType");
+        missionType.ifPresent(type -> {
+            if (type.isBlank() || type.contains("/") || !id.value().startsWith(type + "/")) {
+                throw new IllegalArgumentException(
+                        "a mission type's template id starts with '<type>/': '" + id.value() + "' of '" + type + "'");
+            }
+        });
     }
 
     /**
@@ -100,6 +112,15 @@ public final class Template implements CharterArtifact {
         return content;
     }
 
+    /**
+     * The mission type whose {@code templates/} directory holds this template (#194, ADR-0044).
+     *
+     * @return the type's id; empty for a template of the pack's top-level {@code templates/}
+     */
+    public Optional<String> missionType() {
+        return missionType;
+    }
+
     /** Entity identity: equal when the identifier is equal, whatever the content holds. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -121,8 +142,21 @@ public final class Template implements CharterArtifact {
         private @Nullable TemplateIdentifier id;
         private @Nullable PackIdentifier packId;
         private @Nullable Payload content;
+        private @Nullable String missionType;
 
         private Builder() {}
+
+        /**
+         * Sets the mission type whose {@code templates/} directory holds the template; {@code null} for the pack's
+         * top-level {@code templates/}.
+         *
+         * @param value the type's id, or {@code null}
+         * @return this builder
+         */
+        public Builder missionType(@Nullable String value) {
+            this.missionType = value;
+            return this;
+        }
 
         /**
          * Sets the template's identity.
@@ -167,7 +201,8 @@ public final class Template implements CharterArtifact {
             return new Template(
                     Objects.requireNonNull(id, "id"),
                     Objects.requireNonNull(packId, "packId"),
-                    Objects.requireNonNull(content, "content"));
+                    Objects.requireNonNull(content, "content"),
+                    Optional.ofNullable(missionType));
         }
     }
 }

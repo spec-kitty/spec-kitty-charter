@@ -1,0 +1,104 @@
+schema_version: '1.0'
+id: qa
+title: QA
+description: 'The v0 display/acceptance config for the QA mission type: independent test strategy, planning, design, execution, and reporting across the seven-step QA lifecycle.'
+expected_output_artifacts:
+- artifact_key: output.test-report.qa
+  artifact_class: output
+  path_pattern: test-report.md
+- artifact_key: output.qa-traceability.qa
+  artifact_class: evidence
+  path_pattern: qa-traceability.yaml
+- artifact_key: output.qa-coverage.qa.optional
+  artifact_class: evidence
+  path_pattern: qa-coverage.json
+- artifact_key: output.evidence.qa
+  artifact_class: evidence
+  path_pattern: evidence/**
+references:
+- type: directive
+  id: QA_001
+- type: directive
+  id: QA_002
+- type: directive
+  id: QA_003
+- type: directive
+  id: QA_004
+- type: directive
+  id: QA_005
+- type: directive
+  id: QA_006
+steps:
+- id: discovery
+  title: Discovery
+  description: Investigate the feature under test and gather the context a test strategy will be authored against.
+  role: researcher
+  prompt_path: steps/discovery.prompt.md
+- id: specify
+  title: Test Strategy
+  description: 'Define the QA test strategy: scope, risk areas, and what will and will not be tested.'
+  role: qa-strategist
+  prompt_path: steps/specify.prompt.md
+  expected_output_artifacts:
+  - artifact_key: input.spec.qa
+    artifact_class: input
+    path_pattern: spec.md
+    blocking: true
+    template_path: templates/test-strategy-template.md
+- id: plan
+  title: Test Plan
+  description: Translate the test strategy into a detailed, executable test plan with exit criteria, environments, and test data.
+  role: qa-strategist
+  prompt_path: steps/plan.prompt.md
+  expected_output_artifacts:
+  - artifact_key: workflow.plan.qa
+    artifact_class: workflow
+    path_pattern: plan.md
+    blocking: true
+    template_path: templates/test-plan-template.md
+- id: tasks
+  title: Test Design
+  description: Design the concrete test suite and work packages that implement the test plan, including exploratory charters.
+  role: test-designer
+  prompt_path: steps/tasks.prompt.md
+  expected_output_artifacts:
+  - artifact_key: workflow.tasks.qa
+    artifact_class: workflow
+    path_pattern: tasks.md
+    blocking: true
+    template_path: templates/test-suite-template.md
+- id: implement
+  title: Test Execution
+  description: Execute the designed test suite and record defects found during execution.
+  role: test-executor
+  prompt_path: steps/implement.prompt.md
+  expected_output_artifacts:
+  - artifact_key: output.defect-log.qa
+    artifact_class: output
+    path_pattern: defect-log.md
+    template_path: templates/defect-log-template.md
+- id: review
+  title: Test Report Review
+  description: Review execution results for genuine, no-fake-green outcomes and produce the test report.
+  role: qa-reporter
+  prompt_path: steps/review.prompt.md
+  expected_output_artifacts:
+  - artifact_key: output.test-report.review.qa
+    artifact_class: output
+    path_pattern: test-report.md
+    blocking: true
+    template_path: templates/test-report-template.md
+  - artifact_key: output.qa-traceability.review.qa
+    artifact_class: evidence
+    path_pattern: qa-traceability.yaml
+    blocking: true
+- id: accept
+  title: Acceptance
+  description: Confirm exit criteria were actually met and record the release/acceptance decision.
+  role: qa-reporter
+  prompt_path: steps/accept.prompt.md
+  expected_output_artifacts:
+  - artifact_key: output.qa-coverage.qa
+    artifact_class: evidence
+    path_pattern: qa-coverage.json
+    blocking: true

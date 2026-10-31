@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -51,7 +52,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>An asset sidecar is held only when its payload is: a sidecar whose {@code path} names no asset file the read found
  * under {@code assets/} is dropped and recorded as a violation ({@code payload assets/<path> does not exist}), and so is
- * a second sidecar naming a file another sidecar already named. A payload that is not UTF-8 is no violation. An asset
+ * a second sidecar naming a file another sidecar already named. A template file whose id an earlier template file
+ * already gives is dropped and recorded as a violation naming both files ({@code template <id> is already read from
+ * <file>}). A payload that is not UTF-8 is no violation. An asset
  * file or a template reached through a link whose real location is outside the pack is a violation and is not read,
  * and so is an asset file whose name the domain refuses.
  *
@@ -180,21 +183,25 @@ final class FilesystemPackStore {
     }
 
     /**
-     * One template file as read: its bytes and where it sits.
+     * One template file as read: its bytes, its id and where it sits.
      *
-     * @param path the path relative to the pack's {@code templates/} directory, {@code /}-separated: the template's id
+     * @param path the template's id ({@link PackFileSet#templateId}): the path under the pack's top-level
+     *     {@code templates/}, or {@code <type>/<path>} under a mission type's {@code templates/} (ADR-0044)
      * @param content the file's bytes
+     * @param place the pack-relative path of the file
      */
-    record TemplateFile(String path, Payload content) {
+    record TemplateFile(String path, Payload content, String place) {
         /**
          * Checks the fields.
          *
-         * @param path the path under {@code templates/}
+         * @param path the template's id
          * @param content the bytes
+         * @param place the pack-relative path
          */
         TemplateFile {
             Objects.requireNonNull(path, "path");
             Objects.requireNonNull(content, "content");
+            Objects.requireNonNull(place, "place");
         }
     }
 
@@ -246,12 +253,14 @@ final class FilesystemPackStore {
     }
 
     /**
-     * A store whose companions are held to the given table and schemas: the seam a test uses to give a companion a
-     * structure schema of its own (#194).
+     * A store whose pack files and companions are held to the given table and schemas: the seam a test uses to give a
+     * companion a structure schema of its own, or to refuse a retired file before the bundled table has a
+     * {@code retired} rule (#194).
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format
-     * @param companionRules the table that classifies companion paths and the schemas of Markdown companions
+     * @param companionRules the table that classifies the pack's files and companion paths, and the schemas of
+     *     Markdown companions
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy, Companions.Rules companionRules) {
         this(root, strategy, ATOMIC, companionRules);
@@ -284,7 +293,8 @@ final class FilesystemPackStore {
      * Reads a pack, tolerating broken element files.
      *
      * @param id the pack
-     * @return the descriptor, the readable files of every bound kind and a violation per broken file
+     * @return the descriptor, the readable files of every bound kind and a violation per broken file, and per retired
+     *     file (ADR-0044 decision 6) one of kind {@code retired} naming its rule's reason
      * @throws CharterRefusal when the pack has no readable {@code pack.yaml}
      */
     PackRead read(PackIdentifier id) {
@@ -302,9 +312,9 @@ final class FilesystemPackStore {
     PackRead read(PackIdentifier id, List<KindBinding<?, ?>> kinds) {
         Path directory = existingDirectory(id);
         PackDescriptorDso descriptor = descriptorOf(directory, id);
-        PackFileSet.Listing listing = PackFileSet.listing(directory);
+        PackFileSet.Listing listing = PackFileSet.listing(directory, companionRules.table());
         Map<ArtifactKind, List<Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
-        List<PackElementViolation> violations = new ArrayList<>();
+        List<PackElementViolation> violations = new ArrayList<>(retiredViolations(listing));
         List<AssetFile> assetFiles = new ArrayList<>();
         for (String file : listing.assetFiles()) {
             readPayload(directory, file, violations).ifPresent(bytes -> {
@@ -317,12 +327,7 @@ final class FilesystemPackStore {
                 }
             });
         }
-        List<TemplateFile> templates = new ArrayList<>();
-        for (String file : listing.templates()) {
-            readPayload(directory, file, violations)
-                    .ifPresent(bytes -> templates.add(
-                            new TemplateFile(file.substring(PackFileSet.TEMPLATES.length()), Payload.of(bytes))));
-        }
+        List<TemplateFile> templates = readTemplates(directory, listing.templates(), violations);
         Set<String> claimed = new HashSet<>();
         for (KindBinding<?, ?> kind : kinds) {
             List<Stored<?>> read = readKind(directory, listing.files(kind.kind()), kind, violations, claimed);
@@ -409,6 +414,42 @@ final class FilesystemPackStore {
             }
         }
         return kept;
+    }
+
+    /**
+     * The templates the read holds, in path order. A top-level {@code templates/<type>/<path>} and a mission type's
+     * {@code missions/<type>/templates/<path>} both have the id {@code <type>/<path>} (ADR-0044): a template file whose
+     * id an earlier read one already gives is a violation on its file naming the earlier one, and does not join the
+     * pack. A file that cannot be read claims no id.
+     */
+    private static List<TemplateFile> readTemplates(
+            Path directory, List<String> files, List<PackElementViolation> violations) {
+        Map<String, String> readFrom = new HashMap<>();
+        List<TemplateFile> templates = new ArrayList<>();
+        for (String file : files) {
+            String id = PackFileSet.templateId(file);
+            String claimant = readFrom.get(id);
+            if (claimant != null) {
+                violations.add(new PackElementViolation(
+                        file, ArtifactKind.TEMPLATE.token(), "template " + id + " is already read from " + claimant));
+            } else {
+                readPayload(directory, file, violations).ifPresent(bytes -> {
+                    readFrom.put(id, file);
+                    templates.add(new TemplateFile(id, Payload.of(bytes), file));
+                });
+            }
+        }
+        return templates;
+    }
+
+    /**
+     * A violation per retired file of the listing (ADR-0044 decision 6), in path order: the file is refused by name with its
+     * rule's reason and never read, so a stale file of the old mission layout cannot hide.
+     */
+    private static List<PackElementViolation> retiredViolations(PackFileSet.Listing listing) {
+        List<PackElementViolation> out = new ArrayList<>();
+        listing.retired().forEach((file, reason) -> out.add(new PackElementViolation(file, "retired", reason)));
+        return out;
     }
 
     /**
@@ -544,6 +585,11 @@ final class FilesystemPackStore {
                         violations.add(new PackElementViolation(file, "schema", misnamed.get()));
                         continue;
                     }
+                    Optional<String> unnamed = missingNamedFile(directory, file, kind.namedFiles(good.value()));
+                    if (unnamed.isPresent()) {
+                        violations.add(new PackElementViolation(file, "reference", unnamed.get()));
+                        continue;
+                    }
                     withCompanions(companionRules, directory, file, kind, good.value(), violations, claimed)
                             .ifPresent(dso -> into.add(new Stored<>(file, dso)));
                 }
@@ -552,6 +598,42 @@ final class FilesystemPackStore {
             }
         }
         return into;
+    }
+
+    /**
+     * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack or is not a regular file
+     * there, with why.
+     *
+     * @param directory the pack directory
+     * @param file the artifact's pack-relative path
+     * @param named the paths it names, relative to its file, with what names each
+     * @return {@code <path> (named by <what>): leaves the pack} or {@code ...: missing}; empty when every one is there
+     */
+    private static Optional<String> missingNamedFile(Path directory, String file, List<KindBinding.NamedFile> named) {
+        Path base = Objects.requireNonNull(directory.resolve(file).getParent(), "an artifact file has a parent");
+        for (KindBinding.NamedFile one : named) {
+            String what = one.path() + " (named by " + one.namedBy() + ")";
+            Path target = base.resolve(one.path()).normalize();
+            if (!target.startsWith(directory)) {
+                return Optional.of(what + ": leaves the pack");
+            }
+            if (!Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
+                return Optional.of(what + ": missing");
+            }
+            // A parent directory may be a link: the real place must stay in the pack too.
+            if (!realPath(target).startsWith(realPath(directory))) {
+                return Optional.of(what + ": leaves the pack");
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Path realPath(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
@@ -637,7 +719,8 @@ final class FilesystemPackStore {
 
     /**
      * Upserts an element: the file of the element of this kind with this id is replaced; an unknown id is created as
-     * {@link KindBinding#fileName} in the pack directory. Both arms are atomic and contained in the pack.
+     * {@link KindBinding#fileName} in the pack directory, or below it, directories included, for a kind placed at its
+     * file name (a mission type, ADR-0044). Both arms are atomic and contained in the pack.
      *
      * <p>An element's companions (ADR-0039) are all checked before anything is written, then written, each atomically
      * and beside the element's file, then the element's file. A companion never replaces an existing file the element
@@ -873,7 +956,14 @@ final class FilesystemPackStore {
     private static Path newFile(Path directory, KindBinding<?, ?> kind, String elementId) {
         String token = kind.kind().token();
         Path target = directory.resolve(kind.fileName(elementId)).normalize();
-        if (!directory.equals(target.getParent())) {
+        // A kind placed at its file name (a mission type, ADR-0044) is created below the pack directory, the write
+        // creating its directories; every other kind directly in it. Either way the file stays in the pack.
+        boolean inPlace = kind.placedAtItsFileName()
+                ? !elementId.contains("/")
+                        && !elementId.contains("\\")
+                        && target.equals(directory.resolve(kind.fileName(elementId)))
+                : directory.equals(target.getParent());
+        if (!inPlace) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, token + " id '" + elementId + "' does not name a file in the pack");
         }

@@ -23,7 +23,8 @@ class ArtifactKindTest {
                         "mission_step_contract",
                         "glossary_pack",
                         "skill",
-                        "anti_pattern");
+                        "anti_pattern",
+                        "mission_type");
         assertThat(Arrays.stream(ArtifactKind.values()).filter(ArtifactKind::selectionOverlayable))
                 .allMatch(ArtifactKind::orgRequirable)
                 .hasSize(8);
@@ -32,6 +33,8 @@ class ArtifactKindTest {
                 .containsExactly(ArtifactKind.SKILL);
         assertThat(ArtifactKind.ASSET.orgRequirable()).isTrue();
         assertThat(ArtifactKind.TEMPLATE.orgRequirable()).isFalse();
+        assertThat(ArtifactKind.MISSION_TYPE.orgRequirable()).isFalse();
+        assertThat(ArtifactKind.MISSION_TYPE.selectionOverlayable()).isFalse();
     }
 
     @Test
@@ -40,11 +43,13 @@ class ArtifactKindTest {
             assertThat(NodeKind.of(kind).artifactKind()).contains(kind);
         }
         assertThat(NodeKind.ACTION.artifactKind()).isEmpty();
+        assertThat(NodeKind.MISSION_TYPE.artifactKind()).contains(ArtifactKind.MISSION_TYPE);
     }
 
     @Test
     void pluralsResolve() {
         assertThat(ArtifactKind.fromPlural("agent_profiles")).contains(ArtifactKind.AGENT_PROFILE);
-        assertThat(ArtifactKind.fromPlural("mission_types")).isEmpty();
+        assertThat(ArtifactKind.fromPlural("mission_types")).contains(ArtifactKind.MISSION_TYPE);
+        assertThat(ArtifactKind.fromPlural("mission_steps")).isEmpty();
     }
 }

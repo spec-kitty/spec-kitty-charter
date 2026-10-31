@@ -560,10 +560,11 @@ public final class PackPolicy {
     /**
      * The findings of a file that could not be read: its parse failure, or its schema violations.
      *
-     * <p>The code of a parse failure follows the file kind, like every other finding (R17): {@code pack_unreadable} for
-     * {@code pack.yaml}, {@code drg_schema_error} for a shard or the fragment, {@code org_charter_schema_error} for the
-     * org charter and {@code artifact_schema_error} for any other file. An {@link FileRead.Unreadable} holds exactly
-     * one of a parse failure and schema violations, so every unreadable file has a finding.
+     * <p>A retired file (#194) reads {@code <origin> is retired: <reason>}. The code of a parse failure follows the file
+     * kind, like every other finding (R17): {@code pack_unreadable} for {@code pack.yaml}, {@code drg_schema_error} for
+     * a shard or the fragment, {@code org_charter_schema_error} for the org charter and {@code artifact_schema_error}
+     * for any other file. An {@link FileRead.Unreadable} holds exactly one of a parse failure and schema violations, so
+     * every unreadable file has a finding.
      *
      * @param packName the pack's configured name
      * @param unreadable the file that could not be read
@@ -573,9 +574,11 @@ public final class PackPolicy {
         String file = unreadable.file();
         PackContents.ParseFailure parse = unreadable.parse();
         if (parse != null) {
-            String text = PACK_YAML.equals(file)
-                    ? origin(packName, file) + " is not valid YAML"
-                    : origin(packName, file) + " is not valid " + language(file) + ": " + parse.firstLine();
+            String text = parse.retiredReason()
+                    .map(reason -> origin(packName, file) + " is retired: " + reason)
+                    .orElseGet(() -> PACK_YAML.equals(file)
+                            ? origin(packName, file) + " is not valid YAML"
+                            : origin(packName, file) + " is not valid " + language(file) + ": " + parse.firstLine());
             return List.of(new PackFinding(codeFor(file), file, List.of(), text));
         }
         return schemaFindings(packName, unreadable.violations());

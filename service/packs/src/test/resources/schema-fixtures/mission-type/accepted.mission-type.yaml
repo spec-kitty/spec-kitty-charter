@@ -1,0 +1,44 @@
+schema_version: "1.0"
+id: research
+title: Research
+description: Conduct systematic research with structured methodology and evidence synthesis.
+content: You are a research agent.
+requires_substantive_spec: true
+path_conventions:
+  workspace: research/
+  data: data/
+expected_output_artifacts:
+- artifact_key: evidence.sources.research
+  artifact_class: evidence
+  path_pattern: research/source-register.csv
+references:
+- type: directive
+  id: DIRECTIVE_010
+  when: always
+  reason: the spec is the contract
+steps:
+- id: scoping
+  title: Research Scoping
+  description: Define the research question.
+  role: researcher
+  prompt_path: steps/scoping.prompt.md
+  guidelines_path: steps/scoping.guidelines.md
+  expected_input_artifacts:
+  - artifact_key: input.charter.main
+    path_pattern: charter.md
+    blocking: true
+  expected_output_artifacts:
+  - artifact_key: output.spec.research
+    artifact_class: output
+    path_pattern: spec.md
+    blocking: true
+    template_path: templates/research-spec-template.md
+  references:
+  - type: tactic
+    id: requirements-validation-workflow
+- id: methodology
+  title: Methodology
+on_demand_steps:
+- id: retrospect
+  title: Retrospective
+  role: facilitator

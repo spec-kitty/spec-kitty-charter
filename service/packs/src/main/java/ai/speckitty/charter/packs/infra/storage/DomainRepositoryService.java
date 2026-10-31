@@ -312,9 +312,9 @@ public final class DomainRepositoryService
         }
         read.assetFiles().forEach(builder::assetFile);
         for (FilesystemPackStore.TemplateFile file : read.templates()) {
-            String place = PackFileSet.TEMPLATES + file.path();
+            String place = file.place();
             try {
-                Template template = TemplateBinding.INSTANCE.toEntity(pack, file.path(), file.content());
+                Template template = TemplateBinding.INSTANCE.toEntityAt(pack, file.place(), file.content());
                 builder.artifact(template);
                 places.put(template.urn(), place);
             } catch (ConstraintBreachException | IllegalArgumentException breach) {

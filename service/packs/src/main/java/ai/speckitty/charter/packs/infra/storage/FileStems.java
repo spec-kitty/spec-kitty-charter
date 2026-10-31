@@ -41,6 +41,12 @@ final class FileStems {
         if (!binding.idIsFileStem()) {
             return Optional.empty();
         }
-        return mismatch(binding.kind().token(), file, "." + binding.fileToken() + ".yaml", id);
+        Optional<String> stem = mismatch(binding.kind().token(), file, "." + binding.fileToken() + ".yaml", id);
+        if (stem.isPresent()
+                || !binding.placedAtItsFileName()
+                || binding.fileName(id).equals(file)) {
+            return stem;
+        }
+        return Optional.of(binding.kind().token() + " '" + id + "' is not at its place '" + binding.fileName(id) + "'");
     }
 }

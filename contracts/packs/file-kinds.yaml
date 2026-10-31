@@ -15,6 +15,13 @@
 #                    reviewable reason.
 #   payloads         Rules for files with no schema (`match`, `kind`, `content_form`, all
 #                    required), consulted only when no `files` or `exclusions` rule matches.
+#   retired          Rules for files of a retired layout (`match`, `reason`, both required;
+#                    ADR-0044 decision 6). A retired file is refused by name in the store's load and
+#                    in validate mode, YAML and Markdown alike, is never a companion, is bucketed
+#                    `retired:<match>` by the whole-pack gate and is digested in the fingerprint
+#                    tail. Optional; consulted after `exclusions` and before `payloads`, and
+#                    no file may match a `retired` rule and a `files` or `exclusions` rule.
+#   Any other top-level key fails when the table loads.
 #
 # Content form
 #   `content_form` says how a file is read, held, written and compared: `yaml` (the default, so
@@ -35,8 +42,9 @@
 #   Its `schema` is a structure schema in schemas/ (Draft 2020-12, standard keywords only, loaded
 #   when the table loads; one that does not load fails the table). It validates the model as the
 #   JSON tree {frontmatter?, title?, preamble, sections: [{title, content}]}, with `frontmatter`
-#   and `title` left out, not null, when the document has none. The toolguide guide rule (#194)
-#   and the pack document rule `*/pack.md` (#260) declare it.
+#   and `title` left out, not null, when the document has none. The toolguide guide rule (#194),
+#   the pack document rule `*/pack.md` (#260) and the two mission step rules (#194, ADR-0044)
+#   declare it.
 #
 # Matching
 #   `match` is a glob over the file's path relative to the directory that holds the pack
@@ -79,6 +87,7 @@ artifact_kinds:
   - anti_pattern
   - asset
   - template
+  - mission_type
 
 fragment_kinds:
   directives: directive
@@ -148,39 +157,40 @@ files:
   - match: "*/pack.md"
     schema: pack-document
     content_form: markdown
+  # Mission types (#194, ADR-0044): one file per type, missions/<id>/<id>.mission-type.yaml; a file anywhere else is
+  # refused by placement, not skipped, so the rule matches the token anywhere.
+  - match: "**/*.mission-type.yaml"
+    schema: mission-type
+  # A mission step's prompt and guidelines (#194, ADR-0044): Markdown companions beside their mission type, named by the
+  # step's derived prompt_path and guidelines_path. Each rule is its companion's own.
+  - match: "*/missions/*/steps/*.prompt.md"
+    schema: mission-step-prompt
+    content_form: markdown
+  - match: "*/missions/*/steps/*.guidelines.md"
+    schema: mission-step-guidelines
+    content_form: markdown
 
 exclusions:
-  - match: "**/mission-steps/**/step.yaml"
-    reason: >-
-      Mission step definitions are runtime files, not step-contract artifacts. No model in core
-      at 9554e7b2 validates them against a pack schema.
-  - match: "**/actions/*/index.yaml"
-    reason: >-
-      Action indexes list the doctrine an action loads. No model in core at 9554e7b2.
-  - match: "**/missions/*/mission.yaml"
-    reason: >-
-      Mission definitions are runtime files. No model in core at 9554e7b2 is exported as a pack
-      schema.
-  - match: "**/missions/*/mission-runtime.yaml"
-    reason: >-
-      Mission runtime sidecars. No model in core at 9554e7b2 is exported as a pack schema.
-  - match: "**/missions/*/expected-artifacts.yaml"
-    reason: >-
-      Expected-artifact manifests of a mission. No model in core at 9554e7b2 is exported as a
-      pack schema.
-  - match: "**/governance-profile.yaml"
-    reason: >-
-      Governance profiles of a mission or mission type. No model in core at 9554e7b2 is exported
-      as a pack schema.
-  - match: "**/mission_types/*.yaml"
-    reason: >-
-      Mission-type definitions. No model in core at 9554e7b2 is exported as a pack schema.
   - match: "built-in.source.yaml"
     reason: >-
       The source declaration of the built-in pack. No model in core at 9554e7b2.
   - match: "**/templates/plan-field-declaration.yaml"
     reason: >-
       A mission template's plan-field declaration. No model in core at 9554e7b2.
+  # Orientation notes beside a mission type and its templates (#194, ADR-0044), as for assets (R4). Named per place,
+  # never by a missions/** glob, so a README under a retired directory is refused with it, not excluded. One place
+  # still overlaps: a README directly in the old built-in missions/mission-steps/ reads as one beside a mission type
+  # named mission-steps, and is excluded, since exclusions come before retired rules; it is never read either way
+  # (RetiredFilesTest pins this).
+  - match: "*/missions/README.md"
+    reason: >-
+      Orientation notes on the pack's mission types. Not pack content.
+  - match: "*/missions/*/README.md"
+    reason: >-
+      Orientation notes beside the mission type they describe. Not pack content.
+  - match: "*/missions/*/templates/**/README.md"
+    reason: >-
+      Orientation notes beside the mission templates they describe. Not pack content and not templates.
   # Asset and template round trip (#193): the README exclusion and the payloads section below.
   - match: "*/assets/**/README.md"
     reason: >-
@@ -193,10 +203,34 @@ exclusions:
     reason: >-
       Hidden files under assets/ (a file manager's .DS_Store, a .gitkeep, the store's own
       .pack-write-*.tmp temporary file) are not pack content and not asset payloads (#193).
+  - match: "*/missions/*/templates/**/.*"
+    reason: >-
+      Hidden files under a mission type's templates/ are not pack content and not templates (#194).
   - match: "*/templates/**/.*"
     reason: >-
       Hidden files under templates/ (a file manager's .DS_Store, a .gitkeep, the store's own
       .pack-write-*.tmp temporary file) are not pack content and not templates (#193).
+
+# The retired mission tier (#194, ADR-0044 decision 6): files of these families are refused by name, in the load and in
+# validate mode, so a stale one cannot hide. Removed when the service is incorporated into core and no supported pack
+# holds the old layout.
+retired:
+  - match: "**/mission_types/*.yaml"
+    reason: the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)
+  - match: "**/missions/*/mission.yaml"
+    reason: folded into the mission-type file (ADR-0044)
+  - match: "**/missions/*/mission-runtime.yaml"
+    reason: folded into the mission-type file (ADR-0044)
+  - match: "**/governance-profile.yaml"
+    reason: folded into the mission-type file (ADR-0044)
+  - match: "**/missions/*/expected-artifacts.yaml"
+    reason: folded into the mission-type steps (ADR-0044)
+  - match: "**/actions/*/index.yaml"
+    reason: folded into the mission-type steps' references (ADR-0044)
+  - match: "**/mission-steps/**/*"
+    reason: folded into the mission-type steps and their companions (ADR-0044)
+  - match: "**/missions/*/command-templates/*"
+    reason: folded into the mission-type steps' prompts (ADR-0044)
 
 # Files with no schema (#193, ADR-0040): consulted only when no files or exclusions rule matches.
 payloads:
@@ -204,5 +238,9 @@ payloads:
     kind: asset-payload
     content_form: bytes
   - match: "*/templates/**/*"
+    kind: template
+    content_form: bytes
+  # A mission type's templates (#194, ADR-0044), deferred here by ADR-0040: template payloads, id <type>/<path>.
+  - match: "*/missions/*/templates/**/*"
     kind: template
     content_form: bytes

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * <p>A companion path is relative to its artifact's file and resolves, normalized, to a file inside the pack
  * directory. It never ends in {@code .yaml}, so it can never be {@code pack.yaml}, a graph shard or an artifact file.
  * One file has one owner (ADR-0039 decision 3), so writing a companion can never replace another part of the pack: a
- * path that any {@code files} rule, {@code exclusions} rule or {@code payloads} rule of {@code file-kinds.yaml}
+ * path that any {@code files}, {@code exclusions}, {@code retired} or {@code payloads} rule of {@code file-kinds.yaml}
  * classifies is refused, naming the rule, except at the companion's own rule, a {@code files} rule whose schema is the
  * companion's declared structure schema in the companion's declared form (a guide classified by its own rule, #194).
  *
@@ -175,6 +175,10 @@ final class Companions {
             case PackFileKind.Unclassified unclassified -> Optional.empty();
             case PackFileKind.Excluded excluded ->
                 Optional.of("is excluded by file-kinds rule '" + excluded.exclusionClass() + "', not a companion");
+            case PackFileKind.Retired retired ->
+                // A retired file is refused by name (ADR-0044 decision 6); no artifact may take it as its companion.
+                Optional.of("is retired by file-kinds rule '" + retired.match() + "' (" + retired.reason()
+                        + "), not a companion");
             case PackFileKind.Mapped mapped
             when mapped.schema().isEmpty() ->
                 // A pack-level file (#193, ADR-0040): an asset file or a template.

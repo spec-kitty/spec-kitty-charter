@@ -97,6 +97,7 @@ final class GeneratedPackTree {
         GLOSSARY_PACK("glossary-pack"),
         SKILL("skill"),
         PROCEDURE("procedure"),
+        MISSION_TYPE("mission-type"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset");
 
@@ -127,6 +128,7 @@ final class GeneratedPackTree {
         PAYLOAD_UNNAMED(Verdict.PAYLOAD),
         PAYLOAD_NESTED(Verdict.PAYLOAD),
         TEMPLATE_TOP(Verdict.PAYLOAD),
+        TEMPLATE_MISSION(Verdict.PAYLOAD),
         PRESET(Verdict.LOADED),
         PACK_DOCUMENT(Verdict.LOADED),
         MANIFEST(Verdict.MANIFEST),
@@ -178,6 +180,7 @@ final class GeneratedPackTree {
             Shape.PAYLOAD_UNNAMED,
             Shape.PAYLOAD_NESTED,
             Shape.TEMPLATE_TOP,
+            Shape.TEMPLATE_MISSION,
             Shape.PRESET,
             Shape.DECOY_MISSION_TEMPLATE,
             Shape.DECOY_PAYLOAD_OUTSIDE_ASSETS,
@@ -457,9 +460,16 @@ final class GeneratedPackTree {
         // A procedure's id is its file stem (ADR-0043 S1), and the id cannot hold a dot: a procedure is planted under
         // its id, and never in a shape whose stem holds a dot (a hidden or a config stem), where a tactic stands in.
         boolean dottedStem = shape == Shape.LOADED_HIDDEN_STEM || shape == Shape.LOADED_CONFIG_STEM;
-        Kind kind = wanted == Kind.PROCEDURE && dottedStem ? Kind.TACTIC : wanted;
-        String stem = kind == Kind.PROCEDURE ? idOf(kind, n) : "e" + n;
-        String path = loadedPath(shape, stem, kind);
+        // A mission type sits at missions/<id>/<id>.mission-type.yaml (ADR-0044): it is planted there in the plain
+        // shape, and a tactic stands in for it in every other shape.
+        Kind kind =
+                (wanted == Kind.PROCEDURE && dottedStem) || (wanted == Kind.MISSION_TYPE && shape != Shape.LOADED_PLAIN)
+                        ? Kind.TACTIC
+                        : wanted;
+        String stem = kind == Kind.PROCEDURE || kind == Kind.MISSION_TYPE ? idOf(kind, n) : "e" + n;
+        String path = kind == Kind.MISSION_TYPE
+                ? "missions/" + stem + "/" + stem + ".mission-type.yaml"
+                : loadedPath(shape, stem, kind);
         boolean valid =
                 pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;
         String id = idOf(kind, n);
@@ -633,7 +643,9 @@ final class GeneratedPackTree {
             // The store's own temporary file, left behind by a write that was cut off, and a .gitkeep.
             case DECOY_ASSETS_HIDDEN -> PackFileSet.ASSETS + directories(2) + ".pack-write-" + stem + ".tmp";
             case DECOY_TEMPLATES_HIDDEN -> PackFileSet.TEMPLATES + directories(2) + "." + stem;
-            case DECOY_MISSION_TEMPLATE -> "missions/m/templates/" + stem + ".md";
+            // A mission type's template is a template payload (#194, ADR-0044); without a type directory it is no file.
+            case TEMPLATE_MISSION -> "missions/m/templates/" + directories(1) + stem + ".md";
+            case DECOY_MISSION_TEMPLATE -> "missions/templates/" + stem + ".md";
             case DECOY_PAYLOAD_OUTSIDE_ASSETS -> directories(2) + stem + ".png";
             case DECOY_ORG_CHARTER -> "org-charter.yaml";
             case DECOY_SUB_CHARTER -> "sub/charter.yaml";
@@ -687,6 +699,7 @@ final class GeneratedPackTree {
             case GLOSSARY_PACK -> "gp-" + n;
             case SKILL -> "sk-" + n;
             case PROCEDURE -> "pr-" + n;
+            case MISSION_TYPE -> "mt-" + n;
             case ASSET -> "a-" + n;
         };
     }
@@ -714,6 +727,8 @@ final class GeneratedPackTree {
             case PROCEDURE ->
                 "schema_version: '1.0'\nid: " + id
                         + "\ntitle: T\ndescription: D\nentry_condition: E\nexit_condition: X\nsteps:\n  - title: S\n";
+            case MISSION_TYPE ->
+                "schema_version: '1.0'\nid: " + id + "\ntitle: T\ndescription: D\nsteps:\n  - id: s\n    title: S\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

@@ -1,0 +1,526 @@
+package ai.speckitty.charter.packs.infra.storage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.missions.domain.ArtifactClass;
+import ai.speckitty.charter.missions.domain.MissionReference;
+import ai.speckitty.charter.missions.domain.MissionStep;
+import ai.speckitty.charter.missions.domain.MissionType;
+import ai.speckitty.charter.missions.domain.StepDocument;
+import ai.speckitty.charter.missions.domain.StepSection;
+import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackInspector;
+import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.infra.storage.WholePackRoundTrip.Outcome;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.UnaryOperator;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+/**
+ * The mission type in the pack store (ADR-0044): one file per type at {@code missions/<id>/<id>.mission-type.yaml}, its
+ * steps as sub-items, each step's prompt and guidelines as Markdown companions at their derived paths. Each refusal
+ * stands beside its accepted neighbour, and the positive controls run through the production write path.
+ */
+@DisplayName("A mission type round-trips from one file with its step companions (#194)")
+class MissionTypeBindingTest {
+
+    private static final String PACK = "mission-type";
+    private static final PackIdentifier PACK_ID = new PackIdentifier(PACK);
+    private static final String FILE = "missions/research/research.mission-type.yaml";
+    private static final String PROMPT = "missions/research/steps/scoping.prompt.md";
+    private static final String GUIDELINES = "missions/research/steps/scoping.guidelines.md";
+
+    private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+
+    @TempDir
+    Path host;
+
+    private FilesystemPackStore.PackRead read() {
+        return new FilesystemPackStore(host, strategy).read(PACK_ID, List.of(MissionTypeBinding.INSTANCE));
+    }
+
+    private Pack load(Path pack) {
+        return new DomainRepositoryService(() -> List.of(new PackLocation(PACK, PackLevel.ORG, pack)), strategy)
+                .load(PACK_ID);
+    }
+
+    private static MissionType missionType(Pack pack) {
+        return pack.artifacts().stream()
+                .filter(MissionType.class::isInstance)
+                .map(MissionType.class::cast)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    // ---- the fixture round trip ---------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("the fixture reads into a mission type with its steps in order, documents and side-kept artifacts")
+    void theFixtureReadsIntoTheDomain() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+
+        Pack loaded = load(pack);
+
+        assertThat(loaded.violations()).isEmpty();
+        MissionType type = missionType(loaded);
+        assertThat(type.kind()).isEqualTo(ArtifactKind.MISSION_TYPE);
+        assertThat(type.steps()).extracting(MissionStep::id).containsExactly("scoping", "methodology");
+        assertThat(type.onDemandSteps()).extracting(MissionStep::id).containsExactly("retrospect");
+        MissionStep scoping = type.steps().getFirst();
+        assertThat(scoping.role()).contains("researcher");
+        assertThat(scoping.expectedInputArtifacts())
+                .singleElement()
+                .satisfies(input -> assertThat(input.artifactKey()).isEqualTo("input.charter.main"));
+        assertThat(scoping.expectedOutputArtifacts()).singleElement().satisfies(output -> {
+            assertThat(output.blocking()).isTrue();
+            assertThat(output.artifactClass()).isEqualTo(ArtifactClass.OUTPUT);
+        });
+        StepDocument prompt = scoping.prompt().orElseThrow();
+        assertThat(prompt.title()).contains("Research Scoping");
+        assertThat(prompt.sections()).extracting(StepSection::title).containsExactly("Goal", "Steps");
+        assertThat(prompt.sections().get(1).content())
+                .as("a heading in a fence stays content")
+                .contains("## not");
+        assertThat(type.steps().get(1).prompt().orElseThrow().title())
+                .as("a prompt without an H1")
+                .isEmpty();
+        assertThat(type.steps().get(1).guidelines()).isEmpty();
+        assertThat(scoping.references())
+                .extracting(MissionReference::id)
+                .containsExactly("requirements-validation-workflow", "DIRECTIVE_003");
+        assertThat(loaded.artifacts())
+                .flatExtracting(CharterArtifact::relationships)
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the file and its companions write back byte for byte through the production writer")
+    void theFixtureWritesBackByteForByte() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Map<String, String> source = new TreeMap<>();
+        for (String file : List.of(FILE, PROMPT, GUIDELINES, "missions/research/steps/methodology.prompt.md")) {
+            source.put(file, Files.readString(pack.resolve(file)));
+        }
+        MissionTypeDso dso = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        MissionType type = MissionTypeBinding.INSTANCE.toEntity(PACK_ID, dso);
+        assertThat(MissionTypeBinding.INSTANCE.toDso(type)).as("DSO fidelity").isEqualTo(dso);
+
+        for (String file : source.keySet()) {
+            Files.delete(pack.resolve(file));
+        }
+        new FilesystemPackStore(host, strategy)
+                .write(PACK_ID, MissionTypeBinding.INSTANCE, MissionTypeBinding.INSTANCE.toDso(type));
+
+        source.forEach((file, text) -> assertThat(pack.resolve(file)).as(file).hasContent(text));
+    }
+
+    @Test
+    @DisplayName("a new mission type is created at missions/<id>/ with its steps' companions, directories included")
+    void aNewMissionTypeIsCreatedAtItsPlace() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        MissionTypeDso fixture = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        MissionTypeDso renamed = new MissionTypeDso(
+                "plan",
+                fixture.schemaVersion(),
+                "Plan",
+                fixture.description(),
+                Optional.empty(),
+                false,
+                Map.of(),
+                List.of(),
+                List.of(),
+                fixture.steps(),
+                List.of());
+
+        new FilesystemPackStore(host, strategy).write(PACK_ID, MissionTypeBinding.INSTANCE, renamed);
+
+        assertThat(pack.resolve("missions/plan/plan.mission-type.yaml")).exists();
+        assertThat(pack.resolve("missions/plan/steps/scoping.prompt.md")).hasSameTextualContentAs(pack.resolve(PROMPT));
+        assertThat(read().dsos(MissionTypeBinding.INSTANCE))
+                .extracting(MissionTypeDso::id)
+                .contains("plan");
+    }
+
+    @ParameterizedTest(name = "the id ''{0}'' does not name a place in the pack")
+    @ValueSource(strings = {"../escape", "a/b"})
+    void anIdThatLeavesItsPlaceIsRefusedOnCreate(String id) throws IOException {
+        PackFixtures.copyOf(PACK, host);
+        MissionTypeDso fixture = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        MissionTypeDso escaping = new MissionTypeDso(
+                id, "1.0", "T", "D", Optional.empty(), false, Map.of(), List.of(), List.of(), List.of(), List.of());
+        FilesystemPackStore store = new FilesystemPackStore(host, strategy);
+
+        assertThatThrownBy(() -> store.write(PACK_ID, MissionTypeBinding.INSTANCE, escaping))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("mission_type id '" + id + "' does not name a file in the pack");
+        assertThat(fixture.id())
+                .as("the accepted neighbour, read from its place")
+                .isEqualTo("research");
+    }
+
+    // ---- placement and derived paths ----------------------------------------------------------------------------
+
+    @ParameterizedTest(name = "a mission type at {0} is refused; at its place it is read")
+    @ValueSource(
+            strings = {
+                "research.mission-type.yaml",
+                "mission_types/research.mission-type.yaml",
+                "missions/research/nested/research.mission-type.yaml",
+                "missions/other/research.mission-type.yaml"
+            })
+    void aMisplacedMissionTypeIsRefused(String place) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Path target = pack.resolve(place);
+        Files.createDirectories(target.getParent());
+        Files.move(pack.resolve(FILE), target);
+
+        FilesystemPackStore.PackRead read = read();
+
+        assertThat(read.dsos(MissionTypeBinding.INSTANCE)).isEmpty();
+        assertThat(read.violations())
+                .extracting(PackElementViolation::reason)
+                .contains("mission_type 'research' is not at its place '" + FILE + "'");
+    }
+
+    @Test
+    @DisplayName("validate mode refuses a misplaced mission type as a const violation at its id")
+    void validateModeRefusesAMisplacedMissionType() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Path target = pack.resolve("missions/other/research.mission-type.yaml");
+        Files.createDirectories(target.getParent());
+        Files.move(pack.resolve(FILE), target);
+
+        PackContents validated = new FileSystemPackInspector()
+                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+
+        assertThat(validated.unreadableFiles())
+                .extracting(FileRead::file)
+                .containsExactly("missions/other/research.mission-type.yaml");
+    }
+
+    @Test
+    @DisplayName("an output template that names a file is read; one that is missing or leaves the pack is refused")
+    void outputTemplatesNameAFile() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        String withTemplate = Files.readString(pack.resolve(FILE))
+                .replace(
+                        "    path_pattern: spec.md\n    blocking: true\n",
+                        "    path_pattern: spec.md\n    blocking: true\n    template_path: templates/spec-template.md\n");
+        Files.writeString(pack.resolve(FILE), withTemplate);
+
+        assertThat(read().violations())
+                .containsExactly(new PackElementViolation(
+                        FILE, "reference", "templates/spec-template.md (named by step 'scoping'): missing"));
+
+        Files.createDirectories(pack.resolve("missions/research/templates"));
+        Files.writeString(pack.resolve("missions/research/templates/spec-template.md"), "# Spec\n");
+        assertThat(read().violations()).isEmpty();
+        assertThat(read().dsos(MissionTypeBinding.INSTANCE)).hasSize(1);
+
+        // A templates directory that links out of the pack: the file is there, its real place is not in the pack.
+        Path outside = Files.createDirectories(host.resolve("outside"));
+        Files.writeString(outside.resolve("spec-template.md"), "# Spec\n");
+        Path templates = pack.resolve("missions/research/templates");
+        Files.delete(templates.resolve("spec-template.md"));
+        Files.delete(templates);
+        Files.createSymbolicLink(templates, outside);
+        assertThat(read().violations())
+                .extracting(PackElementViolation::reason)
+                .containsExactly("templates/spec-template.md (named by step 'scoping'): leaves the pack");
+        Files.delete(templates);
+
+        Files.writeString(
+                pack.resolve(FILE), withTemplate.replace("templates/spec-template.md", "templates/../../../x.md"));
+        assertThat(read().violations())
+                .extracting(PackElementViolation::reason)
+                .as("the schema refuses a template path that climbs, before the store looks for it")
+                .containsExactly("not violated at /steps/0/expected_output_artifacts/0/template_path");
+    }
+
+    @Test
+    @DisplayName("a prompt_path other than the derived one is refused when the pack loads; the derived one is read")
+    void aNonDerivedPromptPathIsRefused() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.move(
+                pack.resolve("missions/research/steps/methodology.prompt.md"),
+                pack.resolve("missions/research/steps/method.prompt.md"));
+        Files.writeString(
+                pack.resolve(FILE),
+                Files.readString(pack.resolve(FILE)).replace("steps/methodology.prompt.md", "steps/method.prompt.md"));
+
+        Pack loaded = load(pack);
+
+        assertThat(loaded.violations())
+                .extracting(PackElementViolation::reason)
+                .contains("mission type 'research' step 'methodology': names steps/method.prompt.md, not its derived"
+                        + " path steps/methodology.prompt.md");
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ValueSource(
+            strings = {
+                "owner: me\ndescription: Choose.",
+                "description: 3",
+                "description: ''",
+                "description: ' '",
+                "description: [a]",
+                "owner: me",
+                ""
+            })
+    @DisplayName("a prompt frontmatter other than one description text is refused on the prompt")
+    void anyOtherPromptFrontmatterIsRefused(String frontmatter) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Path methodology = pack.resolve("missions/research/steps/methodology.prompt.md");
+        String held = Files.readString(methodology);
+        String body = held.substring(held.indexOf("\n---\n", 4) + 5);
+        Files.writeString(methodology, "---\n" + (frontmatter.isEmpty() ? "" : frontmatter + "\n") + "---\n" + body);
+
+        assertThat(read().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(FILE);
+            assertThat(violation.reason()).startsWith("steps/methodology.prompt.md: ");
+        });
+    }
+
+    @Test
+    @DisplayName("a prompt's frontmatter is its detailed description; guidelines frontmatter is refused")
+    void promptFrontmatterIsTheDetailedDescription() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+
+        MissionStep step = MissionTypeBinding.INSTANCE
+                .toEntity(PACK_ID, read().dsos(MissionTypeBinding.INSTANCE).getFirst())
+                .steps()
+                .get(1);
+        assertThat(step.prompt().orElseThrow().description())
+                .contains("Choose a research method that fits the question, weigh the alternatives, and record the"
+                        + " reasons for the choice.");
+
+        Files.writeString(
+                pack.resolve(GUIDELINES),
+                "---\ndescription: Scope it\n---\n" + Files.readString(pack.resolve(GUIDELINES)));
+        assertThat(read().violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(FILE);
+            assertThat(violation.reason())
+                    .startsWith("steps/scoping.guidelines.md: ")
+                    .contains("frontmatter");
+        });
+    }
+
+    @Test
+    @DisplayName("a missing prompt is a companion violation of its mission type")
+    void aMissingPromptIsAViolation() throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.delete(pack.resolve(PROMPT));
+
+        FilesystemPackStore.PackRead read = read();
+
+        assertThat(read.dsos(MissionTypeBinding.INSTANCE)).isEmpty();
+        assertThat(read.violations())
+                .containsExactly(new PackElementViolation(FILE, "companion", "steps/scoping.prompt.md: missing"));
+    }
+
+    // ---- the gate -------------------------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("the fixture pack round-trips through the gate green, every companion paired")
+    void theFixtureIsGreenThroughTheGate() throws IOException {
+        Path source = PackFixtures.copyOf(PACK, host);
+
+        Gate faithful = gate(source, "faithful", pack -> pack);
+
+        assertThat(faithful.observed())
+                .containsKeys(FILE, PROMPT, GUIDELINES)
+                .allSatisfy((path, red) -> assertThat(red).as(path).isEmpty());
+        assertThat(faithful.unpaired()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("positive control: a changed step title is a difference in the mission-type file")
+    void aChangedStepTitleIsReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "title",
+                pack -> pack.with(edit(pack, type -> {
+                    List<MissionStep> steps = new ArrayList<>(type.steps());
+                    MissionStep first = steps.getFirst();
+                    steps.set(0, retitled(first, "Scoping, renamed"));
+                    return rebuilt(type, steps, type.onDemandSteps());
+                })));
+
+        assertThat(changed.observed().get(FILE)).isPresent();
+    }
+
+    @Test
+    @DisplayName("positive control: two steps swapped are a difference, so order is meaning")
+    void swappedStepsAreReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "swapped",
+                pack -> pack.with(edit(
+                        pack,
+                        type -> rebuilt(
+                                type, List.of(type.steps().get(1), type.steps().get(0)), type.onDemandSteps()))));
+
+        assertThat(changed.observed().get(FILE)).isPresent();
+    }
+
+    @Test
+    @DisplayName("positive control: a dropped on-demand step is a difference")
+    void aDroppedOnDemandStepIsReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "dropped",
+                pack -> pack.with(edit(pack, type -> rebuilt(type, type.steps(), List.of()))));
+
+        assertThat(changed.observed().get(FILE)).isPresent();
+    }
+
+    @Test
+    @DisplayName("positive control: an edited prompt section is a difference at that section, the file unchanged")
+    void anEditedPromptSectionIsReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "prompt",
+                pack -> pack.with(edit(pack, type -> {
+                    List<MissionStep> steps = new ArrayList<>(type.steps());
+                    MissionStep first = steps.getFirst();
+                    StepDocument prompt = first.prompt().orElseThrow();
+                    List<StepSection> sections = new ArrayList<>(prompt.sections());
+                    sections.set(
+                            0,
+                            new StepSection(
+                                    "Goal", sections.getFirst().content().replace("question", "questioN")));
+                    steps.set(
+                            0,
+                            new MissionStep(
+                                    first.id(),
+                                    first.title(),
+                                    first.description(),
+                                    first.role(),
+                                    Optional.of(new StepDocument(
+                                            prompt.title(), prompt.description(), prompt.preamble(), sections)),
+                                    first.guidelines(),
+                                    first.expectedInputArtifacts(),
+                                    first.expectedOutputArtifacts(),
+                                    first.references()));
+                    return rebuilt(type, steps, type.onDemandSteps());
+                })));
+
+        assertThat(changed.observed().get(PROMPT))
+                .hasValueSatisfying(red -> assertThat(red).startsWith("sections[0].content: "));
+        assertThat(changed.observed().get(FILE)).as("the mission-type file").isEmpty();
+    }
+
+    @Test
+    @DisplayName("positive control: reordered references are a difference")
+    void reorderedReferencesAreReported() throws IOException {
+        Gate changed = gate(
+                PackFixtures.copyOf(PACK, host),
+                "references",
+                pack -> pack.with(edit(pack, type -> {
+                    List<MissionStep> steps = new ArrayList<>(type.steps());
+                    MissionStep first = steps.getFirst();
+                    steps.set(
+                            0,
+                            new MissionStep(
+                                    first.id(),
+                                    first.title(),
+                                    first.description(),
+                                    first.role(),
+                                    first.prompt(),
+                                    first.guidelines(),
+                                    first.expectedInputArtifacts(),
+                                    first.expectedOutputArtifacts(),
+                                    List.of(
+                                            first.references().get(1),
+                                            first.references().get(0))));
+                    return rebuilt(type, steps, type.onDemandSteps());
+                })));
+
+        assertThat(changed.observed().get(FILE)).isPresent();
+    }
+
+    // ---- helpers --------------------------------------------------------------------------------------------------
+
+    private record Gate(Map<String, Optional<String>> observed, List<String> unpaired) {}
+
+    private Gate gate(Path source, String run, UnaryOperator<Pack> beforeSave) {
+        Path target = host.resolve(run).resolve(PACK);
+        SortedMap<String, String> census = WholePackCensus.of(source);
+        Map<String, Outcome> outcomes = new TreeMap<>();
+        WholePackRoundTrip recording = new WholePackRoundTrip() {
+            private final DomainRoundTrip domain = new DomainRoundTrip(strategy, beforeSave);
+
+            @Override
+            public Set<String> modelledKinds() {
+                return domain.modelledKinds();
+            }
+
+            @Override
+            public Map<String, Outcome> roundTrip(Path from, Path to, Map<String, String> kindOf) {
+                outcomes.putAll(domain.roundTrip(from, to, kindOf));
+                return outcomes;
+            }
+        };
+        Set<String> paired = new TreeSet<>();
+        Map<String, Optional<String>> observed = WholePackRoundTripTest.observe(
+                recording, source, target, census, new TreeMap<>(), paired, WholePackCensus.formsOf(source));
+        return new Gate(observed, WholePackRoundTripTest.unpaired(target, paired));
+    }
+
+    private static MissionType edit(Pack pack, UnaryOperator<MissionType> change) {
+        return change.apply(missionType(pack));
+    }
+
+    private static MissionStep retitled(MissionStep step, String title) {
+        return new MissionStep(
+                step.id(),
+                title,
+                step.description(),
+                step.role(),
+                step.prompt(),
+                step.guidelines(),
+                step.expectedInputArtifacts(),
+                step.expectedOutputArtifacts(),
+                step.references());
+    }
+
+    private static MissionType rebuilt(MissionType type, List<MissionStep> steps, List<MissionStep> onDemand) {
+        MissionType.Builder builder = MissionType.builder()
+                .id(type.id())
+                .packId(type.packId())
+                .schemaVersion(type.schemaVersion().orElseThrow())
+                .title(type.title())
+                .description(type.description().orElseThrow())
+                .content(type.content().orElse(null))
+                .requiresSubstantiveSpec(type.requiresSubstantiveSpec())
+                .pathConventions(type.pathConventions().orElse(null));
+        type.expectedOutputArtifacts().forEach(builder::expectedOutputArtifact);
+        type.references().forEach(builder::reference);
+        steps.forEach(builder::step);
+        onDemand.forEach(builder::onDemandStep);
+        return builder.build();
+    }
+}

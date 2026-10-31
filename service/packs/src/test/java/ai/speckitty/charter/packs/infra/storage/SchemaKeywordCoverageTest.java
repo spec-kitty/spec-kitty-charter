@@ -60,7 +60,8 @@ class SchemaKeywordCoverageTest {
             "then");
 
     /** Keywords whose violation gets the fixed fallback text, {@code <o>: '<pointer>' breaks schema keyword '<k>'}. */
-    private static final Set<String> FIXED_FALLBACK = Set.of("anyOf", "oneOf", "not", "maxLength", "uniqueItems");
+    private static final Set<String> FIXED_FALLBACK =
+            Set.of("anyOf", "oneOf", "not", "maxLength", "uniqueItems", "minProperties");
 
     private static void collect(JsonNode schema, String where, Map<String, Set<String>> found) {
         if (!schema.isObject()) {

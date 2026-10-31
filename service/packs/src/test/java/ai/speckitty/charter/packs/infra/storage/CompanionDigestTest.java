@@ -120,8 +120,7 @@ class CompanionDigestTest {
     }
 
     @Test
-    @DisplayName(
-            "binding skills adds nothing to the digest of a pack with no skill; only toolguide guides are Markdown")
+    @DisplayName("binding skills adds nothing to the digest of a pack with no skill; only companions are Markdown")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
         // The vendored qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
         // styleguides, ...) and Markdown beside them, and no skill.
@@ -130,15 +129,34 @@ class CompanionDigestTest {
         withoutSkills.remove(ArtifactKind.SKILL);
 
         List<String> digested = PackFileSet.digested(qa);
-        // #193 digests the pack's asset files (three .py payloads), last.
+        // #193 digests the pack's asset files (three .py payloads) and then its templates, last; #194 makes the mission
+        // type's templates templates.
         List<String> assetFiles = PackFileSet.assetFiles(qa);
-        // #194: every file before them is YAML, except the three toolguide guides, each right after its toolguide.
-        List<String> beforeAssets = digested.subList(0, digested.size() - assetFiles.size());
+        List<String> payloads = new java.util.ArrayList<>(assetFiles);
+        payloads.addAll(PackFileSet.templates(qa));
+        // #194: every file before them is YAML, except the companions: the three toolguide guides, each right after its
+        // toolguide, and the qa mission type's seven step prompts, right after the mission-type file in step order.
+        List<String> beforeAssets = digested.subList(0, digested.size() - payloads.size());
         List<String> guides =
-                beforeAssets.stream().filter(file -> !file.endsWith(".yaml")).toList();
+                beforeAssets.stream().filter(file -> file.endsWith(".guide.md")).toList();
+        int type = beforeAssets.indexOf("missions/qa/qa.mission-type.yaml");
+
+        assertThat(beforeAssets.stream().filter(file -> !file.endsWith(".yaml")))
+                .hasSize(10)
+                .allSatisfy(file ->
+                        assertThat(file).matches("toolguides/.*\\.guide\\.md|missions/qa/steps/.*\\.prompt\\.md"));
+        assertThat(beforeAssets.subList(type + 1, type + 8))
+                .containsExactly(
+                        "missions/qa/steps/discovery.prompt.md",
+                        "missions/qa/steps/specify.prompt.md",
+                        "missions/qa/steps/plan.prompt.md",
+                        "missions/qa/steps/tasks.prompt.md",
+                        "missions/qa/steps/implement.prompt.md",
+                        "missions/qa/steps/review.prompt.md",
+                        "missions/qa/steps/accept.prompt.md");
 
         assertThat(assetFiles).hasSize(3).noneSatisfy(file -> assertThat(file).endsWith(".md"));
-        assertThat(digested).hasSizeGreaterThan(10).endsWith(assetFiles.toArray(String[]::new));
+        assertThat(digested).hasSizeGreaterThan(10).endsWith(payloads.toArray(String[]::new));
         assertThat(guides).hasSize(3).allSatisfy(guide -> {
             String toolguide = beforeAssets.get(beforeAssets.indexOf(guide) - 1);
             assertThat(toolguide).endsWith(".toolguide.yaml");

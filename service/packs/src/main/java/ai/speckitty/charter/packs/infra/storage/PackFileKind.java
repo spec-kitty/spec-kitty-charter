@@ -17,8 +17,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Classifies a pack-relative file path against the bundled {@code file-kinds.yaml}: the file is mapped to a kind (with
  * the schema that validates it, or none for a schema-less payload) and its {@link ContentForm}, excluded for a reviewed
- * reason, or not classified at all. The {@code files} rules are consulted first, then the {@code exclusions}, then the
- * {@code payloads}.
+ * reason, retired (a file of a layout the service no longer reads, refused by name, ADR-0044 decision 6), or not classified at
+ * all. The {@code files} rules are consulted first, then the {@code exclusions}, then the {@code retired} rules, then the
+ * {@code payloads}. A top-level key the table does not define is refused when it loads, never ignored.
  *
  * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
  * rule declares a form other than {@code yaml} or {@code markdown} (its schema validates the parsed YAML document, or
@@ -43,6 +44,13 @@ final class PackFileKind {
     private static final Set<String> FILE_KEYS = Set.of(MATCH, "schema", CONTENT_FORM);
     private static final Set<String> EXCLUSION_KEYS = Set.of(MATCH, "reason");
     private static final Set<String> PAYLOAD_KEYS = Set.of(MATCH, "kind", CONTENT_FORM);
+    private static final Set<String> RETIRED_KEYS = Set.of(MATCH, "reason");
+    private static final String RETIRED = "retired";
+    private static final String PAYLOADS = "payloads";
+
+    /** The table's top-level keys; any other is refused when the table loads (#194). */
+    private static final Set<String> TOP_LEVEL_KEYS =
+            Set.of("node_kinds", "artifact_kinds", "fragment_kinds", "files", "exclusions", PAYLOADS, RETIRED);
 
     /**
      * The content forms the table admits. A rule naming another form fails when the table loads (C-004). Admitting a
@@ -70,7 +78,7 @@ final class PackFileKind {
     private static final PackFileKind BUNDLED = load();
 
     /** The outcome of classifying one path. */
-    sealed interface Classification permits Mapped, Excluded, Unclassified {}
+    sealed interface Classification permits Mapped, Excluded, Retired, Unclassified {}
 
     /**
      * A file of a known kind.
@@ -89,6 +97,15 @@ final class PackFileKind {
      * @param reason why the class has no schema
      */
     record Excluded(String exclusionClass, String reason) implements Classification {}
+
+    /**
+     * A file of a retired family (ADR-0044 decision 6): the store's load and validate mode refuse it by name, the gate reports it
+     * in its own bucket, and the fingerprint digests it, so a stale file cannot hide.
+     *
+     * @param match the {@code retired} rule's glob, which names the family
+     * @param reason why the family is retired
+     */
+    record Retired(String match, String reason) implements Classification {}
 
     /** A file that no rule covers. */
     enum Unclassified implements Classification {
@@ -123,6 +140,14 @@ final class PackFileKind {
      */
     record PayloadRule(String match, String kind, ContentForm contentForm) {}
 
+    /**
+     * A {@code retired} rule: a family of files the service no longer reads, refused by name.
+     *
+     * @param match the glob
+     * @param reason why the family is retired
+     */
+    record RetiredRule(String match, String reason) {}
+
     private record Compiled(String match, Pattern pattern) {}
 
     private final String schemaDir;
@@ -131,6 +156,7 @@ final class PackFileKind {
     private final List<FileRule> fileRules;
     private final List<ExclusionRule> exclusionRules;
     private final List<PayloadRule> payloadRules;
+    private final List<RetiredRule> retiredRules;
     private final List<Compiled> compiled;
     private final List<Compiled> payloadsCompiled;
 
@@ -165,9 +191,11 @@ final class PackFileKind {
         this.fileRules = List.copyOf(table.fileRules());
         this.exclusionRules = List.copyOf(table.exclusionRules());
         this.payloadRules = List.copyOf(table.payloadRules());
+        this.retiredRules = List.copyOf(table.retiredRules());
         List<Compiled> all = new ArrayList<>();
         fileRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
         exclusionRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
+        retiredRules.forEach(r -> all.add(new Compiled(r.match(), glob(r.match()))));
         this.compiled = List.copyOf(all);
         this.payloadsCompiled = payloadRules.stream()
                 .map(r -> new Compiled(r.match(), glob(r.match())))
@@ -179,7 +207,8 @@ final class PackFileKind {
             Map<String, String> fragmentKinds,
             List<FileRule> fileRules,
             List<ExclusionRule> exclusionRules,
-            List<PayloadRule> payloadRules) {}
+            List<PayloadRule> payloadRules,
+            List<RetiredRule> retiredRules) {}
 
     /** The table bundled with this adapter, read once. */
     static PackFileKind bundled() {
@@ -211,8 +240,14 @@ final class PackFileKind {
         return payloadRules;
     }
 
+    /** The retired families, in table order; empty until the re-pin gives the bundled table its rules (#194). */
+    List<RetiredRule> retiredRules() {
+        return retiredRules;
+    }
+
     /**
-     * Every {@code files} or {@code exclusions} rule glob that matches {@code path}; the table promises at most one.
+     * Every {@code files}, {@code exclusions} or {@code retired} rule glob that matches {@code path}; the table
+     * promises at most one.
      * The payload rules are left out: they overlap the other two by design (a sidecar under {@code assets/} matches a
      * {@code files} rule and a payload rule), and only the first match counts.
      */
@@ -239,18 +274,12 @@ final class PackFileKind {
      * @return how the path is handled
      */
     Classification classify(String path) {
-        // `compiled` holds the files rules, then the exclusions, each compiled once when the table was built.
+        // `compiled` holds the files rules, then the exclusions, then the retired rules, each compiled once when the
+        // table was built.
         for (int i = 0; i < compiled.size(); i++) {
-            if (!compiled.get(i).pattern().matcher(path).matches()) {
-                continue;
+            if (compiled.get(i).pattern().matcher(path).matches()) {
+                return ruleAt(i);
             }
-            if (i < fileRules.size()) {
-                FileRule rule = fileRules.get(i);
-                return new Mapped(
-                        rule.schema(), Optional.of(schemaDir + rule.schema() + SCHEMA_SUFFIX), rule.contentForm());
-            }
-            ExclusionRule rule = exclusionRules.get(i - fileRules.size());
-            return new Excluded(rule.match(), rule.reason());
         }
         for (int i = 0; i < payloadsCompiled.size(); i++) {
             if (payloadsCompiled.get(i).pattern().matcher(path).matches()) {
@@ -259,6 +288,22 @@ final class PackFileKind {
             }
         }
         return Unclassified.INSTANCE;
+    }
+
+    /** The classification of the {@code i}th rule of {@link #compiled}. */
+    private Classification ruleAt(int i) {
+        if (i < fileRules.size()) {
+            FileRule rule = fileRules.get(i);
+            return new Mapped(
+                    rule.schema(), Optional.of(schemaDir + rule.schema() + SCHEMA_SUFFIX), rule.contentForm());
+        }
+        int exclusion = i - fileRules.size();
+        if (exclusion < exclusionRules.size()) {
+            ExclusionRule rule = exclusionRules.get(exclusion);
+            return new Excluded(rule.match(), rule.reason());
+        }
+        RetiredRule rule = retiredRules.get(exclusion - exclusionRules.size());
+        return new Retired(rule.match(), rule.reason());
     }
 
     private static Pattern glob(String match) {
@@ -290,6 +335,13 @@ final class PackFileKind {
     private static Table parse(String yaml) {
         Object root = Yaml.load(yaml);
         Map<String, Object> table = map(root, RESOURCE);
+        for (String key : table.keySet()) {
+            if (!TOP_LEVEL_KEYS.contains(key)) {
+                throw new IllegalStateException(
+                        RESOURCE + ": the unknown top-level key '" + key + "'; the table takes only "
+                                + TOP_LEVEL_KEYS.stream().sorted().toList());
+            }
+        }
         List<String> nodeKinds = strings(table.get("node_kinds"), "node_kinds");
         Map<String, String> fragments = new LinkedHashMap<>();
         map(table.get("fragment_kinds"), "fragment_kinds").forEach((k, v) -> fragments.put(k, String.valueOf(v)));
@@ -310,11 +362,14 @@ final class PackFileKind {
             Map<String, Object> rule = rule(entry, "exclusions", EXCLUSION_KEYS);
             exclusions.add(new ExclusionRule(string(rule, MATCH), string(rule, "reason")));
         }
+        return new Table(nodeKinds, fragments, files, exclusions, payloads(table), retired(table));
+    }
+
+    /** The optional {@code payloads} section: a table without schema-less files has none. */
+    private static List<PayloadRule> payloads(Map<String, Object> table) {
         List<PayloadRule> payloads = new ArrayList<>();
-        // The section is optional: a table without schema-less files has none.
-        Object payloadSection = table.get("payloads");
-        for (Object entry : payloadSection == null ? List.of() : list(payloadSection, "payloads")) {
-            Map<String, Object> rule = rule(entry, "payloads", PAYLOAD_KEYS);
+        for (Object entry : section(table, PAYLOADS)) {
+            Map<String, Object> rule = rule(entry, PAYLOADS, PAYLOAD_KEYS);
             ContentForm form = contentForm(rule);
             String kind = string(rule, "kind");
             if (form != ContentForm.BYTES) {
@@ -331,7 +386,26 @@ final class PackFileKind {
             }
             payloads.add(new PayloadRule(string(rule, MATCH), kind, form));
         }
-        return new Table(nodeKinds, fragments, files, exclusions, payloads);
+        return payloads;
+    }
+
+    /**
+     * The optional {@code retired} section (ADR-0044 decision 6): each rule a {@code match} and a {@code reason}, both required.
+     * A table without retired families has none.
+     */
+    private static List<RetiredRule> retired(Map<String, Object> table) {
+        List<RetiredRule> retired = new ArrayList<>();
+        for (Object entry : section(table, RETIRED)) {
+            Map<String, Object> rule = rule(entry, RETIRED, RETIRED_KEYS);
+            retired.add(new RetiredRule(string(rule, MATCH), string(rule, "reason")));
+        }
+        return retired;
+    }
+
+    /** The entries of an optional list section; none when the table leaves it out. */
+    private static List<?> section(Map<String, Object> table, String name) {
+        Object section = table.get(name);
+        return section == null ? List.of() : list(section, name);
     }
 
     /**

@@ -310,4 +310,25 @@ class PackPolicyTest {
         assertThat(textOf(violation("a.graph.yaml", List.of("nodes", "0"), keyword, null, null, Map.of())))
                 .isEqualTo("qa/a.graph.yaml: '/nodes/0' breaks schema keyword '" + keyword + "'");
     }
+
+    @Test
+    void aRetiredFileReadsAsRetiredAndAParseFailureKeepsItsWording() {
+        PackContents.ParseFailure retired =
+                PackContents.ParseFailure.retired("missions/plan/mission.yaml", "folded into the mission-type file");
+        PackContents.ParseFailure markdown =
+                PackContents.ParseFailure.retired("mission-steps/plan/specify/prompt.md", "folded into the steps");
+        PackContents.ParseFailure broken = new PackContents.ParseFailure("tactics/x.tactic.yaml", "mapping expected");
+
+        assertThat(retired.retiredReason()).contains("folded into the mission-type file");
+        assertThat(broken.retiredReason()).isEmpty();
+        assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(retired.file(), retired, List.of())))
+                .extracting(PackFinding::detail)
+                .containsExactly("qa/missions/plan/mission.yaml is retired: folded into the mission-type file");
+        assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(markdown.file(), markdown, List.of())))
+                .extracting(PackFinding::detail)
+                .containsExactly("qa/mission-steps/plan/specify/prompt.md is retired: folded into the steps");
+        assertThat(PackPolicy.unreadable("qa", new FileRead.Unreadable<>(broken.file(), broken, List.of())))
+                .extracting(PackFinding::detail)
+                .containsExactly("qa/tactics/x.tactic.yaml is not valid YAML: mapping expected");
+    }
 }

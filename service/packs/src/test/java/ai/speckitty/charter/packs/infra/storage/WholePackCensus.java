@@ -35,6 +35,12 @@ final class WholePackCensus {
     /** The prefix of a gate kind for a file no schema covers. */
     static final String OTHER = "other:";
 
+    /**
+     * The prefix of a retired file's gate kind, followed by its rule's glob (ADR-0044 decision 6): a bucket of its own, never
+     * folded into {@code other:}, so a stale file is red.
+     */
+    static final String RETIRED = "retired:";
+
     private WholePackCensus() {}
 
     /**
@@ -104,11 +110,25 @@ final class WholePackCensus {
      */
     private static String kindOf(String packName, String path, SortedMap<String, CompanionFile> companions) {
         @Nullable CompanionFile companion = companions.get(path);
-        if (companion != null) {
-            return companion.ownerKind();
-        }
-        if (PackFileKind.bundled().classify(packName + "/" + path) instanceof PackFileKind.Mapped mapped) {
+        return companion != null ? companion.ownerKind() : kindOf(packName, path, PackFileKind.bundled());
+    }
+
+    /**
+     * The gate kind of one file under {@code table}: the schema name, {@link #RETIRED} and the rule's glob for a retired
+     * file, else {@code other:<first segment>}. The seam a test uses before the bundled table has a retired rule.
+     *
+     * @param packName the pack directory's name
+     * @param path the pack-relative path
+     * @param table the file-kinds table
+     * @return the gate kind
+     */
+    static String kindOf(String packName, String path, PackFileKind table) {
+        PackFileKind.Classification classification = table.classify(packName + "/" + path);
+        if (classification instanceof PackFileKind.Mapped mapped) {
             return mapped.kind();
+        }
+        if (classification instanceof PackFileKind.Retired retired) {
+            return RETIRED + retired.match();
         }
         int slash = path.indexOf('/');
         return OTHER + (slash < 0 ? path : path.substring(0, slash));

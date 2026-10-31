@@ -33,13 +33,37 @@ enum TemplateBinding {
     }
 
     /**
+     * Builds a template from a file the store read at {@code place}: a mission type's template when the place is under
+     * {@code missions/<type>/templates/} (#194, ADR-0044), a top-level one otherwise.
+     *
+     * @param pack the owning pack
+     * @param place the file's pack-relative path
+     * @param content the file's bytes
+     * @return the template, its id {@link PackFileSet#templateId}
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the path is no template id
+     */
+    Template toEntityAt(PackIdentifier pack, String place, Payload content) {
+        String id = PackFileSet.templateId(place);
+        String missionType = place.startsWith(PackFileSet.TEMPLATES) ? null : id.substring(0, id.indexOf('/'));
+        return Template.builder()
+                .id(new TemplateIdentifier(id))
+                .packId(pack)
+                .content(content)
+                .missionType(missionType)
+                .build();
+    }
+
+    /**
      * Where a template is written.
      *
      * @param template the template
-     * @return {@code templates/<id>}, pack-relative
+     * @return {@code templates/<id>}, or {@code missions/<type>/templates/<path>} for a mission type's, pack-relative
      */
     String pathOf(Template template) {
-        return PackFileSet.TEMPLATES + template.id().value();
+        String id = template.id().value();
+        return template.missionType()
+                .map(type -> "missions/" + type + "/templates/" + id.substring(type.length() + 1))
+                .orElse(PackFileSet.TEMPLATES + id);
     }
 
     /**

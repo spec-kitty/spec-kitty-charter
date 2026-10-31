@@ -27,7 +27,8 @@ final class KindBindings {
             GlossaryPackBinding.INSTANCE,
             SkillBinding.INSTANCE,
             AssetBinding.INSTANCE,
-            ProcedureBinding.INSTANCE);
+            ProcedureBinding.INSTANCE,
+            MissionTypeBinding.INSTANCE);
 
     /**
      * The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194), derived

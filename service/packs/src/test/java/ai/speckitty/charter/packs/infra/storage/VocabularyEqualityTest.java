@@ -148,6 +148,24 @@ class VocabularyEqualityTest {
     }
 
     @Test
+    void thePackManifestsConstituentKindsAreTheDomainsArtifactKinds() throws IOException {
+        Map<?, ?> schema;
+        try (InputStream in =
+                VocabularyEqualityTest.class.getResourceAsStream("/packs/schemas/pack-manifest.schema.json")) {
+            schema = JsonMapper.builder().build().readValue(in, Map.class);
+        }
+        Map<?, ?> kind = (Map<?, ?>) ((Map<?, ?>)
+                        ((Map<?, ?>) ((Map<?, ?>) schema.get("$defs")).get("constituent")).get("properties"))
+                .get("kind");
+
+        assertThat(((List<?>) kind.get("enum")).stream().map(String::valueOf).toList())
+                .as("a manifest may list a constituent of every artifact kind (#194: mission types included)")
+                .containsExactlyElementsOf(Arrays.stream(ArtifactKind.values())
+                        .map(ArtifactKind::token)
+                        .toList());
+    }
+
+    @Test
     void theInspectorsArtifactSchemaKindsAreTheMappedSchemasThatDeclareAnId() throws IOException {
         Set<String> expected = new TreeSet<>();
         for (PackFileKind.FileRule rule : PackFileKind.bundled().fileRules()) {
@@ -166,8 +184,9 @@ class VocabularyEqualityTest {
 
         assertThat(FileSystemPackInspector.artifactKinds()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(FileSystemPackInspector.artifactKinds())
-                .as("the ten kinds that were listed by hand")
+                .as("the ten kinds that were listed by hand, and the mission type (#194)")
                 .containsExactlyInAnyOrder(
+                        "mission-type",
                         "directive",
                         "tactic",
                         "styleguide",
@@ -186,7 +205,9 @@ class VocabularyEqualityTest {
                 .map(PackFileKind.PayloadRule::kind)
                 .toList();
 
-        assertThat(payloadKinds).containsExactly("asset-payload", ArtifactKind.TEMPLATE.token());
+        assertThat(payloadKinds)
+                .as("a pack's top-level templates and a mission type's templates are both templates (#194)")
+                .containsExactly("asset-payload", ArtifactKind.TEMPLATE.token(), ArtifactKind.TEMPLATE.token());
         assertThat(PackFileKind.bundled().fileRules())
                 .extracting(PackFileKind.FileRule::schema)
                 .as("a payload kind is not a schema kind, so PackSchemas never sees it")

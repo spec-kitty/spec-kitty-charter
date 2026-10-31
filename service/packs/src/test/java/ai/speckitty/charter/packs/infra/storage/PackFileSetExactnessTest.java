@@ -316,6 +316,7 @@ class PackFileSetExactnessTest {
             typed.put(Kind.GLOSSARY_PACK, ids(read.dsos(GlossaryPackBinding.INSTANCE), GlossaryPackDso::id));
             typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
             typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));
+            typed.put(Kind.MISSION_TYPE, ids(read.dsos(MissionTypeBinding.INSTANCE), MissionTypeDso::id));
             typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);
@@ -349,8 +350,11 @@ class PackFileSetExactnessTest {
                 assertSameBytes(pack, PackFileSet.ASSETS + file.path(), file.payload(), where);
             }
             for (FilesystemPackStore.TemplateFile file : read.templates()) {
-                payloads.add(PackFileSet.TEMPLATES + file.path());
-                assertSameBytes(pack, PackFileSet.TEMPLATES + file.path(), file.content(), where);
+                payloads.add(file.place());
+                assertSameBytes(pack, file.place(), file.content(), where);
+                assertThat(PackFileSet.templateId(file.place()))
+                        .as("%s the id of %s", where, file.place())
+                        .isEqualTo(file.path());
             }
             assertThat(payloads)
                     .as("%s the asset files and templates the store read", where)
@@ -375,12 +379,17 @@ class PackFileSetExactnessTest {
             ai.speckitty.charter.packs.domain.Pack loaded = service.load(new PackIdentifier(pack.name()));
             Set<String> held = new LinkedHashSet<>();
             loaded.assetFiles().forEach(file -> held.add(PackFileSet.ASSETS + file.path()));
+            // A template is held by its id (a mission type's is <type>/<path>, #194), so its planted path is mapped to
+            // it.
             loaded.templates()
-                    .forEach(template ->
-                            held.add(PackFileSet.TEMPLATES + template.id().value()));
+                    .forEach(template -> held.add("template:" + template.id().value()));
             assertThat(held)
                     .as("%s the asset files and templates the loaded pack holds", where)
-                    .isEqualTo(pack.paths(Verdict.PAYLOAD));
+                    .isEqualTo(pack.paths(Verdict.PAYLOAD).stream()
+                            .map(path -> path.startsWith(PackFileSet.ASSETS)
+                                    ? path
+                                    : "template:" + PackFileSet.templateId(path))
+                            .collect(Collectors.toSet()));
             assertThat(loaded.assets().stream().map(asset -> asset.id().value()).collect(Collectors.toSet()))
                     .as("%s the assets the loaded pack holds", where)
                     .isEqualTo(validIds(pack, Kind.ASSET));

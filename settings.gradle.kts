@@ -21,6 +21,7 @@ listOf(
     "kernel",
     "packs",
     "profiles",
+    "missions",
     "charter-api",
     "deployable",
     // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
