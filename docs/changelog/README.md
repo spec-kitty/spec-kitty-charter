@@ -17,6 +17,7 @@ Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
 - [2026-11-01 — The service ships as a native executable on four targets, released on the service-v* line](/changelog/2026-11-01-service-native-build-and-release-line/)
+- [2026-10-31 — The Markdown rules have one home, companions are classified case-folded, and a step's output template is resolved](/changelog/2026-10-31-pack-model-cleanup/)
 - [2026-10-31 — A pack whose commit a crash interrupted is restored on the next listing](/changelog/2026-10-31-interrupted-commit-repair/)
 - [2026-10-31 — A linked packs/ directory is followed, and every write keeps a linked pack read-only](/changelog/2026-10-31-linked-pack-hardening/)
 - [2026-10-31 — A pack linked into the configuration root is served](/changelog/2026-10-31-linked-packs/)
