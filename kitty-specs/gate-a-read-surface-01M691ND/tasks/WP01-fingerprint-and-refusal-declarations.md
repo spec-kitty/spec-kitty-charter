@@ -14,6 +14,9 @@ requirement_refs:
 planning_base_branch: issue-126-offering-reads
 merge_target_branch: issue-126-offering-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-126-offering-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-126-offering-reads unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-gate-a-read-surface-01M691ND
+base_commit: 4f6b643ac2de3441ea0ff1bb31b2d29dc19c319d
+created_at: '2026-10-31T13:43:03.283051+00:00'
 subtasks:
 - T001
 - T002
