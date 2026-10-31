@@ -16,6 +16,7 @@ audience:
 Notable changes, newest first. The reasoning behind decisions lives in the
 [decision records](/adr/).
 
+- [2026-10-31 — The Markdown rules have one home, companions are classified case-folded, and a step's output template is resolved](/changelog/2026-10-31-pack-model-cleanup/)
 - [2026-10-31 — A linked packs/ directory is followed, and every write keeps a linked pack read-only](/changelog/2026-10-31-linked-pack-hardening/)
 - [2026-10-31 — A pack linked into the configuration root is served](/changelog/2026-10-31-linked-packs/)
 - [2026-10-31 — A tension edge and the fields of a graph node round-trip as written](/changelog/2026-10-31-drg-tension-and-node-fields-round-trip/)
