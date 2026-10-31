@@ -1,0 +1,8 @@
+description: >-
+  A strong entity tag of an effective read: an opaque digest that changes when the activation's revision or the
+  offering's governanceFingerprint changes, in double quotes. Opaque to consumers, who compare it and never parse
+  it.
+required: true
+schema:
+  type: string
+  pattern: ^"sha256:[0-9a-f]{64}"$

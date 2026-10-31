@@ -1,0 +1,14 @@
+description: >-
+  If-Match names a revision that is not current, or If-None-Match: * names an activation that exists: 412, a Problem
+  with no code. The client fetches the activation again before it retries (ADR-0020 D9).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../../_shared/schemas/Problem.yaml

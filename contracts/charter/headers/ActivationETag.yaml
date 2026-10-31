@@ -1,0 +1,8 @@
+description: >-
+  The activation's revision as a strong entity tag: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization
+  of its canonical ActivationConfig, in double quotes. Two writes of the same document give the same tag (ADR-0020
+  D4).
+required: true
+schema:
+  type: string
+  pattern: ^"sha256:[0-9a-f]{64}"$

@@ -1,0 +1,22 @@
+title: SelectionRequest
+description: The body of a select (ADR-0020 D6). Send {} for no cascade.
+type: object
+additionalProperties: false
+required: []
+properties:
+  cascade:
+    allOf:
+    - $ref: CascadeScope.yaml
+    description: >-
+      The kinds the selection cascades into over the graph; absent means no cascade. The walk stops at a deactivated
+      artifact and reports it in the skipped report.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6
+  includeDeactivated:
+    type: boolean
+    description: >-
+      When true, the cascade walks through deactivated artifacts and clears their exclusions. Absent means false.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6

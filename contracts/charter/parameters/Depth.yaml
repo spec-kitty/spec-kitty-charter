@@ -1,0 +1,11 @@
+name: depth
+in: query
+required: false
+description: >-
+  How many suggests hops the context follows from the action, as the offering's walk counts them (ADR-0018): 0 or
+  1.
+schema:
+  type: integer
+  minimum: 0
+  maximum: 1
+  default: 0

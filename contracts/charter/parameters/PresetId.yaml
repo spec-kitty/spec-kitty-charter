@@ -1,0 +1,6 @@
+name: presetId
+in: path
+required: true
+description: The id of a preset the packs of the activation offer.
+schema:
+  $ref: ../schemas/Slug.yaml

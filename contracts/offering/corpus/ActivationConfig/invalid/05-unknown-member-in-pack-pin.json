@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "packId": "built-in",
+      "level": "org"
+    }
+  ]
+}

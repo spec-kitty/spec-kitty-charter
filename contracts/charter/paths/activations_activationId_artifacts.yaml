@@ -1,0 +1,47 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: listEffectiveArtifacts
+  summary: List the artifacts of the offering under an activation.
+  description: >-
+    Each artifact of the offering with its state, its policy facts and the reason, filtered by kind and state and
+    paged (ADR-0020 D7). A required or locked artifact is always active. Reserved: it answers 501 until it is built
+    (ADR-0020 D8).
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/EffectiveKindQuery.yaml
+  - $ref: ../parameters/EffectiveStateQuery.yaml
+  - $ref: ../../_shared/parameters/PageSize.yaml
+  - $ref: ../../_shared/parameters/PageCursor.yaml
+  responses:
+    '200':
+      description: A page of the effective artifacts.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveArtifactList.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -1,0 +1,51 @@
+title: SkippedReport
+description: >-
+  What a cascade or the effective set left out, and why (ADR-0013 D4, ADR-0020 D6). Every list may be empty.
+type: object
+additionalProperties: false
+required:
+- skippedByScope
+- skippedDeactivated
+- unreachedBehindDeactivated
+- skippedShared
+properties:
+  skippedByScope:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: Artifacts the walk reached that lie outside the cascade's kinds.
+    x-derived:
+      rule: The reached artifacts whose kind is outside the cascade scope.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  skippedDeactivated:
+    type: array
+    items:
+      $ref: SkippedDeactivated.yaml
+    description: Artifacts the walk reached and skipped because they are deactivated.
+    x-derived:
+      rule: The reached artifacts in deactivated.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  unreachedBehindDeactivated:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: Artifacts reachable only through a deactivated artifact, so the walk never reached them.
+    x-derived:
+      rule: The artifacts behind a skipped deactivated artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  skippedShared:
+    type: array
+    items:
+      $ref: SharedSkip.yaml
+    description: 'For a cascading deactivate: artifacts kept because an active artifact still references them.'
+    x-derived:
+      rule: The reached artifacts another active artifact references.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The skipped report of the walk or the effective set (ADR-0013 D4).
+  inputs:
+  - schemas/ActivationConfig.yaml

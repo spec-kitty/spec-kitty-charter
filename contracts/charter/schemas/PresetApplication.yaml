@@ -1,0 +1,14 @@
+title: PresetApplication
+description: The body of a preset application (ADR-0020 D6). Send {} for the default.
+type: object
+additionalProperties: false
+required: []
+properties:
+  force:
+    type: boolean
+    description: >-
+      When true, the exclusions of the ids the preset lists are cleared and reported in the change; absent or false
+      never removes a deny entry.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6

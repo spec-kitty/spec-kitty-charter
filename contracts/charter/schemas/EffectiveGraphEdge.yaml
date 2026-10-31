@@ -1,0 +1,33 @@
+title: EffectiveGraphEdge
+description: An edge of the activation-filtered graph; an edge is dropped with either endpoint.
+type: object
+additionalProperties: false
+required:
+- source
+- relation
+- target
+properties:
+  source:
+    allOf:
+    - $ref: Urn.yaml
+    description: The edge's source node.
+    x-derived:
+      rule: The source of an offering edge whose endpoints both remain.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  relation:
+    allOf:
+    - $ref: Relation.yaml
+    description: The edge's relation.
+    x-derived:
+      rule: The relation of the offering edge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  target:
+    allOf:
+    - $ref: Urn.yaml
+    description: The edge's target node.
+    x-derived:
+      rule: The target of the offering edge.
+      inputs:
+      - schemas/ActivationConfig.yaml

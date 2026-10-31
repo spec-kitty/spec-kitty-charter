@@ -1,0 +1,6 @@
+summary: The packs of the activation offer no such preset.
+value:
+  title: Preset not found
+  status: 404
+  code: preset_not_found
+  detail: The packs of activation a-1 offer no preset event-driven.

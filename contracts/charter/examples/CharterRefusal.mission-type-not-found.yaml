@@ -1,0 +1,6 @@
+summary: The offering has no such mission type.
+value:
+  title: Mission type not found
+  status: 404
+  code: mission_type_not_found
+  detail: The offering of activation a-1 has no mission type research-x.

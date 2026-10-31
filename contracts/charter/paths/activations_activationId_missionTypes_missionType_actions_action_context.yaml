@@ -1,0 +1,48 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+- $ref: ../parameters/MissionTypePath.yaml
+- $ref: ../parameters/ActionPath.yaml
+get:
+  operationId: getEffectiveActionContext
+  summary: Read what governs one action under an activation.
+  description: >-
+    The effective context of the action: what applies under the activation, filtered, with exclusions and the skipped
+    report (ADR-0020 D7). Never the offering's walk, which answers what the offering says. An unknown mission type
+    or action is 404 mission_type_not_found or action_not_found. Reserved: it answers 501 until it is built (ADR-0020
+    D8). A mission type that the activation does not put in force answers the context with no artifacts, its reason
+    in the skipped report.
+  tags:
+  - Activation
+  x-reserved:
+    contractSet: activation
+    issue: '#125'
+  parameters:
+  - $ref: ../parameters/Depth.yaml
+  responses:
+    '200':
+      description: The effective context.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/EffectiveActionContext.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ActivationNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

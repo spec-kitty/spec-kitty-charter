@@ -1,0 +1,8 @@
+title: CascadeScope
+description: >-
+  The kinds a cascade walks into from the named artifact, or exactly ["all"] for every kind. all stands alone: a
+  list that mixes it with kinds is refused with 422 activation_invalid and a violations entry at /cascade.
+type: array
+minItems: 1
+items:
+  $ref: CascadeKind.yaml

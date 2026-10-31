@@ -1,0 +1,12 @@
+description: 'A sub-resource write without If-Match: 428, a Problem with no code (ADR-0020 D9).'
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  Charter-Source-Fingerprint:
+    $ref: ../headers/CharterSourceFingerprint.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../../_shared/schemas/Problem.yaml

@@ -1,0 +1,28 @@
+title: SharedSkip
+description: >-
+  An artifact a cascading deactivate reached and kept, because another active artifact still references it.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- referencedBy
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind.
+    x-derived:
+      rule: The kind of the kept artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The id of the kept artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  referencedBy:
+    $ref: ArtifactReference.yaml

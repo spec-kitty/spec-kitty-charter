@@ -1,0 +1,6 @@
+summary: The activation does not exist, or this client may not see it.
+value:
+  title: Activation not found
+  status: 404
+  code: activation_not_found
+  detail: No activation a-1.

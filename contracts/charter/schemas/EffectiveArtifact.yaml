@@ -1,0 +1,59 @@
+title: EffectiveArtifact
+description: One artifact of the offering under an activation (ADR-0020 D7).
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- state
+- required
+- policy
+- reason
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The artifact's kind.
+    x-derived:
+      rule: The kind of the offering artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The artifact's declared id.
+    x-derived:
+      rule: The declared id of the offering artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  state:
+    allOf:
+    - $ref: EffectiveArtifactState.yaml
+    description: Whether it is in force.
+    x-derived:
+      rule: The effective-set algebra over config and the offering.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  required:
+    type: boolean
+    description: True when a pack requires it; a required artifact is always active.
+    x-derived:
+      rule: Derived from the must-have items of the governing presets (ADR-0031).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  policy:
+    allOf:
+    - $ref: ArtifactPolicy.yaml
+    description: The mutability level its pack declares.
+    x-derived:
+      rule: The level the owning pack declares (ADR-0012).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    allOf:
+    - $ref: EffectiveArtifactReason.yaml
+    description: Why it has its state.
+    x-derived:
+      rule: The rule of the effective-set algebra that decided the state.
+      inputs:
+      - schemas/ActivationConfig.yaml

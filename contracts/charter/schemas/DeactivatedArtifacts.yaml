@@ -1,0 +1,89 @@
+title: DeactivatedArtifacts
+description: >-
+  The deny lists: per activatable kind, the artifacts the user deactivated (ADR-0013). A deny entry wins over a
+  selection and a cascade; an artifact a pack requires or locks cannot be deactivated (409). A deny entry is never
+  stored for an unknown kind or a required or locked id (ADR-0020 D9).
+  Absent, the activation excludes nothing.
+type: object
+additionalProperties: false
+properties:
+  directive:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The directive ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/directive'
+  tactic:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The tactic ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/tactic'
+  styleguide:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The styleguide ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/styleguide'
+  toolguide:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The toolguide ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/toolguide'
+  paradigm:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The paradigm ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/paradigm'
+  procedure:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The procedure ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/procedure'
+  agent_profile:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The agent_profile ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/agent_profile'
+  mission_step_contract:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The mission_step_contract ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/mission_step_contract'
+  glossary_pack:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The glossary_pack ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/glossary_pack'
+  skill:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The skill ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/skill'
+  anti_pattern:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: The anti_pattern ids. Absent means no exclusion of the kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/anti_pattern'
+x-source:
+  path: contracts/offering/schemas/ActivationConfig.schema.json
+  symbol: '#/$defs/DeactivatedArtifacts'
