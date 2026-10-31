@@ -203,7 +203,8 @@ class FileSystemPackInspectorTest {
         Path outside = dir.resolve("outside");
         write(outside, "y.tactic.yaml", TACTIC.formatted("y"));
         SymbolicLinks.create(real.resolve("linked"), outside);
-        Path link = SymbolicLinks.create(Files.createDirectories(dir.resolve("packs")).resolve("qa"), real);
+        Path link = SymbolicLinks.create(
+                Files.createDirectories(dir.resolve("packs")).resolve("qa"), real);
 
         PackContents linked = full(link);
         PackContents direct = full(real);

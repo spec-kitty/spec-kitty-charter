@@ -324,7 +324,8 @@ class WholePackStoreTest {
     }
 
     @Test
-    @DisplayName("a pack whose root is a link lists the unmodelled files of its target; links below it are not followed")
+    @DisplayName(
+            "a pack whose root is a link lists the unmodelled files of its target; links below it are not followed")
     void aLinkedRootListsItsUnmodelledFiles(@TempDir Path host) throws IOException {
         Path real = richPack(host.resolve("checkout"));
         write(real, "README.md", "# hello\n");
@@ -332,7 +333,8 @@ class WholePackStoreTest {
         Path outside = Files.createDirectories(host.resolve("outside"));
         write(outside, "beyond.md", "# not the pack's\n");
         SymbolicLinks.create(real.resolve("below"), outside);
-        Path link = SymbolicLinks.create(Files.createDirectories(host.resolve("packs")).resolve("pack-a"), real);
+        Path link = SymbolicLinks.create(
+                Files.createDirectories(host.resolve("packs")).resolve("pack-a"), real);
 
         WholePackStore.LoadedPack loaded = store.load(link);
 
