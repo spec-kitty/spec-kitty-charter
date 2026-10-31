@@ -270,3 +270,74 @@ paths:
                         x-source:
                           path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
                           symbol: RefusalCode
+  /reserved-things/{thingId}:
+    put:
+      operationId: putReservedThing
+      summary: Store a thing; declared ahead of being built.
+      tags:
+        - Things
+      x-reserved:
+        contractSet: activation
+        issue: '#125'
+      parameters:
+        - name: thingId
+          in: path
+          required: true
+          description: The thing.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The thing was stored.
+          headers: *charter-headers
+          content:
+            application/json:
+              schema:
+                title: Thing
+                description: A thing.
+                type: object
+                additionalProperties: false
+                properties:
+                  thingId:
+                    type: string
+                    description: The thing.
+                    x-derived:
+                      rule: The thingId path segment.
+                      inputs:
+                        - parameters/ThingId.yaml
+        '501':
+          description: The operation is reserved and not built yet.
+          headers: *charter-headers
+          content:
+            application/problem+json:
+              schema:
+                title: Problem
+                description: The shared problem details body.
+                type: object
+                additionalProperties: false
+                required:
+                  - title
+                  - status
+                properties:
+                  title:
+                    type: string
+                    description: A short summary of the kind of problem.
+                  status:
+                    type: integer
+                    description: The HTTP status code.
+    delete:
+      operationId: deleteThing
+      summary: Remove a thing.
+      tags:
+        - Things
+      parameters:
+        - name: thingId
+          in: path
+          required: true
+          description: The thing.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: The thing was removed; no body.
+          headers: *charter-headers
