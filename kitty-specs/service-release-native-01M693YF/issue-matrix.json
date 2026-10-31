@@ -13,7 +13,7 @@
       "wp": null
     },
     "#241": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "docs/adr/0046-service-release-line-and-native-packaging.md; procedure in WP05",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,8 +21,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#70": {
       "evidence_ref": "<link or commit>",
