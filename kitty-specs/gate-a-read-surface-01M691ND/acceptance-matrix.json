@@ -48,10 +48,10 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "directives|styleguides|paradigms|toolguides.feature 'A duplicate id is a conflict on POST while a distinct id is created' (201 envelope, ETag, 'the path of the Location header is the href of the link self', 409 registration_conflict), validation_failed 422, 'A stale If-Match is refused with 412 and a fresh one succeeds', directives 'A relationship write with no precondition is refused with 428'; removed-routes.feature 'A PUT on the item of a kind that has no write is a 405'; LinkChecks.checkLocation on every 201; bundle: 8 ops registerPack*/putPack* at /packs/{packId}/artifacts/<kind>[/{artifactId}] answering Artifact; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:22:30.541024+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
