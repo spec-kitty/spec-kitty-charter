@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: gate-a-read-surface-01M691ND
 mission_id: 01M691NDZHKX1ZEZJ39X6CJD6A
-generated_at: '2026-10-31T13:42:16.327535+00:00'
+generated_at: '2026-10-31T13:42:43.230277+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -12,7 +12,7 @@ input_artifacts:
     sha256: 915ffe17855d589a58f3c4e29497f62446912fb28c191085cf86c6b9f760b0c5
   plan.md:
     path: kitty-specs/gate-a-read-surface-01M691ND/plan.md
-    sha256: f08cff53e28d45ed6f5a075bd33ef1d07539dff30185dabcaacad2e7f468b1ef
+    sha256: f6f76334df8152647a51bc35abf2fb545785ffa4bc988d39b386c9050cd9ccf5
   tasks.md:
     path: kitty-specs/gate-a-read-surface-01M691ND/tasks.md
     sha256: 40645fe7af1c6de8957e495ae76b29e9c7010bf1bbd17126ce3a27a7955c7017
@@ -22,77 +22,43 @@ input_artifacts:
 verdict: ready
 issue_counts:
   high: 0
-  medium: 2
-  low: 2
+  medium: 0
+  low: 0
   critical: 0
   info: 0
-findings:
-- id: I1
-  severity: medium
-  category: inconsistency
-  summary: plan.md Project Structure and Design overview still name PackCatalog, ArtifactCatalogReadService and ArtifactKinds, which the squad folds (R-18, R-19) replaced by PackCatalogRepository/ConfiguredPack and ArtifactReadService; the WP prompts use the new names.
-- id: I2
-  severity: medium
-  category: inconsistency
-  summary: plan.md Summary says 'one lane of five work packages'; tasks.md and research R-12 (revised) have seven.
-- id: I3
-  severity: low
-  category: inconsistency
-  summary: research.md R-04 (edit link) and R-10 (ArtifactCatalogReadService, ArtifactKinds) are superseded by R-24 and R-19 but read as current unless the squad section is read.
-- id: U1
-  severity: low
-  category: underspecification
-  summary: data-model.md refusal table says a removed path or GET on a literal write path is '404 or 405'; WP04 pins 404 for removed paths and 405 for literal write paths.
+findings: []
 ---
 
 ## Specification Analysis Report
 
-| ID | Category | Severity | Location(s) | Summary | Recommendation |
-|----|----------|----------|-------------|---------|----------------|
-| I1 | Inconsistency | MEDIUM | plan.md:112-117, :134-136 | The project structure and the design diagram still name the pre-squad classes (`PackCatalog`, `ArtifactCatalogReadService`, `ArtifactKinds`). | Rename them to `PackCatalogRepository`/`ConfiguredPack` and `ArtifactReadService` (R-18, R-19). The WP prompts are already correct. |
-| I2 | Inconsistency | MEDIUM | plan.md:25 | "One lane of five work packages", while tasks have seven. | Say seven. |
-| I3 | Inconsistency | LOW | research.md R-04, R-10 | Superseded decisions are not marked inline. | Add "(superseded by R-24 / R-19)" markers. |
-| U1 | Underspecification | LOW | data-model.md, Refusals table | "404 or 405" is looser than WP04's pinned statuses. | Split the row: removed path → 404; GET on a literal write path → 405. |
+Re-run after `81aa2bf6`, which folded the previous report's findings:
 
-**Coverage summary.** Every requirement is mapped to at least one WP, and `finalize-tasks` validated the
-mapping. All 18 FR, 6 NFR, 9 C and 5 SC IDs are covered.
+- **I1.** The plan's structure and diagram now name `PackCatalogRepository`, `ConfiguredPack` and
+  `ArtifactReadService`.
+- **I2.** The plan now says seven WPs.
+- **I3.** The superseded research decisions are marked inline.
+- **U1.** The refusal statuses are split: a removed path is a 404; a GET on a literal write path is a 405.
 
-| Requirement | WP(s) | Notes |
-|---|---|---|
-| FR-001, FR-002, FR-016 | WP05 | root, offering, `service-desc` |
-| FR-003, FR-004, FR-007 | WP03 | generic reads, `kind_not_found` |
-| FR-005, FR-006, FR-015 | WP04 | writes moved, routes removed, #176 scenario |
-| FR-008 | WP02, WP06 | components, then enforcement |
-| FR-009, FR-011 | WP06 | link resolution, relation-key lint |
-| FR-010 | WP02 | closure exemption |
-| FR-012, FR-013, FR-014 | WP01 | #175, #176 |
-| FR-017, FR-018 | WP07 | records (review-checked) |
-| NFR-001..003 | WP01 (and every WP's DoD) | |
-| NFR-004 | WP04 | baseline and after count, mapping |
-| NFR-005 | WP03 | page bounds |
-| NFR-006 | WP07 | docs checks |
-| C-001..C-009 | WP02, WP03, WP04, WP05, WP07 | |
+No new findings.
 
-**Charter alignment.** No conflicts.
-- Red-first is in every WP.
-- An adversarial squad ran at the plan point, and the pre-merge squad is planned at closeout.
-- The 0.x breaking rules (ADR-0022) are respected inside `0.1.0-SNAPSHOT`.
-- `verifyAll` runs on Java 25 in every WP's DoD.
-- The docs checks are in WP07.
+**Coverage.** 38 requirements (18 FR, 6 NFR, 9 C, 5 SC) across 35 tasks in 7 WPs: 100% mapped, as
+validated by `finalize-tasks`. The per-requirement table is unchanged from the previous report.
 
-**Unmapped tasks.** None. Every T001 to T035 belongs to exactly one WP.
+**Charter alignment.** No conflicts:
+
+- red-first in every WP;
+- the plan-point squad has run, and the pre-merge squad is planned;
+- ADR-0022 0.x breaking rules inside `0.1.0-SNAPSHOT`;
+- `verifyAll` on Java 25 and the docs checks are in the DoDs.
 
 **Metrics.**
-- Requirements: 38 (18 FR, 6 NFR, 9 C, 5 SC).
-- Tasks: 35.
-- Coverage: 100%.
-- Ambiguities: 0. Duplications: 0. Critical issues: 0.
 
-**Caveat.** The author of the spec, plan and tasks ran this analysis. The independent check was the
-plan-point squad (34 findings, dispositioned in research.md).
+- Ambiguities: 0
+- Duplications: 0
+- Critical issues: 0
+
+**Caveat.** The planning author ran this analysis. The independent check was the plan-point squad.
 
 ## Next Actions
 
-Only MEDIUM and LOW findings remain. They are documentation drift in the plan and research. The WP prompts,
-which drive implementation, are already correct. Fix I1, I2, I3 and U1 in one planning commit, re-run
-analyze so the report is current, then implement.
+Ready for implementation: the WPs run in order WP01 → WP07 in lane-a.
