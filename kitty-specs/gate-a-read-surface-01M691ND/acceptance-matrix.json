@@ -138,10 +138,10 @@
       "criterion_id": "FR-014",
       "description": "Verify FR-014 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "responses/OfferingUnreadable.yaml examples pack-unreadable + stale-input, description names pack_unreadable, stale_input, internal_error (all raised:true in x-refusal); :contracts:checkRefusalExamples (RefusalExamples) green on bundle; RefusalExamplesTest anExampleNamingAnUnraisedCodeIsReported (unraised-example.yaml), aDescriptionNamingAnUnraisedCodeIsReported; verifyAll --rerun-tasks BUILD SUCCESSFUL at lane head 6433dab2; CharterContractSuite 189/189 pass",
+      "pass_fail": "pass",
+      "verified_by": "claude::qa-test-executor-elena",
+      "verified_at": "2026-10-31T17:23:30.190346+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
