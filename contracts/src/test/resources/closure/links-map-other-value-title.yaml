@@ -1,0 +1,44 @@
+# Must report (ADR-0019 D3 lookalike): a _links map whose value schema is titled Href, not Link, is an open map.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                title: Probe
+                type: object
+                additionalProperties: false
+                required:
+                  - _links
+                properties:
+                  name:
+                    type: string
+                  _links:
+                    title: Links
+                    description: The links of a resource.
+                    type: object
+                    additionalProperties:
+                      title: Href
+                      description: One hypermedia link.
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          pattern: '^/api/v1(/|$|\{)'
+                        templated:
+                          type: boolean
+                        method:
+                          type: string
+                          pattern: '^(GET|POST|PUT)$'
+                        title:
+                          type: string

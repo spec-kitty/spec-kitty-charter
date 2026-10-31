@@ -1,0 +1,43 @@
+# Must report (ADR-0019 D3 lookalike): a _links map whose Link is not closed; reported at the open Link and at the map.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                title: Probe
+                type: object
+                additionalProperties: false
+                required:
+                  - _links
+                properties:
+                  name:
+                    type: string
+                  _links:
+                    title: Links
+                    description: The links of a resource.
+                    type: object
+                    additionalProperties:
+                      title: Link
+                      description: One hypermedia link.
+                      type: object
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          pattern: '^/api/v1(/|$|\{)'
+                        templated:
+                          type: boolean
+                        method:
+                          type: string
+                          pattern: '^(GET|POST|PUT)$'
+                        title:
+                          type: string

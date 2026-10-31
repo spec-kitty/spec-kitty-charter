@@ -564,6 +564,46 @@ class ClosureCheckerTest {
         }
     }
 
+    /**
+     * The one exemption (ADR-0019 D3): a property named {@code _links} whose values are the closed {@code Link}.
+     * Each lookalike stays an open map.
+     */
+    @Nested
+    class LinksMap {
+
+        private static final String LINKS = "/paths/~1probe/get/responses/200/content/application~1json/schema"
+                + "/properties/_links";
+        private static final String MAP = "additionalProperties holds a schema, so it is a map";
+
+        @Test
+        void aLinksPropertyOfClosedLinksPasses() {
+            assertPasses("links-map-exempt.yaml");
+        }
+
+        @Test
+        void theSameMapUnderAnotherPropertyNameIsReported() {
+            assertReports(
+                    "links-map-other-property.yaml",
+                    "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/links",
+                    MAP);
+        }
+
+        @Test
+        void aLinksMapOfAValueWithAnotherTitleIsReported() {
+            assertReports("links-map-other-value-title.yaml", LINKS, MAP);
+        }
+
+        /** The open Link is a position of its own, and the map is not exempt because its Link is not proven closed. */
+        @Test
+        void aLinksMapOfAnOpenLinkIsReportedAtTheLinkAndAtTheMap() {
+            assertThat(violations("links-map-open-link.yaml"))
+                    .extracting(Violation::toString)
+                    .containsExactly(
+                            LINKS + "/additionalProperties: no additionalProperties: false",
+                            LINKS + ": " + MAP);
+        }
+    }
+
     @Nested
     class MalformedInput {
 
