@@ -11,13 +11,14 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** The rules of a toolguide's {@link Guide} (#194, data-model "Guide"): each refusal beside an accepted neighbour. */
 @DisplayName("Guide rules")
 class GuideTest {
 
-    private static final String CONTENT_RULE = "no column-0 H1 or H2 outside a fence";
+    private static final String CONTENT_RULE = "Guide content";
 
     @Test
     @DisplayName("the seven fixed blocks have their canonical headings in write order; only the overview is required")
@@ -84,9 +85,11 @@ class GuideTest {
                 "\nleading blank line",
                 "trailing blank line\n",
                 "trailing blank line\n  ",
-                "a carriage return\r\nhere"
+                "a carriage return\r\nhere",
+                "## ",
+                "## a closing sequence ##"
             })
-    @DisplayName("content that could not stand as an H2 section is refused")
+    @DisplayName("content that could not stand as an H2 section is refused, by the Markdown model's own rules")
     void contentThatCannotStandAsASectionIsRefused(String content) {
         assertThatThrownBy(() -> Guide.of(content))
                 .isInstanceOf(ConstraintBreachException.class)
@@ -96,12 +99,33 @@ class GuideTest {
                 .hasMessageContaining(CONTENT_RULE);
     }
 
+    @ParameterizedTest(name = "[{index}] {0}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "' # an indented H1' | line 1: an H1 indented by 1 space is ambiguous; start it at column 0",
+                "'   ## an indented H2' | line 1: an H2 indented by 3 spaces is ambiguous; start it at column 0",
+                "'a paragraph line\n---' | line 2: a setext heading underline is ambiguous",
+                "'a paragraph line\n===' | line 2: a setext heading underline is ambiguous"
+            })
+    @DisplayName("#271: content the hand copy of the rules let through is refused by the Markdown model's own rule")
+    void contentTheHandCopyMissedIsRefused(String content, String problem) {
+        String text = content.replace("\\n", "\n");
+        assertThatThrownBy(() -> Guide.of(text))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("Guide content cannot stand inside a document: " + problem);
+        assertThatThrownBy(() -> new GuideSection("Examples", text))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("Guide content cannot stand inside a document: " + problem);
+    }
+
     @ParameterizedTest
     @ValueSource(
             strings = {
                 "### An H3 stays in content",
                 "#hashtag is text",
-                " # an indented line is text here; the Markdown reader judges it",
+                "    # indented by four spaces is text",
+                "text\n\n---\nafter a blank line, a thematic break is text",
                 "```bash\n# a comment in a fence\n## and another\n```",
                 "  ~~~~\n# inside an indented tilde fence\n~~~\n## still inside: the closer is shorter\n  ~~~~~ \nafter",
                 "````\n```\n# a nested backtick line is inside\n```\n````",
@@ -131,11 +155,17 @@ class GuideTest {
     @DisplayName("a freeform title is one line, not blank, without surrounding whitespace")
     void aFreeformTitleIsOneTrimmedLine() {
         assertThatCode(() -> new GuideSection("Exit codes", "")).doesNotThrowAnyException();
+        assertThatCode(() -> new GuideSection("Notes #1", "")).doesNotThrowAnyException();
+        // #271: a title the codec would not read back as an H2's text is refused when the section is built.
+        assertThatThrownBy(() -> new GuideSection("Notes #", "x"))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("A guide section's title cannot be a heading's text: an H2 with a closing #"
+                        + " sequence is ambiguous");
         for (String bad : List.of("", " ", " Exit codes", "Exit codes ", "Exit\ncodes")) {
             assertThatThrownBy(() -> new GuideSection(bad, ""))
                     .as("'%s'", bad)
                     .isInstanceOf(ConstraintBreachException.class)
-                    .hasMessageContaining("one line, not blank");
+                    .hasMessageContaining("A guide section's title must");
         }
     }
 }
