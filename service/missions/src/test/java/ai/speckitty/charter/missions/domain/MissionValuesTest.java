@@ -36,12 +36,28 @@ class MissionValuesTest {
     }
 
     @ParameterizedTest(name = "the path ''{0}'' is refused")
-    @ValueSource(strings = {"/spec.md", "../spec.md", "a/../../b", ""})
+    @ValueSource(strings = {"/spec.md", "../spec.md", "a/../../b", "", "..\\spec.md", "a\\b.md", "C:/spec.md"})
     void pathsThatLeaveAreRefused(String path) {
         assertThatThrownBy(() -> artifact("input.spec.main", path, Optional.empty()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> artifact("input.spec.main", "spec.md", Optional.of(path)))
                 .isInstanceOf(ConstraintBreachException.class);
+    }
+
+    @Test
+    @DisplayName("a template path outside templates/ is refused, though it stays in the pack")
+    void templatesLiveUnderTemplates() {
+        assertThatThrownBy(() -> artifact("output.spec.main", "spec.md", Optional.of("steps/spec.md")))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("under templates/");
+    }
+
+    @Test
+    @DisplayName("a step document's title is never blank")
+    void stepDocumentTitlesAreNotBlank() {
+        assertThatThrownBy(() -> new StepDocument(Optional.of(" "), Optional.empty(), "", List.of()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("title is not blank");
     }
 
     @Test

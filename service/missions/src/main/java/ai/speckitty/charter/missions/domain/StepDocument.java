@@ -20,6 +20,8 @@ import java.util.Optional;
 public record StepDocument(
         Optional<String> title, Optional<String> description, String preamble, List<StepSection> sections) {
 
+    private static final ModularRuleset<String> TITLE_RULES = ModularRuleset.<String>emptyRules()
+            .must(Constraints.of("A step document's title is not blank.", text -> !text.isBlank()));
     private static final ModularRuleset<String> DESCRIPTION_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of("A step document's detailed description is not blank.", text -> !text.isBlank()));
 
@@ -30,12 +32,13 @@ public record StepDocument(
      * @param description the detailed description, possibly empty; never blank
      * @param preamble the preamble, possibly empty text
      * @param sections the sections, in order
-     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the description is blank
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the title or the description is
+     *     blank
      */
     public StepDocument {
-        Objects.requireNonNull(title, "title");
+        Objects.requireNonNull(title, "title").ifPresent(TITLE_RULES::guard);
         Objects.requireNonNull(description, "description").ifPresent(DESCRIPTION_RULES::guard);
         Objects.requireNonNull(preamble, "preamble");
-        sections = List.copyOf(sections);
+        sections = List.copyOf(Objects.requireNonNull(sections, "sections"));
     }
 }

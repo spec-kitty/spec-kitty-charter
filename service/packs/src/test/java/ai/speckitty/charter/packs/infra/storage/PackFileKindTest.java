@@ -64,6 +64,8 @@ class PackFileKindTest {
             "built-in/templates/writing/.gitkeep",
             "built-in/missions/plan/templates/.gitkeep",
             "built-in/missions/README.md",
+            "built-in/missions/plan/.pack-write-1.tmp",
+            "built-in/missions/plan/steps/.pack-write-2.tmp",
             "built-in/missions/plan/README.md",
             "built-in/missions/documentation/templates/README.md");
 

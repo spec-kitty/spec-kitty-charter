@@ -294,6 +294,16 @@ class PackFileSetTest {
                 .hasMessageContaining("the payloads rule for '*/assets/**/*' declares content_form 'yaml'");
     }
 
+    /** #194: a template's id is its path under either templates directory; any other file is no template. */
+    @Test
+    void aTemplateIdComesFromEitherTemplatesDirectoryOnly() {
+        assertThat(PackFileSet.templateId("templates/writing/minutes.md")).isEqualTo("writing/minutes.md");
+        assertThat(PackFileSet.templateId("missions/plan/templates/spec.md")).isEqualTo("plan/spec.md");
+        assertThatThrownBy(() -> PackFileSet.templateId("assets/spec.md"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("no template file: assets/spec.md");
+    }
+
     /**
      * A-3 (#194, FR-008): a retired file is digested in the tail, after the manifest, in path order, so a pack without
      * one keeps its exact digest list under a table with {@code retired} rules, and planting one moves the fingerprint.

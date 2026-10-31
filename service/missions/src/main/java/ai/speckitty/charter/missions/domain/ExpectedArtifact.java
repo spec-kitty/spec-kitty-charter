@@ -27,6 +27,7 @@ public record ExpectedArtifact(
 
     private static final Pattern KEY = Pattern.compile("[a-z][a-z0-9-]*(\\.[a-z0-9_-]+)+");
     private static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
+    private static final Pattern DRIVE = Pattern.compile("[A-Za-z]:");
 
     private static final ModularRuleset<String> KEY_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
@@ -38,8 +39,8 @@ public record ExpectedArtifact(
                     ExpectedArtifact::isRelativeInside));
     private static final ModularRuleset<String> TEMPLATE_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "An expected artifact's template path is relative and stays in the pack.",
-                    ExpectedArtifact::isRelativeInside));
+                    "An expected artifact's template path is under templates/ beside its mission type and stays there.",
+                    path -> path.startsWith("templates/") && isRelativeInside(path)));
 
     /**
      * Checks every component.
@@ -49,8 +50,8 @@ public record ExpectedArtifact(
      * @param pathPattern the workspace glob
      * @param blocking whether it blocks
      * @param templatePath the template path, possibly empty
-     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the key is not dotted or a path
-     *     is absolute or climbs out
+     * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the key is not dotted, a path is
+     *     absolute, climbs out or uses a backslash or a drive, or the template path is not under {@code templates/}
      */
     public ExpectedArtifact {
         KEY_RULES.guard(Objects.requireNonNull(artifactKey, "artifactKey"));
@@ -70,12 +71,17 @@ public record ExpectedArtifact(
     }
 
     /**
-     * Whether a path is relative and does not climb out.
+     * Whether a path is relative, {@code /}-separated and does not climb out: no leading {@code /}, no {@code ..}
+     * segment, no backslash and no drive ({@code C:}), whatever the host.
      *
      * @param path the path
      * @return {@code true} when it is
      */
     static boolean isRelativeInside(String path) {
-        return !path.isEmpty() && !path.startsWith("/") && !PARENT.matcher(path).find();
+        return !path.isEmpty()
+                && !path.startsWith("/")
+                && path.indexOf('\\') < 0
+                && !DRIVE.matcher(path).lookingAt()
+                && !PARENT.matcher(path).find();
     }
 }

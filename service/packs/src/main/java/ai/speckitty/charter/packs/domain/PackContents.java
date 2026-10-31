@@ -177,25 +177,27 @@ public record PackContents(
     }
 
     /**
-     * A parser failure, reduced to the parser's first line so that no host path appears; or a file the file-kinds table
-     * retires (#194, ADR-0044 decision 6), refused by name and never parsed.
+     * A parser failure, reduced to the parser's first line so that no host path appears; or a file the store's own
+     * rules refuse though it parses: a file the file-kinds table retires (#194, ADR-0044 decision 6), or a mission type
+     * whose companions or named templates the load refuses. Validate mode refuses what the load refuses.
      *
      * @param file the pack-relative path
-     * @param firstLine the first line of the parser's message, or of the retired refusal
-     * @param retiredReason the retired rule's reason when the file is retired; empty for a parse failure
+     * @param firstLine the first line of the parser's message, or of the refusal
+     * @param refusal what the store's rule says of the file when it is refused rather than unparseable; empty for a
+     *     parse failure
      */
-    public record ParseFailure(String file, String firstLine, Optional<String> retiredReason) {
+    public record ParseFailure(String file, String firstLine, Optional<String> refusal) {
         /**
          * Checks the fields.
          *
          * @param file the pack-relative path
          * @param firstLine the first line of the message
-         * @param retiredReason the retired rule's reason, possibly empty
+         * @param refusal the store rule's refusal, possibly empty
          */
         public ParseFailure {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(firstLine, "firstLine");
-            Objects.requireNonNull(retiredReason, "retiredReason");
+            Objects.requireNonNull(refusal, "refusal");
         }
 
         /**
@@ -213,10 +215,21 @@ public record PackContents(
          *
          * @param file the pack-relative path
          * @param reason the retired rule's reason
-         * @return the failure
+         * @return the failure, refused as {@code is retired: <reason>}
          */
         public static ParseFailure retired(String file, String reason) {
-            return new ParseFailure(file, "the file is retired: " + reason, Optional.of(reason));
+            return refused(file, "is retired: " + reason);
+        }
+
+        /**
+         * The failure of a file that parses but that a store rule refuses, as the load does.
+         *
+         * @param file the pack-relative path
+         * @param refusal what the rule says, read after the file's origin ({@code is retired: ...})
+         * @return the failure
+         */
+        public static ParseFailure refused(String file, String refusal) {
+            return new ParseFailure(file, refusal, Optional.of(refusal));
         }
     }
 

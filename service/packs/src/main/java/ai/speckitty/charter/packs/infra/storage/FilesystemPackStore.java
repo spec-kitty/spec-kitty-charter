@@ -14,7 +14,6 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownDocument;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -584,7 +583,8 @@ final class FilesystemPackStore {
                         violations.add(new PackElementViolation(file, "schema", misnamed.get()));
                         continue;
                     }
-                    Optional<String> unnamed = missingNamedFile(directory, file, kind.namedFiles(good.value()));
+                    Optional<String> unnamed =
+                            missingNamedFile(directory, file, kind.namedFiles(good.value()), companionRules.table());
                     if (unnamed.isPresent()) {
                         violations.add(new PackElementViolation(file, "reference", unnamed.get()));
                         continue;
@@ -600,38 +600,59 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack or is not a regular file
-     * there, with why.
+     * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack, is not a regular file
+     * there, or is not a template payload, with why. A named file is the artifact's output template (ADR-0044): it must
+     * be a file the pack holds and digests as a template, never a file the table excludes or retires. A link is
+     * followed, as the pack walk follows one, as long as its real place stays in the pack.
      *
      * @param directory the pack directory
      * @param file the artifact's pack-relative path
      * @param named the paths it names, relative to its file, with what names each
-     * @return {@code <path> (named by <what>): leaves the pack} or {@code ...: missing}; empty when every one is there
+     * @param table the table that classifies the named file
+     * @return {@code <path> (named by <what>): <why>}; empty when every one is a template of the pack
      */
-    private static Optional<String> missingNamedFile(Path directory, String file, List<KindBinding.NamedFile> named) {
+    static Optional<String> missingNamedFile(
+            Path directory, String file, List<KindBinding.NamedFile> named, PackFileKind table) {
         Path base = Objects.requireNonNull(directory.resolve(file).getParent(), "an artifact file has a parent");
         for (KindBinding.NamedFile one : named) {
-            String what = one.path() + " (named by " + one.namedBy() + ")";
-            Path target = base.resolve(one.path()).normalize();
-            if (!target.startsWith(directory)) {
-                return Optional.of(what + ": leaves the pack");
-            }
-            if (!Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
-                return Optional.of(what + ": missing");
-            }
-            // A parent directory may be a link: the real place must stay in the pack too.
-            if (!realPath(target).startsWith(realPath(directory))) {
-                return Optional.of(what + ": leaves the pack");
+            Optional<String> why =
+                    namedFileProblem(directory, base.resolve(one.path()).normalize(), table);
+            if (why.isPresent()) {
+                return Optional.of(one.path() + " (named by " + one.namedBy() + "): " + why.get());
             }
         }
         return Optional.empty();
     }
 
-    private static Path realPath(Path path) {
+    private static Optional<String> namedFileProblem(Path directory, Path target, PackFileKind table) {
+        if (!target.startsWith(directory)) {
+            return Optional.of("leaves the pack");
+        }
+        if (!Files.exists(target)) {
+            return Optional.of("missing");
+        }
+        Optional<Path> real = realPath(target);
+        if (real.isEmpty() || !real.get().startsWith(realPath(directory).orElse(directory))) {
+            // A link, or a linked parent directory, whose real place is outside the pack.
+            return Optional.of("leaves the pack");
+        }
+        if (!Files.isRegularFile(target)) {
+            return Optional.of("is not a regular file");
+        }
+        String relative = directory.relativize(target).toString().replace('\\', '/');
+        String prefix = String.valueOf(directory.getFileName()) + "/";
+        if (!(table.classify(prefix + relative) instanceof PackFileKind.Mapped mapped)
+                || !PackFileKind.TEMPLATE.equals(mapped.kind())) {
+            return Optional.of("is not a template of the pack");
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<Path> realPath(Path path) {
         try {
-            return path.toRealPath();
+            return Optional.of(path.toRealPath());
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return Optional.empty();
         }
     }
 
@@ -738,7 +759,8 @@ final class FilesystemPackStore {
      *     is classified by a rule of {@code file-kinds.yaml}) or its structure schema ({@code VALIDATION_FAILED}, a
      *     client error); when a companion is named twice, is named by another artifact, differs only in case from the
      *     companion it replaces, or would replace an existing file the element does not own
-     *     ({@code REGISTRATION_CONFLICT}, a client error)
+     *     ({@code REGISTRATION_CONFLICT}, a client error); when a file the element names is not a template of the pack
+     *     ({@code VALIDATION_FAILED}, ADR-0044)
      */
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
         Path directory = existingDirectory(id);
@@ -751,6 +773,13 @@ final class FilesystemPackStore {
         Set<String> others = kind.hasCompanions() ? claimsOfOthers(directory, file, kind) : Set.of();
         Map<Companions.Inside, String> planned =
                 planCompanions(companionRules, directory, file, kind, dso, owned, others);
+        // The read refuses an element whose named file is not a template of the pack: so does the write, before
+        // anything is written.
+        Optional<String> unnamed = missingNamedFile(directory, file, kind.namedFiles(dso), companionRules.table());
+        if (unnamed.isPresent()) {
+            throw new CharterRefusal(
+                    RefusalCode.VALIDATION_FAILED, kind.kind().token() + " '" + elementId + "' names " + unnamed.get());
+        }
         // writeAtomically creates each companion's directories and refuses, as "cannot write <path> in pack", one it
         // cannot write.
         for (Map.Entry<Companions.Inside, String> companion : planned.entrySet()) {

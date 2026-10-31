@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The {@link KindBinding} of the mission type (ADR-0044): {@link MissionTypeDso} to {@link MissionType} and back. A
@@ -317,7 +318,7 @@ enum MissionTypeBinding implements KindBinding<MissionTypeDso, MissionType> {
         return new MissionReference(type, reference.id(), reference.when(), reference.reason());
     }
 
-    private static @org.jspecify.annotations.Nullable PathConventions conventionsOf(Map<String, String> written) {
+    private static @Nullable PathConventions conventionsOf(Map<String, String> written) {
         if (written.isEmpty()) {
             return null;
         }

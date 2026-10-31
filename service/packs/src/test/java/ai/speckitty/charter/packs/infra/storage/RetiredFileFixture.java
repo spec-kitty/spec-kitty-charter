@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.SequencedMap;
 
@@ -18,29 +19,41 @@ final class RetiredFileFixture {
     static final SequencedMap<String, String> RULES = rules();
 
     /**
-     * One retired file of every family a pack can hold at its root, each with the glob that retires it: the old
-     * {@code mission_types/}, {@code mission-steps/} and {@code actions/} directories of the qa pack's layout.
+     * One retired file of every family at the layout the qa and cave-kitty packs held, the mission tier at the pack
+     * root, each with the glob that retires it.
      */
     static final SequencedMap<String, String> ROOT_LAYOUT = paths(
-            "mission_types/qa.yaml", "**/mission_types/*.yaml",
-            "governance-profile.yaml", "**/governance-profile.yaml",
-            "actions/review/index.yaml", "**/actions/*/index.yaml",
-            "mission-steps/review/step.yaml", "**/mission-steps/**/*",
-            "mission-steps/review/prompt.md", "**/mission-steps/**/*",
-            "mission-steps/review/guidelines.md", "**/mission-steps/**/*");
+            "mission_types/qa.yaml", "*/mission_types/*.yaml",
+            "mission_types/qa/governance-profile.yaml", "*/mission_types/*/governance-profile.yaml",
+            "mission-steps/qa/review/step.yaml", "*/mission-steps/**/*",
+            "mission-steps/qa/review/prompt.md", "*/mission-steps/**/*",
+            "mission-steps/qa/review/guidelines.md", "*/mission-steps/**/*",
+            "missions/qa/command-templates/review.md", "*/missions/*/command-templates/*");
 
-    /** One retired file of every family under {@code missions/<type>/}, each with the glob that retires it. */
+    /** One retired file of every family at the layout the built-in pack held, under {@code missions/}. */
     static final SequencedMap<String, String> MISSIONS_LAYOUT = paths(
-            "missions/mission_types/plan.yaml", "**/mission_types/*.yaml",
-            "missions/plan/mission.yaml", "**/missions/*/mission.yaml",
-            "missions/plan/mission-runtime.yaml", "**/missions/*/mission-runtime.yaml",
-            "missions/plan/governance-profile.yaml", "**/governance-profile.yaml",
-            "missions/plan/expected-artifacts.yaml", "**/missions/*/expected-artifacts.yaml",
-            "missions/plan/actions/specify/index.yaml", "**/actions/*/index.yaml",
-            "missions/plan/mission-steps/specify/step.yaml", "**/mission-steps/**/*",
-            "missions/plan/mission-steps/specify/prompt.md", "**/mission-steps/**/*",
-            "missions/plan/mission-steps/specify/guidelines.md", "**/mission-steps/**/*",
-            "missions/plan/command-templates/specify.md", "**/missions/*/command-templates/*");
+            "missions/mission_types/plan.yaml", "*/missions/mission_types/*.yaml",
+            "missions/mission_types/plan/governance-profile.yaml", "*/missions/mission_types/*/governance-profile.yaml",
+            "missions/plan/mission.yaml", "*/missions/*/mission.yaml",
+            "missions/plan/mission-runtime.yaml", "*/missions/*/mission-runtime.yaml",
+            "missions/plan/governance-profile.yaml", "*/missions/*/governance-profile.yaml",
+            "missions/plan/expected-artifacts.yaml", "*/missions/*/expected-artifacts.yaml",
+            "missions/plan/actions/specify/index.yaml", "*/missions/*/actions/*/index.yaml",
+            "missions/mission-steps/plan/specify/step.yaml", "*/missions/mission-steps/**/*",
+            "missions/mission-steps/plan/specify/prompt.md", "*/missions/mission-steps/**/*",
+            "missions/mission-steps/plan/specify/guidelines.md", "*/missions/mission-steps/**/*");
+
+    /**
+     * Payloads elsewhere in a pack that only share a name with a retired family: an anchored rule never retires one.
+     */
+    static final List<String> NAMESAKES = List.of(
+            "assets/img/governance-profile.yaml",
+            "assets/actions/x/index.yaml",
+            "templates/mission-steps/checklist.md",
+            "templates/mission_types/x.yaml",
+            "missions/research/templates/actions/plan/index.yaml",
+            "missions/research/templates/governance-profile.yaml",
+            "missions/research/templates/mission-steps/x.md");
 
     /** A {@code pack.yaml} the store reads. */
     static final String PACK_YAML = """
@@ -76,15 +89,21 @@ final class RetiredFileFixture {
     private static SequencedMap<String, String> rules() {
         SequencedMap<String, String> out = new LinkedHashMap<>();
         out.put(
-                "**/mission_types/*.yaml",
+                "*/mission_types/*.yaml",
                 "the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)");
-        out.put("**/missions/*/mission.yaml", "folded into the mission-type file (ADR-0044)");
-        out.put("**/missions/*/mission-runtime.yaml", "folded into the mission-type file (ADR-0044)");
-        out.put("**/governance-profile.yaml", "folded into the mission-type file (ADR-0044)");
-        out.put("**/missions/*/expected-artifacts.yaml", "folded into the mission-type steps (ADR-0044)");
-        out.put("**/actions/*/index.yaml", "folded into the mission-type steps' references (ADR-0044)");
-        out.put("**/mission-steps/**/*", "folded into the mission-type steps and their companions (ADR-0044)");
-        out.put("**/missions/*/command-templates/*", "folded into the mission-type steps' prompts (ADR-0044)");
+        out.put(
+                "*/missions/mission_types/*.yaml",
+                "the mission-type file moved to missions/<id>/<id>.mission-type.yaml (ADR-0044)");
+        out.put("*/missions/*/mission.yaml", "folded into the mission-type file (ADR-0044)");
+        out.put("*/missions/*/mission-runtime.yaml", "folded into the mission-type file (ADR-0044)");
+        out.put("*/missions/*/governance-profile.yaml", "folded into the mission-type file (ADR-0044)");
+        out.put("*/mission_types/*/governance-profile.yaml", "folded into the mission-type file (ADR-0044)");
+        out.put("*/missions/mission_types/*/governance-profile.yaml", "folded into the mission-type file (ADR-0044)");
+        out.put("*/missions/*/expected-artifacts.yaml", "folded into the mission-type steps (ADR-0044)");
+        out.put("*/missions/*/actions/*/index.yaml", "folded into the mission-type steps' references (ADR-0044)");
+        out.put("*/mission-steps/**/*", "folded into the mission-type steps and their companions (ADR-0044)");
+        out.put("*/missions/mission-steps/**/*", "folded into the mission-type steps and their companions (ADR-0044)");
+        out.put("*/missions/*/command-templates/*", "folded into the mission-type steps' prompts (ADR-0044)");
         return out;
     }
 

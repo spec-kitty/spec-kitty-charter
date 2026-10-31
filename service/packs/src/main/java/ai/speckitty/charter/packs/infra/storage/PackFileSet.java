@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -72,8 +74,7 @@ final class PackFileSet {
     static final String TEMPLATES = "templates/";
 
     /** A mission type's template file: {@code missions/<type>/templates/<path>} (ADR-0044). */
-    private static final java.util.regex.Pattern MISSION_TEMPLATE =
-            java.util.regex.Pattern.compile("missions/([^/]+)/templates/(.+)");
+    private static final Pattern MISSION_TEMPLATE = Pattern.compile("missions/([^/]+)/templates/(.+)");
 
     /**
      * The id of a template file: the path under the pack's top-level {@code templates/}, or {@code <type>/<path>} for
@@ -81,11 +82,15 @@ final class PackFileSet {
      *
      * @param file the template's pack-relative path
      * @return its id
+     * @throws IllegalArgumentException when the file is under neither templates directory
      */
     static String templateId(String file) {
-        java.util.regex.Matcher mission = MISSION_TEMPLATE.matcher(file);
+        Matcher mission = MISSION_TEMPLATE.matcher(file);
         if (mission.matches()) {
             return mission.group(1) + "/" + mission.group(2);
+        }
+        if (!file.startsWith(TEMPLATES)) {
+            throw new IllegalArgumentException("no template file: " + file);
         }
         return file.substring(TEMPLATES.length());
     }
