@@ -5,13 +5,23 @@ import static org.junit.jupiter.api.Assumptions.abort;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 
-/** The packs of the pack domain: which directories are packs, at which level, in which order. */
+/**
+ * The packs of the pack domain: which directories are packs, at which level, in which order. A link to a directory is
+ * a pack (#174, ADR-0038 as amended 2026-10-31); a link that resolves to no directory, to the domain itself or to a
+ * directory another entry resolves to is not, and is reported once.
+ */
 class StorageRootLocationsTest {
 
     @TempDir
@@ -64,18 +74,105 @@ class StorageRootLocationsTest {
     }
 
     @Test
-    void aSymbolicLinkIsNeverAPackBecauseACommitWouldReplaceIt(@TempDir Path elsewhere) throws IOException {
+    void aLinkToADirectoryIsAPackNamedAfterTheLinkAtTheLevelItsTargetDeclares(@TempDir Path elsewhere)
+            throws IOException {
         pack("qa", "org");
-        Files.createDirectories(elsewhere.resolve("external"));
+        Path target = elsewhere.resolve("real-name");
+        Files.createDirectories(target);
+        Files.writeString(target.resolve("pack.yaml"), "pack_id: external\npack_level: project\n");
+        link(packs.resolve("external"), target);
+
+        assertThat(new StorageRootLocations(packs).all())
+                .containsExactly(
+                        new PackLocation("external", PackLevel.PROJECT, packs.resolve("external")),
+                        new PackLocation("qa", PackLevel.ORG, packs.resolve("qa")));
+    }
+
+    @Test
+    void aDanglingLinkAndALinkToAFileAreNotPacksAndEachIsReportedOnce(@TempDir Path elsewhere) throws IOException {
+        pack("qa", "org");
+        Files.writeString(elsewhere.resolve("a-file"), "x");
+        link(packs.resolve("to-a-file"), elsewhere.resolve("a-file"));
+        link(packs.resolve("dangling"), elsewhere.resolve("gone"));
+        StorageRootLocations locations = new StorageRootLocations(packs);
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
+            assertThat(locations.all()).extracting(PackLocation::name).containsExactly("qa");
+
+            assertThat(log.warnings())
+                    .as("one warning per refused entry, however often the domain is listed")
+                    .hasSize(2)
+                    .anySatisfy(warning -> assertThat(warning).contains("dangling", "does not resolve"))
+                    .anySatisfy(warning -> assertThat(warning).contains("to-a-file", "not a directory"));
+        }
+    }
+
+    @Test
+    void entriesThatResolveToOneDirectoryAreRefusedTogether(@TempDir Path elsewhere) throws IOException {
+        pack("qa", "org");
+        pack("solo", "org");
+        link(packs.resolve("qa-alias"), packs.resolve("qa"));
+        Files.createDirectories(elsewhere.resolve("shared"));
+        link(packs.resolve("one"), elsewhere.resolve("shared"));
+        link(packs.resolve("two"), elsewhere.resolve("shared"));
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(new StorageRootLocations(packs).all())
+                    .as("a commit to one name would change the pack under the other; neither is served")
+                    .extracting(PackLocation::name)
+                    .containsExactly("solo");
+            assertThat(log.warnings())
+                    .anySatisfy(warning -> assertThat(warning).contains("qa", "qa-alias", "same directory"))
+                    .anySatisfy(warning -> assertThat(warning).contains("one", "two", "same directory"));
+        }
+    }
+
+    @Test
+    void aLinkToThePackDomainOrAnAncestorOfItIsNotAPack() throws IOException {
+        pack("qa", "org");
+        link(packs.resolve("loop"), packs);
+        link(packs.resolve("up"), packs.getParent());
+
+        try (LogCapture log = new LogCapture()) {
+            assertThat(new StorageRootLocations(packs).all())
+                    .extracting(PackLocation::name)
+                    .containsExactly("qa");
+            assertThat(log.warnings())
+                    .anySatisfy(warning -> assertThat(warning).contains("loop", "holds the pack domain"))
+                    .anySatisfy(warning -> assertThat(warning).contains("up", "holds the pack domain"));
+        }
+    }
+
+    private static void link(Path link, Path target) throws IOException {
         try {
-            Files.createSymbolicLink(packs.resolve("external"), elsewhere.resolve("external"));
+            Files.createSymbolicLink(link, target);
         } catch (UnsupportedOperationException | IOException noLinks) {
             abort("the filesystem cannot create symbolic links");
         }
+    }
 
-        assertThat(new StorageRootLocations(packs).all())
-                .extracting(PackLocation::name)
-                .containsExactly("qa");
+    /** The warnings {@link StorageRootLocations} logs while open. */
+    private static final class LogCapture implements AutoCloseable {
+        private final Logger logger = (Logger) LoggerFactory.getLogger(StorageRootLocations.class);
+        private final ListAppender<ILoggingEvent> events = new ListAppender<>();
+
+        LogCapture() {
+            events.start();
+            logger.addAppender(events);
+        }
+
+        List<String> warnings() {
+            return events.list.stream()
+                    .filter(event -> event.getLevel() == Level.WARN)
+                    .map(ILoggingEvent::getFormattedMessage)
+                    .toList();
+        }
+
+        @Override
+        public void close() {
+            logger.detachAppender(events);
+        }
     }
 
     @Test
