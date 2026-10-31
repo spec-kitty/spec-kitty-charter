@@ -6,7 +6,7 @@
   "friendly_name": "Gate-A read surface: API root, offering, generic artifact routes and links",
   "mid8": "01M691ND",
   "mission_id": "01M691NDZHKX1ZEZJ39X6CJD6A",
-  "mission_number": null,
+  "mission_number": 15,
   "mission_slug": "gate-a-read-surface-01M691ND",
   "mission_type": "software-dev",
   "pr_bound": true,
