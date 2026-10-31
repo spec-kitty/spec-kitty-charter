@@ -1,6 +1,7 @@
 // The charter contract's own checks (DM 01M57WH7P0QZWHKYGBA2R0MA3K): the single-file bundle core vendors,
 // lint with the charter's ruleset and the planted fixtures of every rule, the closed-response-objects
-// checker (Java, src/main/java; DM 01M584Q3NNK0B78H9NKHV7VJDK) and the breaking-change check against the
+// checker (Java, src/main/java; DM 01M584Q3NNK0B78H9NKHV7VJDK), the raised-code check of the refusals (Java,
+// src/main/java; #176) and the breaking-change check against the
 // baseline release the release gate names (Java, src/main/java; DM 01M5986KJ7B18K7GQ25E47J989) with its own
 // planted pairs. All run in `check`, so `./gradlew verifyAll` runs them.
 // Conventions and how to add a rule: contracts/lint/README.md.
@@ -604,14 +605,18 @@ abstract class CheckContractCompatibility @Inject constructor(
 }
 
 /**
- * Runs the closed-response-objects checker (`ai.speckitty.charter.contracts.closure`) over the bundle; its class
- * Javadoc is the authority on what closed means. The checker's output is the report; any violation fails the task.
+ * Runs one of the contract's Java checkers over the bundle: the closed-response-objects checker
+ * (`ai.speckitty.charter.contracts.closure`) or the raised-code check of the refusals
+ * (`ai.speckitty.charter.contracts.refusal`, #176). Each checker's class Javadoc is the authority on what it refuses.
+ * The checker's output is the report; any violation fails the task with [failure] as its first line.
  */
 @CacheableTask
-abstract class CheckClosedResponseObjects @Inject constructor(private val exec: ExecOperations) : DefaultTask() {
+abstract class CheckBundle @Inject constructor(private val exec: ExecOperations) : DefaultTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val bundle: RegularFileProperty
     @get:Classpath abstract val checkerClasspath: ConfigurableFileCollection
     @get:Nested abstract val launcher: Property<JavaLauncher>
+    @get:Input abstract val checker: Property<String>
+    @get:Input abstract val failure: Property<String>
     @get:OutputFile abstract val report: RegularFileProperty
 
     @TaskAction
@@ -620,7 +625,7 @@ abstract class CheckClosedResponseObjects @Inject constructor(private val exec: 
         val result = exec.javaexec {
             executable = launcher.get().executablePath.asFile.absolutePath
             classpath = checkerClasspath
-            mainClass = "ai.speckitty.charter.contracts.closure.CheckClosedResponseObjects"
+            mainClass = checker
             args(bundle.get().asFile.absolutePath)
             standardOutput = output
             errorOutput = output
@@ -629,7 +634,7 @@ abstract class CheckClosedResponseObjects @Inject constructor(private val exec: 
         val text = output.toString(Charsets.UTF_8)
         report.get().asFile.writeText(text)
         if (result.exitValue != 0) {
-            throw GradleException("The charter contract has open response schemas:\n$text")
+            throw GradleException("${failure.get()}:\n$text")
         }
         logger.lifecycle(text.trim())
     }
@@ -758,13 +763,26 @@ tasks.test {
     systemProperty("charter.lintCleanFixture", lintCleanFixture.asFile.absolutePath)
 }
 
-val checkClosedResponseObjects = tasks.register<CheckClosedResponseObjects>("checkClosedResponseObjects") {
+val checkClosedResponseObjects = tasks.register<CheckBundle>("checkClosedResponseObjects") {
     group = "verification"
     description = "Checks that every response schema of the bundle is closed (the Java checker in src/main/java)."
     bundle = bundleContract.flatMap { it.bundle }
     checkerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
     launcher = javaToolchains.launcherFor(java.toolchain)
+    checker = "ai.speckitty.charter.contracts.closure.CheckClosedResponseObjects"
+    failure = "The charter contract has open response schemas"
     report = layout.buildDirectory.file("reports/closure/charter-openapi.txt")
+}
+
+val checkRefusalExamples = tasks.register<CheckBundle>("checkRefusalExamples") {
+    group = "verification"
+    description = "Checks that every refusal example and response description of the bundle names raised codes only (#176)."
+    bundle = bundleContract.flatMap { it.bundle }
+    checkerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    launcher = javaToolchains.launcherFor(java.toolchain)
+    checker = "ai.speckitty.charter.contracts.refusal.RefusalExamples"
+    failure = "The charter contract names refusal codes it does not raise"
+    report = layout.buildDirectory.file("reports/refusal/charter-openapi.txt")
 }
 
 tasks.register<CheckReleaseTag>("checkReleaseTag") {
@@ -778,6 +796,6 @@ tasks.register<CheckReleaseTag>("checkReleaseTag") {
 }
 
 tasks.named("check") {
-    dependsOn(bundleContract, lintContract, lintFixtures, checkClosedResponseObjects, compatibilityFixtures,
-        checkContractCompatibility)
+    dependsOn(bundleContract, lintContract, lintFixtures, checkClosedResponseObjects, checkRefusalExamples,
+        compatibilityFixtures, checkContractCompatibility)
 }

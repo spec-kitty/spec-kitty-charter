@@ -15,12 +15,13 @@ adapts to the charter through its integration seam.
 ./gradlew :contracts:lintFixtures          # each rule against its planted fixtures
 ./gradlew :contracts:compatibilityFixtures # the breaking-change check against its planted pairs
 ./gradlew :contracts:checkClosedResponseObjects # the closure checker against the bundle
+./gradlew :contracts:checkRefusalExamples      # the raised-code check of the refusals against the bundle
 ```
 
 `contracts/build.gradle.kts` downloads vacuum and oasdiff at pinned versions, checks each archive's
 SHA-256 before extracting it (downloads time out after 30 s without a connection or 60 s without
 data), re-verifies the installed archive and executable against the pin on every build, also after
-a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs six tasks:
+a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs seven tasks:
 
 | Task | What it checks |
 |---|---|
@@ -28,6 +29,7 @@ a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs six tas
 | `lintContract` | Lints the bundle with `ruleset.yaml`. Any violation fails, and so does a ruleset vacuum loads with a different number of rules than it declares. |
 | `lintFixtures` | Every rule has at least one fixture, `fixtures/<rule id>.yaml` or `fixtures/<rule id>.<case>.yaml`, that fails that rule and no other; `fixtures/clean.yaml` fails none. Each fixture goes through the same bundle step as the contract first, so the rules are proven on the inlined shape they judge. |
 | `checkClosedResponseObjects` | Runs the closure checker (see [Closed responses](#closed-responses)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
+| `checkRefusalExamples` | Runs the raised-code check (see [Refusal codes](#refusal-codes)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
 | `compatibilityFixtures` | Each `../compat/fixtures/<case>/` holds `base.yaml` and `revision.yaml`; a `breaking-*` case must fail the breaking-change comparison and a `compatible-*` case must pass it. |
 | `checkContractCompatibility` | The release gate, then `oasdiff breaking` of the bundle against the bundle of the baseline release it names (see [The released baseline](#the-released-baseline)). |
 
@@ -137,6 +139,16 @@ deliberate contract change that the breaking-change check sees. A Java checker, 
 [class Javadoc](../src/main/java/ai/speckitty/charter/contracts/closure/ClosureChecker.java) is the
 authority on what closed means and what the checker refuses, with its cases as fixtures in
 `contracts/src/test/resources/closure/`.
+
+## Refusal codes
+
+A client learns which refusal codes it may meet from a refusal's examples and its description, so neither
+may name a code the service does not raise (#176). A Java check, `RefusalExamples` (run by
+`checkRefusalExamples` over the bundle as part of `check`), reads the raised codes from the `x-refusal`
+map of `CharterRefusalCode` (the codes whose `raised` is `true`) and fails a `CharterRefusal` example whose
+`code` is not one of them, and a response description that names, as a whole word, a code of that map
+that is not raised. Its [class Javadoc](../src/main/java/ai/speckitty/charter/contracts/refusal/RefusalExamples.java)
+is the authority, with its cases as fixtures in `contracts/src/test/resources/refusal/`.
 
 ## Adding or changing a rule
 

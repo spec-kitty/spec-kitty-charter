@@ -87,8 +87,7 @@ post:
     '409':
       description: >-
         The registration conflicts with the pack's current state (registration_conflict: a duplicate id on POST, or
-        the guide's file <id>.guide.md already claimed by another artifact of the pack; or
-        governance_policy_violation).
+        the guide's file <id>.guide.md already claimed by another artifact of the pack).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

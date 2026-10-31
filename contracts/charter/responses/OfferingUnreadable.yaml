@@ -1,9 +1,11 @@
 description: >-
-  A configured Charter Pack could not be loaded or merged, the packs changed while the read was
-  answered, or the service failed unexpectedly, refused with 500. The answer is never partial. The code
-  names the reason, for example pack_level_mismatch or drg_schema_error; a read whose packs or
-  project configuration changed while it was answered is stale_input, which may be retried; an
-  unexpected failure is internal_error. A refusal carries no Charter-Source-Fingerprint.
+  A configured Charter Pack could not be read, the packs changed while the read was answered, or the
+  service failed unexpectedly, refused with 500. The answer is never partial. The code names the
+  reason, and it is one of three: pack_unreadable, when a configured pack's directory is missing or a
+  file the fingerprint covers cannot be read or a directory cannot be listed; stale_input, when the
+  packs or the project configuration changed while the read was answered, which may be retried; and
+  internal_error, an unexpected failure, which may be retried. A refusal carries no
+  Charter-Source-Fingerprint.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
@@ -13,3 +15,18 @@ content:
   application/problem+json:
     schema:
       $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-unreadable:
+        summary: A configured pack has no pack.yaml.
+        value:
+          title: Pack unreadable
+          status: 500
+          code: pack_unreadable
+          detail: pack qa has no pack.yaml
+      stale-input:
+        summary: The inputs changed while the read was answered.
+        value:
+          title: Stale input
+          status: 500
+          code: stale_input
+          detail: The inputs changed while the tactics were read; read them again.
