@@ -37,6 +37,9 @@ class PackFileKindTest {
             Map.entry("core/styleguides/a.styleguide.yaml", "styleguide"),
             Map.entry("core/toolguides/a.toolguide.yaml", "toolguide"),
             Map.entry("core/toolguides/a.guide.md", "toolguide-guide"),
+            Map.entry("core/missions/plan/plan.mission-type.yaml", "mission-type"),
+            Map.entry("core/missions/plan/steps/specify.prompt.md", "mission-step-prompt"),
+            Map.entry("core/missions/plan/steps/specify.guidelines.md", "mission-step-guidelines"),
             Map.entry("core/paradigms/a.paradigm.yaml", "paradigm"),
             Map.entry("core/procedures/a.procedure.yaml", "procedure"),
             Map.entry("core/agent-profiles/a.agent.yaml", "agent-profile"),
@@ -51,13 +54,6 @@ class PackFileKindTest {
 
     /** One sample path for each exclusion rule. */
     private static final List<String> EXCLUDED = List.of(
-            "core/missions/software-dev/mission-steps/specify/step.yaml",
-            "core/actions/plan/index.yaml",
-            "core/missions/software-dev/mission.yaml",
-            "core/missions/software-dev/mission-runtime.yaml",
-            "core/missions/software-dev/expected-artifacts.yaml",
-            "core/missions/software-dev/governance-profile.yaml",
-            "core/mission_types/software-dev.yaml",
             "built-in.source.yaml",
             "core/missions/software-dev/templates/plan-field-declaration.yaml",
             "built-in/assets/README.md",
@@ -65,7 +61,11 @@ class PackFileKindTest {
             "built-in/assets/.DS_Store",
             "internal/assets/debrief/fonts/.gitkeep",
             "built-in/templates/.pack-write-123.tmp",
-            "built-in/templates/writing/.gitkeep");
+            "built-in/templates/writing/.gitkeep",
+            "built-in/missions/plan/templates/.gitkeep",
+            "built-in/missions/README.md",
+            "built-in/missions/plan/README.md",
+            "built-in/missions/documentation/templates/README.md");
 
     /** Schema-less payload samples, nested on purpose (a trailing `**` would match one segment only), with their kind. */
     private static final Map<String, String> PAYLOADS = Map.ofEntries(
@@ -73,7 +73,9 @@ class PackFileKindTest {
             Map.entry("internal/assets/debrief/fonts/FallingSky-Bold.otf", "asset-payload"),
             Map.entry("qa/assets/qa_carrier_lint.py", "asset-payload"),
             Map.entry("built-in/assets/docs_structural_lint.config.yaml", "asset-payload"),
-            Map.entry("built-in/templates/writing/meeting-minutes.md", "template"));
+            Map.entry("built-in/templates/writing/meeting-minutes.md", "template"),
+            Map.entry("built-in/missions/documentation/templates/divio/tutorial-template.md", "template"),
+            Map.entry("qa/missions/qa/templates/test-report-template.md", "template"));
 
     /** A table text whose only rules are {@code %s}, written as YAML flow mappings. */
     private static final String TABLE = "node_kinds: []\nfragment_kinds: {}\n%s\n";
@@ -121,7 +123,8 @@ class PackFileKindTest {
         assertThat(KINDS.payloadRules())
                 .containsExactly(
                         new PackFileKind.PayloadRule("*/assets/**/*", "asset-payload", ContentForm.BYTES),
-                        new PackFileKind.PayloadRule("*/templates/**/*", "template", ContentForm.BYTES));
+                        new PackFileKind.PayloadRule("*/templates/**/*", "template", ContentForm.BYTES),
+                        new PackFileKind.PayloadRule("*/missions/*/templates/**/*", "template", ContentForm.BYTES));
     }
 
     @Test
@@ -148,17 +151,20 @@ class PackFileKindTest {
     }
 
     @Test
-    void thePayloadGlobsSpanNestedFilesAndTheTemplatesRuleCoversOnlyAPacksTopLevelTemplates() {
+    void thePayloadGlobsSpanNestedFilesAndTheTemplateRulesCoverTopLevelAndMissionTypeTemplates() {
         assertThat(KINDS.matchingPayloadRules("x/assets/a/b/c/d.bin"))
                 .as("depth 3 under assets/")
                 .containsExactly("*/assets/**/*");
-        assertThat(KINDS.matchingPayloadRules("x/missions/m/templates/a.md")).isEmpty();
+        assertThat(KINDS.matchingPayloadRules("x/missions/m/templates/a.md"))
+                .as("a mission type's template (#194, ADR-0044)")
+                .containsExactly("*/missions/*/templates/**/*");
+        assertThat(KINDS.matchingPayloadRules("x/missions/templates/a.md")).isEmpty();
         assertThat(KINDS.matchingPayloadRules("x/templates/a.md")).containsExactly("*/templates/**/*");
     }
 
     /**
      * F5: a hidden file under a pack's {@code assets/} or top-level {@code templates/} is excluded, not a payload,
-     * while the same name without its leading dot, beside it, is one; a hidden mission template stays unclassified.
+     * while the same name without its leading dot, beside it, is one; a mission type's templates follow the same rule.
      */
     @Test
     void aHiddenFileUnderAssetsOrTemplatesIsExcludedWhileItsUnhiddenTwinIsAPayload() {
@@ -176,7 +182,9 @@ class PackFileKindTest {
         assertThat(KINDS.classify("qa/templates/gitkeep"))
                 .isEqualTo(new PackFileKind.Mapped("template", Optional.empty(), ContentForm.BYTES));
         assertThat(KINDS.classify("built-in/missions/plan/templates/.gitkeep"))
-                .isEqualTo(PackFileKind.Unclassified.INSTANCE);
+                .isInstanceOf(PackFileKind.Excluded.class);
+        assertThat(KINDS.classify("built-in/missions/plan/templates/gitkeep"))
+                .isEqualTo(new PackFileKind.Mapped("template", Optional.empty(), ContentForm.BYTES));
     }
 
     @ParameterizedTest
@@ -187,8 +195,7 @@ class PackFileKindTest {
         "pack.yaml",
         "core/deep/er/pack.yaml",
         "core/docs/pack.md",
-        "qa/missions/qa/templates/test-report-template.md",
-        "built-in/missions/software-dev/templates/spec-template.md"
+        "built-in/missions/templates/spec-template.md"
     })
     void anUnknownFileIsUnclassified(String path) {
         assertThat(KINDS.classify(path)).isEqualTo(PackFileKind.Unclassified.INSTANCE);
@@ -218,10 +225,13 @@ class PackFileKindTest {
                 .hasSize(15)
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(20);
+        assertThat(KINDS.fileRules()).hasSize(23);
         assertThat(KINDS.fileRules())
-                .as("every files rule keeps the default form but the toolguide guide's (#194) and pack.md's (#260)")
-                .filteredOn(rule -> !Set.of("toolguide-guide", "pack-document").contains(rule.schema()))
+                .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
+                        + " pack.md's (#260)")
+                .filteredOn(rule -> !Set.of(
+                                "toolguide-guide", "pack-document", "mission-step-prompt", "mission-step-guidelines")
+                        .contains(rule.schema()))
                 .extracting(PackFileKind.FileRule::contentForm)
                 .containsOnly(ContentForm.YAML);
     }

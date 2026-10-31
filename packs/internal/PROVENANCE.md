@@ -22,7 +22,7 @@ activation, tracked by #32).
 
 ## Vendored copy
 
-Re-vendored from `spec-kitty-open-packs` `packs/internal` at commit `5df92a5d02e47e8877364de5e2deb06c016d30a9` (main, after PR #91 landed: procedures and toolguide guides in the charter's sanitized shapes) on 2026-10-29. This file and `README.md` are local and differ from upstream on purpose. One more file differs from upstream at that commit, and everything else in this directory is the upstream copy:
+Re-vendored from `spec-kitty-open-packs` `packs/internal` at commit `5df92a5d02e47e8877364de5e2deb06c016d30a9` (main, after PR #91 landed: procedures and toolguide guides in the charter's sanitized shapes) on 2026-10-29; the pin moved to `86d9284695a18a71f9f7cc934f0305b1b03de19e` (PR #95, the mission tier) on 2026-10-31, which changes nothing in `packs/internal`. This file and `README.md` are local and differ from upstream on purpose. One more file differs from upstream at that commit, and everything else in this directory is the upstream copy:
 
 - `assets/validate-pr-body.py`: the closing-link pattern also accepts GitHub's colon form (`Closes: #5`, `\s*:?`), the edit this repository's `main` made in commit `dd86daa`. Taking it upstream is tracked as [spec-kitty/spec-kitty-open-packs#92](https://github.com/spec-kitty/spec-kitty-open-packs/issues/92).
 

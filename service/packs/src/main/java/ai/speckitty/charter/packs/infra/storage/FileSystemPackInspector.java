@@ -63,6 +63,10 @@ import org.jspecify.annotations.Nullable;
  * the store's own read ({@link PackDocumentMarkdown#read}). Other Markdown files are not read, nor listed in the
  * classification.
  *
+ * <p>{@link Scope#FULL} reports every retired file (ADR-0044 decision 6), YAML and Markdown alike, as
+ * {@link PackContents#unreadableFiles()} naming its rule's reason, from the store's own listing
+ * ({@link PackFileSet.Listing#retired()}), so validate mode and the load refuse the same files by name.
+ *
  * <p>Every call reads the files again, every file through {@link ParsedYaml} and never through {@link Yaml} directly,
  * so that a document nested too deeply or holding a scalar no validator can judge is a parse failure. A file whose
  * bytes are not UTF-8 is a parse failure too, and the code of its finding follows its kind like every other. The
@@ -108,8 +112,22 @@ public final class FileSystemPackInspector implements PackInspector {
         return ArtifactKinds.KINDS;
     }
 
-    /** An inspector; it keeps no state. */
-    public FileSystemPackInspector() {}
+    private final PackFileKind table;
+
+    /** An inspector over the bundled file-kinds table; it keeps no state. */
+    public FileSystemPackInspector() {
+        this(PackFileKind.bundled());
+    }
+
+    /**
+     * An inspector that classifies with {@code table} in place of the bundled one: the seam a test uses to refuse a
+     * retired file before the bundled table has a {@code retired} rule (#194).
+     *
+     * @param table the file-kinds table
+     */
+    FileSystemPackInspector(PackFileKind table) {
+        this.table = Objects.requireNonNull(table, "table");
+    }
 
     /**
      * Reads a pack directory.
@@ -152,7 +170,7 @@ public final class FileSystemPackInspector implements PackInspector {
                     root, descriptor, shards, fragment, List.of(), List.of(), List.of(), List.of(), List.of());
         }
         FullRead full = new FullRead(
-                directory, name, shards.stream().map(FileRead::file).toList());
+                directory, name, shards.stream().map(FileRead::file).toList(), table);
         full.readAll();
         return new PackContents(
                 root,
@@ -198,10 +216,12 @@ public final class FileSystemPackInspector implements PackInspector {
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
         private final Set<String> assetIds = new HashSet<>();
+        private final PackFileKind table;
 
-        FullRead(Path directory, String name, List<String> shards) {
+        FullRead(Path directory, String name, List<String> shards, PackFileKind table) {
             this.directory = directory;
             this.name = name;
+            this.table = table;
             loadPath.add(PackFileSet.PACK_YAML);
             loadPath.add(PackFileSet.FRAGMENT);
             loadPath.addAll(shards);
@@ -213,7 +233,7 @@ public final class FileSystemPackInspector implements PackInspector {
             String prefix = (last == null ? "pack" : last.toString()) + "/";
             for (Path path : yamlFiles(directory, name)) {
                 String file = slashed(directory.relativize(path));
-                switch (PackFileKind.bundled().classify(prefix + file)) {
+                switch (table.classify(prefix + file)) {
                     case PackFileKind.Excluded excluded ->
                         files.add(new ClassifiedFile(file, Optional.empty(), Optional.of(excluded.exclusionClass())));
                     case PackFileKind.Mapped mapped -> {
@@ -222,12 +242,14 @@ public final class FileSystemPackInspector implements PackInspector {
                             readMapped(path, file, mapped.kind());
                         }
                     }
+                    // Reported below from the store's listing, with the retired Markdown files.
+                    case PackFileKind.Retired retired -> {}
                     case PackFileKind.Unclassified unclassified -> {}
                 }
             }
             for (Path path : packFiles(directory, name, MARKDOWN)) {
                 String file = slashed(directory.relativize(path));
-                if (!(PackFileKind.bundled().classify(prefix + file) instanceof PackFileKind.Mapped mapped)
+                if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)
                         || mapped.contentForm() != ContentForm.MARKDOWN) {
                     continue;
                 }
@@ -238,10 +260,14 @@ public final class FileSystemPackInspector implements PackInspector {
                 } else {
                     // A future Markdown kind must fail loud in validate mode too, as the store's
                     // listing walk does (PackFileSet#loaded) — never silently skipped. Unreachable
-                    // with today's two-rule table; keeps load and validate symmetric by construction.
+                    // with today's markdown rules; keeps load and validate symmetric by construction.
                     throw PackFileSet.notStored(file, mapped.contentForm());
                 }
             }
+            PackFileSet.listing(directory, table)
+                    .retired()
+                    .forEach((file, reason) -> unreadable.add(
+                            new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
         }
 
         /** The pack document (#260), read as the store's load reads it, so the two refuse the same {@code pack.md}. */

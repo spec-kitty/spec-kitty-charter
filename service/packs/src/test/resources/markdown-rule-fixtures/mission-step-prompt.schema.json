@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-step-prompt.schema.json",
+  "title": "Mission step prompt",
+  "description": "The structure of a mission step's prompt (steps/<id>.prompt.md beside its mission type), over the parsed Markdown model: optional frontmatter holding only the prompt's detailed description, an optional H1, a preamble and H2 sections (ADR-0044, ruling Q1 as refined on 2026-10-30).",
+  "type": "object",
+  "required": [
+    "preamble",
+    "sections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "frontmatter": {
+      "description": "The prompt's frontmatter: only its detailed description, a longer text than the step's one-line description in the mission-type file.",
+      "type": "object",
+      "required": [
+        "description"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "title": "Detailed description",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preamble": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -171,9 +171,14 @@ class PresetTest {
     @Test
     @DisplayName("every kind presets govern can carry a list")
     void everyGovernedKindIsAccepted() {
+        // A preset activates mission types in its own list (missionTypes, ADR-0042), not as an activated kind.
         assertThat(Preset.ACTIVATION_KINDS)
                 .isEqualTo(EnumSet.complementOf(EnumSet.of(
-                        ArtifactKind.SKILL, ArtifactKind.GLOSSARY_PACK, ArtifactKind.ASSET, ArtifactKind.TEMPLATE)));
+                        ArtifactKind.SKILL,
+                        ArtifactKind.GLOSSARY_PACK,
+                        ArtifactKind.ASSET,
+                        ArtifactKind.TEMPLATE,
+                        ArtifactKind.MISSION_TYPE)));
         for (ArtifactKind kind : Preset.ACTIVATION_KINDS) {
             assertThatCode(() -> preset("p", lists(kind, PresetItem.of("x")))).doesNotThrowAnyException();
         }

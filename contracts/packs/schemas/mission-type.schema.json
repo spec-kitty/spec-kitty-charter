@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-type.schema.json",
+  "$defs": {
+    "GuidanceKind": {
+      "description": "The artifact kinds a mission type or step may reference: the guidance kinds. A mission type names roles, not agent profiles (ADR-0032).",
+      "enum": [
+        "directive",
+        "tactic",
+        "styleguide",
+        "toolguide",
+        "paradigm",
+        "procedure"
+      ],
+      "title": "GuidanceKind",
+      "type": "string"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "description": "A reference to guidance, stored verbatim; never minted as a relationship (#189).",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/GuidanceKind"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "title": "When",
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "Reference",
+      "type": "object"
+    },
+    "Step": {
+      "additionalProperties": false,
+      "description": "A step of the mission type, a sub-item of steps or on_demand_steps. Its prompt and guidelines are Markdown companions beside the mission-type file.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "title": "Description",
+          "description": "The step's one-line, human-facing summary; a longer text is the prompt's detailed description (its frontmatter).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "role": {
+          "title": "Role",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "An open role token, for example operator; absent when any role may act."
+        },
+        "prompt_path": {
+          "title": "Prompt Path",
+          "type": "string",
+          "pattern": "^steps/[a-z][a-z0-9]*(-[a-z0-9]+)*\\.prompt\\.md$",
+          "description": "Derived: steps/<id>.prompt.md. Present when the step has a prompt."
+        },
+        "guidelines_path": {
+          "title": "Guidelines Path",
+          "type": "string",
+          "pattern": "^steps/[a-z][a-z0-9]*(-[a-z0-9]+)*\\.guidelines\\.md$",
+          "description": "Derived: steps/<id>.guidelines.md. Present when the step has guidelines."
+        },
+        "expected_input_artifacts": {
+          "description": "The step's preconditions.",
+          "items": {
+            "$ref": "#/$defs/ExpectedInputArtifact"
+          },
+          "minItems": 1,
+          "title": "Expected Input Artifacts",
+          "type": "array"
+        },
+        "expected_output_artifacts": {
+          "description": "The step's postconditions.",
+          "items": {
+            "$ref": "#/$defs/ExpectedOutputArtifact"
+          },
+          "minItems": 1,
+          "title": "Expected Output Artifacts",
+          "type": "array"
+        },
+        "references": {
+          "description": "The step's action-scoped guidance, in authored order.",
+          "items": {
+            "$ref": "#/$defs/Reference"
+          },
+          "minItems": 1,
+          "title": "References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "Step",
+      "type": "object"
+    },
+    "PathConventions": {
+      "additionalProperties": false,
+      "description": "Directories in the mission's workspace, not pack files; at least one is named.",
+      "properties": {
+        "workspace": {
+          "title": "Workspace",
+          "type": "string",
+          "minLength": 1
+        },
+        "tests": {
+          "title": "Tests",
+          "type": "string",
+          "minLength": 1
+        },
+        "deliverables": {
+          "title": "Deliverables",
+          "type": "string",
+          "minLength": 1
+        },
+        "documentation": {
+          "title": "Documentation",
+          "type": "string",
+          "minLength": 1
+        },
+        "data": {
+          "title": "Data",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "title": "PathConventions",
+      "type": "object",
+      "minProperties": 1
+    },
+    "ExpectedInputArtifact": {
+      "additionalProperties": false,
+      "description": "An artifact a step needs before it runs: a precondition, checked in the mission's workspace. It has no class and no template.",
+      "properties": {
+        "artifact_key": {
+          "title": "Artifact Key",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9_-]+)+$",
+          "description": "An opaque dotted key, kept verbatim; not an identity: the same key may stand at two steps."
+        },
+        "path_pattern": {
+          "description": "A glob in the mission's workspace, not a pack file: relative, no '..'.",
+          "minLength": 1,
+          "not": {
+            "pattern": "(^|/)\\.\\.(/|$)"
+          },
+          "pattern": "^[^/]",
+          "title": "Path Pattern",
+          "type": "string"
+        },
+        "blocking": {
+          "const": true,
+          "description": "Present only when a missing input blocks the step; absent means not blocking.",
+          "title": "Blocking",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "artifact_key",
+        "path_pattern"
+      ],
+      "title": "ExpectedInputArtifact",
+      "type": "object"
+    },
+    "ExpectedOutputArtifact": {
+      "additionalProperties": false,
+      "description": "An artifact a step or the mission produces: a postcondition, checked in the mission's workspace.",
+      "properties": {
+        "artifact_key": {
+          "title": "Artifact Key",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9_-]+)+$",
+          "description": "An opaque dotted key, kept verbatim; not an identity: the same key may stand at two steps."
+        },
+        "artifact_class": {
+          "enum": [
+            "input",
+            "output",
+            "evidence",
+            "workflow",
+            "runtime"
+          ],
+          "title": "Artifact Class",
+          "type": "string",
+          "description": "What the artifact is to the mission; input is the mission's input document, such as the specification a specify step produces."
+        },
+        "path_pattern": {
+          "description": "A glob in the mission's workspace, not a pack file: relative, no '..'.",
+          "minLength": 1,
+          "not": {
+            "pattern": "(^|/)\\.\\.(/|$)"
+          },
+          "pattern": "^[^/]",
+          "title": "Path Pattern",
+          "type": "string"
+        },
+        "blocking": {
+          "const": true,
+          "description": "Present only when a missing artifact blocks the step; absent means not blocking.",
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "template_path": {
+          "description": "The template that produces the artifact, relative to the mission-type file.",
+          "not": {
+            "pattern": "(^|/)\\.\\.(/|$)"
+          },
+          "pattern": "^templates/[^/]",
+          "title": "Template Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_key",
+        "artifact_class",
+        "path_pattern"
+      ],
+      "title": "ExpectedOutputArtifact",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A mission type: its steps in order, the steps invoked on demand, its expected artifacts and its guidance (ADR-0044).",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "The file stem; the file is missions/<id>/<id>.mission-type.yaml."
+    },
+    "title": {
+      "title": "Title",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "title": "Description",
+      "type": "string",
+      "minLength": 1
+    },
+    "content": {
+      "title": "Content",
+      "type": "string",
+      "minLength": 1,
+      "description": "Standing context for the agent of every step."
+    },
+    "requires_substantive_spec": {
+      "const": true,
+      "description": "Present when the type requires a substantive specification; absent means not required, never 'use a default'.",
+      "title": "Requires Substantive Spec",
+      "type": "boolean"
+    },
+    "path_conventions": {
+      "$ref": "#/$defs/PathConventions"
+    },
+    "expected_output_artifacts": {
+      "description": "The mission's own postconditions, not tied to a step.",
+      "items": {
+        "$ref": "#/$defs/ExpectedOutputArtifact"
+      },
+      "minItems": 1,
+      "title": "Expected Output Artifacts",
+      "type": "array"
+    },
+    "references": {
+      "description": "The type's recipe ingredients, in authored order.",
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "minItems": 1,
+      "title": "References",
+      "type": "array"
+    },
+    "steps": {
+      "description": "The sequence: the list order is the run order.",
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "on_demand_steps": {
+      "description": "Steps invoked by an explicit command, outside the sequence; authored order kept, not a run order.",
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "minItems": 1,
+      "title": "On-Demand Steps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "description",
+    "steps"
+  ],
+  "title": "MissionType",
+  "type": "object"
+}

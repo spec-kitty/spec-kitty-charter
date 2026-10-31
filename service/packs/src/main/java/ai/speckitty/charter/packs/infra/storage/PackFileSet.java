@@ -17,10 +17,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -31,9 +33,10 @@ import org.jspecify.annotations.Nullable;
  * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests {@code
  * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
  * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042).
- * Both take their list from here, so a file the service loads cannot escape the fingerprint. Binding a kind is all it
- * takes for the digest to cover it. The asset files, templates, presets and pack document come last, so a pack that
+ * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042),
+ * then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
+ * escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The asset files, templates,
+ * presets, pack document and retired files come last, so a pack that
  * holds none keeps its exact digest list.
  *
  * <p>A pack file's kind is the {@link PackFileKind} classification of {@code <pack directory name>/<relative path>}:
@@ -68,6 +71,25 @@ final class PackFileSet {
     /** The pack's top-level template directory, with its trailing slash. */
     static final String TEMPLATES = "templates/";
 
+    /** A mission type's template file: {@code missions/<type>/templates/<path>} (ADR-0044). */
+    private static final java.util.regex.Pattern MISSION_TEMPLATE =
+            java.util.regex.Pattern.compile("missions/([^/]+)/templates/(.+)");
+
+    /**
+     * The id of a template file: the path under the pack's top-level {@code templates/}, or {@code <type>/<path>} for
+     * a mission type's template, the id the CRG's {@code template:} URNs already use (ADR-0044).
+     *
+     * @param file the template's pack-relative path
+     * @return its id
+     */
+    static String templateId(String file) {
+        java.util.regex.Matcher mission = MISSION_TEMPLATE.matcher(file);
+        if (mission.matches()) {
+            return mission.group(1) + "/" + mission.group(2);
+        }
+        return file.substring(TEMPLATES.length());
+    }
+
     /** The {@code payloads} rule kind of an asset file. */
     static final String ASSET_PAYLOAD = PackFileKind.ASSET_PAYLOAD;
 
@@ -77,16 +99,20 @@ final class PackFileSet {
      *
      * @param byKind the files of each bound kind; a kind with none may be absent
      * @param assetFiles the asset files, pack-relative (they start with {@code assets/})
-     * @param templates the templates, pack-relative (they start with {@code templates/})
+     * @param templates the templates, pack-relative (under {@code templates/} or a mission type's
+     *     {@code missions/<type>/templates/}, ADR-0044)
      * @param presets the activation presets, pack-relative ({@code presets/<stem>.yaml})
      * @param document the pack document, {@code pack.md}, when the pack has one
+     * @param retired the files of a retired family (ADR-0044 decision 6), each with its rule's reason, which the load and
+     *     validate mode refuse by name
      */
     record Listing(
             Map<ArtifactKind, List<String>> byKind,
             List<String> assetFiles,
             List<String> templates,
             List<String> presets,
-            Optional<String> document) {
+            Optional<String> document,
+            SequencedMap<String, String> retired) {
         /**
          * Copies the collections.
          *
@@ -95,6 +121,7 @@ final class PackFileSet {
          * @param templates the templates
          * @param presets the presets
          * @param document the pack document, if any
+         * @param retired the retired files, path to reason
          */
         Listing {
             Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
@@ -104,6 +131,7 @@ final class PackFileSet {
             templates = List.copyOf(templates);
             presets = List.copyOf(presets);
             Objects.requireNonNull(document, "document");
+            retired = Collections.unmodifiableSequencedMap(new LinkedHashMap<>(retired));
         }
 
         /**
@@ -169,11 +197,11 @@ final class PackFileSet {
     }
 
     /**
-     * The templates of a pack: every file under its top-level {@code templates/} that the {@code template} payload rule
-     * classifies. Mission templates ({@code missions/<m>/templates/}) are not among them.
+     * The templates of a pack: every file under its top-level {@code templates/} or a mission type's
+     * {@code missions/<type>/templates/} that a {@code template} payload rule classifies (ADR-0044).
      *
      * @param packDir the pack directory
-     * @return the pack-relative paths (each starts with {@code templates/}), in {@link String} order
+     * @return the pack-relative paths, in {@link String} order
      */
     static List<String> templates(Path packDir) {
         return listing(packDir).templates();
@@ -199,10 +227,22 @@ final class PackFileSet {
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file;
      *     the asset files; the templates; the presets; {@code pack.md} when a regular file; {@code pack-manifest.yaml}
-     *     when a regular file. None of those is a bound kind, and they are always included.
+     *     when a regular file; the retired files. None of those is a bound kind, and they are always included.
      */
     static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
-        return digested(packDir, kinds, nameOf(normalized(packDir)));
+        return digested(packDir, kinds, nameOf(normalized(packDir)), PackFileKind.bundled());
+    }
+
+    /**
+     * The digested files when {@code table} classifies in place of the bundled one: the seam a test uses to digest a
+     * retired file before the bundled table has a {@code retired} rule (#194).
+     *
+     * @param packDir the pack directory
+     * @param table the file-kind table
+     * @return the pack-relative paths, in digest order
+     */
+    static List<String> digested(Path packDir, PackFileKind table) {
+        return digested(packDir, Set.copyOf(KindBindings.kinds()), nameOf(normalized(packDir)), table);
     }
 
     /**
@@ -213,16 +253,16 @@ final class PackFileSet {
      * @return the pack-relative paths, in digest order
      */
     static List<String> digested(Path packDir, String packName) {
-        return digested(packDir, Set.copyOf(KindBindings.kinds()), packName);
+        return digested(packDir, Set.copyOf(KindBindings.kinds()), packName, PackFileKind.bundled());
     }
 
-    private static List<String> digested(Path packDir, Set<ArtifactKind> kinds, String packName) {
+    private static List<String> digested(Path packDir, Set<ArtifactKind> kinds, String packName, PackFileKind table) {
         Path directory = normalized(packDir);
         List<String> out = new ArrayList<>();
         if (Files.isRegularFile(directory.resolve(PACK_YAML))) {
             out.add(PACK_YAML);
         }
-        Listing loaded = loaded(directory, packName, PackFileKind.bundled());
+        Listing loaded = loaded(directory, packName, table);
         Set<String> listed = new HashSet<>(out);
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             if (!kinds.contains(binding.kind())) {
@@ -251,6 +291,9 @@ final class PackFileSet {
         out.addAll(loaded.assetFiles());
         out.addAll(loaded.templates());
         out.addAll(packLevelTail(directory, loaded));
+        // After the manifest, in path order, so a pack without a retired file keeps its digest; a refused file that is
+        // read but not digested could change unseen (ADR-0039, ADR-0044 decision 6).
+        out.addAll(loaded.retired().sequencedKeySet());
         return out;
     }
 
@@ -317,7 +360,7 @@ final class PackFileSet {
 
     /**
      * One walk of the pack, each file classified once: every bound kind's files grouped, the payload files, the
-     * presets and the pack document apart.
+     * presets, the pack document and the retired files apart.
      */
     private static Listing loaded(Path directory, String packName, PackFileKind table) {
         // The classification globs are relative to the directory that holds the pack directories.
@@ -327,8 +370,13 @@ final class PackFileSet {
         List<String> templates = new ArrayList<>();
         List<String> presets = new ArrayList<>();
         List<String> documents = new ArrayList<>();
+        SequencedMap<String, String> retired = new LinkedHashMap<>();
         for (String file : regularFiles(directory, packName)) {
-            if (!(table.classify(prefix + file) instanceof PackFileKind.Mapped mapped)) {
+            PackFileKind.Classification classification = table.classify(prefix + file);
+            if (classification instanceof PackFileKind.Retired family) {
+                retired.put(file, family.reason());
+            }
+            if (!(classification instanceof PackFileKind.Mapped mapped)) {
                 continue;
             }
             // The rule's content form decides the store, never the path: a bytes file is held by its rule's kind.
@@ -342,7 +390,7 @@ final class PackFileSet {
         }
         // The rule matches only <pack>/pack.md, so there is at most one.
         return new Listing(
-                byKind, assetFiles, templates, presets, documents.stream().findFirst());
+                byKind, assetFiles, templates, presets, documents.stream().findFirst(), retired);
     }
 
     /** The list a {@code yaml} file joins: the presets, its bound kind's files, or none for an unbound kind. */
@@ -507,6 +555,7 @@ final class PackFileSet {
             case PackFileKind.Mapped mapped -> Optional.of("is a pack file of kind " + mapped.kind() + ", not " + noun);
             case PackFileKind.Excluded excluded ->
                 Optional.of("is excluded by " + excluded.exclusionClass() + ", not " + noun);
+            case PackFileKind.Retired retired -> Optional.of("is retired by " + retired.match() + ", not " + noun);
             case PackFileKind.Unclassified unclassified -> Optional.of("is classified by no rule, not " + noun);
         };
     }

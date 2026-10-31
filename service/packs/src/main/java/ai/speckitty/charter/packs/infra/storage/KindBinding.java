@@ -249,4 +249,47 @@ interface KindBinding<D, E extends CharterArtifact> {
     default boolean idIsFileStem() {
         return false;
     }
+
+    /**
+     * Whether an artifact's file must sit exactly at {@link #fileName} of its id, the pack-relative path, not only carry
+     * the id as its stem (a mission type: {@code missions/<id>/<id>.mission-type.yaml}, ADR-0044). The store's load and
+     * validate mode apply it alike ({@link FileStems}). A kind that answers {@code true} also answers {@code true} from
+     * {@link #idIsFileStem()}.
+     *
+     * @return {@code false} by default
+     */
+    default boolean placedAtItsFileName() {
+        return false;
+    }
+
+    /**
+     * Other pack files a persistence shape names that must exist but that this kind does not read or own: a mission
+     * type's output templates (ADR-0044), which stay unmodelled pack files. Each is relative to the artifact's file;
+     * the store's load refuses an artifact that names one outside the pack or one that is not there.
+     *
+     * @param dso the shape
+     * @return the named paths with what names each, in the order the shape names them; none by default
+     */
+    default List<NamedFile> namedFiles(D dso) {
+        return List.of();
+    }
+
+    /**
+     * A pack file an artifact names but does not own ({@link #namedFiles}).
+     *
+     * @param path the path, relative to the artifact's file
+     * @param namedBy what in the artifact names it, for a refusal ({@code step 'scoping'})
+     */
+    record NamedFile(String path, String namedBy) {
+        /**
+         * Checks the fields.
+         *
+         * @param path the path
+         * @param namedBy what names it
+         */
+        public NamedFile {
+            Objects.requireNonNull(path, "path");
+            Objects.requireNonNull(namedBy, "namedBy");
+        }
+    }
 }

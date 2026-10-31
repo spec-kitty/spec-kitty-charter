@@ -288,7 +288,8 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(countsOf(internal)).isEqualTo(new Counts(10, 10, 4, 0));
         assertThat(binaryExtensions(internal)).containsExactly(".otf", ".otf", ".otf", ".png");
-        assertThat(listed(openPacks.resolve("qa"))).isEqualTo(new Counts(3, 3, 0, 0));
+        // qa's mission type holds ten templates (#194: a mission type's templates are templates).
+        assertThat(listed(openPacks.resolve("qa"))).isEqualTo(new Counts(3, 3, 0, 10));
         assertThat(listed(openPacks.resolve("event-driven"))).isEqualTo(new Counts(1, 1, 0, 0));
         assertThat(listed(openPacks.resolve("internal"))).isEqualTo(countsOf(internal));
 
@@ -388,7 +389,30 @@ class WholePackOpenPacksRoundTripTest {
                 sidecars,
                 payloads.size(),
                 binary,
-                regularFilesUnder(pack.resolve("templates")).size());
+                regularFilesUnder(pack.resolve("templates")).size() + missionTemplatesOnDisk(pack));
+    }
+
+    /**
+     * The mission types' templates on disk (#194): every file under {@code missions/<type>/templates/} but the
+     * orientation READMEs, hidden files and the excluded {@code plan-field-declaration.yaml}.
+     */
+    private static int missionTemplatesOnDisk(Path pack) throws IOException {
+        Path missions = pack.resolve("missions");
+        if (!Files.isDirectory(missions)) {
+            return 0;
+        }
+        int count = 0;
+        try (Stream<Path> types = Files.list(missions)) {
+            for (Path type : types.filter(Files::isDirectory).toList()) {
+                count += (int) regularFilesUnder(type.resolve("templates")).stream()
+                        .map(file -> file.getFileName().toString())
+                        .filter(name -> !name.equals(README)
+                                && !name.startsWith(".")
+                                && !name.equals("plan-field-declaration.yaml"))
+                        .count();
+            }
+        }
+        return count;
     }
 
     private static List<Path> regularFilesUnder(Path directory) throws IOException {
@@ -455,8 +479,10 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(loaded.manifest().orElseThrow().constituents())
                 .as("every constituent: #194 binds procedures, so every listed kind is modelled")
                 .hasSize(272);
-        assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 2));
+        // Two top-level templates and 25 mission-type templates (#194).
+        assertThat(countsOf(loaded)).isEqualTo(new Counts(6, 7, 0, 27));
         assertThat(loaded.pack().templates())
+                .filteredOn(template -> template.missionType().isEmpty())
                 .extracting(template -> template.id().value())
                 .containsExactly("writing/meeting-discussion-notes.md", "writing/meeting-minutes.md");
         assertThat(roundTrip(corrected, loaded, host.resolve("written").resolve(BUILT_IN)))

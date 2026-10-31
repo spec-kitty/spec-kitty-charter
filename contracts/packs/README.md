@@ -1,8 +1,10 @@
 # Pack schemas
 
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
-descriptor, graph shards, the org fragment, the org charter, the eleven artifact kinds, and the
-project `charter.yaml`.
+descriptor, graph shards, the org fragment, the org charter, the presets and the pack manifest,
+the twelve artifact kinds that have a schema (a template and an anti-pattern have none), the
+Markdown companions with a structure (a toolguide's guide, a mission step's prompt and
+guidelines), and the project `charter.yaml`.
 
 These schemas are canonical in this repository and are edited in place; core consumes them
 ([ADR-0015](../../docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md) decisions 1, 2
@@ -18,14 +20,17 @@ model, since core exports no schema for it. Where a schema differs from core's b
 
 | Path | Holds |
 |---|---|
-| `schemas/<kind>.schema.json` | One schema per kind, 20 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), two of them Markdown structure schemas (`toolguide-guide`, `pack-document`) |
-| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, and the schema-less payloads |
+| `schemas/<kind>.schema.json` | One schema per kind, 23 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), four of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`; ADR-0043, ADR-0042 decision 8, ADR-0044) |
+| `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, the schema-less payloads and the retired files |
 
-`file-kinds.yaml` classifies a pack file in three steps: its `files` rules map a file to the schema that
-validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
-reason), and its `payloads` rules, consulted only when neither matches, give a schema-less file a kind: a file
-under a pack's `assets/` is an `asset-payload` and a file under its top-level `templates/` is a `template` (a
-`README.md` under `assets/` and a hidden file under either are excluded). Each
+`file-kinds.yaml` classifies a pack file in four steps, in this order: its `files` rules map a file to the schema
+that validates it, its `exclusions` name files that are not pack content or have no schema (each with a reviewable
+reason), its `retired` rules name the files of a layout the service no longer reads, and its `payloads` rules,
+consulted only when none of those matches, give a schema-less file a kind: a file
+under a pack's `assets/` is an `asset-payload`, and a file under its top-level `templates/` or under a mission
+type's `missions/<type>/templates/` is a `template` (a `README.md` under `assets/` or `missions/`, and a hidden file
+under either templates directory or `assets/`, are excluded). A retired file is refused by name with its rule's
+reason, never skipped (ADR-0044 decision 6). Each
 rule also says the file's **content form**, how it is read, held, written and compared: `yaml` (the default of a
 `files` rule), `markdown`, `text` or `bytes`. The form decides how the service holds the file: a `bytes` file is
 held by its rule's kind, an `asset-payload` as an asset file and a `template` as a template, round-tripped byte for
@@ -40,13 +45,18 @@ A `files` rule may declare `content_form: markdown` with a `schema`: its files a
 `content`), compared by that model and written back in a canonical form. The rule's schema is a **structure
 schema**, a Draft 2020-12 schema in `schemas/` with standard keywords only, that validates the model as the JSON
 tree `{"frontmatter": {...}, "title": "...", "preamble": "...", "sections": [{"title": "...", "content": "..."}]}`;
-`frontmatter` and `title` are left out when the document has none. No rule declares `markdown` yet.
+`frontmatter` and `title` are left out when the document has none. Four rules declare `markdown`: the toolguide
+guide (`**/toolguides/*.guide.md`, schema `toolguide-guide`), the pack document (`*/pack.md`, schema
+`pack-document`) and a mission step's prompt and guidelines
+(`*/missions/*/steps/*.prompt.md` and `*.guidelines.md`, schemas `mission-step-prompt` and
+`mission-step-guidelines`).
 
 ## Validate a file
 
 1. Find the schema for the file in `file-kinds.yaml`. `pack.yaml` at a pack root is
    `pack-descriptor`, `*.graph.yaml` is `graph-shard`, `drg/fragment.yaml` is `org-fragment`, and
-   `*.tactic.yaml` is `tactic`. Files under `exclusions` have no schema.
+   `*.tactic.yaml` is `tactic`. Files under `exclusions` have no schema, and files under `retired` are
+   refused.
 2. Load the YAML and validate it against `schemas/<schema>.schema.json` with any Draft 2020-12
    validator. For example, with Python `jsonschema`:
 

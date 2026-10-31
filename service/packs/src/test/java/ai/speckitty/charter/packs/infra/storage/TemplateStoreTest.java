@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Template;
@@ -83,9 +84,12 @@ class TemplateStoreTest {
         assertThat(Files.size(target.resolve("templates/empty.md"))).isZero();
     }
 
-    /** FR-013 with FR-007's positive case on the same pack: a mission template is not a template of the pack. */
+    /**
+     * A mission type's template is a template of the pack (#194, ADR-0044; ADR-0040 deferred it here): its id is
+     * {@code <type>/<path>}, the id the CRG's {@code template:} URNs use, and it keeps its place.
+     */
     @Test
-    void aMissionTemplateIsNotReadAsATemplate(@TempDir Path host) throws IOException {
+    void aMissionTemplateIsReadAsATemplateWithItsTypeInItsId(@TempDir Path host) throws IOException {
         Path source = pack(host, "source");
         write(source, "missions/plan/templates/spec.md", TEMPLATE);
         write(source, "templates/top.md", TEMPLATE);
@@ -93,8 +97,38 @@ class TemplateStoreTest {
         FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
 
         assertThat(read.templates())
-                .extracting(FilesystemPackStore.TemplateFile::path)
-                .containsExactly("top.md");
+                .extracting(FilesystemPackStore.TemplateFile::path, FilesystemPackStore.TemplateFile::place)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("plan/spec.md", "missions/plan/templates/spec.md"),
+                        org.assertj.core.groups.Tuple.tuple("top.md", "templates/top.md"));
+    }
+
+    /**
+     * A top-level {@code templates/plan/x.md} and a mission type's {@code missions/plan/templates/x.md} both have the id
+     * {@code plan/x.md}: the later file is a violation naming both files, so neither copy is dropped unseen and the
+     * assembly holds one template at one place.
+     */
+    @Test
+    void twoTemplateFilesWithOneIdAreAViolationNamingBoth(@TempDir Path host) throws IOException {
+        Path source = pack(host, "source");
+        write(source, "missions/plan/templates/x.md", TEMPLATE);
+        write(source, "templates/plan/x.md", new byte[] {'t', 'o', 'p'});
+
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy).read(SOURCE);
+        Map<Urn, String> places = new java.util.HashMap<>();
+        Pack pack = DomainRepositoryService.assembly(SOURCE, read, places).build();
+
+        PackElementViolation duplicate = new PackElementViolation(
+                "templates/plan/x.md",
+                "template",
+                "template plan/x.md is already read from missions/plan/templates/x.md");
+        assertThat(read.violations()).containsExactly(duplicate);
+        assertThat(read.templates())
+                .extracting(FilesystemPackStore.TemplateFile::place)
+                .containsExactly("missions/plan/templates/x.md");
+        assertThat(pack.violations()).containsExactly(duplicate);
+        assertThat(places)
+                .containsExactly(Map.entry(new Urn(NodeKind.TEMPLATE, "plan/x.md"), "missions/plan/templates/x.md"));
     }
 
     /** A template with no recorded place is written at {@code templates/<id>}; a recorded place wins. */

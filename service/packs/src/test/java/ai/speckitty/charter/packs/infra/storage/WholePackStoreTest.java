@@ -489,7 +489,9 @@ class WholePackStoreTest {
         assertThat(loaded.pack().violations()).isEmpty();
         assertThat(loaded.pack().assets()).hasSize(2);
         assertThat(loaded.pack().assetFiles()).hasSize(3);
-        assertThat(loaded.pack().templates()).hasSize(2);
+        assertThat(loaded.pack().templates())
+                .as("two top-level templates and a mission type's (#194)")
+                .hasSize(3);
         assertThat(meaning(reloaded)).isEqualTo(meaning(loaded));
         for (String file : List.of(
                 "assets/debrief/fonts/Bold.otf",
@@ -519,7 +521,6 @@ class WholePackStoreTest {
                         "assets/README.md",
                         "assets/debrief/.DS_Store",
                         "assets/debrief/README.md",
-                        "missions/plan/templates/spec.md",
                         "templates/.gitkeep");
     }
 

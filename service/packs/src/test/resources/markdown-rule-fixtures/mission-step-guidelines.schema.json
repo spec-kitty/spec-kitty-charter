@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-step-guidelines.schema.json",
+  "title": "Mission step guidelines",
+  "description": "The structure of a mission step's guidelines (steps/<id>.guidelines.md beside its mission type), over the parsed Markdown model: no frontmatter, an optional H1, a preamble and H2 sections (ADR-0044).",
+  "type": "object",
+  "required": [
+    "preamble",
+    "sections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preamble": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -95,7 +95,7 @@ nodes:
 - id: qa
   kind: mission_types
   title: QA Mission Type
-  body_path: mission_types/qa/governance-profile.yaml
+  body_path: missions/qa/qa.mission-type.yaml
 - id: qa-strategist-quinn
   kind: agent_profiles
   title: QA Strategist (Quinn)

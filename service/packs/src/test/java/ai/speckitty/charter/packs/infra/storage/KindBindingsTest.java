@@ -55,20 +55,44 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the procedure is appended last, after the asset, with its format and the default spellings (#194)")
-    void theProcedureIsAppendedLast() {
+    @DisplayName("the mission type is appended last, after the procedure, placed at its own path (#194, ADR-0044)")
+    void theMissionTypeIsAppendedLast() {
         List<ArtifactKind> kinds = KindBindings.kinds();
-        // Append-only: the ten kinds bound before it keep their positions, so a pack without procedures keeps its
-        // digest.
-        assertThat(kinds).hasSize(11);
-        assertThat(kinds.get(kinds.size() - 1)).isEqualTo(ArtifactKind.PROCEDURE);
-        assertThat(kinds.get(kinds.size() - 2)).isEqualTo(ArtifactKind.ASSET);
-        assertThat(YamlFormats.all()).hasSize(11).last().isSameAs(ProcedureYaml.INSTANCE);
-        assertThat(KindBindings.of(ArtifactKind.PROCEDURE)).containsSame(ProcedureBinding.INSTANCE);
+        // Append-only: the eleven kinds bound before it keep their positions, so a pack without mission types keeps
+        // its digest.
+        assertThat(kinds).hasSize(12);
+        assertThat(kinds.get(kinds.size() - 1)).isEqualTo(ArtifactKind.MISSION_TYPE);
+        assertThat(kinds.get(kinds.size() - 2)).isEqualTo(ArtifactKind.PROCEDURE);
+        assertThat(kinds.get(kinds.size() - 3)).isEqualTo(ArtifactKind.ASSET);
+        assertThat(YamlFormats.all()).hasSize(12).last().isSameAs(MissionTypeYaml.INSTANCE);
+        assertThat(KindBindings.of(ArtifactKind.MISSION_TYPE)).containsSame(MissionTypeBinding.INSTANCE);
+        assertThat(YamlFormats.of(MissionTypeBinding.INSTANCE)).isSameAs(MissionTypeYaml.INSTANCE);
+        assertThat(MissionTypeBinding.INSTANCE.fileName("research"))
+                .isEqualTo("missions/research/research.mission-type.yaml");
+        assertThat(MissionTypeBinding.INSTANCE.schemaName()).isEqualTo("mission-type");
+        assertThat(MissionTypeBinding.INSTANCE.fileToken()).isEqualTo("mission-type");
+        assertThat(MissionTypeBinding.INSTANCE.placedAtItsFileName()).isTrue();
+        // The procedure keeps its place before the mission type, its format and its default spellings (#194).
         assertThat(YamlFormats.of(ProcedureBinding.INSTANCE)).isSameAs(ProcedureYaml.INSTANCE);
         assertThat(ProcedureBinding.INSTANCE.fileName("land-a-change")).isEqualTo("land-a-change.procedure.yaml");
         assertThat(ProcedureBinding.INSTANCE.schemaName()).isEqualTo("procedure");
         assertThat(ProcedureBinding.INSTANCE.idKey()).isEqualTo("id");
+        assertThat(ProcedureBinding.INSTANCE.placedAtItsFileName()).isFalse();
+    }
+
+    @Test
+    @DisplayName("the test fixtures' copies of the step companion structure schemas are the bundled ones")
+    void theFixtureStepSchemaCopiesAreTheBundledOnes() throws java.io.IOException {
+        for (String schema : List.of("mission-step-prompt", "mission-step-guidelines")) {
+            try (var fixture = KindBindingsTest.class.getResourceAsStream(
+                            "/markdown-rule-fixtures/" + schema + ".schema.json");
+                    var bundled =
+                            KindBindingsTest.class.getResourceAsStream("/packs/schemas/" + schema + ".schema.json")) {
+                assertThat(fixture).as(schema).isNotNull();
+                assertThat(bundled).as(schema).isNotNull();
+                assertThat(fixture.readAllBytes()).as(schema).isEqualTo(bundled.readAllBytes());
+            }
+        }
     }
 
     @Test
@@ -132,6 +156,8 @@ class KindBindingsTest {
         java.nio.file.Path pack = java.nio.file.Files.createDirectories(host.resolve("probe-pack"));
         for (KindBinding<?, ?> binding : KindBindings.all()) {
             String name = binding.fileName("probe-" + binding.kind().token());
+            // A mission type's file name has directories (ADR-0044); the store's write creates them.
+            java.nio.file.Files.createDirectories(pack.resolve(name).getParent());
             java.nio.file.Files.writeString(pack.resolve(name), "id: x\n");
             assertThat(PackFileSet.files(pack, binding.kind()))
                     .as(binding.kind().token())

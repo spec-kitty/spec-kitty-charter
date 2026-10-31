@@ -177,21 +177,46 @@ public record PackContents(
     }
 
     /**
-     * A parser failure, reduced to the parser's first line so that no host path appears.
+     * A parser failure, reduced to the parser's first line so that no host path appears; or a file the file-kinds table
+     * retires (#194, ADR-0044 decision 6), refused by name and never parsed.
      *
      * @param file the pack-relative path
-     * @param firstLine the first line of the parser's message
+     * @param firstLine the first line of the parser's message, or of the retired refusal
+     * @param retiredReason the retired rule's reason when the file is retired; empty for a parse failure
      */
-    public record ParseFailure(String file, String firstLine) {
+    public record ParseFailure(String file, String firstLine, Optional<String> retiredReason) {
         /**
          * Checks the fields.
          *
          * @param file the pack-relative path
-         * @param firstLine the first line of the parser's message
+         * @param firstLine the first line of the message
+         * @param retiredReason the retired rule's reason, possibly empty
          */
         public ParseFailure {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(firstLine, "firstLine");
+            Objects.requireNonNull(retiredReason, "retiredReason");
+        }
+
+        /**
+         * A parser failure.
+         *
+         * @param file the pack-relative path
+         * @param firstLine the first line of the parser's message
+         */
+        public ParseFailure(String file, String firstLine) {
+            this(file, firstLine, Optional.empty());
+        }
+
+        /**
+         * The failure of a file the file-kinds table retires: it is refused by name, unread.
+         *
+         * @param file the pack-relative path
+         * @param reason the retired rule's reason
+         * @return the failure
+         */
+        public static ParseFailure retired(String file, String reason) {
+            return new ParseFailure(file, "the file is retired: " + reason, Optional.of(reason));
         }
     }
 

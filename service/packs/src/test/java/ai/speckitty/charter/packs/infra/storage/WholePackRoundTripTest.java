@@ -75,7 +75,8 @@ class WholePackRoundTripTest {
             "template", // #193
             "preset", // #195
             "pack-manifest", // #195
-            "pack-document"); // #260
+            "pack-document", // #260
+            "mission-type"); // #194
 
     @Test
     void theBuiltInPackRoundTripsAsExpected(@TempDir Path temp) throws IOException {
@@ -142,7 +143,8 @@ class WholePackRoundTripTest {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
         assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.KNOWN_FAILURE, 6));
         assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
-        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 2));
+        // Two top-level templates and 25 mission-type templates (#194).
+        assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 27));
         assertThat(byKind.get("pack-document")).as("pack-document (#260)").isEqualTo(Map.of(Status.GREEN, 1));
         assertThat(observed.get(PackDocumentMarkdown.FILE)).as("pack.md").isEmpty();
         List<String> sidecars = census.entrySet().stream()
@@ -159,11 +161,12 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * FR-013 at gate level: the mission templates under {@code missions/<mission>/templates/} census as
-     * {@code other:missions}, on the same pack whose top-level {@code templates/} census as {@code template}.
+     * The mission templates under {@code missions/<type>/templates/} census as {@code template} (#194, ADR-0044, which
+     * ADR-0040 deferred them to), beside the pack's top-level {@code templates/}; their orientation READMEs are
+     * excluded.
      */
     @Test
-    void missionTemplatesAreNotTemplates() {
+    void missionTemplatesAreTemplates() {
         OpenPacksCorpus.assertPinned();
         SortedMap<String, String> census =
                 WholePackCensus.of(OpenPacksCorpus.packsDirectory().resolve(BUILT_IN));
@@ -172,17 +175,19 @@ class WholePackRoundTripTest {
                 .filter(path -> path.matches("missions/[^/]+/templates/.+"))
                 .toList();
         assertThat(missionTemplates)
+                .filteredOn(path -> census.get(path).equals("template"))
+                .as("every mission template but the orientation READMEs, which are excluded")
+                .hasSize(25)
+                .noneSatisfy(path -> assertThat(path).endsWith("README.md"));
+        assertThat(missionTemplates)
+                .filteredOn(path -> path.endsWith("README.md"))
                 .isNotEmpty()
-                .allSatisfy(path -> assertThat(census.get(path)).as(path).isEqualTo("other:missions"));
+                .allSatisfy(path -> assertThat(census.get(path)).as(path).isNotEqualTo("template"));
         assertThat(census.entrySet().stream()
                         .filter(entry -> entry.getKey().startsWith("templates/"))
                         .map(Map.Entry::getValue)
                         .toList())
                 .containsExactly("template", "template");
-        assertThat(census.entrySet().stream()
-                        .filter(entry -> entry.getValue().equals("template"))
-                        .map(Map.Entry::getKey))
-                .allSatisfy(path -> assertThat(path).startsWith("templates/"));
     }
 
     /**
@@ -293,7 +298,8 @@ class WholePackRoundTripTest {
                 .as("bytes-kind outcomes: the loaded pack's asset files plus templates")
                 .hasSize(loaded.get().assetFiles().size()
                         + loaded.get().templates().size())
-                .hasSize(7 + 2);
+                .as("7 asset files, 2 top-level templates and 25 mission-type templates (#194)")
+                .hasSize(7 + 2 + 25);
         assertThat(bytesKind)
                 .allSatisfy(path -> assertThat(faithful.get(path)).as(path).isEmpty());
         // Nothing but the payloads moves: the pack document (#260) and every other outcome are the faithful run's.
@@ -453,6 +459,7 @@ class WholePackRoundTripTest {
                             ? Template.builder()
                                     .id(template.id())
                                     .packId(template.packId())
+                                    .missionType(template.missionType().orElse(null))
                                     .content(Payload.of(
                                             change.apply(template.content().bytes())))
                                     .build()

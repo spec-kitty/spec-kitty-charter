@@ -38,7 +38,6 @@ class NodeKindTest {
 
     private static String pluralOf(NodeKind kind) {
         return switch (kind) {
-            case MISSION_TYPE -> "mission_types";
             case ACTION -> "actions";
             default -> kind.artifactKind().orElseThrow().plural();
         };

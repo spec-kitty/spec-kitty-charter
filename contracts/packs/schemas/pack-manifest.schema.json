@@ -21,7 +21,8 @@
             "skill",
             "anti_pattern",
             "asset",
-            "template"
+            "template",
+            "mission_type"
           ],
           "title": "Kind",
           "type": "string"
