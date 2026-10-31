@@ -7,7 +7,7 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 
 | Schema | Fields | Rules |
 |---|---|---|
-| `Link` (closed) | `href` (required), `templated`, `method` (`GET`, `POST`, `PUT`), `title` | `href` starts with `/api/v1`. It is either an absolute path or an RFC 6570 template, with `templated: true` when it is a template. `method` defaults to `GET`. |
+| `Link` (closed) | `href` (required), `templated`, `method` (a string matching `^(GET|POST|PUT)$`; no enum, R-15), `title` | `href` starts with `/api/v1`. It is either an absolute path or an RFC 6570 template, with `templated: true` when it is a template. `method` defaults to `GET`. |
 | `Links` (open map) | relation key → `Link` | It is the one map the closure checker accepts. Every key is in the relation table of `docs/development/hypermedia-hateoas.md`. |
 
 **Invariants**:
@@ -22,11 +22,11 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 | `ApiRoot` | `_links` | `self` `/api/v1/`, `info`, `offering`, `artifacts` (templated `/api/v1/packs/{packId}/artifacts{?kind}`), `service-desc` |
 | `ServiceInfo` (changed) | the existing four fields and `_links` | `self` `/api/v1/info`, `service-desc` |
 | `Offering` | `packs` (an array of `OfferingPack`, in merge order), `_links` | `self` `/api/v1/offering` |
-| `OfferingPack` | `packId`, `name`, `version`, `level` (`PackLevel`), `_links` | `artifacts` `/api/v1/packs/{packId}/artifacts` (no `self`: `GET /packs/{packId}` is deferred) |
+| `OfferingPack` | `packId`, `level` (a `$ref` to `PackLevel`; the configured level), optional `name` and `version` (from `pack.yaml`; absent without one), `_links` | `artifacts` `/api/v1/packs/{packId}/artifacts` (no `self`: `GET /packs/{packId}` is deferred) |
 | `ArtifactPage` | `items` (an array of `ArtifactSummary`), `page` (`PageInfo`), `_links` | `self` (the request, with its query), `first`, and `next` only when `page.hasNextPage` is true |
 | `ArtifactSummary` | `kind` (`ArtifactKindToken`), `id`, `title`, `_links` | `self` `/api/v1/packs/{packId}/artifacts/{kind}/{id}` |
-| `Artifact` | `kind`, `id`, `packId`, `_links`, and exactly one of `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide` | `self`, `collection` (`…/artifacts?kind=<kind>`), and `edit` (method `PUT`, same href) for the four writable kinds |
-| `RelationshipRegistration` (changed) | the existing fields and `_links` | `self` `/api/v1/packs/{packId}/relationships`, method `PUT` |
+| `Artifact` | `kind`, `id`, `packId`, `_links`, and exactly one of `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide` | `self` and `collection` (`…/artifacts?kind=<kind>`). No `edit` link in this minor (R-24). |
+| `RelationshipRegistered` (new, response only) | `relationship` (the unchanged `RelationshipRegistration`), `_links` | `artifacts` only. There is no `self`, because the URI has no GET (R-13). |
 
 - `ArtifactKindToken` is an enum: `tactic`, `directive`, `styleguide`, `paradigm`, `toolguide`. These
   are the served kinds, matching the kernel `ArtifactKind.token()` values.
@@ -35,8 +35,8 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 
 ## Orders and paging
 
-- **Offering order**: by `PackLevel` ordinal (built-in < org < project), then by `packId` in
-  code-point order. A pack without a declared level is `org`.
+- **Offering order**: by the configured `PackLevel` ordinal (built-in < org < project), then by
+  `packId` in code-point order (R-18).
 - **Artifact order**: by served-kind order (as listed above), then by `id` in code-point order.
 - **Cursor**: opaque base64url of `<kind>/<id>`. The next page is the items strictly after that
   position, under the same `kind` filter.
@@ -65,6 +65,7 @@ one port. The exact OpenAPI shapes are sketched in `contracts/gate-a-surface.ske
 
 ## Domain port (new)
 
-`PackCatalog` lives in `packs.domain`. Its method `List<PackIdentifier> configured()` lists the
-configured packs, and `DomainRepositoryService` implements it over the storage locations. It names
-only domain types (`PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES`).
+`PackCatalogRepository` lives in `packs.domain`. Its method `List<ConfiguredPack> configured()`
+returns each configured pack's identifier and configured level, and `DomainRepositoryService`
+implements it over the storage locations. The `*Repository` suffix keeps it under the ArchUnit port
+rules, and its signatures name only domain types.

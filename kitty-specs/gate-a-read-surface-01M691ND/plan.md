@@ -54,7 +54,7 @@ No dependency changes.
 - strict SHA-256 dependency verification;
 - `info.version` stays `0.1.0-SNAPSHOT`.
 **Scale/Scope**:
-- 22 operations today, 16 after: 2 service reads, the root, `/offering`, 2 artifact reads, 8 writes, the relationships write and `/openapi.yaml`;
+- 21 operations today, 15 after: `/info`, `/openapi.yaml`, the root, `/offering`, 2 artifact reads, 8 writes and the relationships write;
 - about 46 existing files touched, plus about 20 new contract, fixture and scenario files.
 
 ## Charter Check
@@ -147,94 +147,159 @@ Empty: no charter violations.
 
 ## Implementation Concern Map
 
-### IC-01 — Headers, refusals and links infrastructure (#175, #176, kind_not_found, Links)
+The plan-point squad's findings are folded in; dispositions are in `research.md`, under "Plan-point
+adversarial squad". There is one lane, and the WPs run in order. Each WP leaves `verifyAll` green, and
+inside each WP the scenarios and fixtures are written red first.
 
-- **Contract**:
-  - fingerprint required on the existing read 200s and removed from every refusal and write and
-    from the shared Problem;
-  - `OfferingUnreadable` examples and description;
-  - `kind_not_found` in `CharterRefusalCode` (`raised: true`, 404);
-  - the `Links` and `Link` schemas, not yet referenced.
-- **Lint**: the narrowed headers rule, plus `fingerprint-on-verified-reads` and
-  `fingerprint-only-on-verified-reads`, each with planted fixtures. `clean.yaml` is updated.
-- **Closure**: the `Links` exemption, with the passing and lookalike fixtures.
-- **Service**:
-  - `RefusalCode.KIND_NOT_FOUND` and its `RefusalHandler` mapping;
-  - the scenario fingerprint hook reads whether the contract declares the header.
-- **Docs touched**: the lint README rows, the `VENDORED.md` change list, the `CharterSourceFingerprint`
-  description.
-- **Red first**: the planted fixtures fail before the rules exist; the closure fixture fails before
-  the exemption; the wire-token parity test fails before the kernel code.
+### IC-01 — Headers, refusals, links infrastructure (#175, #176, kind_not_found)
 
-### IC-02 — API root and offering
+**Contract**
 
-- **Contract**:
-  - `GET /` (`getApiRoot`, Service tag) answering `ApiRoot`;
-  - `GET /offering` (`getOffering`, Offering tag) answering `Offering` (`OfferingPack` entries);
-  - `ServiceInfo._links` (`self`, `service-desc`);
-  - the `Link` response header on the info 200.
-- **Service**:
-  - the `PackCatalog` port and its implementation;
-  - `OfferingReadService`;
-  - `OfferingController`;
-  - `getApiRoot` on `InfoController`;
-  - the `Hypermedia` link builder;
-  - the `Link` header.
-- **Scenarios** (new `root.feature`, `offering.feature`; `service.feature` updated):
-  - root links that resolve;
-  - offering order and `pack_unreadable`;
-  - the `service-desc` link and header.
+- The fingerprint is `required: true` on the existing verified read 200s, and is removed from:
+  - every refusal and write;
+  - the shared `Problem` (with a `VENDORED.md` change-list entry).
+- `OfferingUnreadable`: examples `pack_unreadable` and `stale_input`, and a description naming only raised
+  codes.
+- `kind_not_found` is added (`raised: true`, 404).
+- `Links` and `Link` are added (R-15), not yet referenced.
 
-### IC-03 — Generic artifact reads (removing the per-kind reads)
+**Lint**
 
-- **Contract**:
-  - `GET /packs/{packId}/artifacts` (`listPackArtifacts`, Artifacts tag: `kind`, `pageSize`,
-    `pageCursor`) answering `ArtifactPage`;
-  - `GET /packs/{packId}/artifacts/{kind}/{artifactId}` (`getPackArtifact`) answering `Artifact`
-    with an ETag for writable kinds;
-  - the 404 `ArtifactNotFound` response with `pack_not_found`, `kind_not_found` and the per-kind
-    codes;
-  - remove `listPack*` and `getPack*` for all five kinds and the `Tactics` tag.
-- **Service**:
-  - `ArtifactCatalogReadService` and the cursor;
-  - `ArtifactKinds` dispatch;
-  - `ArtifactController`;
-  - `TacticController` removed; the read methods removed from the other four.
-- **Scenarios**:
-  - the kind features rewritten onto the generic reads;
-  - new `artifacts.feature`: paging, filter, kind refusals, and every removed read path answering a
-    404 without a code;
-  - `pack_unreadable` on a tactic item (#176).
+- `charter-headers-on-every-response` is narrowed to the two always-on headers. The orphaned
+  `.missing-fingerprint` fixture is replaced.
+- Two new rules, `fingerprint-on-verified-reads` and `fingerprint-only-on-verified-reads`, each with planted
+  fixtures. The README table is updated.
 
-### IC-04 — Writes moved into the tree; every answer linked
+**Contracts unit tests**
 
-- **Contract**:
-  - the 8 writes at `/packs/{packId}/artifacts/<kind>` and `/packs/{packId}/artifacts/<kind>/{id}`
-    under their per-kind tags, answering `Artifact`;
-  - `RelationshipRegistration._links`;
-  - the old write paths removed;
-  - lint `success-schemas-carry-links` (every 2xx JSON schema requires `_links`) and
-    `link-relations-are-known` (relation keys in examples are in the table), with fixtures.
-- **Service**:
-  - the per-kind controllers answer the envelope, with `Location` under the new path;
-  - `ToolguideRegistrationBodyAdvice` re-targeted;
-  - `RelationshipController` links.
-- **Scenarios**:
-  - the registration scenarios and journeys moved to the new paths;
-  - the old write paths answer a 404;
-  - the harness hook checks `_links.self` and the relation keys on every 2xx JSON answer.
+- The closure exemption (R-02 revised), with the passing fixture and three lookalike fixtures.
+- The check that refusal examples name raised codes (R-22), with a planted fixture.
 
-### IC-05 — Records
+**Harness**
 
-- **CHANGELOG** `0.1.0-SNAPSHOT` `### Breaking`: removed operations and paths, the new operations,
-  the required `_links`, the fingerprint and refusal changes, `kind_not_found`, the seam change for
-  core, and the scenario lines.
-- **Docs**:
-  - the hypermedia guide (table: `service-desc`, `first`, `next`; state: "in the contract");
-  - `docs/api/service-contract.md`;
-  - ADR-0019 (implementation note);
-  - ADR-0026 (D1.2 amendment note, paths only);
-  - the scenarios README;
-  - a `docs/changelog/` entry;
-  - the glossary, if the terms are new.
-- **Checks**: `check_docs.py all`, markdownlint and cspell.
+- `ContractConformance` validates map values and matches on path and method (R-14).
+- The fingerprint hook rule is unchanged except for the root exemption (R-08 revised).
+
+**Service**
+
+- `RefusalCode.KIND_NOT_FOUND`, with `notFound()`, the `RefusalHandler` title and status, and the parity
+  test.
+
+### IC-02 — Generic artifact reads, added beside the per-kind routes
+
+**Contract**
+
+- `listPackArtifacts` (`kind`, `pageSize`, `pageCursor`) answering `ArtifactPage`.
+- `getPackArtifact` answering `Artifact`, with `ETag` (`required: false`) for the writable kinds.
+- `ArtifactNotFound` (404: `pack_not_found`, `kind_not_found`, and the per-kind codes).
+- `ArtifactKindToken`.
+- `PageInfo` gets its citation (R-16).
+- The per-kind routes stay for now.
+
+**Service**
+
+- `ArtifactReadService` (R-19), including the pack-refusal rewrite.
+- The cursor value type.
+- `ArtifactController`, with the converter and the 400s (R-17).
+- The `Hypermedia` and `Relation` link builders.
+
+**Scenarios**
+
+- `artifacts.feature`: the list and item reads for each served kind, the filter, the paging cases (R-21),
+  the kind refusals, an unknown pack, and the envelope's links.
+- New steps (R-21).
+
+**Tests**
+
+- `ArtifactControllerTest`.
+- Application unit tests.
+- The generator spike for `nextPageCursor`.
+
+### IC-03 — Writes moved; every per-kind route removed
+
+**Contract**
+
+- The 8 writes move to `POST /packs/{packId}/artifacts/<kind>` and
+  `PUT /packs/{packId}/artifacts/<kind>/{artifactId}`, under their per-kind tags, answering `Artifact`.
+- Every per-kind path file is removed, along with the `Tactics` tag, `TacticNotFound.yaml` and
+  `TacticId.yaml`.
+
+**Service**
+
+- The per-kind controllers keep only the writes and answer the envelope. `Location` sits under the new
+  path.
+- `TacticController` and the read methods of the other four controllers are removed, with their tests
+  migrated into `ArtifactControllerTest`.
+
+**Scenarios**
+
+- The kind features and journeys are migrated, with a removed-to-new mapping table and the
+  `CharterContractSuite` count before and after (R-23).
+- The removed-route outline and the 405 cases (R-21).
+- #176: `pack_unreadable` on a tactic item read, through the missing-directory state.
+
+### IC-04 — API root and offering
+
+**Contract**
+
+- `GET /` (`getApiRoot`, Service tag) answering `ApiRoot`.
+- `GET /offering` (`getOffering`, Offering tag) answering `Offering`/`OfferingPack`, with `level` as a
+  `$ref` to `PackLevel`, and `name` and `version` optional.
+- `ServiceInfo._links` (`self`, `service-desc`).
+- The `Link` header on the info 200 only.
+
+**Service**
+
+- `PackCatalogRepository` and `ConfiguredPack`, with the storage implementation (R-18).
+- `OfferingReadService` and `OfferingController`.
+- `getApiRoot`.
+- The `Link` header.
+
+**Scenarios**
+
+- `root.feature` and `offering.feature`, with the R-18 cases.
+- `service.feature`, updated.
+
+### IC-05 — Every answer linked and checked; records
+
+**Contract**
+
+- `RelationshipRegistered` (R-13).
+- Lint rules `success-schemas-carry-links`, `link-relations-are-known` and
+  `success-responses-have-link-examples` (R-03 revised), with planted fixtures.
+- `clean.yaml` and every existing fixture gain `_links` where the rules need it.
+- A `_links` example on every 2xx response.
+
+**Harness**
+
+- The `self`, link-resolution and `Location` assertions (R-20).
+- The `@AfterAll` operation-coverage check.
+- The relation-table parity tests.
+- The service's `Relation` set is checked against the table.
+
+**Docs**
+
+- The guide table: rows for `service-desc`, `first` and `next`, and the "On" column corrected for
+  `collection` and `artifacts`; the "none is in the contract yet" note removed.
+- `docs/api/service-contract.md`.
+- ADR-0019 implementation note, and ADR-0026 D1.2 amendment note (paths only).
+- The scenarios README and the lint README.
+- `docs/architecture/architectural-patterns-applied.md`, `docs/architecture/packs-resource-model.md` and
+  `docs/plans/roadmap.md`.
+- A `docs/changelog/` entry.
+
+**CHANGELOG** (`0.1.0-SNAPSHOT` `### Breaking`)
+
+- Every removed and new operation.
+- The required `_links`.
+- The fingerprint and refusal changes.
+- `kind_not_found`.
+- That registration is not yet advertised by a link.
+- The seam change for core.
+- A line for each scenario change.
+
+**Checks**
+
+- `check_docs.py all`, markdownlint and cspell.
+
+**Closeout task (not a WP)**: update the #126 issue body with the offering reads chosen for this minor.

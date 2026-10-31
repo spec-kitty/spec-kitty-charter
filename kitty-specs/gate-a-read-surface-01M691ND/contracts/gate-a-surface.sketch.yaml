@@ -1,4 +1,4 @@
-# Design sketch of the contract shapes this mission adds. This file is NOT the contract.
+# Design sketch (revised after the plan-point squad; see research.md R-13..R-24) of the contract shapes this mission adds. This file is NOT the contract.
 # contracts/charter/ stays the source of record (ADR-0002); the WPs write the real split files
 # from this sketch, with the full descriptions, x-source citations and Charter headers.
 openapi: 3.1.0
@@ -29,7 +29,7 @@ paths:
       responses: {'200': {description: One artifact., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}
   /packs/{packId}/artifacts/directive:
     post: {operationId: registerPackDirective, tags: [Directives], responses: {'201': {description: Registered., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}}
-  /packs/{packId}/artifacts/directive/{directiveId}:
+  /packs/{packId}/artifacts/directive/{artifactId}:
     put: {operationId: putPackDirective, tags: [Directives], responses: {'200': {description: Replaced., content: {application/json: {schema: {$ref: '#/components/schemas/Artifact'}}}}}}
   # ...and the same pair for styleguide, paradigm and toolguide.
 components:
@@ -41,7 +41,7 @@ components:
       properties:
         href: {type: string, pattern: '^/api/v1(/|$|\{)'}
         templated: {type: boolean}
-        method: {type: string, enum: [GET, POST, PUT]}
+        method: {type: string, pattern: '^(GET|POST|PUT)$'}
         title: {type: string}
     Links:
       type: object
@@ -61,12 +61,12 @@ components:
     OfferingPack:
       type: object
       additionalProperties: false
-      required: [packId, name, version, level, _links]
+      required: [packId, level, _links]
       properties:
         packId: {type: string}
         name: {type: string}
         version: {type: string}
-        level: {type: string, enum: [built-in, org, project]}
+        level: {description: $ref PackLevel}
         _links: {$ref: '#/components/schemas/Links'}
     ArtifactKindToken:
       type: string

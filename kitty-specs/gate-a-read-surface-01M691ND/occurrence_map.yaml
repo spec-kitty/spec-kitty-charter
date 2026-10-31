@@ -39,8 +39,8 @@ exceptions:
     action: manual_review
     reason: "Earlier entries stay as written; the move is recorded in the 0.1.0-SNAPSHOT ### Breaking subsection"
   - path: "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/**"
-    action: do_not_change
-    reason: "Storage adapter reads pack directories by kind plural; unrelated to routes"
+    action: manual_review
+    reason: "The storage adapter reads pack directories by kind plural, which are not routes and are never renamed; DomainRepositoryService only gains the PackCatalogRepository implementation"
 
 moves:
   - from:

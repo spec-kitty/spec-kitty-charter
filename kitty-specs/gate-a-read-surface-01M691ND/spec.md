@@ -133,12 +133,12 @@ with each answer being the envelope with its links.
 **Acceptance Scenarios**:
 
 1. **Given** a writable pack, **When** an author POSTs a valid directive registration to
-   `/packs/{packId}/artifacts/directive`, **Then** the answer is 201. Its `Location` and `self`
-   link are `/api/v1/packs/{packId}/artifacts/directive/{id}`, and a GET of that link returns the
+   `/packs/{packId}/artifacts/directive`, **Then** the answer is 201. The path of its `Location` and its `self`
+   link are both `/api/v1/packs/{packId}/artifacts/directive/{id}`, and a GET of that link returns the
    same envelope.
 2. **Given** an existing directive and its ETag, **When** the author PUTs a replacement with a
-   matching `If-Match`, **Then** the answer is 200 with the envelope. A stale `If-Match` is a 412,
-   as today.
+   matching `If-Match`, **Then** the answer is 200 with the envelope (201 when the PUT creates it, as today). A stale
+   `If-Match` is a 412, as today.
 3. **Given** every refusal the per-kind writes answer today (409 `registration_conflict`, 422
    `validation_failed`, 404, 412, 428 where it applies), **When** the same request is sent to the
    new path, **Then** the same refusal and code are answered.
@@ -150,7 +150,8 @@ with each answer being the envelope with its links.
 ### User Story 4 - Read the offering (Priority: P2)
 
 A client reads `GET /offering`. It gets the configured packs in force, in merge order, each with its
-identity, name, version, level and a link to its artifacts.
+identity and configured level, its name and version when its `pack.yaml` gives them, and a link to
+its artifacts.
 
 **Why this priority**: the offering is ADR-0020 D1's third top-level resource. The smallest Gate-A
 set is its pack list (ruling 3). The merged reads (the action context, the graph, mission types)
@@ -201,8 +202,8 @@ contract.
 - **An artifact kind the service knows but does not serve** (for example `procedure`) is a 404
   `kind_not_found` on an item path. As a `?kind=` value it is a 400. Only the five kinds with a
   contract representation are served: tactic, directive, styleguide, paradigm and toolguide.
-- **Tactics can be read, not written.** No POST or PUT exists for `tactic`, so no `edit` link is
-  offered on a tactic.
+- **Tactics can be read, not written.** No POST or PUT exists for `tactic`. A PUT to
+  `/packs/{packId}/artifacts/tactic/{id}` answers 405.
 - **A GET on a literal write path** (for example `GET /packs/{packId}/artifacts/directive`) matches
   no read operation. It answers the framework's Problem without a refusal code, never a 200.
 - **An empty pack, or an empty kind** lists an empty page: `hasNextPage` is false and there is no
@@ -211,7 +212,8 @@ contract.
 - **Inputs that change during a read** are a 500 `stale_input` without a fingerprint, as today, on
   the list, the item and the offering.
 - **The relationships write** (`PUT /packs/{packId}/relationships`) stays where it is. Its answer
-  gains `_links` like every success answer.
+  becomes a response-only wrapper with `_links` (an `artifacts` link). It has no `self`, because
+  that URI has no read. The request body does not change.
 - **The contract document** (`GET /openapi.yaml`) answers YAML, not a JSON schema. It carries no
   `_links` and no fingerprint. A 304 has no body.
 
@@ -222,7 +224,7 @@ contract.
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
 | FR-001 | API root | As a client, I want `GET /` to answer the API root with links to `info`, `offering`, `artifacts` (templated) and `service-desc`, plus `self`, so that I can start from one known place (ADR-0019 D2, D4). | High | Open | [build] | no — the path answers 404 today |
-| FR-002 | Offering pack list | As a client, I want `GET /offering` to answer the configured packs in force, ordered built-in, org, project and then by pack id, each with id, name, version, level and an `artifacts` link, from the canonical pack model (ADR-0020 D1). | High | Open | [build] | no — the path answers 404 today |
+| FR-002 | Offering pack list | As a client, I want `GET /offering` to answer the configured packs in force, ordered built-in, org, project and then by pack id, each with id, configured level, the name and version its `pack.yaml` gives (absent without one) and an `artifacts` link, from the canonical pack model (ADR-0020 D1). | High | Open | [build] | no — the path answers 404 today |
 | FR-003 | Generic artifact list | As a client, I want `GET /packs/{packId}/artifacts`, filtered by an optional `kind` and paged with the shared page information and `first`/`next` links, to list the pack's artifacts of the served kinds as summaries that each link to their item (ADR-0019 D2). | High | Open | [build] | no — the path answers 404 today |
 | FR-004 | Generic artifact item | As a client, I want `GET /packs/{packId}/artifacts/{kind}/{artifactId}` to answer one artifact in a closed common envelope (kind, id, pack id, `_links`, and exactly one kind-named member holding that kind's representation) (ruling 1). | High | Open | [build] | no — positive control: each served kind is read on the same fixture |
 | FR-005 | Writes move into the tree | As a pack author, I want the eight registration and replacement operations at `POST /packs/{packId}/artifacts/{kind}` and `PUT /packs/{packId}/artifacts/{kind}/{artifactId}`, one typed operation per kind, keeping their bodies and refusals and answering the envelope (ruling 2, ADR-0026 D1.2 amended). | High | Open | [build] | no — the old-path scenarios are moved, and a no-op fails them |
@@ -234,11 +236,11 @@ contract.
 | FR-011 | Relation keys linted | As the contract owner, I want a lint rule that fails a relation key missing from the relation table in the hypermedia guide, with a planted fixture. The table gains `service-desc`, `first` and `next`. | High | Open | [build] | no — the planted fixture fails, and `clean.yaml` passes |
 | FR-012 | Fingerprint only on verified reads | As a client, I want `Charter-Source-Fingerprint` declared required on the 200 of `getServiceInfo`, `getOffering`, `listPackArtifacts` and `getPackArtifact`, and declared on no other response (refusals, the shared Problem, writes, the root, the contract document) (#175, ruling 4). | High | Open | [build] | no — today it is optional on reads and declared on refusals |
 | FR-013 | Fingerprint lint rules | As the contract owner, I want the always-on headers rule narrowed to the two always-on headers, one rule requiring the fingerprint on verified GET 200s and one forbidding it elsewhere, each with planted fixtures (#175). | High | Open | [build] | no — each planted fixture fails its rule |
-| FR-014 | Refusal examples name raised codes | As a client, I want the 500 `OfferingUnreadable` examples to be `pack_unreadable` and `stale_input`, and its description to name only raised codes (#176). | Medium | Open | [build] | no — the examples are absent today |
+| FR-014 | Refusal examples name raised codes | As a client, I want the 500 `OfferingUnreadable` examples to be `pack_unreadable` and `stale_input`, its description to name only raised codes, and a check that fails any refusal example whose code is not raised (#176). | Medium | Open | [build] | no — the new raised-code check fails the old description's codes; a planted fixture proves it |
 | FR-015 | `pack_unreadable` pinned on an item read | As the contract owner, I want a scenario that pins `pack_unreadable` on a tactic item read through the generic route (#176). | Medium | Open | [build] | no — no such scenario exists today |
 | FR-016 | `service-desc` hand-over | As a client, I want `ServiceInfo` and the root to carry a `service-desc` link to `/api/v1/openapi.yaml`, with the `Link` header kept on the info response only (the #208 hand-over). | Medium | Open | [build] | no — absent today |
-| FR-017 | Breaking changelog entry | As core's maintainer, I want the `0.1.0-SNAPSHOT` `### Breaking` subsection to name every removed route and operation, the new required `_links`, the fingerprint and refusal changes, the new code and the seam change for core, with a scenario line for each scenario change (ADR-0022). | High | Open | [build] | no — the release-gate and docs checks read it |
-| FR-018 | Records stay true | As a reader, I want the hypermedia guide, the service-contract doc, ADR-0019 (implementation note), ADR-0026 (a D1.2 amendment note on paths only), the scenarios README, the lint README and `VENDORED.md` to match the new surface. | Medium | Open | [build] | no — each named record still describes the per-kind routes today |
+| FR-017 | Breaking changelog entry | As core's maintainer, I want the `0.1.0-SNAPSHOT` `### Breaking` subsection to name every removed route and operation, the new required `_links`, the fingerprint and refusal changes, the new code and the seam change for core, with a scenario line for each scenario change (ADR-0022). | High | Open | [build] | yes — review-checked: no automated check reads the entry's content |
+| FR-018 | Records stay true | As a reader, I want the hypermedia guide, the service-contract doc, ADR-0019 (implementation note), ADR-0026 (a D1.2 amendment note on paths only), the scenarios README, the lint README and `VENDORED.md` to match the new surface. | Medium | Open | [build] | yes — review-checked: a grep for the removed routes over the named records is part of review |
 
 ### Non-Functional Requirements
 
@@ -268,8 +270,8 @@ contract.
 ### Key Entities
 
 - **API root**: the entry resource. It carries only links.
-- **Offering**: the packs in force, in merge order. Each entry has the pack's id, name, version, level
-  and an `artifacts` link. In this minor the order is declared, not merged; merging comes with #10 and
+- **Offering**: the packs in force, in merge order. Each entry has the pack's id and configured level,
+  its name and version when its `pack.yaml` gives them, and an `artifacts` link. In this minor the order is declared, not merged; merging comes with #10 and
   #11.
 - **Artifact (envelope)**: one artifact of a served kind. It carries its kind token, id, pack id,
   `_links`, and exactly one kind-named member with that kind's representation (tactic, directive,
@@ -308,9 +310,10 @@ contract.
 - The page cursor is opaque. It stays valid across a change of unrelated artifacts, but makes no
   promise of a consistent snapshot across pages. Each page is verified against the fingerprint on its
   own.
-- The answer to `PUT /packs/{packId}/relationships` links `self` to the relationships resource with
-  `method: PUT`, because no GET exists there. The plan confirms the exact relation against the
-  relation table.
+- A success answer carries `self` whenever its URI has a read operation. The relationships answer
+  is the one exception, since its URI is write-only (plan research R-13).
+- No `edit` link is offered in this minor. Registration is reached through the documented write
+  paths (plan research R-24).
 
 ## Dependencies and Coordination
 
