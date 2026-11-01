@@ -74,7 +74,8 @@ The conformance corpus joins these checks with roadmap step 3.
 - The one required check is `CI gate / gate`
   ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build, the native
   executables and the docs checks for the parts of the repository the pull request changes.
-- `main` lands pull requests through a merge queue. The gate runs again on each queue entry,
+- `main` lands pull requests through a merge queue
+  ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)). The gate runs again on each queue entry,
   against the `main` the pull request will land on. A pull request that fails in the queue is
   taken out of it, and the rest of the queue goes on.
 - During a pile-up, a maintainer can label a parked pull request `pr:pause-ci`:
