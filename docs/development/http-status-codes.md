@@ -57,7 +57,7 @@ except the servlet container's own 400s
 | 200 OK | The read or the action succeeded | Every built operation. Reserved: an activation replaced, or changed through a sub-resource, with `ETag` | The declared success schema |
 | 201 Created | A new resource exists; `Location` names it | Every registration that creates. Reserved: an activation created by `PUT` or `POST`, with `Location` and `ETag`. Proposed: register (`POST /packs`) | The created resource |
 | 202 Accepted | Work was queued, not done | Not used. Only if an action becomes asynchronous; it then links to a status resource | A status resource |
-| 204 No Content | Success with nothing to return | Reserved: `DELETE` of an activation only (`no-content-has-no-body`). Every other operation answers a body | None |
+| 204 No Content | Success with nothing to return | Reserved: `DELETE` of an activation only (`no-content-only-on-delete`, `no-content-has-no-body`). Every other operation answers a body | None |
 
 ## 3xx: redirection
 

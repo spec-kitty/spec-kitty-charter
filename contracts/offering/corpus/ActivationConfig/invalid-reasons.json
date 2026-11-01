@@ -1,0 +1,51 @@
+{
+  "01-no-schema-version.json": [
+    { "keyword": "required", "at": "", "member": "schemaVersion" }
+  ],
+  "02-schema-version-two.json": [
+    { "keyword": "maximum", "at": "/schemaVersion" }
+  ],
+  "03-schema-version-string.json": [
+    { "keyword": "type", "at": "/schemaVersion" }
+  ],
+  "04-unknown-top-level-member.json": [
+    { "keyword": "additionalProperties", "at": "", "member": "appliedPresets" }
+  ],
+  "05-unknown-member-in-pack-pin.json": [
+    { "keyword": "additionalProperties", "at": "/packs/0", "member": "level" }
+  ],
+  "06-selected-template.json": [
+    { "keyword": "additionalProperties", "at": "/selected", "member": "template" }
+  ],
+  "07-selected-mission-type.json": [
+    { "keyword": "additionalProperties", "at": "/selected", "member": "mission_type" }
+  ],
+  "08-null-member.json": [
+    { "keyword": "type", "at": "/selected" }
+  ],
+  "09-null-list.json": [
+    { "keyword": "type", "at": "/missionTypes" }
+  ],
+  "10-empty-deny-list.json": [
+    { "keyword": "minItems", "at": "/deactivated/tactic" }
+  ],
+  "11-empty-packs.json": [
+    { "keyword": "minItems", "at": "/packs" }
+  ],
+  "12-unknown-deny-kind.json": [
+    { "keyword": "additionalProperties", "at": "/deactivated", "member": "asset" }
+  ],
+  "13-pack-id-upper-case.json": [
+    { "keyword": "pattern", "at": "/packs/0/packId" }
+  ],
+  "14-activated-kind-mission-type.json": [
+    { "keyword": "enum", "at": "/activatedKinds/0" }
+  ],
+  "15-artifact-id-empty.json": [
+    { "keyword": "minLength", "at": "/selected/directive/0" },
+    { "keyword": "pattern", "at": "/selected/directive/0" }
+  ],
+  "16-context-activations-left-out.json": [
+    { "keyword": "additionalProperties", "at": "", "member": "contextActivations" }
+  ]
+}
