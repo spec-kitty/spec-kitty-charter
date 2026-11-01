@@ -69,7 +69,7 @@ It runs the charter's own contract checks, contract generation, formatting
 tests, the architecture rules, the contract scenarios, the open-packs round-trip, and the
 aggregated Javadoc and coverage reports. Mutation testing (PIT) runs nightly, not here. It
 needs Java 25, the full Git history and a `spec-kitty-open-packs` checkout beside this one
-(or `-PopenPacksDir=<path>`). Details: [Building the service](docs/guides/service-build.md).
+(or `-PopenPacksDir=<path>`, absolute or relative to the repository root). Details: [Building the service](docs/guides/service-build.md).
 
 ## Documentation
 
