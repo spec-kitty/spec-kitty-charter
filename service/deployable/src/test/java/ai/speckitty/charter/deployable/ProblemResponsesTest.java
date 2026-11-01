@@ -129,6 +129,78 @@ class ProblemResponsesTest {
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("list is null")));
     }
 
+    /**
+     * A registration that sends a {@code null} item in a list is a {@code 422 validation_failed} naming the list, for
+     * each kind, in the assembled application: neither the converter nor bean validation refuses a {@code null} item,
+     * and the controller's mapping answered it {@code 500} (#309). The per-list matrices are the controller tests'.
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "directive | references | 0 | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                        + "\"enforcement\":\"required\",\"references\":[null]}",
+                "paradigm | relationships | 0 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\","
+                        + "\"summary\":\"s\",\"relationships\":[null]}",
+                "styleguide | principles | 1 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\","
+                        + "\"scope\":\"code\",\"principles\":[\"p\",null]}",
+                "toolguide | commands | 0 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
+                        + "\"summary\":\"s\",\"guide\":\"## Overview\",\"commands\":[null]}"
+            })
+    void aRegistrationWithANullListItemIsAValidationFailedRefusalNotAServerError(
+            String kind, String list, int item, String body) throws Exception {
+        mvc.perform(post("/api/v1/packs/qa/artifacts/" + kind)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.startsWith("Item ")))
+                .andExpect(
+                        jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(" of the " + list + " list")));
+    }
+
+    /**
+     * A {@code null} required field inside an object item is bean validation's {@code 400}, not the item check's and
+     * not a server error: the item check refuses only a {@code null} item (#309).
+     */
+    @Test
+    void aNullRequiredFieldInsideAListItemIsABadRequestProblemNotAServerError() throws Exception {
+        mvc.perform(post("/api/v1/packs/qa/artifacts/directive")
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                                + "\"enforcement\":\"required\",\"references\":[{\"type\":null,\"id\":\"a\","
+                                + "\"when\":null,\"reason\":null}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(result ->
+                        assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    /**
+     * A directive, paradigm or styleguide registration body over 1 MiB is a {@code 422 validation_failed}, in the
+     * assembled application (#310). The bound's edges are {@code RegistrationBodyAdviceTest}'s.
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"directive", "paradigm", "styleguide"})
+    void aRegistrationBodyOverTheLimitIsAValidationFailedRefusal(String kind) throws Exception {
+        byte[] body = new byte[1024 * 1024 + 1];
+        java.util.Arrays.fill(body, (byte) ' ');
+        body[0] = '{';
+        body[body.length - 1] = '}';
+        mvc.perform(post("/api/v1/packs/qa/artifacts/" + kind)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(
+                        jsonPath("$.detail").value("The " + kind + " registration body is larger than 1048576 bytes."));
+    }
+
     @Test
     void theContainerErrorPageAnswersWithTheProblemOfTheForwardedStatus() throws Exception {
         mvc.perform(get("/error").header("Authorization", BEARER).requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 400))

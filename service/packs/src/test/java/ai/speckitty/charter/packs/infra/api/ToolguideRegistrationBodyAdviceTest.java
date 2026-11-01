@@ -18,7 +18,8 @@ import org.springframework.util.unit.DataSize;
 
 /**
  * The toolguide registration body guard (S5, A8): a body over the limit is refused by its {@code Content-Length} and,
- * without one, while it is read; an explicit {@code null} guide field is refused; any other body passes unchanged.
+ * without one, while it is read; an explicit {@code null} guide field, list or list item is refused; any other body
+ * passes unchanged.
  */
 class ToolguideRegistrationBodyAdviceTest {
 
@@ -31,6 +32,14 @@ class ToolguideRegistrationBodyAdviceTest {
     void theBodyLimitIsSixBytesPerGuideByteAndAMebibyteMore() {
         assertThat(ToolguideRegistrationBodyAdvice.bodyLimit(16)).isEqualTo(LIMIT);
         assertThat(ToolguideRegistrationBodyAdvice.bodyLimit(1024 * 1024)).isEqualTo(7L * 1024 * 1024);
+    }
+
+    @Test
+    void aGuideCapWhoseBodyLimitNoArrayCanHoldIsRefusedAtStartup() {
+        assertThatThrownBy(() -> new ToolguideRegistrationBodyAdvice(DataSize.ofMegabytes(400)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(new ToolguideRegistrationBodyAdvice(DataSize.ofMegabytes(300)))
+                .isNotNull();
     }
 
     @Test
@@ -72,31 +81,38 @@ class ToolguideRegistrationBodyAdviceTest {
 
     @Test
     void anExplicitNullGuideFieldIsRefusedWhileAnAbsentOneOrAnotherNullIsNot() {
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
-                        bytes("{\"guide\":null,\"guideUri\":\"https://a\"}"), null))
-                .contains("guide");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"guideUri\":null}"), null))
-                .contains("guideUri");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"lastUpdated\":null}"), null))
-                .isEmpty();
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":"), null))
+        assertThat(nullMember("{\"guide\":null,\"guideUri\":\"https://a\"}")).contains("guide");
+        assertThat(nullMember("{\"guide\":\"g\",\"guideUri\":null}")).contains("guideUri");
+        assertThat(nullMember("{\"guide\":\"g\",\"lastUpdated\":null}")).isEmpty();
+        assertThat(nullMember("{\"guide\":"))
                 .as("not JSON: the converter answers it")
                 .isEmpty();
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("[null]"), null))
+        assertThat(nullMember("[null]")).isEmpty();
+    }
+
+    @Test
+    void aNullItemIsFoundInAListButNotInAGuideField() {
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
+                        bytes("{\"guide\":\"g\",\"commands\":[\"a\",null]}"), null))
+                .contains(new RegistrationLists.NullValue("commands", 1));
+        assertThat(nullMember("{\"guide\":[null],\"guideUri\":\"https://a\"}"))
+                .as("a guide field is a string: an array there is the converter's type error")
                 .isEmpty();
     }
 
     @Test
     void anExplicitNullListIsFoundAfterTheGuideFields() {
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"commands\":null}"), null))
-                .contains("commands");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
-                        bytes("{\"commands\":null,\"guide\":null,\"guideUri\":\"https://a\"}"), null))
+        assertThat(nullMember("{\"guide\":\"g\",\"commands\":null}")).contains("commands");
+        assertThat(nullMember("{\"commands\":null,\"guide\":null,\"guideUri\":\"https://a\"}"))
                 .as("a null guide field is named before a null list, wherever it stands")
                 .contains("guide");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"references\":[]}"), null))
+        assertThat(nullMember("{\"guide\":\"g\",\"references\":[]}"))
                 .as("an empty list is a value")
                 .isEmpty();
+    }
+
+    private static java.util.Optional<String> nullMember(String json) {
+        return ToolguideRegistrationBodyAdvice.explicitNull(bytes(json), null).map(RegistrationLists.NullValue::member);
     }
 
     private HttpInputMessage read(HttpInputMessage message) throws IOException {

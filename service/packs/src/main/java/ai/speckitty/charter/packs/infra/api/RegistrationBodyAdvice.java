@@ -6,7 +6,6 @@ import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -18,34 +17,49 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
 /**
- * Refuses a directive, paradigm or styleguide registration that sends a list as an explicit {@code null}, before the
- * message converter reads the body into the DTO (#292). The generated DTO reads a {@code null} list and an absent one
- * alike, so without this the body {@code {"references": null}} would register as if it carried {@code []}; the
- * contract types every list as an array, and {@code null} is never a value. An absent list still means empty.
+ * Guards a directive, paradigm or styleguide registration's body before the message converter reads it into the DTO.
  *
- * <p>The refusal is {@code 422 validation_failed} and names the list. The body is otherwise handed on unchanged, and
- * a body that is not JSON is passed through, so the converter answers it as it answers any unreadable body. The
- * toolguide registration is guarded the same way by {@link ToolguideRegistrationBodyAdvice}, which also bounds its
- * body first.
+ * <ul>
+ *   <li><b>Bounded (#310).</b> A body larger than {@link RegistrationLists#BODY_LIMIT} (1 MiB) is refused, by its
+ *       {@code Content-Length} before a byte is read and otherwise one byte past the limit, so an oversized body is
+ *       never parsed nor held whole. It is the toolguide's room for the fields beside its guide.
+ *   <li><b>No explicit null list (#292).</b> The generated DTO reads a {@code null} list and an absent one alike, so
+ *       without this the body {@code {"references": null}} would register as if it carried {@code []}; the contract
+ *       types every list as an array, and {@code null} is never a value. An absent list still means empty.
+ *   <li><b>No null item (#309).</b> The converter keeps a {@code null} item, and the controller's mapping would answer
+ *       it {@code 500}; {@code {"references": [null]}} is refused.
+ * </ul>
+ *
+ * <p>Each refusal is {@code 422 validation_failed} and names the list, or the limit. The body is otherwise handed on
+ * unchanged, and a body that is not JSON is passed through, so the converter answers it as it answers any unreadable
+ * body. The toolguide registration is guarded the same way by {@link ToolguideRegistrationBodyAdvice}, whose limit
+ * makes room for its guide.
  */
 @ControllerAdvice
 public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
 
-    /** The list members of each registration this advice guards, read off the generated DTOs. */
-    private static final Map<Type, List<String>> LISTS = Map.of(
-            DirectiveRegistration.class, RegistrationLists.of(DirectiveRegistration.class),
-            ParadigmRegistration.class, RegistrationLists.of(ParadigmRegistration.class),
-            StyleguideRegistration.class, RegistrationLists.of(StyleguideRegistration.class));
+    /** A guarded registration: its kind, as a refusal names it, and its list members, read off the generated DTO. */
+    private record Guarded(String kind, List<String> lists) {
+        Guarded(String kind, Class<?> dto) {
+            this(kind, RegistrationLists.of(dto));
+        }
+    }
+
+    /** The registrations this advice guards. */
+    private static final Map<Type, Guarded> GUARDED = Map.of(
+            DirectiveRegistration.class, new Guarded("directive", DirectiveRegistration.class),
+            ParadigmRegistration.class, new Guarded("paradigm", ParadigmRegistration.class),
+            StyleguideRegistration.class, new Guarded("styleguide", StyleguideRegistration.class));
 
     /** An advice over the directive, paradigm and styleguide registrations; a test constructs it directly. */
     public RegistrationBodyAdvice() {
-        // Stateless: the guarded lists are the class's own.
+        // Stateless: the guarded registrations are the class's own.
     }
 
     @Override
     public boolean supports(
             MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return LISTS.containsKey(targetType);
+        return GUARDED.containsKey(targetType);
     }
 
     @Override
@@ -55,14 +69,15 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
             Type targetType,
             Class<? extends HttpMessageConverter<?>> converterType)
             throws IOException {
-        HttpHeaders headers = inputMessage.getHeaders();
-        byte[] body;
-        try (InputStream in = inputMessage.getBody()) {
-            body = in.readAllBytes();
+        Guarded guarded = GUARDED.get(targetType);
+        if (guarded == null) {
+            return inputMessage;
         }
-        RegistrationLists.firstExplicitNull(body, headers.getContentType(), LISTS.getOrDefault(targetType, List.of()))
-                .ifPresent(member -> {
-                    throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, RegistrationLists.nullListDetail(member));
+        HttpHeaders headers = inputMessage.getHeaders();
+        byte[] body = RegistrationLists.readBounded(inputMessage, RegistrationLists.BODY_LIMIT, guarded.kind());
+        RegistrationLists.firstNull(body, headers.getContentType(), List.of(), guarded.lists())
+                .ifPresent(nul -> {
+                    throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, nul.detail());
                 });
         return RegistrationLists.replay(headers, body);
     }

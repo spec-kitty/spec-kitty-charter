@@ -135,6 +135,34 @@ class StyleguideControllerTest {
         assertThat(store.commits).as("a refused registration commits nothing").isZero();
     }
 
+    // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages", "references"})
+    void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
+                + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":[null]}";
+        if (list.equals("principles")) {
+            bad = bad.replace("\"principles\":[\"Prefer clarity\"],", "");
+        }
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/styleguide/docs-style")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
     @Test
     void anAbsentOptionalListIsEmpty() throws Exception {
         // The positive control of the matrix above: every optional list left out.

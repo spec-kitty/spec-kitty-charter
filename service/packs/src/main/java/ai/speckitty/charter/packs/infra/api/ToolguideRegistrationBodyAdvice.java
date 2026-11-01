@@ -4,11 +4,9 @@ import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,8 +32,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
  *       {@code {"guide": null, "guideUri": "https://..."}} would otherwise pass as a registration by URI, although
  *       {@code guide} is typed {@code string} in the contract. A registration leaves out the guide field it does not
  *       carry; an explicit {@code null} for {@code guide} or {@code guideUri} is refused. So is one for a list
- *       ({@code commands}, {@code appliesToLanguages}, {@code references}): an absent list is empty, and {@code null}
- *       is never a value (#292, as {@link RegistrationBodyAdvice} does for the other registrations).
+ *       ({@code commands}, {@code appliesToLanguages}, {@code references}), or a {@code null} item in one: an absent
+ *       list is empty, and {@code null} is never a value (#292, #309, as {@link RegistrationBodyAdvice} does for the
+ *       other registrations).
  * </ul>
  *
  * <p>Both are {@code 422 validation_failed}. The body is handed on unchanged. A body that is not JSON is passed
@@ -48,16 +47,14 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     /** The registration's guide fields; an explicit {@code null} is refused for these and for the lists. */
     static final List<String> GUIDE_FIELDS = List.of("guide", "guideUri");
 
-    /** The guide fields, then the registration's list members, in the order an explicit {@code null} is looked for. */
-    private static final List<String> NOT_NULL = Stream.concat(
-                    GUIDE_FIELDS.stream(), RegistrationLists.of(ToolguideRegistration.class).stream())
-            .toList();
+    /** The registration's list members, looked at for a {@code null} after the guide fields. */
+    private static final List<String> LISTS = RegistrationLists.of(ToolguideRegistration.class);
 
     /** JSON bytes allowed per byte of guide: a JSON escape of one character is six. */
     private static final int ESCAPE_FACTOR = 6;
 
-    /** The room left for the fields beside the guide. */
-    private static final long OTHER_FIELDS = 1024L * 1024;
+    /** The room left for the fields beside the guide: every registration's own body limit. */
+    private static final long OTHER_FIELDS = RegistrationLists.BODY_LIMIT;
 
     private final long bodyLimit;
 
@@ -74,6 +71,11 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     @Autowired
     public ToolguideRegistrationBodyAdvice(@Value("${charter.guide-fetch.max-size:1MB}") DataSize maxGuideSize) {
         this.bodyLimit = bodyLimit(maxGuideSize.toBytes());
+        if (bodyLimit >= Integer.MAX_VALUE - 8) {
+            // A body is read into one array; a limit past the largest one could never be enforced.
+            throw new IllegalArgumentException("charter.guide-fetch.max-size " + maxGuideSize
+                    + " makes a toolguide registration body limit no array can hold.");
+        }
     }
 
     /**
@@ -100,42 +102,28 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
             Class<? extends HttpMessageConverter<?>> converterType)
             throws IOException {
         HttpHeaders headers = inputMessage.getHeaders();
-        if (headers.getContentLength() > bodyLimit) {
-            throw tooLarge();
-        }
-        byte[] body;
-        try (InputStream in = inputMessage.getBody()) {
-            // One byte past the limit is enough to know the body is over it; the rest is never read.
-            body = in.readNBytes(Math.toIntExact(Math.min(bodyLimit + 1, Integer.MAX_VALUE - 8)));
-        }
-        if (body.length > bodyLimit) {
-            throw tooLarge();
-        }
-        explicitNull(body, headers.getContentType()).ifPresent(field -> {
+        byte[] body = RegistrationLists.readBounded(inputMessage, bodyLimit, "toolguide");
+        explicitNull(body, headers.getContentType()).ifPresent(nul -> {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
-                    GUIDE_FIELDS.contains(field)
-                            ? "The " + field + " is null; a toolguide registration leaves out the guide field it does"
-                                    + " not carry."
-                            : RegistrationLists.nullListDetail(field));
+                    GUIDE_FIELDS.contains(nul.member())
+                            ? "The " + nul.member() + " is null; a toolguide registration leaves out the guide field"
+                                    + " it does not carry."
+                            : nul.detail());
         });
         return RegistrationLists.replay(headers, body);
     }
 
-    private CharterRefusal tooLarge() {
-        return new CharterRefusal(
-                RefusalCode.VALIDATION_FAILED,
-                "The toolguide registration body is larger than " + bodyLimit + " bytes.");
-    }
-
     /**
-     * The first guide field, or else the first list, the body sends as an explicit {@code null}.
+     * The first guide field the body sends as an explicit {@code null}, or else the first list it sends as one or
+     * with a {@code null} item.
      *
      * @param body the request body
      * @param contentType the request's content type, whose charset the body is read in
-     * @return the field; empty when none is {@code null}, or the body is not a readable JSON object
+     * @return the field and what is {@code null} in it; empty when nothing is, or the body is not a readable JSON
+     *     object
      */
-    static Optional<String> explicitNull(byte[] body, @Nullable MediaType contentType) {
-        return RegistrationLists.firstExplicitNull(body, contentType, NOT_NULL);
+    static Optional<RegistrationLists.NullValue> explicitNull(byte[] body, @Nullable MediaType contentType) {
+        return RegistrationLists.firstNull(body, contentType, GUIDE_FIELDS, LISTS);
     }
 }
