@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -79,6 +79,23 @@ service modules; `.github/workflows/mutation-nightly.yml` runs it nightly, and n
 request runs it.
 
 Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
+
+Not in `verifyAll` by design: the CPU-time budgets, the tests tagged `timing`
+([#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316)). A budget only means something on a quiet
+machine, and `verifyAll` runs every module's tests at once. Run them in an invocation of their own, as the only task
+named; CI runs them as a step of their own after `verifyAll`. Each prints the CPU time it measured against its budget,
+and the task fails rather than skips where symbolic links cannot be made:
+
+```bash
+./gradlew :packs:timingBudgets
+```
+
+Today that is `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated-tree checks (NFR-001 of the verified
+source fingerprint). The checks themselves, whether the fingerprint changes exactly when it must and the store loads
+exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
+CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
+within a bound far above the work's own time, are not budgets and need no tag
+([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) tracks the tight ones).
 
 ## The whole-pack round-trip gate
 
