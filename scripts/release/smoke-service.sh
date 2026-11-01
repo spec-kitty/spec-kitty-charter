@@ -12,7 +12,7 @@
 # Start 1, with a worktree token, the smoke pack (scripts/release/smoke/config-root) and a guide-fetch allowlist:
 #   - GET /api/v1/info answers 200 with both versions, within the limit; the time is printed;
 #   - without the token it answers 401 with a problem body (a body written outside a controller);
-#   - GET /api/v1/packs/smoke/tactics serves the pack's tactic (the pack is read and validated against its schema);
+#   - GET /api/v1/packs/smoke/artifacts?kind=tactic serves the pack's tactic (the pack is read and validated);
 #   - a directive body missing its required members is a 400 problem, and a complete one without an id is a 422
 #     validation_failed (binding, Bean Validation and the domain's refusal);
 #   - the allowlist makes the start require the DNS-rebinding guard of the guide fetch: without it the service
@@ -176,21 +176,21 @@ status="$(http "$work/unauthorized.json" "$base/info")"
   || fail "the 401 has no problem body: $(cat "$work/unauthorized.json")"
 echo "ok: without the token, 401 with a problem body"
 
-status="$(http "$work/tactics.json" -H "$auth" "$base/packs/smoke/tactics")"
-[[ "$status" == "200" ]] || fail "GET /packs/smoke/tactics answered $status: $(cat "$work/tactics.json")"
+status="$(http "$work/tactics.json" -H "$auth" "$base/packs/smoke/artifacts?kind=tactic")"
+[[ "$status" == "200" ]] || fail "GET /packs/smoke/artifacts?kind=tactic answered $status: $(cat "$work/tactics.json")"
 [[ "$(cat "$work/tactics.json")" == *'"id":"smoke-check"'* ]] \
   || fail "the smoke pack's tactic is not served: $(cat "$work/tactics.json")"
 echo "ok: the smoke pack is read, validated and served"
 
 status="$(http "$work/incomplete.json" -X POST -H "$auth" -H 'Content-Type: application/json' \
-  --data '{"schemaVersion":"1.0"}' "$base/packs/smoke/directives")"
+  --data '{"schemaVersion":"1.0"}' "$base/packs/smoke/artifacts/directive")"
 [[ "$status" == "400" && "$(cat "$work/incomplete.json")" == *'"status":400'* ]] \
   || fail "a directive missing its required members answered $status: $(cat "$work/incomplete.json")"
 echo "ok: a body missing required members is a 400 problem"
 
 status="$(http "$work/refused.json" -X POST -H "$auth" -H 'Content-Type: application/json' \
   --data '{"schemaVersion":"1.0","title":"Smoke","intent":"Smoke","enforcement":"required"}' \
-  "$base/packs/smoke/directives")"
+  "$base/packs/smoke/artifacts/directive")"
 [[ "$status" == "422" && "$(cat "$work/refused.json")" == *'"code":"validation_failed"'* ]] \
   || fail "a directive without an id answered $status: $(cat "$work/refused.json")"
 echo "ok: a complete body without an id is a 422 validation_failed"
