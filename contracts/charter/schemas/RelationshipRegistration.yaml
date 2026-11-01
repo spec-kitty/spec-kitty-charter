@@ -4,7 +4,9 @@ description: >-
   {from, to} pair (ADR-0025/0027): re-registering a pair, in either orientation, replaces it
   (last-write-wins). It is the request body of PUT /packs/{packId}/relationships and an entry of an
   artifact registration's relationships array; it is also the shape in which a component's
-  relationships are read back. Shared and reused by reference across the regular-artifact slices.
+  relationships are read back. Shared and reused by reference across the regular-artifact slices. As the
+  body of PUT /packs/{packId}/relationships it is at most 1 MiB; a larger body is refused 422 validation_failed
+  before it is read.
 type: object
 additionalProperties: false
 required: [from, to, type]

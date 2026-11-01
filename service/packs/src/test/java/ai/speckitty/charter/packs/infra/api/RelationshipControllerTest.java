@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
  * The HTTP contract of the relationship route: idempotent upsert, ETag, the {@code RelationshipRegistered} answer (the
- * edge and the link to the pack's artifacts, no {@code self}), and the 412/428/409 refusals.
+ * edge and the link to the pack's artifacts, no {@code self}), and the 412/428/409 refusals, and the body bound (#323).
  */
 class RelationshipControllerTest {
 
@@ -43,7 +43,7 @@ class RelationshipControllerTest {
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new RelationshipController(
                     new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate()),
                     new Hypermedia("/api/v1")))
-            .setControllerAdvice(new RefusalHandler())
+            .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();
 
     private static final String BODY = "{\"from\":\"directive:DIR_A\",\"to\":\"procedure:p\",\"type\":\"requires\"}";
@@ -73,6 +73,25 @@ class RelationshipControllerTest {
                 .andExpect(jsonPath("$.relationship.type").value("requires"))
                 .andExpect(jsonPath("$._links.artifacts.href").value("/api/v1/packs/pack-a/artifacts"))
                 .andExpect(jsonPath("$._links.self").doesNotExist());
+    }
+
+    /** A body over 1 MiB is refused before it is read whole, and nothing is registered (#323). */
+    @Test
+    void aBodyOverTheLimitIsAValidationFailedRefusalAndRegistersNothing() throws Exception {
+        byte[] body = new byte[1024 * 1024 + 1];
+        java.util.Arrays.fill(body, (byte) ' ');
+        byte[] json = BODY.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        System.arraycopy(json, 0, body, 0, json.length);
+
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(
+                        jsonPath("$.detail").value("The relationship registration body is larger than 1048576 bytes."));
+        assertThat(store.edges).isEmpty();
     }
 
     @Test
