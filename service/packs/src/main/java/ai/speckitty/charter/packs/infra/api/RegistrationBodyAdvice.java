@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
+import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -17,12 +18,14 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
 /**
- * Guards a directive, paradigm or styleguide registration's body before the message converter reads it into the DTO.
+ * Guards a directive, paradigm, styleguide or relationship registration's body before the message converter reads it
+ * into the DTO.
  *
  * <ul>
- *   <li><b>Bounded (#310).</b> A body larger than {@link RegistrationLists#BODY_LIMIT} (1 MiB) is refused, by its
+ *   <li><b>Bounded (#310, #323).</b> A body larger than {@link RegistrationLists#BODY_LIMIT} (1 MiB) is refused, by its
  *       {@code Content-Length} before a byte is read and otherwise one byte past the limit, so an oversized body is
- *       never parsed nor held whole. It is the toolguide's room for the fields beside its guide.
+ *       never parsed nor held whole. It is the toolguide's room for the fields beside its guide. A relationship
+ *       registration has no list, so it is bounded only; a {@code null} in one of its members is bean validation's.
  *   <li><b>No explicit null list (#292).</b> The generated DTO reads a {@code null} list and an absent one alike, so
  *       without this the body {@code {"references": null}} would register as if it carried {@code []}; the contract
  *       types every list as an array, and {@code null} is never a value. An absent list still means empty.
@@ -38,20 +41,29 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
 @ControllerAdvice
 public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
 
-    /** A guarded registration: its kind, as a refusal names it, and its list members, read off the generated DTO. */
+    /**
+     * A guarded registration: its kind, as a refusal names it, and its list members, read off the generated DTO; none
+     * for a registration without a list.
+     */
     private record Guarded(String kind, List<String> lists) {
         Guarded(String kind, Class<?> dto) {
             this(kind, RegistrationLists.of(dto));
         }
     }
 
-    /** The registrations this advice guards. */
+    /**
+     * The registrations this advice guards. The relationship registration has no list ({@code RegistrationBodyAdviceTest}
+     * pins that), so it names none rather than read them off its DTO, which would refuse to start.
+     */
     private static final Map<Type, Guarded> GUARDED = Map.of(
             DirectiveRegistration.class, new Guarded("directive", DirectiveRegistration.class),
             ParadigmRegistration.class, new Guarded("paradigm", ParadigmRegistration.class),
-            StyleguideRegistration.class, new Guarded("styleguide", StyleguideRegistration.class));
+            StyleguideRegistration.class, new Guarded("styleguide", StyleguideRegistration.class),
+            RelationshipRegistration.class, new Guarded("relationship", List.of()));
 
-    /** An advice over the directive, paradigm and styleguide registrations; a test constructs it directly. */
+    /**
+     * An advice over the directive, paradigm, styleguide and relationship registrations; a test constructs it directly.
+     */
     public RegistrationBodyAdvice() {
         // Stateless: the guarded registrations are the class's own.
     }
@@ -75,6 +87,9 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
         }
         HttpHeaders headers = inputMessage.getHeaders();
         byte[] body = RegistrationLists.readBounded(inputMessage, RegistrationLists.BODY_LIMIT, guarded.kind());
+        if (guarded.lists().isEmpty()) {
+            return RegistrationLists.replay(headers, body);
+        }
         RegistrationLists.firstNull(body, headers.getContentType(), List.of(), guarded.lists())
                 .ifPresent(nul -> {
                     throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, nul.detail());

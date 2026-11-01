@@ -64,3 +64,17 @@ Feature: A relationship may be authored from a mission type
       """
     Then the response status is 409
     And the problem code is "registration_conflict"
+
+  Scenario: A relationship registration body over 1 MiB is refused before it is read (#323)
+    When I PUT "/packs/qa/relationships" with the body, its "rationale" padded to 1048576 bytes:
+      """
+      {"from": "mission_type:research", "to": "directive:GUARD", "type": "scope", "rationale": ""}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "The relationship registration body is larger than 1048576 bytes."
+    When I PUT "/packs/qa/relationships" with the body, its "rationale" padded to 1048000 bytes:
+      """
+      {"from": "mission_type:research", "to": "directive:GUARD", "type": "scope", "rationale": ""}
+      """
+    Then the response status is 428

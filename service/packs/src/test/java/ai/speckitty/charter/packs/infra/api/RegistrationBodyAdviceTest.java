@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.api.model.DirectiveRegistration;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
+import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -22,9 +23,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 
 /**
- * The directive, paradigm and styleguide registration body guard (#310): a body over the limit is refused by its
- * {@code Content-Length} before a byte is read and, without one, one byte past the limit; a body at the limit is handed
- * on unchanged. The limit is the toolguide's room for the fields beside its guide, 1 MiB.
+ * The directive, paradigm, styleguide (#310) and relationship (#323) registration body guard: a body over the limit is
+ * refused by its {@code Content-Length} before a byte is read and, without one, one byte past the limit; a body at the
+ * limit is handed on unchanged. The limit is the toolguide's room for the fields beside its guide, 1 MiB.
  */
 class RegistrationBodyAdviceTest {
 
@@ -36,7 +37,8 @@ class RegistrationBodyAdviceTest {
     @CsvSource({
         "ai.speckitty.charter.api.model.DirectiveRegistration, directive",
         "ai.speckitty.charter.api.model.ParadigmRegistration, paradigm",
-        "ai.speckitty.charter.api.model.StyleguideRegistration, styleguide"
+        "ai.speckitty.charter.api.model.StyleguideRegistration, styleguide",
+        "ai.speckitty.charter.api.model.RelationshipRegistration, relationship"
     })
     void aDeclaredLengthOverTheLimitIsRefusedBeforeAByteIsRead(Class<?> registration, String kind) {
         CountingStream body = new CountingStream(new byte[0]);
@@ -56,7 +58,8 @@ class RegistrationBodyAdviceTest {
     @CsvSource({
         "ai.speckitty.charter.api.model.DirectiveRegistration, directive",
         "ai.speckitty.charter.api.model.ParadigmRegistration, paradigm",
-        "ai.speckitty.charter.api.model.StyleguideRegistration, styleguide"
+        "ai.speckitty.charter.api.model.StyleguideRegistration, styleguide",
+        "ai.speckitty.charter.api.model.RelationshipRegistration, relationship"
     })
     void anUndeclaredBodyOverTheLimitIsRefusedOneBytePastIt(Class<?> registration, String kind) {
         byte[] large = new byte[Math.toIntExact(LIMIT) + 4096];
@@ -75,7 +78,8 @@ class RegistrationBodyAdviceTest {
     @CsvSource({
         "ai.speckitty.charter.api.model.DirectiveRegistration",
         "ai.speckitty.charter.api.model.ParadigmRegistration",
-        "ai.speckitty.charter.api.model.StyleguideRegistration"
+        "ai.speckitty.charter.api.model.StyleguideRegistration",
+        "ai.speckitty.charter.api.model.RelationshipRegistration"
     })
     void aBodyAtTheLimitIsHandedOnUnchanged(Class<?> registration) throws IOException {
         byte[] json = "{\"id\":\"a\",\"references\":[]}".getBytes(StandardCharsets.UTF_8);
@@ -107,10 +111,32 @@ class RegistrationBodyAdviceTest {
                 });
     }
 
+    /**
+     * A relationship registration has no list, so only its size is bounded (#323); its scalar members are bean
+     * validation's. Should the contract give it a list, this fails, and the list must be guarded.
+     */
     @Test
-    void theGuardedRegistrationsAreTheThreeWithoutAGuide() {
-        for (Type t :
-                new Type[] {DirectiveRegistration.class, ParadigmRegistration.class, StyleguideRegistration.class}) {
+    void aRelationshipRegistrationHasNoListToGuardAndIsHandedOnWithItsNulls() throws IOException {
+        assertThatThrownBy(() -> RegistrationLists.of(RelationshipRegistration.class))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("RelationshipRegistration shows no list member");
+        byte[] json = "{\"from\":null,\"to\":\"procedure:p\",\"type\":\"requires\",\"rationale\":null}"
+                .getBytes(StandardCharsets.UTF_8);
+
+        assertThat(read(message(new CountingStream(json), new HttpHeaders()), RelationshipRegistration.class)
+                        .getBody()
+                        .readAllBytes())
+                .isEqualTo(json);
+    }
+
+    @Test
+    void theGuardedRegistrationsAreTheThreeWithoutAGuideAndTheRelationship() {
+        for (Type t : new Type[] {
+            DirectiveRegistration.class,
+            ParadigmRegistration.class,
+            StyleguideRegistration.class,
+            RelationshipRegistration.class
+        }) {
             assertThat(advice.supports(null, t, null)).as(t.getTypeName()).isTrue();
         }
         assertThat(advice.supports(null, ToolguideRegistration.class, null))

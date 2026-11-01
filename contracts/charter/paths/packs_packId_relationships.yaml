@@ -87,7 +87,9 @@ put:
     '412':
       $ref: ../../_shared/responses/Problem.yaml
     '422':
-      description: The relationship is well-formed but breaks a schema or invariant.
+      description: >-
+        The relationship is well-formed but breaks a schema or invariant (validation_failed), or its body is over the
+        body limit (1 MiB; refused validation_failed before it is read).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

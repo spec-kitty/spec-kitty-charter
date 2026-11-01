@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -61,6 +62,7 @@ class ProblemResponsesTest {
 
     static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
     private static final String BEARER = "Bearer " + TOKEN;
+    private static final String IF_MATCH = "\"sha256:" + "1f".repeat(32) + "\"";
 
     private static final String INTERNAL_ERROR = "{\"title\":\"Internal error\",\"status\":500,"
             + "\"code\":\"internal_error\",\"detail\":\"The charter service failed unexpectedly; the failure is logged.\"}";
@@ -186,19 +188,67 @@ class ProblemResponsesTest {
     @ParameterizedTest(name = "{0}")
     @CsvSource({"directive", "paradigm", "styleguide"})
     void aRegistrationBodyOverTheLimitIsAValidationFailedRefusal(String kind) throws Exception {
-        byte[] body = new byte[1024 * 1024 + 1];
-        java.util.Arrays.fill(body, (byte) ' ');
-        body[0] = '{';
-        body[body.length - 1] = '}';
         mvc.perform(post("/api/v1/packs/qa/artifacts/" + kind)
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(oversized()))
                 .andExpect(status().is(422))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("validation_failed"))
                 .andExpect(
                         jsonPath("$.detail").value("The " + kind + " registration body is larger than 1048576 bytes."));
+    }
+
+    /**
+     * A relationship registration body over 1 MiB is a {@code 422 validation_failed}, in the assembled application
+     * (#323). The bound's edges are {@code RegistrationBodyAdviceTest}'s.
+     */
+    @Test
+    void aRelationshipRegistrationBodyOverTheLimitIsAValidationFailedRefusal() throws Exception {
+        mvc.perform(put("/api/v1/packs/qa/relationships")
+                        .header("Authorization", BEARER)
+                        .header("If-Match", IF_MATCH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(oversized()))
+                .andExpect(status().is(422))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(
+                        jsonPath("$.detail").value("The relationship registration body is larger than 1048576 bytes."));
+    }
+
+    /**
+     * A relationship registration has no list, so the body guard leaves its members alone: a {@code null} required
+     * member stays bean validation's {@code 400}, not a server error. This pins the behaviour the guard keeps (#323).
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "from | {\"from\":null,\"to\":\"procedure:p\",\"type\":\"requires\"}",
+                "to | {\"from\":\"directive:DIR_A\",\"to\":null,\"type\":\"requires\"}",
+                "type | {\"from\":\"directive:DIR_A\",\"to\":\"procedure:p\",\"type\":null}"
+            })
+    void aRelationshipRegistrationWithANullRequiredMemberIsABadRequestProblemNotAServerError(String member, String body)
+            throws Exception {
+        mvc.perform(put("/api/v1/packs/qa/relationships")
+                        .header("Authorization", BEARER)
+                        .header("If-Match", IF_MATCH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(result ->
+                        assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    /** A JSON object one byte over 1 MiB. */
+    private static byte[] oversized() {
+        byte[] body = new byte[1024 * 1024 + 1];
+        java.util.Arrays.fill(body, (byte) ' ');
+        body[0] = '{';
+        body[body.length - 1] = '}';
+        return body;
     }
 
     @Test

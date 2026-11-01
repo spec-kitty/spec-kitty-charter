@@ -53,7 +53,7 @@ final class RegistrationLists {
     /**
      * The largest registration body without a guide, in bytes: 1 MiB (#310). It is the toolguide's room for the fields
      * beside its guide, so every registration holds its fields to the same budget; the largest pack artifact the
-     * service ships is about 14 KiB.
+     * service ships is about 14 KiB. A relationship registration, a few hundred bytes, is held to it too (#323).
      */
     static final long BODY_LIMIT = 1024L * 1024;
 
