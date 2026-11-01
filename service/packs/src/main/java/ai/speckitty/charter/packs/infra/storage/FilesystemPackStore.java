@@ -93,6 +93,22 @@ final class FilesystemPackStore {
     }
 
     /**
+     * The read-failure seam (#301): how a listed payload, an asset file or a template, is read. The default reads the
+     * file's bytes as they are; a test supplies one that throws, as an I/O failure between listing and reading would.
+     */
+    @FunctionalInterface
+    interface PayloadRead {
+        /**
+         * Reads {@code file}'s bytes.
+         *
+         * @param file the payload
+         * @return its bytes
+         * @throws IOException when the file cannot be read
+         */
+        byte[] read(Path file) throws IOException;
+    }
+
+    /**
      * One readable artifact file: where it sits in the pack and what it held.
      *
      * @param file the pack-relative, {@code /}-separated path
@@ -238,10 +254,13 @@ final class FilesystemPackStore {
 
     private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
+    private static final PayloadRead FILES = Files::readAllBytes;
+
     private final Path root;
     private final SerializationStrategy strategy;
     private final Rename rename;
     private final Companions.Rules companionRules;
+    private final PayloadRead payloadRead;
 
     /**
      * A store that renames atomically.
@@ -261,7 +280,7 @@ final class FilesystemPackStore {
      * @param rename the move step
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy, Rename rename) {
-        this(root, strategy, rename, Companions.Rules.bundled());
+        this(root, strategy, rename, Companions.Rules.bundled(), FILES);
     }
 
     /**
@@ -274,15 +293,31 @@ final class FilesystemPackStore {
      *     Markdown companions
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy, Companions.Rules companionRules) {
-        this(root, strategy, ATOMIC, companionRules);
+        this(root, strategy, ATOMIC, companionRules, FILES);
+    }
+
+    /**
+     * A store with an injected payload read; the seam for tests of a payload that is listed but cannot be read (#301).
+     *
+     * @param root the directory that holds the pack directories
+     * @param strategy the format
+     * @param payloadRead the read of an asset file's or a template's bytes
+     */
+    FilesystemPackStore(Path root, SerializationStrategy strategy, PayloadRead payloadRead) {
+        this(root, strategy, ATOMIC, Companions.Rules.bundled(), payloadRead);
     }
 
     private FilesystemPackStore(
-            Path root, SerializationStrategy strategy, Rename rename, Companions.Rules companionRules) {
+            Path root,
+            SerializationStrategy strategy,
+            Rename rename,
+            Companions.Rules companionRules,
+            PayloadRead payloadRead) {
         this.root = Objects.requireNonNull(root, "root").toAbsolutePath().normalize();
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.rename = Objects.requireNonNull(rename, "rename");
         this.companionRules = Objects.requireNonNull(companionRules, "companionRules");
+        this.payloadRead = Objects.requireNonNull(payloadRead, "payloadRead");
     }
 
     /**
@@ -427,7 +462,7 @@ final class FilesystemPackStore {
      * id an earlier read one already gives is a violation on its file naming the earlier one, and does not join the
      * pack. A file that cannot be read claims no id.
      */
-    private static List<TemplateFile> readTemplates(
+    private List<TemplateFile> readTemplates(
             Path directory, List<String> files, List<PackElementViolation> violations) {
         Map<String, String> readFrom = new HashMap<>();
         List<TemplateFile> templates = new ArrayList<>();
@@ -462,9 +497,12 @@ final class FilesystemPackStore {
      * companion's does ({@link #realPathContained}): a link whose real location is outside the pack is a violation and
      * is not read. A file that cannot be read is a violation too, not a refusal.
      */
-    private static Optional<byte[]> readPayload(Path directory, String file, List<PackElementViolation> violations) {
+    private Optional<byte[]> readPayload(Path directory, String file, List<PackElementViolation> violations) {
         return readPayload(
-                directory, file, reason -> violations.add(new PackElementViolation(file, "unreadable", reason)));
+                directory,
+                file,
+                payloadRead,
+                reason -> violations.add(new PackElementViolation(file, "unreadable", reason)));
     }
 
     /**
@@ -477,13 +515,27 @@ final class FilesystemPackStore {
      * @return the bytes; empty when refused
      */
     static Optional<byte[]> readPayload(Path directory, String file, Consumer<String> refused) {
+        return readPayload(directory, file, FILES, refused);
+    }
+
+    /**
+     * {@link #readPayload(Path, String, Consumer)} through the given read: the store's seam (#301).
+     *
+     * @param directory the pack directory
+     * @param file the payload, pack-relative
+     * @param read how the file's bytes are read
+     * @param refused told why, when the pack does not hold the file
+     * @return the bytes; empty when refused
+     */
+    private static Optional<byte[]> readPayload(
+            Path directory, String file, PayloadRead read, Consumer<String> refused) {
         if (!realPathContained(directory, directory.resolve(file))) {
             refused.accept("the file leaves the pack");
             return Optional.empty();
         }
-        Optional<byte[]> bytes = readBytes(directory.resolve(file));
+        Optional<byte[]> bytes = readBytes(directory.resolve(file), read);
         if (bytes.isEmpty()) {
-            refused.accept("the file cannot be read");
+            refused.accept(UNREADABLE);
         }
         return bytes;
     }
@@ -1091,8 +1143,13 @@ final class FilesystemPackStore {
      * @return the bytes; empty when the file cannot be read
      */
     static Optional<byte[]> readBytes(Path path) {
+        return readBytes(path, FILES);
+    }
+
+    /** The bytes {@code read} gives for {@code path}; empty when it throws. */
+    private static Optional<byte[]> readBytes(Path path, PayloadRead read) {
         try {
-            return Optional.of(Files.readAllBytes(path));
+            return Optional.of(read.read(path));
         } catch (IOException e) {
             return Optional.empty();
         }

@@ -354,6 +354,31 @@ class AssetStoreTest {
                 .containsExactly(new PackElementViolation("assets/leak.bin", "unreadable", "the file leaves the pack"));
     }
 
+    /**
+     * #301: an asset file the store lists but cannot read (an I/O failure between listing and reading, injected through
+     * the store's read seam) is a violation and is not read; the asset file beside it loads.
+     */
+    @Test
+    void anAssetFileThatCannotBeReadIsAViolationWhileOneBesideItLoads(@TempDir Path host) throws IOException {
+        Path source = pack(host, "source");
+        write(source, "assets/broken.bin", BINARY);
+        write(source, "assets/kept.bin", BINARY);
+        Path broken = source.resolve("assets/broken.bin");
+        FilesystemPackStore.PayloadRead failing = file -> {
+            if (file.equals(broken)) {
+                throw new IOException("injected read failure");
+            }
+            return Files.readAllBytes(file);
+        };
+
+        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing).read(SOURCE);
+
+        assertThat(read.assetFiles()).extracting(AssetFile::path).containsExactly("kept.bin");
+        assertThat(read.violations())
+                .containsExactly(
+                        new PackElementViolation("assets/broken.bin", "unreadable", "the file cannot be read"));
+    }
+
     /** Creates a symbolic link and its parent directories, or skips (fails, when links are required) the test. */
     static void link(Path link, Path target) throws IOException {
         Files.createDirectories(link.getParent());
