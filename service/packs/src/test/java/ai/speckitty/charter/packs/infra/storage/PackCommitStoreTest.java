@@ -177,8 +177,12 @@ class PackCommitStoreTest {
     }
 
     @Test
-    @DisplayName("a swap a crash interrupted between its two renames is restored from the aside copy on the next write")
+    @DisplayName("the non-listing fixed-Locations fallback restores an interrupted swap on the next write")
     void anInterruptedSwapIsRestoredBeforeTheNextWrite(@TempDir Path host) throws IOException {
+        // Covers CommitStorePackWriteStore.exclusively's own restoreInterruptedSwap fallback for a fixed Locations
+        // that never lists. This is NOT end-to-end reachability coverage: pre-#281 it passed falsely because the
+        // fixed locations(packDir) lambda resolves pack-a without the production listing where the bug lived
+        // (kitty-ops/research/issue-281-crash-repair.md). The listing path is covered by InterruptedCommitRepairTest.
         Path packDir = PackFixtures.copyOf("pack-a", host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(

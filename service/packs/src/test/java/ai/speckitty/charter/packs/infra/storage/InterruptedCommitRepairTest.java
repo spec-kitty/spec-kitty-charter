@@ -298,7 +298,7 @@ class InterruptedCommitRepairTest {
     }
 
     @Test
-    void aRelativeLinkIsFollowedFromTheDirectoryThatHoldsIt() throws IOException {
+    void aRelativeLinkTargetIsFollowedToItsRealPath() throws IOException {
         Path vendor = Files.createDirectories(packs.resolve(".vendor"));
         Path target = Files.move(PackFixtures.copyOf("pack-a", vendor), vendor.resolve("real-pack-a"))
                 .toRealPath();
