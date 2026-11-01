@@ -72,16 +72,30 @@ class ToolguideRegistrationBodyAdviceTest {
 
     @Test
     void anExplicitNullGuideFieldIsRefusedWhileAnAbsentOneOrAnotherNullIsNot() {
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":null,\"guideUri\":\"https://a\"}")))
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
+                        bytes("{\"guide\":null,\"guideUri\":\"https://a\"}"), null))
                 .contains("guide");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"guideUri\":null}")))
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"guideUri\":null}"), null))
                 .contains("guideUri");
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"lastUpdated\":null}")))
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"lastUpdated\":null}"), null))
                 .isEmpty();
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":")))
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":"), null))
                 .as("not JSON: the converter answers it")
                 .isEmpty();
-        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("[null]")))
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("[null]"), null))
+                .isEmpty();
+    }
+
+    @Test
+    void anExplicitNullListIsFoundAfterTheGuideFields() {
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"commands\":null}"), null))
+                .contains("commands");
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
+                        bytes("{\"commands\":null,\"guide\":null,\"guideUri\":\"https://a\"}"), null))
+                .as("a null guide field is named before a null list, wherever it stands")
+                .contains("guide");
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"references\":[]}"), null))
+                .as("an empty list is a value")
                 .isEmpty();
     }
 

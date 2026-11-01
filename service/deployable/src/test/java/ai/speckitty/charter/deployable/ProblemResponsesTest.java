@@ -5,11 +5,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -28,7 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * The failures the contract scenarios cannot provoke: a method the path does not have, the container's error page
  * reached by a forward and by a direct request, a server error Spring resolves itself (logged once, never
- * shown), and a registration body that bean validation refuses before the handler runs. The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
+ * shown), a registration body that bean validation refuses before the handler runs, and one that sends a list as an
+ * explicit {@code null}. The 404 and 406 problems and the unexpected-exception {@code internal_error} body are pinned by
  * {@code errors.feature}; what the container answers before Spring sees the request is {@code ConnectorErrorsTest}.
  */
 @SpringBootTest(
@@ -91,6 +95,38 @@ class ProblemResponsesTest {
                         assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(content().json("{\"title\":\"Bad Request\",\"status\":400}", JsonCompareMode.STRICT));
+    }
+
+    /**
+     * A registration that sends a list as an explicit {@code null} is a {@code 422 validation_failed}, for each kind,
+     * in the assembled application: the body advices that refuse it are picked up beside the controllers (#292). A
+     * {@code null} for the required {@code principles} is refused the same way, before bean validation, which answers
+     * a {@code principles} left out with the 400 above. The per-list matrices are the controller tests'.
+     */
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "directive | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                        + "\"enforcement\":\"required\",\"references\":null}",
+                "paradigm | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\",\"summary\":\"s\","
+                        + "\"relationships\":null}",
+                "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
+                        + "\"principles\":[\"p\"],\"patterns\":null}",
+                "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
+                        + "\"principles\":null}",
+                "toolguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
+                        + "\"summary\":\"s\",\"guide\":\"## Overview\",\"commands\":null}"
+            })
+    void aRegistrationWithAnExplicitNullListIsAValidationFailedRefusal(String kind, String body) throws Exception {
+        mvc.perform(post("/api/v1/packs/qa/artifacts/" + kind)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("list is null")));
     }
 
     @Test
