@@ -41,8 +41,13 @@ final class RegistrationLists {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    /** The charsets JSON detects from the bytes, which the converter therefore reads from the bytes too. */
-    private static final Set<String> DETECTED = Set.of("UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE");
+    // The charsets Spring's AbstractJacksonHttpMessageConverter treats as self-detecting and so reads from the bytes,
+    // leaving Jackson to detect the encoding (endianness included): the five JsonEncoding names, plus US-ASCII and the
+    // bare UTF-16/UTF-32 it also admits. We must list exactly these, because for a bare UTF-16/UTF-32 with no BOM a
+    // Java InputStreamReader would default to big-endian while the converter detects the real endianness, so a body
+    // in one of them would otherwise step past this guard (see RegistrationListsTest).
+    private static final Set<String> DETECTED =
+            Set.of("UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE", "US-ASCII", "UTF-16", "UTF-32");
 
     private RegistrationLists() {}
 

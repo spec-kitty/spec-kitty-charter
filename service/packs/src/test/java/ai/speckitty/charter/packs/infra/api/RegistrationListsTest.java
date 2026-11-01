@@ -83,6 +83,17 @@ class RegistrationListsTest {
     }
 
     @Test
+    void aBareUtf16DeclaredCharsetIsDetectedFromTheBytesAsTheConverterDoes() {
+        // Spring's converter treats a bare "UTF-16"/"UTF-32" as self-detecting (endianness from the bytes), so a
+        // BOM-less UTF-16LE body binds the null list as []. A Java InputStreamReader("UTF-16") would default to
+        // big-endian and read garbage, stepping past the guard; the charset is detected from the bytes here too.
+        byte[] utf16le = "{\"references\":null}".getBytes(StandardCharsets.UTF_16LE);
+        assertThat(RegistrationLists.firstExplicitNull(
+                        utf16le, MediaType.parseMediaType("application/json;charset=UTF-16"), MEMBERS))
+                .contains("references");
+    }
+
+    @Test
     void aDtoThatShowsNoListIsRefusedRatherThanLeftUnguarded() {
         assertThatThrownBy(() -> RegistrationLists.of(String.class)).isInstanceOf(IllegalStateException.class);
     }
