@@ -11,20 +11,46 @@ name: CI gate
 # The called workflows keep their own `push` (main) and `workflow_dispatch` triggers for main CI;
 # they no longer trigger on `pull_request` directly — this orchestrator is the PR entry point, so
 # nothing double-runs. See docs/adr/0023-ci-gate-required-check.md.
+#
+# Merge queue (ADR-0047): the gate also runs on `merge_group`, so the queue tests each pull request (or
+# group of them) against the main it will land on. The called workflows inherit the event. On a queue
+# entry the change detection diffs the queue's base against its head, not a pull request's.
+#
+# `pr:pause-ci` (ADR-0047): a maintainer labels a parked pull request to stop its CI during a pile-up.
+# Adding the label cancels the running check; while it is on, every run skips the work and the gate
+# fails, so a paused pull request never reads as green. Removing it runs CI again.
+# Any other label event must not cost a CI run or cancel one: it waits for the running check, does no
+# work, and its gate repeats the verdict of the last real run on the same commit.
 
 on:
   pull_request:
+    # The default three, plus the label events the pause guard needs.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
 
 concurrency:
+  # A queue entry has its own ref (refs/heads/gh-readonly-queue/main/...), so it never cancels a PR run.
   group: ci-gate-${{ github.ref }}
-  cancel-in-progress: true
+  # A label event about another label waits behind the running check instead of cancelling it.
+  cancel-in-progress: ${{ !(github.event_name == 'pull_request' && (github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'pr:pause-ci') }}
+
+env:
+  # Both are false outside pull_request events (merge_group carries no labels).
+  PAUSED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
+  OTHER_LABEL: ${{ github.event_name == 'pull_request' && (github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name != 'pr:pause-ci' }}
 
 jobs:
   changes:
     name: Detect changed concern groups
+    # Skipped while paused or for another label's event; the gate then decides without it.
+    if: >-
+      !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'pr:pause-ci'))
+      && !(github.event_name == 'pull_request' && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+      && github.event.label.name != 'pr:pause-ci')
     runs-on: ubuntu-24.04
     outputs:
       service: ${{ steps.detect.outputs.service }}
@@ -38,12 +64,19 @@ jobs:
       - name: Detect
         id: detect
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          # A queue entry's head is main's tip (its base) plus the pull requests queued up to and including
+          # this one, so base_sha is an ancestor of head_sha and the diff is exactly what the entry adds.
+          BASE: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          if [ -z "$BASE" ] || [ -z "$HEAD" ]; then
+            echo "::error::no base or head SHA for a ${GITHUB_EVENT_NAME} event; refusing to guess the changed files"
+            exit 1
+          fi
           # Three-dot (merge-base) diff: exactly the PR's own changes, so main advancing since the
           # branch point does not fold main-only files in and over-detect a group the PR never touched.
+          # On a queue entry the merge base is BASE itself, so this is BASE..HEAD.
           changed="$(git diff --name-only "$BASE...$HEAD")"
           printf 'changed files:\n%s\n' "$changed"
           # Mirror the path filters of service.yml, service-native.yml and docs-cleanliness.yml exactly; a
@@ -80,8 +113,38 @@ jobs:
     needs: [changes, service, native, docs]
     if: always()
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Another label's event repeats the last real verdict, read from this commit's check runs.
+      checks: read
     steps:
+      - name: Paused by pr:pause-ci
+        if: env.PAUSED == 'true'
+        run: |
+          echo "::error::CI is paused by the pr:pause-ci label; remove the label to run it. A paused pull request does not pass the gate."
+          exit 1
+      - name: Repeat the last verdict on this commit (another label changed)
+        if: env.PAUSED != 'true' && env.OTHER_LABEL == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # This run waited behind any running check (concurrency), so the latest completed `gate` check run
+          # from another run on this commit is the real verdict. None, or not a success, fails closed: push or
+          # re-run to get a real one.
+          verdict="$(gh api "repos/$REPO/commits/$SHA/check-runs?check_name=gate&filter=all&per_page=100" --jq \
+            "[.check_runs[] | select(.status == \"completed\") | select(.details_url | contains(\"/runs/$RUN_ID/\") | not)]
+             | sort_by(.completed_at) | last | .conclusion // \"none\"")"
+          echo "last gate verdict on $SHA: $verdict"
+          if [ "$verdict" != "success" ]; then
+            echo "::error::the last real CI run on this commit did not pass (verdict: $verdict); a label change does not re-run CI"
+            exit 1
+          fi
       - name: Require every triggered group to have passed
+        if: env.PAUSED != 'true' && env.OTHER_LABEL != 'true'
         env:
           CHANGES: ${{ needs.changes.result }}
           SERVICE: ${{ needs.service.result }}
