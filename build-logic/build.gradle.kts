@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.gradle.plugin.spotless)
     implementation(libs.gradle.plugin.errorprone)
     implementation(libs.gradle.plugin.pitest)
+    implementation(libs.gradle.plugin.graalvm.native)
     generatorApi(libs.openapi.generator.lib)
     compileOnly(files(generatorApi))
     testImplementation(files(generatorApi))

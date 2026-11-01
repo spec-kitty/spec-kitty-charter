@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.Problem;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.module.SimpleModule;
 
@@ -18,6 +19,7 @@ import tools.jackson.databind.module.SimpleModule;
  * one, which {@code NullOmissionTest} derives from the schemas and checks against every generated model.
  */
 @Configuration(proxyBeanMethods = false)
+@ImportRuntimeHints(ProblemRuntimeHints.class)
 public class ProblemJson {
 
     /** For Spring, which finds the configuration by component scan. */
@@ -33,6 +35,15 @@ public class ProblemJson {
         return new SimpleModule("charter-problem-json")
                 .setMixInAnnotation(CharterRefusal.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(Problem.class, OmitAbsentMembers.class);
+    }
+
+    /**
+     * The mix-in, for the native executable's hints ({@link ProblemRuntimeHints}).
+     *
+     * @return the mix-in class
+     */
+    static Class<?> omitAbsentMembers() {
+        return OmitAbsentMembers.class;
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */

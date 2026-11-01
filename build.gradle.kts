@@ -1,4 +1,9 @@
 // Root project: aggregation only. Module builds live under service/, conventions under build-logic/.
+plugins {
+    // checkServiceReleaseTag, the publishing gate of a service release (ADR-0046).
+    id("charter.service-release")
+}
+
 tasks.register("verifyAll") {
     group = "verification"
     description = "Runs every module's check, including the contract validation and the open-packs round-trip."
