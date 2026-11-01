@@ -447,6 +447,45 @@ class MissionTypeBindingTest {
     }
 
     @Test
+    @DisplayName("#301: a step's template the store lists but cannot read is an unreadable file, and the type that"
+            + " names it is refused as unresolved")
+    void aTemplateThatCannotBeReadRefusesTheTypeThatNamesIt() throws IOException {
+        Path pack = withSpecTemplate();
+        Path template = pack.resolve("missions/research/templates/spec-template.md");
+        List<Path> asked = new ArrayList<>();
+        FilesystemPackStore.PayloadRead failing = file -> {
+            asked.add(file);
+            if (file.equals(template)) {
+                throw new IOException("injected read failure");
+            }
+            return Files.readAllBytes(file);
+        };
+
+        FilesystemPackStore.PackRead read =
+                new FilesystemPackStore(host, strategy, failing).read(PACK_ID, List.of(MissionTypeBinding.INSTANCE));
+
+        assertThat(asked).as("the template is read through the seam, once").containsOnlyOnce(template);
+        assertThat(read.templates()).isEmpty();
+        assertThat(read.violations())
+                .containsExactly(new PackElementViolation(
+                        "missions/research/templates/spec-template.md", "unreadable", "the file cannot be read"));
+        assertThat(read.elements().get(ArtifactKind.MISSION_TYPE))
+                .as("the type itself still reads")
+                .hasSize(1);
+
+        Pack assembled =
+                DomainRepositoryService.assembly(PACK_ID, read, new HashMap<>()).build();
+        assertThat(assembled.artifacts(ArtifactKind.MISSION_TYPE)).isEmpty();
+        assertThat(assembled.violations())
+                .containsExactly(
+                        new PackElementViolation(
+                                "missions/research/templates/spec-template.md",
+                                "unreadable",
+                                "the file cannot be read"),
+                        new PackElementViolation(FILE, "reference", UNRESOLVED));
+    }
+
+    @Test
     @DisplayName("#277: a whole-pack write whose type names no template of the aggregate is refused before anything"
             + " is written; the type's own template writes")
     void aWholePackWriteNamingNoTemplateOfTheAggregateIsRefused() throws IOException {
