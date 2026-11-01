@@ -3,6 +3,8 @@ title: "ADR-0032: Steps name roles, and a profile is selected by role fit, then 
 description: Mission steps ask for a role, never a profile; the service picks the most specialized fitting profile, a declared fallback, or refuses; a derived pack may pin a role.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

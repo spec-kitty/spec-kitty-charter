@@ -3,6 +3,8 @@ title: "ADR-0028: `impacts` is an artifact's per-value list, and `tension` is th
 description: Splits the old signed impacts edge into a per-value impacts list on an artifact and an authored tension relationship that may sit beside one structural relationship.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted; decision 5 answered for the domain and the pack files by ADR-0045 (2026-10-31, proposed)
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

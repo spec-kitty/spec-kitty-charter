@@ -3,6 +3,8 @@ title: "ADR-0031: Requirement is authored as a preset, and the required set is d
 description: An org states what must be on the plate through a preset's must-have items; the service derives the required set; ADR-0042 answers its two open questions.
 doc_status: active
 updated: 2026-10-28T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-28; open questions answered by ADR-0042 (2026-10-28)
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

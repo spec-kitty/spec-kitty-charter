@@ -63,6 +63,29 @@ base path (`/spec-kitty-charter`). A `.md`-relative link builds but 404s on the 
 site; `check:built-links` fails on it. Links outside `docs/` (code, the repository root) use
 full GitHub URLs.
 
+## The changelog and ADR indexes
+
+The lists in [Changelog](/changelog/) and [Decision Records](/adr/) are generated from each
+entry's frontmatter ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)), so no pull
+request edits a shared hub:
+
+- A changelog entry `docs/changelog/YYYY-MM-DD-slug.md` gives its date (from the filename) and
+  its `title`. The list runs newest date first, then by filename.
+- An ADR `docs/adr/NNNN-slug.md` gives its `title`, `decision_status` (the Status column, such
+  as `Accepted` or `Proposed`) and `decision_date` (`'YYYY-MM-DD'`). The table runs in number
+  order.
+- Each hub commits an empty block between the `BEGIN GENERATED INDEX` and `END GENERATED INDEX`
+  markers. The site build fills it, and `check_docs.py` checks the hub as it regenerates. A
+  committed block that holds anything fails the check, and the hubs are exempt from the
+  freshness SLA, because no pull request edits them.
+
+To preview the lists, or to see which entry cannot be listed:
+
+```sh
+python3 scripts/docs/generate_indexes.py           # report only
+python3 scripts/docs/generate_indexes.py --write   # fill the blocks; do not commit the result
+```
+
 ## Glossary
 
 The [Glossary](/glossary/) section is generated from a file this repository authors:
@@ -122,12 +145,12 @@ none does. The checks:
 |-------|------------------|
 | `frontmatter` | Required keys, description of 50-180 characters, `doc_status` vocabulary, ISO `updated`, `audience` resolving to a persona under `docs/context/audience/`. Generated glossary pages are exempt from `updated`, `type`, `audience` and the description range (doc-kitty owns their frontmatter) |
 | `related` | Each `related` entry is the docs-root slug of an existing page |
-| `freshness` | `updated` is within the SLA of the page's `doc_status` (draft 90 days, active 180, deprecated 365, ADRs 365; superseded, durable and changelog entries exempt) |
+| `freshness` | `updated` is within the SLA of the page's `doc_status` (draft 90 days, active 180, deprecated 365, ADRs 365; superseded, durable, changelog entries and the two generated index hubs exempt) |
 | `links` | Internal links are root-absolute routes that resolve, anchors exist, no absolute GitHub links to this repository's own docs |
 | `terms` | The terminology rules in `docs/_meta/terminology.yaml`: the Mission canon, the two retired terms, glossary aliases. Add a deliberate mention to its `allow` list with a reason |
-| `adr` | Every `docs/adr/NNNN-*.md` is in the ADR index; numbers are unique with no gaps |
-| `changelog` | `YYYY-MM-DD-slug.md` names, listed newest first, under 3000 characters |
-| `orphans` | Every page is linked from the `README.md` of its own directory |
+| `adr` | The ADR index regenerates cleanly: every `docs/adr/NNNN-*.md` has the `title`, `decision_status` and `decision_date` the index needs, and the hub has its generated block; numbers are unique with no gaps |
+| `changelog` | `YYYY-MM-DD-slug.md` names, a `title` for the generated index, under 3000 characters |
+| `orphans` | Every page is linked from the `README.md` of its own directory, the generated indexes included |
 | `plantuml` | Each `.puml` renders to the committed SVG |
 | markdownlint, cspell | Markdown style and spelling. Add project words to `docs/_meta/spelling-words.txt`; `check_docs.py wordlist` prints glossary words not yet listed |
 

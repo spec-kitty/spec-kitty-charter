@@ -3,6 +3,8 @@ title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added)'
+decision_date: '2026-10-28'
 type: ADR
 kind: ADR
 related:

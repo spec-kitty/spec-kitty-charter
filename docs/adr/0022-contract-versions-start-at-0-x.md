@@ -3,6 +3,8 @@ title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-24'
 type: ADR
 kind: ADR
 related:

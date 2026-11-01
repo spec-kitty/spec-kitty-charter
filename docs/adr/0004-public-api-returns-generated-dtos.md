@@ -3,6 +3,8 @@ title: "ADR-0004: The public API returns DTOs generated from the OpenAPI contrac
 description: The public API, package and service, returns DTOs generated from the OpenAPI contract, one set per client language; core hand-written types are transitional.
 doc_status: active
 updated: 2026-10-14T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-14'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0040: A file-kind rule declares its content form, and asset payloads
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
 updated: 2026-10-31T00:00:00Z
+decision_status: Proposed, with Amendment 2026-10-28; extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

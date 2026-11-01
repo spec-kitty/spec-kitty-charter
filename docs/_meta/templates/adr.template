@@ -1,5 +1,7 @@
 <!-- Blank ADR. Copy to docs/adr/NNNN-<slug>.md and add the frontmatter every docs page carries
-     (title, description, doc_status, updated, type: ADR, kind: ADR, audience). -->
+     (title, description, doc_status, updated, type: ADR, kind: ADR, audience), plus the two keys
+     the generated ADR index reads (ADR-0047): decision_status (the Status column, e.g. Proposed)
+     and decision_date ('YYYY-MM-DD'). Do not edit docs/adr/README.md: its table is generated. -->
 # ADR-NNNN: Title
 
 ## Status

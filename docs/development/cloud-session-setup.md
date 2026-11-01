@@ -281,6 +281,9 @@ spec-kitty --version
 
 - **ADR numbers collide.** Parallel sessions pick the same next ADR number. Check `main` *and* the
   open PRs for the next free number at writing time.
+- **Two PRs conflict on an index.** They should not: no PR edits `docs/adr/README.md` or
+  `docs/changelog/README.md`, whose lists are generated
+  ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)). Drop the hub edit from the PR.
 - **The docsite build fails on `related:`.** The CI site build is stricter than
   `scripts/docs/check_docs.py`: every `related:` entry must be the slug of a real page.
   `adr/README` is not one (PR #246 failed on it). Run the site build, or check that each slug maps

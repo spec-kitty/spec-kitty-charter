@@ -3,6 +3,8 @@ title: "ADR-0005: The charter offering service registers and distributes packs; 
 description: The service registers and distributes packs of every level through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-19
+decision_date: '2026-10-18'
 type: ADR
 kind: ADR
 related:

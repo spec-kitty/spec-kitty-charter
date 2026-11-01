@@ -35,6 +35,9 @@ from xml.etree import ElementTree
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import generate_indexes  # noqa: E402
+
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 SELF_REPO = "spec-kitty/spec-kitty-charter"
 SITE_BASE = "/spec-kitty-charter"
@@ -64,12 +67,13 @@ SLA_DAYS: dict[str, int | None] = {
 }
 SLA_BY_TYPE: dict[str, int | None] = {"ADR": 365, "Changelog": None}
 
-CHANGELOG_ENTRY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
+# Shared with the index generator, so an entry this gate accepts is one the index lists.
+CHANGELOG_ENTRY_RE = generate_indexes.CHANGELOG_ENTRY_RE
 CHANGELOG_MAX_CHARS = 3000
 ADR_NON_ENTRIES = ("README.md", "template.md")
-ADR_RE = re.compile(r"^(\d{4})-[a-z0-9][a-z0-9-]*\.md$")
+ADR_RE = generate_indexes.ADR_RE
 
-FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n?", re.DOTALL)
+FRONTMATTER_RE = generate_indexes.FRONTMATTER_RE
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
 IMAGE_RE = re.compile(r"\!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
@@ -105,6 +109,11 @@ class Page:
     meta_error: str | None
     text: str
     body_start: int  # 0-based line index where the body starts
+    # A generated index hub: maps a line of the regenerated text back to the committed file.
+    regenerated: generate_indexes.Regenerated | None = None
+
+    def committed_line(self, line: int) -> int:
+        return self.regenerated.committed_line(line) if self.regenerated else line
 
     @property
     def docs_rel(self) -> str:
@@ -119,6 +128,9 @@ class Tree:
         self.docs = self.root / "docs"
         self._pages: list[Page] | None = None
         self._generated_prefixes: tuple[str, ...] | None = None
+        # What kept an entry out of a generated index, by hub (docs-relative): check_adr and
+        # check_changelog report it. Filled as the hubs load.
+        self.index_problems: dict[str, list[generate_indexes.Problem]] = {}
 
     def pages(self) -> list[Page]:
         if self._pages is None:
@@ -137,17 +149,25 @@ class Tree:
     def _load(self, path: Path) -> Page:
         text = path.read_text(encoding="utf-8")
         rel = path.relative_to(self.root).as_posix()
+        hub = path.relative_to(self.docs).as_posix()
+        regenerated = None
+        if hub in generate_indexes.HUBS:
+            # A generated index: every check sees the hub as it regenerates, never the block as
+            # committed, so a PR adds its entry file and leaves the shared hub alone (ADR-0047).
+            regenerated = generate_indexes.regenerate(self.docs, hub)
+            self.index_problems[hub] = regenerated.problems
+            text = regenerated.text if regenerated.text is not None else text
         m = FRONTMATTER_RE.match(text)
         if not m:
-            return Page(rel, path, None, "no frontmatter block", text, 0)
+            return Page(rel, path, None, "no frontmatter block", text, 0, regenerated)
         start = text[: m.end()].count("\n")
         try:
             data = yaml.safe_load(m.group(1))
-        except yaml.YAMLError as exc:
-            return Page(rel, path, None, f"frontmatter is not valid YAML: {exc}", text, start)
+        except (yaml.YAMLError, ValueError) as exc:  # ValueError: an impossible unquoted date
+            return Page(rel, path, None, f"frontmatter is not valid YAML: {exc}", text, start, regenerated)
         if not isinstance(data, dict):
-            return Page(rel, path, None, "frontmatter is not a mapping", text, start)
-        return Page(rel, path, data, None, text, start)
+            return Page(rel, path, None, "frontmatter is not a mapping", text, start, regenerated)
+        return Page(rel, path, data, None, text, start, regenerated)
 
     def generated_route_prefixes(self) -> tuple[str, ...]:
         """Root-absolute route prefixes the site build generates (DOC_RULES, GENERATED_ROUTES_RULE)."""
@@ -215,7 +235,7 @@ def body_lines(page: Page) -> Iterator[tuple[int, str]]:
             fence = None if fence == m.group(1) else (fence or m.group(1))
             continue
         if fence is None:
-            yield i + 1, line
+            yield page.committed_line(i + 1), line
 
 
 def prose(line: str) -> str:
@@ -348,6 +368,8 @@ def check_related(tree: Tree, _today: dt.date) -> list[Finding]:
 def check_freshness(tree: Tree, today: dt.date) -> list[Finding]:
     out: list[Finding] = []
     for page in tree.pages():
+        if page.regenerated is not None:
+            continue  # a generated index hub: no pull request edits it, so it cannot be re-verified by date
         meta = page.meta or {}
         updated = as_date(meta.get("updated"))
         if updated is None:
@@ -372,13 +394,19 @@ def check_freshness(tree: Tree, today: dt.date) -> list[Finding]:
     return out
 
 
+def index_findings(tree: Tree, check: str, hub: str) -> list[Finding]:
+    """What keeps the generated index from regenerating cleanly: a hub without its block, or an
+    entry the generator cannot list. What the committed block holds is never compared."""
+    tree.pages()  # loading the hubs regenerates them
+    return [Finding(check, p.path, p.message) for p in tree.index_problems.get(hub, [])]
+
+
 def check_adr(tree: Tree, _today: dt.date) -> list[Finding]:
     adr_dir = tree.docs / "adr"
     out: list[Finding] = []
-    readme = adr_dir / "README.md"
-    if not readme.is_file():
+    if not (adr_dir / "README.md").is_file():
         return [Finding("adr", "docs/adr/README.md", "ADR index is missing")]
-    listed = re.findall(r"\(/adr/([^)/]+)/?\)", readme.read_text(encoding="utf-8"))
+    out.extend(index_findings(tree, "adr", "adr/README.md"))
     numbers: dict[int, list[str]] = {}
     for p in sorted(adr_dir.glob("*.md")):
         if p.name in ADR_NON_ENTRIES:
@@ -388,8 +416,6 @@ def check_adr(tree: Tree, _today: dt.date) -> list[Finding]:
             out.append(Finding("adr", f"docs/adr/{p.name}", "filename must be NNNN-kebab-slug.md"))
             continue
         numbers.setdefault(int(m.group(1)), []).append(p.name)
-        if p.stem not in listed:
-            out.append(Finding("adr", f"docs/adr/{p.name}", "not listed in docs/adr/README.md"))
     for n, names in numbers.items():
         if len(names) > 1:
             out.append(Finding("adr", "docs/adr", f"ADR number {n:04d} used by {', '.join(names)}"))
@@ -402,11 +428,9 @@ def check_adr(tree: Tree, _today: dt.date) -> list[Finding]:
 def check_changelog(tree: Tree, _today: dt.date) -> list[Finding]:
     cdir = tree.docs / "changelog"
     out: list[Finding] = []
-    readme = cdir / "README.md"
-    if not readme.is_file():
+    if not (cdir / "README.md").is_file():
         return [Finding("changelog", "docs/changelog/README.md", "changelog index is missing")]
-    index = readme.read_text(encoding="utf-8")
-    listed = re.findall(r"\(/changelog/([^)/]+)/?\)", index)
+    out.extend(index_findings(tree, "changelog", "changelog/README.md"))
     entries = sorted(p for p in cdir.glob("*.md") if p.name != "README.md")
     for p in entries:
         rel = f"docs/changelog/{p.name}"
@@ -416,14 +440,9 @@ def check_changelog(tree: Tree, _today: dt.date) -> list[Finding]:
             continue
         if as_date(m.group(1)) is None:
             out.append(Finding("changelog", rel, f"`{m.group(1)}` is not a real date"))
-        if p.stem not in listed:
-            out.append(Finding("changelog", rel, "not listed in docs/changelog/README.md"))
         size = len(p.read_text(encoding="utf-8"))
         if size > CHANGELOG_MAX_CHARS:
             out.append(Finding("changelog", rel, f"{size} characters; keep entries under {CHANGELOG_MAX_CHARS} (link to the docs for detail)"))
-    dates = [s[:10] for s in listed]
-    if dates != sorted(dates, reverse=True):
-        out.append(Finding("changelog", "docs/changelog/README.md", "entries must be listed newest first"))
     return out
 
 

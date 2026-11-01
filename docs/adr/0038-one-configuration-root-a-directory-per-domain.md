@@ -3,6 +3,8 @@ title: "ADR-0038: The service keeps its files under one configuration root, a di
 description: charter.config-root holds packs/ and activations/; every registered pack lives in packs/ at its declared level, so one layout serves a local machine and a hosted store.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0041 (2026-10-28)
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0006: Onion layering cut by vertical concern slices, enforced by Arc
 description: The service is onion-layered and cut into vertical concern slices, one Gradle module per slice with layers as packages; ArchUnit enforces inward dependencies and a pure domain.
 doc_status: draft
 updated: 2026-10-21T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-21'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0009: Contract 1.0 reserves what the cutover needs; later capabiliti
 description: Contract 1.0 models the signed impacts relation and reserves refusal codes, load depth and version headers; activation, creed and policy come later as new endpoints.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-19; superseded in part by ADR-0028 (2026-10-26)
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

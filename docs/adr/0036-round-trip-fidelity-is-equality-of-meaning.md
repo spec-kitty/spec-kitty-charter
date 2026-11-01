@@ -3,6 +3,8 @@ title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31)
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

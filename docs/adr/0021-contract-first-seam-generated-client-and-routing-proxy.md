@@ -3,6 +3,8 @@ title: "ADR-0021: Core adopts the generated client now, behind a proxy that rout
 description: Proposes that the published contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
 doc_status: active
 updated: 2026-10-24T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-24'
 type: ADR
 kind: ADR
 related:

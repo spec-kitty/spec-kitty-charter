@@ -11,6 +11,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_docs as cd  # noqa: E402
+import generate_indexes as gi  # noqa: E402
 
 TODAY = dt.date(2026, 10, 14)
 # Built from fragments so this file does not itself contain the retired term.
@@ -21,6 +22,11 @@ DESC = "A description that is comfortably longer than fifty characters and short
 # doc-kitty's own frontmatter stamp on a generator-owned glossary page; its presence (not the
 # docs/glossary/ path alone) is what grants the authored-only-rule exemptions.
 STAMP = {"by": "doc-kitty-glossary/0.4.0", "at": "2026-10-19T15:57:59Z", "content_hash": "sha256:deadbeef"}
+
+
+# A hub as committed: prose plus an empty generated block; the checks see it regenerated.
+BLOCK = f"Prose.\n\n{gi.BEGIN}\n{gi.END}\n"
+ADR_KEYS = {"decision_status": "Accepted", "decision_date": "2026-10-01"}
 
 
 def page(title: str = "Page", body: str = "Text.\n", **meta: object) -> str:
@@ -47,12 +53,10 @@ def root(tmp_path: Path) -> Path:
         "docs/context/audience/dev.md": page("Dev"),
         "docs/guides/README.md": page("Guides", "- [One](/guides/one/)\n"),
         "docs/guides/one.md": page("One", "## Setup\n\nSee [home](/) and [setup](#setup).\n", related=["guides/README"]),
-        "docs/adr/README.md": page("ADRs", "- [1](/adr/0001-first/)\n- [2](/adr/0002-second/)\n", type="ADR"),
-        "docs/adr/0001-first.md": page("First", type="ADR"),
-        "docs/adr/0002-second.md": page("Second", type="ADR"),
-        "docs/changelog/README.md": page(
-            "Changelog", "- [b](/changelog/2026-10-02-b/)\n- [a](/changelog/2026-10-01-a/)\n", type="Changelog"
-        ),
+        "docs/adr/README.md": page("ADRs", BLOCK, type="ADR"),
+        "docs/adr/0001-first.md": page("First", type="ADR", **ADR_KEYS),
+        "docs/adr/0002-second.md": page("Second", type="ADR", **ADR_KEYS),
+        "docs/changelog/README.md": page("Changelog", BLOCK, type="Changelog"),
         "docs/changelog/2026-10-01-a.md": page("A", type="Changelog"),
         "docs/changelog/2026-10-02-b.md": page("B", type="Changelog"),
         "docs/_meta/terminology.yaml": (
@@ -156,30 +160,73 @@ def test_freshness_flags_future_date(root: Path) -> None:
     assert "future" in run("freshness", root)[0].message
 
 
-def test_adr_gap_duplicate_and_unlisted(root: Path) -> None:
-    (root / "docs/adr/0004-fourth.md").write_text(page("Fourth", type="ADR"), encoding="utf-8")
-    (root / "docs/adr/0002-other.md").write_text(page("Other", type="ADR"), encoding="utf-8")
+def test_adr_gap_duplicate_and_an_entry_the_index_cannot_list(root: Path) -> None:
+    (root / "docs/adr/0004-fourth.md").write_text(page("Fourth", type="ADR", **ADR_KEYS), encoding="utf-8")
+    (root / "docs/adr/0002-other.md").write_text(page("Other", type="ADR", **ADR_KEYS), encoding="utf-8")
     messages = " | ".join(f.message for f in run("adr", root))
     assert "gap in numbering: no ADR 0003" in messages
     assert "ADR number 0002 used by" in messages
-    assert "not listed" in messages
     (root / "docs/adr/Notes.md").write_text(page("Notes", type="ADR"), encoding="utf-8")
-    (root / "docs/adr/0003-third.md").write_text(page("Third", type="ADR"), encoding="utf-8")
-    rewrite(root, "docs/adr/README.md", "# ADRs\n", "# ADRs\n\nSee 0003-third in prose.\n")
+    (root / "docs/adr/0003-third.md").write_text(page("Third", type="ADR"), encoding="utf-8")  # no decision_* keys
+    rewrite(root, "docs/adr/README.md", "Prose.\n", "Prose. See 0003-third in prose.\n")
     messages = [f"{f.path}: {f.message}" for f in run("adr", root)]
     assert "docs/adr/Notes.md: filename must be NNNN-kebab-slug.md" in messages
-    assert "docs/adr/0003-third.md: not listed in docs/adr/README.md" in messages  # a prose mention is not a listing
+    # A prose mention is not a listing: the entry the generator cannot list is reported.
+    assert "docs/adr/0003-third.md: frontmatter needs a non-empty `decision_status` for the ADR index" in messages
 
 
-def test_changelog_filename_listing_order_and_length(root: Path) -> None:
+def test_a_new_entry_passes_without_touching_the_hub(root: Path) -> None:
+    """The point of the change: a PR adds an entry file and never edits the shared hub."""
+    hubs = {rel: (root / rel).read_text(encoding="utf-8") for rel in ("docs/adr/README.md", "docs/changelog/README.md")}
+    (root / "docs/adr/0003-third.md").write_text(page("Third", type="ADR", **ADR_KEYS), encoding="utf-8")
+    (root / "docs/changelog/2026-10-03-c.md").write_text(page("C", type="Changelog"), encoding="utf-8")
+    for name in ("adr", "changelog", "orphans", "links"):
+        assert run(name, root) == [], name
+    assert {rel: (root / rel).read_text(encoding="utf-8") for rel in hubs} == hubs  # the checks write nothing
+
+
+def test_a_filled_block_is_never_compared_but_is_refused(root: Path) -> None:
+    """The checks read the hub as it regenerates; a committed list is refused, not compared,
+    because committing it would bring back the conflicts the generated index removes."""
+    rewrite(root, "docs/changelog/README.md", f"{gi.BEGIN}\n", f"{gi.BEGIN}\n- [gone](/changelog/2026-09-01-gone/)\n")
+    assert run("links", root) == []  # the stale line is not what the checks see
+    assert [f.message.split(":")[0] for f in run("changelog", root)] == ["the committed generated block must be empty"]
+
+
+def test_a_finding_after_the_block_names_the_committed_line(root: Path) -> None:
+    rewrite(root, "docs/adr/README.md", f"{gi.END}\n", f"{gi.END}\n\nSee [gone](/nowhere/).\n")
+    lines = (root / "docs/adr/README.md").read_text(encoding="utf-8").splitlines()
+    (found,) = run("links", root)
+    assert (found.path, found.line) == ("docs/adr/README.md", lines.index("See [gone](/nowhere/).") + 1)
+
+
+def test_the_generated_hubs_are_exempt_from_freshness(root: Path) -> None:
+    """No pull request edits a hub any more, so its `updated` cannot be what keeps it current."""
+    hubs = {"docs/adr/README.md", "docs/changelog/README.md"}
+    for rel in hubs:
+        rewrite(root, rel, "doc_status: active", "doc_status: draft")
+    rewrite(root, "docs/adr/README.md", "type: ADR", "type: Guide")
+    found = {f.path for f in run("freshness", root, dt.date(2030, 1, 1))}
+    assert "docs/guides/README.md" in found  # not vacuous: every authored page is stale by 2030
+    assert not found & hubs
+
+
+def test_a_hub_without_the_generated_block_is_reported(root: Path) -> None:
+    rewrite(root, "docs/changelog/README.md", f"{gi.BEGIN}\n{gi.END}\n", "- [a](/changelog/2026-10-01-a/)\n")
+    messages = [f"{f.path}: {f.message}" for f in run("changelog", root)]
+    assert messages == [
+        f"docs/changelog/README.md: needs exactly one generated block: one `{gi.BEGIN}` line, then one `{gi.END}` line"
+    ]
+
+
+def test_changelog_filename_title_and_length(root: Path) -> None:
     (root / "docs/changelog/notes.md").write_text(page("Notes", type="Changelog"), encoding="utf-8")
     rewrite(root, "docs/changelog/2026-10-01-a.md", "Text.", "x" * (cd.CHANGELOG_MAX_CHARS + 1))
-    rewrite(root, "docs/changelog/README.md", "- [b](/changelog/2026-10-02-b/)\n- [a](/changelog/2026-10-01-a/)\n",
-            "- [a](/changelog/2026-10-01-a/)\n- [b](/changelog/2026-10-02-b/)\n")
-    messages = " | ".join(f.message for f in run("changelog", root))
-    assert "YYYY-MM-DD-kebab-slug" in messages
-    assert "characters; keep entries under" in messages
-    assert "newest first" in messages
+    rewrite(root, "docs/changelog/2026-10-02-b.md", "title: B\n", "")
+    messages = [f"{f.path}: {f.message}" for f in run("changelog", root)]
+    assert "docs/changelog/notes.md: filename must be YYYY-MM-DD-kebab-slug.md" in messages
+    assert any(m.startswith("docs/changelog/2026-10-01-a.md: ") and "keep entries under" in m for m in messages)
+    assert "docs/changelog/2026-10-02-b.md: frontmatter needs a non-empty `title` for the changelog index" in messages
 
 
 def test_terms_flags_forbidden_terms_but_not_code_urls_or_allowlisted(root: Path) -> None:

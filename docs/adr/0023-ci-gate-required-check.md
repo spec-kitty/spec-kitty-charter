@@ -3,6 +3,8 @@ title: "ADR-0023: An always-on CI gate is the single required status check"
 description: Adds an always-on orchestrator workflow that aggregates the path-filtered service and docs checks into one status context, so branch protection can gate merges on green.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-22'
 type: ADR
 kind: ADR
 related:

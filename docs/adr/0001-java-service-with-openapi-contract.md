@@ -3,6 +3,8 @@ title: "ADR-0001: The charter is a Java service built against an OpenAPI contrac
 description: The charter's new implementation is a Java service; an OpenAPI contract is the single source of the DTOs that the service and the core's runtime (CLI, next state machine) both use.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-13'
 type: ADR
 kind: ADR
 related:

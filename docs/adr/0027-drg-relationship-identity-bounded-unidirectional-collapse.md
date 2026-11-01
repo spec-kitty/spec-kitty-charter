@@ -3,6 +3,8 @@ title: "ADR-0027: CRG relationship identity is a bounded, conditional unidirecti
 description: Why a relationship is one unidirectional edge per component pair as an upstream normalization with a revisit trigger, not a claim that relationships are intrinsically one-way.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0028 (2026-10-26); clarified by ADR-0036 (2026-10-27)
+decision_date: '2026-10-25'
 type: ADR
 kind: ADR
 related:
