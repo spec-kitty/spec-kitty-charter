@@ -2,10 +2,12 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -44,6 +46,14 @@ class TemplateStoreTest {
         Path renamed = host.resolve(name);
         Files.move(pack, renamed);
         return renamed;
+    }
+
+    /** Whether the file system under {@code dir} tells two names apart by case. */
+    private static boolean caseSensitive(Path dir) throws IOException {
+        Path probe = Files.writeString(dir.resolve("case-probe"), "");
+        boolean sensitive = !Files.exists(dir.resolve("CASE-PROBE"));
+        Files.delete(probe);
+        return sensitive;
     }
 
     private static void write(Path pack, String relative, byte[] bytes) throws IOException {
@@ -192,5 +202,57 @@ class TemplateStoreTest {
         assertThat(Files.readAllBytes(target.resolve("templates/x.md"))).isEqualTo(TEMPLATE);
         assertThat(target.resolve("templates/x.tactic.yaml")).doesNotExist();
         assertThat(target.resolve("templates/plan-field-declaration.yaml")).doesNotExist();
+    }
+
+    /**
+     * #252: the single payload write keeps one file to a path, case ignored, as the whole-pack write does. On a
+     * case-insensitive file system, writing {@code templates/x/a.md} would replace {@code templates/x/A.md}. Here, on
+     * a case-sensitive one, it would add a second file that folds to the same path. A directory spelled in another case
+     * is the same conflict, one segment up. Rewriting a file in its own spelling is not one.
+     */
+    @Test
+    void aPayloadThatDiffersOnlyInCaseFromAFileOfThePackIsRefused(@TempDir Path host) throws IOException {
+        assumeTrue(caseSensitive(host), "the fixture plants two spellings, which a case-insensitive file system folds");
+        Path target = pack(host, "target");
+        write(target, "templates/x/A.md", TEMPLATE);
+        FilesystemPackStore store = new FilesystemPackStore(host, strategy);
+        Payload other = Payload.of(new byte[] {'o'});
+
+        assertThatThrownBy(() -> store.writePayload(TARGET, "templates/x/a.md", other, PackFileKind.TEMPLATE))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
+                .hasMessage("payload templates/x/a.md differs only in case from templates/x/A.md");
+        assertThatThrownBy(() -> store.writePayload(TARGET, "templates/X/b.md", other, PackFileKind.TEMPLATE))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
+                .hasMessage("payload templates/X/b.md differs only in case from templates/x");
+
+        assertThat(target.resolve("templates/x/a.md")).doesNotExist();
+        assertThat(target.resolve("templates/X")).doesNotExist();
+        assertThat(Files.readAllBytes(target.resolve("templates/x/A.md"))).isEqualTo(TEMPLATE);
+
+        store.writePayload(TARGET, "templates/x/A.md", other, PackFileKind.TEMPLATE);
+        assertThat(Files.readAllBytes(target.resolve("templates/x/A.md"))).isEqualTo(other.bytes());
+    }
+
+    /**
+     * #252: a pack that already holds two spellings of one path (written on a case-sensitive file system) gets no
+     * third write to either: the write would land on whichever file a case-insensitive file system opens.
+     */
+    @Test
+    void aPayloadWhosePathAnotherFileOfThePackFoldsToIsRefusedEvenInItsOwnSpelling(@TempDir Path host)
+            throws IOException {
+        assumeTrue(caseSensitive(host), "the fixture plants two spellings, which a case-insensitive file system folds");
+        Path target = pack(host, "target");
+        write(target, "templates/a.md", TEMPLATE);
+        write(target, "templates/A.md", TEMPLATE);
+        FilesystemPackStore store = new FilesystemPackStore(host, strategy);
+
+        assertThatThrownBy(() -> store.writePayload(
+                        TARGET, "templates/a.md", Payload.of(new byte[] {'o'}), PackFileKind.TEMPLATE))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT))
+                .hasMessage("payload templates/a.md differs only in case from templates/A.md");
+        assertThat(Files.readAllBytes(target.resolve("templates/a.md"))).isEqualTo(TEMPLATE);
     }
 }
