@@ -47,8 +47,6 @@ files:
   - EffectiveGraphNode.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
-  - Link.yaml
-  - Links.yaml
   - PackPin.yaml
   - PresetApplication.yaml
   - SelectableKind.yaml
