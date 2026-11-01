@@ -108,6 +108,16 @@ rules:
       field: content
       function: falsy
 
+  # Only a removal answers 204 (ADR-0020 D9): a read answers 200 and a registration 200 or 201 with the resource
+  # (ADR-0018 D10 as amended), so a 204 on any other method would be a success without the resource (#295).
+  no-content-only-on-delete:
+    description: Only a DELETE declares a 204 No Content response.
+    severity: error
+    given: "$.paths[*][?(@property != 'delete' && @.responses)].responses"
+    then:
+      field: '204'
+      function: falsy
+
   # ADR-0020 D8: an operation declared ahead of being built carries x-reserved, naming the contract set it
   # belongs to and the issue that reserves it. It is removed, with the 501, when the operation is built.
   # The marker is judged on the operation that carries it, so a null marker (which a path to the marker itself
