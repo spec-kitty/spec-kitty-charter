@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -134,6 +134,18 @@ The authored pack files are drawn in the
 | **Action-scoped context** | The guidance for one action of one mission type, as `spec-kitty charter context --action <name>` returns it today. Action nodes in the CRG are `action:<mission-type>/<action>`; the CLI's bootstrap set is specify, plan, implement and review. |
 | **Profile resolution** | `(profile_id, action)` in, the resolved profile with its `specializes_from` lineage and `enhances` / `overrides` edges applied plus compact context out (core `docs/architecture/profile-load-reliability.md` §4.2). Fail loud: an unresolved profile is an error, never an unprofiled agent. Selecting a profile for a role follows [ADR-0032](/adr/0032-steps-name-roles-and-profile-selection-order/): role fit, specialization, declared fallback, then not found. |
 | **Resolution** | Computing an answer from the active graph: action-scoped context, a profile, or a graph query. Not the core glossary's *Governance Resolution*, which is the existence and compatibility check of the active charter against the offering. |
+
+## The API surface
+
+The words the contract and its docs use for the service's resources
+([Service contract](/api/service-contract/)).
+
+| Term | Meaning |
+|---|---|
+| **Offering** (resource) | `GET /offering`: the API resource of the *Charter offering*. In contract `0.1.0` it answers only the configured packs in force, in the merge order (configured level, then pack id), each with an `artifacts` link; merging is not applied yet ([ADR-0020](/adr/0020-offering-and-activations/) D1). |
+| **Served kind** | An artifact kind the API reads, with a contract representation: today `tactic`, `directive`, `styleguide`, `paradigm` and `toolguide` (`ArtifactKindToken`). Every other artifact kind is known to the domain but not served; a path that names one is refused with `kind_not_found`. |
+| **Artifact envelope** | The `Artifact` answer of an artifact read or write: `kind`, `id`, `packId`, `_links` and exactly one member named after the kind, which holds the artifact in its kind's own representation. |
+| **Links** | The `_links` member every JSON success answer carries: a map from a relation name (`self`, `collection`, `artifacts`, …) to a link with an `href` under `/api/v1`. A client follows links by relation name instead of building paths ([Hypermedia (HATEOAS)](/development/hypermedia-hateoas/)). |
 
 ## Neighboring terms
 

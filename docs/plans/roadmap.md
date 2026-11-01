@@ -56,8 +56,10 @@ As of 2026-10-27.
 - **Step 1, done, then reshaped.** `contracts/charter/` is at `0.1.0-SNAPSHOT`, unreleased, and is
   published as 0.x until it is stable (ADR-0022, built by PR #129). PR #139 rebuilt the service on
   one canonical `Pack` aggregate. It removed `GET /packs`, `POST /packs/refresh` and the
-  action-context read, so the contract now holds `GET /info` and the tactic reads
-  (`/packs/{packId}/tactics[/{tacticId}]`). The contract's own checks (lint, closed responses, the
+  action-context read. Since #126 (2026-10-31) the contract holds the API root `GET /`, `GET /info`,
+  `GET /openapi.yaml`, `GET /offering` (the configured packs), the generic artifact reads
+  (`/packs/{packId}/artifacts[/{kind}/{artifactId}]`) and the registrations under the same tree, every JSON success answer
+  linked through `_links`; the per-kind routes are removed. The contract's own checks (lint, closed responses, the
   bundle, the release gate) run in the build and pass.
 - **Step 2, done.** The build is cut into onion-layered vertical slices (`kernel`, `packs`,
   `deployable`), enforced by ArchUnit

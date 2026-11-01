@@ -2,7 +2,7 @@
 title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 related:
@@ -62,6 +62,15 @@ API writes and how it is framed.
       generated contract DTOs ([ADR-0004](/adr/0004-public-api-returns-generated-dtos/)); the storage
       DSO is never exposed. One family per kind: tactics, directives, styleguides, paradigms,
       toolguides (procedures pending [#150](https://github.com/spec-kitty/spec-kitty-charter/issues/150)).
+
+      *Amended 2026-10-31 (operator ruling 2 on [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126)),
+      paths only:* the registrations moved into the artifact tree of
+      [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) D2. They are now
+      `POST /packs/{packId}/artifacts/<kind>` and `PUT /packs/{packId}/artifacts/<kind>/{artifactId}`, with the
+      singular kind token (`directive`, `styleguide`, `paradigm`, `toolguide`), so a write and the generic read of an
+      artifact share one item URI. The per-kind paths are removed with no alias. "One family per kind" and every
+      other part of D1.2 are unchanged: each kind keeps its own typed operation, operationId, request body and
+      refusals. D1.3 (relationships) is unchanged.
    3. **Register a relationship** — `PUT /packs/{packId}/relationships`, idempotent on the unordered
       `{from, to}` pair ([ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/));
       body = `from`, `to`, `type`, `rationale` (directionality derives from the type). A relationship

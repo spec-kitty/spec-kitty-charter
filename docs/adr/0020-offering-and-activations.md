@@ -605,8 +605,9 @@ change.
   `packs.infra.api`, the one adapter allowed to name the generated types; the built activation set becomes a slice
   of its own, and the `PACKS_*` ArchUnit constants are generalized then (#140).
 - **Growth.** A new activatable kind, effective state, policy level or reason is a contract change: a 0.x minor
-  before 1.0.0, a major after. The activation links carry `self` only; `Link.method` admits `GET`, `POST` and `PUT`,
-  and widens to `DELETE` when the writes are built.
+  before 1.0.0, a major after. The activation links carry `self` only. `Link.method` admits `GET`, `POST`, `PUT` and
+  `DELETE`: the shared `Link` of #126, which landed after this set, already widens it; no answer carries a
+  `DELETE` link until the writes are built.
 - **Build notes.** When an operation is built: a String-to-enum converter for snake_case path kinds; unknown JSON
   members on activation bodies refused (`422`, never dropped); a body that fails bean validation answered
   `422 activation_invalid` with `violations`; `containerDefaultToNull` and the `NON_NULL` mix-in keep absent apart
