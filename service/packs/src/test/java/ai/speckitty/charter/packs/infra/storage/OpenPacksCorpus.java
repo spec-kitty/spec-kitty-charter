@@ -42,13 +42,17 @@ public final class OpenPacksCorpus {
                 "org pack " + orgPack + " has no pack.yaml; the configured level org is used");
     }
 
-    /** The checkout root; requires the current layout, {@code <root>/packs/built-in}. */
+    /**
+     * The checkout root; requires the current layout, {@code <root>/packs/built-in}. Gradle passes it absolute, a relative
+     * {@code -PopenPacksDir} already resolved against the repository root (#322).
+     */
     public static Path root() {
         String dir = System.getProperty("charter.openPacksDir");
         if (dir == null || !Files.isDirectory(Path.of(dir, "packs", "built-in"))) {
-            throw new IllegalStateException(
-                    "No spec-kitty-open-packs checkout at '" + dir
-                            + "' (expected <checkout>/packs/built-in); pass -PopenPacksDir=<checkout>. The round-trip never skips.");
+            throw new IllegalStateException("No spec-kitty-open-packs checkout at '" + dir
+                    + "' (expected <checkout>/packs/built-in). Clone it beside the repository, or pass"
+                    + " -PopenPacksDir=<checkout>: an absolute path, or one relative to the repository root, such as"
+                    + " -PopenPacksDir=.open-packs. The round-trip never skips.");
         }
         return Path.of(dir);
     }

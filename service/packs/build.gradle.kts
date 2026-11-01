@@ -92,9 +92,12 @@ tasks.processResources {
 }
 
 // The pinned spec-kitty-open-packs checkout the corpus tests read. Point -PopenPacksDir at a checkout; by default the
-// sibling directory ../spec-kitty-open-packs. A missing checkout fails the task, it never skips.
+// sibling directory ../spec-kitty-open-packs. A relative path resolves against the repository root, not this project
+// (OpenPacksCheckout, #322), and the tests get it absolute. A missing checkout fails the task, it never skips.
+val repositoryRoot: File = rootProject.layout.projectDirectory.asFile
 val openPacksDir = providers.gradleProperty("openPacksDir")
-    .orElse(rootProject.layout.projectDirectory.dir("../spec-kitty-open-packs").asFile.absolutePath)
+    .map { OpenPacksCheckout.resolve(repositoryRoot, it).path }
+    .orElse(OpenPacksCheckout.resolve(repositoryRoot, null).path)
 
 // The pin: gradle.properties (openPacksRef) is its single source of truth, read here and by CI. It is validated
 // when the task runs, never at configuration time, and is a task input so a new pin is never answered from the cache.
