@@ -1,0 +1,243 @@
+name: service-release
+
+# Publishes a service release (ADR-0046; issues #241, #71). Pushing a tag service-v<version> at a commit on main whose
+# gradle.properties `version` is <version> builds, checks and attaches the release's assets:
+#   spec-kitty-charter-service-<version>-{linux-x64,linux-arm64,macos-arm64}, -windows-x64.exe (GraalVM native
+#   executables), spec-kitty-charter-service-<version>.jar (the fallback, Java 25), one <asset>.sha256 each and
+#   SHA256SUMS, with a build-provenance attestation of every asset.
+# Nothing is published unless:
+#   - the tag has core's form service-vX.Y.Z[-pre] and is not a placeholder or a -SNAPSHOT;
+#   - the tagged commit is on main, and its build version is the tag's;
+#   - a final release's bundled contract is released (contract-charter-v<info.version> merged into the commit);
+#   - verifyAll, the jar and all four native executables built and passed their start-and-answer check;
+#   - the tag still names the built commit when publishing starts.
+# The gate is :checkServiceReleaseTag (ServiceReleaseGate in build-logic); the commit's place on main and the tag's
+# stability are checked here, where the remote is. Only the publish job can write, and it runs no build. A release is
+# never marked latest, and a tag with a pre-release suffix makes a GitHub pre-release. An existing release fails the run;
+# nothing is replaced. The workflow runs from the tagged commit, so these checks guard against mistakes, not against
+# someone who can push tags: a tag ruleset on service-v* limits who can publish.
+#
+# The build it calls (service.yml) also checks out spec-kitty-open-packs at the commit pinned in gradle.properties
+# (openPacksRef): test data for verifyAll's round-trip, read-only and never part of an asset.
+#
+# A manual run (workflow_dispatch) is a rehearsal: it judges the chosen ref under the tag it is given, builds the
+# assets and uploads them as the workflow artifact `service-release`. It never creates a release; on a ref whose
+# version is not that tag's it shows the refusal. service.yml rehearses the gate and the asset set on every change
+# (scripts/release/rehearse-service-release.sh).
+on:
+  push:
+    tags: ["service-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release tag to rehearse (service-v<version>). Nothing is published."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# A release is never cancelled halfway: a second run for the same tag waits.
+concurrency:
+  group: service-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      commit: ${{ steps.tag.outputs.commit }}
+      version: ${{ steps.gate.outputs.version }}
+      prerelease: ${{ steps.gate.outputs.prerelease }}
+      contract-note: ${{ steps.gate.outputs.contract-note }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # The gate reads the contract-charter-v* tags; the main check reads origin/main.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Name the tag
+        id: tag
+        env:
+          EVENT: ${{ github.event_name }}
+          PUSHED: ${{ github.ref_name }}
+          REHEARSED: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = push ]; then tag="$PUSHED"; else tag="$REHEARSED"; fi
+          if ! printf '%s' "$tag" | grep -Eq '^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::The tag is not a service release tag (service-vX.Y.Z[-pre], ADR-0046 decision 1)"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # The release procedure tags a commit on main (docs/guides/service-build.md).
+      - name: Check the tagged commit is on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_SHA is not on main: tag a commit on main"
+            exit 1
+          fi
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      - name: Judge the tag against the commit
+        id: gate
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ./gradlew checkServiceReleaseTag -PreleaseTag="$TAG"
+          gate=build/service-release/gate.properties
+          value() { awk -F= -v key="$1" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$gate"; }
+          {
+            echo "version=$(value version)"
+            echo "prerelease=$(value prerelease)"
+            echo "contract-note=$(value contractNote)"
+          } >> "$GITHUB_OUTPUT"
+
+  # The whole service build (verifyAll) and the jar, started and checked; the jar is the `service-jar` artifact.
+  jvm:
+    needs: gate
+    uses: ./.github/workflows/service.yml
+    with:
+      cache-disabled: true
+
+  # The four native executables, each started and checked; `native-<target>` artifacts.
+  native:
+    needs: gate
+    uses: ./.github/workflows/service-native.yml
+    with:
+      cache-disabled: true
+
+  # Read-only: names the assets as ADR-0046 does and writes their checksums.
+  assemble:
+    needs: [gate, jvm, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Download the executables
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: native-*
+          path: build-outputs
+
+      - name: Download the jar
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: service-jar
+          path: build-outputs/service-jar
+
+      - name: Assemble the release assets
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: scripts/release/service-release-assets.sh "$VERSION" build-outputs dist
+
+      - name: Upload the release assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: service-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The only job that can write: it runs no build, only checks, attests and attaches what assemble built.
+  publish:
+    needs: [gate, assemble]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The operator may require reviewers on this environment; the service-v* tag ruleset is the first guard (ADR-0046).
+    environment: service-release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download the release assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: service-release
+          path: dist
+
+      - name: Check the assets against their checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum --check --strict SHA256SUMS
+          for listed in $(awk '{print $2}' SHA256SUMS); do sha256sum --check --strict "$listed.sha256"; done
+
+      # The assets are those of the commit gate judged. A tag moved or re-pushed since then names another commit, and
+      # nothing is published.
+      - name: Check the tag still names the built commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.gate.outputs.tag }}
+          BUILT: ${{ needs.gate.outputs.commit }}
+        run: |
+          set -euo pipefail
+          read -r type sha < <(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          if [ "$type" = tag ]; then sha="$(gh api "repos/$REPO/git/tags/$sha" --jq .object.sha)"; fi
+          if [ "$sha" != "$BUILT" ] || [ "$sha" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG now names $sha, but the assets were built from $BUILT"
+            exit 1
+          fi
+
+      - name: Attest the build provenance of every asset
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
+
+      # --verify-tag refuses a tag that does not exist on the remote; an existing release of the tag fails the step,
+      # so a release is never replaced. Only the listed files are attached.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.gate.outputs.tag }}
+          VERSION: ${{ needs.gate.outputs.version }}
+          PRERELEASE: ${{ needs.gate.outputs.prerelease }}
+          CONTRACT_NOTE: ${{ needs.gate.outputs.contract-note }}
+        run: |
+          set -euo pipefail
+          {
+            echo "The charter service ${VERSION}. ${CONTRACT_NOTE}"
+            echo
+            echo "Native executables for linux-x64, linux-arm64, macos-arm64 and windows-x64; the jar runs on any other"
+            echo "host with Java 25 (ADR-0046). The executables are not code-signed."
+            echo
+            echo "Check a download:"
+            echo
+            echo '```bash'
+            echo "sha256sum --check --ignore-missing SHA256SUMS"
+            echo "gh attestation verify <asset> --repo ${REPO} \\"
+            echo "  --signer-workflow ${REPO}/.github/workflows/service-release.yml --source-ref refs/tags/${TAG}"
+            echo '```'
+          } > "$RUNNER_TEMP/notes.md"
+          flags=(--latest=false)
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          files=(dist/SHA256SUMS)
+          for listed in $(awk '{print $2}' dist/SHA256SUMS); do files+=("dist/$listed" "dist/$listed.sha256"); done
+          gh release create "$TAG" --repo "$REPO" --verify-tag --title "Charter service ${VERSION}" "${flags[@]}" \
+            --notes-file "$RUNNER_TEMP/notes.md" "${files[@]}"

@@ -145,8 +145,7 @@ Core's requests that follow from it are
      push a tag. Before the first tag, the operator therefore creates a tag ruleset on `service-v*`: it restricts
      who may create a tag and blocks updating or deleting one. The publishing job runs in the `service-release`
      environment, on which the operator may also require reviewers.
-   - The release procedure is documented in [Building the service](/guides/service-build/) when the workflow lands
-     ([#297](https://github.com/spec-kitty/spec-kitty-charter/issues/297)).
+   - The procedure is in [Building the service](/guides/service-build/).
 
 ## Consequences
 
