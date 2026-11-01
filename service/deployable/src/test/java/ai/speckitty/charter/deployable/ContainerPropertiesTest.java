@@ -8,9 +8,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -18,7 +20,8 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * How {@code charter.container.*} binds (ADR-0041 decision 2): under the {@code container} profile a missing or invalid
- * value fails the start naming the property; without the profile nothing in the namespace is bound or checked.
+ * value fails the start naming the property; without the profile nothing in the namespace is bound or checked. The
+ * profile is read when the service starts, not when the native image is built (ADR-0046 decision 5).
  */
 class ContainerPropertiesTest {
 
@@ -32,8 +35,9 @@ class ContainerPropertiesTest {
     void underTheContainerProfileTheAllowedHostsBindInOrder() {
         runner.withPropertyValues(CONTAINER, PROPERTY + "=charter.example.org,charter")
                 .run(context -> assertThat(
-                                context.getBean(ContainerProperties.class).allowedHosts())
-                        .containsExactly("charter.example.org", "charter"));
+                                context.getBean(ContainerWiring.class).properties())
+                        .map(ContainerProperties::allowedHosts)
+                        .hasValue(List.of("charter.example.org", "charter")));
     }
 
     @Test
@@ -72,14 +76,29 @@ class ContainerPropertiesTest {
 
     @Test
     void withoutTheContainerProfileNothingIsBoundAndAnInvalidValueDoesNotFailTheStart() {
-        runner.withPropertyValues(PROPERTY + "[0]= ")
-                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ContainerProperties.class));
+        runner.withPropertyValues(PROPERTY + "[0]= ").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(ContainerWiring.class).properties()).isEmpty();
+        });
     }
 
     @Test
     void anotherProfileAloneDoesNotBindTheRecord() {
-        runner.withPropertyValues("spring.profiles.active=test")
-                .run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ContainerProperties.class));
+        runner.withPropertyValues("spring.profiles.active=test").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(ContainerWiring.class).properties()).isEmpty();
+        });
+    }
+
+    @Test
+    void underTheContainerProfileLazyInitializationDoesNotSkipTheValidation() {
+        runner.withPropertyValues(CONTAINER)
+                .withInitializer(context ->
+                        context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor()))
+                .run(context -> assertThat(context)
+                        .hasFailed()
+                        .getFailure()
+                        .hasStackTraceContaining(PROPERTY + " is required"));
     }
 
     @Test
@@ -146,8 +165,9 @@ class ContainerPropertiesTest {
     void theServiceAsItShipsBindsTheRecordUnderTheContainerProfile(@TempDir Path root) {
         try (var context =
                 shippedService(Map.of(PROPERTY, "charter.example.org")).run(startArguments(root))) {
-            assertThat(context.getBean(ContainerProperties.class).allowedHosts())
-                    .containsExactly("charter.example.org");
+            assertThat(context.getBean(ContainerWiring.class).properties())
+                    .map(ContainerProperties::allowedHosts)
+                    .hasValue(List.of("charter.example.org"));
         }
     }
 }
