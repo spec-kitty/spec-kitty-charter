@@ -234,7 +234,10 @@ date; no gate is relaxed anywhere else, and blanket suppressions are not allowed
 1. Edit the split files under `contracts/charter/` and list new files in the directory's
    `_index.yaml`.
 2. Write or change the scenario in `contracts/charter/scenarios/` that pins the behavior.
-3. Add an entry to `contracts/charter/CHANGELOG.md`; a scenario change gets one too.
+3. Add a changelog fragment, `contracts/charter/changes/YYYY-MM-DD-<slug>.md`, holding one `###`
+   block; a scenario change gets one too. Do not edit `contracts/charter/CHANGELOG.md`: the
+   release pull request assembles the fragments into it. The format is in
+   [`contracts/charter/changes/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/changes/README.md).
 4. Run `./gradlew :contracts:check`, then `./gradlew verifyAll`.
 
 The contract checks follow the conventions in

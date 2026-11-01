@@ -6,8 +6,10 @@
 # In a throwaway clone of HEAD with no remote, it:
 #   1. tags the unreleased commit and expects the publishing gate (:contracts:checkReleaseTag) to refuse it (a
 #      -SNAPSHOT is never published) and contract-release-assets.sh to leave no assets;
-#   2. commits a synthetic release (info.version and the top CHANGELOG heading without -SNAPSHOT), tags it
-#      locally and expects the three assets, with a checksum that matches the bundle.
+#   2. commits a synthetic release (info.version and the top CHANGELOG heading without -SNAPSHOT) that leaves a
+#      changelog fragment unassembled, and expects the publishing gate to refuse its tag (ADR-0047);
+#   3. assembles the fragments (:contracts:assembleContractChangelog), as the release pull request does, tags the
+#      release locally and expects the assets, with a checksum that matches the bundle.
 # The clone has no remote, so its tags can never be pushed. service.yml runs it after verifyAll.
 set -euo pipefail
 
@@ -49,10 +51,36 @@ if [[ -e "$work/refused" ]] && [[ -n "$(ls -A "$work/refused")" ]]; then
 fi
 git tag -d "$tag" > /dev/null
 
-echo "== 2. A synthetic release $version is assembled"
+commit() {
+  git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --message "$1"
+}
+
+echo "== 2. A release that leaves a changelog fragment unassembled is refused"
 sed -i "0,/^  version: $snapshot\$/s//  version: $version/" "$openapi"
 sed -i "0,/^## $snapshot\$/s//## $version/" "$changelog"
-git -c user.name=rehearsal -c user.email=rehearsal@invalid commit --quiet --all --message "rehearsal: release $version"
+probe=contracts/charter/changes/2000-01-01-rehearsal-probe.md
+printf '### Added\n\n- A fragment the rehearsal plants, to prove the gate refuses an unassembled release.\n' > "$probe"
+git add "$probe"
+commit "rehearsal: release $version with a fragment left"
+git tag "$tag"
+if scripts/release/contract-release-assets.sh "$tag" "$work/unassembled" 2>&1 | tee "$work/unassembled.log"; then
+  echo "error: the release $version was assembled with a changelog fragment left" >&2
+  exit 1
+fi
+if ! grep -q "not assembled into the CHANGELOG" "$work/unassembled.log"; then
+  echo "error: :contracts:checkReleaseTag did not refuse the unassembled fragment" >&2
+  exit 1
+fi
+git tag -d "$tag" > /dev/null
+
+echo "== 3. A synthetic release $version is assembled"
+./gradlew --quiet :contracts:assembleContractChangelog
+if ! grep -q "A fragment the rehearsal plants" "$changelog" || [[ -e "$probe" ]]; then
+  echo "error: :contracts:assembleContractChangelog did not move the fragment into $changelog" >&2
+  exit 1
+fi
+git add --all contracts/charter
+commit "rehearsal: release $version"
 git tag "$tag"
 scripts/release/contract-release-assets.sh "$tag" "$work/assets"
 for asset in charter-openapi.yaml charter-openapi.yaml.sha256 charter-scenarios.tar.gz ActivationConfig.schema.json; do
@@ -64,4 +92,4 @@ done
 (cd "$work/assets" && sha256sum --check --strict charter-openapi.yaml.sha256)
 # grep reads the whole listing: grep -q would exit at the first match and tar would die on SIGPIPE under pipefail.
 tar -tzf "$work/assets/charter-scenarios.tar.gz" | grep -x 'scenarios/README.md' >/dev/null
-echo "Rehearsed $tag: refused while unreleased, assembled once released. Nothing was published."
+echo "Rehearsed $tag: refused while unreleased or unassembled, assembled once released. Nothing was published."

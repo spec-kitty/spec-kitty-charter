@@ -80,9 +80,12 @@ A missing baseline is a stated fact, never an artifact of the checkout:
 
 This is the one release procedure.
 
-1. In a pull request, set `info.version` of `../charter/openapi.yaml` to the release (`1.1.0`) and
-   turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for a new major, or for
-   a new minor while the major is 0). The
+1. In a pull request, run `./gradlew :contracts:assembleContractChangelog`: it moves every fragment
+   of `../charter/changes/` into the top CHANGELOG section and deletes them
+   (`../charter/changes/README.md`). Then set `info.version` of `../charter/openapi.yaml` to the
+   release (`1.1.0`) and turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for
+   a new major, or for a new minor while the major is 0). `:contracts:checkReleaseTag` refuses the
+   tag while a fragment is left. The
    check reports "pending release 1.1.0" while no tag for it is merged into HEAD, and compares
    against the previous release.
 2. After the merge, tag `main` at the merge commit: `git tag contract-charter-v1.1.0 <merge commit>`
