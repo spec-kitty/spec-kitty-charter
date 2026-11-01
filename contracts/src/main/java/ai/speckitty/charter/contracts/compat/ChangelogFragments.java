@@ -175,6 +175,9 @@ public final class ChangelogFragments {
                         name + " must hold one `###` block: a `#`, `##` or `###` heading under it is not allowed");
             }
         }
+        if (fence != null) {
+            throw new IllegalArgumentException(name + " has an unclosed `" + fence + "` code fence");
+        }
         return new Fragment(name, heading.group(1), body);
     }
 
