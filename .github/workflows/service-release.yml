@@ -77,6 +77,8 @@ jobs:
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # The release procedure tags a commit on main (docs/guides/service-build.md).
+      # Residual (in model): on-main is checked once here, at the gate, not again at publish. Dropping the commit
+      # from main after the gate would need a force-rewrite of the protected main branch, which the ruleset forbids.
       - name: Check the tagged commit is on main
         if: github.event_name == 'push'
         run: |
@@ -189,6 +191,9 @@ jobs:
 
       # The assets are those of the commit gate judged. A tag moved or re-pushed since then names another commit, and
       # nothing is published.
+      # Residual (in model): a tag moved between this check and `gh release create` below would point the release at
+      # a new commit carrying the old assets. It needs a ruleset-forbidden tag update, and the per-asset attestation
+      # still binds each asset to this workflow and tag, so it is a release/target mismatch, not a supply-chain hole.
       - name: Check the tag still names the built commit
         env:
           GH_TOKEN: ${{ github.token }}
