@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -42,7 +45,7 @@ class ParadigmControllerTest {
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ParadigmController(
                     new ParadigmRegistrationService(store, store, new PermissiveWritePolicyGate()),
                     new Hypermedia("/api/v1")))
-            .setControllerAdvice(new RefusalHandler())
+            .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();
 
     ParadigmControllerTest() {
@@ -103,6 +106,37 @@ class ParadigmControllerTest {
                         .content(bad))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("validation_failed"));
+    }
+
+    // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"directiveRefs", "references", "relationships"})
+    void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = body("hexagonal").replace("}", ",\"" + list + "\":null}");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(list)));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/hexagonal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
+    @Test
+    void anAbsentListIsEmpty() throws Exception {
+        // The positive control of the matrix above: every list left out.
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("hexagonal")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paradigm.directiveRefs").isEmpty());
     }
 
     private static String body(String id) {

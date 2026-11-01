@@ -232,6 +232,33 @@ class ToolguideControllerTest {
                 .andExpect(status().isCreated());
     }
 
+    // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    void anExplicitNullListIsA422OnPostAndPut(String field) throws Exception {
+        String bad = body("make", guideField(GUIDE) + ",\"" + field + "\":null");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(field)));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+        // The positive control: the same body with the list left out is accepted, and the list is empty.
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.toolguide." + field).isEmpty());
+    }
+
     // ---- the toolguide id names a guide file the schema accepts ---------------------------------------------------
 
     @ParameterizedTest(name = "{0}")

@@ -85,6 +85,15 @@ class ToolguideRegistrationBodyAdviceTest {
                 .isEmpty();
     }
 
+    @Test
+    void anExplicitNullListIsFoundAfterTheGuideFields() {
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"commands\":null}")))
+                .contains("commands");
+        assertThat(ToolguideRegistrationBodyAdvice.explicitNull(bytes("{\"guide\":\"g\",\"references\":[]}")))
+                .as("an empty list is a value")
+                .isEmpty();
+    }
+
     private HttpInputMessage read(HttpInputMessage message) throws IOException {
         return advice.beforeBodyRead(message, null, ToolguideRegistration.class, null);
     }

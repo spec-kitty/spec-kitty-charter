@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.MethodParameter;
@@ -18,9 +19,6 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Guards a toolguide registration's body before the message converter reads it into the DTO (FR-010, NFR-005).
@@ -34,7 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
  *   <li><b>No explicit null.</b> The generated DTO reads a {@code null} and an absent field alike, so the body
  *       {@code {"guide": null, "guideUri": "https://..."}} would otherwise pass as a registration by URI, although
  *       {@code guide} is typed {@code string} in the contract. A registration leaves out the guide field it does not
- *       carry; an explicit {@code null} for {@code guide} or {@code guideUri} is refused.
+ *       carry; an explicit {@code null} for {@code guide} or {@code guideUri} is refused. So is one for a list
+ *       ({@code commands}, {@code appliesToLanguages}, {@code references}): an absent list is empty, and {@code null}
+ *       is never a value (#292, as {@link RegistrationBodyAdvice} does for the other registrations).
  * </ul>
  *
  * <p>Both are {@code 422 validation_failed}. The body is handed on unchanged. A body that is not JSON is passed
@@ -44,16 +44,19 @@ import tools.jackson.databind.json.JsonMapper;
 @ControllerAdvice
 public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
 
-    /** The registration's guide fields, the only ones an explicit {@code null} is refused for. */
+    /** The registration's guide fields; an explicit {@code null} is refused for these and for the lists. */
     static final List<String> GUIDE_FIELDS = List.of("guide", "guideUri");
+
+    /** The guide fields, then the registration's list members, in the order an explicit {@code null} is looked for. */
+    private static final List<String> NOT_NULL = Stream.concat(
+                    GUIDE_FIELDS.stream(), RegistrationLists.of(ToolguideRegistration.class).stream())
+            .toList();
 
     /** JSON bytes allowed per byte of guide: a JSON escape of one character is six. */
     private static final int ESCAPE_FACTOR = 6;
 
     /** The room left for the fields beside the guide. */
     private static final long OTHER_FIELDS = 1024L * 1024;
-
-    private static final JsonMapper JSON = JsonMapper.builder().build();
 
     private final long bodyLimit;
 
@@ -110,8 +113,10 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
         explicitNull(body).ifPresent(field -> {
             throw new CharterRefusal(
                     RefusalCode.VALIDATION_FAILED,
-                    "The " + field + " is null; a toolguide registration leaves out the guide field it does not"
-                            + " carry.");
+                    GUIDE_FIELDS.contains(field)
+                            ? "The " + field + " is null; a toolguide registration leaves out the guide field it does"
+                                    + " not carry."
+                            : RegistrationLists.nullListDetail(field));
         });
         return new HttpInputMessage() {
             @Override
@@ -133,24 +138,12 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     }
 
     /**
-     * The first guide field the body sends as an explicit {@code null}.
+     * The first guide field, or else the first list, the body sends as an explicit {@code null}.
      *
      * @param body the request body
      * @return the field; empty when none is {@code null}, or the body is not a JSON object
      */
     static Optional<String> explicitNull(byte[] body) {
-        JsonNode tree;
-        try {
-            tree = JSON.readTree(body);
-        } catch (JacksonException unreadable) {
-            // Not this advice's to answer: the converter refuses the body as unreadable.
-            return Optional.empty();
-        }
-        if (tree == null || !tree.isObject()) {
-            return Optional.empty();
-        }
-        return GUIDE_FIELDS.stream()
-                .filter(field -> tree.has(field) && tree.get(field).isNull())
-                .findFirst();
+        return RegistrationLists.firstExplicitNull(body, NOT_NULL);
     }
 }

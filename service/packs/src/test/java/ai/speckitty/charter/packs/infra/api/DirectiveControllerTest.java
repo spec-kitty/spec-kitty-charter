@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -28,6 +29,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -44,7 +46,7 @@ class DirectiveControllerTest {
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new DirectiveController(
                     new DirectiveRegistrationService(store, store, new PermissiveWritePolicyGate()),
                     new Hypermedia("/api/v1")))
-            .setControllerAdvice(new RefusalHandler())
+            .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();
 
     DirectiveControllerTest() {
@@ -135,6 +137,45 @@ class DirectiveControllerTest {
                         .content(bad))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("validation_failed"));
+    }
+
+    // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "procedures",
+                "integrityRules",
+                "validationCriteria",
+                "explicitAllowances",
+                "references",
+                "relationships"
+            })
+    void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = body("GUARD").replace("}", ",\"" + list + "\":null}");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(list)));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/directive/GUARD")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
+    @Test
+    void anAbsentListIsEmptyAndANullScopeIsStillAccepted() throws Exception {
+        // The positive controls of the matrix above: every list left out, and the one member typed nullable.
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("GUARD").replace("}", ",\"scope\":null}")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.directive.references").isEmpty());
     }
 
     private static String body(String id) {

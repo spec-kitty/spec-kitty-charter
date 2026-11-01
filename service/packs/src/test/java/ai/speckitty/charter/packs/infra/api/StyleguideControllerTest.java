@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -43,7 +46,7 @@ class StyleguideControllerTest {
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new StyleguideController(
                     new StyleguideRegistrationService(store, store, new PermissiveWritePolicyGate()),
                     new Hypermedia("/api/v1")))
-            .setControllerAdvice(new RefusalHandler())
+            .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();
 
     StyleguideControllerTest() {
@@ -105,6 +108,41 @@ class StyleguideControllerTest {
                         .content(bad))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("validation_failed"));
+    }
+
+    // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"principles", "patterns", "antiPatterns", "tooling", "appliesToLanguages", "references"})
+    void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = "{\"id\":\"docs-style\",\"schemaVersion\":\"1.0\",\"title\":\"Docs\",\"scope\":\"code\","
+                + "\"principles\":[\"Prefer clarity\"],\"" + list + "\":null}";
+        if (list.equals("principles")) {
+            bad = bad.replace("\"principles\":[\"Prefer clarity\"],", "");
+        }
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(list)));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/styleguide/docs-style")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
+    @Test
+    void anAbsentOptionalListIsEmpty() throws Exception {
+        // The positive control of the matrix above: every optional list left out.
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/styleguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("docs-style")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.styleguide.patterns").isEmpty());
     }
 
     private static String body(String id) {
