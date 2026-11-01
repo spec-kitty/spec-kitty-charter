@@ -23,3 +23,7 @@ kitty-specs/**/canary-evidence/** linguist-generated=true
 .kittify/workspaces/** -diff
 .kittify/migrations/** linguist-generated=true
 .kittify/migrations/** -diff
+
+# Shell scripts and the Gradle wrapper run under bash on every OS, the Windows CI runner included (ADR-0046).
+*.sh text eol=lf
+gradlew text eol=lf

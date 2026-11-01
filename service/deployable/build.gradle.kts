@@ -1,6 +1,8 @@
 plugins {
     id("charter.service-conventions")
     id("charter.hand-written")
+    // The native executable (ADR-0046 decision 5).
+    id("charter.native-image")
 }
 
 dependencies {
@@ -33,10 +35,21 @@ dependencies {
     "contractBundle"(project(":contracts"))
 }
 
+// -PcontractBundle=<file> packages a bundle built elsewhere instead: the native build on Windows, where the contract
+// tools have no pinned binary (contracts/build.gradle.kts), takes the bundle a Linux job built from the same commit and
+// checked against its SHA-256 (.github/workflows/service-native.yml). Every other build bundles the contract itself.
+val prebuiltContractBundle = providers.gradleProperty("contractBundle")
 tasks.processResources {
-    from(contractBundleFiles) {
-        include("charter-openapi.yaml")
-        into("ai/speckitty/charter/deployable")
+    if (prebuiltContractBundle.isPresent) {
+        from(prebuiltContractBundle) {
+            rename { "charter-openapi.yaml" }
+            into("ai/speckitty/charter/deployable")
+        }
+    } else {
+        from(contractBundleFiles) {
+            include("charter-openapi.yaml")
+            into("ai/speckitty/charter/deployable")
+        }
     }
 }
 

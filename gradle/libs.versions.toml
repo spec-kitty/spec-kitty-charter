@@ -3,6 +3,8 @@
 [versions]
 spring-boot = "4.1.1"
 openapi-generator = "7.26.0"
+# GraalVM native build tools: the version Spring Boot 4.1.1 manages (native-build-tools-plugin.version); ADR-0046.
+native-build-tools = "1.1.8"
 junit = "6.1.3"
 assertj = "3.27.7"
 archunit = "1.5.1"
@@ -60,5 +62,6 @@ gradle-plugin-openapi-generator = { module = "org.openapitools:openapi-generator
 gradle-plugin-spotless = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 gradle-plugin-errorprone = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "errorprone-plugin" }
 gradle-plugin-pitest = { module = "info.solidsoft.gradle.pitest:gradle-pitest-plugin", version.ref = "pitest-plugin" }
+gradle-plugin-graalvm-native = { module = "org.graalvm.buildtools:native-gradle-plugin", version.ref = "native-build-tools" }
 # The generator itself, compiled against by the contract normalizer in build-logic; the plugin brings it at run time.
 openapi-generator-lib = { module = "org.openapitools:openapi-generator", version.ref = "openapi-generator" }
