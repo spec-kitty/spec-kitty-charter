@@ -2,14 +2,17 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
+import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
@@ -26,6 +29,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -471,31 +475,117 @@ class FileSystemPackInspectorTest {
                         new PackContents.AssetFacts("assets/a.asset.yaml", "a", "..\\x.png", "Image/PNG ", true));
     }
 
+    /**
+     * #251: every payload and template the store's listing holds is listed with its kind, whatever its extension, and
+     * none is read.
+     */
     @Test
     void aSchemaLessPayloadIsListedWithItsKindAndNotReadWhileItsSidecarsFactsStand(@TempDir Path dir)
             throws IOException {
         write(dir, "assets/x.md.asset.yaml", ASSET.formatted("x", "text/markdown", "x.md"));
         write(dir, "assets/x.md", "# a payload\n");
-        // No payload is YAML a schema would pass: were one read and validated, it would be unreadable. Validate mode
-        // walks *.yaml files only, so the two Markdown payloads are not listed at all.
+        // No payload is YAML a schema would pass: were one read and validated, it would be unreadable.
         write(dir, "assets/tools/x.config.yaml", "rules: [\n");
         write(dir, "templates/writing/t.md", "---\ntitle: [\n---\n");
         write(dir, "templates/writing/t.yaml", "a: [\n");
+        Files.write(dir.resolve("assets/logo.png"), new byte[] {(byte) 0x89, 'P', 'N', 'G'});
 
         PackContents contents = full(dir);
 
         assertThat(contents.unreadableFiles()).isEmpty();
         assertThat(contents.files())
                 .containsExactly(
+                        classified("assets/logo.png", "asset-payload"),
                         classified("assets/tools/x.config.yaml", "asset-payload"),
+                        classified("assets/x.md", "asset-payload"),
                         classified("assets/x.md.asset.yaml", "asset"),
+                        classified("templates/writing/t.md", "template"),
                         classified("templates/writing/t.yaml", "template"));
         assertThat(contents.assets())
-                .as("the sidecar is read and judged as it is without payload rules")
+                .as("the sidecar is read, and its payload is held")
                 .containsExactly(
                         new PackContents.AssetFacts("assets/x.md.asset.yaml", "x", "x.md", "text/markdown", true));
         assertThat(contents.artifacts())
                 .containsExactly(new PackContents.ArtifactFacts("assets/x.md.asset.yaml", "asset", "x"));
+    }
+
+    /**
+     * #251: validate mode refuses the sidecars the store's load refuses, with the load's words: a payload the pack does
+     * not hold (missing, spelled in another case, or outside {@code assets/}), and a payload an earlier sidecar named.
+     * The sidecar's facts stand, so the asset rules still judge it.
+     */
+    @Test
+    void aSidecarWhosePayloadThePackDoesNotHoldIsRefusedAsTheLoadRefusesIt(@TempDir Path host) throws IOException {
+        Path dir = host.resolve("qa");
+        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(dir, "assets/a.asset.yaml", ASSET.formatted("a", "text/markdown", "a.md"));
+        write(dir, "assets/a.md", "# a\n");
+        write(dir, "assets/b.asset.yaml", ASSET.formatted("b", "text/markdown", "b.md"));
+        write(dir, "assets/c.asset.yaml", ASSET.formatted("c", "image/png", "Logo.png"));
+        write(dir, "assets/logo.png", "png");
+        write(dir, "assets/d.asset.yaml", ASSET.formatted("d", "text/markdown", "a.md"));
+        write(dir, "assets/e.asset.yaml", ASSET.formatted("e", "image/png", "../../escape.png"));
+        List<Tuple> refused = List.of(
+                tuple("assets/b.asset.yaml", "payload assets/b.md does not exist"),
+                tuple("assets/c.asset.yaml", "payload assets/Logo.png does not exist"),
+                tuple("assets/d.asset.yaml", "payload assets/a.md is already named by asset a"),
+                tuple("assets/e.asset.yaml", "payload assets/../../escape.png does not exist"));
+
+        PackContents contents = full(dir);
+        FilesystemPackStore.PackRead load =
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackIdentifier("qa"));
+
+        assertThat(contents.unreadableFiles())
+                .extracting(
+                        FileRead::file,
+                        bad -> bad.parse() == null
+                                ? null
+                                : bad.parse().refusal().orElse(null))
+                .containsExactlyElementsOf(refused);
+        assertThat(load.violations())
+                .as("the load refuses the same sidecars, in the same words")
+                .extracting(PackElementViolation::file, PackElementViolation::reason)
+                .containsExactlyElementsOf(refused);
+        assertThat(contents.assets())
+                .extracting(PackContents.AssetFacts::file)
+                .containsExactly(
+                        "assets/a.asset.yaml",
+                        "assets/b.asset.yaml",
+                        "assets/c.asset.yaml",
+                        "assets/d.asset.yaml",
+                        "assets/e.asset.yaml");
+    }
+
+    /**
+     * #251: an asset file the store's read does not hold (here, a link that leaves the pack) is refused with the load's
+     * reason, and a sidecar naming it names no payload, in validate mode as in the load.
+     */
+    @Test
+    void anAssetFileTheLoadDoesNotHoldIsRefusedAndNamesNoPayload(@TempDir Path host) throws IOException {
+        SymbolicLinks.requireSupport(host);
+        Path dir = host.resolve("qa");
+        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(dir, "assets/f.asset.yaml", ASSET.formatted("f", "image/png", "out.png"));
+        write(host, "outside.png", "png");
+        SymbolicLinks.create(dir.resolve("assets/out.png"), host.resolve("outside.png"));
+        List<Tuple> refused = List.of(
+                tuple("assets/out.png", "the file leaves the pack"),
+                tuple("assets/f.asset.yaml", "payload assets/out.png does not exist"));
+
+        PackContents contents = full(dir);
+        FilesystemPackStore.PackRead load =
+                new FilesystemPackStore(host, new YamlSerializationStrategy()).read(new PackIdentifier("qa"));
+
+        assertThat(contents.unreadableFiles())
+                .extracting(
+                        FileRead::file,
+                        bad -> bad.parse() == null
+                                ? null
+                                : bad.parse().refusal().orElse(null))
+                .containsExactlyElementsOf(refused);
+        assertThat(load.violations())
+                .extracting(PackElementViolation::file, PackElementViolation::reason)
+                .containsExactlyElementsOf(refused);
     }
 
     /**
@@ -525,7 +615,16 @@ class FileSystemPackInspectorTest {
         assertThat(verdict.findings())
                 .allSatisfy(f -> assertThat(f.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR))
                 .extracting(PackFinding::file)
-                .containsOnly("pack-manifest.yaml", "presets/default.yaml", "presets/minimal.yaml");
+                .containsOnly(
+                        "pack-manifest.yaml",
+                        "presets/default.yaml",
+                        "presets/minimal.yaml",
+                        "assets/docs_structural_lint.py.asset.yaml",
+                        "assets/audiences/agentic-framework-core-team.md.asset.yaml",
+                        "assets/audiences/automation_agent.md.asset.yaml",
+                        "assets/audiences/line_manager.md.asset.yaml",
+                        "assets/audiences/nontech_educator.md.asset.yaml",
+                        "assets/audiences/software_engineer.md.asset.yaml");
         assertThat(verdict.findings())
                 .filteredOn(f -> f.place().isEmpty() && !f.detail().contains("provenance_path"))
                 .extracting(PackFinding::detail)
@@ -543,7 +642,13 @@ class FileSystemPackInspectorTest {
                         "built-in/presets/minimal.yaml: missing 'id'",
                         "built-in/presets/minimal.yaml: missing 'schema_version'",
                         "built-in/presets/minimal.yaml: unknown key 'mission_type_activations'",
-                        "built-in/presets/minimal.yaml: unknown key 'name'");
+                        "built-in/presets/minimal.yaml: unknown key 'name'",
+                        "built-in/assets/docs_structural_lint.py.asset.yaml payload assets/assets/docs_structural_lint.py does not exist",
+                        "built-in/assets/audiences/agentic-framework-core-team.md.asset.yaml payload assets/assets/audiences/agentic-framework-core-team.md does not exist",
+                        "built-in/assets/audiences/automation_agent.md.asset.yaml payload assets/assets/audiences/automation_agent.md does not exist",
+                        "built-in/assets/audiences/line_manager.md.asset.yaml payload assets/assets/audiences/line_manager.md does not exist",
+                        "built-in/assets/audiences/nontech_educator.md.asset.yaml payload assets/assets/audiences/nontech_educator.md does not exist",
+                        "built-in/assets/audiences/software_engineer.md.asset.yaml payload assets/assets/audiences/software_engineer.md does not exist");
         assertThat(verdict.findings())
                 .filteredOn(
                         f -> f.file().equals("pack-manifest.yaml") && !f.place().isEmpty())
@@ -572,11 +677,14 @@ class FileSystemPackInspectorTest {
                 .hasSize(272);
         assertThat(verdict.findings())
                 .as("283 for the manifest (272 provenance_path, six root keys, schema_version, two preset entries keyed"
-                        + " name without id), 10 for minimal.yaml, 4 for default.yaml")
-                .hasSize(297);
+                        + " name without id), 10 for minimal.yaml, 4 for default.yaml, and (#251) one for each of the"
+                        + " six sidecars the load refuses (known-failures.yaml, open-packs#75)")
+                .hasSize(297 + 6);
         // 386 at the previous pin, 5df92a5d; the mission-type migration (#194, open-packs#95) retired 74 YAML files of
         // the pack and added its 4 mission-type files.
-        assertThat(verdict.files()).hasSize(386 - 74 + 4);
+        // #251: and every payload and template the store holds is listed, whatever its extension: the 7 asset payloads
+        // and 27 templates the whole-pack census counts, less the YAML payload this walk listed already.
+        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1));
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
