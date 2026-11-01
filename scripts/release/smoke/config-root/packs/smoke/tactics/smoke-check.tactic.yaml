@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: smoke-check
+name: Smoke Check
+purpose: The one tactic of the release smoke check's pack, so a started service has a pack to load, validate and serve.
+steps:
+  - title: Start the artifact
+    description: Start the built service and ask it for this tactic.
