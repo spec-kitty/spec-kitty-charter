@@ -15,7 +15,8 @@ steps:
 - title: Treat contracts/charter/ as public
   description: >-
     Every edit runs the contract validation in ./gradlew verifyAll, adds
-    a line to contracts/charter/CHANGELOG.md (scenario changes included), and
+    a changelog fragment under contracts/charter/changes/ (scenario changes
+    included), assembled into CHANGELOG.md in the release PR (ADR-0047), and
     follows the contract's versioning rules (ADR-0022): a break lands only on a 0.x
     minor with a `### Breaking` CHANGELOG entry, and no released contract is broken
     incompatibly.

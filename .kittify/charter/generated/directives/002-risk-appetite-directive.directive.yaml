@@ -31,8 +31,9 @@ procedures:
     charter oracle returns when the service is incorporated into core.
   - >-
     Treat every edit to contracts/charter/ as a public contract change - run
-    the contract validation in ./gradlew verifyAll, add a line to
-    contracts/charter/CHANGELOG.md (scenario changes included), and follow
+    the contract validation in ./gradlew verifyAll, add a changelog fragment
+    under contracts/charter/changes/ (scenario changes included), assembled
+    into CHANGELOG.md in the release PR (ADR-0047), and follow
     the contract's versioning rules (ADR-0022): a break lands only on a 0.x
     minor with a `### Breaking` CHANGELOG entry, and no released contract is
     broken incompatibly.
@@ -57,6 +58,8 @@ integrity_rules:
 validation_criteria:
   - No pull request carries an exception against fidelity to the charter's own
     model, contract and packs, or against the contract's versioning rules.
-  - Every contract change has a matching contracts/charter/CHANGELOG.md line.
+  - Every contract change adds a changelog fragment under contracts/charter/changes/
+    (scenario changes included), assembled into CHANGELOG.md in the release PR
+    (ADR-0047).
   - ./gradlew verifyAll passes with strict dependency verification and the
     round trip executed, not skipped.
