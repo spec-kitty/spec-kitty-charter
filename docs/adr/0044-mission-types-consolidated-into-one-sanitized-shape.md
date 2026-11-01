@@ -2,7 +2,7 @@
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 decision_status: Accepted (2026-10-31)
 decision_date: '2026-10-30'
 type: ADR
@@ -28,7 +28,7 @@ audience:
 
 ## Status
 
-**Accepted** — 2026-10-31 (proposed 2026-10-30). Amended 2026-10-31 (#277). Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
+**Accepted** — 2026-10-31 (proposed 2026-10-30). Amended 2026-10-31 (#277) and 2026-11-01 (#300). Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-10-28 and
 2026-10-30 on [#194](https://github.com/spec-kitty/spec-kitty-charter/issues/194) (part of epic
 [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186)), held as decision moments under
 `kitty-specs/mission-type-consolidation-01M65MCK/decisions/`. The second pull request of #194 (PR-B) implements it;
@@ -72,11 +72,27 @@ decision. The issue offered two forms; the record takes the second.
   `mission_type '<id>' names <that reason>`, and nothing is written. The read's, the per-file write's and validate
   mode's check that the path names a template file of the pack stays. On a case-insensitive file system that check
   admits a path that differs from its template only in case, which the load then refuses; validate mode does not
-  build the domain, so it does not resolve.
+  build the domain, so it does not resolve. *(Amended 2026-11-01, #300: the check reads the
+  pack's spelling; see the amendment below.)*
 - **Rejected: a typed reference with the path derived on write.** `ExpectedArtifact` lives in `:missions`, which
   depends on the kernel only, and `TemplateIdentifier` lives in `packs.domain`; holding one would reverse this
   record's dependency direction, or need a new kernel type. Every `template_path` at the open-packs pin, 13 in all,
   resolves and is spelled as its id, so the amendment refuses nothing that loads.
+
+### Amendment 2026-11-01 (#300): the named-file check reads the pack's spelling
+
+Made by [#300](https://github.com/spec-kitty/spec-kitty-charter/issues/300), a follow-up of #277. It changes only
+the named-file check that the amendment above keeps. Decision 7 and the resolution are unchanged.
+
+- **The check compares the names the pack lists.** The read's, the per-file write's and validate mode's check that a
+  `template_path` names a template file of the pack reads the path's spelling from the directory listings, segment by
+  segment. It never asks the file system to open a name. A path that the pack lists only in another case is refused
+  as `<path> (named by step '<id>'): differs only in case from <on-disk path>`. The on-disk path is pack-relative. A
+  path that the pack lists in no case is `missing`.
+- **So the check and the resolution agree on any file system.** A listing holds the same names on a case-sensitive
+  and a case-insensitive file system, so the check's verdict is the same on both, and it matches the exact id
+  resolution. A path that differs only in case is refused once, by the check, before the pack is assembled. The
+  load, the per-file write and validate mode give the one reason.
 
 ## Context
 

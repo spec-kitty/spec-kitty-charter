@@ -2,8 +2,8 @@
 title: "ADR-0040: A file-kind rule declares its content form, and asset payloads and templates are pack content"
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
-decision_status: Proposed, with Amendment 2026-10-28; extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+updated: 2026-11-01T00:00:00Z
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01; extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -161,6 +161,39 @@ text below is unchanged; the record stays Proposed.
   violation and a validate-mode finding, where the file was ignored before. Core does not read
   `pack.md`; the divergence is deliberate (ADR-0036 decision 5: a bad shape is fixed in the pack).
 
+### Amendment 2026-11-01 (#251, #252, #300): validate mode and the store judge payloads alike
+
+Made by [#251](https://github.com/spec-kitty/spec-kitty-charter/issues/251),
+[#252](https://github.com/spec-kitty/spec-kitty-charter/issues/252) and
+[#300](https://github.com/spec-kitty/spec-kitty-charter/issues/300), the follow-ups that the reviews
+of #193 and #277 filed. It closes the known gaps that decisions 2 and 4 record. The decision text
+below is unchanged, and each point this note changes is annotated where it stands. The record stays
+Proposed.
+
+- **Decision 2: validate mode applies the store's payload rule.** Validate mode lists every payload
+  and template the store's listing holds, whatever its extension, with its kind, and reads none. It
+  applies decision 6's rule to every schema-valid sidecar, through the same code as the load
+  (`SidecarPayloads`). A sidecar whose payload the pack does not hold, or that names a payload an
+  earlier sidecar named, is an unreadable file carrying the load's refusal. Validate mode reads asset
+  files through the load's own read, so an asset file the load does not hold (a link that leaves the
+  pack, or a file it cannot read) is refused with the load's reason and names no payload. Its finding is
+  `artifact_schema_error`, as for any other file a store rule refuses. On the built-in pack at the
+  pin, validate mode now reports the six sidecars the load refuses (open-packs#75). No operation
+  serves validate mode (ADR-0042 decision 7), so nothing changes on the wire.
+- **Decision 4: the per-artifact payload write folds case too.** The single payload write
+  (`FilesystemPackStore.writePayload`, for an asset file or a template) refuses a path whose file or
+  directory the pack already lists in another case. The refusal is `REGISTRATION_CONFLICT`,
+  `payload <path> differs only in case from <on-disk path>`: the code and words the companion
+  upsert uses for the same conflict. This holds even when the path is also listed as written. On a
+  case-insensitive file system the write would replace that file.
+- **The spelling is read from the listings.** Both the payload write and the named-file check of
+  [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/) (amendment 2026-11-01) read a path's
+  spelling segment by segment from the directory listings (`Spellings`). They never ask the file
+  system to open a name. A listing holds the same names on a case-sensitive and a case-insensitive
+  file system, so the verdict is the same on both, and a test on case-sensitive CI covers both.
+  Case folds as a claim folds it: `Locale.ROOT` lower case. Names that this fold leaves apart, such
+  as two Unicode normalizations of one name, are different names, on every file system.
+
 ## Context
 
 Issue #193 asks for the two payload-bearing kinds: an **asset** (a `*.asset.yaml` sidecar and the
@@ -231,6 +264,9 @@ Four facts force a decision:
    `path` stays inside `assets/`, not that the payload exists. That is a known gap: on the built-in
    pack at the pin, validate mode reports no finding for the six sidecars the load refuses
    (decision 6). It is tracked as a follow-up issue.
+   *(Amended 2026-11-01, #251, see Status: validate mode lists every payload and template with its
+   kind, and applies decision 6's payload rule as the load does, so the two refuse the same sidecars
+   in the same words.)*
 3. **Asset payloads and templates are `bytes`.** They are read with no charset, held as a
    `Payload` (the exact bytes; equal when the bytes are equal), written byte for byte and compared
    byte for byte by the whole-pack gate, which reports the first differing offset. A payload that
@@ -259,7 +295,9 @@ Four facts force a decision:
      here. A duplicate template id is refused. Two templates or asset files whose paths fold to one
      path with case ignored are refused on the whole-pack write; the per-artifact store save does
      not yet carry that case-fold guard
-     ([#252](https://github.com/spec-kitty/spec-kitty-charter/issues/252)). One file has one owner: a template or an asset file whose path
+     ([#252](https://github.com/spec-kitty/spec-kitty-charter/issues/252)). *(Amended 2026-11-01,
+     #252, see Status: the per-artifact payload write refuses a path the pack lists in another case,
+     `REGISTRATION_CONFLICT`.)* One file has one owner: a template or an asset file whose path
      would not classify back as its kind (`templates/x.tactic.yaml` is a tactic's file,
      `templates/plan-field-declaration.yaml` is excluded) is refused on the store's save and on the
      whole-pack write, `is a pack file of kind <kind>, not a template`, as a companion is.
@@ -358,7 +396,7 @@ Four facts force a decision:
   them. That is about 0.6 MB for the largest open pack today (NFR-004); it is a scaling limit, and a
   pack with large payloads would need them streamed.
 - Validate mode does not check that a sidecar's payload exists (decision 2), so it can pass a pack
-  the load refuses.
+  the load refuses. *(Amended 2026-11-01, #251: it does now, through the load's own rule.)*
 
 ### Risks
 
