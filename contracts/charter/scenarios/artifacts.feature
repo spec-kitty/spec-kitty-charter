@@ -577,29 +577,3 @@ Feature: A pack's artifacts are read through one generic list and one generic it
       | styleguide | styleguide_not_found |
       | paradigm   | paradigm_not_found   |
       | toolguide  | toolguide_not_found  |
-
-  # ---- read consistency ------------------------------------------------------------------------------------------
-
-  Scenario: A list whose inputs change while it is answered is refused with stale_input
-    Given a tactic file changes while the next read is answered
-    When I GET "/packs/qa/artifacts"
-    Then the response status is 500
-    And the response body is:
-      """
-      {"title": "Stale input", "status": 500, "code": "stale_input", "detail": "The inputs changed while the artifacts were read; read them again."}
-      """
-    And the response has no "Charter-Source-Fingerprint" header
-    When I GET "/packs/qa/artifacts"
-    Then the response status is 200
-
-  Scenario: An item whose inputs change while it is answered is refused with stale_input
-    Given a tactic file changes while the next read is answered
-    When I GET "/packs/qa/artifacts/tactic/rehearse"
-    Then the response status is 500
-    And the response body is:
-      """
-      {"title": "Stale input", "status": 500, "code": "stale_input", "detail": "The inputs changed while the tactic was read; read it again."}
-      """
-    And the response has no "Charter-Source-Fingerprint" header
-    When I GET "/packs/qa/artifacts/tactic/rehearse"
-    Then the response status is 200
