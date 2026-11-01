@@ -32,6 +32,7 @@ charter.
 
 - **R-1:** "the jar smoke on every PR" (D6) is read as every pull request that runs the service CI group, and
   every push to `main`. A documentation-only pull request builds nothing, so it smokes nothing.
+- **R-3** (pre-PR squad, 2026-10-31): NFR-001's 5 s is measured and reported as a warning, and the native check fails only past 30 s, because a hosted runner's first run of a fresh executable can be scanned or slowed, and a flaky red target would block every release.
 - **R-2:** the service release gate is a Kotlin class in `build-logic`, unit-tested under `verifyAll`. It is
   not a Java class in `:contracts`, because the service version and the contract version are both build
   facts, and the contract project is the contract's own.

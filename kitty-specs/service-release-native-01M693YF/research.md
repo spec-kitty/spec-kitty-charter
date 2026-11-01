@@ -210,3 +210,45 @@ The four-target matrix takes minutes per target. Candidate triggers:
 
 The draft is in [`drafts/core-issue-charter-service-release-line.md`](drafts/core-issue-charter-service-release-line.md),
 for the orchestrator to file.
+
+## Pre-PR adversarial squad (2026-10-31): findings and dispositions
+
+Three lenses reviewed the branch, read-only: release and supply chain, native-image and Spring runtime, and CI
+cross-OS and gating.
+
+### Release and supply chain
+
+| Finding | Disposition |
+|---|---|
+| S1: GraalVM `java-version: "25"` floats between the four jobs | **Fixed:** pinned to `25.0.2` as events pins it; each job records `native-image --version` |
+| S2: the trust model rests on a `service-v*` tag ruleset nothing shows exists | **Fixed in docs, operator action:** ADR-0046 decision 7 makes the ruleset a prerequisite of the first tag, and the publish job runs in the `service-release` environment, where reviewers can be required. Listed in the hand-over |
+| S3: a 5 s start limit is a hard release gate on hosted runners | **Fixed:** the check fails past 30 s. NFR-001's 5 s is measured per target and a later answer is a warning (plan R-3) |
+| N1: the SNAPSHOT check is case-sensitive | **Fixed** (red first) |
+| N2: two contract-version parsers (awk in the workflows, a regex in the gate) | **Accepted:** if they disagree the run fails, so nothing wrong is published |
+| N3: concurrency drops a third pending run for the same ref | **Accepted:** a release run is per tag |
+| N4, N5: artifacts expire after 7 days; a failed upload can leave a partial release | **Documented** in the release procedure |
+| N6: no explicit wrapper validation | **Accepted:** `setup-gradle` v6 validates wrappers by default |
+
+### Native-image and Spring runtime
+
+| Finding | Disposition |
+|---|---|
+| 1: Hibernate Validator needs the record's fields and the two validators reflectively. Without them the container check fails open or crashes natively | **Fixed** (red first): field and method hints for `ContainerProperties` and constructor hints for the two validators. The smoke check gains start 3, a valid container start that must answer |
+| 2: the DNS guard may not install natively | **Open until CI:** start 1 runs with an allowlist, so the CI run proves it on four targets. If it is red, D4b goes back to the operator |
+| 3: the HTTPS guide fetch (TLS, trust store) is not exercised by the smoke check | **Accepted gap, in the hand-over:** a smoke step needs an external host, so it is left to the launcher's tests (#70) |
+| 4: native-image memory on `macos-15` | **Fixed:** `-J-Xmx5g` |
+| 6: the valve hint defends nothing; duplicate `--no-fallback`; locale of the networknt messages | **Fixed:** the valve hint and its test are dropped, and so is the duplicate flag. The locale is accepted |
+| 7: `processTestAot` is not in `check` | No change |
+
+### CI cross-OS and gating
+
+| Finding | Disposition |
+|---|---|
+| 1: on Windows a refused connect takes about 2 s, so the time limit can fail a service that started in time | **Fixed:** each poll is timed from when it was sent |
+| 2: stopping the service on Windows can hang or fail the cleanup | **Fixed:** the stop is bounded (kill, then `taskkill` or `kill -9`), and the cleanup never fails a passing run |
+| 3: memory on the macOS runner; MSVC on windows-2025 | **Partly fixed:** `-J-Xmx5g`. MSVC is watched in CI |
+| 5: start 2 matched any log naming the property | **Fixed:** it matches the refusal's own sentence |
+| 7: `service-release.yml` never runs on a PR | **In the hand-over:** run `workflow_dispatch` once after merge, with a tag that is not the build version, to see the refusal |
+| 8: ADR-0023 does not mention the `native` group | **Fixed:** an extension note |
+| 9: line endings on developers' Windows clones | **Fixed:** `.gitattributes` keeps `*.sh` and `gradlew` LF |
+| 4, 6: port probing; the rehearsal's run time | **Accepted** |
