@@ -93,16 +93,16 @@ Feature: Failures outside the charter's refusals
     And the response header "Charter-Source-Fingerprint" appears once
     And the response header "Charter-Source-Fingerprint" is the remembered "sourceFingerprint"
 
-  @reserved
-  Scenario: governance_policy_violation is reserved
-    A declaration pin, not behavior. No operation of this version raises the code: the unit test
-    ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it, and the mutability-policy epic #55 (ADR-0012, steps #57 to #61), which will raise
-    it, deletes that test. Nothing here calls the service.
+  Scenario: governance_policy_violation is raised by the registration writes (#293)
+    A declaration, not behavior. The registration writes refuse a write the mutability level of the
+    pack that owns its target does not permit (ADR-0012, epic #55). The service configures no
+    mutability policy yet, so every target is open and no request here can provoke the refusal; the
+    unit tests of PackMutabilityPolicy and of the registration services pin the behavior, and
+    ReservedRefusalCodesTest fails while the contract marks a code not raised that a main class names.
     Then the contract declares the refusal code "governance_policy_violation"
     And the contract says "governance_policy_violation" is answered with status 409
     And the contract says "governance_policy_violation" may not be retried
-    And the contract says "governance_policy_violation" is raised by no operation
+    And the contract says "governance_policy_violation" is raised by an operation
 
   @reserved
   Scenario: activation_not_found is reserved for the activation set
@@ -181,22 +181,24 @@ Feature: Failures outside the charter's refusals
     refusal a scenario observes has the status and the raised flag the contract declares for its
     code, and these are all the codes raised. The generic item read adds the not-found code of each
     served kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and
-    toolguide_not_found) and kind_not_found; the registration writes add validation_failed and
-    registration_conflict. mission_type_not_found and action_not_found are not raised: the operations
-    that answered them are gone, and the reserved activation operations that will answer them again
-    (ADR-0020 D7) answer 501 until they are built. unresolved_edge_endpoint, and, with the load that
-    judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation; neither
-    are the six codes reserved for the activation set.
+    toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
+    registration_conflict and governance_policy_violation. mission_type_not_found and action_not_found
+    are not raised: the operations that answered them are gone, and the reserved activation operations
+    that will answer them again (ADR-0020 D7) answer 501 until they are built. unresolved_edge_endpoint, and, with the load that
+    judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
+    operation reaches the whole-pack load that still refuses a graph as drg_schema_error); neither are
+    the six codes reserved for the activation set.
     Then the contract says exactly these refusal codes are raised by an operation:
-      | pack_unreadable            |
-      | internal_error             |
-      | stale_input                |
-      | pack_not_found             |
-      | tactic_not_found           |
-      | directive_not_found        |
-      | styleguide_not_found       |
-      | paradigm_not_found         |
-      | toolguide_not_found        |
-      | kind_not_found             |
-      | validation_failed          |
-      | registration_conflict      |
+      | pack_unreadable             |
+      | internal_error              |
+      | stale_input                 |
+      | pack_not_found              |
+      | tactic_not_found            |
+      | directive_not_found         |
+      | styleguide_not_found        |
+      | paradigm_not_found          |
+      | toolguide_not_found         |
+      | kind_not_found              |
+      | validation_failed           |
+      | registration_conflict       |
+      | governance_policy_violation |

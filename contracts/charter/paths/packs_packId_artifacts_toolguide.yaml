@@ -55,7 +55,8 @@ post:
     '409':
       description: >-
         The registration conflicts with the pack's current state (registration_conflict: a duplicate id on POST, or
-        the guide's file <id>.guide.md already claimed by another artifact of the pack).
+        the guide's file <id>.guide.md already claimed by another artifact of the pack; or
+        governance_policy_violation, a write the mutability level of the pack that owns the artifact does not permit (ADR-0012)).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

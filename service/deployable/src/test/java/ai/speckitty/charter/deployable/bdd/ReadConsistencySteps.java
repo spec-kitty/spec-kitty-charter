@@ -119,6 +119,11 @@ public class ReadConsistencySteps {
         assertThat(refusal(code)).containsEntry("raised", false);
     }
 
+    @Then("the contract says {string} is raised by an operation")
+    public void theContractSaysRaised(String code) {
+        assertThat(refusal(code)).containsEntry("raised", true);
+    }
+
     @Then("the contract says exactly these refusal codes are raised by an operation:")
     public void theContractSaysTheRaisedCodes(DataTable table) {
         assertThat(codes().stream()
