@@ -107,7 +107,11 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
         ReentrantLock lock = PackWriteLocks.of(directory);
         lock.lock();
         try {
-            // StorageRootLocations repairs on the listing; this covers locations that do not list (a fixed set).
+            // StorageRootLocations repairs on the listing, behind its domain/overlap/read-only guards; this covers
+            // locations that do not list (a fixed set). Deliberately unguarded here: a fixed Locations is a trusted,
+            // self-contained set with no outside-link or cross-pack adversary, and this only ever repairs that one
+            // pack's own directory. On the listing path, all() has already repaired or refused the pack before
+            // resolve(pack) reaches this line, so for StorageRootLocations this is a no-op.
             PackCommitStore.missingLiveDirectory(directory).ifPresent(PackCommitStore::restoreInterruptedSwap);
             return work.get();
         } finally {
