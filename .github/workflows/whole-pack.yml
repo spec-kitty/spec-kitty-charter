@@ -70,8 +70,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
+      # A path relative to the repository root, as the docs give it, so CI covers that resolution (#322); service.yml
+      # passes an absolute one.
       - name: Whole-pack round trip
-        run: ./gradlew :packs:wholePackRoundTrip -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+        run: ./gradlew :packs:wholePackRoundTrip -PopenPacksDir=.open-packs
 
       - name: Show the report
         if: always()
