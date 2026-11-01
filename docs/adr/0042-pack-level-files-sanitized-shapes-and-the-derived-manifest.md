@@ -2,7 +2,7 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added)'
 decision_date: '2026-10-28'
 type: ADR
@@ -309,7 +309,9 @@ artifact kinds: it declares an `id`, but it is not an artifact.
 
 On the built-in pack at the pin, validate mode now reports findings on exactly three files:
 `pack-manifest.yaml` (283), `presets/minimal.yaml` (10) and `presets/default.yaml` (4), 297 in all.
-Main found none. No operation serves validate mode (`PackValidation` has no controller), so nothing
+Main found none. *(Since [ADR-0040](/adr/0040-content-form-and-payload-kinds/)'s amendment of
+2026-11-01 (#251): validate mode applies the store's payload rule, which adds one finding on each of the
+six built-in sidecars whose payload the pack does not hold, 303 on nine files.)* No operation serves validate mode (`PackValidation` has no controller), so nothing
 changes on the wire.
 
 **A known gap.** A break that only the domain sees passes validate mode while the load refuses it.
@@ -450,7 +452,8 @@ Under the ruling on #186 they are open-packs issues only. No core issue is draft
 
 - The built-in presets and manifest stay red until open-packs adopts the shapes (OP-1, OP-2) and
   `openPacksRef` moves. The manifest then stays red until #194 binds procedures.
-- Built-in validate mode goes from 0 to 297 findings, on three files.
+- Built-in validate mode goes from 0 to 297 findings, on three files. *(Since ADR-0040's amendment of
+  2026-11-01 (#251): 303, on nine files.)*
 - A pack with an unknown `pack.yaml` key is now unreadable where it loaded with a warning.
 - Packs that hold presets or a manifest get a new fingerprint and ETag once.
 - A registration leaves the manifest stale until #110 decides regeneration.
