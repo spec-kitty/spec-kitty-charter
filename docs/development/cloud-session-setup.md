@@ -2,7 +2,7 @@
 title: Set up a Claude Code cloud session
 description: Prepare a Claude Code cloud environment for this repository — Java 25, allowed domains, per-session steps — and run several cloud sessions in parallel.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -183,8 +183,10 @@ From the repository root:
    ```
 
 2. **Check out `spec-kitty-open-packs` at the pinned commit.** The build reads it from
-   `../spec-kitty-open-packs` (or `-PopenPacksDir=<path>`) and refuses a checkout that is not clean
-   or not at `openPacksRef` in `gradle.properties`; it prints the command that fixes it.
+   `../spec-kitty-open-packs` (or `-PopenPacksDir=<path>`: an absolute path, or one relative to the
+   repository root) and stops on a checkout that is missing, not clean or not at `openPacksRef` in
+   `gradle.properties`. It names the directory it looked in, and for an unclean or unpinned
+   checkout it prints the command that fixes it.
 3. **Fetch the full history and tags.** The contract's breaking-change check compares against the
    last released contract tag: `git fetch --unshallow --tags origin` (or `git fetch --tags` when
    the clone is already complete).

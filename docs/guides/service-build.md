@@ -26,7 +26,8 @@ How to build the charter service and run every check CI runs.
   A machine without Java 25 can pass `-Pcharter.javaVersion=21` for a local build; CI never
   does.
 - **A `spec-kitty-open-packs` checkout**, by default beside this repository
-  (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`. The checkout must be
+  (`../spec-kitty-open-packs`), or anywhere with `-PopenPacksDir=<path>`: an absolute path, or
+  one relative to the repository root. The checkout must be
   clean and at `openPacksRef` in `gradle.properties` (currently
   `86d9284695a18a71f9f7cc934f0305b1b03de19e`); the build refuses otherwise, and prints the
   command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
