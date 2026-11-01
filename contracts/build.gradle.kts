@@ -647,13 +647,16 @@ abstract class CheckBundle @Inject constructor(private val exec: ExecOperations)
 
 /**
  * The publishing gate of a release tag (`ReleaseGate.releaseRefusal`): the tag `-PreleaseTag` names, `info.version`
- * and the top CHANGELOG heading must name one released version. `contract-release.yml` runs it before it assembles
- * anything; it is not part of `check`, because a commit on main is not a release.
+ * and the top CHANGELOG heading must name one released version, and no changelog fragment may be left unassembled
+ * in `charter/changes/` (ADR-0047). `contract-release.yml` runs it before it assembles anything; it is not part of
+ * `check`, because a commit on main is not a release.
  */
 @DisableCachingByDefault(because = "A gate with no outputs: it runs each time it is asked.")
 abstract class CheckReleaseTag @Inject constructor(private val exec: ExecOperations) : DefaultTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val openapi: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val changelog: RegularFileProperty
+    // A String, not a directory input: the gate lists the directory itself, and a missing one holds no fragment.
+    @get:Input abstract val changes: Property<String>
     @get:Classpath abstract val gateClasspath: ConfigurableFileCollection
     @get:Nested abstract val launcher: Property<JavaLauncher>
     @get:Input @get:Optional abstract val tag: Property<String>
@@ -668,7 +671,8 @@ abstract class CheckReleaseTag @Inject constructor(private val exec: ExecOperati
             executable = launcher.get().executablePath.asFile.absolutePath
             classpath = gateClasspath
             mainClass = "ai.speckitty.charter.contracts.compat.CheckReleaseGate"
-            args("--release", openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, releaseTag)
+            args("--release", openapi.get().asFile.absolutePath, changelog.get().asFile.absolutePath, releaseTag,
+                changes.get())
             standardOutput = output
             errorOutput = errors
             isIgnoreExitValue = true
@@ -809,12 +813,37 @@ tasks.register<CheckReleaseTag>("checkReleaseTag") {
     description = "Checks that -PreleaseTag, info.version and the top CHANGELOG heading name one released version."
     openapi = charterContract.file("openapi.yaml")
     changelog = charterContract.file("CHANGELOG.md")
+    changes = charterContract.dir("changes").asFile.absolutePath
     gateClasspath.from(sourceSets.main.map { it.runtimeClasspath })
     launcher = javaToolchains.launcherFor(java.toolchain)
     tag = providers.gradleProperty("releaseTag")
 }
 
+// The release pull request's step (ADR-0047): assembles charter/changes/*.md into the top CHANGELOG section and deletes
+// them. It writes the source tree, so it is never part of `check`; run it, review the diff, commit it.
+tasks.register<JavaExec>("assembleContractChangelog") {
+    group = "contract"
+    description = "Assembles the changelog fragments in contracts/charter/changes/ into contracts/charter/CHANGELOG.md."
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    mainClass = "ai.speckitty.charter.contracts.compat.ChangelogFragments"
+    args(charterContract.file("CHANGELOG.md").asFile.absolutePath, charterContract.dir("changes").asFile.absolutePath)
+    notCompatibleWithConfigurationCache("A one-off source-tree edit, run by hand in the release pull request.")
+}
+
+// Checks every changelog fragment in charter/changes/ on each build (ADR-0047), so a malformed or misnamed one fails the
+// pull request that adds it, not the release pull request that assembles it.
+val checkContractChangelogFragments = tasks.register<JavaExec>("checkContractChangelogFragments") {
+    group = "contract"
+    description = "Checks the changelog fragments in contracts/charter/changes/: one dated ### block each."
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    mainClass = "ai.speckitty.charter.contracts.compat.ChangelogFragments"
+    args("--check", charterContract.dir("changes").asFile.absolutePath)
+    inputs.files(fileTree(charterContract.dir("changes"))).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 tasks.named("check") {
     dependsOn(bundleContract, lintContract, lintFixtures, checkClosedResponseObjects, checkRefusalExamples,
-        compatibilityFixtures, checkContractCompatibility)
+        compatibilityFixtures, checkContractCompatibility, checkContractChangelogFragments)
 }
