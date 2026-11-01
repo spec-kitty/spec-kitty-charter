@@ -11,7 +11,6 @@ import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.env.ConfigTreePropertySource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
@@ -24,10 +23,10 @@ import org.springframework.core.env.PropertySource;
  * directory itself), so a shared or misplaced mount cannot reconfigure the service; the service-account tree Kubernetes
  * mounts under {@code /run/secrets/kubernetes.io} is left alone. A breach fails the start; the message names the
  * property, the directory or the file, and never a value. Without the profile nothing here runs, so the local start is
- * unchanged, and lazy initialization does not skip it.
+ * unchanged, and lazy initialization does not skip it. The profile is read when the service starts, not declared with
+ * {@code @Profile}, which Spring AOT would decide when the native image is built (ADR-0046 decision 5).
  */
 @Configuration(proxyBeanMethods = false)
-@Profile(ContainerProperties.PROFILE)
 public class ContainerStartupCheck implements InitializingBean {
 
     static final String PORT_PROPERTY = "server.port";
@@ -61,6 +60,9 @@ public class ContainerStartupCheck implements InitializingBean {
      */
     @Override
     public void afterPropertiesSet() {
+        if (!environment.matchesProfiles(ContainerProperties.PROFILE)) {
+            return;
+        }
         requireFixedPort(environment);
         requireExistingConfigRoot(environment);
         refuse(environment, GuardWiring.INSECURE_PROPERTY, "the service never starts without a token in a container");

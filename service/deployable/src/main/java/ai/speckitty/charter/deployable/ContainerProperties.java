@@ -8,7 +8,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The settings of the {@code container} profile (ADR-0041 decision 2), bound at {@code charter.container.*} and only
- * under that profile ({@link ContainerWiring}). A missing or invalid value fails the start, naming the property. Keys
+ * under that profile, which {@link ContainerWiring} reads when the service starts. A missing or invalid value fails the start, naming the property. Keys
  * outside this namespace ({@code server.*}, {@code charter.config-root}, {@code charter.worktree-token}) are not part
  * of it, and no component holds a secret (ADR-0041 decision 8). Each constraint's message names the property in its
  * canonical form, because Spring reports the field by its Java name ({@code allowedHosts}). Spring's start-up report

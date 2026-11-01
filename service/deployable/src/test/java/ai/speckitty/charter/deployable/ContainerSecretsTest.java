@@ -10,6 +10,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,8 +96,9 @@ class ContainerSecretsTest {
     }
 
     private static void assertBoundToTheTokenAndHosts(ConfigurableApplicationContext context) throws Exception {
-        assertThat(context.getBean(ContainerProperties.class).allowedHosts())
-                .containsExactly("charter.example.org", "localhost");
+        assertThat(context.getBean(ContainerWiring.class).properties())
+                .map(ContainerProperties::allowedHosts)
+                .hasValue(List.of("charter.example.org", "localhost"));
         assertThat(guardStatus(context, TOKEN)).isEqualTo(200);
         assertThat(guardStatus(context, OTHER_TOKEN)).isEqualTo(401);
     }
