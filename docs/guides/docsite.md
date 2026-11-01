@@ -187,8 +187,11 @@ red run names what failed:
 
 `.github/workflows/docs-site.yml` builds and publishes the site:
 
-1. the `service` job calls `.github/workflows/service.yml`, the main build workflow, which
-   runs `./gradlew verifyAll` and uploads the aggregated Javadoc as the `javadoc` artifact;
+1. the Javadoc, as the `javadoc` artifact:
+   - on a push to `main`, the `service` job calls `.github/workflows/service.yml`, the main build
+     workflow, which runs `./gradlew verifyAll` and uploads the aggregated Javadoc;
+   - on a pull request, the `javadoc` job builds `:charter-reports:aggregateJavadoc` alone, because
+     the CI gate already runs the full build for the pull request;
 2. `npm ci`, reading the toolkit from GitHub Packages with the workflow's own token
    (`packages: read`);
 3. the `javadoc` artifact of the same run is downloaded into `site/public/javadoc` (ignored

@@ -68,3 +68,21 @@ Run these before you open a pull request; CI runs the same checks.
   commands and pinned versions: [Building the docsite](/guides/docsite/).
 
 The conformance corpus joins these checks with roadmap step 3.
+
+## Landing a pull request
+
+- The one required check is `CI gate / gate`
+  ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build, the native
+  executables and the docs checks for the parts of the repository the pull request changes.
+- `main` lands pull requests through a merge queue. The gate runs again on each queue entry,
+  against the `main` the pull request will land on. A pull request that fails in the queue is
+  taken out of it, and the rest of the queue goes on.
+- During a pile-up, a maintainer can label a parked pull request `pr:pause-ci`:
+  - Adding the label cancels its running checks.
+  - While the label is on, every run skips the work and the gate fails, so a paused pull
+    request never reads as green.
+  - Removing the label runs CI again.
+- Pausing does not take a pull request out of the merge queue, where runs carry no labels; remove
+  it from the queue first.
+- A change to any other label neither runs the build nor cancels it. Its run waits for any running
+  gate on the commit, then repeats the verdict of the last one.
