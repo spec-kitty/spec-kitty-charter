@@ -1,0 +1,140 @@
+{
+  "event_count": 71,
+  "last_event_id": "01M69FY9ND7HK3BP4APPMS7ETG",
+  "materialized_at": "2026-10-31T17:25:57.549677+00:00",
+  "mission_number": "",
+  "mission_slug": "gate-a-read-surface-01M691ND",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FXRV0FB1P3382X0137G1X",
+      "last_transition_at": "2026-10-31T17:25:40.320663+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP01-fingerprint-and-refusal-declarations/review-cycle-2.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP01-fingerprint-and-refusal-declarations/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 21367,
+      "shell_pid_created_at": "1793455414.92"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FXVM968KK5YK5GB3CH8YP",
+      "last_transition_at": "2026-10-31T17:25:43.178028+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP02-hypermedia-components-and-harness/review-cycle-2.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP02-hypermedia-components-and-harness/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 30373,
+      "shell_pid_created_at": "1793456615.43"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FXY9ZEGTB19SBXGF6ZQNC",
+      "last_transition_at": "2026-10-31T17:25:45.919421+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP03-generic-artifact-reads/review-cycle-1.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP03-generic-artifact-reads/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 581,
+      "shell_pid_created_at": "1793456833.38"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FY17Y2TPPD08C592M2C1S",
+      "last_transition_at": "2026-10-31T17:25:48.926449+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP04-writes-moved-per-kind-routes-removed/review-cycle-1.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP04-writes-moved-per-kind-routes-removed/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 16442,
+      "shell_pid_created_at": "1793459890.07"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FY3YY3XH3FVHDDPEMCF5G",
+      "last_transition_at": "2026-10-31T17:25:51.710180+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP05-api-root-and-offering/review-cycle-2.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP05-api-root-and-offering/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 5338,
+      "shell_pid_created_at": "1793463425.37"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FY6WY8JV0VS0W95Z5TX8R",
+      "last_transition_at": "2026-10-31T17:25:54.718263+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP06-every-answer-linked-and-checked/review-cycle-1.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP06-every-answer-linked-and-checked/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 9246,
+      "shell_pid_created_at": "1793464001.51"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M69FY9ND7HK3BP4APPMS7ETG",
+      "last_transition_at": "2026-10-31T17:25:57.549677+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/gate-a-read-surface-01M691ND-coord/kitty-specs/gate-a-read-surface-01M691ND/tasks/WP07-records/review-cycle-1.md",
+        "reference": "review-cycle://gate-a-read-surface-01M691ND/WP07-records/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23815,
+      "shell_pid_created_at": "1793465989.46"
+    }
+  }
+}
