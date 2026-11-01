@@ -108,7 +108,7 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     classpath = testSourceSet.runtimeClasspath
     useJUnitPlatform {
         includeTags("open-packs")
-        excludeTags("whole-pack")
+        excludeTags("whole-pack", "timing")
     }
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
@@ -138,7 +138,10 @@ tasks.register<Test>("wholePackRoundTrip") {
     description = "The whole-pack round-trip gate over the pinned built-in pack (#187); not part of check."
     testClassesDirs = testSourceSet.output.classesDirs
     classpath = testSourceSet.runtimeClasspath
-    useJUnitPlatform { includeTags("whole-pack") }
+    useJUnitPlatform {
+        includeTags("whole-pack")
+        excludeTags("timing")
+    }
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
@@ -156,8 +159,33 @@ tasks.register<Test>("wholePackRoundTrip") {
     }
 }
 
+// The CPU-time budgets (#316): tests tagged `timing` hold a piece of work to a CPU-time budget, which only means
+// something on a quiet machine. Under verifyAll every module's tests run at once, and that load pushed the generated-tree
+// checks, then in PackFileSetExactnessTest, past their budget (13.1 s of a 10 s budget on a merge-queue runner) although
+// nothing in them had changed. So they are not part of `test` or `check`: this task runs them in one test JVM, and CI
+// runs it as a step of its own after verifyAll (.github/workflows/service.yml). The correctness of the same work stays in
+// `test` (PackFileSetExactnessTest). Run it in an invocation of its own, as the only task named:
+//
+//   ./gradlew :packs:timingBudgets
+tasks.register<Test>("timingBudgets") {
+    group = "verification"
+    description = "The CPU-time budgets (tests tagged timing), run alone; not part of check (#316)."
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = testSourceSet.runtimeClasspath
+    useJUnitPlatform { includeTags("timing") }
+    maxParallelForks = 1
+    // Never beside this module's other test tasks, when they are named in the same invocation.
+    mustRunAfter(tasks.test, openPacksRoundTrip)
+    doNotTrackState("a budget measured on another run says nothing about this one (#316)")
+    // The generated trees plant symbolic links. A budget that skips is never meaningful, so a file system without them
+    // fails here, whatever -PrequireSymlinks says.
+    systemProperty("charter.requireSymlinks", "true")
+    // Each budget test prints the CPU time it measured, so the margin shows in every run.
+    testLogging { showStandardStreams = true }
+}
+
 tasks.test {
-    useJUnitPlatform { excludeTags("open-packs", "whole-pack") }
+    useJUnitPlatform { excludeTags("open-packs", "whole-pack", "timing") }
     // PackSchemasTest checks that every schema file in the repository is bundled and listed in file-kinds.yaml;
     // PlantedFilesTest reads the repository's conformance files. Both find the repository by this property.
     val schemaFiles = packContracts.dir("schemas")

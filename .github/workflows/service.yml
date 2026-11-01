@@ -3,7 +3,8 @@ name: service
 # The charter service build: the charter's own contract checks (lint, bundle, closed response
 # objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
 # contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
-# (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
+# (./gradlew verifyAll), then the CPU-time budgets on their own (./gradlew :packs:timingBudgets, #316). It uploads
+# three artifacts: `javadoc`, `coverage` and `contract-bundle`.
 # The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
 # `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
@@ -124,6 +125,12 @@ jobs:
             build/contracts/contract/charter-openapi.yaml
             build/contracts/contract/charter-openapi.yaml.sha256
           if-no-files-found: error
+
+      # The CPU-time budgets (tests tagged `timing`, #316), alone on the runner: under Verify's parallel module tests the
+      # load, not the code, decided whether they passed. The correctness of the same work is in Verify (:packs:test).
+      # The same properties as Verify, so the configuration cache is reused; the task itself requires symbolic links.
+      - name: Check the CPU-time budgets
+        run: ./gradlew :packs:timingBudgets -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
 
   # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
   # and checked like them before it is uploaded.
