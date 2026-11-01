@@ -2,8 +2,9 @@
 # (DM 01M57WH7P0QZWHKYGBA2R0MA3K). contracts/lint/README.md explains each convention.
 #
 # Run by `./gradlew :contracts:lintContract` over the bundle of contracts/charter/openapi.yaml, which
-# has every $ref inlined: a property that references a schema is judged with that schema's content,
-# so a citation or description on a referenced enum or scalar file holds wherever it is used.
+# keeps components (#294) and which vacuum lints resolved: a property that references a schema is judged
+# with that schema's content, so a citation or description on a referenced enum or scalar file holds
+# wherever it is used.
 #
 # vacuum's own OpenAPI rule set is switched off and only the rules below run, so a vacuum upgrade
 # cannot add rules silently. Every rule has at least one planted fixture, fixtures/<rule id>[.<case>].yaml, that

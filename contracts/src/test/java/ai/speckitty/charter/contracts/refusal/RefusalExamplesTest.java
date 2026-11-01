@@ -50,6 +50,21 @@ class RefusalExamplesTest {
     }
 
     @Test
+    void aRefusalKeptAsComponentReferencesIsJudgedWhereTheOperationUsesIt() throws IOException, URISyntaxException {
+        RefusalExamples.Report report = RefusalExamples.check(resource("unraised-example-by-ref.yaml"));
+        assertThat(report.violations())
+                .containsExactlyInAnyOrder(
+                        RESPONSE_500 + "/description: the description names pack_level_mismatch, which"
+                                + " CharterRefusalCode's x-refusal does not declare raised",
+                        RESPONSE_500
+                                + "/content/application~1problem+json/examples/pack-level-mismatch/value/code: the"
+                                + " example names pack_level_mismatch, which CharterRefusalCode's x-refusal does not"
+                                + " declare raised");
+        assertThat(report.examples()).isEqualTo(1);
+        assertThat(report.descriptions()).isEqualTo(1);
+    }
+
+    @Test
     void aReservedOperationIsNotJudgedUntilItIsBuilt() {
         Map<String, Object> refusal = Map.of(
                 "title",

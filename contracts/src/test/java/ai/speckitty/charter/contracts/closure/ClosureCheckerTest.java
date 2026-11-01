@@ -212,6 +212,19 @@ class ClosureCheckerTest {
         }
 
         @Test
+        void anOpenObjectBehindComponentReferencesIsReportedWhereTheResponseUsesIt() {
+            assertReports("components-ref-open.yaml", PROBE, "no additionalProperties: false");
+        }
+
+        @Test
+        void aComponentThatRefersToItselfIsLeftAsARefAndNamed() {
+            String child = PROBE + "/properties/child";
+            List<Violation> violations = violations("components-ref-cycle.yaml");
+            assertThat(violations).extracting(v -> v.pointer().toString()).containsExactly(child + "/$ref", child);
+            assertThat(violations.getFirst().reason()).contains("a $ref is left in the bundle");
+        }
+
+        @Test
         void aResponseLeftAsARef() {
             assertReports("response-ref.yaml", "/paths/~1probe/get/responses/200/$ref", "a $ref is left in the bundle");
         }
@@ -272,6 +285,11 @@ class ClosureCheckerTest {
                     "media-type-without-schema.yaml",
                     JSON_MEDIA,
                     "the media type has no schema, so its body is unconstrained");
+        }
+
+        @Test
+        void aClosedResponseKeptAsAComponentReferencePasses() {
+            assertPasses("components-ref-closed.yaml");
         }
 
         @Test

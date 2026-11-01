@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Finds the response schema positions of an OpenAPI document (rules 2 and 3 of {@link ClosureChecker}): each
@@ -57,7 +58,7 @@ final class ResponseSchemas {
 
     private ResponseSchemas() {}
 
-    static List<Node> in(Object document, Findings findings) {
+    static List<Node> in(@Nullable Object document, Findings findings) {
         Node root = new Node(document, JsonPointer.ROOT);
         Dialect.check(root, findings);
         root.child("webhooks")
@@ -200,7 +201,8 @@ final class ResponseSchemas {
     private static void refused(Node node, Findings findings) {
         if (node.has(REF)) {
             findings.malformed(
-                    node.pointer().child(REF), "a $ref is left in the bundle; the bundle must inline every reference");
+                    node.pointer().child(REF),
+                    "a $ref is left in the bundle: it names no component of it, or a component that holds itself");
         }
     }
 
