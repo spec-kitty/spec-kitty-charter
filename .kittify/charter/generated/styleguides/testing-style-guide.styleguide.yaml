@@ -17,7 +17,8 @@ principles:
   - Assert outcomes, not implementation details; no fake green, no skipped or
     quarantined tests to reach green; test code is reviewed like production
     code.
-  - Every scenario change gets a contracts/charter/CHANGELOG.md line.
+  - Every scenario change adds a changelog fragment under contracts/charter/changes/,
+    assembled into CHANGELOG.md in the release PR (ADR-0047).
 patterns:
   - name: Outcome assertion
     description: Assert what the contract returns.

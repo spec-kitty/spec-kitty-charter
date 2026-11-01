@@ -9,8 +9,9 @@ principles:
     as diagram source checked into the repository.
   - Decisions are ADRs under docs/adr/; an accepted ADR is superseded, never
     edited.
-  - Contract changes, scenario changes included, are recorded in
-    contracts/charter/CHANGELOG.md; notable changes in docs/changelog/.
+  - Every contract change adds a changelog fragment under contracts/charter/changes/
+    (scenario changes included), assembled into CHANGELOG.md in the release PR
+    (ADR-0047); notable changes in docs/changelog/.
   - Every public Java type and member carries Javadoc; the aggregated Javadoc
     is published inside the docsite.
   - US spelling; the terms guard in check_docs.py applies to all docs prose.

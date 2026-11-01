@@ -47,7 +47,9 @@ answers:
     Docs follow doc-kitty (ADR-0003) and stay in sync with shipped behavior in
     the same change. Architecture docs use C4 levels. Decisions are ADRs
     under docs/adr/; an accepted decision is superseded, never edited.
-    Contract changes are recorded in contracts/charter/CHANGELOG.md, notable
+    Every contract change adds a changelog fragment under contracts/charter/changes/
+    (scenario changes included), assembled into CHANGELOG.md in the release PR
+    (ADR-0047); notable
     changes in docs/changelog/. US spelling; the terms guard applies.
   risk_boundaries: >-
     The costliest failures: (1) the service answering governance content that
