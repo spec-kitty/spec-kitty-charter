@@ -3,7 +3,7 @@ title: "ADR-0023: An always-on CI gate is the single required status check"
 description: Adds an always-on orchestrator workflow that aggregates the path-filtered service and docs checks into one status context, so branch protection can gate merges on green.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci)'
 decision_date: '2026-10-22'
 type: ADR
 kind: ADR
@@ -27,7 +27,7 @@ Extended 2026-10-31 by [ADR-0046](/adr/0046-service-release-line-and-native-pack
 `native`, calls `service-native.yml` (the four native executables) for changes to the contract, the service, the
 build and `scripts/release/`; `CI gate / gate` counts it like the other two. The required check is unchanged.
 
-Amended 2026-11-01 by ADR-0047 (operator ruling of 2026-11-01). `main` lands through a merge queue, and the
+Amended 2026-11-01 by [ADR-0047](/adr/0047-generated-indexes-and-merge-queue/) (operator ruling of 2026-11-01). `main` lands through a merge queue, and the
 changes below are annotated where they stand. The required check is unchanged.
 
 - The gate also triggers on `merge_group`, and on a queue entry it diffs the queue's base against its head.
