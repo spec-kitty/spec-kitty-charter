@@ -1,0 +1,186 @@
+name: service-native
+
+# The charter service's native executables (ADR-0046 decision 5): a GraalVM native image for each of the four targets
+# core pins (linux-x64, linux-arm64, macos-arm64, windows-x64), each started and checked by
+# scripts/release/smoke-service.sh before it is uploaded as the workflow artifact `native-<target>`. A missing native
+# reachability hint shows up only in a native build, so this runs on every change that can affect one, not only on a
+# release. Pull requests enter through the CI gate orchestrator (ci.yml, the `native` concern group); a release calls
+# it from service-release.yml with the Gradle cache off. It builds and publishes nothing else.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "service/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "scripts/release/**"
+      - ".github/workflows/service-native.yml"
+  workflow_call:
+    inputs:
+      cache-disabled:
+        description: "Build without the Gradle cache (release runs)."
+        type: boolean
+        default: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# As in service.yml: a called run belongs to its caller and is never cancelled by this workflow's own runs.
+concurrency:
+  group: service-native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'service-native' }}
+
+jobs:
+  # The contract bundle the service serves, built once on Linux. The contract tools have no pinned Windows binary
+  # (contracts/build.gradle.kts), so the Windows executable packages this bundle (-PcontractBundle), checked against its
+  # SHA-256; the other targets bundle the contract themselves, from the same commit.
+  contract-bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: ${{ inputs.cache-disabled || false }}
+
+      - name: Bundle the contract
+        run: ./gradlew :contracts:bundleContract
+
+      - name: Upload the contract bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-contract-bundle
+          path: |
+            build/contracts/contract/charter-openapi.yaml
+            build/contracts/contract/charter-openapi.yaml.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  native:
+    name: native (${{ matrix.target }})
+    needs: contract-bundle
+    strategy:
+      # Every target is part of the release's asset set (ADR-0046 decision 4): one red target is reported, not hidden
+      # behind the first failure.
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+            exe: ""
+            prebuilt-bundle: false
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+            exe: ""
+            prebuilt-bundle: false
+          - runner: macos-15
+            target: macos-arm64
+            exe: ""
+            prebuilt-bundle: false
+          - runner: windows-2025
+            target: windows-x64
+            exe: ".exe"
+            prebuilt-bundle: true
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Windows runners convert to CRLF on checkout (core.autocrlf), which breaks ./gradlew and the bash scripts
+      # under Git Bash; the repository's files are LF, so they are checked out as they are.
+      - name: Keep LF line endings on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
+
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      # GraalVM Community for Java 25: the JDK Gradle runs on and the native-image the build uses (toolchainDetection
+      # is off in charter.native-image). The action and the GraalVM release are pinned as spec-kitty-events pins them, so
+      # the four targets of one release are built by one compiler; the version goes to the step summary.
+      - name: Set up GraalVM 25
+        uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
+        with:
+          java-version: "25.0.2"
+          distribution: graalvm-community
+
+      - name: Record the compiler
+        run: |
+          set -euo pipefail
+          echo "### ${{ matrix.target }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- native-image: $(native-image --version | head -n 1)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: ${{ inputs.cache-disabled || false }}
+
+      - name: Download the contract bundle
+        if: matrix.prebuilt-bundle
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-contract-bundle
+          path: ${{ runner.temp }}/contract-bundle
+
+      - name: Build the native executable
+        env:
+          PREBUILT: ${{ matrix.prebuilt-bundle }}
+          BUNDLE_DIR: ${{ runner.temp }}/contract-bundle
+        run: |
+          set -euo pipefail
+          if [ "$PREBUILT" = true ]; then
+            # The bundle must be the one its checksum names, as the Linux job wrote them.
+            (cd "$(cygpath -u "$BUNDLE_DIR")" && sha256sum --check --strict charter-openapi.yaml.sha256)
+            ./gradlew --no-daemon :deployable:nativeCompile -Pcharter.native=true "-PcontractBundle=$BUNDLE_DIR/charter-openapi.yaml"
+          else
+            ./gradlew --no-daemon :deployable:nativeCompile -Pcharter.native=true
+          fi
+
+      - name: Read the versions the executable must report
+        id: versions
+        run: |
+          set -euo pipefail
+          service="$(awk -F= '$1 == "version" { print $2; exit }' gradle.properties)"
+          contract="$(awk '/^  version:/ { sub(/^  version: */, ""); print; exit }' contracts/charter/openapi.yaml)"
+          echo "service=$service" >> "$GITHUB_OUTPUT"
+          echo "contract=$contract" >> "$GITHUB_OUTPUT"
+
+      # The executable must answer within 30 s, and NFR-001's 5 s is reported against: a later first answer is a warning
+      # with the measured time, not a red release (a first run on a hosted runner can be scanned or slowed). The time and
+      # the size go to the step summary.
+      - name: Start the executable and check it answers
+        env:
+          BINARY: service/deployable/build/native/nativeCompile/spec-kitty-charter-service${{ matrix.exe }}
+          SERVICE_VERSION: ${{ steps.versions.outputs.service }}
+          CONTRACT_VERSION: ${{ steps.versions.outputs.contract }}
+        run: |
+          set -euo pipefail
+          echo "- size: $(wc -c < "$BINARY" | tr -d ' ') bytes" >> "$GITHUB_STEP_SUMMARY"
+          scripts/release/smoke-service.sh "$BINARY" "$SERVICE_VERSION" "$CONTRACT_VERSION" 30 5
+
+      - name: Upload the executable
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-${{ matrix.target }}
+          path: service/deployable/build/native/nativeCompile/spec-kitty-charter-service${{ matrix.exe }}
+          if-no-files-found: error
+          retention-days: 7
