@@ -162,7 +162,7 @@ nothing.
 
 | ID | Requirement | Threshold | Status |
 |---|---|---|---|
-| NFR-001 | Each native executable starts and answers the info operation quickly enough to serve as a per-worktree daemon. | First info answer within 5 s of process start on every target in CI (the JVM jar gets 60 s) | Proposed |
+| NFR-001 | Each native executable starts and answers the info operation quickly enough to serve as a per-worktree daemon. | First info answer within 5 s of process start on every target in CI, measured and reported per target (a later answer is a CI warning; the check fails past 30 s; the JVM jar gets 60 s) | Proposed |
 | NFR-002 | A native target job, build and check included, fits a CI budget. | At most 45 minutes per target job | Proposed |
 | NFR-003 | The build's dependency verification stays strict. | Every new build dependency has a SHA-256 entry; zero new suppressions or verification exemptions | Proposed |
 | NFR-004 | Release assets are checkable by anyone. | 100% of published assets are listed in `SHA256SUMS` and covered by an attestation | Proposed |
