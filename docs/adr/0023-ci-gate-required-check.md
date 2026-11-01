@@ -27,6 +27,13 @@ Extended 2026-10-31 by [ADR-0046](/adr/0046-service-release-line-and-native-pack
 `native`, calls `service-native.yml` (the four native executables) for changes to the contract, the service, the
 build and `scripts/release/`; `CI gate / gate` counts it like the other two. The required check is unchanged.
 
+Amended 2026-11-01 by ADR-0047 (operator ruling of 2026-11-01). `main` lands through a merge queue, and the
+changes below are annotated where they stand. The required check is unchanged.
+
+- The gate also triggers on `merge_group`, and on a queue entry it diffs the queue's base against its head.
+- A `pr:pause-ci` label pauses a pull request's CI.
+- `docs-site.yml` no longer builds the service on a pull request. It builds the Javadoc alone.
+
 ## Context
 
 The `main` branch ruleset required a pull request and a linear history, but **no status check** —
@@ -53,6 +60,7 @@ Introduce one always-on orchestrator workflow, `.github/workflows/ci.yml` (**CI 
 single PR entry point, and require only its terminal job context, **`CI gate / gate`**.
 
 - It triggers on `pull_request` with **no path filter**, so it always runs and always posts.
+  *(Amended 2026-11-01, ADR-0047: also on `merge_group`.)*
 - A `changes` job detects which concern groups the PR touched (a `git diff` against the PR base,
   mirroring the two workflows' path lists; a change to `ci.yml` itself re-runs both groups).
 - It calls the real gate workflows as reusable workflows (`uses: ./.github/workflows/service.yml`,
@@ -85,7 +93,8 @@ With the context posting on every PR, `main`'s ruleset requires `CI gate / gate`
 - An orchestration indirection: the real jobs now run one level down, under `CI gate`.
 - Some redundancy remains: `docs-site.yml` still calls `service.yml` for the Javadoc, so a
   service-touching PR can build the service twice (pre-existing; a later consolidation may fold
-  `docs-site`'s PR build into the gate).
+  `docs-site`'s PR build into the gate). *(Resolved 2026-11-01, ADR-0047: on a pull request
+  `docs-site.yml` builds the Javadoc alone.)*
 
 ### Risks
 
