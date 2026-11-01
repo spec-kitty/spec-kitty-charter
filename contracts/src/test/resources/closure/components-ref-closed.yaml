@@ -1,0 +1,26 @@
+# Must pass: a response kept as a component reference, whose schema is a closed component.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          $ref: '#/components/responses/Probe'
+components:
+  responses:
+    Probe:
+      description: The probe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Probe'
+  schemas:
+    Probe:
+      type: object
+      additionalProperties: false
+      properties:
+        probe:
+          type: string

@@ -91,7 +91,7 @@ final class Vocabulary {
             if (REF.equals(keyword)) {
                 findings.malformed(
                         schema.pointer().child(keyword),
-                        "a $ref is left in the bundle; the bundle must inline every reference");
+                        "a $ref is left in the bundle: it names no component of it, or a component that holds itself");
             } else if (!understands(keyword)) {
                 findings.malformed(
                         schema.pointer().child(keyword),

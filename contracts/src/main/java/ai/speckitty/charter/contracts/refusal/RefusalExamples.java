@@ -1,10 +1,9 @@
 package ai.speckitty.charter.contracts.refusal;
 
+import ai.speckitty.charter.contracts.bundle.BundleDocument;
 import ai.speckitty.charter.contracts.closure.JsonPointer;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +12,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
-import org.snakeyaml.engine.v2.api.Load;
-import org.snakeyaml.engine.v2.api.LoadSettings;
 import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
 
 /**
@@ -23,7 +20,8 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  *
  * <p>The raised codes are read from the contract itself, never listed here: they are the keys of the {@code
  * x-refusal} map of the {@code CharterRefusalCode} schema whose {@code raised} is {@code true}. The check then
- * judges every response of every operation under {@code paths}:
+ * judges every response of every operation under {@code paths} (a response, schema or example kept as a component
+ * reference is judged where the operation uses it, as {@link BundleDocument} reads the bundle; #294):
  *
  * <ul>
  *   <li>for each media type whose schema is titled {@code CharterRefusal}, its {@code example.code} and every
@@ -49,11 +47,6 @@ public final class RefusalExamples {
     private static final String CODE_SCHEMA = "CharterRefusalCode";
     private static final String NOT_RAISED = ", which " + CODE_SCHEMA + "'s x-refusal does not declare raised";
 
-    // The bundle inlines every $ref, so each operation repeats its shared responses; with the activation set (#125) it
-    // passed snakeyaml's default limit of 3 MiB of code points, as ClosureChecker notes. The file is the build's own
-    // output, not input from outside, so a larger limit admits nothing untrusted.
-    private static final int BUNDLE_CODE_POINT_LIMIT = 64 * 1024 * 1024;
-
     private RefusalExamples() {}
 
     /**
@@ -72,20 +65,14 @@ public final class RefusalExamples {
     }
 
     /**
-     * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document.
+     * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document, read as {@link BundleDocument} reads it.
      *
      * @param bundle the path of the bundled contract
      * @return what was judged and the violations found
      * @throws IOException when the file cannot be read
      */
     public static Report check(Path bundle) throws IOException {
-        try (InputStream in = Files.newInputStream(bundle)) {
-            return check(new Load(LoadSettings.builder()
-                            .setLabel(bundle.toString())
-                            .setCodePointLimit(BUNDLE_CODE_POINT_LIMIT)
-                            .build())
-                    .loadFromInputStream(in));
-        }
+        return check(BundleDocument.load(bundle));
     }
 
     /**

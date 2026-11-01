@@ -25,16 +25,20 @@ a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs seven t
 
 | Task | What it checks |
 |---|---|
-| `bundleContract` | Bundles `charter/openapi.yaml` into one file with every `$ref` inlined, `build/contracts/contract/charter-openapi.yaml` with a `.sha256` beside it, and checks the bundle is valid OpenAPI (`oasdiff validate`, warnings fail). This is the file core vendors. |
+| `bundleContract` | Bundles `charter/openapi.yaml` into one file that keeps `components`, `build/contracts/contract/charter-openapi.yaml` with a `.sha256` beside it, and checks the bundle is valid OpenAPI (`oasdiff validate`, warnings fail). `vacuum bundle --composed` names a component after its file and points every reference at it; `ComposedBundle` (`src/main/java`) moves the path items back under `paths`, merges a file vacuum named twice, refuses a reference that names no component and a component that refers back to itself, and writes no YAML anchors, quoting a string a YAML 1.1 reader would take for another type (#294). This is the file core vendors. |
 | `lintContract` | Lints the bundle with `ruleset.yaml`. Any violation fails, and so does a ruleset vacuum loads with a different number of rules than it declares. |
-| `lintFixtures` | Every rule has at least one fixture, `fixtures/<rule id>.yaml` or `fixtures/<rule id>.<case>.yaml`, that fails that rule and no other; `fixtures/clean.yaml` fails none. Each fixture goes through the same bundle step as the contract first, so the rules are proven on the inlined shape they judge. |
+| `lintFixtures` | Every rule has at least one fixture, `fixtures/<rule id>.yaml` or `fixtures/<rule id>.<case>.yaml`, that fails that rule and no other; `fixtures/clean.yaml` fails none. Each fixture goes through the same bundle step as the contract first, so the rules are proven on the shape they judge. |
 | `checkClosedResponseObjects` | Runs the closure checker (see [Closed responses](#closed-responses)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
 | `checkRefusalExamples` | Runs the raised-code check (see [Refusal codes](#refusal-codes)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
 | `compatibilityFixtures` | Each `../compat/fixtures/<case>/` holds `base.yaml` and `revision.yaml`; a `breaking-*` case must fail the breaking-change comparison and a `compatible-*` case must pass it. |
 | `checkContractCompatibility` | The release gate, then `oasdiff breaking` of the bundle against the bundle of the baseline release it names (see [The released baseline](#the-released-baseline)). |
 
-The lint runs on the bundle, so a property that references a schema is judged with that schema's
-content: a description or citation on a referenced enum or scalar file holds wherever it is used.
+The lint runs on the bundle, which keeps `components` (#294) and which vacuum reads resolved, so a
+property that references a schema is judged with that schema's content: a description or citation on a
+referenced enum or scalar file holds wherever it is used. A violation inside a component is reported once,
+at the component (`$.components.responses.PackNotFound`), not at each operation that uses it.
+The closure and raised-code checks read the bundle the same way, each component reference as the
+component it names (`BundleDocument`), and report a finding at the operation that uses it.
 
 ## The released baseline
 
@@ -170,7 +174,8 @@ is the authority, with its cases as fixtures in `contracts/src/test/resources/re
 1. Add the rule to `ruleset.yaml` with a one-line `description` of the convention.
 2. Add `fixtures/<rule id>.yaml`: a copy of `fixtures/clean.yaml` with one planted violation of the new
    rule and nothing else, and a first-line comment saying what is planted. Fixtures are written inline
-   (no `$ref`), the shape of the bundle. A second case of the same rule is `<rule id>.<case>.yaml`.
+   (no `$ref`); vacuum lints a bundle resolved, so an inline fixture is judged as the bundle's component
+   references are. A second case of the same rule is `<rule id>.<case>.yaml`.
    The fixtures share their headers through two YAML anchors: `&read-headers` on a `GET` 200 (the
    always-on headers and the required fingerprint) and `&charter-headers` on every other response (the
    always-on headers only). Keep that split in a new fixture, or it fires a fingerprint rule as well.

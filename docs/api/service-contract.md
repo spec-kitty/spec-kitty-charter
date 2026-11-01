@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -33,7 +33,8 @@ The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kit
 
 The single-file bundle that core vendors is built from them by `./gradlew :contracts:bundleContract`
 and uploaded by CI as the `contract-bundle` artifact
-([Building the service](/guides/service-build/)).
+([Building the service](/guides/service-build/)). It keeps `components`: each file a definition references is one
+component named after the file, and every `$ref` in the bundle points at one (#294).
 
 The contract is OpenAPI 3.1, served under `/api/v1`, with closed response schemas and
 `Problem` bodies for refusals. How it is laid out, generated and versioned is in

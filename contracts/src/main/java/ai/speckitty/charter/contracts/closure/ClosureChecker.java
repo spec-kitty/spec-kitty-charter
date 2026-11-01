@@ -1,12 +1,10 @@
 package ai.speckitty.charter.contracts.closure;
 
+import ai.speckitty.charter.contracts.bundle.BundleDocument;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.snakeyaml.engine.v2.api.Load;
-import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The closed-response-objects convention of the charter contract: every response schema is closed, so a new
@@ -14,13 +12,16 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * add unannounced (DM 01M584Q3NNK0B78H9NKHV7VJDK). This Javadoc is the authority on what the checker accepts.
  *
  * <ol>
- *   <li><b>Input.</b> The bundled contract ({@code bundleContract}'s output, every {@code $ref} inlined), an
+ *   <li><b>Input.</b> The bundled contract ({@code bundleContract}'s output, which keeps {@code components}; it is read as {@link BundleDocument} reads it,
+ *       each component reference as the component it names, so every position is judged where it is used and a
+ *       finding carries the pointer of that use), an
  *       OpenAPI 3.1 document ({@code openapi: 3.1.x}, a string: an unquoted YAML number {@code 3.1} is reported)
  *       whose schemas are the OAS 3.1 default dialect, {@value #DEFAULT_DIALECT} (JSON Schema 2020-12 with the
  *       OpenAPI vocabulary). The checker assumes that dialect: another {@code openapi} version, or a
  *       {@code jsonSchemaDialect} other than the default, is a violation, because its keywords may mean something
  *       else. A {@code $ref} left anywhere the checker reads (a path item, a response, a header, a media type, a
- *       schema) is a violation: the bundle is wrong.</li>
+ *       schema) is a violation: one that names no component of the bundle, or a component that holds itself, which
+ *       cannot be inlined where it recurs.</li>
  *   <li><b>Positions.</b> Every response schema is a <i>position</i>:
  *       {@code paths.*.<method>.responses.*.content.*.schema}, and, for each response header, its {@code schema}
  *       and each {@code content.*.schema} of it. Headers are judged, not refused: a header schema that admits an
@@ -56,7 +57,7 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       {@code properties}, {@code patternProperties} and schema-valued {@code additionalProperties} value is a
  *       position. <b>The one exemption</b> ({@link LinksMap}): ADR-0019 D3 puts every link of an answer in "a property
  *       named {@code _links} whose values reference the link object", a map with open relation keys and a closed
- *       value. The bundle has every {@code $ref} inlined, so the exemption is structural: a schema reached as the
+ *       value. The checker reads every component reference inlined, so the exemption is structural: a schema reached as the
  *       property {@code _links} ({@code properties/_links}), whose {@code type} is {@code object} alone, with no
  *       {@code patternProperties}, and whose {@code additionalProperties} is a schema titled {@code Link} that this
  *       walk classifies as closed, is closed by its own keywords. The {@code Link} is still a position and is judged
@@ -118,26 +119,15 @@ public final class ClosureChecker {
 
     private ClosureChecker() {}
 
-    // The bundle inlines every $ref, so each operation repeats its shared responses; with the activation set (#125) it
-    // passed snakeyaml's default limit of 3 MiB of code points. The file is the build's own output, not input from
-    // outside, so a larger limit admits nothing untrusted.
-    private static final int BUNDLE_CODE_POINT_LIMIT = 64 * 1024 * 1024;
-
     /**
-     * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document.
+     * Checks the bundle at {@code bundle}, a YAML or JSON OpenAPI document, read as {@link BundleDocument} reads it.
      *
      * @param bundle the path of the bundled contract
      * @return the positions checked and the violations found
      * @throws IOException when the file cannot be read
      */
     public static ClosureReport check(Path bundle) throws IOException {
-        try (InputStream in = Files.newInputStream(bundle)) {
-            return check(new Load(LoadSettings.builder()
-                            .setLabel(bundle.toString())
-                            .setCodePointLimit(BUNDLE_CODE_POINT_LIMIT)
-                            .build())
-                    .loadFromInputStream(in));
-        }
+        return check(BundleDocument.load(bundle));
     }
 
     /**
@@ -146,7 +136,7 @@ public final class ClosureChecker {
      * @param document the loaded document
      * @return the positions checked and the violations found; a malformed document is reported, never thrown
      */
-    public static ClosureReport check(Object document) {
+    public static ClosureReport check(@Nullable Object document) {
         Findings findings = Findings.collecting();
         List<Node> positions = ResponseSchemas.in(document, findings);
         SchemaClassifier classifier = new SchemaClassifier(findings);

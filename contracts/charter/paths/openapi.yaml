@@ -2,8 +2,9 @@ get:
   operationId: getOpenApiDocument
   summary: Read the contract the service was built against.
   description: >-
-    The bundled charter contract the service was built from, byte for byte: this OpenAPI document with
-    every reference inlined, the file a contract release publishes as charter-openapi.yaml. A client
+    The bundled charter contract the service was built from, byte for byte: this OpenAPI document in one
+    file that keeps its components, every reference pointing at one of them, the file a contract release
+    publishes as charter-openapi.yaml. A client
     fetches it to read or try the contract the running service answers to, without a separate download.
     The answer carries a strong ETag, the SHA-256 digest of the bytes it serves; a request whose
     If-None-Match matches it is answered 304 without a body. The document is fixed when the service is
