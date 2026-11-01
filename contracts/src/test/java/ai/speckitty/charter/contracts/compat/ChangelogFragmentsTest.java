@@ -146,6 +146,16 @@ class ChangelogFragmentsTest {
     }
 
     @Test
+    void anUnclosedCodeFenceIsRefused() throws IOException {
+        fragment("2026-11-01-a.md", "### Added\n\n```\nnot closed\n");
+        assertThatThrownBy(() -> ChangelogFragments.read(dir))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("2026-11-01-a.md")
+                .hasMessageContaining("unclosed")
+                .hasMessageContaining("code fence");
+    }
+
+    @Test
     void aFileThatIsNotAFragmentIsRefusedNotIgnored() throws IOException {
         fragment("2026-11-01-a.markdown", "### Added\n\n- x\n");
         assertThat(ChangelogFragments.pending(dir)).containsExactly("2026-11-01-a.markdown");
