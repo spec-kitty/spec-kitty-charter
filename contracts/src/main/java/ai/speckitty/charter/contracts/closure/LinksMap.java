@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * The one map the checker accepts (rule 5 of {@link ClosureChecker}, ADR-0019 D3): "a property named {@code _links}
  * whose values reference the link object". The exemption is structural, because the checker reads the bundle with
- * every {@code $ref} inlined: the schema is reached as the property {@code _links}, its {@code type} is
+ * every component reference inlined ({@code BundleDocument}): the schema is reached as the property {@code _links}, its {@code type} is
  * {@code object} alone, it has no {@code patternProperties}, and its {@code additionalProperties} is a schema titled
  * {@code Link} that the checker itself classified as closed. Any other map, a lookalike included, stays open.
  */

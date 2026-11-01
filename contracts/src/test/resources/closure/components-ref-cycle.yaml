@@ -1,0 +1,28 @@
+# Must report: a component that refers back to itself. Its reference cannot be inlined, so it is left in place and
+# named, and the position holding it cannot be proven closed.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  probe:
+                    $ref: '#/components/schemas/Tree'
+components:
+  schemas:
+    Tree:
+      type: object
+      additionalProperties: false
+      properties:
+        child:
+          $ref: '#/components/schemas/Tree'

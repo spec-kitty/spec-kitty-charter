@@ -1,0 +1,78 @@
+# A refusal code added to a CharterRefusalCode the refusal reaches only through component references, the shape the
+# bundle keeps (#294): oasdiff resolves the references, and --flatten-allof still sees the composed enum.
+openapi: 3.1.0
+info:
+  title: Charter compatibility fixture
+  version: 1.0.0
+paths:
+  /packs:
+    get:
+      operationId: listPacks
+      summary: List the packs.
+      tags:
+        - Packs
+      responses:
+        '200':
+          description: The pack listing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackSummary'
+        '404':
+          $ref: '#/components/responses/Refused'
+components:
+  responses:
+    Refused:
+      description: Refused.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CharterRefusal'
+  schemas:
+    PackSummary:
+      title: PackSummary
+      description: One loaded pack.
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The pack name.
+    Problem:
+      title: Problem
+      description: The shared problem details body.
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - status
+      properties:
+        title:
+          type: string
+          description: A short summary of the kind of problem.
+        status:
+          type: integer
+          description: The HTTP status code.
+        code:
+          type: string
+          description: A stable machine-readable code.
+    CharterRefusal:
+      title: CharterRefusal
+      description: A Problem whose code is a charter refusal code.
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          required:
+            - code
+          properties:
+            code:
+              $ref: '#/components/schemas/CharterRefusalCode'
+    CharterRefusalCode:
+      title: CharterRefusalCode
+      description: The refusal codes.
+      type: string
+      enum:
+        - pack_not_found
+        - pack_unreadable

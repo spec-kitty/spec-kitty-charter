@@ -1,0 +1,26 @@
+# Must report: an open object reached through two component references. The bundle keeps components (#294), and
+# the checker judges the response at the position that uses the reference, as if it were inlined there.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Probe'
+components:
+  schemas:
+    Probe:
+      type: object
+      additionalProperties: false
+      properties:
+        probe:
+          $ref: '#/components/schemas/Open'
+    Open:
+      type: object
