@@ -84,6 +84,18 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void anUnreleasedTagIsRefusedAsUnreleasedEvenWithAFragmentLeft() throws IOException {
+        Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 0.1.0-SNAPSHOT\n");
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0-SNAPSHOT\n");
+        Path changes = Files.createDirectory(dir.resolve("changes"));
+        Files.writeString(changes.resolve("2026-11-01-a.md"), "### Added\n\n- x\n");
+        List<String> args =
+                List.of("--release", openapi.toString(), log.toString(), "contract-charter-v0.1.0", changes.toString());
+        assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
+        assertThat(printed()).doesNotContain("not assembled");
+    }
+
+    @Test
     void aMajorBumpNamesThePreviousMajorsRelease() throws IOException {
         Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 2.0.0-SNAPSHOT\n");
         Path log = Files.writeString(

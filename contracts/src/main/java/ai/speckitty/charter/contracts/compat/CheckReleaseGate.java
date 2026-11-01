@@ -150,15 +150,16 @@ public final class CheckReleaseGate {
             out.println("Cannot read the release gate's inputs: " + e.getMessage());
             return 2;
         }
+        // The release refusal first: an unreleased tag is refused as unreleased, whatever fragments are left.
+        Optional<Decision.Refused> refused = ReleaseGate.releaseRefusal(tag, version, log);
+        if (refused.isPresent()) {
+            out.println(refused.get().message());
+            return 1;
+        }
         if (!pending.isEmpty()) {
             out.println(pending.size() + (pending.size() == 1 ? " changelog fragment is" : " changelog fragments are")
                     + " not assembled into the CHANGELOG: " + String.join(", ", pending)
                     + ". Run ./gradlew :contracts:assembleContractChangelog in the release pull request.");
-            return 1;
-        }
-        Optional<Decision.Refused> refused = ReleaseGate.releaseRefusal(tag, version, log);
-        if (refused.isPresent()) {
-            out.println(refused.get().message());
             return 1;
         }
         out.println("RELEASE " + version);

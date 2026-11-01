@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The contract's changelog fragments (ADR-0047): a contract change adds one file under {@code contracts/charter/changes/}
@@ -33,7 +34,9 @@ import java.util.stream.Stream;
  *
  * <p>The command line, run by the Gradle task {@code assembleContractChangelog}: {@code ChangelogFragments
  * <CHANGELOG.md> <changes-dir>} assembles the fragments into the changelog and deletes them; it exits 0, or 2 when an
- * input cannot be read or a fragment is malformed.
+ * input cannot be read, a fragment is malformed or the top section is a release. {@code ChangelogFragments --check
+ * <changes-dir>}, run by {@code checkContractChangelogFragments} in {@code check}, only reads and checks them: it exits
+ * 0, or 1 naming what is wrong, so a malformed fragment fails the pull request that adds it, not the release.
  */
 public final class ChangelogFragments {
 
@@ -75,8 +78,20 @@ public final class ChangelogFragments {
     }
 
     static int run(List<String> args, PrintStream out) {
+        if (args.size() == 2 && "--check".equals(args.get(0))) {
+            try {
+                int count = read(Path.of(args.get(1))).size();
+                out.println(
+                        count + (count == 1 ? " changelog fragment is" : " changelog fragments are") + " well formed.");
+                return 0;
+            } catch (IOException | IllegalArgumentException e) {
+                out.println("A changelog fragment is malformed: " + e.getMessage());
+                return 1;
+            }
+        }
         if (args.size() != 2) {
-            out.println("usage: ChangelogFragments <CHANGELOG.md> <changes-dir>");
+            out.println(
+                    "usage: ChangelogFragments <CHANGELOG.md> <changes-dir> | ChangelogFragments --check <changes-dir>");
             return 2;
         }
         Path changelog = Path.of(args.get(0));
@@ -100,10 +115,11 @@ public final class ChangelogFragments {
     }
 
     /**
-     * The names of the fragments left in a directory, sorted; none when the directory does not exist.
+     * The names of the files left in a fragments directory, sorted; none when the directory does not exist. Every file
+     * but the {@code README.md} counts, so a misnamed one ({@code .markdown}, {@code .txt}) is refused, never lost.
      *
      * @param changes the fragments directory
-     * @return the file names of every {@code *.md} but the {@code README.md}
+     * @return the file names of every regular file but the {@code README.md}
      * @throws IOException when the directory cannot be listed
      */
     public static List<String> pending(Path changes) throws IOException {
@@ -111,8 +127,9 @@ public final class ChangelogFragments {
             return List.of();
         }
         try (Stream<Path> files = Files.list(changes)) {
-            return files.map(p -> p.getFileName().toString())
-                    .filter(n -> n.endsWith(".md") && !README.equals(n))
+            return files.filter(Files::isRegularFile)
+                    .map(p -> p.getFileName().toString())
+                    .filter(n -> !README.equals(n))
                     .sorted()
                     .toList();
         }
@@ -148,11 +165,12 @@ public final class ChangelogFragments {
         if (body.isEmpty()) {
             throw new IllegalArgumentException(name + " has no text under its heading");
         }
-        boolean fenced = false;
+        @Nullable String fence = null;
         for (String line : body) {
-            if (FENCE.matcher(line).find()) {
-                fenced = !fenced;
-            } else if (!fenced && ANY_HEADING_UP_TO_THREE.matcher(line).matches()) {
+            String marker = fenceMarker(line);
+            if (marker != null && (fence == null || fence.equals(marker))) {
+                fence = fence == null ? marker : null;
+            } else if (fence == null && ANY_HEADING_UP_TO_THREE.matcher(line).matches()) {
                 throw new IllegalArgumentException(
                         name + " must hold one `###` block: a `#`, `##` or `###` heading under it is not allowed");
             }
@@ -166,7 +184,8 @@ public final class ChangelogFragments {
      * @param changelog the text of {@code CHANGELOG.md}
      * @param fragments the fragments, newest first, as {@link #read} returns them
      * @return the assembled text; the changelog itself when there is no fragment
-     * @throws IllegalArgumentException when the changelog has no {@code ## } version section
+     * @throws IllegalArgumentException when the changelog has no {@code ## } version section, or its top one is a
+     *     release rather than a {@code -SNAPSHOT}
      */
     public static String assemble(String changelog, List<Fragment> fragments) {
         if (fragments.isEmpty()) {
@@ -184,7 +203,7 @@ public final class ChangelogFragments {
         Section section = section(lines);
         for (int i = 0; i < section.subsections().size(); i++) {
             int at = section.subsections().get(i);
-            if (headingText(lines.get(at)).equals(fragment.heading())) {
+            if (headingText(lines.get(at)).equalsIgnoreCase(fragment.heading())) {
                 List<String> block = new ArrayList<>();
                 block.add("");
                 block.addAll(fragment.body());
@@ -194,7 +213,7 @@ public final class ChangelogFragments {
         }
         int at = section.end();
         for (int i = 0; i < section.subsections().size(); i++) {
-            if (headingText(lines.get(section.subsections().get(i))).equals(BREAKING)) {
+            if (headingText(lines.get(section.subsections().get(i))).equalsIgnoreCase(BREAKING)) {
                 at = i + 1 < section.subsections().size()
                         ? section.subsections().get(i + 1)
                         : section.end();
@@ -224,14 +243,15 @@ public final class ChangelogFragments {
         int start = -1;
         int end = lines.size();
         List<Integer> subsections = new ArrayList<>();
-        boolean fenced = false;
+        @Nullable String fence = null;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            if (FENCE.matcher(line).find()) {
-                fenced = !fenced;
+            String marker = fenceMarker(line);
+            if (marker != null && (fence == null || fence.equals(marker))) {
+                fence = fence == null ? marker : null;
                 continue;
             }
-            if (fenced) {
+            if (fence != null) {
                 continue;
             }
             if (LEVEL_TWO.matcher(line).matches()) {
@@ -247,11 +267,22 @@ public final class ChangelogFragments {
         if (start < 0) {
             throw new IllegalArgumentException("the changelog has no `## ` version section to assemble into");
         }
+        String top = lines.get(start).strip();
+        if (!top.endsWith("-SNAPSHOT")) {
+            throw new IllegalArgumentException("the top section `" + top + "` is a release, and a release is never"
+                    + " rewritten: assemble before turning the -SNAPSHOT heading into the release");
+        }
         // The section ends before the blank lines that separate it from the next one.
         while (end - 1 > start && lines.get(end - 1).isBlank()) {
             end--;
         }
         return new Section(List.copyOf(subsections), end);
+    }
+
+    /** The marker of a fence line ({@code ```} or {@code ~~~}), or null; a fence closes only on its own marker. */
+    private static @Nullable String fenceMarker(String line) {
+        var m = FENCE.matcher(line);
+        return m.find() ? m.group(1) : null;
     }
 
     private static String headingText(String line) {

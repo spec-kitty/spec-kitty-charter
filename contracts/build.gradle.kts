@@ -831,7 +831,19 @@ tasks.register<JavaExec>("assembleContractChangelog") {
     notCompatibleWithConfigurationCache("A one-off source-tree edit, run by hand in the release pull request.")
 }
 
+// Checks every changelog fragment in charter/changes/ on each build (ADR-0047), so a malformed or misnamed one fails the
+// pull request that adds it, not the release pull request that assembles it.
+val checkContractChangelogFragments = tasks.register<JavaExec>("checkContractChangelogFragments") {
+    group = "contract"
+    description = "Checks the changelog fragments in contracts/charter/changes/: one dated ### block each."
+    classpath(sourceSets.main.map { it.runtimeClasspath })
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    mainClass = "ai.speckitty.charter.contracts.compat.ChangelogFragments"
+    args("--check", charterContract.dir("changes").asFile.absolutePath)
+    inputs.files(fileTree(charterContract.dir("changes"))).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 tasks.named("check") {
     dependsOn(bundleContract, lintContract, lintFixtures, checkClosedResponseObjects, checkRefusalExamples,
-        compatibilityFixtures, checkContractCompatibility)
+        compatibilityFixtures, checkContractCompatibility, checkContractChangelogFragments)
 }

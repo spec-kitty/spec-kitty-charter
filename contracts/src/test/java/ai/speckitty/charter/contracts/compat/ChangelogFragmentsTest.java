@@ -146,6 +146,55 @@ class ChangelogFragmentsTest {
     }
 
     @Test
+    void aFileThatIsNotAFragmentIsRefusedNotIgnored() throws IOException {
+        fragment("2026-11-01-a.markdown", "### Added\n\n- x\n");
+        assertThat(ChangelogFragments.pending(dir)).containsExactly("2026-11-01-a.markdown");
+        assertThatThrownBy(() -> ChangelogFragments.read(dir)).hasMessageContaining("2026-11-01-a.markdown");
+    }
+
+    @Test
+    void aSubsectionHeadingMatchesWhateverItsCase() throws IOException {
+        fragment("2026-11-01-a.md", "### added\n\n- new\n");
+        String log = "## 1.1.0-SNAPSHOT\n\n### Added\n\n- old\n";
+        assertThat(ChangelogFragments.assemble(log, ChangelogFragments.read(dir)))
+                .isEqualTo("## 1.1.0-SNAPSHOT\n\n### Added\n\n- new\n\n- old\n");
+    }
+
+    @Test
+    void aFenceClosesOnlyWithTheMarkerThatOpenedIt() throws IOException {
+        fragment("2026-11-01-a.md", "### Added\n\n- new\n");
+        String log = "## 1.1.0-SNAPSHOT\n\n~~~\n```\n### Added\n~~~\n\n### Added\n\n- old\n";
+        assertThat(ChangelogFragments.assemble(log, ChangelogFragments.read(dir)))
+                .isEqualTo("## 1.1.0-SNAPSHOT\n\n~~~\n```\n### Added\n~~~\n\n### Added\n\n- new\n\n- old\n");
+    }
+
+    @Test
+    void aReleasedTopSectionIsNeverRewritten() throws IOException {
+        fragment("2026-11-01-a.md", "### Added\n\n- x\n");
+        List<ChangelogFragments.Fragment> fragments = ChangelogFragments.read(dir);
+        assertThatThrownBy(() -> ChangelogFragments.assemble("## 1.0.0\n\n### Added\n\n- old\n", fragments))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("`## 1.0.0` is a release")
+                .hasMessageContaining("assemble before");
+    }
+
+    @Test
+    void theCheckModeValidatesWithoutWriting() throws IOException {
+        Path changes = Files.createDirectory(dir.resolve("changes"));
+        Files.writeString(changes.resolve("2026-11-01-a.md"), "### Added\n\n- x\n");
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        java.io.PrintStream out = new java.io.PrintStream(output, true, java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(ChangelogFragments.run(List.of("--check", changes.toString()), out))
+                .isZero();
+        assertThat(changes.resolve("2026-11-01-a.md")).exists();
+        Files.writeString(changes.resolve("2026-11-02-b.md"), "- no heading\n");
+        assertThat(ChangelogFragments.run(List.of("--check", changes.toString()), out))
+                .isEqualTo(1);
+        assertThat(output.toString(java.nio.charset.StandardCharsets.UTF_8))
+                .contains("2026-11-02-b.md must start with a `### ` heading");
+    }
+
+    @Test
     void aChangelogWithNoVersionSectionIsRefused() throws IOException {
         fragment("2026-11-01-a.md", "### Added\n\n- x\n");
         List<ChangelogFragments.Fragment> fragments = ChangelogFragments.read(dir);

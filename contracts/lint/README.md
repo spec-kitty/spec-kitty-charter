@@ -106,7 +106,8 @@ tags: a tag ruleset on `contract-charter-v*` decides who can publish.
 
 Nothing publishes without a tag. `service.yml` rehearses the whole path on every change
 (`scripts/release/rehearse-contract-release.sh`): in a throwaway clone with no remote it expects
-the unreleased commit to be refused and a synthetic release to yield the three assets. To
+the unreleased commit to be refused, a release that leaves a changelog fragment unassembled to be
+refused, and a synthetic release, its fragments assembled, to yield the four assets. To
 rehearse a real release, run `scripts/release/contract-release-assets.sh <tag> <out-dir>`, or the
 workflow by hand (workflow_dispatch) with the tag, on the release pull request's branch after
 step 1: both assemble the assets and create no Release. On `main` before step 1 they refuse,

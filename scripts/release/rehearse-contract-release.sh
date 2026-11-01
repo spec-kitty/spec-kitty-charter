@@ -8,8 +8,9 @@
 #      -SNAPSHOT is never published) and contract-release-assets.sh to leave no assets;
 #   2. commits a synthetic release (info.version and the top CHANGELOG heading without -SNAPSHOT) that leaves a
 #      changelog fragment unassembled, and expects the publishing gate to refuse its tag (ADR-0047);
-#   3. assembles the fragments (:contracts:assembleContractChangelog), as the release pull request does, tags the
-#      release locally and expects the assets, with a checksum that matches the bundle.
+#   3. as the release pull request does, assembles the fragments (:contracts:assembleContractChangelog) under the
+#      -SNAPSHOT heading, then turns it into the release, tags it locally and expects the assets, with a checksum
+#      that matches the bundle.
 # The clone has no remote, so its tags can never be pushed. service.yml runs it after verifyAll.
 set -euo pipefail
 
@@ -74,7 +75,10 @@ fi
 git tag -d "$tag" > /dev/null
 
 echo "== 3. A synthetic release $version is assembled"
+# The documented order: assemble under the -SNAPSHOT heading, then release it. Assembly refuses a released section.
+sed -i "0,/^## $version\$/s//## $snapshot/" "$changelog"
 ./gradlew --quiet :contracts:assembleContractChangelog
+sed -i "0,/^## $snapshot\$/s//## $version/" "$changelog"
 if ! grep -q "A fragment the rehearsal plants" "$changelog" || [[ -e "$probe" ]]; then
   echo "error: :contracts:assembleContractChangelog did not move the fragment into $changelog" >&2
   exit 1
