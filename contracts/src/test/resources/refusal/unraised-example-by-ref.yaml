@@ -1,0 +1,55 @@
+# Must report: the refusal of unraised-example.yaml, kept as a component response whose schema is a component
+# (#294). The check judges the response where an operation uses it, so both findings carry the operation's pointer.
+openapi: 3.1.0
+info:
+  title: Refusal examples fixture
+  version: 1.0.0
+paths:
+  /info:
+    get:
+      operationId: getServiceInfo
+      responses:
+        '500':
+          $ref: '#/components/responses/PacksUnmerged'
+components:
+  responses:
+    PacksUnmerged:
+      description: The packs could not be merged, for example `pack_level_mismatch`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CharterRefusal'
+          examples:
+            pack-level-mismatch:
+              $ref: '#/components/examples/PackLevelMismatch'
+  examples:
+    PackLevelMismatch:
+      value:
+        title: Pack level mismatch
+        status: 500
+        code: pack_level_mismatch
+  schemas:
+    CharterRefusal:
+      title: CharterRefusal
+      allOf:
+        - title: Problem
+          type: object
+        - type: object
+          properties:
+            code:
+              $ref: '#/components/schemas/CharterRefusalCode'
+    CharterRefusalCode:
+      title: CharterRefusalCode
+      type: string
+      enum:
+        - pack_unreadable
+        - pack_level_mismatch
+      x-refusal:
+        pack_unreadable:
+          status: 500
+          retryable: false
+          raised: true
+        pack_level_mismatch:
+          status: 500
+          retryable: false
+          raised: false

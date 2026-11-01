@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.snakeyaml.engine.v2.api.Load;
@@ -53,6 +54,27 @@ class OpenApiDocumentTest {
 
     private MockHttpServletResponse answer(MockHttpServletRequestBuilder request) throws Exception {
         return mvc.perform(request).andReturn().getResponse();
+    }
+
+    @Test
+    void theServedBundleKeepsItsComponentsAndReadsWithinTheYamlReadersDefaultLimit() {
+        // #294: the bundle refers to its components instead of inlining each use, so it stays well below snakeyaml's
+        // default limit of 3 MiB of code points, and a client reads it without raising that limit.
+        Map<?, ?> document = (Map<?, ?>)
+                new Load(LoadSettings.builder().build()).loadFromString(new String(BUNDLE, StandardCharsets.UTF_8));
+        Map<?, ?> components = (Map<?, ?>) document.get("components");
+
+        assertThat(keys(components))
+                .contains("schemas", "responses", "parameters", "headers", "examples")
+                .doesNotContain("pathItems");
+        assertThat(keys((Map<?, ?>) components.get("schemas")))
+                .contains("CharterRefusal", "CharterRefusalCode", "Problem");
+        assertThat(new String(BUNDLE, StandardCharsets.UTF_8)
+                        .lines()
+                        .filter(line -> line.contains("$ref:"))
+                        .map(String::strip))
+                .isNotEmpty()
+                .allMatch(line -> line.startsWith("$ref: '#/components/") || line.startsWith("- $ref: '#/components/"));
     }
 
     @Test
@@ -176,12 +198,13 @@ class OpenApiDocumentTest {
 
     /** The served document's {@code info.version}, read from the build output, not from the service. */
     private static String infoVersion() {
-        Map<?, ?> document = (Map<?, ?>) new Load(LoadSettings.builder()
-                        // The inlined bundle passed snakeyaml's default 3 MiB with the activation set (#125).
-                        .setCodePointLimit(64 * 1024 * 1024)
-                        .build())
-                .loadFromString(new String(BUNDLE, StandardCharsets.UTF_8));
+        Map<?, ?> document = (Map<?, ?>)
+                new Load(LoadSettings.builder().build()).loadFromString(new String(BUNDLE, StandardCharsets.UTF_8));
         return (String) ((Map<?, ?>) document.get("info")).get("version");
+    }
+
+    private static List<String> keys(Map<?, ?> map) {
+        return map.keySet().stream().map(String::valueOf).toList();
     }
 
     private static byte[] read(String property) {

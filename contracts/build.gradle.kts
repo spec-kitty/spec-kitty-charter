@@ -245,22 +245,6 @@ abstract class ContractToolTask : DefaultTask() {
     }
 
     /**
-     * Bundles [source] into [out] with every `$ref` inlined: the one shape the contract is linted, vendored and
-     * compared in. vacuum reports an unresolvable reference as an ERR line and still exits 0, and it keeps a
-     * reference inside the same file, so both are checked; the result is null on success, else the reason.
-     */
-    protected fun bundle(vacuum: File, source: File, out: File): String? {
-        out.parentFile.mkdirs()
-        val (code, output) = run(vacuum.path, "bundle", "--no-style", "--no-update-check",
-            "--base", source.parentFile.path, source.path, out.path)
-        return when {
-            code != 0 || output.lines().any { it.trimStart().startsWith("ERR") } -> output
-            out.readText().contains("\$ref") -> "${out.name} still holds a \$ref; it must be self-contained"
-            else -> null
-        }
-    }
-
-    /**
      * The oasdiff breaking-change comparison every compatibility check uses: exit 1 means breaking. [levels] is
      * contracts/compat/severity-levels.txt; oasdiff reads no comments, so its `#` lines are dropped first.
      */
@@ -281,9 +265,47 @@ abstract class ContractToolTask : DefaultTask() {
 // No consumer runs a tool that was not re-verified this build, whether it was downloaded or restored from the cache.
 tasks.withType<ContractToolTask>().configureEach { dependsOn(verifyVacuum, verifyOasdiff) }
 
-/** Bundles the split contract into one file with every $ref inlined, and checks the bundle is valid OpenAPI. */
+/**
+ * A contract tool task that bundles a split contract: the contract itself, each lint fixture and each released
+ * baseline go through the one [bundle] step, so all are linted and compared in the shape core vendors.
+ */
+abstract class BundlingTask : ContractToolTask() {
+    /** The runtime classpath of this project, which holds `ai.speckitty.charter.contracts.bundle.ComposedBundle`. */
+    @get:Classpath abstract val bundlerClasspath: ConfigurableFileCollection
+    @get:Nested abstract val launcher: Property<JavaLauncher>
+
+    /**
+     * Bundles [source] into [out], keeping `components` (#294): `vacuum bundle --composed` moves every referenced
+     * file into `components` and points each reference there, and `ComposedBundle` normalizes that output (its
+     * class Javadoc is the authority): path items back under `paths`, a file vacuum named twice merged into one
+     * component, every `$ref` a reference to a component the bundle holds, no YAML anchors. vacuum reports an
+     * unresolvable reference as an ERR line and still exits 0, so that is checked too. The result is null on
+     * success, else the reason. A released baseline is re-bundled through this same step, so a rule added to
+     * `ComposedBundle` also judges every earlier release's contract: weigh a tightening against them.
+     */
+    protected fun bundle(vacuum: File, source: File, out: File): String? {
+        out.parentFile.mkdirs()
+        val composed = File(File(temporaryDir, "composed").apply { mkdirs() }, out.name)
+        val (code, output) = run(vacuum.path, "bundle", "--composed", "--no-style", "--no-update-check",
+            "--base", source.parentFile.path, source.path, composed.path)
+        if (code != 0 || output.lines().any { it.trimStart().startsWith("ERR") }) return output
+        val normalized = ByteArrayOutputStream()
+        val result = execOps.javaexec {
+            executable = launcher.get().executablePath.asFile.absolutePath
+            classpath = bundlerClasspath
+            mainClass = "ai.speckitty.charter.contracts.bundle.ComposedBundle"
+            args(composed.path, out.path)
+            standardOutput = normalized
+            errorOutput = normalized
+            isIgnoreExitValue = true
+        }
+        return if (result.exitValue == 0) null else normalized.toString(Charsets.UTF_8)
+    }
+}
+
+/** Bundles the split contract into one file that keeps `components`, and checks the bundle is valid OpenAPI. */
 @CacheableTask
-abstract class BundleContract : ContractToolTask() {
+abstract class BundleContract : BundlingTask() {
     @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val contractFiles: ConfigurableFileCollection
     @get:Internal abstract val openapi: RegularFileProperty
     @get:Input abstract val openapiPath: Property<String>
@@ -333,10 +355,12 @@ abstract class LintContract : ContractToolTask() {
 
     @TaskAction
     fun lint() {
-        // The inlined bundle is large (#125 put it near 5 MB), and a rule over a recursive JSONPath needs more than
-        // vacuum's default 5 seconds; a rule that times out is skipped, which the ERR check below refuses.
+        // vacuum lints the bundle resolved, so keeping components (#294) roughly halves the lint, not more: on four
+        // busy cores (the build's parallel tasks) the whole run took 6 to 7 seconds, and vacuum's default 5-second
+        // rule timeout skipped rules. 20 seconds keeps about three times that; the inlined bundle needed 60.
+        // A rule that times out is skipped, which the ERR check below refuses.
         val (code, output) = run(vacuum.get().asFile.path, "lint", "--no-style", "--no-banner", "--no-update-check",
-            "--details", "--all-results", "--no-clip", "--timeout", "60", "--ruleset", ruleset.get().asFile.path,
+            "--details", "--all-results", "--no-clip", "--timeout", "20", "--ruleset", ruleset.get().asFile.path,
             bundle.get().asFile.path)
         report.get().asFile.writeText(output)
         // A ruleset vacuum could not read would lint against no rules and pass; the rule count rules that out.
@@ -357,10 +381,10 @@ abstract class LintContract : ContractToolTask() {
 /**
  * Every planted fixture fails exactly its own rule; the clean fixture fails none; every rule has a fixture.
  * A fixture is `<rule id>.yaml` or `<rule id>.<case>.yaml`. Each is bundled first, through the same step as the
- * contract, so a rule is proven on the inlined shape it judges the contract in.
+ * contract, so a rule is proven on the shape it judges the contract in.
  */
 @CacheableTask
-abstract class LintFixtures : ContractToolTask() {
+abstract class LintFixtures : BundlingTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.RELATIVE) abstract val ruleset: RegularFileProperty
     @get:InputFiles @get:PathSensitive(PathSensitivity.RELATIVE) abstract val fixtures: ConfigurableFileCollection
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val vacuum: RegularFileProperty
@@ -404,7 +428,8 @@ abstract class LintFixtures : ContractToolTask() {
 
 /**
  * The compatibility check on planted pairs: each `compat/fixtures/<case>/` holds `base.yaml` and `revision.yaml`
- * (inlined documents, the shape bundles have). A `breaking-*` case must fail the comparison, a `compatible-*`
+ * (inlined documents, and `breaking-refusal-code-added-in-component` in the shape the bundle keeps, its change
+ * reached only through component references, which oasdiff resolves). A `breaking-*` case must fail the comparison, a `compatible-*`
  * case must pass it, and there is at least one of each.
  */
 @CacheableTask
@@ -461,7 +486,7 @@ abstract class CompatibilityFixtures : ContractToolTask() {
 abstract class CheckContractCompatibility @Inject constructor(
     private val archives: ArchiveOperations,
     private val files: FileSystemOperations,
-) : ContractToolTask() {
+) : BundlingTask() {
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val bundle: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val openapi: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val changelog: RegularFileProperty
@@ -469,7 +494,6 @@ abstract class CheckContractCompatibility @Inject constructor(
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val vacuum: RegularFileProperty
     @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val oasdiff: RegularFileProperty
     @get:Classpath abstract val gateClasspath: ConfigurableFileCollection
-    @get:Nested abstract val launcher: Property<JavaLauncher>
     @get:Input @get:Optional abstract val baselineOverride: Property<String>
     @get:Input @get:Optional abstract val ci: Property<String>
     @get:Internal abstract val repository: DirectoryProperty
@@ -705,6 +729,8 @@ val bundleContract = tasks.register<BundleContract>("bundleContract") {
     oasdiff = oasdiffExe
     bundle = layout.buildDirectory.file("contract/charter-openapi.yaml")
     checksum = layout.buildDirectory.file("contract/charter-openapi.yaml.sha256")
+    bundlerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    launcher = javaToolchains.launcherFor(java.toolchain)
 }
 
 /** The variant attribute value of the bundled contract, which no Java variant carries. */
@@ -738,6 +764,8 @@ val lintFixtures = tasks.register<LintFixtures>("lintFixtures") {
     vacuum = vacuumExe
     rules = ruleIds(rulesetFile.asFile)
     report = layout.buildDirectory.file("reports/lint/fixtures.txt")
+    bundlerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    launcher = javaToolchains.launcherFor(java.toolchain)
 }
 
 val compatibilityFixtures = tasks.register<CompatibilityFixtures>("compatibilityFixtures") {
@@ -759,6 +787,7 @@ val checkContractCompatibility = tasks.register<CheckContractCompatibility>("che
     vacuum = vacuumExe
     oasdiff = oasdiffExe
     gateClasspath.from(sourceSets.main.map { it.runtimeClasspath })
+    bundlerClasspath.from(sourceSets.main.map { it.runtimeClasspath })
     launcher = javaToolchains.launcherFor(java.toolchain)
     baselineOverride = providers.gradleProperty("contractBaseline")
     ci = providers.environmentVariable("CI")
