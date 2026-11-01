@@ -64,7 +64,10 @@ post:
           schema:
             $ref: ../schemas/CharterRefusal.yaml
     '422':
-      description: The registration is well-formed but breaks a pack invariant or schema.
+      description: >-
+        The registration is well-formed but breaks a pack invariant or schema (validation_failed): among others, one of
+        its lists is null or holds a null item (a list is sent as an array, [] where it may be empty, and an optional
+        one may be left out), or its body is over the body limit (1 MiB; refused validation_failed before it is read).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

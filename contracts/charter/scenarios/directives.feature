@@ -152,3 +152,33 @@ Feature: Directives are read and registered functionally
       {"from": "directive:GUARD", "to": "procedure:p", "type": "requires"}
       """
     Then the response status is 428
+
+  Scenario Outline: A null list, or a null item in a list, is refused before the body is bound (#292, #309: <case>)
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"<fields>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "<detail>"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
+    Then the response status is 404
+
+    Examples:
+      | case        | fields                           | detail                                                                                                             |
+      | a null list | , "procedures": null             | The procedures list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item | , "procedures": ["proc-1", null] | Item 1 of the procedures list is null; a list holds no null item.                                                  |
+
+  Scenario: A directive registration body over 1 MiB is refused before it is read (#310)
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body, its "intent" padded to 1048576 bytes:
+      """
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "The directive registration body is larger than 1048576 bytes."
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body, its "intent" padded to 1048000 bytes:
+      """
+      {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required"}
+      """
+    Then the response status is 201

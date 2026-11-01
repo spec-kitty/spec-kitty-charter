@@ -259,3 +259,19 @@ Feature: Toolguides are read and registered functionally
       """
     Then the response status is 200
     And the field at "/toolguide/guide" starts with "# How to use git (v2)"
+
+  Scenario Outline: A null list, or a null item in a list, is refused before the body is bound (#292, #309: <case>)
+    When I PUT "/packs/qa/artifacts/toolguide/git" with the body:
+      """
+      {"schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "## Overview", "summary": "Using git."<fields>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "<detail>"
+    When I GET "/packs/qa/artifacts/toolguide/git"
+    Then the response status is 404
+
+    Examples:
+      | case        | fields                             | detail                                                                                                           |
+      | a null list | , "commands": null                 | The commands list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item | , "commands": ["git status", null] | Item 1 of the commands list is null; a list holds no null item.                                                  |
