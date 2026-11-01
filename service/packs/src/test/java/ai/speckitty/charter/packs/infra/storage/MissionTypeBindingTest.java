@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -334,6 +335,52 @@ class MissionTypeBindingTest {
                 .isInstanceOf(CharterRefusal.class)
                 .hasMessage("mission_type 'research' names templates/spec-template.md (named by step 'scoping'):"
                         + " missing");
+        assertThat(pack.resolve(FILE)).hasContent(before);
+    }
+
+    /**
+     * #300: a {@code template_path} that differs from its template only in case is refused by the file check, with the
+     * spelling the pack holds, so the check and the id resolution (exact, ADR-0044 decision 7) agree. The check reads
+     * names from the directory listings and never asks the file system to open one, so its verdict is the same on a
+     * case-insensitive file system, where the file would open, as here, where it would not. The load, validate mode and
+     * the per-file write give the one reason.
+     */
+    @Test
+    @DisplayName("#300: an output template spelled in another case is refused by the file check, with the pack's"
+            + " spelling, in the load, validate mode and the write alike")
+    void anOutputTemplateSpelledInAnotherCaseIsRefusedByTheFileCheck() throws IOException {
+        Path pack = withSpecTemplate();
+        Path templates = pack.resolve("missions/research/templates");
+        Files.writeString(
+                pack.resolve(FILE),
+                Files.readString(pack.resolve(FILE))
+                        .replace("templates/spec-template.md", "templates/Spec-Template.md"));
+        // Spelled alike on disk, the type reads; the template is then renamed to the spelling the pack keeps.
+        Files.move(templates.resolve("spec-template.md"), templates.resolve("Spec-Template.md"));
+        MissionTypeDso held = read().dsos(MissionTypeBinding.INSTANCE).getFirst();
+        Files.move(templates.resolve("Spec-Template.md"), templates.resolve("spec-template.md"));
+        String reason = "templates/Spec-Template.md (named by step 'scoping'): differs only in case from"
+                + " missions/research/templates/spec-template.md";
+
+        assertThat(read().violations()).containsExactly(new PackElementViolation(FILE, "reference", reason));
+        assertThat(load(pack).violations())
+                .as("the type is refused once, by the file check; the resolution never sees it")
+                .containsExactly(new PackElementViolation(FILE, "reference", reason));
+        PackContents validated = new FileSystemPackInspector()
+                .inspect(new PackRoot(PACK, Optional.of(PackLevel.ORG), pack.toString()), PackInspector.Scope.FULL);
+        assertThat(validated.unreadableFiles())
+                .extracting(
+                        FileRead::file,
+                        bad -> bad.parse() == null
+                                ? null
+                                : bad.parse().refusal().orElse(null))
+                .containsExactly(tuple(FILE, "names " + reason));
+
+        String before = Files.readString(pack.resolve(FILE));
+        assertThatThrownBy(
+                        () -> new FilesystemPackStore(host, strategy).write(PACK_ID, MissionTypeBinding.INSTANCE, held))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessage("mission_type 'research' names " + reason);
         assertThat(pack.resolve(FILE)).hasContent(before);
     }
 

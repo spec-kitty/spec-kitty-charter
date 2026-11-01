@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -398,31 +399,25 @@ final class FilesystemPackStore {
     /**
      * The asset sidecars whose payload the read holds, in path order. A sidecar whose {@code path} names no asset file
      * (missing, outside {@code assets/}, or a file another rule classifies) is a violation on the sidecar's file, and so
-     * is a sidecar naming a file an earlier sidecar named; neither joins the pack.
+     * is a sidecar naming a file an earlier sidecar named; neither joins the pack. The rule is {@link SidecarPayloads},
+     * which validate mode applies too (#251).
      */
     private static List<Stored<?>> withPayloads(
             List<Stored<?>> sidecars, List<AssetFile> assetFiles, List<PackElementViolation> violations) {
-        Set<String> held = new HashSet<>();
-        assetFiles.forEach(file -> held.add(file.path()));
-        Map<String, String> namedBy = new HashMap<>();
-        List<Stored<?>> kept = new ArrayList<>();
+        List<SidecarPayloads.Sidecar> read = new ArrayList<>();
         for (Stored<?> stored : sidecars) {
             AssetDso sidecar = AssetDso.class.cast(stored.dso());
-            String payload = PackFileSet.ASSETS + sidecar.path();
-            String claimant = namedBy.get(sidecar.path());
-            if (!held.contains(sidecar.path())) {
-                violations.add(new PackElementViolation(
-                        stored.file(), AssetBinding.INSTANCE.kind().token(), "payload " + payload + " does not exist"));
-            } else if (claimant != null) {
-                violations.add(new PackElementViolation(
-                        stored.file(),
-                        AssetBinding.INSTANCE.kind().token(),
-                        "payload " + payload + " is already named by asset " + claimant));
-            } else {
-                namedBy.put(sidecar.path(), sidecar.id());
-                kept.add(stored);
-            }
+            read.add(new SidecarPayloads.Sidecar(stored.file(), sidecar.id(), sidecar.path()));
         }
+        Set<String> refused = new HashSet<>();
+        for (SidecarPayloads.Refused one : SidecarPayloads.refused(
+                read, assetFiles.stream().map(AssetFile::path).toList())) {
+            refused.add(one.file());
+            violations.add(new PackElementViolation(
+                    one.file(), AssetBinding.INSTANCE.kind().token(), one.reason()));
+        }
+        List<Stored<?>> kept = new ArrayList<>(sidecars);
+        kept.removeIf(stored -> refused.contains(stored.file()));
         return kept;
     }
 
@@ -468,13 +463,27 @@ final class FilesystemPackStore {
      * is not read. A file that cannot be read is a violation too, not a refusal.
      */
     private static Optional<byte[]> readPayload(Path directory, String file, List<PackElementViolation> violations) {
+        return readPayload(
+                directory, file, reason -> violations.add(new PackElementViolation(file, "unreadable", reason)));
+    }
+
+    /**
+     * The bytes of a listed payload, or none with why the pack does not hold it: the file leaves the pack, or cannot
+     * be read. The load and validate mode read an asset file through it, so they hold the same ones (#251).
+     *
+     * @param directory the pack directory
+     * @param file the payload, pack-relative
+     * @param refused told why, when the pack does not hold the file
+     * @return the bytes; empty when refused
+     */
+    static Optional<byte[]> readPayload(Path directory, String file, Consumer<String> refused) {
         if (!realPathContained(directory, directory.resolve(file))) {
-            violations.add(new PackElementViolation(file, "unreadable", "the file leaves the pack"));
+            refused.accept("the file leaves the pack");
             return Optional.empty();
         }
         Optional<byte[]> bytes = readBytes(directory.resolve(file));
         if (bytes.isEmpty()) {
-            violations.add(new PackElementViolation(file, "unreadable", "the file cannot be read"));
+            refused.accept("the file cannot be read");
         }
         return bytes;
     }
@@ -629,8 +638,9 @@ final class FilesystemPackStore {
     }
 
     /**
-     * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack, is not a regular file
-     * there, or is not a template payload, with why. A named file is the artifact's output template (ADR-0044): it must
+     * The first file an artifact names ({@link KindBinding#namedFiles}) that leaves the pack, is spelled in another
+     * case than the pack lists it ({@link Spellings#of}, #300), is not a regular file there, or is not a template
+     * payload, with why. A named file is the artifact's output template (ADR-0044): it must
      * be a file the pack holds and digests as a template, never a file the table excludes or retires. A link is
      * followed, as the pack walk follows one, as long as its real place stays in the pack.
      *
@@ -657,7 +667,21 @@ final class FilesystemPackStore {
         if (!target.startsWith(directory)) {
             return Optional.of("leaves the pack");
         }
+        String relative = directory.relativize(target).toString().replace('\\', '/');
+        // The id resolution is exact (ADR-0044, amendment 2026-11-01), so the check compares the names the pack lists,
+        // never asking the file system to open one: a case-insensitive file system would open the file for a path that
+        // differs only in case (#300).
+        switch (Spellings.of(directory, relative)) {
+            case Spellings.Absent absent -> {
+                return Optional.of("missing");
+            }
+            case Spellings.OtherCase other -> {
+                return Optional.of("differs only in case from " + other.onDisk());
+            }
+            case Spellings.Exact exact -> {}
+        }
         if (!Files.exists(target)) {
+            // Listed, but a link to nothing.
             return Optional.of("missing");
         }
         Optional<Path> real = realPath(target);
@@ -668,7 +692,6 @@ final class FilesystemPackStore {
         if (!Files.isRegularFile(target)) {
             return Optional.of("is not a regular file");
         }
-        String relative = directory.relativize(target).toString().replace('\\', '/');
         String prefix = String.valueOf(directory.getFileName()) + "/";
         if (!(table.classify(prefix + relative) instanceof PackFileKind.Mapped mapped)
                 || !PackFileKind.TEMPLATE.equals(mapped.kind())) {
@@ -964,8 +987,9 @@ final class FilesystemPackStore {
      * @param payload the bytes to write
      * @param kind the {@code bytes} kind the file is written as: {@link PackFileKind#ASSET_PAYLOAD} or
      *     {@link PackFileKind#TEMPLATE}
-     * @throws CharterRefusal when the path breaks the containment rule, another rule classifies it, the file resolves
-     *     outside the pack, or it cannot be written
+     * @throws CharterRefusal when the path breaks the containment rule, another rule classifies it, it differs only in
+     *     case from a file or directory of the pack ({@code REGISTRATION_CONFLICT}, {@link Spellings#collision}, #252),
+     *     the file resolves outside the pack, or it cannot be written
      */
     void writePayload(PackIdentifier id, String file, Payload payload, String kind) {
         Path directory = existingDirectory(id);
@@ -976,6 +1000,12 @@ final class FilesystemPackStore {
         };
         PackFileSet.notHeldAs(directory, at.packRelative(), kind).ifPresent(reason -> {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "payload " + file + " " + reason);
+        });
+        // One file has one path, case ignored, as the whole-pack write keeps it (#252): on a case-insensitive file
+        // system the write would replace the file in the other case.
+        Spellings.collision(directory, at.packRelative()).ifPresent(held -> {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT, "payload " + file + " differs only in case from " + held);
         });
         writeAtomically(directory, at.file(), payload.bytes());
     }

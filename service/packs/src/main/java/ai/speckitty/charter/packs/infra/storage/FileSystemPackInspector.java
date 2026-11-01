@@ -51,6 +51,12 @@ import org.jspecify.annotations.Nullable;
  * be YAML) is listed with its kind and not read. The step ids, artifact ids and asset declarations of the files that passed their schema are the
  * facts the validate-only rules judge; a file that did not is {@link PackContents#unreadableFiles()}.
  *
+ * <p>{@link Scope#FULL} lists every payload and template the store's listing holds, whatever its extension, with its
+ * kind, and reads none (#251). It applies the store's payload rule to the schema-valid asset sidecars
+ * ({@link SidecarPayloads}, ADR-0040 decision 6): a sidecar whose payload the pack does not hold, or that names a
+ * payload an earlier sidecar named, is {@link PackContents#unreadableFiles()} with the load's refusal, so validate mode
+ * and the load refuse the same sidecars in the same words.
+ *
  * <p>{@link Scope#FULL} also reads every {@code *.md} file that a {@code files} rule maps to a bound kind's Markdown
  * companion structure (a toolguide's guide, #194), as the store's load does: parsed with {@link MarkdownCodec},
  * validated against the structure schema, then held to the rules the schema cannot express
@@ -210,6 +216,7 @@ public final class FileSystemPackInspector implements PackInspector {
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
         private final Set<String> assetIds = new HashSet<>();
+        private final List<SidecarPayloads.Sidecar> sidecars = new ArrayList<>();
         private final PackFileKind table;
 
         FullRead(Path directory, String name, List<String> shards, PackFileKind table) {
@@ -258,10 +265,58 @@ public final class FileSystemPackInspector implements PackInspector {
                     throw PackFileSet.notStored(file, mapped.contentForm());
                 }
             }
-            PackFileSet.listing(directory, table)
-                    .retired()
+            PackFileSet.Listing listing = PackFileSet.listing(directory, table);
+            listPayloads(listing, prefix);
+            refuseSidecarsWithoutPayload(listing);
+            listing.retired()
                     .forEach((file, reason) -> unreadable.add(
                             new FileRead.Unreadable<>(file, ParseFailure.retired(file, reason), List.of())));
+        }
+
+        /**
+         * Lists every payload and template the store's listing holds with its kind, whatever its extension (#251): the
+         * YAML walk has listed the YAML-named ones. None is read.
+         */
+        private void listPayloads(PackFileSet.Listing listing, String prefix) {
+            Set<String> listed = new HashSet<>();
+            files.forEach(classified -> listed.add(classified.file()));
+            for (String file : concat(listing.assetFiles(), listing.templates())) {
+                if (!listed.contains(file) && table.classify(prefix + file) instanceof PackFileKind.Mapped mapped) {
+                    files.add(new ClassifiedFile(file, Optional.of(mapped.kind()), Optional.empty()));
+                }
+            }
+            files.sort(Comparator.comparing(ClassifiedFile::file, FileSystemPackInspector::comparePaths));
+        }
+
+        /**
+         * The store's payload rule ({@link SidecarPayloads}, ADR-0040 decision 6), so validate mode and the load refuse
+         * the same sidecars in the same words (#251): over the schema-valid sidecars in the store's order, against the
+         * asset files the store holds. An asset file is held when the store's read holds it
+         * ({@link FilesystemPackStore#readPayload(Path, String, java.util.function.Consumer)}); one that leaves the pack
+         * or cannot be read is unreadable with the load's reason, and names no payload. A refused sidecar is unreadable
+         * with the load's refusal; its facts stand, so the asset rules still judge it.
+         */
+        private void refuseSidecarsWithoutPayload(PackFileSet.Listing listing) {
+            List<String> held = new ArrayList<>();
+            for (String file : listing.assetFiles()) {
+                FilesystemPackStore.readPayload(
+                                directory,
+                                file,
+                                reason -> unreadable.add(
+                                        new FileRead.Unreadable<>(file, ParseFailure.refused(file, reason), List.of())))
+                        .ifPresent(bytes -> held.add(file.substring(PackFileSet.ASSETS.length())));
+            }
+            sidecars.sort(Comparator.comparing(SidecarPayloads.Sidecar::file));
+            for (SidecarPayloads.Refused refused : SidecarPayloads.refused(sidecars, held)) {
+                unreadable.add(new FileRead.Unreadable<>(
+                        refused.file(), ParseFailure.refused(refused.file(), refused.reason()), List.of()));
+            }
+        }
+
+        private static List<String> concat(List<String> first, List<String> second) {
+            List<String> both = new ArrayList<>(first);
+            both.addAll(second);
+            return both;
         }
 
         /** The pack document (#260), read as the store's load reads it, so the two refuse the same {@code pack.md}. */
@@ -301,6 +356,9 @@ public final class FileSystemPackInspector implements PackInspector {
             }
             if (map.get("id") instanceof String id && !id.isEmpty()) {
                 artifacts.add(new ArtifactFacts(file, kind.replace('-', '_'), id));
+                if ("asset".equals(kind) && map.get("path") instanceof String path) {
+                    sidecars.add(new SidecarPayloads.Sidecar(file, id, path));
+                }
                 if ("asset".equals(kind) && assetIds.add(id)) {
                     assets.add(assetFacts(file, id, map));
                 }
