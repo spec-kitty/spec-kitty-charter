@@ -492,6 +492,23 @@ final class FilesystemPackStore {
     }
 
     /**
+     * Reads only a pack's {@code pack.yaml}, telling an absent file from one that cannot be read: when nothing stands at
+     * {@code pack.yaml}, not even a link, the file is absent; anything else there must be a readable descriptor.
+     *
+     * @param id the pack
+     * @return the descriptor; empty when the pack has no {@code pack.yaml}
+     * @throws CharterRefusal when the pack directory is missing, or {@code pack.yaml} is there but is no readable
+     *     descriptor
+     */
+    Optional<PackDescriptorDso> findDescriptor(PackIdentifier id) {
+        Path directory = existingDirectory(id);
+        if (!Files.exists(directory.resolve(PackFileSet.PACK_YAML), LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.empty();
+        }
+        return Optional.of(descriptorOf(directory, id));
+    }
+
+    /**
      * Reads the readable elements of one kind of a pack, without its descriptor.
      *
      * @param id the pack

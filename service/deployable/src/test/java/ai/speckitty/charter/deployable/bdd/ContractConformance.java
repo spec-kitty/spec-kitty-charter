@@ -9,6 +9,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,19 +29,27 @@ import tools.jackson.databind.JsonNode;
  * Checks a response against the split contract on the test classpath ({@code contract/charter/openapi.yaml} and
  * the vendored {@code contract/_shared} components): the response the operation declares for the status, or its
  * {@code default}, must list the response's content type, and the body must validate against that content's
- * schema. A path no operation defines must answer the shared {@code Problem} response, the only non-2xx body of
- * any module.
+ * schema. A response is found by path template and method: a literal path beside a templated one (a
+ * {@code PUT} on {@code .../directive/{artifactId}} beside a {@code GET} on {@code .../{kind}/{artifactId}}) is
+ * checked against the operation that defines the method. A path no operation defines for the method must answer the
+ * shared {@code Problem} response, the only non-2xx body of any module.
  *
  * <p>The validator covers the JSON Schema keywords the contract uses: {@code $ref} (to a whole file),
  * {@code allOf}, {@code oneOf}, {@code type} (one name or a list), {@code properties}, {@code required},
- * {@code additionalProperties: false} (or a map of {@code Link.yaml}, the {@code Links} component of ADR-0019 D3), {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength},
- * {@code minItems}, {@code maxItems}, {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
+ * {@code additionalProperties} ({@code false}, or a schema each undeclared member is checked against: a map such as
+ * {@code Links}; {@code true}, {@code {}}, a mapping of annotations only and {@code null} are refused, so the contract
+ * stays closed),
+ * {@code items}, {@code enum}, {@code pattern}, {@code minLength}, {@code maxLength}, {@code minItems},
+ * {@code maxItems},
+ * {@code minimum} and {@code maximum}. Any other keyword fails the check, so a constraint the contract adds is
  * never ignored in silence: the check walks every schema of the contract once when it is built, not only the
  * ones a body reaches. The contract tree is a constructor argument, so the fail-closed branches are tested over
  * fixtures.
  *
- * <p>Not routed through here, as no scenario can provoke them: the {@code 405} of a method the path does not have
- * and the container's {@code /error} page, pinned in {@code ProblemResponsesTest}; and what Tomcat answers before
+ * <p>A {@code 405} of a method a path of the contract does not define ({@code removed-routes.feature}) is routed through
+ * here as a path no operation defines for the method: the shared {@code Problem}; its {@code Allow} header is pinned in
+ * {@code ProblemResponsesTest}. Not routed through here, as no scenario can provoke them: the container's
+ * {@code /error} page, pinned in {@code ProblemResponsesTest}; and what Tomcat answers before
  * routing (a malformed path, a missing {@code Host}, an oversized header, {@code TRACE}), pinned in
  * {@code ConnectorErrorsTest}. Both assert the closed {@code Problem} body literally.
  */
@@ -60,6 +69,23 @@ final class ContractConformance {
             "minimum",
             "maximum");
     private static final Set<String> ANNOTATIONS = Set.of("title", "description", "examples", "format");
+    private static final Set<String> METHODS =
+            Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
+
+    /**
+     * One success answer the contract declares: an operation, by its method and path template, and a 2xx status.
+     *
+     * @param method the lower-case method, as the contract names it
+     * @param template the path template, for example {@code /packs/{packId}/artifacts}
+     * @param status the 2xx status
+     */
+    record Success(String method, String template, int status) {
+
+        @Override
+        public String toString() {
+            return method.toUpperCase(Locale.ROOT) + " " + template + " " + status;
+        }
+    }
 
     private final Path root;
     private final Map<String, Map<String, Object>> documents = new HashMap<>();
@@ -149,17 +175,6 @@ final class ContractConformance {
         }
     }
 
-    /**
-     * Whether an {@code additionalProperties} is the one map the contract holds: the {@code Links} component's map of
-     * {@code Link} (ADR-0019 D3), whose relation keys are open and whose values are each a closed {@code Link}.
-     */
-    private static boolean isLinkMap(@Nullable Object argument) {
-        return argument instanceof Map<?, ?> map
-                && map.size() == 1
-                && map.get("$ref") instanceof String ref
-                && (ref.equals("Link.yaml") || ref.endsWith("/Link.yaml"));
-    }
-
     private void vetFile(String resource, Set<String> vetted) {
         if (vetted.add(resource)) {
             vetNode(new Located(document(resource), resource), vetted);
@@ -189,14 +204,13 @@ final class ContractConformance {
                 case "items" ->
                     vetNode(new Located(mapping(argument, schema.file() + " items"), schema.file()), vetted);
                 case "additionalProperties" -> {
-                    if (isLinkMap(argument)) {
+                    if (isSchema(argument)) {
                         vetNode(
                                 new Located(mapping(argument, schema.file() + " additionalProperties"), schema.file()),
                                 vetted);
                     } else if (!Boolean.FALSE.equals(argument)) {
                         throw new AssertionError(schema.file()
-                                + ": only additionalProperties: false is supported, or a map of Link.yaml, not "
-                                + argument);
+                                + ": only additionalProperties: false or a schema is supported, not " + argument);
                     }
                 }
                 default -> {
@@ -228,7 +242,8 @@ final class ContractConformance {
      * @param path the request path below the server prefix, without a query
      * @param status the response status
      * @param contentType the response content type, or {@code null} when there is none
-     * @param body the response body as JSON, or {@code null} when it is empty or not JSON
+     * @param body the response body as JSON, or {@code null} when it is empty or not JSON; a declared media type that is
+     *     not JSON (YAML text) is not read as JSON
      * @return what does not conform, one sentence each
      */
     List<String> violations(
@@ -242,7 +257,8 @@ final class ContractConformance {
                     + "; it declares " + content.keySet());
         }
         if (body == null) {
-            return List.of("the " + status + " body is not JSON");
+            // A text type (the contract document's application/yaml) is not read as JSON; a JSON type must be JSON.
+            return isJson(mediaType) ? List.of("the " + status + " body is not JSON") : List.of();
         }
         Located schema = new Located(
                 mapping(mapping(media, response.file()).get("schema"), response.file() + " schema"), response.file());
@@ -266,27 +282,61 @@ final class ContractConformance {
         return violations;
     }
 
+    /** Whether a media type is JSON: {@code application/json} or a {@code +json} type such as a problem. */
+    private static boolean isJson(String mediaType) {
+        return mediaType.equals("application/json") || mediaType.endsWith("+json");
+    }
+
+    /**
+     * The path template of the operation that answers {@code method} on {@code path}. Every path template that matches
+     * the path is a candidate; among those that define the method, the concrete one wins (fewest template segments, as
+     * OpenAPI asks). A segment of {@code path} may itself be a template expression such as {@code {packId}}: it
+     * matches a template's variable segment, never a literal one.
+     *
+     * @param method the lower-case method, for example {@code get}
+     * @param path the path below the server prefix, without a query
+     * @return the template, or empty when no operation of the contract defines the method on the path
+     */
+    Optional<String> operationTemplate(String method, String path) {
+        return paths().entrySet().stream()
+                .filter(entry -> template(entry.getKey()).matcher(path).matches())
+                .filter(entry -> pathItem(entry).node().get(method) != null)
+                .map(Map.Entry::getKey)
+                .min(Comparator.comparingLong(ContractConformance::templateSegments));
+    }
+
     /**
      * The operation the contract declares for a method and a concrete path, with no fallback: a path or method the
-     * contract does not declare is empty, never the shared {@code Problem}.
+     * contract does not declare is empty, never the shared {@code Problem}. The operation is the one
+     * {@link #operationTemplate} names.
      *
      * @param method the request method, for example {@code put}
      * @param path the request path below the server prefix, without a query
      * @return the declared operation, its {@code $ref}s of the path item resolved
      */
     Optional<DeclaredOperation> operation(String method, String path) {
-        Map<String, Object> paths = mapping(document(OPENAPI).get("paths"), "paths");
-        for (Map.Entry<String, Object> entry : paths.entrySet()) {
-            if (!template(entry.getKey()).matcher(path).matches()) {
-                continue;
-            }
-            Located item = resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
-            Object operation = item.node().get(method.toLowerCase(Locale.ROOT));
-            return operation == null
-                    ? Optional.empty()
-                    : Optional.of(new DeclaredOperation(entry.getKey(), mapping(operation, entry.getKey())));
-        }
-        return Optional.empty();
+        String lower = method.toLowerCase(Locale.ROOT);
+        return operationTemplate(lower, path)
+                .map(chosen -> new DeclaredOperation(
+                        chosen,
+                        mapping(
+                                pathItem(Map.entry(chosen, paths().get(chosen)))
+                                        .node()
+                                        .get(lower),
+                                chosen)));
+    }
+
+    /**
+     * Whether the operation that answers {@code method} on {@code path} is built: the contract declares it, and it
+     * carries no {@code x-reserved} (ADR-0020 D8). A reserved operation answers 501 until it is built, so no link may
+     * point to it and no scenario can exercise its success answers.
+     *
+     * @param method the lower-case method, for example {@code get}
+     * @param path the path below the server prefix, without a query; a template expression matches a variable segment
+     * @return the template of the built operation, or empty when none is declared or the declared one is reserved
+     */
+    Optional<String> builtOperationTemplate(String method, String path) {
+        return operation(method, path).filter(found -> !found.reserved()).map(DeclaredOperation::pathTemplate);
     }
 
     /**
@@ -318,27 +368,65 @@ final class ContractConformance {
         }
     }
 
-    private Located response(String method, String path, int status) {
-        Map<String, Object> openapi = document(OPENAPI);
-        Map<String, Object> paths = mapping(openapi.get("paths"), "paths");
-        for (Map.Entry<String, Object> entry : paths.entrySet()) {
-            if (!template(entry.getKey()).matcher(path).matches()) {
-                continue;
+    /**
+     * Every success answer the contract declares of a built operation: each 2xx status of each operation that carries
+     * no {@code x-reserved}. A reserved operation (ADR-0020 D8) answers 501 whatever the request holds, so its declared
+     * successes cannot be exercised until it is built; it is pinned by its 501 scenario instead.
+     *
+     * @return the successes, by method, path template and status
+     */
+    Set<Success> successResponses() {
+        Set<Success> successes = new HashSet<>();
+        for (Map.Entry<String, Object> entry : paths().entrySet()) {
+            Located item = pathItem(entry);
+            for (Map.Entry<String, Object> operation : item.node().entrySet()) {
+                if (!METHODS.contains(operation.getKey())
+                        || new DeclaredOperation(entry.getKey(), mapping(operation.getValue(), entry.getKey()))
+                                .reserved()) {
+                    continue;
+                }
+                mapping(mapping(operation.getValue(), entry.getKey()).get("responses"), entry.getKey() + " responses")
+                        .keySet()
+                        .stream()
+                        .filter(status -> status.matches("2\\d\\d"))
+                        .forEach(status -> successes.add(
+                                new Success(operation.getKey(), entry.getKey(), Integer.parseInt(status))));
             }
-            Located item = resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
-            Object operation = item.node().get(method);
-            if (operation == null) {
-                break;
-            }
-            Map<String, Object> responses = mapping(mapping(operation, path).get("responses"), path + " responses");
-            Object declared = Optional.ofNullable(responses.get(String.valueOf(status)))
-                    .orElseGet(() -> responses.get("default"));
-            if (declared == null) {
-                throw new AssertionError(item.file() + " declares no " + status + " and no default response");
-            }
-            return resolve(new Located(mapping(declared, path + " " + status), item.file()));
         }
-        return new Located(document(SHARED_PROBLEM), SHARED_PROBLEM);
+        return successes;
+    }
+
+    private Map<String, Object> paths() {
+        return mapping(document(OPENAPI).get("paths"), "paths");
+    }
+
+    private Located pathItem(Map.Entry<String, Object> entry) {
+        return resolve(new Located(mapping(entry.getValue(), entry.getKey()), OPENAPI));
+    }
+
+    /**
+     * The response the contract declares for {@code method} on {@code path}: the one of the operation
+     * {@link #operationTemplate} names. When no operation defines the method, the shared {@code Problem} response
+     * applies.
+     */
+    private Located response(String method, String path, int status) {
+        Optional<String> chosen = operationTemplate(method, path);
+        if (chosen.isEmpty()) {
+            return new Located(document(SHARED_PROBLEM), SHARED_PROBLEM);
+        }
+        Located item = pathItem(Map.entry(chosen.get(), paths().get(chosen.get())));
+        Map<String, Object> responses =
+                mapping(mapping(item.node().get(method), path).get("responses"), path + " responses");
+        Object declared =
+                Optional.ofNullable(responses.get(String.valueOf(status))).orElseGet(() -> responses.get("default"));
+        if (declared == null) {
+            throw new AssertionError(item.file() + " declares no " + status + " and no default response");
+        }
+        return resolve(new Located(mapping(declared, path + " " + status), item.file()));
+    }
+
+    private static long templateSegments(String pathTemplate) {
+        return Pattern.compile("\\{[^}]+}").matcher(pathTemplate).results().count();
     }
 
     private static Pattern template(String pathTemplate) {
@@ -364,137 +452,186 @@ final class ContractConformance {
                         validate(value, new Located(mapping(branch, at), resolved.file()), at, violations);
                     }
                 }
-                case "oneOf" -> {
-                    long matching = list(argument, at + " oneOf").stream()
-                            .filter(branch -> {
-                                List<String> branchViolations = new ArrayList<>();
-                                validate(
-                                        value, new Located(mapping(branch, at), resolved.file()), at, branchViolations);
-                                return branchViolations.isEmpty();
-                            })
-                            .count();
-                    if (matching != 1) {
-                        violations.add(at + " matches " + matching + " of the oneOf branches, not exactly one");
-                    }
-                }
-                case "type" -> {
-                    List<?> types = argument instanceof List<?> l ? l : List.of(argument);
-                    if (types.stream().noneMatch(t -> hasType(value, String.valueOf(t)))) {
-                        violations.add(at + " is " + value.getNodeType() + ", not " + types);
-                    }
-                }
-                case "properties" -> {
-                    for (Map.Entry<String, Object> property :
-                            mapping(argument, at + " properties").entrySet()) {
-                        JsonNode member = value.isObject() ? value.get(property.getKey()) : null;
-                        if (member != null) {
-                            validate(
-                                    member,
-                                    new Located(mapping(property.getValue(), property.getKey()), resolved.file()),
-                                    at + "." + property.getKey(),
-                                    violations);
-                        }
-                    }
-                }
-                case "required" -> {
-                    for (Object name : list(argument, at + " required")) {
-                        if (value.isObject() && !value.has(String.valueOf(name))) {
-                            violations.add(at + " lacks the required member '" + name + "'");
-                        }
-                    }
-                }
-                case "additionalProperties" -> {
-                    boolean links = isLinkMap(argument);
-                    if (!links && !Boolean.FALSE.equals(argument)) {
-                        throw new AssertionError(at + ": only additionalProperties: false is supported");
-                    }
-                    Set<String> declared = mapping(node.getOrDefault("properties", Map.of()), at)
-                            .keySet();
-                    if (value.isObject()) {
-                        for (String name : value.propertyNames()) {
-                            if (declared.contains(name)) {
-                                continue;
-                            }
-                            if (links) {
-                                validate(
-                                        value.get(name),
-                                        new Located(mapping(argument, at), resolved.file()),
-                                        at + "." + name,
-                                        violations);
-                            } else {
-                                violations.add(at + " has the undeclared member '" + name + "'");
-                            }
-                        }
-                    }
-                }
-                case "items" -> {
-                    if (value.isArray()) {
-                        for (int i = 0; i < value.size(); i++) {
-                            validate(
-                                    value.get(i),
-                                    new Located(mapping(argument, at + " items"), resolved.file()),
-                                    at + "[" + i + "]",
-                                    violations);
-                        }
-                    }
-                }
-                case "enum" -> {
-                    if (list(argument, at + " enum").stream()
-                            .noneMatch(v -> value.isString() && value.asString().equals(String.valueOf(v)))) {
-                        violations.add(at + " is " + value + ", not one of " + argument);
-                    }
-                }
-                case "pattern" -> {
-                    if (value.isString()
-                            && !Pattern.compile(String.valueOf(argument))
-                                    .matcher(value.asString())
-                                    .find()) {
-                        violations.add(at + " '" + value.asString() + "' does not match " + argument);
-                    }
-                }
-                case "minLength" -> {
-                    if (value.isString()
-                            && value.asString()
-                                            .codePointCount(0, value.asString().length())
-                                    < ((Number) argument).intValue()) {
-                        violations.add(at + " is shorter than " + argument);
-                    }
-                }
-                case "maxLength" -> {
-                    if (value.isString()
-                            && value.asString()
-                                            .codePointCount(0, value.asString().length())
-                                    > ((Number) argument).intValue()) {
-                        violations.add(at + " is longer than " + argument);
-                    }
-                }
-                case "minItems" -> {
-                    if (value.isArray() && value.size() < ((Number) argument).intValue()) {
-                        violations.add(at + " holds fewer than " + argument + " items");
-                    }
-                }
-                case "maxItems" -> {
-                    if (value.isArray() && value.size() > ((Number) argument).intValue()) {
-                        violations.add(at + " holds more than " + argument + " items");
-                    }
-                }
-                case "minimum" -> {
-                    if (value.isNumber() && value.asDouble() < ((Number) argument).doubleValue()) {
-                        violations.add(at + " is below " + argument);
-                    }
-                }
-                case "maximum" -> {
-                    if (value.isNumber() && value.asDouble() > ((Number) argument).doubleValue()) {
-                        violations.add(at + " is above " + argument);
-                    }
-                }
+                case "oneOf" -> validateOneOf(value, argument, resolved, at, violations);
+                case "properties" -> validateProperties(value, argument, resolved, at, violations);
+                case "additionalProperties" -> validateAdditional(value, argument, resolved, at, violations);
+                case "items" -> validateItems(value, argument, resolved, at, violations);
                 default -> {
-                    if (!key.startsWith("x-") && !ANNOTATIONS.contains(key)) {
+                    if (CONSTRAINTS.contains(key)) {
+                        constrain(value, key, argument, at, violations);
+                    } else if (!key.startsWith("x-") && !ANNOTATIONS.contains(key)) {
                         throw new AssertionError(resolved.file() + " uses the keyword '" + key
                                 + "', which this check does not implement");
                     }
                 }
             }
+        }
+    }
+
+    private void validateProperties(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        for (Map.Entry<String, Object> property :
+                mapping(argument, at + " properties").entrySet()) {
+            JsonNode member = value.isObject() ? value.get(property.getKey()) : null;
+            if (member != null) {
+                validate(
+                        member,
+                        new Located(mapping(property.getValue(), property.getKey()), resolved.file()),
+                        at + "." + property.getKey(),
+                        violations);
+            }
+        }
+    }
+
+    private void validateItems(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        if (value.isArray()) {
+            for (int i = 0; i < value.size(); i++) {
+                validate(
+                        value.get(i),
+                        new Located(mapping(argument, at + " items"), resolved.file()),
+                        at + "[" + i + "]",
+                        violations);
+            }
+        }
+    }
+
+    private void validateOneOf(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        long matching = list(argument, at + " oneOf").stream()
+                .filter(branch -> {
+                    List<String> branchViolations = new ArrayList<>();
+                    validate(value, new Located(mapping(branch, at), resolved.file()), at, branchViolations);
+                    return branchViolations.isEmpty();
+                })
+                .count();
+        if (matching != 1) {
+            violations.add(at + " matches " + matching + " of the oneOf branches, not exactly one");
+        }
+    }
+
+    /**
+     * {@code additionalProperties: false} refuses a member {@code properties} does not declare; a schema-valued one
+     * (a map, the {@code Links} of ADR-0019 D3) checks each such member against that schema.
+     */
+    private void validateAdditional(
+            JsonNode value, @Nullable Object argument, Located resolved, String at, List<String> violations) {
+        boolean closed = Boolean.FALSE.equals(argument);
+        if (!closed && !isSchema(argument)) {
+            throw new AssertionError(at + ": only additionalProperties: false or a schema is supported");
+        }
+        if (!value.isObject()) {
+            return;
+        }
+        Set<String> declared = mapping(resolved.node().getOrDefault("properties", Map.of()), at)
+                .keySet();
+        for (String name : value.propertyNames()) {
+            if (declared.contains(name)) {
+                continue;
+            }
+            if (closed) {
+                violations.add(at + " has the undeclared member '" + name + "'");
+            } else {
+                validate(
+                        value.get(name),
+                        new Located(mapping(argument, at + " additionalProperties"), resolved.file()),
+                        at + "." + name,
+                        violations);
+            }
+        }
+    }
+
+    /**
+     * A schema-valued {@code additionalProperties}: a mapping that constrains something, with a keyword that is neither
+     * an annotation nor an {@code x-} extension. {@code {}}, or a mapping of annotations only, admits all.
+     */
+    private static boolean isSchema(@Nullable Object argument) {
+        return argument instanceof Map<?, ?> map
+                && map.keySet().stream()
+                        .map(String::valueOf)
+                        .anyMatch(key -> !ANNOTATIONS.contains(key) && !key.startsWith("x-"));
+    }
+
+    /** The scalar and size constraints, which never descend into the value. */
+    private static void constrain(JsonNode value, String key, Object argument, String at, List<String> violations) {
+        switch (key) {
+            case "type" -> {
+                List<?> types = argument instanceof List<?> l ? l : List.of(argument);
+                if (types.stream().noneMatch(t -> hasType(value, String.valueOf(t)))) {
+                    violations.add(at + " is " + value.getNodeType() + ", not " + types);
+                }
+            }
+            case "required" -> {
+                for (Object name : list(argument, at + " required")) {
+                    if (value.isObject() && !value.has(String.valueOf(name))) {
+                        violations.add(at + " lacks the required member '" + name + "'");
+                    }
+                }
+            }
+            case "enum" -> {
+                if (list(argument, at + " enum").stream()
+                        .noneMatch(v -> value.isString() && value.asString().equals(String.valueOf(v)))) {
+                    violations.add(at + " is " + value + ", not one of " + argument);
+                }
+            }
+            case "pattern" -> {
+                if (value.isString()
+                        && !Pattern.compile(String.valueOf(argument))
+                                .matcher(value.asString())
+                                .find()) {
+                    violations.add(at + " '" + value.asString() + "' does not match " + argument);
+                }
+            }
+            default -> bound(value, key, (Number) argument, at, violations);
+        }
+    }
+
+    /** The length, size and range bounds. */
+    private static void bound(JsonNode value, String key, Number limit, String at, List<String> violations) {
+        if (key.equals("minLength") || key.equals("maxLength")) {
+            lengthBound(value, key, limit, at, violations);
+        } else {
+            sizeOrRangeBound(value, key, limit, at, violations);
+        }
+    }
+
+    /** {@code minLength} and {@code maxLength}, in code points; a value that is not a string passes. */
+    private static void lengthBound(JsonNode value, String key, Number limit, String at, List<String> violations) {
+        if (!value.isString()) {
+            return;
+        }
+        int length = value.asString().codePointCount(0, value.asString().length());
+        if (key.equals("minLength") && length < limit.intValue()) {
+            violations.add(at + " is shorter than " + limit);
+        } else if (key.equals("maxLength") && length > limit.intValue()) {
+            violations.add(at + " is longer than " + limit);
+        }
+    }
+
+    /** {@code minItems}, {@code maxItems}, {@code minimum} and {@code maximum}. */
+    private static void sizeOrRangeBound(JsonNode value, String key, Number limit, String at, List<String> violations) {
+        switch (key) {
+            case "minItems" -> {
+                if (value.isArray() && value.size() < limit.intValue()) {
+                    violations.add(at + " holds fewer than " + limit + " items");
+                }
+            }
+            case "maxItems" -> {
+                if (value.isArray() && value.size() > limit.intValue()) {
+                    violations.add(at + " holds more than " + limit + " items");
+                }
+            }
+            case "minimum" -> {
+                if (value.isNumber() && value.asDouble() < limit.doubleValue()) {
+                    violations.add(at + " is below " + limit);
+                }
+            }
+            case "maximum" -> {
+                if (value.isNumber() && value.asDouble() > limit.doubleValue()) {
+                    violations.add(at + " is above " + limit);
+                }
+            }
+            default -> throw new AssertionError("the constraint '" + key + "' is not implemented");
         }
     }
 

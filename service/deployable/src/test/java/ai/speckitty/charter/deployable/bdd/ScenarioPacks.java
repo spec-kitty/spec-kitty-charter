@@ -114,6 +114,24 @@ public final class ScenarioPacks {
         }
     }
 
+    /**
+     * Deletes one file of a configured pack, which must exist: a scenario that deletes nothing proves nothing.
+     *
+     * @param pack the configured name of the pack
+     * @param relativePath the file's path below the pack directory
+     */
+    void deleteFile(String pack, String relativePath) {
+        PackLocation location = locations.stream()
+                .filter(l -> l.name().equals(pack))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("no pack " + pack + " is configured"));
+        try {
+            Files.delete(location.root().resolve(relativePath));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /** Plants a failure no refusal names: asking for the packs throws, until the scenario ends. */
     void failUnexpectedly() {
         failing = true;

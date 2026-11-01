@@ -87,8 +87,8 @@ class RegularArtefactWiringTest {
 
     @Test
     void everyNewKindReadServesWithTheFingerprintHeader() throws Exception {
-        for (String kind : new String[] {"directives", "styleguides", "paradigms", "toolguides"}) {
-            HttpResponse<String> response = send("GET", "/api/v1/packs/qa/" + kind, null);
+        for (String kind : new String[] {"directive", "styleguide", "paradigm", "toolguide"}) {
+            HttpResponse<String> response = send("GET", "/api/v1/packs/qa/artifacts?kind=" + kind, null);
             assertThat(response.statusCode())
                     .as("GET %s: %s", kind, response.body())
                     .isEqualTo(200);
@@ -104,15 +104,16 @@ class RegularArtefactWiringTest {
     void aRegistrationPutRoundTripsThroughTheWiredContext() throws Exception {
         HttpResponse<String> put = send(
                 "PUT",
-                "/api/v1/packs/qa/directives/ROUNDTRIP",
+                "/api/v1/packs/qa/artifacts/directive/ROUNDTRIP",
                 "{\"schemaVersion\": \"1.0\", \"title\": \"Round trip\", \"intent\": \"prove the wiring\","
                         + " \"enforcement\": \"required\"}");
         assertThat(put.statusCode()).as(put.body()).isEqualTo(201);
 
-        HttpResponse<String> get = send("GET", "/api/v1/packs/qa/directives/ROUNDTRIP", null);
+        HttpResponse<String> get = send("GET", "/api/v1/packs/qa/artifacts/directive/ROUNDTRIP", null);
         assertThat(get.statusCode()).as(get.body()).isEqualTo(200);
         assertThat(JSON.readTree(get.body()).path("id").asString()).isEqualTo("ROUNDTRIP");
-        assertThat(JSON.readTree(get.body()).path("title").asString()).isEqualTo("Round trip");
+        assertThat(JSON.readTree(get.body()).at("/directive/title").asString()).isEqualTo("Round trip");
+        assertThat(JSON.readTree(put.body())).isEqualTo(JSON.readTree(get.body()));
     }
 
     @Test
@@ -121,7 +122,7 @@ class RegularArtefactWiringTest {
 
         HttpResponse<String> put = send(
                 "PUT",
-                "/api/v1/packs/qa/directives/RESOLVED",
+                "/api/v1/packs/qa/artifacts/directive/RESOLVED",
                 "{\"schemaVersion\": \"1.0\", \"title\": \"Resolved\", \"intent\": \"prove dispatch\","
                         + " \"enforcement\": \"required\"}");
         assertThat(put.statusCode()).as(put.body()).isEqualTo(201);

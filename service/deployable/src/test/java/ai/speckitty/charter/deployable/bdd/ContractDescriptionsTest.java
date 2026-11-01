@@ -54,6 +54,9 @@ class ContractDescriptionsTest {
     void theRefusedResponseCoversStaleInput() throws IOException {
         assertThat(description("contract/charter/responses/OfferingUnreadable.yaml"))
                 .contains("the packs changed while the read was answered")
-                .contains("stale_input, which may be retried");
+                .contains("stale_input, when the packs or the project configuration changed while the read was"
+                        + " answered, which may be retried")
+                .doesNotContain("pack_level_mismatch")
+                .doesNotContain("drg_schema_error");
     }
 }

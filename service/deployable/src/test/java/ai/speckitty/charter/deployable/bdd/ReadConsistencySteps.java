@@ -98,15 +98,6 @@ public class ReadConsistencySteps {
         assertThat(http.response().getHeaders(name)).hasSize(1);
     }
 
-    @Then("the response body is a list with an element whose field {string} is {string}")
-    public void bodyListHasElement(String field, String value) throws Exception {
-        JsonNode body = JSON.readTree(http.body());
-        assertThat(body.isArray()).as("the body is a JSON array: %s", body).isTrue();
-        assertThat(body.valueStream().map(element -> element.path(field).asString()))
-                .as("the %s of the listed elements", field)
-                .contains(value);
-    }
-
     @Then("the contract declares the refusal code {string}")
     public void theContractDeclares(String code) {
         assertThat(codes()).contains(code);
@@ -141,7 +132,10 @@ public class ReadConsistencySteps {
     public void observedRefusalsAgreeWithTheContract() throws Exception {
         for (ScenarioHttp.Exchange exchange : http.exchanges()) {
             String text = exchange.result().getResponse().getContentAsString();
-            JsonNode body = text.isBlank() ? JSON.createObjectNode() : JSON.readTree(text);
+            String type = exchange.result().getResponse().getContentType();
+            // A refusal is JSON; a text answer (the contract document's YAML) carries no code.
+            boolean json = type != null && (type.startsWith("application/json") || type.contains("+json"));
+            JsonNode body = text.isBlank() || !json ? JSON.createObjectNode() : JSON.readTree(text);
             if (!body.has("code")) {
                 continue;
             }
