@@ -111,11 +111,13 @@ A path names a resource, never an action. Every resource is one of four archetyp
 
 ## Headers every response carries
 
-- **`Charter-Contract-Version`, `Charter-Worktree` and `Charter-Source-Fingerprint`** are declared
-  on every response, errors included ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/),
+- **`Charter-Contract-Version` and `Charter-Worktree`** are declared on every response, errors included
+  ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/),
   [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)). The lint rule
   `charter-headers-on-every-response` fails a response that does not declare them.
-  - `Charter-Source-Fingerprint` is sent only on a `200`: never on a refusal or a failure.
+  - `Charter-Source-Fingerprint` is declared, `required: true`, on the `200` of every verified read, and on no
+    other response (#175): never on a refusal, a failure, a write, the root or `/openapi.yaml`. A reserved read of
+    the activation set declares it on its `200` too and, while it answers `501`, sends none.
   - The one exception is the servlet container's own 400s (a bad path encoding, an oversized
     header, a missing `Host`), which answer before the service sees the request and carry no
     `Charter-*` header.
