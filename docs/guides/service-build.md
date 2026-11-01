@@ -321,6 +321,9 @@ Pushing the tag runs `.github/workflows/service-release.yml`.
     nothing.
   - `scripts/release/rehearse-service-release.sh` rehearses every gate refusal and the asset set without
     any remote. It runs in CI on every change.
+  - **Before the very first `service-v*` tag,** do one manual `workflow_dispatch` run against a candidate
+    tag name. The publish job and the two remote gate-checks (on-main, tag-still-names-the-commit) run only
+    on a real tag push, so a dispatch run is their first exercise end to end, while still publishing nothing.
 
 If a run fails after its assets were built:
 
