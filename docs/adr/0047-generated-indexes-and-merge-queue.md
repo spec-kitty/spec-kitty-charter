@@ -34,6 +34,9 @@ audience:
   - a `pr:pause-ci` guard stops CI on a parked pull request;
   - stale docsite runs are cancelled.
 - **Sequence.** The changes land in the order 1, 3, 2.
+- **The ADR keys.** The proposal named the two keys `status` and `date`. They were built as
+  `decision_status` and `decision_date`, so they cannot collide with a `status` or `date` meaning in
+  OKF or doc-kitty, and the operator accepted those names on 2026-11-01.
 
 ## Context
 
