@@ -27,26 +27,32 @@ description: >-
   mission_type_not_found and action_not_found are not raised: the action-context operation that
   answered them is gone, and the reserved effective context of an activation (ADR-0020 D7) that will
   answer them again answers 501 until it is built. pack_level_mismatch and drg_schema_error are no longer raised: no operation
-  loads and judges a pack's graph any more. All four values stay in the enum so that the contract
+  loads and judges a pack's graph any more (the whole-pack load that refuses a graph breaking its schema as
+  drg_schema_error is not reached by any operation). All four values stay in the enum so that the contract
   keeps accepting them.
 
-  One code is reserved for the work that raises it, so that adding it is no breaking change (ADR-0009):
-  governance_policy_violation will refuse an offering in which a lower-tier pack breaks the mutability
-  policy of the pack that owns an artifact (the mutability-policy epic #55, ADR-0012, steps #57 to
-  #61). No operation of this version raises it. Its scenario is
-  a declaration pin, not behavior: it asserts only what the x-refusal map below declares, and a unit test of
-  the service fails when any main class other than the enum and its title mapping names the code.
+  governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
+  the pack that owns its target does not permit is refused with it (ADR-0012, the mutability-policy epic
+  #55). An artifact no policy names is open, and open permits every write; this version reads no policy
+  file yet, so until it does every target is open and no write is refused with it. A lower-tier pack that breaks
+  the mutability policy of an artifact it changes in the merged offering will be refused with it too,
+  once the offering is merged (#10, #11).
 
   Six codes are reserved for the activation set (ADR-0020 D9, D10, #125), declared before the operations
   that raise them are built, which answer 501 until then (ADR-0020 D8): activation_not_found,
   artifact_not_found and preset_not_found (404); artifact_required and artifact_locked (409), a
   deactivation a pack requires or locks, whose refusal names every requiring pack in requiredBy;
   activation_invalid (422), a document or body the service refuses, each refused part listed in violations.
-  No operation of this version raises them. Each scenario is a declaration pin, as for
-  governance_policy_violation.
+  No operation of this version raises them. Each scenario is a declaration pin, not behavior: it asserts
+  only what the x-refusal map below declares, and a unit test of the service fails when any main class
+  other than the enum and its mappings names a code the map marks not raised, outside the two classes no
+  operation reaches (the whole-pack load and its findings).
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
-  and whether an operation of this version raises it (raised). Clients and the contract scenarios read it.
+  and whether an operation of this version raises it (raised). A code is raised when an operation of this version
+  reaches the code that refuses with it, even when no configuration of this version provokes the refusal
+  (governance_policy_violation); a code that only a part no operation reaches refuses with is not raised
+  (drg_schema_error). Clients and the contract scenarios read it.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -118,7 +124,7 @@ x-refusal:
   governance_policy_violation:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   stale_input:
     status: 500
     retryable: true

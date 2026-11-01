@@ -191,7 +191,8 @@ that calls it. A run that selects only some scenarios reports the others' operat
   `@contract`. It takes one of two forms:
   - A *declaration pin* pins a reserved refusal code, never behavior. It calls no operation, and names in its
     description the unit test that enforces "raised by no operation of this version" and the issue that will raise
-    the code (for `governance_policy_violation`: `ReservedRefusalCodesTest` and #55).
+    the code (for `activation_not_found`: `ReservedRefusalCodesTest` and #291). `ReservedRefusalCodesTest` reads
+    the codes from the `x-refusal` map, so a code the map marks `raised: false` is enforced without editing it.
   - A *501 pin* pins a reserved operation (ADR-0020 D8). It sends one well-formed request to the operation and ends
     with `Then the operation is refused as not implemented`. Its feature names `ReservedOperationCoverageTest`, which
     keeps the 501 pins and the operations that carry `x-reserved` one to one, and the issue that will build the

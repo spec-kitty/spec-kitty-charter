@@ -71,7 +71,10 @@ put:
     '404':
       $ref: ../../_shared/responses/Problem.yaml
     '409':
-      description: The relationship conflicts with the pack's state (from does not resolve, or policy).
+      description: >-
+        The relationship conflicts with the pack's state: registration_conflict, its from does not resolve; or
+        governance_policy_violation, an edge the mutability level of the pack that owns its from does not permit
+        (ADR-0012).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

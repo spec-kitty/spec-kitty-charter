@@ -31,13 +31,14 @@ class ContractDescriptionsTest {
     }
 
     @Test
-    void theRefusalCodeSaysStaleInputIsRaisedAndGovernancePolicyViolationIsOnlyDeclared() throws IOException {
+    void theRefusalCodeSaysStaleInputAndGovernancePolicyViolationAreRaised() throws IOException {
         assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
                 .contains("stale_input is raised: the packs or the project configuration changed while the answer was"
                         + " computed, so the answer and the Charter-Source-Fingerprint it would report might disagree")
                 .contains("The read may be retried")
-                .contains("No operation of this version raises it")
-                .contains("Its scenario is a declaration pin, not behavior");
+                .contains("governance_policy_violation (409) is raised by the registration writes")
+                .contains("this version reads no policy file yet, so until it does every target is open")
+                .doesNotContain("No operation of this version raises it");
     }
 
     @Test
