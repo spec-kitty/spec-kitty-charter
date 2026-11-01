@@ -1,0 +1,69 @@
+# Must pass: every refusal example and every response description names only codes x-refusal declares
+# raised. The examples use both forms, examples.*.value.code and example.code.
+openapi: 3.1.0
+info:
+  title: Refusal examples fixture
+  version: 1.0.0
+paths:
+  /info:
+    get:
+      operationId: getServiceInfo
+      responses:
+        '404':
+          description: >-
+            The pack is not configured, refused with 404 `pack_not_found`. A word that merely contains a code,
+            such as no_pack_level_mismatch_here, names none.
+          content:
+            application/problem+json:
+              schema: &charter-refusal
+                title: CharterRefusal
+                allOf:
+                  - title: Problem
+                    type: object
+                  - type: object
+                    properties:
+                      code:
+                        title: CharterRefusalCode
+                        type: string
+                        enum:
+                          - pack_not_found
+                          - pack_unreadable
+                          - stale_input
+                          - pack_level_mismatch
+                        x-refusal:
+                          pack_not_found:
+                            status: 404
+                            retryable: false
+                            raised: true
+                          pack_unreadable:
+                            status: 500
+                            retryable: false
+                            raised: true
+                          stale_input:
+                            status: 500
+                            retryable: true
+                            raised: true
+                          pack_level_mismatch:
+                            status: 500
+                            retryable: false
+                            raised: false
+              example:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+        '500':
+          description: The packs could not be read (pack_unreadable) or changed during the read (stale_input).
+          content:
+            application/problem+json:
+              schema: *charter-refusal
+              examples:
+                pack-unreadable:
+                  value:
+                    title: Pack unreadable
+                    status: 500
+                    code: pack_unreadable
+                stale-input:
+                  value:
+                    title: Stale input
+                    status: 500
+                    code: stale_input

@@ -1,0 +1,10 @@
+name: kind
+in: path
+required: true
+description: >-
+  The kind of the artifact, as its token: tactic, directive, styleguide, paradigm or toolguide. The
+  parameter is a slug, not an enum: a value that is not a slug (Tactic, -tactic) is a 400 Problem
+  without a code, before the pack is judged, and a slug that names no served kind is answered 404
+  kind_not_found by the service, after the pack is found.
+schema:
+  $ref: ../schemas/Slug.yaml

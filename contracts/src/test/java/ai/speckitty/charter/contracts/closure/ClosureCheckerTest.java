@@ -110,43 +110,6 @@ class ClosureCheckerTest {
         }
     }
 
-    /** The one map a response may hold: _links, a map of Link (ADR-0019 D3, #125, shared with #126). */
-    @Nested
-    class TheLinksMap {
-
-        private static final String LINKS = "/paths/~1activations~1{activationId}/get/responses/200/content/"
-                + "application~1json/schema/properties/";
-
-        @Test
-        void aLinksMapUnderLinksPasses() {
-            assertPasses("links-map.yaml");
-        }
-
-        @Test
-        void itsLinkValueIsStillJudged() {
-            assertReports(
-                    "links-map-open-link.yaml",
-                    LINKS + "_links/allOf/0/additionalProperties",
-                    "additionalProperties: true admits any member");
-        }
-
-        @Test
-        void aMapUnderLinksWhoseValuesAreNotALinkIsAnOpenMap() {
-            assertReports(
-                    "links-map-other-title.yaml",
-                    LINKS + "_links",
-                    "additionalProperties holds a schema, so it is a map");
-        }
-
-        @Test
-        void aLinksMapAnywhereElseIsAnOpenMap() {
-            assertReports(
-                    "links-map-not-under-links.yaml",
-                    LINKS + "relations",
-                    "additionalProperties holds a schema, so it is a map");
-        }
-    }
-
     @Nested
     class RoundFiveProbes {
 
@@ -597,8 +560,47 @@ class ClosureCheckerTest {
             ClosureReport report = ClosureChecker.check(Path.of(System.getProperty("charter.lintCleanFixture")));
             assertThat(report.violations()).isEmpty();
             assertThat(report.positions())
-                    .isEqualTo(30); // WP01 of #125 added a reserved PUT and a 204 DELETE to the clean fixture
+                    .isEqualTo(24); // #125 added a reserved PUT (its linked 200 and its 501) and a 204 DELETE
             assertThat(report.passes()).isTrue();
+        }
+    }
+
+    /**
+     * The one exemption (ADR-0019 D3): a property named {@code _links} whose values are the closed {@code Link}.
+     * Each lookalike stays an open map.
+     */
+    @Nested
+    class LinksMap {
+
+        private static final String LINKS =
+                "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/_links";
+        private static final String MAP = "additionalProperties holds a schema, so it is a map";
+
+        @Test
+        void aLinksPropertyOfClosedLinksPasses() {
+            assertPasses("links-map-exempt.yaml");
+        }
+
+        @Test
+        void theSameMapUnderAnotherPropertyNameIsReported() {
+            assertReports(
+                    "links-map-other-property.yaml",
+                    "/paths/~1probe/get/responses/200/content/application~1json/schema/properties/links",
+                    MAP);
+        }
+
+        @Test
+        void aLinksMapOfAValueWithAnotherTitleIsReported() {
+            assertReports("links-map-other-value-title.yaml", LINKS, MAP);
+        }
+
+        /** The open Link is a position of its own, and the map is not exempt because its Link is not proven closed. */
+        @Test
+        void aLinksMapOfAnOpenLinkIsReportedAtTheLinkAndAtTheMap() {
+            assertThat(violations("links-map-open-link.yaml"))
+                    .extracting(Violation::toString)
+                    .containsExactly(
+                            LINKS + "/additionalProperties: no additionalProperties: false", LINKS + ": " + MAP);
         }
     }
 

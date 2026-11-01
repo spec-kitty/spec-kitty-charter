@@ -61,3 +61,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
       symbol: Paradigm.relationships
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Paradigm.java
+  symbol: Paradigm

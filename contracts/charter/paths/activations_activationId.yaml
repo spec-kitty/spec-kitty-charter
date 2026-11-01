@@ -27,6 +27,9 @@ get:
         application/json:
           schema:
             $ref: ../schemas/Activation.yaml
+          examples:
+            minimal:
+              $ref: ../examples/Activation.minimal.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -71,18 +74,19 @@ put:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        Charter-Source-Fingerprint: *id003
         ETag: *id004
       content:
         application/json:
           schema:
             $ref: ../schemas/Activation.yaml
+          examples:
+            minimal:
+              $ref: ../examples/Activation.minimal.yaml
     '201':
       description: The activation was created.
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        Charter-Source-Fingerprint: *id003
         Location:
           $ref: ../headers/Location.yaml
         ETag: *id004
@@ -90,6 +94,9 @@ put:
         application/json:
           schema:
             $ref: ../schemas/Activation.yaml
+          examples:
+            minimal:
+              $ref: ../examples/Activation.minimal.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -128,7 +135,6 @@ delete:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        Charter-Source-Fingerprint: *id003
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

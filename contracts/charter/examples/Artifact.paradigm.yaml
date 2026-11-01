@@ -1,0 +1,18 @@
+summary: A paradigm in the envelope, as a registration answers it; the other four kind members are absent.
+value:
+  kind: paradigm
+  id: layered
+  packId: qa
+  paradigm:
+    id: layered
+    schemaVersion: '1.0'
+    name: Layered architecture
+    summary: Keep the layers apart.
+    directiveRefs: []
+    references: []
+    relationships: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/paradigm/layered
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=paradigm

@@ -1,6 +1,15 @@
 files:
+  - ApiRoot.links.yaml
+  - Artifact.directive.yaml
+  - Artifact.paradigm.yaml
+  - Artifact.styleguide.yaml
+  - Artifact.tactic.yaml
+  - Artifact.toolguide.yaml
+  - ArtifactPage.first-page.yaml
   - CharterRefusal.action-not-found.yaml
   - CharterRefusal.tactic-not-found.yaml
+  - Offering.three-levels.yaml
+  - RelationshipRegistered.requires.yaml
   - ServiceInfo.one-worktree.yaml
   - CharterRefusal.activation-invalid.yaml
   - CharterRefusal.activation-not-found.yaml
@@ -9,3 +18,9 @@ files:
   - CharterRefusal.artifact-required.yaml
   - CharterRefusal.preset-not-found.yaml
   - CharterRefusal.mission-type-not-found.yaml
+  - Activation.minimal.yaml
+  - ActivationChange.selected.yaml
+  - ActivationSkippedReport.nothing-skipped.yaml
+  - EffectiveActionContext.implement.yaml
+  - EffectiveArtifactList.first-page.yaml
+  - EffectiveGraph.one-edge.yaml

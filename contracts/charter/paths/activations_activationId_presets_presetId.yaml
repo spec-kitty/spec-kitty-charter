@@ -31,14 +31,15 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag:
           $ref: ../headers/ActivationETag.yaml
       content:
         application/json:
           schema:
             $ref: ../schemas/ActivationChange.yaml
+          examples:
+            selected:
+              $ref: ../examples/ActivationChange.selected.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

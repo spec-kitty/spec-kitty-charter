@@ -29,12 +29,17 @@ final class SchemaClassifier {
         this.inProgress = inProgress;
     }
 
-    /** Judges a position: a schema that describes a value of a response. An open position is a violation. */
-    void judge(Node position) {
+    /**
+     * Judges a position: a schema that describes a value of a response. An open position is a violation.
+     *
+     * @return the position's classification
+     */
+    Closure judge(Node position) {
         Closure closure = classify(position);
         if (!closure.passes() && position.isSchema()) {
             findings.open(position.pointer(), closure);
         }
+        return closure;
     }
 
     /** Classifies a schema, its own keywords together with its composition; positions nested in it are judged. */
@@ -61,19 +66,36 @@ final class SchemaClassifier {
 
     private Closure classifyMapping(Node schema) {
         Vocabulary.vet(schema, findings);
-        nestedPositions(schema).forEach(this::judge);
+        Optional<Closure> ownShape = judgeNested(schema);
         schema.entries("dependentSchemas", findings).forEach(this::classify);
         SchemaClassifier conditionsOnly = new SchemaClassifier(findings.ignoringClosure(), inProgress);
         schema.child("not").ifPresent(conditionsOnly::classify);
         schema.child("if").ifPresent(conditionsOnly::classify);
 
         List<Closure> parts = new ArrayList<>();
-        parts.add(OwnShape.classify(schema));
+        parts.add(ownShape.orElseGet(() -> OwnShape.classify(schema)));
         schema.elements("allOf", findings).forEach(part -> parts.add(classify(part)));
         union(schema, "anyOf").ifPresent(parts::add);
         union(schema, "oneOf").ifPresent(parts::add);
         conditional(schema).ifPresent(parts::add);
         return parts.size() == 1 ? parts.getFirst() : Conjunction.of(schema.pointer(), parts);
+    }
+
+    /**
+     * Judges every position nested in {@code schema}. When its schema-valued {@code additionalProperties} makes it the
+     * exempt {@code _links} map ({@link LinksMap}), the closure of its own keywords is returned; that needs the
+     * value's classification, which the judgement gives.
+     */
+    private Optional<Closure> judgeNested(Node schema) {
+        JsonPointer valuesAt = schema.pointer().child("additionalProperties");
+        Optional<Closure> exempt = Optional.empty();
+        for (Node position : nestedPositions(schema)) {
+            Closure closure = judge(position);
+            if (position.pointer().equals(valuesAt)) {
+                exempt = LinksMap.exempt(schema, closure);
+            }
+        }
+        return exempt;
     }
 
     /** The schemas of the members and items a schema admits: each is a position of its own. */

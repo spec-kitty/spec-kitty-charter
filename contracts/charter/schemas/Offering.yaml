@@ -1,0 +1,23 @@
+title: Offering
+description: >-
+  The packs the service is configured with (ADR-0020 D1), in the merge order: by configured level
+  (built-in, then org, then project), then by pack id in code-point order, so Zeta comes before
+  alpha. Merging is not applied yet (#10, #11): the offering lists the packs, not a merged result.
+  _links holds self. The list and its fingerprint come from one verified read.
+type: object
+additionalProperties: false
+required:
+  - packs
+  - _links
+properties:
+  packs:
+    type: array
+    description: >-
+      Every configured pack, in the merge order; empty when no pack is configured.
+    items:
+      $ref: OfferingPack.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java
+      symbol: OfferingReadService.offering
+  _links:
+    $ref: Links.yaml

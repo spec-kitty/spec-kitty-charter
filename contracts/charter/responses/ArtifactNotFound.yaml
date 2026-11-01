@@ -1,0 +1,63 @@
+description: >-
+  The pack, the kind or the artifact the path names is not there, refused with 404. The pack is
+  judged first: an identifier that matches no configured pack (by name or by declared pack_id) is
+  pack_not_found, whatever kind the path names. Then a kind the service does not serve is
+  kind_not_found. Then an id the pack does not hold is the not-found code of its kind:
+  tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found or
+  toolguide_not_found. A client error: the request named something that is not there. A configured
+  pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read
+  or a directory that cannot be listed, is not this answer: it is pack_unreadable (500) on every read.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-not-found:
+        summary: No configured pack matches the identifier, whatever the kind.
+        value:
+          title: Pack not found
+          status: 404
+          code: pack_not_found
+          detail: Pack nope was not found.
+      kind-not-found:
+        summary: The path names a kind the service does not serve.
+        value:
+          title: Kind not found
+          status: 404
+          code: kind_not_found
+          detail: The service serves no artifact kind procedure.
+      tactic-not-found:
+        $ref: ../examples/CharterRefusal.tactic-not-found.yaml
+      directive-not-found:
+        summary: The pack has no directive with the asked identity.
+        value:
+          title: Directive not found
+          status: 404
+          code: directive_not_found
+          detail: Pack qa has no directive GUARD.
+      styleguide-not-found:
+        summary: The pack has no styleguide with the asked identity.
+        value:
+          title: Styleguide not found
+          status: 404
+          code: styleguide_not_found
+          detail: Pack qa has no styleguide java-style.
+      paradigm-not-found:
+        summary: The pack has no paradigm with the asked identity.
+        value:
+          title: Paradigm not found
+          status: 404
+          code: paradigm_not_found
+          detail: Pack qa has no paradigm layered.
+      toolguide-not-found:
+        summary: The pack has no toolguide with the asked identity.
+        value:
+          title: Toolguide not found
+          status: 404
+          code: toolguide_not_found
+          detail: Pack qa has no toolguide git.

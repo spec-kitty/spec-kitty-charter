@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Charter API
   version: 0.1.0-SNAPSHOT
-  summary: Read-only answers of the charter of one project.
+  summary: The charter of one project, its offering and its packs' artifacts.
   description: >-
     The contract of the charter service. This file holds the document header and the map from
     each path to the file that defines it; every definition lives in a small file next to it.
@@ -13,51 +13,67 @@ servers:
 security:
   - charterWorktreeToken: []
 tags:
-  - name: Tactics
-    description: The tactics of a Charter Pack.
   - name: Service
-    description: What the service says about itself.
+    description: What the service says about itself, and the API root a client starts from.
+  - name: Offering
+    description: The Charter Packs the service is configured with, in the merge order.
   - name: Directives
-    description: The directives of a Charter Pack.
+    description: >-
+      The directive registrations of a Charter Pack: register and replace a directive, which is read
+      through Artifacts.
   - name: Styleguides
-    description: The styleguides of a Charter Pack.
+    description: >-
+      The styleguide registrations of a Charter Pack: register and replace a styleguide, which is read
+      through Artifacts.
   - name: Paradigms
-    description: The paradigms of a Charter Pack.
+    description: >-
+      The paradigm registrations of a Charter Pack: register and replace a paradigm, which is read
+      through Artifacts.
   - name: Toolguides
-    description: The toolguides of a Charter Pack.
+    description: >-
+      The toolguide registrations of a Charter Pack: register and replace a toolguide, which is read
+      through Artifacts.
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
+  - name: Artifacts
+    description: >-
+      The artifacts of a Charter Pack of every served kind, read through one paged list and one
+      item.
   - name: Activation
     description: >-
       The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
       effective reads. Declared in full and reserved: every operation answers 501 until it is built (ADR-0020 D8).
 paths:
+  /:
+    $ref: paths/root.yaml
   /info:
     $ref: paths/info.yaml
   /openapi.yaml:
     $ref: paths/openapi.yaml
-  /packs/{packId}/tactics:
-    $ref: paths/packs_packId_tactics.yaml
-  /packs/{packId}/tactics/{tacticId}:
-    $ref: paths/packs_packId_tactics_tacticId.yaml
-  /packs/{packId}/directives:
-    $ref: paths/packs_packId_directives.yaml
-  /packs/{packId}/directives/{directiveId}:
-    $ref: paths/packs_packId_directives_directiveId.yaml
-  /packs/{packId}/styleguides:
-    $ref: paths/packs_packId_styleguides.yaml
-  /packs/{packId}/styleguides/{styleguideId}:
-    $ref: paths/packs_packId_styleguides_styleguideId.yaml
-  /packs/{packId}/paradigms:
-    $ref: paths/packs_packId_paradigms.yaml
-  /packs/{packId}/paradigms/{paradigmId}:
-    $ref: paths/packs_packId_paradigms_paradigmId.yaml
-  /packs/{packId}/toolguides:
-    $ref: paths/packs_packId_toolguides.yaml
-  /packs/{packId}/toolguides/{toolguideId}:
-    $ref: paths/packs_packId_toolguides_toolguideId.yaml
+  /offering:
+    $ref: paths/offering.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
+  /packs/{packId}/artifacts:
+    $ref: paths/packs_packId_artifacts.yaml
+  /packs/{packId}/artifacts/directive:
+    $ref: paths/packs_packId_artifacts_directive.yaml
+  /packs/{packId}/artifacts/directive/{artifactId}:
+    $ref: paths/packs_packId_artifacts_directive_artifactId.yaml
+  /packs/{packId}/artifacts/styleguide:
+    $ref: paths/packs_packId_artifacts_styleguide.yaml
+  /packs/{packId}/artifacts/styleguide/{artifactId}:
+    $ref: paths/packs_packId_artifacts_styleguide_artifactId.yaml
+  /packs/{packId}/artifacts/paradigm:
+    $ref: paths/packs_packId_artifacts_paradigm.yaml
+  /packs/{packId}/artifacts/paradigm/{artifactId}:
+    $ref: paths/packs_packId_artifacts_paradigm_artifactId.yaml
+  /packs/{packId}/artifacts/toolguide:
+    $ref: paths/packs_packId_artifacts_toolguide.yaml
+  /packs/{packId}/artifacts/toolguide/{artifactId}:
+    $ref: paths/packs_packId_artifacts_toolguide_artifactId.yaml
+  /packs/{packId}/artifacts/{kind}/{artifactId}:
+    $ref: paths/packs_packId_artifacts_kind_artifactId.yaml
   /activations:
     $ref: paths/activations.yaml
   /activations/{activationId}:

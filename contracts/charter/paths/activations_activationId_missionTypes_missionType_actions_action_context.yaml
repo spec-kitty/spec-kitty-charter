@@ -34,6 +34,9 @@ get:
         application/json:
           schema:
             $ref: ../schemas/EffectiveActionContext.yaml
+          examples:
+            implement:
+              $ref: ../examples/EffectiveActionContext.implement.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

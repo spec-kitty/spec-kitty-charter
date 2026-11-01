@@ -34,14 +34,15 @@ put:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree: &id002
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint: &id003
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag: &id004
           $ref: ../headers/ActivationETag.yaml
       content:
         application/json:
           schema:
             $ref: ../schemas/ActivationChange.yaml
+          examples:
+            selected:
+              $ref: ../examples/ActivationChange.selected.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -84,12 +85,14 @@ delete:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        Charter-Source-Fingerprint: *id003
         ETag: *id004
       content:
         application/json:
           schema:
             $ref: ../schemas/ActivationChange.yaml
+          examples:
+            selected:
+              $ref: ../examples/ActivationChange.selected.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

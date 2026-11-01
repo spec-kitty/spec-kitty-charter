@@ -1,0 +1,25 @@
+summary: A styleguide in the envelope, as a registration answers it; the other four kind members are absent.
+value:
+  kind: styleguide
+  id: java-style
+  packId: qa
+  styleguide:
+    id: java-style
+    schemaVersion: '1.0'
+    title: Java style
+    scope: code
+    principles:
+      - Name things plainly.
+    patterns: []
+    antiPatterns: []
+    tooling: []
+    qualityTest: null
+    structuralLintConfig: null
+    appliesToLanguages: []
+    references: []
+    relationships: []
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts/styleguide/java-style
+    collection:
+      href: /api/v1/packs/qa/artifacts?kind=styleguide

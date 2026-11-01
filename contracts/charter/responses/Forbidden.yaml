@@ -4,14 +4,12 @@ description: >-
   127.0.0.1 or [::1]. The browser check comes before the token check, so a browser is not told whether its
   token would have been accepted. The body is the shared Problem without a code: it is a transport failure,
   not a charter refusal. The answer carries the contract version and the worktree, without WWW-Authenticate,
-  and never carries Charter-Source-Fingerprint: it reads no pack file.
+  and never carries the source fingerprint header: it reads no pack file.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
   Charter-Worktree:
     $ref: ../headers/CharterWorktree.yaml
-  Charter-Source-Fingerprint:
-    $ref: ../headers/CharterSourceFingerprint.yaml
 content:
   application/problem+json:
     schema:

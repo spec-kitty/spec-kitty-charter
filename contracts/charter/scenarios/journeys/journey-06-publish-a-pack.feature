@@ -19,39 +19,39 @@ Feature: Journey 06 — a pack author publishes a pack
       """
 
   Scenario: A paradigm is registered with the directives that carry its rules
-    When I PUT "/packs/qa/paradigms/clean-architecture" with the body:
+    When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
       {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward", "directiveRefs": ["ALPHA"]}
       """
     Then the response status is 201
-    When I GET "/packs/qa/paradigms/clean-architecture"
+    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
     Then the response status is 200
-    And the response body has 1 relationship
-    And a relationship of the response body points to "directive:ALPHA"
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "directive:ALPHA"
 
   Scenario: A rule's directive names the procedure that carries it out
-    When I PUT "/packs/qa/directives/GUARD" with the body:
+    When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
       {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "procedures": ["proc-1"]}
       """
     Then the response status is 201
-    When I GET "/packs/qa/directives/GUARD"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
     Then the response status is 200
-    And the response body has 1 relationship
-    And a relationship of the response body points to "procedure:proc-1"
+    And the artifact in the response body has 1 relationship
+    And a relationship of the artifact in the response body points to "procedure:proc-1"
 
   Scenario: A relationship between two artifacts is registered once
-    When I POST "/packs/qa/directives" as JSON with the body:
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
       """
     Then the response status is 201
-    When I POST "/packs/qa/directives" as JSON with the body:
+    When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "OTHER", "schemaVersion": "1.0", "title": "Other", "intent": "other", "enforcement": "required"}
       """
     Then the response status is 201
-    When I GET "/packs/qa/directives/GUARD"
+    When I GET "/packs/qa/artifacts/directive/GUARD"
     Then the response status is 200
     And I remember the ETag
     When I PUT "/packs/qa/relationships" with the remembered ETag and the body:

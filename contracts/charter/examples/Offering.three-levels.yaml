@@ -1,0 +1,27 @@
+summary: One configured pack at each level, in the merge order.
+value:
+  packs:
+    - packId: spec-kitty
+      level: built-in
+      name: Spec Kitty
+      version: 4.0.0
+      _links:
+        artifacts:
+          href: /api/v1/packs/spec-kitty/artifacts
+    - packId: qa
+      level: org
+      name: QA house rules
+      version: 1.2.0
+      _links:
+        artifacts:
+          href: /api/v1/packs/qa/artifacts
+    - packId: my-project
+      level: project
+      name: My project
+      version: 0.1.0
+      _links:
+        artifacts:
+          href: /api/v1/packs/my-project/artifacts
+  _links:
+    self:
+      href: /api/v1/offering

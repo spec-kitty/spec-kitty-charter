@@ -13,7 +13,7 @@ paths:
       responses:
         '200':
           description: The pack listing.
-          headers: &charter-headers
+          headers: &read-headers
             Charter-Contract-Version: &charter-contract-version
               description: The info.version of the contract the service was built against. On every response of the charter's operations (ADR-0011).
               required: true
@@ -26,10 +26,10 @@ paths:
                 type: string
             Charter-Source-Fingerprint:
               description: >-
-                The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. On every
-                response of the charter's operations, except when a pack file cannot be read; the read then
-                reports why. The freshness work (#73) compares it; this version only reports it (ADR-0011).
-              required: false
+                The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. Required on
+                the 200 of every verified read and declared on no other answer (#175). The freshness work (#73)
+                compares it; this version only reports it (ADR-0011).
+              required: true
               schema:
                 title: Sha256Digest
                 description: "A SHA-256 digest, sha256: followed by 64 lower-case hex digits. Opaque to consumers, who compare it and never parse it."
@@ -37,12 +37,47 @@ paths:
                 pattern: '^sha256:[0-9a-f]{64}$'
           content:
             application/json:
+              examples:
+                two-packs:
+                  summary: The packs and the link to the listing itself.
+                  value:
+                    packs:
+                      - name: qa
+                        level: org
+                    _links:
+                      self:
+                        href: /api/v1/packs
               schema:
                 title: PackListing
                 description: The packs of the offering.
                 type: object
                 additionalProperties: false
+                required:
+                  - _links
                 properties:
+                  _links: &links
+                    title: Links
+                    description: The links of the answer, keyed by a relation of the hypermedia guide's table.
+                    type: object
+                    x-derived:
+                      rule: The links the server writes for the answer.
+                      inputs:
+                        - openapi.yaml#/paths
+                    additionalProperties:
+                      title: Link
+                      description: One hypermedia link.
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          description: Where the link points, an absolute path under /api/v1.
+                          x-derived:
+                            rule: The server prefix followed by the path of the operation the relation names.
+                            inputs:
+                              - openapi.yaml#/paths
                   packs:
                     type: array
                     description: The loaded packs.
@@ -152,7 +187,9 @@ paths:
                                   symbol: Diagnostic.detail
         '304':
           description: The client holds the current listing; no body.
-          headers: *charter-headers
+          headers: &charter-headers
+            Charter-Contract-Version: *charter-contract-version
+            Charter-Worktree: *charter-worktree
         default:
           description: The read failed.
           headers: *charter-headers
@@ -200,15 +237,27 @@ paths:
       responses:
         '200':
           description: The action context.
-          headers: *charter-headers
+          headers: *read-headers
           content:
             application/json:
+              examples:
+                implement:
+                  summary: The context of one action and the link to it.
+                  value:
+                    action: action:software-dev/implement
+                    missionType: mission_type:software-dev
+                    _links:
+                      self:
+                        href: /api/v1/mission-types/software-dev/actions/implement/context
               schema:
                 title: ActionContext
                 description: The guidance of one action.
                 type: object
                 additionalProperties: false
+                required:
+                  - _links
                 properties:
+                  _links: *links
                   action:
                     description: The action node.
                     allOf:
@@ -289,12 +338,23 @@ paths:
           headers: *charter-headers
           content:
             application/json:
+              examples:
+                stored:
+                  summary: The stored thing and the link to it.
+                  value:
+                    thingId: t-1
+                    _links:
+                      self:
+                        href: /api/v1/reserved-things/t-1
               schema:
                 title: Thing
                 description: A thing.
                 type: object
                 additionalProperties: false
+                required:
+                  - _links
                 properties:
+                  _links: *links
                   thingId:
                     type: string
                     description: The thing.

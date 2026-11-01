@@ -3,6 +3,7 @@ files:
   - CharterSourceFingerprint.yaml
   - CharterWorktree.yaml
   - ContractETag.yaml
+  - ServiceDescLink.yaml
   - WwwAuthenticate.yaml
   - ActivationETag.yaml
   - EffectiveETag.yaml

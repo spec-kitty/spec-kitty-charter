@@ -1,0 +1,43 @@
+# Must report: a 500 refusal whose example names pack_level_mismatch, a code x-refusal declares not raised,
+# and whose description names it too, in backticks.
+openapi: 3.1.0
+info:
+  title: Refusal examples fixture
+  version: 1.0.0
+paths:
+  /info:
+    get:
+      operationId: getServiceInfo
+      responses:
+        '500':
+          description: The packs could not be merged, for example `pack_level_mismatch`.
+          content:
+            application/problem+json:
+              schema:
+                title: CharterRefusal
+                allOf:
+                  - title: Problem
+                    type: object
+                  - type: object
+                    properties:
+                      code:
+                        title: CharterRefusalCode
+                        type: string
+                        enum:
+                          - pack_unreadable
+                          - pack_level_mismatch
+                        x-refusal:
+                          pack_unreadable:
+                            status: 500
+                            retryable: false
+                            raised: true
+                          pack_level_mismatch:
+                            status: 500
+                            retryable: false
+                            raised: false
+              examples:
+                pack-level-mismatch:
+                  value:
+                    title: Pack level mismatch
+                    status: 500
+                    code: pack_level_mismatch

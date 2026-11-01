@@ -15,12 +15,13 @@ adapts to the charter through its integration seam.
 ./gradlew :contracts:lintFixtures          # each rule against its planted fixtures
 ./gradlew :contracts:compatibilityFixtures # the breaking-change check against its planted pairs
 ./gradlew :contracts:checkClosedResponseObjects # the closure checker against the bundle
+./gradlew :contracts:checkRefusalExamples      # the raised-code check of the refusals against the bundle
 ```
 
 `contracts/build.gradle.kts` downloads vacuum and oasdiff at pinned versions, checks each archive's
 SHA-256 before extracting it (downloads time out after 30 s without a connection or 60 s without
 data), re-verifies the installed archive and executable against the pin on every build, also after
-a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs six tasks:
+a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs seven tasks:
 
 | Task | What it checks |
 |---|---|
@@ -28,6 +29,7 @@ a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs six tas
 | `lintContract` | Lints the bundle with `ruleset.yaml`. Any violation fails, and so does a ruleset vacuum loads with a different number of rules than it declares. |
 | `lintFixtures` | Every rule has at least one fixture, `fixtures/<rule id>.yaml` or `fixtures/<rule id>.<case>.yaml`, that fails that rule and no other; `fixtures/clean.yaml` fails none. Each fixture goes through the same bundle step as the contract first, so the rules are proven on the inlined shape they judge. |
 | `checkClosedResponseObjects` | Runs the closure checker (see [Closed responses](#closed-responses)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
+| `checkRefusalExamples` | Runs the raised-code check (see [Refusal codes](#refusal-codes)) over the bundle. Any violation fails, one line each with its JSON Pointer. |
 | `compatibilityFixtures` | Each `../compat/fixtures/<case>/` holds `base.yaml` and `revision.yaml`; a `breaking-*` case must fail the breaking-change comparison and a `compatible-*` case must pass it. |
 | `checkContractCompatibility` | The release gate, then `oasdiff breaking` of the bundle against the bundle of the baseline release it names (see [The released baseline](#the-released-baseline)). |
 
@@ -123,7 +125,12 @@ a rule silently.
 | `x-reserved-shape` | `x-reserved` is `{contractSet, issue}`: the contract set the operation belongs to and the issue that reserves it, as `#` and a number. | A reserved operation says which set it belongs to and where it is tracked (ADR-0020 D8). |
 | `reserved-operation-declares-501` | An operation that carries `x-reserved` declares a `501` response. | A reserved operation is declared in full and answers `501 Not Implemented` until it is built (ADR-0020 D8). |
 | `built-operation-declares-no-501` | An operation without `x-reserved` declares no `501`. | Building an operation removes its `501` and its `x-reserved` together, so neither outlives the other. |
-| `charter-headers-on-every-response` | Every response of every operation, `default` included, declares the `Charter-Contract-Version`, `Charter-Worktree` and `Charter-Source-Fingerprint` headers. `Charter-Source-Fingerprint` is not required on the wire, but it is still declared. | ADR-0018 D11: the headers are declared on every response and the fingerprint is present on 200 only, so the contract says so on each one and the shared `Problem` response cannot lose them. A fixture gives every response the three headers, written once per fixture under a YAML anchor. |
+| `charter-headers-on-every-response` | Every response of every operation, `default` included, declares the `Charter-Contract-Version` and `Charter-Worktree` headers. `Charter-Source-Fingerprint` is governed by the two rules below. | ADR-0018 D11: the always-on headers are declared on every response, so the contract says so on each one and the shared `Problem` response cannot lose them. A fixture gives every response the two headers, written once per fixture under the YAML anchor `&charter-headers`. |
+| `fingerprint-on-verified-reads` | The `200` of every `GET` other than `/` and `/openapi.yaml` declares `Charter-Source-Fingerprint`, with `required: true`. The rule is written by path shape, not by `operationId`. | #175, ruling 4: every such `GET` is a verified read, and its 200 carries the digest that read verified. `/` and the contract document read no pack. A reserved `GET` of the activation set (`x-reserved`, ADR-0020 D8) is held to it too: it answers `501` until built, and its declared 200 is the verified read it becomes, so declaring the fingerprint now keeps its build from changing the 200's headers. A fixture's verified reads use the YAML anchor `&read-headers`: the two always-on headers plus the required fingerprint. |
+| `fingerprint-only-on-verified-reads` | No other response declares `Charter-Source-Fingerprint`: not a write's (`PUT`, `POST`, `DELETE`, `PATCH`), not a `HEAD`, `OPTIONS` or `TRACE` answer, not a `GET`'s non-200 (refusals, `304`, `default`), not the root's (`/`, which reads no pack) or `/openapi.yaml`'s, and not a shared component response. The `.root` fixture plants it on the root's 200. | #175, ruling 4: the service sends the fingerprint on no other answer, so the contract declares it on no other answer. A `GET` 200 that declares no headers at all is not this rule's or `fingerprint-on-verified-reads`' to report: `charter-headers-on-every-response` fails it first, for the missing always-on headers. |
+| `success-schemas-carry-links` | The schema of every 2xx `application/json` response requires `_links`. | ADR-0019 D3 and FR-008: every success answer can be navigated through the one `Links` component. The `application/yaml` answer of `/openapi.yaml` is not JSON and is not judged. |
+| `success-responses-have-link-examples` | Every 2xx `application/json` response has an `example` or `examples`, and every example it has carries `_links` at its top level. | The relation keys are checked in examples (the next rule), so every success response must have one, or the key check would pass by having nothing to read. Written with the core `schema` function; no Java check is needed. |
+| `link-relations-are-known` | Every key of a `_links` in an example (`examples.*.value` or `example`, at any depth) is a relation of the table in `docs/development/hypermedia-hateoas.md`. | FR-011: `Links` is an open map, so a relation key appears only in answers and examples, never in a schema. The rule's `enum` is that table's first column; `RelationTableParityTest` (`contracts` tests) fails when the two differ, so the guide stays the source. The scenario hook checks the keys of every answer against the same table. |
 | `property-described` | Every schema property has a description. A bare `const` or `enum` refinement holding nothing else (an `if` condition, or an `allOf` part narrowing a property) is exempt: it narrows a property described where it is declared. | The contract is read by people as well as generators. |
 | `enum-snake-case` | Enum values are snake_case. The pack level `built-in` is the one value with a hyphen. | One wire spelling for every code; `built-in` is the pack level as packs declare it. |
 | `pack-level-token-spelling` | The pack level `built-in` is spelled `built-in`, never `built_in`, `builtin` or another case. | `built_in` would pass `enum-snake-case` and still be a second spelling of one pack level. |
@@ -141,12 +148,31 @@ deliberate contract change that the breaking-change check sees. A Java checker, 
 authority on what closed means and what the checker refuses, with its cases as fixtures in
 `contracts/src/test/resources/closure/`.
 
+## Refusal codes
+
+A client learns which refusal codes it may meet from a refusal's examples and its description, so neither
+may name a code the service does not raise (#176). A Java check, `RefusalExamples` (run by
+`checkRefusalExamples` over the bundle as part of `check`), reads the raised codes from the `x-refusal`
+map of `CharterRefusalCode` (the codes whose `raised` is `true`) and fails a `CharterRefusal` example whose
+`code` is not one of them, and a response description that names, as a whole word, a code of that map
+that is not raised. An operation that carries `x-reserved` is not judged (ADR-0020 D8): it answers `501`
+whatever the request holds, so its declared refusals describe the operation once built, and the codes reserved
+for it stay `raised: false` until then; when the operation is built its marker goes with its `501`, and its
+refusals are judged like any other. Its [class Javadoc](../src/main/java/ai/speckitty/charter/contracts/refusal/RefusalExamples.java)
+is the authority, with its cases as fixtures in `contracts/src/test/resources/refusal/`.
+
 ## Adding or changing a rule
 
 1. Add the rule to `ruleset.yaml` with a one-line `description` of the convention.
 2. Add `fixtures/<rule id>.yaml`: a copy of `fixtures/clean.yaml` with one planted violation of the new
    rule and nothing else, and a first-line comment saying what is planted. Fixtures are written inline
    (no `$ref`), the shape of the bundle. A second case of the same rule is `<rule id>.<case>.yaml`.
+   The fixtures share their headers through two YAML anchors: `&read-headers` on a `GET` 200 (the
+   always-on headers and the required fingerprint) and `&charter-headers` on every other response (the
+   always-on headers only). Keep that split in a new fixture, or it fires a fingerprint rule as well.
+   Each fixture's two `200` JSON schemas require `_links` (the `Links` map of a closed `Link`, written once under
+   the anchor `&links`) and each `200` JSON response carries an example whose `_links` holds `self`. Keep both in a
+   new fixture, or it fires a link rule as well.
 3. Run `./gradlew :contracts:check`. `lintFixtures` fails until the rule and its fixture agree, and
    `lintContract` shows whether the contract already follows the rule.
 4. Add the rule to the table above.

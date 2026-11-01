@@ -102,3 +102,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
       symbol: Directive.relationships
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
+  symbol: Directive

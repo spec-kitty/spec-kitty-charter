@@ -1,0 +1,321 @@
+# Planted fixture for fingerprint-only-on-verified-reads: a 404 refusal that declares Charter-Source-Fingerprint.
+openapi: 3.1.0
+info:
+  title: Charter lint fixture
+  version: 1.0.0-SNAPSHOT
+paths:
+  /packs:
+    get:
+      operationId: listPacks
+      summary: List the packs.
+      tags:
+        - Packs
+      responses:
+        '200':
+          description: The pack listing.
+          headers: &read-headers
+            Charter-Contract-Version: &charter-contract-version
+              description: The info.version of the contract the service was built against. On every response of the charter's operations (ADR-0011).
+              required: true
+              schema:
+                type: string
+            Charter-Worktree: &charter-worktree
+              description: The opaque id of the worktree the service serves; never a host path. On every response of the charter's operations (ADR-0011).
+              required: true
+              schema:
+                type: string
+            Charter-Source-Fingerprint:
+              description: >-
+                The digest of the files the offering is loaded from, as ServiceInfo.sourceFingerprint. Required on
+                the 200 of every verified read and declared on no other answer (#175). The freshness work (#73)
+                compares it; this version only reports it (ADR-0011).
+              required: true
+              schema:
+                title: Sha256Digest
+                description: "A SHA-256 digest, sha256: followed by 64 lower-case hex digits. Opaque to consumers, who compare it and never parse it."
+                type: string
+                pattern: '^sha256:[0-9a-f]{64}$'
+          content:
+            application/json:
+              examples:
+                two-packs:
+                  summary: The packs and the link to the listing itself.
+                  value:
+                    packs:
+                      - name: qa
+                        level: org
+                    _links:
+                      self:
+                        href: /api/v1/packs
+              schema:
+                title: PackListing
+                description: The packs of the offering.
+                type: object
+                additionalProperties: false
+                required:
+                  - _links
+                properties:
+                  _links: &links
+                    title: Links
+                    description: The links of the answer, keyed by a relation of the hypermedia guide's table.
+                    type: object
+                    x-derived:
+                      rule: The links the server writes for the answer.
+                      inputs:
+                        - openapi.yaml#/paths
+                    additionalProperties:
+                      title: Link
+                      description: One hypermedia link.
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          description: Where the link points, an absolute path under /api/v1.
+                          x-derived:
+                            rule: The server prefix followed by the path of the operation the relation names.
+                            inputs:
+                              - openapi.yaml#/paths
+                  packs:
+                    type: array
+                    description: The loaded packs.
+                    x-source:
+                      path: service/charter-read-app/src/main/java/ai/speckitty/charter/read/PackListingQuery.java
+                      symbol: PackListingQuery.answer
+                    items:
+                      title: PackSummary
+                      description: One loaded pack.
+                      type: object
+                      additionalProperties: false
+                      if:
+                        properties:
+                          level:
+                            const: org
+                      then:
+                        required:
+                          - name
+                      properties:
+                        name:
+                          type: string
+                          description: The pack name.
+                          x-source:
+                            path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPack.java
+                            symbol: CharterPack.name
+                        level:
+                          title: PackLevel
+                          description: The level the pack declares.
+                          type: string
+                          enum:
+                            - built-in
+                            - org
+                            - project
+                          x-source:
+                            path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLevel.java
+                            symbol: PackLevel
+                        nodeCount:
+                          type: integer
+                          description: The number of graph nodes of the pack.
+                          x-derived:
+                            rule: The number of nodes the pack's graph declares.
+                            inputs:
+                              - schemas/PackSummary.yaml#/properties/name
+                        origin:
+                          description: Where the pack was loaded from; a described reference to a composite.
+                          x-derived:
+                            rule: The location the pack is configured with.
+                            inputs:
+                              - schemas/PackSummary.yaml#/properties/name
+                          allOf:
+                            - allOf:
+                                - type: object
+                                  additionalProperties: false
+                                  properties:
+                                    path:
+                                      type: string
+                                      description: The pack-relative path.
+                        owner:
+                          description: Who maintains the pack, or null.
+                          x-source:
+                            path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackDescriptor.java
+                            symbol: PackDescriptor.owner
+                          anyOf:
+                            - type: object
+                              additionalProperties: false
+                              properties:
+                                handle:
+                                  type: string
+                                  description: The maintainer handle.
+                                email:
+                                  type: string
+                                  description: The maintainer email.
+                              oneOf:
+                                - required:
+                                    - handle
+                                - required:
+                                    - email
+                            - type: 'null'
+                        diagnostics:
+                          type: array
+                          description: Load findings that did not stop the load.
+                          x-source:
+                            path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/CharterPack.java
+                            symbol: CharterPack.diagnostics
+                          x-provisional:
+                            open_decision: pack_level_missing becomes a refusal when its deprecation window closes
+                          items:
+                            title: Diagnostic
+                            description: One load finding.
+                            type: object
+                            additionalProperties: false
+                            properties:
+                              code:
+                                title: DiagnosticCode
+                                description: The kind of finding.
+                                type: string
+                                enum:
+                                  - pack_level_missing
+                                x-source:
+                                  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
+                                  symbol: Diagnostic.Code
+                              detail:
+                                type: string
+                                description: What was found.
+                                x-source:
+                                  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
+                                  symbol: Diagnostic.detail
+        '304':
+          description: The client holds the current listing; no body.
+          headers: &charter-headers
+            Charter-Contract-Version: *charter-contract-version
+            Charter-Worktree: *charter-worktree
+        default:
+          description: The read failed.
+          headers: *charter-headers
+          content:
+            application/problem+json:
+              schema:
+                title: Problem
+                description: The shared problem details body.
+                type: object
+                additionalProperties: false
+                required:
+                  - title
+                  - status
+                properties:
+                  title:
+                    type: string
+                    description: A short summary of the kind of problem.
+                  status:
+                    type: integer
+                    description: The HTTP status code.
+                  code:
+                    type: string
+                    description: A stable machine-readable code.
+  /mission-types/{missionType}/actions/{action}/context:
+    get:
+      operationId: getActionContext
+      summary: Read the context of one action.
+      tags:
+        - Context
+      x-provisional:
+        open_decision: the resolution rules are decided by the conformance corpus
+      parameters:
+        - name: missionType
+          in: path
+          required: true
+          description: The mission type.
+          schema:
+            type: string
+        - name: action
+          in: path
+          required: true
+          description: The action.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The action context.
+          headers: *read-headers
+          content:
+            application/json:
+              examples:
+                implement:
+                  summary: The context of one action and the link to it.
+                  value:
+                    action: action:software-dev/implement
+                    missionType: mission_type:software-dev
+                    _links:
+                      self:
+                        href: /api/v1/mission-types/software-dev/actions/implement/context
+              schema:
+                title: ActionContext
+                description: The guidance of one action.
+                type: object
+                additionalProperties: false
+                required:
+                  - _links
+                properties:
+                  _links: *links
+                  action:
+                    description: The action node.
+                    allOf:
+                      - title: Urn
+                        description: A graph node identity.
+                        type: string
+                    x-derived:
+                      rule: action:<missionType>/<action>, from the path parameters.
+                      inputs:
+                        - parameters/MissionType.yaml
+                        - parameters/Action.yaml
+                  missionType:
+                    description: The mission type node.
+                    allOf:
+                      - title: Urn
+                        description: A graph node identity.
+                        type: string
+                    x-derived:
+                      rule: mission_type:<missionType>, from the path parameter.
+                      inputs:
+                        - parameters/MissionType.yaml
+        '404':
+          description: The action or mission type is not a graph node.
+          headers: *read-headers
+          content:
+            application/problem+json:
+              schema:
+                title: CharterRefusal
+                description: A Problem whose code is a charter refusal code.
+                allOf:
+                  - title: Problem
+                    description: The shared problem details body.
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - title
+                      - status
+                    properties:
+                      title:
+                        type: string
+                        description: A short summary of the kind of problem.
+                      status:
+                        type: integer
+                        description: The HTTP status code.
+                      code:
+                        type: string
+                        description: A stable machine-readable code.
+                  - type: object
+                    required:
+                      - code
+                    properties:
+                      code:
+                        title: CharterRefusalCode
+                        description: Why the read was refused.
+                        type: string
+                        enum:
+                          - mission_type_not_found
+                          - action_not_found
+                        x-source:
+                          path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/RefusalCode.java
+                          symbol: RefusalCode

@@ -27,6 +27,9 @@ get:
         application/json:
           schema:
             $ref: ../schemas/EffectiveGraph.yaml
+          examples:
+            one-edge:
+              $ref: ../examples/EffectiveGraph.one-edge.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

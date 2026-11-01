@@ -1,0 +1,11 @@
+summary: A relationship registered in the pack qa, with the link to the pack's artifacts.
+value:
+  relationship:
+    from: directive:GUARD
+    to: procedure:review
+    type: requires
+    rationale: null
+    when: null
+  _links:
+    artifacts:
+      href: /api/v1/packs/qa/artifacts

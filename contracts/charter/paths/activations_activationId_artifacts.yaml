@@ -33,6 +33,9 @@ get:
         application/json:
           schema:
             $ref: ../schemas/EffectiveArtifactList.yaml
+          examples:
+            first-page:
+              $ref: ../examples/EffectiveArtifactList.first-page.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
