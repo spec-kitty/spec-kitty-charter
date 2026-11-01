@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -326,6 +327,26 @@ class StorageRootLocationsTest {
                     .singleElement()
                     .satisfies(warning -> assertThat(warning).contains("pack domain", "holds the configuration root"));
         }
+    }
+
+    @Test
+    void theCatalogListsALinkedPackAtItsLevel(@TempDir Path elsewhere) throws IOException {
+        pack("qa", "org");
+        Path target = elsewhere.resolve("real-name");
+        Files.createDirectories(target);
+        Files.writeString(
+                target.resolve("pack.yaml"),
+                "pack_id: external\npack_version: 1.0.0\nname: external\npack_level: project\n");
+        link(packs.resolve("external"), target);
+        DomainRepositoryService store =
+                new DomainRepositoryService(new StorageRootLocations(packs), new YamlSerializationStrategy());
+
+        assertThat(store.configured())
+                .containsExactly(
+                        new ConfiguredPack(new PackIdentifier("external"), PackLevel.PROJECT),
+                        new ConfiguredPack(new PackIdentifier("qa"), PackLevel.ORG));
+        assertThat(store.find(new PackIdentifier("external")))
+                .hasValueSatisfying(descriptor -> assertThat(descriptor.name()).isEqualTo("external"));
     }
 
     @Test

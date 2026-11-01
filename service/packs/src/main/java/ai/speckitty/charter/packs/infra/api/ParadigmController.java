@@ -1,15 +1,15 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.ParadigmsApi;
-import ai.speckitty.charter.api.model.Paradigm;
+import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ParadigmReference;
 import ai.speckitty.charter.api.model.ParadigmRegistration;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.ParadigmReadService;
 import ai.speckitty.charter.packs.application.ParadigmRegistrationService;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import java.util.List;
@@ -18,13 +18,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * The inbound REST adapter for a pack's paradigms: {@code GET}/{@code POST} on the collection and
- * {@code GET}/{@code PUT} on one paradigm (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). It is a
- * faithful copy of {@link DirectiveController}, kept independent per-kind. The read is a thin projection of
- * {@link ParadigmReadService}; the writes delegate to {@link ParadigmRegistrationService}. A refusal the services
+ * The inbound REST adapter for registering a pack's paradigms under the artifact tree: {@code POST
+ * /packs/{packId}/artifacts/paradigm} and {@code PUT /packs/{packId}/artifacts/paradigm/{artifactId}} (ADR-0026
+ * functional registration; no {@code DELETE}/{@code PATCH}). It is a faithful copy of {@link DirectiveController},
+ * kept independent per-kind. A paradigm is read through the generic {@link ArtifactController}; each write answers the
+ * written paradigm in the same {@code Artifact} envelope. The writes delegate to {@link ParadigmRegistrationService}. A refusal the services
  * throw is answered by {@link RefusalHandler}; so is a stale {@code If-Match}
  * precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
@@ -34,39 +34,22 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class ParadigmController implements ParadigmsApi {
 
-    private final ParadigmReadService reads;
     private final ParadigmRegistrationService registrations;
+    private final Hypermedia links;
 
     /**
-     * A controller over the paradigm read and registration use cases.
+     * A controller over the paradigm registration use case.
      *
-     * @param reads the read use case
      * @param registrations the registration use case
+     * @param links the link builder of the answers
      */
-    public ParadigmController(ParadigmReadService reads, ParadigmRegistrationService registrations) {
-        this.reads = reads;
+    ParadigmController(ParadigmRegistrationService registrations, Hypermedia links) {
         this.registrations = registrations;
+        this.links = links;
     }
 
     @Override
-    public ResponseEntity<List<Paradigm>> listPackParadigms(String packId) {
-        var verified = reads.paradigmsOf(new PackIdentifier(packId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(ParadigmController::toDto).toList());
-    }
-
-    @Override
-    public ResponseEntity<Paradigm> getPackParadigm(String packId, String paradigmId) {
-        var verified = reads.paradigmWithRevision(new PackIdentifier(packId), new ParadigmIdentifier(paradigmId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
-    }
-
-    @Override
-    public ResponseEntity<Paradigm> registerPackParadigm(String packId, ParadigmRegistration body) {
+    public ResponseEntity<Artifact> registerPackParadigm(String packId, ParadigmRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
@@ -80,21 +63,20 @@ public class ParadigmController implements ParadigmsApi {
         List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         ParadigmRegistrationService.Registered result =
                 registrations.registerParadigm(pack, paradigm, relationships, false, null);
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri())
+        Artifact written =
+                ArtifactDtos.envelope(ArtifactKind.PARADIGM, pack, id, links).paradigm(ArtifactDtos.paradigm(paradigm));
+        return ResponseEntity.created(ArtifactDtos.location(written))
                 .eTag(result.revision().token())
-                .body(toDto(paradigm));
+                .body(written);
     }
 
     @Override
-    public ResponseEntity<Paradigm> putPackParadigm(
-            String packId, String paradigmId, ParadigmRegistration body, @Nullable String ifMatch) {
+    public ResponseEntity<Artifact> putPackParadigm(
+            String packId, String artifactId, ParadigmRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Paradigm paradigm = assemble(
                 pack,
-                paradigmId,
+                artifactId,
                 body.getSchemaVersion(),
                 body.getName(),
                 body.getSummary(),
@@ -105,7 +87,8 @@ public class ParadigmController implements ParadigmsApi {
                 registrations.registerParadigm(pack, paradigm, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(paradigm));
+                .body(ArtifactDtos.envelope(ArtifactKind.PARADIGM, pack, artifactId, links)
+                        .paradigm(ArtifactDtos.paradigm(paradigm)));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -140,22 +123,5 @@ public class ParadigmController implements ParadigmsApi {
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
         }
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Paradigm toDto(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
-        return new Paradigm(
-                paradigm.id().value(),
-                paradigm.schemaVersion().orElseThrow(),
-                paradigm.name(),
-                paradigm.summary(),
-                paradigm.directiveRefs(),
-                paradigm.references().stream().map(ParadigmController::toDto).toList(),
-                paradigm.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static ParadigmReference toDto(ai.speckitty.charter.packs.domain.ParadigmReference reference) {
-        return new ParadigmReference(reference.type(), reference.id());
     }
 }

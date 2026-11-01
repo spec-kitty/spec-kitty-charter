@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -14,14 +13,12 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
 import ai.speckitty.charter.packs.application.GuideFetcher;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
-import ai.speckitty.charter.packs.application.ToolguideReadService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -44,15 +41,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.unit.DataSize;
 
 /**
- * The HTTP contract of the toolguide routes: status, headers and body shape, the exactly-one rule of {@code guide} and
+ * The HTTP contract of the toolguide registrations: status, headers and the envelope they answer (the reads are
+ * {@code ArtifactControllerTest}'s), the exactly-one rule of {@code guide} and
  * {@code guideUri}, and the inline size cap (FR-010, NFR-005). The guide is read by the real Markdown adapter; the
  * fetch is a stub, so no test opens a socket.
  */
 class ToolguideControllerTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
-    private static final String DIGEST = "sha256:" + "7".repeat(64);
-    private static final String FINGERPRINT = "Charter-Source-Fingerprint";
     /** A valid guide, JSON-escaped for a request body. */
     private static final String GUIDE = "## Overview\\n\\nHow to use the tool.";
 
@@ -64,9 +60,9 @@ class ToolguideControllerTest {
     private final StubFetcher fetcher = new StubFetcher();
     private final MarkdownGuideFormat format = new MarkdownGuideFormat();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ToolguideController(
-                    new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
                     new ToolguideRegistrationService(store, store, new PermissiveWritePolicyGate(), fetcher, format),
-                    format))
+                    format,
+                    new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler(), new ToolguideRegistrationBodyAdvice())
             .build();
 
@@ -75,51 +71,24 @@ class ToolguideControllerTest {
     }
 
     @Test
-    void listsThePacksToolguidesAsJson() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/toolguides"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value("git"))
-                .andExpect(jsonPath("$[0].tool").value("git"))
-                .andExpect(jsonPath("$[0].guide").value("# How to use git\n\n## Overview\n\nHow to use the tool.\n"))
-                .andExpect(jsonPath("$[0].guidePath").doesNotExist())
-                .andExpect(jsonPath("$[0].lastUpdated").value("2026-03-03"));
-    }
-
-    @Test
-    void returnsOneToolguideWithAnEtag() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/toolguides/git"))
-                .andExpect(status().isOk())
-                .andExpect(header().stringValues(FINGERPRINT, DIGEST))
-                .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("git"))
-                .andExpect(jsonPath("$.summary").value("Using git under governance."))
-                .andExpect(jsonPath("$.guide").value("# How to use git\n\n## Overview\n\nHow to use the tool.\n"));
-    }
-
-    @Test
-    void anAbsentToolguideIsA404Problem() throws Exception {
-        mvc.perform(get("/api/v1/packs/pack-a/toolguides/missing"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.code").value("toolguide_not_found"));
-    }
-
-    @Test
     void registersANewToolguideWithLocationAndEtag() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make")))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/toolguides/make"))
+                .andExpect(header().string("Location", "http://localhost/api/v1/packs/pack-a/artifacts/toolguide/make"))
                 .andExpect(header().exists("ETag"))
-                .andExpect(jsonPath("$.id").value("make"));
+                .andExpect(jsonPath("$.kind").value("toolguide"))
+                .andExpect(jsonPath("$.id").value("make"))
+                .andExpect(jsonPath("$.packId").value("pack-a"))
+                .andExpect(jsonPath("$.toolguide.id").value("make"))
+                .andExpect(jsonPath("$._links.self.href").value("/api/v1/packs/pack-a/artifacts/toolguide/make"))
+                .andExpect(jsonPath("$._links.collection.href").value("/api/v1/packs/pack-a/artifacts?kind=toolguide"));
     }
 
     @Test
     void aDuplicateIdPostIsA409() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("git")))
                 .andExpect(status().isConflict())
@@ -128,7 +97,7 @@ class ToolguideControllerTest {
 
     @Test
     void aPutReplacesAndAnswers200() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/git")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/git")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("git")))
                 .andExpect(status().isOk())
@@ -137,7 +106,7 @@ class ToolguideControllerTest {
 
     @Test
     void aPutCreatesAndAnswers201() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make")))
                 .andExpect(status().isCreated())
@@ -147,7 +116,7 @@ class ToolguideControllerTest {
 
     @Test
     void aStaleIfMatchOnAPutIsA412PlainProblem() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/git")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/git")
                         .header("If-Match", "sha256:" + "0".repeat(64))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("git")))
@@ -160,7 +129,7 @@ class ToolguideControllerTest {
         // Well-formed JSON, DTO-valid, but domain-invalid: schemaVersion breaks the toolguide's ^1\.0$ invariant.
         String bad = "{\"id\":\"make\",\"schemaVersion\":\"9.9\",\"tool\":\"make\",\"title\":\"Make\"," + "\"guide\":\""
                 + GUIDE + "\",\"summary\":\"Using make.\"}";
-        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
                 .andExpect(status().is(422))
@@ -171,21 +140,20 @@ class ToolguideControllerTest {
 
     @Test
     void aGuideWithoutAnH1IsStoredAndAnsweredWithTheH1FromTheTitle() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(GUIDE + "\\n\\n## Usage\\n\\nRun make."))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.guide")
+                .andExpect(jsonPath("$.toolguide.guide")
                         .value("# How to use make\n\n## Overview\n\nHow to use the tool.\n\n## Usage\n\nRun make.\n"));
-        mvc.perform(get("/api/v1/packs/pack-a/toolguides/make"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.guide")
-                        .value("# How to use make\n\n## Overview\n\nHow to use the tool.\n\n## Usage\n\nRun make.\n"));
+        Toolguide stored = store.load(PACK, new ToolguideIdentifier("make")).orElseThrow();
+        assertThat(format.write(stored.title(), stored.guide()))
+                .isEqualTo("# How to use make\n\n## Overview\n\nHow to use the tool.\n\n## Usage\n\nRun make.\n");
     }
 
     @Test
     void anH1EqualToTheTitleIsAcceptedWhileADifferentOneIsRefused() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField("# Something else\\n\\n" + GUIDE))))
                 .andExpect(status().is(422))
@@ -193,7 +161,7 @@ class ToolguideControllerTest {
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Something else")));
         assertThat(store.commits).isZero();
 
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField("# How to use make\\n\\n" + GUIDE))))
                 .andExpect(status().isCreated());
@@ -201,7 +169,7 @@ class ToolguideControllerTest {
 
     @Test
     void aPutReplacesTheGuideWithTheOneItSendsNeverWithTheSummary() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/git")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/git")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("git", guideField("## Overview\\n\\nThe second guide."))))
                 .andExpect(status().isOk());
@@ -212,7 +180,7 @@ class ToolguideControllerTest {
 
     @Test
     void aGuideWithoutAnOverviewIsA422ThatNamesTheRule() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField("## Usage\\n\\nRun make."))))
                 .andExpect(status().is(422))
@@ -225,7 +193,7 @@ class ToolguideControllerTest {
     void aTitleThatCannotBeAnH1IsA422NotAServerError() throws Exception {
         String body = "{\"schemaVersion\":\"1.0\",\"tool\":\"make\",\"title\":\"How to\\nuse make\","
                 + "\"summary\":\"Using make.\"," + guideField(GUIDE) + "}";
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().is(422))
@@ -238,7 +206,7 @@ class ToolguideControllerTest {
     void aTitleThatMarkdownWouldNotReadBackAsTheH1IsA422NotAServerError(String title) throws Exception {
         String body = "{\"schemaVersion\":\"1.0\",\"tool\":\"make\",\"title\":\"" + title + "\","
                 + "\"summary\":\"Using make.\"," + guideField(GUIDE) + "}";
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().is(422))
@@ -252,13 +220,13 @@ class ToolguideControllerTest {
     void aListOfMoreThan256ItemsIsA422(String field) throws Exception {
         String items = "[" + String.join(",", java.util.Collections.nCopies(257, "\"x\"")) + "]";
         String within = "[" + String.join(",", java.util.Collections.nCopies(256, "\"x\"")) + "]";
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(GUIDE) + ",\"" + field + "\":" + items)))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("at most 256")));
         assertThat(store.commits).isZero();
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(GUIDE) + ",\"" + field + "\":" + within)))
                 .andExpect(status().isCreated());
@@ -269,19 +237,19 @@ class ToolguideControllerTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"a-", "a--b", "-a", "A"})
     void anIdWhoseGuideFileTheSchemaWouldRefuseIsA422(String id) throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/" + id)
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(id)))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("validation_failed"));
-        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body(id)))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("validation_failed"));
         assertThat(store.commits).isZero();
 
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/a-b")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/a-b")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("a-b")))
                 .andExpect(status().isCreated());
@@ -305,7 +273,7 @@ class ToolguideControllerTest {
                 "\"guide\":\"" + GUIDE + "\",\"guideUri\":null"
             })
     void aRegistrationWithoutExactlyOneNonEmptyGuideOrGuideUriIsA422(String guideFields) throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideFields)))
                 .andExpect(status().is(422))
@@ -319,17 +287,18 @@ class ToolguideControllerTest {
     @ValueSource(strings = {"\"guide\":\"" + GUIDE + "\"", "\"guideUri\":\"" + SERVED_URI + "\""})
     void aRegistrationWithExactlyOneOfGuideOrGuideUriIsAccepted(String guideFields) throws Exception {
         // The positive control of the matrix above, on the same fixture.
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideFields)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.guide").value("# How to use make\n\n## Overview\n\nHow to use the tool.\n"));
+                .andExpect(jsonPath("$.toolguide.guide")
+                        .value("# How to use make\n\n## Overview\n\nHow to use the tool.\n"));
     }
 
     @Test
     void aGuideUriIsFetchedAgainOnEveryPut() throws Exception {
         for (int i = 0; i < 2; i++) {
-            mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+            mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
                     .andExpect(status().is2xxSuccessful());
@@ -339,7 +308,7 @@ class ToolguideControllerTest {
 
     @Test
     void aRefusedFetchIsA422ThatNamesTheReasonAndTheHostButNotThePath() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", "\"guideUri\":\"" + REFUSED_URI + "\"")))
                 .andExpect(status().is(422))
@@ -356,7 +325,7 @@ class ToolguideControllerTest {
 
     @Test
     void aRegistrationToAMissingPackFetchesNothing() throws Exception {
-        mvc.perform(post("/api/v1/packs/ghost/toolguides")
+        mvc.perform(post("/api/v1/packs/ghost/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
                 .andExpect(status().isNotFound())
@@ -369,11 +338,11 @@ class ToolguideControllerTest {
 
     @Test
     void aDuplicatePostOrAStaleIfMatchFetchesNothing() throws Exception {
-        mvc.perform(post("/api/v1/packs/pack-a/toolguides")
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("git", "\"guideUri\":\"" + SERVED_URI + "\"")))
                 .andExpect(status().isConflict());
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("If-Match", "\"sha256:" + "0".repeat(64) + "\"")
                         .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
@@ -381,7 +350,7 @@ class ToolguideControllerTest {
         assertThat(fetcher.fetched).isEmpty();
         assertThat(store.commits).isZero();
 
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", "\"guideUri\":\"" + SERVED_URI + "\"")))
                 .andExpect(status().isCreated());
@@ -392,7 +361,7 @@ class ToolguideControllerTest {
 
     @Test
     void anUnpairedSurrogateIsA422NotAQuestionMark() throws Exception {
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(GUIDE + " \\ud800 alone"))))
                 .andExpect(status().is(422))
@@ -400,7 +369,7 @@ class ToolguideControllerTest {
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("unpaired surrogate")));
         assertThat(store.commits).isZero();
 
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(GUIDE + " \\ud83d\\ude00 paired"))))
                 .andExpect(status().isCreated());
@@ -409,22 +378,22 @@ class ToolguideControllerTest {
     @Test
     void theInlineCapIsTheConfiguredGuideSize() throws Exception {
         MockMvc halfMib = MockMvcBuilders.standaloneSetup(new ToolguideController(
-                        new ToolguideReadService(store, store, new ConsistentRead(() -> DIGEST), store),
                         new ToolguideRegistrationService(
                                 store, store, new PermissiveWritePolicyGate(), fetcher, format),
                         format,
+                        new Hypermedia("/api/v1"),
                         DataSize.ofKilobytes(512)))
                 .setControllerAdvice(new RefusalHandler(), new ToolguideRegistrationBodyAdvice())
                 .build();
         String prefix = "## Overview\n\n";
         String exact = prefix + "a".repeat(MIB / 2 - prefix.length());
 
-        halfMib.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        halfMib.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(escaped(exact + "a")))))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.detail").value("The guide is larger than 524288 bytes of UTF-8."));
-        halfMib.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        halfMib.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(escaped(exact)))))
                 .andExpect(status().isCreated());
@@ -434,7 +403,7 @@ class ToolguideControllerTest {
     void anInlineGuideOfExactly1MibIsAcceptedWhileOneByteMoreIsRefused() throws Exception {
         String prefix = "## Overview\n\n";
         String exact = prefix + "a".repeat(MIB - prefix.length());
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(escaped(exact + "a")))))
                 .andExpect(status().is(422))
@@ -442,7 +411,7 @@ class ToolguideControllerTest {
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("1 MiB")));
         assertThat(store.commits).isZero();
 
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(escaped(exact)))))
                 .andExpect(status().isCreated());
@@ -452,7 +421,7 @@ class ToolguideControllerTest {
     void theCapCountsUtf8BytesNotCharacters() throws Exception {
         // Fewer than 1 Mi characters, more than 1 MiB of UTF-8: each "é" is two bytes.
         String guide = "## Overview\n\n" + "é".repeat(MIB / 2);
-        mvc.perform(put("/api/v1/packs/pack-a/toolguides/make")
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body("make", guideField(escaped(guide)))))
                 .andExpect(status().is(422))

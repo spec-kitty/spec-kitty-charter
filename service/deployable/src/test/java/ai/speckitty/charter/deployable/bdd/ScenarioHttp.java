@@ -40,6 +40,7 @@ public class ScenarioHttp {
      *
      * @param method the lower-case method, as the contract names it
      * @param path the path below the base path, without its query
+     * @param query the raw query of the request, without its {@code ?}; {@code null} when it has none
      * @param result the response
      * @param infoFingerprint after a 200 answer of a read other than {@code /info}: the {@code sourceFingerprint} that
      *     {@code /info} answered right after, with the inputs unchanged; otherwise {@code null}
@@ -47,6 +48,7 @@ public class ScenarioHttp {
     public record Exchange(
             String method,
             String path,
+            @Nullable String query,
             MvcResult result,
             @Nullable String infoFingerprint) {}
 
@@ -104,10 +106,12 @@ public class ScenarioHttp {
             request.content(body);
         }
         // The contract check matches the path without its query.
-        String bare = path.contains("?") ? path.substring(0, path.indexOf('?')) : path;
+        int mark = path.indexOf('?');
+        String bare = mark < 0 ? path : path.substring(0, mark);
+        String query = mark < 0 ? null : path.substring(mark + 1);
         MvcResult answered = mvc.perform(request).andReturn();
-        exchanges.add(
-                new Exchange(method.toLowerCase(Locale.ROOT), bare, answered, infoFingerprintAfter(bare, answered)));
+        exchanges.add(new Exchange(
+                method.toLowerCase(Locale.ROOT), bare, query, answered, infoFingerprintAfter(bare, answered)));
         return answered;
     }
 

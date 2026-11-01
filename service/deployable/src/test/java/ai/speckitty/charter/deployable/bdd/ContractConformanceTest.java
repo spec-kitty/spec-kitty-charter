@@ -6,11 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,7 +22,8 @@ class ContractConformanceTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String PROBLEM_JSON = "application/problem+json";
-    private static final String CONTEXT = "/packs/p1/tactics/t1";
+    private static final String CONTEXT = "/packs/p1/artifacts/tactic/t1";
+    private static final String LIST = "/packs/p1/artifacts";
 
     private final ContractConformance contract = new ContractConformance();
 
@@ -61,7 +65,7 @@ class ContractConformanceTest {
 
     @Test
     void aContentTypeTheResponseDoesNotDeclareIsAViolation() {
-        assertThat(contract.violations("get", "/packs/p1/tactics", 200, "text/plain", json("{}")))
+        assertThat(contract.violations("get", LIST, 200, "text/plain", json("{}")))
                 .singleElement()
                 .asString()
                 .contains("declares no content of type 'text/plain'");
@@ -69,10 +73,9 @@ class ContractConformanceTest {
 
     @Test
     void aStatusTheOperationDoesNotListIsCheckedAgainstItsDefaultProblem() {
-        assertThat(contract.violations(
-                        "get", "/packs/p1/tactics", 406, PROBLEM_JSON, json("{\"title\":\"t\",\"status\":406}")))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, json("{\"title\":\"t\",\"status\":406}")))
                 .isEmpty();
-        assertThat(contract.violations("get", "/packs/p1/tactics", 406, PROBLEM_JSON, json("{\"title\":\"t\"}")))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, json("{\"title\":\"t\"}")))
                 .containsExactly("$ lacks the required member 'status'");
     }
 
@@ -91,21 +94,34 @@ class ContractConformanceTest {
         String tactic = "{\"id\":\"t1\",\"schemaVersion\":\"1\",\"name\":\"n\",\"purpose\":null,"
                 + "\"notes\":null,\"steps\":[{\"title\":\"s\",\"description\":null,\"examples\":[],"
                 + "\"references\":[]}],\"failureModes\":[],\"appliesToLanguages\":[],\"references\":[]}";
-        assertThat(contract.violations("get", "/packs/p1/tactics", 200, "application/json", json("[" + tactic + "]")))
+        String envelope = "{\"kind\":\"tactic\",\"id\":\"t1\",\"packId\":\"p1\",\"tactic\":%s,"
+                + "\"_links\":{\"self\":{\"href\":\"/api/v1/packs/p1/artifacts/tactic/t1\"},"
+                + "\"collection\":{\"href\":\"/api/v1/packs/p1/artifacts?kind=tactic\"}}}";
+        assertThat(contract.violations("get", CONTEXT, 200, "application/json", json(envelope.formatted(tactic))))
                 .isEmpty();
         assertThat(contract.violations(
                         "get",
-                        "/packs/p1/tactics/t1",
+                        CONTEXT,
                         200,
                         "application/json",
-                        json(tactic.replace("\"notes\":null,", ""))))
-                .containsExactly("$ lacks the required member 'notes'");
+                        json(envelope.formatted(tactic.replace("\"notes\":null,", "")))))
+                .containsExactly("$.tactic lacks the required member 'notes'");
     }
 
     @Test
     void aBodyThatIsNotJsonIsAViolation() {
-        assertThat(contract.violations("get", "/packs/p1/tactics", 406, PROBLEM_JSON, null))
+        assertThat(contract.violations("get", LIST, 406, PROBLEM_JSON, null))
                 .containsExactly("the 406 body is not JSON");
+    }
+
+    @Test
+    void aTextBodyOfANonJsonMediaTypeIsNotReadAsJson() {
+        // The contract document is YAML text: its 200 declares application/yaml, a string, so no JSON is expected.
+        assertThat(contract.violations("get", "/openapi.yaml", 200, "application/yaml", null))
+                .isEmpty();
+        assertThat(contract.violations("get", "/openapi.yaml", 200, "application/json", null))
+                .as("a JSON type the operation does not declare is still a violation")
+                .hasSize(1);
     }
 
     /** The refusal codes as the schema's enum prints, built from the domain's tokens, not kept by hand. */
@@ -263,14 +279,187 @@ class ContractConformanceTest {
                 .containsExactly("$._links.self has the undeclared member 'rel'");
     }
 
-    @Test
-    void anAdditionalPropertiesSchemaIsRefusedBecauseOnlyFalseIsImplemented() throws IOException {
+    /**
+     * The contract stays closed everywhere but a map: an additionalProperties that admits any member is refused, and so
+     * is a mapping that holds only annotations or extensions, which constrains nothing either.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"true", "{}", "null", "{description: anything}", "{title: Any, x-note: open}"})
+    void anAdditionalPropertiesThatAdmitsAnyMemberIsRefused(String argument) throws IOException {
         minimalContract();
-        write("charter/schemas/Open.yaml", "type: object\nadditionalProperties: {}\n");
+        write("charter/schemas/Open.yaml", "type: object\nadditionalProperties: " + argument + "\n");
 
         assertThatThrownBy(() -> new ContractConformance(fixture))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("only additionalProperties: false is supported");
+                .hasMessageContaining("only additionalProperties: false or a schema is supported");
+    }
+
+    @Test
+    void aKeywordInsideAnAdditionalPropertiesSchemaIsVetted() throws IOException {
+        minimalContract();
+        write("charter/schemas/Map.yaml", "type: object\nadditionalProperties: {type: string, const: x}\n");
+
+        assertThatThrownBy(() -> new ContractConformance(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("uses the keyword 'const'");
+    }
+
+    // A map (R-14): each member a schema-valued additionalProperties admits is checked against that schema.
+
+    private void linkedThing() throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n  /things/{id}:\n    $ref: paths/thing.yaml\n");
+        write("charter/paths/thing.yaml", """
+                get:
+                  responses:
+                    '200':
+                      description: d
+                      content:
+                        application/json:
+                          schema: {$ref: ../schemas/Thing.yaml}
+                """);
+        write("charter/schemas/Thing.yaml", """
+                type: object
+                additionalProperties: false
+                required: [_links]
+                properties:
+                  _links: {$ref: Links.yaml}
+                """);
+        write("charter/schemas/Links.yaml", "type: object\nadditionalProperties: {$ref: Link.yaml}\n");
+        write("charter/schemas/Link.yaml", """
+                type: object
+                additionalProperties: false
+                required: [href]
+                properties:
+                  href: {type: string, pattern: '^/api/v1(/|$|\\{)'}
+                  templated: {type: boolean}
+                """);
+    }
+
+    @Test
+    void aLinkWithoutHrefAndALinkWithAnExtraMemberAreViolations() throws IOException {
+        linkedThing();
+        ContractConformance fixtureContract = new ContractConformance(fixture);
+
+        assertThat(fixtureContract.violations(
+                        "get", "/things/t1", 200, "application/json", json("{\"_links\":{\"self\":{}}}")))
+                .containsExactly("$._links.self lacks the required member 'href'");
+        assertThat(fixtureContract.violations(
+                        "get",
+                        "/things/t1",
+                        200,
+                        "application/json",
+                        json("{\"_links\":{\"self\":{\"href\":\"/api/v1/things/t1\",\"rel\":\"self\"}}}")))
+                .containsExactly("$._links.self has the undeclared member 'rel'");
+    }
+
+    @Test
+    void validLinksUnderOpenRelationKeysConform() throws IOException {
+        linkedThing();
+        ContractConformance fixtureContract = new ContractConformance(fixture);
+
+        assertThat(fixtureContract.violations(
+                        "get",
+                        "/things/t1",
+                        200,
+                        "application/json",
+                        json("{\"_links\":{\"self\":{\"href\":\"/api/v1/things/t1\"},"
+                                + "\"any-relation\":{\"href\":\"/api/v1/things{?q}\",\"templated\":true}}}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations(
+                        "get",
+                        "/things/t1",
+                        200,
+                        "application/json",
+                        json("{\"_links\":{\"self\":{\"href\":\"/things/t1\"}}}")))
+                .containsExactly("$._links.self.href '/things/t1' does not match ^/api/v1(/|$|\\{)");
+    }
+
+    @Test
+    void theShippedContractHoldsLinksAndTheCheckIsBuiltOverIt() {
+        URL links = ContractConformanceTest.class.getClassLoader().getResource("contract/charter/schemas/Links.yaml");
+
+        assertThat(links).isNotNull();
+        assertThatCode(ContractConformance::new).doesNotThrowAnyException();
+    }
+
+    // Path and method (R-14): a literal PUT path beside a templated GET path is checked against its own operation.
+
+    private static final String ARTIFACT = "/packs/qa/artifacts/directive/x";
+
+    private static String operation(String method, String member) {
+        return "    " + method + ":\n      responses:\n        '200':\n          description: d\n"
+                + "          content:\n            application/json:\n              schema:\n"
+                + "                type: object\n                additionalProperties: false\n"
+                + "                required: [" + member + "]\n                properties:\n"
+                + "                  " + member + ": {type: string}\n";
+    }
+
+    private ContractConformance artifacts(String... pathItems) throws IOException {
+        write("charter/openapi.yaml", "openapi: 3.1.0\npaths:\n" + String.join("", pathItems));
+        write("_shared/responses/Problem.yaml", """
+                description: d
+                content:
+                  application/problem+json:
+                    schema:
+                      type: object
+                      additionalProperties: false
+                      required: [title]
+                      properties:
+                        title: {type: string}
+                """);
+        return new ContractConformance(fixture);
+    }
+
+    private static final String TEMPLATED = "  /packs/{packId}/artifacts/{kind}/{artifactId}:\n";
+    private static final String LITERAL = "  /packs/{packId}/artifacts/directive/{artifactId}:\n";
+
+    @Test
+    void aPutAndAGetOfOnePathAreEachCheckedAgainstTheTemplateThatDefinesTheirMethod() throws IOException {
+        ContractConformance fixtureContract =
+                artifacts(TEMPLATED + operation("get", "read"), LITERAL + operation("put", "written"));
+
+        assertThat(fixtureContract.violations("put", ARTIFACT, 200, "application/json", json("{\"written\":\"w\"}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations("get", ARTIFACT, 200, "application/json", json("{\"read\":\"r\"}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations("put", ARTIFACT, 200, "application/json", json("{\"read\":\"r\"}")))
+                .containsExactlyInAnyOrder(
+                        "$ lacks the required member 'written'", "$ has the undeclared member 'read'");
+    }
+
+    @Test
+    void theMatchDoesNotDependOnTheOrderOfThePaths() throws IOException {
+        ContractConformance fixtureContract =
+                artifacts(LITERAL + operation("put", "written"), TEMPLATED + operation("get", "read"));
+
+        assertThat(fixtureContract.violations("get", ARTIFACT, 200, "application/json", json("{\"read\":\"r\"}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations("put", ARTIFACT, 200, "application/json", json("{\"written\":\"w\"}")))
+                .isEmpty();
+    }
+
+    @Test
+    void whenBothTemplatesDefineTheMethodTheConcreteOneWins() throws IOException {
+        ContractConformance fixtureContract =
+                artifacts(TEMPLATED + operation("get", "read"), LITERAL + operation("get", "directive"));
+
+        assertThat(fixtureContract.violations("get", ARTIFACT, 200, "application/json", json("{\"directive\":\"d\"}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations(
+                        "get", "/packs/qa/artifacts/tactic/x", 200, "application/json", json("{\"read\":\"r\"}")))
+                .isEmpty();
+    }
+
+    @Test
+    void aMethodNoMatchingTemplateDefinesIsCheckedAgainstTheSharedProblem() throws IOException {
+        ContractConformance fixtureContract =
+                artifacts(TEMPLATED + operation("get", "read"), LITERAL + operation("put", "written"));
+
+        assertThat(fixtureContract.violations(
+                        "post", ARTIFACT, 405, "application/problem+json", json("{\"title\":\"t\"}")))
+                .isEmpty();
+        assertThat(fixtureContract.violations("post", ARTIFACT, 405, "application/problem+json", json("{}")))
+                .containsExactly("$ lacks the required member 'title'");
     }
 
     @Test

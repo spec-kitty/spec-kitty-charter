@@ -1,15 +1,15 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.DirectivesApi;
-import ai.speckitty.charter.api.model.Directive;
+import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.DirectiveRegistration;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.packs.application.DirectiveReadService;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
@@ -20,12 +20,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * The inbound REST adapter for a pack's directives: {@code GET}/{@code POST} on the collection and
- * {@code GET}/{@code PUT} on one directive (ADR-0026 functional registration; no {@code DELETE}/{@code PATCH}). The
- * read is a thin projection of {@link DirectiveReadService}; the writes delegate to
+ * The inbound REST adapter for registering a pack's directives under the artifact tree: {@code POST
+ * /packs/{packId}/artifacts/directive} and {@code PUT /packs/{packId}/artifacts/directive/{artifactId}} (ADR-0026
+ * functional registration; no {@code DELETE}/{@code PATCH}). A directive is read through the generic
+ * {@link ArtifactController}; each write answers the written directive in the same {@code Artifact} envelope, with the
+ * item read's links, and the path of a 201's {@code Location} is its {@code self}. The writes delegate to
  * {@link DirectiveRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
@@ -35,39 +36,22 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class DirectiveController implements DirectivesApi {
 
-    private final DirectiveReadService reads;
     private final DirectiveRegistrationService registrations;
+    private final Hypermedia links;
 
     /**
-     * A controller over the directive read and registration use cases.
+     * A controller over the directive registration use case.
      *
-     * @param reads the read use case
      * @param registrations the registration use case
+     * @param links the link builder of the answers
      */
-    public DirectiveController(DirectiveReadService reads, DirectiveRegistrationService registrations) {
-        this.reads = reads;
+    DirectiveController(DirectiveRegistrationService registrations, Hypermedia links) {
         this.registrations = registrations;
+        this.links = links;
     }
 
     @Override
-    public ResponseEntity<List<Directive>> listPackDirectives(String packId) {
-        var verified = reads.directivesOf(new PackIdentifier(packId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .body(verified.value().stream().map(DirectiveController::toDto).toList());
-    }
-
-    @Override
-    public ResponseEntity<Directive> getPackDirective(String packId, String directiveId) {
-        var verified = reads.directiveWithRevision(new PackIdentifier(packId), new DirectiveIdentifier(directiveId));
-        return ResponseEntity.ok()
-                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
-                .eTag(verified.value().revision().token())
-                .body(toDto(verified.value().value()));
-    }
-
-    @Override
-    public ResponseEntity<Directive> registerPackDirective(String packId, DirectiveRegistration body) {
+    public ResponseEntity<Artifact> registerPackDirective(String packId, DirectiveRegistration body) {
         PackIdentifier pack = new PackIdentifier(packId);
         String id = requireId(body.getId());
         ai.speckitty.charter.packs.domain.Directive directive = assemble(
@@ -86,21 +70,20 @@ public class DirectiveController implements DirectivesApi {
         List<Relationship> relationships = RelationshipWire.fromWire(OptionalLists.orEmpty(body.getRelationships()));
         DirectiveRegistrationService.Registered result =
                 registrations.registerDirective(pack, directive, relationships, false, null);
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                        .path("/{id}")
-                        .buildAndExpand(id)
-                        .toUri())
+        Artifact written = ArtifactDtos.envelope(ArtifactKind.DIRECTIVE, pack, id, links)
+                .directive(ArtifactDtos.directive(directive));
+        return ResponseEntity.created(ArtifactDtos.location(written))
                 .eTag(result.revision().token())
-                .body(toDto(directive));
+                .body(written);
     }
 
     @Override
-    public ResponseEntity<Directive> putPackDirective(
-            String packId, String directiveId, DirectiveRegistration body, @Nullable String ifMatch) {
+    public ResponseEntity<Artifact> putPackDirective(
+            String packId, String artifactId, DirectiveRegistration body, @Nullable String ifMatch) {
         PackIdentifier pack = new PackIdentifier(packId);
         ai.speckitty.charter.packs.domain.Directive directive = assemble(
                 pack,
-                directiveId,
+                artifactId,
                 body.getSchemaVersion(),
                 body.getTitle(),
                 body.getIntent(),
@@ -116,7 +99,8 @@ public class DirectiveController implements DirectivesApi {
                 registrations.registerDirective(pack, directive, relationships, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .eTag(result.revision().token())
-                .body(toDto(directive));
+                .body(ArtifactDtos.envelope(ArtifactKind.DIRECTIVE, pack, artifactId, links)
+                        .directive(ArtifactDtos.directive(directive)));
     }
 
     // ---- DTO -> domain -------------------------------------------------------------------------------------------
@@ -166,31 +150,5 @@ public class DirectiveController implements DirectivesApi {
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);
         }
-    }
-
-    // ---- domain -> DTO -------------------------------------------------------------------------------------------
-
-    private static Directive toDto(ai.speckitty.charter.packs.domain.Directive directive) {
-        return new Directive(
-                directive.id().value(),
-                directive.schemaVersion().orElseThrow(),
-                directive.title(),
-                directive.intent(),
-                directive.enforcement().token(),
-                directive.scope().orElse(null),
-                directive.procedures(),
-                directive.integrityRules(),
-                directive.validationCriteria(),
-                directive.explicitAllowances(),
-                directive.references().stream().map(DirectiveController::toDto).toList(),
-                directive.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static DirectiveReference toDto(ai.speckitty.charter.packs.domain.DirectiveReference reference) {
-        return new DirectiveReference(
-                reference.type(),
-                reference.id(),
-                reference.when().orElse(null),
-                reference.reason().orElse(null));
     }
 }

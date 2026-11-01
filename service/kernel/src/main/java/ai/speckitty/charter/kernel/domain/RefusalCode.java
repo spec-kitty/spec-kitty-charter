@@ -48,6 +48,12 @@ public enum RefusalCode {
     /** The asked pack has no toolguide with the asked identity. Added for the toolguide read path (WP09). */
     TOOLGUIDE_NOT_FOUND("toolguide_not_found"),
     /**
+     * The path names an artifact kind this service does not serve: any kind token but the served {@code tactic},
+     * {@code directive}, {@code styleguide}, {@code paradigm} and {@code toolguide} of the generic artifact item read.
+     * Answered as 404. The pack is judged first, so an unknown pack with an unknown kind is {@link #PACK_NOT_FOUND}.
+     */
+    KIND_NOT_FOUND("kind_not_found"),
+    /**
      * A registration request is well-formed but its content breaks a pack invariant or a schema (ADR-0026): the
      * mutated aggregate does not revalidate. Answered as 422. Added for the registration write path (WP05+).
      */
@@ -104,8 +110,8 @@ public enum RefusalCode {
      *
      * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND},
      *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
-     *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #ACTIVATION_NOT_FOUND},
-     *     {@link #ARTIFACT_NOT_FOUND} and {@link #PRESET_NOT_FOUND}
+     *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #KIND_NOT_FOUND},
+     *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND} and {@link #PRESET_NOT_FOUND}
      */
     public boolean notFound() {
         return this == MISSION_TYPE_NOT_FOUND
@@ -116,6 +122,7 @@ public enum RefusalCode {
                 || this == STYLEGUIDE_NOT_FOUND
                 || this == PARADIGM_NOT_FOUND
                 || this == TOOLGUIDE_NOT_FOUND
+                || this == KIND_NOT_FOUND
                 || this == ACTIVATION_NOT_FOUND
                 || this == ARTIFACT_NOT_FOUND
                 || this == PRESET_NOT_FOUND;

@@ -118,6 +118,7 @@ public class RefusalHandler {
                     STYLEGUIDE_NOT_FOUND,
                     PARADIGM_NOT_FOUND,
                     TOOLGUIDE_NOT_FOUND,
+                    KIND_NOT_FOUND,
                     ACTIVATION_NOT_FOUND,
                     ARTIFACT_NOT_FOUND,
                     PRESET_NOT_FOUND -> HttpStatus.NOT_FOUND;
@@ -133,31 +134,18 @@ public class RefusalHandler {
         };
     }
 
+    /**
+     * The title of a refusal: its token as a sentence ({@code kind_not_found} is "Kind not found"), so a new code is
+     * titled without a new branch. {@code drg_schema_error} is the one exception, titled "Invalid DRG document".
+     *
+     * @param code the refusal code
+     * @return the human-readable title; clients never branch on it
+     */
     private static String title(RefusalCode code) {
-        return switch (code) {
-            case MISSION_TYPE_NOT_FOUND -> "Mission type not found";
-            case ACTION_NOT_FOUND -> "Action not found";
-            case PACK_LEVEL_MISMATCH -> "Pack level mismatch";
-            case PACK_UNREADABLE -> "Pack unreadable";
-            case DRG_SCHEMA_ERROR -> "Invalid DRG document";
-            case UNRESOLVED_EDGE_ENDPOINT -> "Unresolved edge endpoint";
-            case INTERNAL_ERROR -> "Internal error";
-            case GOVERNANCE_POLICY_VIOLATION -> "Governance policy violation";
-            case STALE_INPUT -> "Stale input";
-            case PACK_NOT_FOUND -> "Pack not found";
-            case TACTIC_NOT_FOUND -> "Tactic not found";
-            case DIRECTIVE_NOT_FOUND -> "Directive not found";
-            case STYLEGUIDE_NOT_FOUND -> "Styleguide not found";
-            case PARADIGM_NOT_FOUND -> "Paradigm not found";
-            case TOOLGUIDE_NOT_FOUND -> "Toolguide not found";
-            case VALIDATION_FAILED -> "Validation failed";
-            case REGISTRATION_CONFLICT -> "Registration conflict";
-            case ACTIVATION_NOT_FOUND -> "Activation not found";
-            case ARTIFACT_NOT_FOUND -> "Artifact not found";
-            case PRESET_NOT_FOUND -> "Preset not found";
-            case ARTIFACT_REQUIRED -> "Artifact required";
-            case ARTIFACT_LOCKED -> "Artifact locked";
-            case ACTIVATION_INVALID -> "Activation invalid";
-        };
+        if (code == RefusalCode.DRG_SCHEMA_ERROR) {
+            return "Invalid DRG document";
+        }
+        String words = code.token().replace('_', ' ');
+        return Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
 }

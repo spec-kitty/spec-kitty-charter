@@ -9,10 +9,12 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -48,7 +50,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
- * {@link PackDescriptorRepository} and {@link PackRepository} over the filesystem.
+ * {@link PackDescriptorRepository}, {@link PackCatalogRepository} and {@link PackRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -71,6 +73,7 @@ public final class DomainRepositoryService
                 ToolguideRepository,
                 ParadigmRepository,
                 PackDescriptorRepository,
+                PackCatalogRepository,
                 PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
@@ -252,9 +255,28 @@ public final class DomainRepositoryService
     }
 
     @Override
+    public Optional<PackDescriptor> find(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        return resolved.store.findDescriptor(resolved.key).map(PackDescriptorDso::toDescriptor);
+    }
+
+    @Override
     public void save(PackIdentifier pack, PackDescriptor descriptor) {
         Resolved resolved = writable(pack);
         resolved.store.writeDescriptor(resolved.key, PackDescriptorDso.of(descriptor));
+    }
+
+    // ---- PackCatalogRepository -----------------------------------------------------------------------------------
+
+    /**
+     * Every configured location as a configured pack: its configured name as the identifier and its configured level,
+     * in the order the locations give them.
+     */
+    @Override
+    public List<ConfiguredPack> configured() {
+        return locations.all().stream()
+                .map(location -> new ConfiguredPack(new PackIdentifier(location.name()), location.level()))
+                .toList();
     }
 
     // ---- PackRepository --------------------------------------------------------------------
