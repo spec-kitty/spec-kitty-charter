@@ -3,6 +3,8 @@ title: "ADR-0017: Charter Pack schemas are imported from core's pydantic models 
 description: Core's pack and artifact models are exported to JSON Schema and owned here; the YAML adapter validates packs with networknt, and the domain keeps the rules a schema cannot express.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
+decision_status: Accepted, with Amendments 2026-10-19 and 2026-10-20; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27)
+decision_date: '2026-10-20'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0034: The charter service has a local and a hosted deployment option
 description: Local is spawned by the CLI and works offline; hosted uses a configured endpoint and a standard login token and fails closed; records the open-core boundary.
 doc_status: active
 updated: 2026-10-28T00:00:00Z
+decision_status: Accepted, with Clarification 2026-10-28 (decision 5 resolved in part by ADR-0041)
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

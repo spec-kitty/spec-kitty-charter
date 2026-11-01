@@ -3,6 +3,8 @@ title: "ADR-0039: A kind binding can carry companion files"
 description: An artifact may name text files beside its own, like a skill's body; the store reads, writes and fingerprints them with it under one path rule.
 doc_status: active
 updated: 2026-10-29T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-27 and Amendment 2026-10-29 (pending ADR-0043 acceptance)
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

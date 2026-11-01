@@ -42,12 +42,12 @@ rules:
     ci: Docs checks / Freshness SLA
     severity: error
   - id: adr-index
-    rule: Every docs/adr/NNNN-*.md is listed in docs/adr/README.md; numbers are unique and have no gaps.
+    rule: "The ADR index in docs/adr/README.md is generated (ADR-0047): every docs/adr/NNNN-*.md carries title, decision_status and decision_date, and the hub keeps its generated block; numbers are unique and have no gaps."
     check: check_docs.py adr
     ci: Docs checks / ADR index
     severity: error
   - id: changelog-style
-    rule: Changelog entries are named YYYY-MM-DD-slug.md, listed newest first in docs/changelog/README.md, and stay under 3000 characters.
+    rule: "Changelog entries are named YYYY-MM-DD-slug.md, carry the title the generated index in docs/changelog/README.md lists (ADR-0047), and stay under 3000 characters."
     check: check_docs.py changelog
     ci: Docs checks / Changelog style
     severity: error

@@ -3,6 +3,8 @@ title: "ADR-0013: Deactivation persists in one activation ledger, and nothing si
 description: A deactivated charter element stays gone; one activation ledger holds allow and deny state, and cascade, upgrade and presets skip what a user excluded.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26)
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

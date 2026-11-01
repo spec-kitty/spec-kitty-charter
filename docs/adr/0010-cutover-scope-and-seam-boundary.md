@@ -3,6 +3,8 @@ title: "ADR-0010: The 4.x cutover retires every Python offering read in one swit
 description: All offering reads, including activation's, go through the API at once, gated by the conformance corpus; offering internals and pack structure are decided here.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

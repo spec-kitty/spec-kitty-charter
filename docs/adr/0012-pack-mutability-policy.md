@@ -3,6 +3,8 @@ title: "ADR-0012: The owning pack declares a mutability level per artifact: open
 description: A Charter Pack author sets what later packs may do with each artifact it introduces; the levels replace the consumer-side replaceable-builtins allowlist.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0030 and ADR-0031 (2026-10-26)
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

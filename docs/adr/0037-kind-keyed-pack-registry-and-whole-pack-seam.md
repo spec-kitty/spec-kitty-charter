@@ -3,6 +3,8 @@ title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31)
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

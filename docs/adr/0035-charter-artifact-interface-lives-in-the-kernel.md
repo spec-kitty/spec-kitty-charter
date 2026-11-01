@@ -3,6 +3,8 @@ title: "ADR-0035: The shared artifact interface lives in the kernel"
 description: CharterArtifact and PackIdentifier move to kernel.domain so every slice can implement the interface; the schema version becomes optional.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-27'
 type: ADR
 kind: ADR
 related:

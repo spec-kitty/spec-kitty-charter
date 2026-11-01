@@ -3,6 +3,8 @@ title: "ADR-0030: Removal by a derived pack is distinct from deactivation by a p
 description: A derived pack may remove open and extendable artifacts pack-wide, never locked ones; deactivation stays per project; role locks and pins live in the pack-root policy file.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0025: Relationships are first-class domain value objects, walked laz
 description: Why relationships are first-class domain value objects over a behavior-carrying RelationType, identified by the component pair, and walked on demand through per-kind repositories.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27)
+decision_date: '2026-10-25'
 type: ADR
 kind: ADR
 related:

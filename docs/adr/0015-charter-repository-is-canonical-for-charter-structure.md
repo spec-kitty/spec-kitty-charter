@@ -3,6 +3,8 @@ title: "ADR-0015: This repository is canonical for the charter structure, respon
 description: Vendored charter vocabulary changed here is canonical; consumers, core included, adapt. Stay close to the source, deviate for good reason.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

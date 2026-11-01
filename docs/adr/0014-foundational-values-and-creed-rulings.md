@@ -3,6 +3,8 @@ title: "ADR-0014: The creed decisions D-1 to D-5 are recorded here, with refinem
 description: Records the operator's rulings on value-bearing kinds, the impacts relation, arithmetic, the interview and rationale, and when creed work reaches the API.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0028 (2026-10-26)
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

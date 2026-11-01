@@ -3,6 +3,8 @@ title: "ADR-0016: The conformance corpus is a harness over core's CLI, on open-p
 description: Corpus inputs come from open-packs and small fixture projects; expected answers come from core's existing CLI, mapped onto the contract shape.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-19
+decision_date: '2026-10-19'
 type: ADR
 kind: ADR
 related:

@@ -3,6 +3,8 @@ title: "ADR-0002: This repository is the source of record for the charter contra
 description: The charter OpenAPI contract is authored here under contracts/charter/, in the layout of core's contract module with its own checks; core ingests pinned releases.
 doc_status: active
 updated: 2026-10-19T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-18
+decision_date: '2026-10-18'
 type: ADR
 kind: ADR
 related:

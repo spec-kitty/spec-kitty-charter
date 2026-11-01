@@ -42,7 +42,10 @@ fixture, so the two never disagree on purpose. Where the fix lands depends on
 - Use the charter vocabulary in [Domain](/context/domain/) and Spec Kitty's terminology
   canon (Mission, not "feature").
 - Record a decision as an ADR under `docs/adr/`; add a dated page under `docs/changelog/`
-  for notable changes.
+  for notable changes. Give an ADR `decision_status` and `decision_date` in its frontmatter.
+  Never edit `docs/adr/README.md` or `docs/changelog/README.md` to list your page: the site
+  build generates both lists from the frontmatter
+  ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)).
 
 ## Quality gates
 

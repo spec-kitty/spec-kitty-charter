@@ -3,6 +3,8 @@ title: "ADR-0046: The service releases on its own service-v* line, native per OS
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-31'
 type: ADR
 kind: ADR
 related:

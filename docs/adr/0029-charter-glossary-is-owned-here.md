@@ -3,6 +3,8 @@ title: "ADR-0029: This repository owns the charter glossary"
 description: The charter glossary is authored here, in site/.contextive/definitions.yaml; the import from the core glossary is retired and doc-kitty still generates the pages.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-26'
 type: ADR
 kind: ADR
 related:

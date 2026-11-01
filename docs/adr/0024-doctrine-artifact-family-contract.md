@@ -3,6 +3,8 @@ title: "ADR-0024: Charter kinds share a thin CharterArtifact interface over per-
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
 updated: 2026-10-27T00:00:00Z
+decision_status: Accepted, with Amendment 2026-10-26; superseded in part by ADR-0035 and ADR-0037 (2026-10-27)
+decision_date: '2026-10-24'
 type: ADR
 kind: ADR
 related:

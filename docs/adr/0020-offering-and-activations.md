@@ -3,6 +3,8 @@ title: "ADR-0020: The offering and activations are separate resources, and the s
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125)
+decision_date: '2026-10-24'
 type: ADR
 kind: ADR
 related:

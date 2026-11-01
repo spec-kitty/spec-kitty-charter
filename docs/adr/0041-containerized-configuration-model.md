@@ -3,6 +3,8 @@ title: "ADR-0041: The containerized service is configured through a container pr
 description: A container profile that is never the default; validated properties fail the start; secrets only from env or /run/secrets; Spring Cloud Config rejected.
 doc_status: active
 updated: 2026-10-30T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-10-28'
 type: ADR
 kind: ADR
 related:
