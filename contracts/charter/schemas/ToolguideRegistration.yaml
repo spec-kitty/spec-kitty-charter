@@ -8,7 +8,11 @@ description: >-
   beside the other field) or an empty guideUri is refused 422 validation_failed, whatever a generated client enforces
   of the oneOf below. An empty guide breaks guide's minLength, and a list over its maxItems breaks that: a body that
   breaks a constraint this schema declares is refused 400 Bad Request (the contract's default problem) before the
-  controller runs, since bean validation is on the classpath (ADR-0041 decision 2).
+  controller runs, since bean validation is on the classpath (ADR-0041 decision 2). The exception is a null list or a
+  null item in one: a list in this body is never null and holds no null item (a list is sent as an array, [] where it
+  may be empty, and an optional one may be left out), and a null list, or a null item in one, is refused 422
+  validation_failed before the body is bound, whatever else the body breaks (the detail names the list and the item,
+  counted from 0).
 type: object
 additionalProperties: false
 required:

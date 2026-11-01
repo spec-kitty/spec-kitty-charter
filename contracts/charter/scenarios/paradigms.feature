@@ -126,3 +126,33 @@ Feature: Paradigms are read and registered functionally
       {"schemaVersion": "1.0", "name": "Clean replaced", "summary": "inward"}
       """
     Then the response status is 200
+
+  Scenario Outline: A null list, or a null item in a list, is refused before the body is bound (#292, #309: <case>)
+    When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
+      """
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"<fields>}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "<detail>"
+    When I GET "/packs/qa/artifacts/paradigm/clean-architecture"
+    Then the response status is 404
+
+    Examples:
+      | case        | fields                             | detail                                                                                                                |
+      | a null list | , "directiveRefs": null            | The directiveRefs list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item | , "directiveRefs": ["ALPHA", null] | Item 1 of the directiveRefs list is null; a list holds no null item.                                                  |
+
+  Scenario: A paradigm registration body over 1 MiB is refused before it is read (#310)
+    When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body, its "summary" padded to 1048576 bytes:
+      """
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    And the field "detail" of the response body is "The paradigm registration body is larger than 1048576 bytes."
+    When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body, its "summary" padded to 1048000 bytes:
+      """
+      {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
+      """
+    Then the response status is 201

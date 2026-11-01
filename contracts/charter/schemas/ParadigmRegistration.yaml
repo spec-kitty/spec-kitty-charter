@@ -4,6 +4,11 @@ description: >-
   collection the id is optional (the server answers with Location); on PUT the id is taken from the path.
   A relationship in this body may be authored only from the paradigm itself (dual-write ownership rule,
   ADR-0026 / plan IC-05); a cross-authored edge is registered through PUT /packs/{packId}/relationships.
+  A list in this body is never null and holds no null item: a list is sent as an array, [] where it may be empty, and
+  an optional one may be left out. A null list, or a null item in one, is refused 422 validation_failed before the body
+  is bound, whatever else the body breaks (the detail names the list and the item, counted from 0); a null field inside
+  an object item breaks a constraint this schema declares and is refused 400 Bad Request. The body is at most 1 MiB; a
+  larger body is refused 422 validation_failed before it is read.
 type: object
 additionalProperties: false
 required:
