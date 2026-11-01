@@ -6,6 +6,9 @@ version is the `info.version` of `openapi.yaml`; the canonical JSON Schemas of `
 half of the contract, and an OpenAPI diff cannot see them, so every scenario change gets a line
 here too.
 
+A contract change does not edit this file: it adds a fragment under `changes/`, which the release
+pull request assembles into the top version section (`changes/README.md`, ADR-0047).
+
 ## 0.1.0-SNAPSHOT
 
 The first contract version core will vendor, not yet released: an unreleased contract version
