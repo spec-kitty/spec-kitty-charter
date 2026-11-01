@@ -162,10 +162,10 @@ rules:
               responses:
                 not: { required: ['501'] }
 
-  # ADR-0011: every response of every operation, the shared default Problem included, declares the three
-  # Charter headers (#90). Fingerprint is not required on the wire, but its absence is still declared.
+  # ADR-0011: every response of every operation, the shared default Problem included, declares the two
+  # always-on Charter headers (#90). Charter-Source-Fingerprint is governed by the two rules below (#175).
   charter-headers-on-every-response:
-    description: Every response of every operation declares the Charter-Contract-Version, Charter-Worktree and Charter-Source-Fingerprint headers (ADR-0011, ADR-0018 D11).
+    description: Every response of every operation declares the Charter-Contract-Version and Charter-Worktree headers (ADR-0011, ADR-0018 D11); the fingerprint has its own two rules.
     severity: error
     given: "$.paths[*][get,put,post,delete,options,head,patch,trace].responses[*]"
     then:
@@ -176,7 +176,139 @@ rules:
         functionOptions:
           schema:
             type: object
-            required: [Charter-Contract-Version, Charter-Worktree, Charter-Source-Fingerprint]
+            required: [Charter-Contract-Version, Charter-Worktree]
+
+  # #175, ruling 4: the 200 of a verified read carries the digest that read verified, so its contract requires
+  # it. Every GET 200 is a verified read except the root (/), which reads no pack, and the contract document
+  # (/openapi.yaml), which reads no pack file either. The rule is written by shape, not by operationId.
+  fingerprint-on-verified-reads:
+    description: The 200 of every GET other than / and /openapi.yaml declares Charter-Source-Fingerprint with required true (#175).
+    severity: error
+    given: "$.paths[?(@property != '/' && @property != '/openapi.yaml')].get.responses['200'].headers"
+    then:
+      - field: Charter-Source-Fingerprint
+        function: truthy
+      - field: Charter-Source-Fingerprint
+        function: schema
+        functionOptions:
+          schema:
+            type: object
+            required: [required]
+            properties:
+              required: { const: true }
+
+  # #175, ruling 4: no other answer carries the fingerprint, so none declares it: not a refusal, not a write's
+  # answer, not the root's or the contract document's, not a shared component response. Only a GET answers a
+  # verified read, so a HEAD, OPTIONS or TRACE answer declares it no more than a write's does.
+  fingerprint-only-on-verified-reads:
+    description: Only the 200 of a verified read declares Charter-Source-Fingerprint; no write, refusal, root (/) or /openapi.yaml answer or shared response does (#175).
+    severity: error
+    given:
+      - "$.paths[*][put,post,delete,patch,head,options,trace].responses[*].headers"
+      - "$.paths[*].get.responses[?(@property != '200')].headers"
+      - "$.paths['/openapi.yaml'].get.responses[*].headers"
+      - "$.paths['/'].get.responses[*].headers"
+      - "$.components.responses[*].headers"
+    then:
+      field: Charter-Source-Fingerprint
+      function: falsy
+
+  # ADR-0019 D3 and FR-008: every success answer can be navigated, so every 2xx JSON schema requires _links (the
+  # one Links component). The YAML answer of /openapi.yaml is not JSON and is not judged.
+  success-schemas-carry-links:
+    description: Every 2xx application/json response schema requires _links (ADR-0019 D3).
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^2/))].content['application/json'].schema"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          type: object
+          required: [required]
+          properties:
+            required:
+              type: array
+              contains: { const: _links }
+
+  # FR-011: Links is an open map, so the relation keys appear only in answers and their examples. Every key of an
+  # example's _links is a relation of the table in docs/development/hypermedia-hateoas.md; the list below is that
+  # table's first column, and RelationTableParityTest fails when the two differ.
+  link-relations-are-known:
+    description: Every relation key of a _links in an example is a relation of the hypermedia guide's table (FR-011).
+    severity: error
+    given:
+      - "$..examples[*].value.._links"
+      - "$..example.._links"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          type: object
+          propertyNames:
+            enum:
+              - self
+              - collection
+              - item
+              - up
+              - first
+              - next
+              - info
+              - service-desc
+              - packs
+              - offering
+              - register
+              - refresh
+              - artifacts
+              - graph
+              - presets
+              - assets
+              - resolution
+              - distribute
+              - kinds
+              - mission-types
+              - context
+              - activations
+              - edit
+              - delete
+              - skipped
+              - effective-context
+              - select
+              - unselect
+              - exclude
+              - include
+              - apply-preset
+
+  # R-03 (revised): the relation-key rule reads examples, so every 2xx JSON response carries one, and every example
+  # it carries has _links at its top level; the key check is then never vacuous.
+  success-responses-have-link-examples:
+    description: Every 2xx application/json response has an example, and every example it has carries _links at its top level.
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^2/))].content['application/json']"
+    then:
+      function: schema
+      functionOptions:
+        forceValidationOnCurrentNode: true
+        schema:
+          type: object
+          anyOf:
+            - required: [example]
+            - required: [examples]
+          properties:
+            example:
+              type: object
+              required: [_links]
+            examples:
+              type: object
+              minProperties: 1
+              additionalProperties:
+                type: object
+                required: [value]
+                properties:
+                  value:
+                    type: object
+                    required: [_links]
 
   # A bare const or enum refinement (an if condition, or an allOf part narrowing a property) holds nothing
   # but that one keyword: it narrows a property described where it is declared, so it needs no description.

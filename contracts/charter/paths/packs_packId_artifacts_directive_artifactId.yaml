@@ -1,0 +1,100 @@
+put:
+  operationId: putPackDirective
+  summary: Register (create or replace) a directive of a Charter Pack by identity.
+  description: >-
+    Idempotent create-or-replace of a directive by id (functional registration, ADR-0026): the whole pack
+    aggregate is revalidated and committed atomically. Answers 201 when it created the directive, 200 when it
+    replaced one, each with an ETag revision. If-Match carries optimistic concurrency: a stale precondition is
+    a 412 (a plain Problem, not a refusal code). A malformed body, or a relationship not authored from the
+    directive, is a 422 validation_failed, and the pack is left unchanged. A directive is replaced at PUT
+    /packs/{packId}/artifacts/directive/{artifactId}, under the artifact tree; the answer is the directive in
+    the Artifact envelope the item read of the same path answers, with the same _links. Registration is not
+    yet advertised by a link: no answer carries an edit link.
+  tags:
+    - Directives
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+    - name: If-Match
+      in: header
+      required: false
+      description: Optimistic concurrency on the pack revision; a stale value is refused 412.
+      schema:
+        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/DirectiveRegistration.yaml
+  responses:
+    '200':
+      description: The directive was replaced.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            directive:
+              $ref: ../examples/Artifact.directive.yaml
+    '201':
+      description: The directive was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the write.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            directive:
+              $ref: ../examples/Artifact.directive.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '412':
+      $ref: ../../_shared/responses/Problem.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

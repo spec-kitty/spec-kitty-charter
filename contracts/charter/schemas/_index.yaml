@@ -1,9 +1,18 @@
 files:
+  - ApiRoot.yaml
+  - Artifact.yaml
+  - ArtifactKindToken.yaml
+  - ArtifactPage.yaml
+  - ArtifactSummary.yaml
   - CharterRefusal.yaml
   - CharterRefusalCode.yaml
   - Diagnostic.yaml
   - DiagnosticCode.yaml
+  - Link.yaml
+  - Links.yaml
   - NodeKind.yaml
+  - Offering.yaml
+  - OfferingPack.yaml
   - PackLevel.yaml
   - Relation.yaml
   - ServiceInfo.yaml

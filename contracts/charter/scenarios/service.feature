@@ -41,9 +41,22 @@ Feature: What the service says about itself
     And the response header "Charter-Source-Fingerprint" appears once
     And the response header "Charter-Source-Fingerprint" is the remembered "sourceFingerprint"
 
+  Scenario: The info answer links to itself and to the contract document, and says so in a Link header
+    The service-desc link (RFC 8631) names the contract the service was built against, in the body
+    and, on this answer only, in a Link header (#208).
+    When I GET "/info"
+    Then the response status is 200
+    And the field at "/_links/self/href" is "/api/v1/info"
+    And the field at "/_links/service-desc/href" is "/api/v1/openapi.yaml"
+    And the response header "Link" appears once
+    And the response header "Link" is '</api/v1/openapi.yaml>; rel="service-desc"'
+    When I follow the link "service-desc"
+    Then the response status is 200
+    And the response has no "Link" header
+
   Scenario: A refusal carries the contract version and the worktree, not the fingerprint
     The fingerprint is the digest a read verified and set on its 200 answer; no refusal carries one.
-    When I GET "/packs/no-such-pack/tactics"
+    When I GET "/packs/no-such-pack/artifacts"
     Then the response status is 404
     And the problem code is "pack_not_found"
     And the response header "Charter-Contract-Version" is the contract version
@@ -60,6 +73,7 @@ Feature: What the service says about itself
     And the response header "Charter-Contract-Version" is the contract version
     And the response header "Charter-Worktree" is "scenario-worktree"
     And the response has no "Charter-Source-Fingerprint" header
+    And the response has no "Link" header
 
   Scenario: The source fingerprint follows the pack files
     When I GET "/info"

@@ -4,22 +4,24 @@ description: >-
   never on the title. Codes are snake_case on the wire; the integration seam in core maps them
   to core's own spellings. mission_type_not_found, action_not_found, pack_not_found,
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
-  activation_not_found, artifact_not_found and preset_not_found are 404; validation_failed and
+  kind_not_found, activation_not_found, artifact_not_found and preset_not_found are 404; validation_failed and
   activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
   artifact_locked are 409; every other code is 500. x-refusal below gives each code's status. pack_not_found means the identifier matches no configured pack, neither by its
-  configured name nor by the pack_id its pack.yaml declares. A missing or invalid pack.yaml never
-  refuses a tactic read: the identifier lookup skips that pack. A configured pack whose directory is
-  missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
+  configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
+  artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm and
+  toolguide); the pack is judged first, so an unknown pack with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
+  missing or invalid is pack_unreadable (500) on the offering and on every artifact read (operator
+  ruling of 2026-10-31). A configured pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
   cannot be listed, is pack_unreadable (500) on every read, because the first digest covers every configured pack. A change to pack.yaml
   during a read is stale_input, because pack.yaml is digested. internal_error refuses a failure no
   other code names; its detail is a generic sentence that says nothing about the failure, so every
   500 is a refusal.
 
   stale_input is raised: the packs or the project configuration changed while the answer was computed,
-  so the answer and the Charter-Source-Fingerprint it would report might disagree. Every built read (the
-  service info and both tactic reads) digests its inputs twice and refuses on a difference, or when the
-  second digest cannot be taken, including when the load itself refused (a pack_not_found or
-  tactic_not_found whose inputs changed meanwhile is stale_input). The read may be retried. A change made
+  so the answer and the Charter-Source-Fingerprint it would report might disagree. Every verified read (the
+  service info, the offering, and the artifact list and item) digests its inputs twice and refuses on a
+  difference, or when the second digest cannot be taken, including when the load itself refused (a
+  pack_not_found or an artifact's not-found code whose inputs changed meanwhile is stale_input). The read may be retried. A change made
   after the second digest, or one reverted between the two, goes unseen.
 
   mission_type_not_found and action_not_found are not raised: the action-context operation that
@@ -75,6 +77,7 @@ enum:
   - styleguide_not_found
   - paradigm_not_found
   - toolguide_not_found
+  - kind_not_found
   - validation_failed
   - registration_conflict
   - activation_not_found
@@ -144,6 +147,11 @@ x-refusal:
     status: 404
     retryable: false
     raised: true
+  kind_not_found:
+    status: 404
+    retryable: false
+    raised: true
+    description: the path names an artifact kind this service does not serve
   validation_failed:
     status: 422
     retryable: false

@@ -1,6 +1,8 @@
 files:
+  - ArtifactId.yaml
+  - ArtifactKind.yaml
+  - ArtifactKindFilter.yaml
   - PackId.yaml
-  - TacticId.yaml
   - ActionPath.yaml
   - ActivatableKindPath.yaml
   - ActivationId.yaml

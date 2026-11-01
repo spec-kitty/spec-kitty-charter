@@ -83,3 +83,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
       symbol: Toolguide.references
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
+  symbol: Toolguide

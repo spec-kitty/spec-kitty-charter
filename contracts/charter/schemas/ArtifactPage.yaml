@@ -1,0 +1,26 @@
+title: ArtifactPage
+description: >-
+  One page of a pack's artifacts of the served kinds, in the served-kind order and then by id in
+  code-point order, filtered by kind when the request names one. The page and its fingerprint come
+  from one verified read.
+type: object
+additionalProperties: false
+required:
+  - items
+  - page
+  - _links
+properties:
+  items:
+    type: array
+    description: >-
+      The artifacts of this page, at most page.pageSize of them, each strictly after the position the
+      request's pageCursor names; empty when the pack, or the kind filtered on, holds none after it.
+    items:
+      $ref: ArtifactSummary.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java
+      symbol: ArtifactReadService.list
+  page:
+    $ref: ../../_shared/schemas/PageInfo.yaml
+  _links:
+    $ref: Links.yaml

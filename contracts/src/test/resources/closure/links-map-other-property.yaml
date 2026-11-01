@@ -1,0 +1,44 @@
+# Must report (ADR-0019 D3 lookalike): the same map under a property named links, not _links, is an open map.
+openapi: 3.1.0
+info:
+  title: Closure probe
+  version: 1.0.0
+paths:
+  /probe:
+    get:
+      responses:
+        '200':
+          description: The probe.
+          content:
+            application/json:
+              schema:
+                title: Probe
+                type: object
+                additionalProperties: false
+                required:
+                  - links
+                properties:
+                  name:
+                    type: string
+                  links:
+                    title: Links
+                    description: The links of a resource.
+                    type: object
+                    additionalProperties:
+                      title: Link
+                      description: One hypermedia link.
+                      type: object
+                      additionalProperties: false
+                      required:
+                        - href
+                      properties:
+                        href:
+                          type: string
+                          pattern: '^/api/v1(/|$|\{)'
+                        templated:
+                          type: boolean
+                        method:
+                          type: string
+                          pattern: '^(GET|POST|PUT)$'
+                        title:
+                          type: string

@@ -1,39 +1,48 @@
 title: Link
 description: >-
-  One relation of a _links map (ADR-0019 D3, docs/development/hypermedia-hateoas.md): where it points and, when
-  the method is not GET, how to follow it. Shared with #126.
+  One hypermedia link (ADR-0019 D3). href is an absolute path under /api/v1 or an RFC 6570 template
+  (templated true). method is GET, POST, PUT or DELETE and defaults to GET. ADR-0026 D2 rules out
+  DELETE and PATCH for pack and artifact writes; ADR-0020 defines DELETE for activations. No link
+  uses PATCH.
 type: object
 additionalProperties: false
 required:
-- href
+  - href
 properties:
   href:
     type: string
-    pattern: ^/api/v1(/|$|\{)
-    description: An absolute path that includes the server prefix, or an RFC 6570 template of one.
+    pattern: '^/api/v1(/|$|\{)'
+    description: >-
+      Where the link points: an absolute path that includes the server prefix, for example
+      /api/v1/packs/qa/artifacts, or, with templated true, an RFC 6570 template of one, for example
+      /api/v1/packs/qa/artifacts{?kind}. A client follows it as given and never builds a path from parts.
     x-derived:
-      rule: Built by the REST adapter from the operation the relation names.
+      rule: The server prefix followed by the path of the operation the relation names, each path segment percent-encoded.
       inputs:
-      - openapi.yaml#/servers/0/url
+        - openapi.yaml#/servers
+        - openapi.yaml#/paths
   templated:
     type: boolean
-    description: True when href is an RFC 6570 template.
+    description: True when href is an RFC 6570 template the client expands before following it; absent otherwise.
     x-derived:
-      rule: True when the REST adapter writes href as a template.
+      rule: True exactly when href holds an RFC 6570 expression.
       inputs:
-      - openapi.yaml#/servers/0/url
+        - schemas/Link.yaml#/properties/href
   method:
     type: string
-    pattern: ^(GET|POST|PUT)$
-    description: The method to follow the relation with, when it is not GET; GET, POST or PUT. A DELETE relation waits for the activation writes (#291).
+    pattern: '^(GET|POST|PUT|DELETE)$'
+    description: >-
+      The method to follow the link with, GET, POST, PUT or DELETE; absent means GET. DELETE is for
+      activations only (ADR-0020); a pack or artifact write is never DELETE or PATCH (ADR-0026 D2),
+      and no link uses PATCH.
     x-derived:
-      rule: The method of the operation the relation names.
+      rule: The method of the operation the relation names, omitted when it is GET.
       inputs:
-      - openapi.yaml#/paths
+        - openapi.yaml#/paths
   title:
     type: string
-    description: A human-readable label; never parsed.
+    description: A human-readable label of the link. Clients never parse it.
     x-derived:
-      rule: Written by the REST adapter.
+      rule: A label the server writes for the relation.
       inputs:
-      - openapi.yaml#/paths
+        - schemas/Link.yaml#/properties/href

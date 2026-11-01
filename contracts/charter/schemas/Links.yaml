@@ -1,12 +1,17 @@
 title: Links
 description: >-
-  The relations of an answer: a map from a relation name to a Link. The keys are open, so a new relation is additive;
-  a client ignores a relation it does not know (ADR-0019 D3). No relation points at an operation that is not built.
-  self is always the answered resource: the activation for an Activation or an ActivationChange, the report, page, graph or context for an effective read.
+  The links of a resource: an open map from a relation key in the relation table of
+  docs/development/hypermedia-hateoas.md to a Link. Clients must tolerate a key they do not know.
+  No relation points at an operation that is not built (ADR-0019 D3, ADR-0020 D8). self is always the
+  answered resource: the activation for an Activation or an ActivationChange, the report, page, graph or
+  context for an effective read.
 type: object
 additionalProperties:
   $ref: Link.yaml
 x-derived:
-  rule: Built by the REST adapter from the request and the operations that are built (ADR-0019 D3).
+  rule: >-
+    The links the server writes for the answer, each keyed by its relation and built from the server
+    prefix and the paths of the operations the relations name.
   inputs:
-  - openapi.yaml#/paths
+    - openapi.yaml#/servers
+    - openapi.yaml#/paths

@@ -1,0 +1,20 @@
+summary: The first page of one item of a pack's artifacts, with a next page.
+value:
+  items:
+    - kind: tactic
+      id: rehearse
+      title: Rehearse
+      _links:
+        self:
+          href: /api/v1/packs/qa/artifacts/tactic/rehearse
+  page:
+    hasNextPage: true
+    nextPageCursor: dGFjdGljL3JlaGVhcnNl
+    pageSize: 1
+  _links:
+    self:
+      href: /api/v1/packs/qa/artifacts?pageSize=1
+    first:
+      href: /api/v1/packs/qa/artifacts?pageSize=1
+    next:
+      href: /api/v1/packs/qa/artifacts?pageSize=1&pageCursor=dGFjdGljL3JlaGVhcnNl

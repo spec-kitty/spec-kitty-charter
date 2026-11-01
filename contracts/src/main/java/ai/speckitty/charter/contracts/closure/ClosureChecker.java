@@ -52,12 +52,17 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  *       {@code enum} are not an object (a {@code const}/{@code enum} that lists an object admits only that object,
  *       so it is closed). A schema whose type admits objects (a type naming {@code object}, or no type) is closed
  *       only by {@code additionalProperties: false} with no {@code patternProperties};
- *       {@code additionalProperties: true} and a schema-valued {@code additionalProperties} (a map) are open, with
- *       one exemption: the schema of a property named {@code _links} whose {@code additionalProperties} is a schema
- *       titled {@code Link} (ADR-0019 D3), whose relation keys are open on purpose; the {@code Link} is still a
- *       position. Each
+ *       {@code additionalProperties: true} and a schema-valued {@code additionalProperties} (a map) are open. Each
  *       {@code properties}, {@code patternProperties} and schema-valued {@code additionalProperties} value is a
- *       position.</li>
+ *       position. <b>The one exemption</b> ({@link LinksMap}): ADR-0019 D3 puts every link of an answer in "a property
+ *       named {@code _links} whose values reference the link object", a map with open relation keys and a closed
+ *       value. The bundle has every {@code $ref} inlined, so the exemption is structural: a schema reached as the
+ *       property {@code _links} ({@code properties/_links}), whose {@code type} is {@code object} alone, with no
+ *       {@code patternProperties}, and whose {@code additionalProperties} is a schema titled {@code Link} that this
+ *       walk classifies as closed, is closed by its own keywords. The {@code Link} is still a position and is judged
+ *       as any other. A lookalike stays an open map: the same map under another property name, a value with another
+ *       title, or a {@code Link} that is not closed; that last one is reported twice, at the open {@code Link} (a
+ *       position) and at the map (not exempt).</li>
  *   <li><b>Arrays.</b> {@code items} and each {@code prefixItems} entry are positions. A schema whose type admits
  *       arrays (a type naming {@code array}, or no type) is open without {@code items}, its items being
  *       unconstrained; a tuple is closed only by {@code items: false} (or an {@code items} position). So an

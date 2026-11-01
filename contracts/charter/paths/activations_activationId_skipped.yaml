@@ -27,6 +27,9 @@ get:
         application/json:
           schema:
             $ref: ../schemas/ActivationSkippedReport.yaml
+          examples:
+            nothing-skipped:
+              $ref: ../examples/ActivationSkippedReport.nothing-skipped.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

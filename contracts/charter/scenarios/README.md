@@ -72,16 +72,42 @@ Keep it small; add a step only when a scenario cannot be written without it.
   tactic file or more than one.
 - `Given the directory of the pack "<name>" is missing` — deletes the configured pack's whole directory, so the first
   digest cannot read it. To remove a sibling, first write any file to it with the pack step above.
-- `Then the response body is a list with an element whose field "<field>" is "<text>"` — for a JSON array body.
 - `Then the contract declares the refusal code "<code>"`, `... is answered with status <n>`, `... may not be
   retried` and `... is raised by no operation` — read the machine-readable `x-refusal` map of
   `../schemas/CharterRefusalCode.yaml` (`status`, `retryable`, `raised` per code). `Then the contract says exactly
   these refusal codes are raised by an operation:` with a one-column table lists the codes whose `raised` is true.
   After every scenario, each refusal it observed must have the status and `raised: true` the map declares.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
+- `Then the problem has no code` — an `application/problem+json` body without a `code` member (absent, not empty): a
+  transport or routing failure, not a charter refusal.
+- `Then the field at "<json-pointer>" is "<text>"`, `... is <integer>` and `... is true` or `... is false` — the
+  member an RFC 6901 JSON Pointer names (for example `/page/hasNextPage` or `/items/0/id`), which must be there and
+  of that JSON type. `Then the field at "<json-pointer>" starts with "<text>"` — the same for the start of a string.
+- `Then the path of the Location header is the href of the link "<relation>"` — a created resource's `Location`
+  (absolute or not) has, as its path, the `href` of that relation in the answer's `_links`.
+- `Then the answer has no link "<relation>"` — the body's `_links` has no member of that relation key.
+- `When I follow the link "<relation>"` — GET the `href` of that relation in the last answer's `_links`, with the
+  `/api/v1` server prefix taken off as the request steps expect.
+- `When I follow the templated link "<relation>" with:` followed by a two-column table of `| name | value |` rows —
+  the link must carry `templated: true`; its RFC 6570 `href` is expanded with the table's values (a simple `{name}`
+  becomes the percent-encoded value, a form-style query `{?a,b}` becomes `?a=..&b=..` for the names the table gives,
+  and nothing when it gives none) and followed like `I follow the link`.
+- `Then following the link "<relation>" of every element of "<member>" answers <n>` — GETs the `href` of that
+  relation in the `_links` of every element of the array `<member>` of the last answer, which must hold at least one,
+  and expects each to answer `<n>`.
+- `Then following "<relation>" links from the answer, the "<member>" ids are:` followed by a table with the header
+  `| kind | id |` — collects the `kind` and `id` of every element of `<member>` on the last answer and on every page
+  its `<relation>` link leads to, following it until a page has none (at most 100 pages, so a looping `next` fails
+  the step instead of hanging it), and compares them with the table in order, so
+  every element is served exactly once. Each followed page must answer 200; the last one is the step's answer.
+- `When the file "<path>" of the pack "<name>" is deleted` — deletes one existing file of a configured pack, between
+  two requests (a cursor's anchor that goes away between pages).
 - `When I POST "<path>" as JSON with the body:`, `When I PUT "<path>" with the body:`, `When I PUT "<path>" with
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
-  body:` — a registration with a JSON doc string, and its `If-Match` precondition.
+  body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
+  JSON with the body:` — the same with any method, for an outline whose examples differ in the method.
+- `Then the artifact in the response body has <n> relationship(s)` and `Then a relationship of the artifact in the
+  response body points to "<urn>"` — the `relationships` of the member an `Artifact` envelope's `kind` names.
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.
@@ -89,8 +115,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
   `Charter-Contract-Version` and `Charter-Worktree` headers and no `Charter-Source-Fingerprint` (ADR-0020 D8).
-- `Then the field "<field>" of the response body is the lines:` followed by a doc string — the field's text is the
-  doc string's lines, each ending in a newline; for a Markdown guide.
+- `Then the field at "<json-pointer>" is the lines:` followed by a doc string — the text the pointer names is the doc
+  string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
   fetches the doc string, for the rest of the scenario; a later step for the same URI replaces it. A URI no step names
   is refused as a host off the allowlist (`HOST_NOT_ALLOWED`), as the service's empty-by-default allowlist refuses it.
@@ -103,18 +129,52 @@ Every scenario that calls an operation is also checked against `../openapi.yaml`
 for every request it sent, not only the last: the response's content type must be one the operation declares for the status, or for its
 `default` response, and the body must validate against that content's schema. A path no
 operation defines must answer the shared `Problem` response. A binding of the steps in another
-language makes the same check. It also checks the fingerprint header of every exchange: a 200 carries
-exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for `/info` and to what
-`/info` answers right after for another read; no other answer carries one.
+language makes the same check. It also checks the fingerprint header of every `GET` exchange, by its own rule
+and never from the contract's declarations: a verified read, a `GET` answered 200 with a JSON body on any path
+but the root `/`, carries exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for
+`/info` and to what `/info` answers right after for another read; every other `GET` answer (a refusal, the root,
+`/openapi.yaml`, whose body is YAML) carries none. A write (`POST`, `PUT`) is exempt.
+
+Every 2xx answer with a JSON body is also checked for its links (R-20), statically, with no further request:
+
+- **Self.** When the contract has a `GET` for the request path, `_links.self.href` is `/api/v1` plus the request path,
+  plus the query for a `GET` with one. Otherwise a 201 with a `Location` has the `Location`'s path as its `self`, and
+  any other answer (the relationships `PUT`, whose path has no `GET`) has no `self`.
+- **Resolution.** Every link, at any depth, has an `href` under `/api/v1/` that, with its query and a trailing
+  `{?...}` expression cut off, matches a path template of `../openapi.yaml` defining the link's `method` (`GET` when
+  absent); a whole-segment `{name}` matches a template variable. Another RFC 6570 form fails the check.
+  `templated` is `true` exactly when the `href` holds an expression.
+- **Location.** On a 201 with a `Location`, its path is `_links.self.href`.
+- **Relations.** Every key of every `_links` is a relation of the table in
+  `docs/development/hypermedia-hateoas.md`, which the build copies onto the test classpath.
+
+After the last scenario, the suite fails when a success answer the contract declares, a 2xx status of an
+operation, was exercised by no scenario, and lists the gaps: a new operation or success status needs a scenario
+that calls it. A run that selects only some scenarios reports the others' operations as gaps.
 
 ## Features
 
-- `service.feature`, `errors.feature`, `security.feature`: the service info, the failures outside the refusals, and
-  the worktree guard.
-- `toolguides.feature`: the toolguide reads and registrations, with the guide sent as content or fetched from a
-  `guideUri`, and their refusals.
-- `tactics.feature`: the tactic reads answer with the `Charter-Source-Fingerprint` they verified, and refuse with
-  `stale_input` or `pack_unreadable` as ADR-0018 D11 requires.
+- `service.feature`, `errors.feature`, `security.feature`: the service info (with its `self` and `service-desc` links
+  and the `Link` header only it sends), the failures outside the refusals, and the worktree guard.
+- `root.feature`: the API root, `GET /` (`/api/v1/`, with the trailing slash), its links and that each one resolves
+  (FR-001). The server prefix without the slash, `/api/v1`, is not mapped to the root: it answers the 404 of a path
+  no operation defines, a `Problem` without a code, and no second mapping is added for it.
+- `offering.feature`: the configured packs in force, `GET /offering`, in the merge order (configured level, then
+  pack id in code-point order), at their configured level, and its refusals (FR-002).
+- `directives.feature`, `styleguides.feature`, `paradigms.feature`, `toolguides.feature`: the registrations of the
+  writable kinds under the artifact tree (`POST /packs/{packId}/artifacts/<kind>`, `PUT
+  /packs/{packId}/artifacts/<kind>/{artifactId}`), each answering the envelope of the generic item, their read-back
+  through the generic item and their refusals; for a toolguide, the guide sent as content or fetched from a
+  `guideUri`.
+- `artifacts.feature`: the generic artifact reads, the paged list of a pack's artifacts of the served kinds and one
+  artifact in its envelope, with their paging edge cases and refusals (FR-003, FR-004, FR-007).
+- `tactics.feature`: the tactic reads, through the generic list and item, answer with the
+  `Charter-Source-Fingerprint` they verified, and refuse with `stale_input` or `pack_unreadable` as ADR-0018 D11
+  requires (the item's `pack_unreadable`: #176).
+- `removed-routes.feature`: every per-kind route of the earlier contract answers the 404 of a path no operation
+  defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
+  kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
+  not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
 - `activations.feature`: the activation set (ADR-0020), declared in full and reserved: one 501 pin per operation.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).

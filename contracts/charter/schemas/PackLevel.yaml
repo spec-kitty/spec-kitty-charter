@@ -1,10 +1,12 @@
 title: PackLevel
-description: The level a Charter Pack declares in pack.yaml (core ADR 2026-10-11-2).
+description: >-
+  The level of a Charter Pack (core ADR 2026-10-11-2): the level a pack.yaml declares, or the level a
+  pack is configured at.
 type: string
 enum:
   - built-in
   - org
   - project
 x-source:
-  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/PackLevel.java
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackLevel.java
   symbol: PackLevel

@@ -39,3 +39,6 @@ properties:
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
       symbol: Relationship.when
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Relationship.java
+  symbol: Relationship

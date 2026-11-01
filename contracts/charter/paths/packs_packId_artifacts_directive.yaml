@@ -1,0 +1,78 @@
+post:
+  operationId: registerPackDirective
+  summary: Register a new directive in a Charter Pack.
+  description: >-
+    Registers a net-new directive (functional registration, ADR-0026): the whole pack aggregate is revalidated
+    and committed atomically. The id is optional in the body; the server answers 201 with a Location to the
+    created directive and an ETag revision. A body that names an already-registered id is a 409
+    registration_conflict; a malformed body, or a relationship not authored from the directive, is a 422
+    validation_failed, and the pack is left unchanged. The directives of a pack are registered at POST
+    /packs/{packId}/artifacts/directive, under the artifact tree; the answer is the directive in the Artifact
+    envelope the item read answers (GET /packs/{packId}/artifacts/directive/{artifactId}), with the same
+    _links, and the path of Location is its _links.self.href. Registration is not yet advertised by a link: no
+    answer carries an edit link.
+  tags:
+    - Directives
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/DirectiveRegistration.yaml
+  responses:
+    '201':
+      description: The directive was created.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Location:
+          description: The URI of the created directive; its path is the _links.self.href of the answer.
+          schema:
+            type: string
+        ETag:
+          description: The pack revision after the write, for optimistic concurrency.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            directive:
+              $ref: ../examples/Artifact.directive.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '409':
+      description: The registration conflicts with the pack's current state (duplicate id or policy).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '422':
+      description: The registration is well-formed but breaks a pack invariant or schema.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
