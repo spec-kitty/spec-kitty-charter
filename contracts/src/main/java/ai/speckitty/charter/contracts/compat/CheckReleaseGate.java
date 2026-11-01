@@ -27,9 +27,10 @@ import org.snakeyaml.engine.v2.exceptions.YamlEngineException;
  * ({@link ReleaseGate#baselineRefusal}): it prints {@code BASELINE <version>} and exits 0, or prints the refusal
  * and exits 1.
  *
- * <p>{@code CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag>} checks a tag pushed to publish a
- * release ({@link ReleaseGate#releaseRefusal}): it prints {@code RELEASE <version>} and exits 0, or prints the
- * refusal and exits 1. The Gradle task {@code checkReleaseTag} runs it.
+ * <p>{@code CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag> [<changes-dir>]} checks a tag pushed to
+ * publish a release ({@link ReleaseGate#releaseRefusal}): it prints {@code RELEASE <version>} and exits 0, or prints
+ * the refusal and exits 1. Given the changelog fragments directory, it also refuses while a fragment is left
+ * unassembled ({@link ChangelogFragments}, ADR-0047). The Gradle task {@code checkReleaseTag} runs it.
  *
  * <p>{@code CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>} prints
  * {@code PREVIOUS_BREAKING <tag>} when the version is a breaking bump (a major bump, or a minor bump while the major
@@ -41,7 +42,7 @@ public final class CheckReleaseGate {
     private static final String USAGE =
             "usage: CheckReleaseGate <openapi.yaml> <CHANGELOG.md> (--git <merged-tags> <head-tags> | --no-git)"
                     + " | CheckReleaseGate --baseline <openapi.yaml> <tag>"
-                    + " | CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag>"
+                    + " | CheckReleaseGate --release <openapi.yaml> <CHANGELOG.md> <tag> [<changes-dir>]"
                     + " | CheckReleaseGate --previous-breaking <openapi.yaml> <CHANGELOG.md> <merged-tags>";
 
     private CheckReleaseGate() {}
@@ -62,8 +63,9 @@ public final class CheckReleaseGate {
         if (args.size() == 4 && "--previous-breaking".equals(args.get(0))) {
             return previousBreaking(args, out);
         }
-        if (args.size() == 4 && "--release".equals(args.get(0))) {
-            return release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), out);
+        if ((args.size() == 4 || args.size() == 5) && "--release".equals(args.get(0))) {
+            @Nullable Path changes = args.size() == 5 ? Path.of(args.get(4)) : null;
+            return release(Path.of(args.get(1)), Path.of(args.get(2)), args.get(3), changes, out);
         }
         if (args.size() == 3 && "--baseline".equals(args.get(0))) {
             return baseline(Path.of(args.get(1)), args.get(2), out);
@@ -136,15 +138,23 @@ public final class CheckReleaseGate {
         return 0;
     }
 
-    private static int release(Path openapi, Path changelog, String tag, PrintStream out) {
+    private static int release(Path openapi, Path changelog, String tag, @Nullable Path changes, PrintStream out) {
         String version;
         String log;
+        List<String> pending;
         try {
             version = infoVersion(openapi);
             log = Files.readString(changelog);
+            pending = changes == null ? List.of() : ChangelogFragments.pending(changes);
         } catch (IOException | YamlEngineException | IllegalArgumentException e) {
             out.println("Cannot read the release gate's inputs: " + e.getMessage());
             return 2;
+        }
+        if (!pending.isEmpty()) {
+            out.println(pending.size() + (pending.size() == 1 ? " changelog fragment is" : " changelog fragments are")
+                    + " not assembled into the CHANGELOG: " + String.join(", ", pending)
+                    + ". Run ./gradlew :contracts:assembleContractChangelog in the release pull request.");
+            return 1;
         }
         Optional<Decision.Refused> refused = ReleaseGate.releaseRefusal(tag, version, log);
         if (refused.isPresent()) {

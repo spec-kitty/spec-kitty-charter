@@ -66,6 +66,24 @@ class CheckReleaseGateTest {
     }
 
     @Test
+    void aReleaseIsRefusedWhileAChangelogFragmentIsNotAssembled() throws IOException {
+        Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 0.1.0\n");
+        Path log = Files.writeString(dir.resolve("CHANGELOG.md"), "## 0.1.0\n");
+        Path changes = Files.createDirectory(dir.resolve("changes"));
+        Files.writeString(changes.resolve("README.md"), "# Fragments\n");
+        List<String> args =
+                List.of("--release", openapi.toString(), log.toString(), "contract-charter-v0.1.0", changes.toString());
+        assertThat(CheckReleaseGate.run(args, out)).isZero(); // the README is not a fragment
+        assertThat(printed()).startsWith("RELEASE 0.1.0\n");
+        output.reset();
+        Files.writeString(changes.resolve("2026-11-01-a.md"), "### Added\n\n- x\n");
+        assertThat(CheckReleaseGate.run(args, out)).isEqualTo(1);
+        assertThat(printed())
+                .isEqualTo("1 changelog fragment is not assembled into the CHANGELOG: 2026-11-01-a.md."
+                        + " Run ./gradlew :contracts:assembleContractChangelog in the release pull request.\n");
+    }
+
+    @Test
     void aMajorBumpNamesThePreviousMajorsRelease() throws IOException {
         Path openapi = Files.writeString(dir.resolve("openapi.yaml"), "info:\n  version: 2.0.0-SNAPSHOT\n");
         Path log = Files.writeString(
