@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "mission_slug": "gate-a-read-surface-01M691ND",
+  "mission_id": "01M691NDZHKX1ZEZJ39X6CJD6A",
+  "mission_branch": "kitty/mission-gate-a-read-surface-01M691ND",
+  "target_branch": "issue-126-offering-reads",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04",
+        "WP05",
+        "WP06",
+        "WP07"
+      ],
+      "write_scope": [
+        "contracts/_shared/VENDORED.md",
+        "contracts/_shared/responses/Problem.yaml",
+        "contracts/_shared/schemas/PageInfo.yaml",
+        "contracts/build.gradle.kts",
+        "contracts/charter/CHANGELOG.md",
+        "contracts/charter/examples/**",
+        "contracts/charter/headers/**",
+        "contracts/charter/headers/CharterSourceFingerprint.yaml",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/parameters/**",
+        "contracts/charter/paths/**",
+        "contracts/charter/paths/info.yaml",
+        "contracts/charter/paths/offering.yaml",
+        "contracts/charter/paths/packs_packId_artifacts*.yaml",
+        "contracts/charter/paths/root.yaml",
+        "contracts/charter/responses/**",
+        "contracts/charter/responses/ArtifactNotFound.yaml",
+        "contracts/charter/responses/_index.yaml",
+        "contracts/charter/scenarios/**",
+        "contracts/charter/scenarios/README.md",
+        "contracts/charter/scenarios/artifacts.feature",
+        "contracts/charter/schemas/**",
+        "contracts/charter/schemas/Artifact*.yaml",
+        "contracts/charter/schemas/CharterRefusalCode.yaml",
+        "contracts/charter/schemas/Link.yaml",
+        "contracts/charter/schemas/Links.yaml",
+        "contracts/charter/schemas/_index.yaml",
+        "contracts/lint/**",
+        "contracts/lint/README.md",
+        "contracts/lint/fixtures/**",
+        "contracts/lint/ruleset.yaml",
+        "contracts/src/main/java/ai/speckitty/charter/contracts/closure/**",
+        "contracts/src/main/java/ai/speckitty/charter/contracts/refusal/**",
+        "contracts/src/test/java/ai/speckitty/charter/contracts/closure/**",
+        "contracts/src/test/java/ai/speckitty/charter/contracts/lint/**",
+        "contracts/src/test/java/ai/speckitty/charter/contracts/refusal/**",
+        "contracts/src/test/resources/closure/**",
+        "contracts/src/test/resources/refusal/**",
+        "docs/adr/0019-packs-resource-model-and-hypermedia.md",
+        "docs/adr/0026-write-surface-is-functional-registration.md",
+        "docs/api/service-contract.md",
+        "docs/architecture/architectural-patterns-applied.md",
+        "docs/architecture/packs-resource-model.md",
+        "docs/changelog/2026-10-31-gate-a-read-surface.md",
+        "docs/context/**",
+        "docs/development/hypermedia-hateoas.md",
+        "docs/plans/roadmap.md",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/**",
+        "service/deployable/src/test/**",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/**",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/CharterSteps.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractConformance.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractConformanceTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReadConsistencySteps.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ScenarioPacks.java",
+        "service/deployable/src/test/resources/conformance/**",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactPosition.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfiguredPack.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCatalogRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackDescriptorRepository.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/*Controller.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactCursor.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactDtos.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactKindTokenConverter.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/Hypermedia*.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/Hypermedia.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RefusalHandler.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/Relation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryService.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/ArtifactReadServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/HypermediaTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-31T13:41:13.052079+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "ba9633210d5a9bf3691f5ba76cc01097ca4e00dc",
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP02",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md'; WP02 depends on WP01"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP03",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/charter/responses/**' vs 'contracts/charter/responses/ArtifactNotFound.yaml', 'contracts/charter/responses/**' vs 'contracts/charter/responses/_index.yaml', 'contracts/charter/paths/**' vs 'contracts/charter/paths/packs_packId_artifacts*.yaml', 'contracts/_shared/VENDORED.md' vs 'contracts/_shared/VENDORED.md', 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md'"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP04",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/charter/responses/**' vs 'contracts/charter/responses/**', 'contracts/charter/paths/**' vs 'contracts/charter/paths/**', 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java' vs 'service/deployable/src/test/java/ai/speckitty/charter/deployable/**', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java' vs 'service/deployable/src/test/java/ai/speckitty/charter/deployable/**'"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP05",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/charter/headers/CharterSourceFingerprint.yaml' vs 'contracts/charter/headers/**', 'contracts/charter/paths/**' vs 'contracts/charter/paths/root.yaml', 'contracts/charter/paths/**' vs 'contracts/charter/paths/offering.yaml', 'contracts/charter/paths/**' vs 'contracts/charter/paths/info.yaml', 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java' vs 'service/deployable/src/test/java/ai/speckitty/charter/deployable/**', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java' vs 'service/deployable/src/test/java/ai/speckitty/charter/deployable/**'"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP06",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/lint/ruleset.yaml' vs 'contracts/lint/**', 'contracts/lint/README.md' vs 'contracts/lint/**', 'contracts/lint/fixtures/**' vs 'contracts/lint/**', 'contracts/charter/paths/**' vs 'contracts/charter/paths/**', 'contracts/build.gradle.kts' vs 'contracts/build.gradle.kts', 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ContractDescriptionsTest.java' vs 'service/deployable/src/test/**', 'service/deployable/src/test/java/ai/speckitty/charter/deployable/ProblemResponsesTest.java' vs 'service/deployable/src/test/**'"
+      },
+      {
+        "wp_a": "WP01",
+        "wp_b": "WP07",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'contracts/lint/README.md' vs 'contracts/lint/README.md', 'contracts/charter/CHANGELOG.md' vs 'contracts/charter/CHANGELOG.md'"
+      }
+    ],
+    "total_merges": 6,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "write_scope_overlap": 6
+    }
+  }
+}

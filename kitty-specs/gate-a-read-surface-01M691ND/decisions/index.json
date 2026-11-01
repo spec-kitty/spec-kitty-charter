@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-31T13:16:41.328706Z",
+      "decision_id": "01M691NVZG50WH0PWHD5SCX0SN",
+      "final_answer": "Confirmed as ruled: operator rulings of 2026-10-31 relayed by the orchestrator session (research note section 7); orchestrator instruction: proceed to specify.",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M691NDZHKX1ZEZJ39X6CJD6A",
+      "mission_slug": "gate-a-read-surface-01M691ND",
+      "opened_by": "cli",
+      "options": [
+        "Confirmed as ruled",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Is the Gate-A read surface scope (research note sections 6-7: artifact envelope, writes moved into the generic tree, smallest offering set, #175 fingerprint policy, #46 no effect, inside 0.1.0-SNAPSHOT, kind_not_found, one PR) the confirmed intent?",
+      "rationale": null,
+      "resolved_at": "2026-10-31T13:16:46.960142Z",
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirmation",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M691NDZHKX1ZEZJ39X6CJD6A",
+  "version": 1
+}
