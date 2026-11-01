@@ -260,6 +260,30 @@ class ToolguideControllerTest {
                 .andExpect(jsonPath("$.toolguide." + field, org.hamcrest.Matchers.hasSize(0)));
     }
 
+    // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    void aNullItemInAListIsA422OnPostAndPut(String field) throws Exception {
+        String bad = body("make", guideField(GUIDE) + ",\"" + field + "\":[null]");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + field + " list is null; a list holds no null item."));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/toolguide/make")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + field + " list is null; a list holds no null item."));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
     // ---- the toolguide id names a guide file the schema accepts ---------------------------------------------------
 
     @ParameterizedTest(name = "{0}")

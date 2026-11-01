@@ -129,6 +129,30 @@ class ParadigmControllerTest {
         assertThat(store.commits).as("a refused registration commits nothing").isZero();
     }
 
+    // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"directiveRefs", "references", "relationships"})
+    void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
+        String bad = body("hexagonal").replace("}", ",\"" + list + "\":[null]}");
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/paradigm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        mvc.perform(put("/api/v1/packs/pack-a/artifacts/paradigm/hexagonal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bad))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Item 0 of the " + list + " list is null; a list holds no null item."));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
     @Test
     void anAbsentListIsEmpty() throws Exception {
         // The positive control of the matrix above: every list left out.

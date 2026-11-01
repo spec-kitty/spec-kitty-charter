@@ -218,7 +218,7 @@ configured under `charter.guide-fetch` (`GuideFetchProperties`):
 |---|---|---|
 | `charter.guide-fetch.allowed-hosts` | empty | The hosts a guide may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every `guideUri` (`HOST_NOT_ALLOWED`). |
 | `charter.guide-fetch.timeout` | `10s` | One deadline over resolution, every redirect and the body. |
-| `charter.guide-fetch.max-size` | 1 MiB (`1MB`, which Spring reads as 1,048,576 bytes) | The largest guide accepted, fetched or inline: counted while a fetched body streams, and the cap of an inline `guide`. A registration body is capped at six times this plus 1 MiB. |
+| `charter.guide-fetch.max-size` | 1 MiB (`1MB`, which Spring reads as 1,048,576 bytes) | The largest guide accepted, fetched or inline: counted while a fetched body streams, and the cap of an inline `guide`. A toolguide registration body is capped at six times this plus 1 MiB; a directive, paradigm or styleguide registration body at a fixed 1 MiB. |
 | `charter.guide-fetch.max-redirects` | `3` | The most redirects followed; each target is checked again. |
 
 The fetch is direct: it never uses a proxy, whatever `https.proxyHost` says. A service that reaches
