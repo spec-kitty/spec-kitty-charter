@@ -3,7 +3,7 @@ title: "ADR-0040: A file-kind rule declares its content form, and asset payloads
 description: How a pack file is read and compared is declared by its file-kind rule; asset payloads and top-level templates are read, written and fingerprinted as bytes.
 doc_status: draft
 updated: 2026-11-01T00:00:00Z
-decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01; extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
+decision_status: Proposed, with Amendments 2026-10-28 and 2026-11-01 (accepted 2026-11-01); extended in part by ADR-0042 (2026-10-28) and ADR-0044 (2026-10-30, mission templates)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -34,7 +34,9 @@ mission's research and held under `kitty-specs/asset-template-round-trip-01M5YY7
 the reconciliation with [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) the
 operator ruled the same day (`DM-01M5ZAMP0R5V5YF5KM09YXY0NS`). The code #193 ships implements
 it, so the points it amends in ADR-0036 and ADR-0039 are in force for that code; the record stays
-Proposed pending the operator's acceptance, which the pull request for #193 asks for.
+Proposed pending the operator's acceptance, which the pull request for #193 asks for. The amendment
+of 2026-11-01 is Accepted, by the operator's
+[ruling on #251](https://github.com/spec-kitty/spec-kitty-charter/issues/251#issuecomment-6560983180).
 
 It widens [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) decision 4
 (Accepted), which left non-YAML content to the kind missions.
@@ -167,8 +169,15 @@ Made by [#251](https://github.com/spec-kitty/spec-kitty-charter/issues/251),
 [#252](https://github.com/spec-kitty/spec-kitty-charter/issues/252) and
 [#300](https://github.com/spec-kitty/spec-kitty-charter/issues/300), the follow-ups that the reviews
 of #193 and #277 filed. It closes the known gaps that decisions 2 and 4 record. The decision text
-below is unchanged, and each point this note changes is annotated where it stands. The record stays
-Proposed.
+below is unchanged, and each point this note changes is annotated where it stands.
+
+**Accepted** — 2026-11-01. The operator approved the decision
+[#314](https://github.com/spec-kitty/spec-kitty-charter/pull/314) made for #251, and with it this
+amendment ([ruling on #251](https://github.com/spec-kitty/spec-kitty-charter/issues/251#issuecomment-6560983180)): validate mode reports a missing payload and lists every payload
+and template, judged by the store's own sidecar payload rule, and no contract change is needed.
+Only this amendment is accepted. Its points are in force now; they join the record's accepted text
+when the record is accepted. The record stays Proposed, pending the acceptance the pull request for
+#193 asks for.
 
 - **Decision 2: validate mode applies the store's payload rule.** Validate mode lists every payload
   and template the store's listing holds, whatever its extension, with its kind, and reads none. It
