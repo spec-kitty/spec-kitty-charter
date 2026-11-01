@@ -176,8 +176,8 @@ below is unchanged, and each point this note changes is annotated where it stand
 amendment ([ruling on #251](https://github.com/spec-kitty/spec-kitty-charter/issues/251#issuecomment-6560983180)): validate mode reports a missing payload and lists every payload
 and template, judged by the store's own sidecar payload rule, and no contract change is needed.
 Only this amendment is accepted. Its points are in force now; they join the record's accepted text
-when the record is accepted. The record stays Proposed, pending the acceptance the pull request for
-#193 asks for.
+when the record is accepted. The record stays Proposed, pending the acceptance that the pull
+request for #193 asks for.
 
 - **Decision 2: validate mode applies the store's payload rule.** Validate mode lists every payload
   and template the store's listing holds, whatever its extension, with its kind, and reads none. It
