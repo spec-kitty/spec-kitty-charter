@@ -276,8 +276,12 @@ writes come after the read stages, one at a time: charter document save and comp
 - `stale_input` is raised by every verified read (`getServiceInfo`, `getOffering`, `listPackArtifacts` and
   `getPackArtifact`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
-- `governance_policy_violation` is reserved: it is declared and pinned by a scenario and a unit
-  test, and raised by nothing until the pack mutability policy lands (epic #55).
+- `governance_policy_violation` (409) is raised by the registration writes when the mutability level of the
+  pack that owns the target does not permit the write (ADR-0012, epic #55). No policy file is read yet, so every
+  target is open and no write is refused with it until one is.
+- `pack_level_mismatch` and `drg_schema_error` are declared and raised by no operation: no operation reaches the
+  whole-pack load that still refuses a graph as `drg_schema_error`. `ReservedRefusalCodesTest` reads every code the
+  `x-refusal` map marks not raised and fails when a main class on the wire names one (#293).
 - **401 and 403 are transport failures, not refusals.** They are `Problem` bodies without a
   charter code: 401 is a missing, malformed or wrong token, 403 is a browser request. The seam
   treats both as transport failures. They carry no fingerprint.

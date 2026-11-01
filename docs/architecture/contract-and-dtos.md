@@ -136,8 +136,8 @@ The layout:
     [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/): the relation
     becomes `tension` and `impacts` an artifact's per-value list; the contract shape is not yet
     decided);
-  - the refusal codes `governance_policy_violation` (still raised by nothing) and `stale_input`
-    (now raised);
+  - the refusal codes `governance_policy_violation` and `stale_input` (both now raised;
+    `governance_policy_violation` by the registration writes, #293);
   - an integer `depth` request parameter on the context read that counts `suggests` hops (0 to
     2), echoed in the response with no maximum;
   - an info endpoint with `serviceVersion`, and `Charter-Contract-Version`, `Charter-Worktree`

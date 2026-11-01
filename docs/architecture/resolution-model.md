@@ -65,7 +65,8 @@ flowchart LR
    land in the same graph that cascade reads; they are not kept on a separate,
    diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
    mutability level is checked against what later packs do to it: a change the level does not
-   allow is the refusal `governance_policy_violation`, a reserved code that nothing raises yet
+   allow is the refusal `governance_policy_violation`, which the registration writes already raise (#293); the merge
+   does not raise it yet
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
 3. **Activate.** A per-kind activation key that is absent means what the kind's
