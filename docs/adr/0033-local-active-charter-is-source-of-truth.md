@@ -2,7 +2,7 @@
 title: "ADR-0033: The project's local activation file is the source of truth for its active charter"
 description: Local activation.yaml is written through to the service, wins visibly on a cold-start divergence, names pack ids and versions; upgrades are opt-in per project.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: Accepted; decision 6 superseded in part by ADR-0048 (2026-11-02)
 decision_date: '2026-10-26'
 type: ADR

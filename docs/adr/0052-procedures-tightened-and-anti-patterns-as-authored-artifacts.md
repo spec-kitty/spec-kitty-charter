@@ -194,7 +194,7 @@ Nothing below is applied in this record.
   `Artifact.styleguide.yaml` retire; `Styleguide`'s "relationships always empty" invariant (FR-013) ends once
   `rejects` mints; the `Artifact` `oneOf` gains the kind.
 - **Kernel facts** (`ArtifactKind`): `anti_pattern`'s documentation ("never a standalone file") and its absence from
-  `CHARTER_KIND_TOKENS` change; the logical model's kind-table note follows.
+  `CHARTER_KIND_TOKENS` change; the logical model's kind-table note follows when the kind is built.
 - **spec-kitty-open-packs**: the curation pass (re-homing, the anti-pattern migration and dedupe).
 - **Core** (can come before the cutover): render the activated anti-patterns in review prompts instead of the
   hardcoded checklist.

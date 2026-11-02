@@ -2,7 +2,7 @@
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
-updated: 2026-11-01T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: Accepted (2026-10-31); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
 decision_date: '2026-10-30'
 type: ADR

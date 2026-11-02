@@ -2,7 +2,7 @@
 title: "ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store"
 description: Sanitized-shape rules for artifact kinds; the procedure shape; the structured toolguide guide as a Markdown companion, sent over HTTP as content or a fetched URI.
 doc_status: draft
-updated: 2026-10-29T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: Proposed; decision 3 superseded by ADR-0052 (2026-11-02)
 decision_date: '2026-10-29'
 type: ADR

@@ -328,8 +328,8 @@ Nothing below is applied in this record; each lands in a later contract-family P
   `DeactivatedArtifacts.mission_type`, and adds `mission_types` to the preset's `activated_kinds`.
 - **Kind facts** ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), `ArtifactKind`): recommended,
   `lifecycle` and `gate` are not activatable on their own (a mission type that references them brings them into
-  force), not org-requirable and not selection-overlayable; the logical model's kind table records the facts. Java paths that hardcode `missions/` (`PackFileSet`, `MissionTypeBinding`, `TemplateBinding`) follow
-  the rename.
+  force), not org-requirable and not selection-overlayable; the logical model's kind table records the facts when the kinds are built. Java paths that hardcode `missions/`
+  (`PackFileSet`, `MissionTypeBinding`, `TemplateBinding`) follow the rename.
 - **spec-kitty-open-packs**: the `missions/` to `mission_types/` move, the step contracts into the bundles, and the
   work-package lifecycle authored from core's lane table.
 - **Core** (post-cutover): run the declared lifecycle instead of `status/transitions.py`, evaluate declared guards,

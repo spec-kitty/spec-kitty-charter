@@ -2,8 +2,8 @@
 title: "ADR-0017: Charter Pack schemas are imported from core's pydantic models as canonical JSON Schema"
 description: Core's pack and artifact models are exported to JSON Schema and owned here; the YAML adapter validates packs with networknt, and the domain keeps the rules a schema cannot express.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
-decision_status: Accepted, with Amendments 2026-10-19 and 2026-10-20; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27); R14 and R15 superseded in part by ADR-0052 and ADR-0049 (2026-11-02)
+updated: 2026-11-02T00:00:00Z
+decision_status: Accepted, with Amendments 2026-10-19 and 2026-10-20; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27); R15 superseded in part by ADR-0049, and R14 by ADR-0052 if its open question 3 is ruled as recommended (2026-11-02)
 decision_date: '2026-10-20'
 type: ADR
 kind: ADR
@@ -67,7 +67,7 @@ and every change the import made to the schemas (C1-C16) is tabled in
   *(Superseded in part by [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), accepted 2026-11-02, if its open question 3 is ruled as recommended: an `anti_pattern` node declared only in a graph fragment is refused after the migration.)*
 - **URNs take the 15 kinds the service models** (R15). Core's `glossary` and `glossary_scope` are
   refused. DIV-012.
-  *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the URN kinds gain `glossary` and `term`.)*
+  *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the URN kinds gain `term`, and a context URN (`glossary`, pending ADR-0049 open question 3).)*
 - **Shard `generated_by` is optional** (R8). The service is laxer than core here. DIV-009.
 - **The `impacts` relation and edge strength are modeled** (ADR-0009 D1, import changes C7 and C12). Core
   has neither yet; the contract leads and core aligns at the cutover. DIV-018.
