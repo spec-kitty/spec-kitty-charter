@@ -192,6 +192,19 @@ service must not depend on spec-kitty-events or any other events provider. E1 to
 - **E4 stays an issue for the events provider:** step-specific core event types do not fit declared
   mission types. E5 (payload from the transition context) is unchanged.
 
+**Second revision (operator, 2026-11-02): a thin event registry for consistency only.** R1 and R2 are
+replaced:
+
+- **A pack may contain an `event_registry` artifact.** It only states, for each entry, a
+  `namespace`, a `type` and a `name`. There are no data schemas, no envelope format and no payload
+  rules.
+- **Its only purpose is a convenience check:** an `emit` in a mission type or lifecycle must name an
+  entry of a registry in the pack's `depends_on` closure (R4). Namespace overlaps between registries
+  are refused (R3).
+- **The client is responsible for sending, shaping and using events.** E5 (payload from context)
+  moves to the client, and the charter does not check payloads.
+- R5 stands: no built-in standard events in the charter.
+
 ### Mission type as a state machine (client-side use)
 
 On the client, a mission type is the **description of a finite-state machine**: it must say which
