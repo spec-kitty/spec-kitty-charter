@@ -239,6 +239,9 @@ Nothing below is applied in this record.
    enumerated in the contract when the guard schema lands.
 2. **The changed-files input.** *Recommended:* relative to the repository root, against the transition's base
    (the work package's base commit).
+3. **Where the interim trust mark lives.** Until #157 lands, an asset-backed guard runs only from a pack the project
+   explicitly trusts, and no record yet says where that trust is written. *Recommended:* the project's activation
+   file, where the pack ids and versions are already named, so one read settles it.
 
 ## Alternatives considered
 
