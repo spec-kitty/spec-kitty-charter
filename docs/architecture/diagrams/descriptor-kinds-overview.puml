@@ -1,21 +1,25 @@
 @startuml descriptor-kinds-overview
-' Entity view of the charter descriptor kinds and how they relate.
-' Sources (core repo spec-kitty, read-only):
+' Entity view of the charter descriptor kinds and how they relate: the decided design.
+' Decided design: ADR-0048 (composition), ADR-0049 (glossary), ADR-0050 (mission types, lifecycles, gates),
+' ADR-0051 (event registry), ADR-0052 (anti-patterns). Accepted 2026-11-02; none of it is built yet.
+' Sources (core repo spec-kitty, read-only), for the parts that stay as they are:
 '   src/charter/offering/artifact_kinds.py         (ArtifactKind)
 '   src/charter/offering/drg/models.py             (NodeKind, Relation, DRGNode, DRGEdge)
 '   src/charter/offering/packs/pack_descriptor.py  (PackDescriptor, pack.yaml)
 '   src/charter/activation/org_charter.py          (OrgCharterPolicy, org-charter.yaml)
 '   src/charter/activation/schemas.py              (GovernanceCharterConfig selected_*)
-'   packs/built-in/*.graph.yaml                    (edge relations in use)
+' Built-in edge counts are not drawn: they are today's data, not the design.
+' Pending: a yellow <<pending>> entity or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Charter descriptor kinds — containment, selection and DRG edges
+title Charter descriptor kinds — decided design (ADR-0048…ADR-0052)
 
 package "Charter Pack (pack.yaml)" as pack {
   entity "PackDescriptor" as PD <<authored>> {
     pack_id
     name
-    pack_level : PackTier
-    parent_pack : ref?
+    pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
+    parent_pack : ref? [lineage only]
+    depends_on : {pack_id, range}[] <color:#8A6D00>[pending ADR-0048 OQ4, OQ6]</color>
     active_charter : path?
     pack_drg : path?
   }
@@ -40,9 +44,32 @@ package "Descriptor kinds (one YAML file per artifact)" as kinds {
   entity Procedure
   entity AgentProfile
   entity MissionStepContract
-  entity GlossaryPack
+  entity MissionType <<ordinary kind>> {
+    transitions, guards, actions
+  }
+  entity Lifecycle {
+    states, transitions, guards
+  }
+  entity "Glossary\n(a context)" as Glossary {
+    glossary:<id> <color:#8A6D00>[pending ADR-0049 OQ3]</color>
+  }
+  entity AntiPattern <<activatable>>
+  entity EventRegistry <<kind>> {
+    not activatable <color:#8A6D00>[pending ADR-0051 OQ1]</color>
+    not a CRG node <color:#8A6D00>[pending ADR-0051 OQ3]</color>
+  }
+  entity Gate <<pending>> {
+    <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+  }
+  entity StepEnhancement <<pending>> {
+    <color:#8A6D00>[pending ADR-0050 OQ7, OQ8]</color>
+  }
   entity PackSkill
   entity "Template / Asset" as TA <<not activatable>>
+}
+
+entity "term" as Term <<node-only>> {
+  term:<context-id>/<term-id>
 }
 
 entity "GovernanceCharterConfig\n(project charter)" as GC {
@@ -53,24 +80,40 @@ PD "1" *-- "1" PM : sibling
 PD "1" *-- "0..1" FRAG : pack_drg
 PD "1" *-- "0..1" OC : active_charter
 PD "1" o-- "*" kinds : ships
+PD "*" --> "*" PD : depends_on\n(versioned range)\n<color:#8A6D00>[pending ADR-0048 OQ4, OQ6]</color>
+PD ..> PD : parent_pack\n(lineage only)
 FRAG ..> kinds : DRGNode.urn = kind:id
 OC ..> kinds : requires (org_requirable kinds)
-GC ..> kinds : selects (selected_* covers 10 kinds)
+GC ..> kinds : selects (selected_* per activatable kind)
 OC ..> GC : required ids union into selected_*
 
-' DRG edges (DRGEdge.relation) — top kind pairs counted in packs/built-in/*.graph.yaml
-Tactic --> Tactic : suggests (123)
-AgentProfile --> Directive : requires (101) / suggests (40)
-AgentProfile --> Tactic : requires (50)
-Directive --> Tactic : suggests (49)
-Tactic --> Directive : suggests (57)
-Procedure --> Tactic : requires (45)
-Paradigm --> Directive : requires (35)
-Directive --> Directive : requires (17) / in_tension_with (1) / reconciles_tension (2)
-Directive --> Tactic : in_tension_with (1) / reconciles_tension (1)
-AgentProfile --> AgentProfile : specializes_from (5)
-Tactic --> Procedure : refines (2)
-' Model-level links (fields, not built-in DRG edges)
+' Containment inside a mission type's bundle, and links between kinds
+MissionType "1" o-- "*" MissionStepContract : bundle (step_contracts/)
+MissionType ..> Lifecycle : work_package_lifecycle\n<color:#8A6D00>[pending ADR-0050 OQ5]</color>
+MissionType ..> Gate : guard {gate, config}
+Lifecycle ..> Gate : guard {gate, config}
+MissionType ..> EventRegistry : emit resolves against\n(the depends_on closure)
+Lifecycle ..> EventRegistry : emit resolves against
+StepEnhancement ..> MissionType : target action:<type>/<step>\n(adds guidance, guards, emit)\n<color:#8A6D00>[pending ADR-0050 OQ7, OQ8]</color>
+MissionType ..> Term : terms (term: URNs)\n<color:#8A6D00>[pending ADR-0050 OQ10]</color>
+Glossary "1" *-- "1..*" Term : terms inside a context
+' Guidance rejects an anti-pattern (Relation.rejects), never suggests
+Directive ..> AntiPattern : rejects
+Tactic ..> AntiPattern : rejects
+Paradigm ..> AntiPattern : rejects
+Styleguide ..> AntiPattern : rejects
+Procedure ..> AntiPattern : rejects
+MissionType ..> AntiPattern : rejects
+
+' DRG edges (DRGEdge.relation): illustrative pairs, not exhaustive, no counts
+Tactic --> Tactic : suggests
+AgentProfile --> Directive : requires / suggests
+AgentProfile --> Tactic : requires
+Directive --> Tactic : suggests
+Procedure --> Tactic : requires
+Paradigm --> Directive : requires
+AgentProfile --> AgentProfile : specializes_from
+' Model-level links (fields)
 MissionStepContract ..> AgentProfile : steps[].delegates_to\n(kind + candidates)
 PackSkill ..> PackSkill : enhances / overrides (fields)
 
@@ -78,13 +121,13 @@ note bottom of kinds
   Relation enum (drg/models.py): requires, suggests, applies, scope,
   vocabulary, instantiates, replaces, delegates_to, specializes_from,
   enhances, overrides, refines, in_tension_with, reconciles_tension, rejects.
-  Edges shown are the dominant observed pairs, not exhaustive. Built-in totals:
-  suggests 475, requires 355, scope 201 (action/mission_type -> doctrine),
-  rejects 15 (-> anti_pattern), instantiates 11 (action -> template).
-  No delegates_to / enhances / overrides edges occur in built-in data.
+  vocabulary targets glossary and term (ADR-0049 d4).
+  A step enhancement is a file, not the enhances relation (ADR-0050 d22).
 end note
 legend right
   <<authored>> hand-edited; <<generated>> machine-written.
   Solid diamond = file containment; dashed = id/URN reference.
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
 endlegend
 @enduml

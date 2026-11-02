@@ -18,3 +18,23 @@ skinparam note {
   BorderColor #8899A6
 }
 hide empty methods
+
+' The «pending» convention (mission docsite-upgrade-and-pack-ecosystem-diagrams).
+' A pending element is drawn as the ADR's decision text shapes it, but a cited open question is not ruled yet.
+' It is never left out and never drawn as settled. Two forms, by size of the pending part:
+'   1. A whole class or entity that is pending: give it the stereotype <<pending>> (yellow, below).
+'        class Gate <<pending>> { ... }
+'   2. One field, member or relation label inside a settled element: append the suffix
+'        <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+'      (several questions: [pending ADR-0048 OQ4, OQ6]).
+' A diagram that uses either form adds this line to its legend:
+'   Yellow «pending» / [pending …]: decided in the cited ADR, but the cited open question is not ruled.
+' A diagram that uses neither form renders exactly as before.
+skinparam class<<pending>> {
+  BackgroundColor #FFF3CD
+  BorderColor #B8860B
+}
+skinparam entity<<pending>> {
+  BackgroundColor #FFF3CD
+  BorderColor #B8860B
+}

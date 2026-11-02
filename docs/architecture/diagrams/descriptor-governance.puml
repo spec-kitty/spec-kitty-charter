@@ -5,18 +5,26 @@
 '   src/charter/activation/schemas.py         (GovernanceCharterConfig)
 '   src/charter/offering/packs/pack_descriptor.py (PackDescriptor -> pack.yaml)
 '   see also core src/charter/diagrams/pack-descriptor-model.puml
+' Decided design: ADR-0048 (composition), ADR-0049 (glossary), ADR-0050 (mission types, lifecycles, gates),
+' ADR-0051 (event registry), ADR-0052 (anti-patterns). Accepted 2026-11-02; none of it is built yet.
+' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Pack, DRG and charter configuration schemas
+title Pack, DRG and charter configuration schemas — decided design (ADR-0048…ADR-0052)
 
 class PackDescriptor <<pack.yaml>> {
-  + pack_id : string [ULID]
-  - pack_version : string [required iff pack_level=built-in]
-  - parent_pack : string
+  + pack_id : string [ULID pattern]
+  + pack_version : string [every level]
+  - parent_pack : string [ULID pattern; lineage only, sets no load order]
+  - depends_on : DependsOn[] <color:#8A6D00>[pending ADR-0048 OQ6]</color>
   + name : string
-  + pack_level : PackTier
+  - pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string
   - active_charter : path
   - pack_drg : path
+}
+class DependsOn <<item of depends_on>> {
+  + pack_id : string [ULID]
+  + range : string <color:#8A6D00>[pending ADR-0048 OQ4: grammar]</color>
 }
 class DRGGraph <<*.graph.yaml / drg/fragment.yaml>> {
   + schema_version : "1.0"
@@ -44,8 +52,11 @@ enum NodeKind {
   directive, tactic, paradigm, styleguide,
   toolguide, procedure, agent_profile,
   mission_step_contract, template, asset,
-  action, glossary_scope, glossary,
-  glossary_pack, mission_type, anti_pattern, skill
+  action, term, mission_type,
+  anti_pattern, skill, lifecycle
+  glossary <color:#8A6D00>[pending ADR-0049 OQ3: core node clash]</color>
+  gate <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+  event_registry <color:#8A6D00>[pending ADR-0051 OQ3]</color>
 }
 enum Relation {
   requires, suggests, applies, scope,
@@ -64,7 +75,8 @@ class OrgCharterPolicy <<org-charter.yaml>> {
     required_toolguides, required_procedures,
     required_agent_profiles,
     required_mission_step_contracts,
-    required_glossary_packs, required_assets,
+    required_glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>,
+    required_assets,
     required_skills : string[] = []
   - skill_namespace : string
   - governance_policies : GovernancePolicy[] = []
@@ -81,12 +93,15 @@ class GovernanceCharterConfig <<project charter>> {
     selected_toolguides, selected_procedures,
     selected_agent_profiles,
     selected_mission_step_contracts,
-    selected_glossary_packs, selected_assets : string[] = []
+    selected_mission_types, selected_anti_patterns,
+    selected_glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>,
+    selected_assets : string[] = []
   - available_tools : string[]
   - template_set : string
   - authority_paths : string[]
   - governance_references : string[]
 }
+PackDescriptor "1" *-- "0..*" DependsOn
 PackDescriptor --> "0..1" DRGGraph : pack_drg
 PackDescriptor --> "0..1" OrgCharterPolicy : active_charter
 OrgCharterPolicy *-- "*" GovernancePolicy
@@ -96,4 +111,13 @@ DRGNode --> NodeKind
 DRGEdge --> Relation
 DRGEdge ..> DRGNode : source / target
 OrgCharterPolicy ..> GovernanceCharterConfig : required_* union into selected_*\n(selection_overlayable kinds)
+note bottom of NodeKind
+  glossary_scope is retired (ADR-0049 d11): scope comes from the pack level.
+  Token spelling is snake_case (mission_type, anti_pattern, event_registry) <color:#8A6D00>[pending ADR-0050 OQ9]</color>
+  vocabulary targets glossary and term (ADR-0049 d4).
+end note
+legend right
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
+endlegend
 @enduml
