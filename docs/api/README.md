@@ -69,3 +69,5 @@ must give one answer for the same inputs; the conformance corpus in
   what a consumer can rely on.
 - [Java API reference (Javadoc)](/api/javadoc/) — the Javadoc of the service's hand-written
   Java modules, built by the main build and published with this site.
+- [OpenAPI reference](/reference/api/main/) — the built contract as readable operation pages, with the
+  raw [`openapi.yaml`](/reference/api/main/openapi.yaml) and its [checksum](/reference/api/main/openapi.yaml.sha256).

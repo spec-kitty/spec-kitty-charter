@@ -45,6 +45,8 @@ The design is grounded in three core ADRs and this repository's own records:
   location and CRG links.
 - [Descriptor schemas](/architecture/descriptor-schemas/) — entity diagrams of the descriptor
   schemas.
+- [Pack schemas](/architecture/pack-schemas/) — one page per pack JSON Schema, with a diagram and
+  property list generated from the schema file.
 
 ## Component detail
 

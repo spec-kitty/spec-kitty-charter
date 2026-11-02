@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import starlightOpenAPI from 'starlight-openapi';
 import { defineDocKittyIntegrations } from '@spec-kitty/doc-toolkit/config';
 import { specKittyTheme } from '@spec-kitty/doc-toolkit/themes/spec-kitty/index.ts';
 
@@ -44,6 +45,13 @@ export default defineConfig({
     sidebar: { indexLabel: 'Overview' },
     // Starlight escape hatch: show a clickable anchor on every heading (since 0.4.0).
     starlight: { markdown: { headingLinks: true } },
+    // The charter contract as API reference pages at <base>/reference/api/main/, with the raw file and its
+    // .sha256 beside it. The bundle is staged by scripts/stage-docs-inputs.mjs. It is unreleased (0.x).
+    openapi: {
+      renderer: starlightOpenAPI,
+      section: 'reference/api',
+      specs: [{ path: 'openapi/charter-openapi.yaml', label: 'main', released: false }],
+    },
     // MUST match the loader in src/content.config.ts.
     indexBasename: ['README'],
   }),
