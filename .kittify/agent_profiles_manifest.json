@@ -89,28 +89,6 @@
       "tool_key": "claude"
     },
     {
-      "file_hash": "a0337cd1e459b583345c57c0a9bbfea3098e651b65919f356902fc3de0ae954a",
-      "format": "claude-agent",
-      "output_path": ".claude/agents/drupal-dries.md",
-      "profile_urn": "agent_profile:drupal-dries",
-      "projection_version": 1,
-      "source_hash": "4abc5883bfa67fa88ee24e852f7aa1ea004246209394d156bce021b69741bc72",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/drupal-dries.agent.yaml",
-      "tool_key": "claude"
-    },
-    {
-      "file_hash": "3fc3010f5fe2498a164c0d4130200f93898865e1e0fad04ceb8e4ee4880c144f",
-      "format": "claude-agent",
-      "output_path": ".claude/agents/frontend-freddy.md",
-      "profile_urn": "agent_profile:frontend-freddy",
-      "projection_version": 1,
-      "source_hash": "5a709fbefe06f192a12f829f76ebe6e65460b5105b830caca6ec4b8ad8472d3a",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/frontend-freddy.agent.yaml",
-      "tool_key": "claude"
-    },
-    {
       "file_hash": "1540c46b8e617ba1e5a5a783b13fd9e4062d9556f142866c6ee1e13f66425360",
       "format": "claude-agent",
       "output_path": ".claude/agents/generic-agent.md",
@@ -163,17 +141,6 @@
       "source_hash": "7247e61f9768e6d0f9ea8936aeaeff152600e6e5d0902545894de156598298ca",
       "source_layer": "built-in",
       "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/minutes-mahad.agent.yaml",
-      "tool_key": "claude"
-    },
-    {
-      "file_hash": "f246a7471c7806a4746ee2e7c604cbced21b260d6ead8c8bb5559a99a68049f5",
-      "format": "claude-agent",
-      "output_path": ".claude/agents/node-norris.md",
-      "profile_urn": "agent_profile:node-norris",
-      "projection_version": 1,
-      "source_hash": "0a7b5f6f138902466487b243de4d6c19e9f3f72193163d2c176ee354a5b26654",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/node-norris.agent.yaml",
       "tool_key": "claude"
     },
     {
@@ -419,28 +386,6 @@
       "tool_key": "codex"
     },
     {
-      "file_hash": "7080a88c886c0c6a02e6818fa9b974df66544d54f9aae85b4bf740211708df0f",
-      "format": "codex-agent",
-      "output_path": ".codex/agents/drupal-dries.toml",
-      "profile_urn": "agent_profile:drupal-dries",
-      "projection_version": 1,
-      "source_hash": "4abc5883bfa67fa88ee24e852f7aa1ea004246209394d156bce021b69741bc72",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/drupal-dries.agent.yaml",
-      "tool_key": "codex"
-    },
-    {
-      "file_hash": "3282d0824e984598e1df245de16f9e2da79f334daacbaa6b271b382a431bc6da",
-      "format": "codex-agent",
-      "output_path": ".codex/agents/frontend-freddy.toml",
-      "profile_urn": "agent_profile:frontend-freddy",
-      "projection_version": 1,
-      "source_hash": "5a709fbefe06f192a12f829f76ebe6e65460b5105b830caca6ec4b8ad8472d3a",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/frontend-freddy.agent.yaml",
-      "tool_key": "codex"
-    },
-    {
       "file_hash": "fd2d1cbad1a9edc7e5d72c6a0752a9eacf05d0d6f6c7a6bf08a2a07febdd41a9",
       "format": "codex-agent",
       "output_path": ".codex/agents/generic-agent.toml",
@@ -493,17 +438,6 @@
       "source_hash": "7247e61f9768e6d0f9ea8936aeaeff152600e6e5d0902545894de156598298ca",
       "source_layer": "built-in",
       "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/minutes-mahad.agent.yaml",
-      "tool_key": "codex"
-    },
-    {
-      "file_hash": "77cd80e44a601ce5dffae12784063008d255ccdb652021152e24d15115286398",
-      "format": "codex-agent",
-      "output_path": ".codex/agents/node-norris.toml",
-      "profile_urn": "agent_profile:node-norris",
-      "projection_version": 1,
-      "source_hash": "0a7b5f6f138902466487b243de4d6c19e9f3f72193163d2c176ee354a5b26654",
-      "source_layer": "built-in",
-      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/node-norris.agent.yaml",
       "tool_key": "codex"
     },
     {
