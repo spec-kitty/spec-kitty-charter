@@ -185,7 +185,7 @@ executable: {runtime: python, min_version: "3.11", entry: qa_carrier_lint.py, ar
   the client cannot reinterpret.
 - Pack authors ship checks as scripts, not as requests to core. An org's static-analysis gate before review is a
   pack asset and a guard file.
-- Core's hardcoded lane guards become declared, inspectable artifacts without being rewritten.
+- Core's hardcoded lane guards become declared artifacts that can be inspected, without being rewritten.
 
 ### Negative
 
