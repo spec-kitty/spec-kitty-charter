@@ -194,6 +194,9 @@ up the formal meaning of a term used here.
 8. **A step may carry `transitions`**: a list of `{to, on?, guard?, on_transition?}`.
    - `to` names a step id of the same type, or the reserved terminal `end`.
    - `on` names the triggering event, a free token the client interprets (`next` when absent).
+     *Amended 2026-11-02 (operator, #156): the key is `event`, not `on`, because a YAML 1.1 reader takes a plain `on`
+     key for the boolean true ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)); a value a YAML 1.1
+     reader takes for a boolean or null is refused. The same holds for lifecycle transitions (decision 17).*
    - `guard` and `on_transition` are decisions 12 and 15.
 9. **Absent `transitions` means "to the next step in the list"**, and the last step goes to `end`. Every current
    mission-type file stays valid, and the list order is syntactic sugar for a linear machine (ADR-0044 decision 4
@@ -246,6 +249,12 @@ up the formal meaning of a term used here.
     - `states[]`: `{id, title, description?, terminal?, on_enter?, on_exit?}`;
     - `transitions[]`: `{from, to, on?, guard?, on_transition?}`, where `from` may be a list of states or `"*"`
       for a transition allowed from every non-terminal state (core's `blocked` and `canceled`).
+
+    *Amended 2026-11-02 (operator, #156): the event key is `event`, as in decision 8. `"*"` means every non-terminal
+    state other than the transition's own target, so `"*" -> blocked` declares no `blocked -> blocked` loop, and it
+    must reach at least one state. A lifecycle declares each (from, to, event) once with `"*"` expanded: an explicit
+    edge that repeats a `"*"` edge is refused, and a source that needs other guards is listed instead of `"*"`. The
+    action points (`on_enter`, `on_exit`, `on_transition`) are added with the event registry (work breakdown item 7).*
 18. **A mission type references a lifecycle from the steps that work on work packages**, with
     `work_package_lifecycle: <lifecycle-id>` on the step (proposed field name). In statechart terms the step holds a
     submachine state, instantiated once per work package. One lifecycle can serve several types, and a type may

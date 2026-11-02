@@ -287,8 +287,8 @@ The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-an
 |---|---|---|
 | `glossary_pack` is renamed `glossary`; its artifact is a glossary context (`glossary_context:<id>`) holding terms (`term:<context>/<term>`) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/), ADR-0053 | `glossary` |
 | `mission_type` becomes an ordinary activatable kind; `CHARTER_KIND_TOKENS`' special path goes | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) | `mission-type` |
-| `lifecycle`: a reusable state machine, today's work-package lanes | ADR-0050 | `lifecycle` |
-| `guard`: an enforced check on a transition, `implemented_by` an executable asset or a closed `builtin:` id, run to the guard/1 interface, failing closed (replaces the proposed `gate` kind) | [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) | `guard` |
+| `lifecycle`: a reusable state machine, today's work-package lanes. **Stored and checked** (#156): `lifecycles/<id>.lifecycle.yaml`, in force with its pack (not activatable); action points come with the event registry | ADR-0050 | `lifecycle` |
+| `guard`: an enforced check on a transition, `implemented_by` an executable asset or a closed `builtin:` id, run to the guard/1 interface, failing closed (replaces the proposed `gate` kind). **Stored and checked** (#156): `guards/<id>.guard.yaml`, in force with its pack (not activatable); not served until its contract set lands | [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) | `guard` |
 | `event_registry`: namespace, type and name per event, for the `emit` check; not activatable | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
 | `anti_pattern` becomes an authored file with a `smell` / `severe` / `breaking` severity and a required bad example, referenced by `rejects` | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) | `anti-pattern` |
 | `procedure` stays, with a tightened definition (one step, no deliverables, not a rule) | ADR-0052 | `procedure` |
@@ -336,6 +336,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
 | `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
+| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field, never authored: a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
 
 An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
 is written as a URN too. A value that is not a URN is refused as `drg_schema_error` by the
@@ -527,7 +528,7 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 | State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
 | Composite state | a step with a `mission_step_contract` | unchanged |
 | Submachine state | none; the work-package lanes are hardcoded in core | a step's `submachine: {lifecycle, per: work_package}`, one instance per work package |
-| Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, on?, guard?, on_transition?}]`; absent means "next in the list" |
+| Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, event?, guard?, on_transition?}]` (the key `event`, not `on`: ADR-0050 as amended); absent means "next in the list" |
 | Guard | blocking expected input and output artifacts | `guard: [{ref, config?, blocking?}]` naming guard artifacts backed by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); blocking artifacts stay the built-in guard |
 | Triggering event | external: the runtime's `next` | `on`, a token the client interprets (`next` when absent) |
 | Global transitions | `on_demand_steps` | unchanged |
@@ -585,12 +586,26 @@ these are resources, used rather than followed.
   `term:<context-id>/<term-id>`. Scope comes from the pack level, only a clash on the same `term:` URN is a
   conflict, and the pack glossary becomes the only authored source of vocabulary; the terminology gates' banned
   lists and Contextive files become projections of it.
-- An **asset** is a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`)
-  and the **asset payload** it names: a file under the pack's `assets/`, with `path` relative to
+- An **asset** is a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`, optional
+  `executable`) and the **asset payload** it names: a file under the pack's `assets/`, with `path` relative to
   that directory. The payload (script, document, font, image) is held as its exact bytes. A
   payload may have no sidecar (`built-in/assets/docs_structural_lint.config.yaml`): the pack holds
   every file under `assets/` as an asset file, named by an asset or not. A sidecar whose payload
   does not exist is refused. `mime` is metadata; it does not decide how the payload is read.
+  An asset that runs declares an **executable** block (`runtime`, `min_version?`, `entry`, `args?`;
+  [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 5): `runtime` is a
+  token from a closed allowlist (`python`), never a shell or an executable path; `entry` is the asset's own `path`
+  and exactly one argv element, never repeated in `args`; no field holds a command string. Only such an asset can
+  implement a guard.
+- A **guard** (`guards/<id>.guard.yaml`, ADR-0054) is an enforced check a transition names. It is
+  `implemented_by` an executable asset of its pack (`asset:<id>`; another pack's, `<pack>::asset:<id>`, is refused
+  until the pack dependency closure resolves it) or a closed built-in (`builtin:<id>`, six ids). Its optional
+  `config_schema` is checked at load; it carries no severity. A **lifecycle**
+  (`lifecycles/<id>.lifecycle.yaml`, ADR-0050 decision 17) declares `initial`, `states` and `transitions`; a
+  transition's `from` is one state, a list, or `*` (every non-terminal state other than the target), and its
+  `guard` entries `{ref, config?, blocking?}` must name guards that resolve, each `config` fitting its guard's
+  `config_schema`. Both are in force with their pack and are not activatable. What does not close is left out of
+  the pack with a `reference` violation, failing closed.
 - A **template** under a pack's top-level `templates/` is an artifact whose id is its path under
   that directory (`templates/writing/meeting-minutes.md` is
   `template:writing/meeting-minutes.md`), held as its exact bytes, frontmatter included. A

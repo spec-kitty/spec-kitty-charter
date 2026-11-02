@@ -238,8 +238,16 @@ Nothing below is applied in this record.
 
 1. **The `builtin:` list.** *Recommended:* exactly core's current lane guards plus `spec-kitty-pre-review`,
    enumerated in the contract when the guard schema lands.
+   *Ruled 2026-11-02 (operator, #156): fewer, coarser ids. The closed list is six: `transition-context-complete` (an
+   actor, a workspace context, and a reason where the edge needs one), `dependency-ready`, `implementation-ready`
+   (subtasks complete and implementation evidence present), `review-approved` (reviewer approval, the in-review
+   approval, the review result and its consistency), `review-ref`, and `spec-kitty-pre-review`. Core's
+   `no_review_conflict` always allows and has no id. `guard.schema.json` and the service's `BuiltinGuard` hold the
+   list; the contract enumerates it with the guard read (work breakdown item 13).*
 2. **The changed-files input.** *Recommended:* relative to the repository root, against the transition's base
    (the work package's base commit).
+   *Left open by the operator on 2026-11-02 (#156): no schema or check of the charter depends on it; it is decided
+   with the guard/1 runner (core C9, #340).*
 3. ~~**Where the interim trust mark lives.**~~ **Ruled 2026-11-02 (operator):** the project's activation file names the
    packs it explicitly trusts, where the pack ids and versions are already named, so one read settles the trust check.
    That file is the source of truth for the anchors, so the load-time refusal has one owner; #157 may widen the

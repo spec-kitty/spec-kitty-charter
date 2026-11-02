@@ -25,6 +25,8 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Directive](/architecture/pack-schemas/directive/) — a constraint-oriented governance rule and its enforcement level.
 - [Glossary pack](/architecture/pack-schemas/glossary-pack/) — a named collection of canonical terms with provenance.
 - [Graph shard](/architecture/pack-schemas/graph-shard/) — a document of the Charter Reference Graph.
+- [Guard](/architecture/pack-schemas/guard/) — an enforced check a transition names, implemented by an executable asset or a built-in.
+- [Lifecycle](/architecture/pack-schemas/lifecycle/) — a reusable state machine of states and guarded transitions.
 - [Mission step contract](/architecture/pack-schemas/mission-step-contract/) — the legacy structural contract of a mission action.
 - [Mission step guidelines](/architecture/pack-schemas/mission-step-guidelines/) — the parsed Markdown structure of a step guidelines file.
 - [Mission step prompt](/architecture/pack-schemas/mission-step-prompt/) — the parsed Markdown structure of a step prompt file.
