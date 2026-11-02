@@ -1,0 +1,139 @@
+{
+  "mission_slug": "docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41521972467 green on doc-toolkit 0.6.0; lockfile from registry (probe 41520907262), exact pins; WP01 review",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:10.113117+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "WP01 T005: 565 html paths on main Pages artifact (run 41508080228) vs 565 in the 0.6.0 build; 0 missing",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:11.845356+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41523884125: 38 pages under /reference/api/main/ (overview + 37 operations), unreleased label; WP02 review",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:13.565370+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41523884125: published openapi.yaml byte-identical to the contract-bundle artifact; sha256 equals the bundler .sha256 (f103a1e8...). PR-path bundle step re-verified on the draft PR run",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:15.295749+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41523884125: 23 kind: Schematic pages, each with one dk-diagram SVG; stage script fails closed on a schema without a page; WP02 review",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:17.015176+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41521972467: build mode in the digest-pinned Playwright container against the digest-pinned PlantUML service; guard fails on client/empty/unset (WP01 c2 review)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:18.756427+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "review",
+      "evidence": "WP03+WP04 opus reviews: 5 pack-model diagrams redrawn to ADR-0048..0052; class-diagram/c4 differ by the #150 note only; check_docs plantuml ok",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:20.491845+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "review",
+      "evidence": "WP03+WP04 opus reviews: all 32 open questions enumerated from the ADRs; every OQ-dependent drawn element carries a pending mark (residual MEDIUM marks folded at closeout)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:22.218234+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "review",
+      "evidence": "Each redrawn diagram titled with its ADRs and a legend; descriptor-schemas/descriptors notes say the code does not do it yet (WP05 c2 review)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:23.926073+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "check_docs.py plantuml ok in the CI-matching container (pinned jar 1.2026.6) after WP03/WP04; CI diagrams-current job on the PR",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:25.662614+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "ci_run",
+      "evidence": "https://github.com/spec-kitty/spec-kitty-charter/actions/runs/41523884125: home sidebar links /reference/api/main/ and each operation (2 clicks); /architecture/ links the pack-schemas hub; API links in docs/api/*",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:27.385935+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "review",
+      "evidence": "descriptor-mission-type-lifecycle.puml/.svg added, @startuml = stem, embedded in descriptor-schemas Mission type section (WP04, WP05 reviews)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:29.087117+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "review",
+      "evidence": "WP05 c2 opus review: every R-06 page-text location addressed; no false today-claim; regeneration section uses the pinned jar",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus-5.5:reviewer-renata",
+      "verified_at": "2026-11-02T21:32:30.798506+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

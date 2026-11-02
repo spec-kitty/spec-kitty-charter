@@ -1,0 +1,106 @@
+{
+  "event_count": 67,
+  "last_event_id": "01M6F2WX2E8B0W58YWJ9ME1FYB",
+  "materialized_at": "2026-11-02T21:33:26.990153+00:00",
+  "mission_number": "",
+  "mission_slug": "docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6F2WTSS9CSSB26WYK05J335",
+      "last_transition_at": "2026-11-02T21:33:24.665223+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09-coord/kitty-specs/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/tasks/WP01-dockitty-0-6-0-build-time-rendering/review-cycle-2.md",
+        "reference": "review-cycle://docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/WP01-dockitty-0-6-0-build-time-rendering/review-cycle-2.md",
+        "reviewer": "claude:opus-5.5:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3040980,
+      "shell_pid_created_at": "1793651787.37"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude:sonnet-5.5:implementer-ivan",
+      "force_count": 2,
+      "implementer_of_record": "claude:sonnet-5.5:implementer-ivan",
+      "lane": "done",
+      "last_event_id": "01M6F2WVYG7ZF6J0D9CD7ANSXM",
+      "last_transition_at": "2026-11-02T21:33:25.840371+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09-coord/kitty-specs/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/tasks/WP02-api-reference-and-schema-pages/review-cycle-3.md",
+        "reference": "review-cycle://docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/WP02-api-reference-and-schema-pages/review-cycle-3.md",
+        "reviewer": "claude:opus-5.5:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3158208,
+      "shell_pid_created_at": "1793654530.79"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude:sonnet-5.5:diagram-daisy",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet-5.5:diagram-daisy",
+      "lane": "done",
+      "last_event_id": "01M6F2WVC4A083ZHFB5TP5ZH33",
+      "last_transition_at": "2026-11-02T21:33:25.252590+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09-coord/kitty-specs/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/tasks/WP03-pending-style-and-pack-model-diagrams/review-cycle-3.md",
+        "reference": "review-cycle://docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/WP03-pending-style-and-pack-model-diagrams/review-cycle-3.md",
+        "reviewer": "claude:opus-5.5:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3175382,
+      "shell_pid_created_at": "1793655015.16"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude:sonnet-5.5:diagram-daisy",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet-5.5:diagram-daisy",
+      "lane": "done",
+      "last_event_id": "01M6F2WWGEMZK6DJNB1N9E1NCK",
+      "last_transition_at": "2026-11-02T21:33:26.414843+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09-coord/kitty-specs/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/tasks/WP04-doctrine-glossary-and-mission-type-diagrams/review-cycle-3.md",
+        "reference": "review-cycle://docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/WP04-doctrine-glossary-and-mission-type-diagrams/review-cycle-3.md",
+        "reviewer": "claude:opus-5.5:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3177926,
+      "shell_pid_created_at": "1793655063.8"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude:sonnet-5.5:scribe-sally",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet-5.5:scribe-sally",
+      "lane": "done",
+      "last_event_id": "01M6F2WX2E8B0W58YWJ9ME1FYB",
+      "last_transition_at": "2026-11-02T21:33:26.990153+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09-coord/kitty-specs/docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/tasks/WP05-page-text-and-changelog/review-cycle-2.md",
+        "reference": "review-cycle://docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09/WP05-page-text-and-changelog/review-cycle-2.md",
+        "reviewer": "claude:opus-5.5:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3171165,
+      "shell_pid_created_at": "1793654844.92"
+    }
+  }
+}

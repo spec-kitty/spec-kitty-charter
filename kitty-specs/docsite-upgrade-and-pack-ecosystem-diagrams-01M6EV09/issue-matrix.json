@@ -1,0 +1,29 @@
+{
+  "rows": {
+    "#150": {
+      "evidence_ref": "Cited for context: #150 was ruled by ADR-0052 decision 1; this mission only corrects a stale diagram note (WP04 T020).",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#257": {
+      "evidence_ref": "Cited for context: doc-kitty#257 is an upstream DocKitty gap (OpenAPI pages not in the OKF export); no work owed in this repository.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
