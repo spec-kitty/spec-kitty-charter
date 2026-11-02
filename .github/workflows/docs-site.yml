@@ -231,16 +231,17 @@ jobs:
           npm run build
       - name: Check that every schema page carries a diagram
         # Fails closed: one built page per contracts/packs/schemas/*.json (the hub excluded), each with the
-        # diagram figure DocKitty builds from the schema. The glob matching nothing is a failure.
+        # diagram figure DocKitty builds from the schema. The glob matching nothing is a failure. The figure must
+        # hold a rendered <svg>: an unrendered figure (client-side fallback) would pass a bare class match.
         run: |
           shopt -s nullglob
           schemas=(../contracts/packs/schemas/*.json)
           pages=(dist/architecture/pack-schemas/*/index.html)
           test "${#schemas[@]}" -gt 0 || { echo "::error::no schemas under contracts/packs/schemas"; exit 1; }
           test "${#pages[@]}" -eq "${#schemas[@]}" || { echo "::error::${#pages[@]} schema pages built for ${#schemas[@]} schemas"; exit 1; }
-          missing=$(grep -L 'class="dk-diagram"' "${pages[@]}" || true)
-          test -z "$missing" || { echo "::error::schema pages without a diagram: $missing"; exit 1; }
-          echo "${#pages[@]} schema pages, each with a diagram"
+          missing=$(grep -LE '<figure class="dk-diagram"[^>]*><svg' "${pages[@]}" || true)
+          test -z "$missing" || { echo "::error::schema pages without a rendered diagram: $missing"; exit 1; }
+          echo "${#pages[@]} schema pages, each with a rendered diagram"
       - name: Check the published OpenAPI contract is the bundled one
         # DocKitty's own .sha256 covers its published copy, so it always verifies. The real check is that the
         # published file is the bundle the build produced: same SHA-256 as the bundler's.
