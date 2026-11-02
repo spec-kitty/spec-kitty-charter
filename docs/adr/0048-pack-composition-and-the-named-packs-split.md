@@ -77,7 +77,7 @@ acceptance instead.
 - **There is no dependency relation between packs.** Org packs are a flat list. `parent_pack` is
   lineage only and sets no load order.
 - **`built-in` is one pack** (`pack_id 01ARWG13C000000000000000FG`) holding about 420 files, split by
-  kind into subdirectories: four Mission types, 27 agent profiles, 121 tactics, 39 directives, 37
+  kind into subdirectories: four mission types, 27 agent profiles, 121 tactics, 39 directives, 37
   toolguides, 26 styleguides, 22 procedures, 14 paradigms and two presets (spec-kitty-open-packs
   `a45afcf`, the count at the time of the ruling; the formalization census below is current).
 - **`built-in` is too exhaustive.** It ships stack-specific content to every consumer, for example
@@ -122,10 +122,11 @@ acceptance instead.
 8. **Packs compose into a graph that may form diamonds.** A foundation pack A has specialist packs
    that depend on it (B, C and D each `depends_on` A), and a distribution pack Z depends on the
    specialists. A shared dependency is loaded once, deduplicated by `pack_id`, and the version ranges
-   that every dependent declares on it must overlap. Otherwise the compose is refused.
+   that every dependent declares on it must overlap. Otherwise the compose is refused. The set of packs loaded
+   together through one `depends_on` closure is a *compose* (open question 6 fixes its exact boundary).
 9. **Specialist packs only add.** A specialist pack adds artifacts and CRG edges.
-   - When two sibling packs both change the same artifact (`enhances` or `overrides`) inside one
-     compound, the compose is refused.
+   - When two sibling packs both change the same artifact (`enhances` or `overrides`) within one
+     `depends_on` closure, the compose is refused.
    - The distribution pack may settle it explicitly with its own edge.
    - There is no "last loaded wins", so the result never depends on the order packs are listed in.
 10. **Artifact identity does not change.** URNs stay global and unqualified. Which pack holds an
@@ -133,14 +134,14 @@ acceptance instead.
 
 ### The named-packs split (S3, S4)
 
-11. **Each topical pack is a full top-level pack** in spec-kitty-open-packs (for example `foundational`,
+11. **Each topical pack is a full top-level pack** in spec-kitty-open-packs (for example `foundation`,
     `writing`, `java`, `drupal`). None is nested under `built-in/`.
 12. **`built-in` becomes a distribution pack.** It keeps its `pack_id` and `pack_level: built-in`,
     holds no artifacts of its own, and aggregates its members through `depends_on`. The presets
     (`default`, `minimal`) stay on `built-in`, because they reach across members.
-13. **The foundation pack keeps the Mission types and base agent profiles we ship, and is slimmed.**
+13. **The foundation pack keeps the mission types and base agent profiles we ship, and is slimmed.**
     It holds the cross-cutting directives, paradigms, glossary, base templates and assets, the
-    shipped Mission types and their step contracts, and the base agent profiles. Content outside that
+    shipped mission types and their step contracts, and the base agent profiles. Content outside that
     core moves out to a topical pack or is cut.
 14. **Stack packs are opt-in.** `java`, `drupal`, `python` and their like are not members of
     `built-in`. A project or org registers them the way it registers `qa` today.
@@ -156,7 +157,7 @@ acceptance instead.
 ### Activation (S6, scope limit)
 
 18. **No whole-pack deactivation in this decision.** Every member of the distribution is loaded.
-    Activation stays per artifact, through presets and the cascade by Mission type. Switching off a
+    Activation stays per artifact, through presets and the cascade by mission type. Switching off a
     whole pack would be a new activation concept and needs its own ADR.
 
 <!-- markdownlint-enable MD029 -->
@@ -204,9 +205,9 @@ acceptance instead.
 Each needs an operator ruling. The formalization pass recommends a default for each; until ruled, the
 [work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the default.
 
-1. **Tier of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
-   `org`, or should the order gain a tier for them? *Recommended:* `org`. The pass found no behavior a new tier
-   would need: an opt-in pack is registered the way an org pack is, and the level rule (decision 7) already lets
+1. **Level of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
+   `org`, or should the order gain a pack level for them? *Recommended:* `org`. The pass found no behavior a new
+   level would need: an opt-in pack is registered the way an org pack is, and the level rule (decision 7) already lets
    it name `built-in` as its parent.
 2. **Foundation membership.** Which directives, tactics, paradigms and agent profiles are "base",
    which move to a topical pack, and which are cut? *Recommended:* the census proposal in the
@@ -217,9 +218,9 @@ Each needs an operator ruling. The formalization pass recommends a default for e
    folded into `qa`. Stack packs `java`, `python`, `drupal` and `javascript` (node and frontend). Cuts and moves
    to `internal` are listed there.
 3. **Topical packs inside `built-in`.** Besides foundation, does `built-in` aggregate any topical pack
-   (for example `writing`, if the documentation Mission type's guidance moves there), or does it hold
-   foundation alone? *Recommended:* foundation and `writing`. The shipped documentation Mission type relies on the
-   writing styleguides and profiles, so leaving `writing` out would ship a Mission type whose guidance is opt-in.
+   (for example `writing`, if the documentation mission type's guidance moves there), or does it hold
+   foundation alone? *Recommended:* foundation and `writing`. The shipped documentation mission type relies on the
+   writing styleguides and profiles, so leaving `writing` out would ship a mission type whose guidance is opt-in.
 4. **Range syntax.** Which semantic-version range grammar (npm-style, Maven-style, or a minimal
    subset)? *Recommended:* a minimal subset: an exact version, `^`, `~`, and the comparison operators `>=`, `>`,
    `<=`, `<` joined by a space (AND). No `||`, no wildcards, no pre-release matching beyond exact. Note that the
@@ -244,7 +245,7 @@ Each needs an operator ruling. The formalization pass recommends a default for e
 ## Alternatives considered
 
 - **Split by kind** (a directives pack, a tactics pack and so on). Rejected. It only renames today's
-  subdirectories, every Mission type would still need every pack, and it does nothing for curation.
+  subdirectories, every mission type would still need every pack, and it does nothing for curation.
 - **Members nested under `built-in/<name>`.** Rejected by the operator. Members are first-class packs
   that can be reused and registered on their own.
 - **Versions per artifact.** Rejected. Every edit would mean a version bump for little gain, because

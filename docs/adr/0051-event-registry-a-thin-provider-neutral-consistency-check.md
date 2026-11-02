@@ -120,7 +120,7 @@ The rulings are not re-opened here. This record adds the shape details and the c
 
 ### What the charter does not hold (R5)
 
-11. **No built-in standard events.** Which lifecycle events a client always sends (step entered, step exited,
+11. **No built-in standard events.** Which standard events a client always sends (step entered, step exited,
     transition taken) is the client's concern. A mission type or lifecycle may declare such events in
     `on_enter` and `on_exit` like any other event, but the service holds no list of them.
 12. **No payloads.** Filling an event's data from the transition context (Mission id, step id, work-package id,
@@ -185,7 +185,7 @@ Recommended defaults the operator rules on.
 
 Rejected by the operator. It couples the charter service to one events provider and its release line.
 
-### An `event_contract` kind with data schemas and an envelope token (R1, R2)
+### An `event_contract` kind with data schemas and an envelope format (R1, R2)
 
 Rejected by the operator in the second revision. Payload shape belongs to the sender and the consumers; the
 charter would have held rules it never enforces. AsyncAPI import was noted as a later possibility under R2 and

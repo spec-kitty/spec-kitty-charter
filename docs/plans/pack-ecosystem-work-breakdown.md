@@ -36,7 +36,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 
 | # | Work | ADR | Size | Depends on | Tracker |
 |---|---|---|---|---|---|
-| 1 | Operator rulings on the open decisions (below); ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch | all | S | none | #142 |
+| 1 | Operator rulings on the open decisions (below); ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch; glossary entries (status `proposed`) for glossary context, term, lifecycle, gate, guard, step enhancement, event registry, anti-pattern, the distribution, foundation, specialist, topical and stack packs, and compose, promoted to `canonical` at acceptance | all | S | none | #142 |
 | 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar | 0048 | M | 1 | #145, #146 |
 | 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
@@ -128,7 +128,7 @@ these.
 | C5 | Make mission type an artifact kind: remove `MissionTypeNotAnArtifactKind`, the special `CHARTER_KIND_TOKENS` entry and the `mission_type_activations` key | 0050 decision 6 | M | charter 11 |
 | C6 | Read `mission_types/<type>/` bundles (runtime bridge, discovery, step repository, org expected artifacts) | 0050 decision 4 | M | open-packs P2 |
 | C7 | Load the lane machine from the declared lifecycle: `wp_state.py` reads edges and guards from the artifact, guards resolve through an evaluator registry | 0050 decisions 17 to 21 | L | charter 8, open-packs P6 |
-| C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive `enhances` | 0050 decisions 12, 13, 22 | M | charter 9, 10 |
+| C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 |
 | C9 | A gate registry with the `smell` / `severe` / `breaking` ladder; `fail_open` derived from severity (#3416) | 0050 decision 14, 0052 decision 10 | M | charter 8 |
 | C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue |
 | C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 |
@@ -155,11 +155,11 @@ The defaults the ADRs plan with until the operator rules. Each is restated in it
 
 | Decision | Recommended default | Where |
 |---|---|---|
-| Tier of our opt-in packs | `org` | ADR-0048 Q1 |
-| Foundation membership | the census proposal above | ADR-0048 Q2 |
-| `built-in` members besides foundation | `writing` only | ADR-0048 Q3 |
-| Range grammar | exact, `^`, `~`, comparison operators, space as AND | ADR-0048 Q4 |
-| Settling a sibling conflict | the distribution pack's own `overrides` edge | ADR-0048 Q5 |
+| Pack level of our opt-in packs | `org` | ADR-0048 open question 1 |
+| Foundation membership | the census proposal above | ADR-0048 open question 2 |
+| `built-in` members besides foundation | `writing` only | ADR-0048 open question 3 |
+| Range grammar | exact, `^`, `~`, comparison operators, space as AND | ADR-0048 open question 4 |
+| Settling a sibling conflict | the distribution pack's own `overrides` edge | ADR-0048 open question 5 |
 | Glossary `applies_to` | advisory | ADR-0049 decision 14 |
 | Glossary file layout | `glossaries/<context-id>.glossary.yaml` | ADR-0049 decision 6 |
 | Terminal state name | reserved `end` | ADR-0050 decision 11 |

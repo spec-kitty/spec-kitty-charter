@@ -79,7 +79,7 @@ note in its `decision_status` at acceptance:
 
 1. **`glossary_pack` is renamed `glossary`** (kind token `glossary`, operator token `glossary`). Its artifact is a
    **glossary context**: a ubiquitous-language bounded context.
-2. **The context shape** (closed, per the sanitized-shape rules of
+2. **The glossary context shape** (closed, per the sanitized-shape rules of
    [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)):
 
    | Field | Required | Shape |
@@ -133,7 +133,7 @@ note in its `decision_status` at acceptance:
 
 11. **Scope comes from the pack level** (built-in, org, project). Core's four hardcoded glossary scopes are retired.
     `mission_local` stays a runtime concern on the Mission instance; it is not a charter scope.
-12. **Two contexts may define the same name.** A name shared by two contexts is two terms, and is no conflict.
+12. **Two glossary contexts may define the same name.** A name shared by two glossary contexts is two terms, and is no conflict.
 13. **Only a clash on the same `term:` URN is a conflict.** Across levels, precedence follows the level (project
     over org over built-in) and the load warns. At the same level the compose is refused unless it is settled
     explicitly, the same way as a sibling conflict (ADR-0048 decision 9).
