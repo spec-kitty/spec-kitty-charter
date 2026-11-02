@@ -27,7 +27,7 @@ audience:
   - profile: pack-author
     guidance_text: Read this for how a mission type declares its transitions, guards and actions, how a lifecycle is declared, and how another pack may enhance or replace a step.
   - profile: charter-service-contributor
-    guidance_text: Read this before changing the mission-type schema, binding the lifecycle or gate kinds, or writing the enhances and overrides checks.
+    guidance_text: Read this before changing the mission-type schema, binding the lifecycle or gate kinds, or writing the step enhancement and overrides checks.
   - profile: core-maintainer
     guidance_text: Read this for what core runs from these declarations (the lane machine, guards, emits) and what the charter no longer special-cases.
 ---
@@ -248,7 +248,7 @@ up the formal meaning of a term used here.
 
 ### Extension from another pack (M3, ruled)
 
-22. **`enhances` extends a step without copying it.** This is the M3 ruling's add-only step enhancement, a
+22. **A step enhancement extends a step without copying it.** This is the M3 ruling's add-only step enhancement, a
     mechanism of its own: the CRG's `enhances` relation keeps its field-merge meaning for the other kinds
     (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
     references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
@@ -268,7 +268,7 @@ up the formal meaning of a term used here.
 26. **Requirement kinds** (#164): core #5956 D1 to D5 are written into the mission-type schema. Mission types and
     steps link vocabulary through `term:` URNs
     ([ADR-0049](/adr/0049-glossary-contexts-and-terms/); #164 D1/Q5).
-27. **#161** (`mission.yaml` and `mission-runtime.yaml` in a non-built-in tier) is moot under ADR-0044's single
+27. **#161** (`mission.yaml` and `mission-runtime.yaml` in a non-built-in pack level) is moot under ADR-0044's single
     file; the default is to confirm and close it.
 28. **#153** (mission-instance addendum layer): the default is to park it and close it as not planned until a need
     shows.

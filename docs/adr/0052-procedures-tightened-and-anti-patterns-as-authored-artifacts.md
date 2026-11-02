@@ -46,7 +46,7 @@ changes below.
 
 ## Context
 
-- **Procedures.** The built-in pack ships 22 procedures (spec-kitty-open-packs `1060bfc`). Some are a technique
+- **Procedures.** The built-in pack ships 22 procedures (spec-kitty-open-packs `1060bfc`). Some are bounded episodes
   inside one step, as intended; others are deliverable-producing workflows, standing rules, or state machines. With
   mission types as declared state machines
   ([ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/)) and the `lifecycle` kind, the
@@ -67,7 +67,7 @@ changes below.
 ### The procedure kind stays, with a tightened definition (#150, ruled)
 
 1. **`procedure` stays a kind** (option 1 of #150).
-2. **A procedure is a repeatable technique used inside one step.** The definition is tightened with three refusals:
+2. **A procedure is a repeatable, bounded episode used inside one step.** The definition is tightened with three refusals:
    - **it may not produce the Mission's deliverables.** A procedure that ends in a deliverable is a mission type or
      a step;
    - **it may not span steps.** A procedure that starts in one step and ends in another is a mission type, a step's
@@ -214,7 +214,7 @@ Recommended defaults the operator rules on.
 
 ### Retire the procedure kind (#150 option 2)
 
-Rejected by the operator. About half the shipped procedures are genuine in-step techniques with no better home.
+Rejected by the operator. About half the shipped procedures are genuine in-step procedures with no better home.
 
 ### Keep anti-patterns inline (ADR-0043 decision 3)
 
