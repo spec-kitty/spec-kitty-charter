@@ -109,6 +109,22 @@ ADRs and issues. Composition and the named-packs split are already drafted as
 - **Running, wiring and enforcing it is the client's concern** (today core's CLI). The charter service
   does not run a machine and does not check that a client follows it.
 
+### Work-package lifecycle (operator ruling, 2026-11-02)
+
+- **A kind of its own (option a).** The work-package lifecycle core runs today
+  (`planned -> claimed -> in_progress -> for_review -> in_review -> approved -> done`, plus `blocked`
+  and `canceled`, with guards) becomes a declared, reusable `lifecycle` state machine in a pack.
+  - It is hardcoded in core today (`status_lanes`, `status/transitions.py`).
+  - Core keeps executing it, by the responsibility split.
+- **Mission types reference a lifecycle.** The Mission type is the outer machine (steps). The
+  lifecycle is a sub-machine, instantiated once per work package inside the steps that work on work
+  packages. In statechart terms, it is a submachine state.
+  - One lifecycle can serve several types, and a type may pick a lighter one.
+- **Storage and reads are separate concerns.** Storage keeps the two as separate artifacts linked by
+  reference. The API may aggregate them into one response, for example a mission-type read with its
+  lifecycle embedded, to keep callers simple. The service architecture exists to allow MVC/CQRS-style
+  splits between display, storage and domain logic.
+
 ### Mission type as a state machine (client-side use)
 
 On the client, a mission type is the **description of a finite-state machine**: it must say which
@@ -199,14 +215,6 @@ taken.
    only advisory.
 7. Whether `depends_on` (a DAG, with parallel steps) comes back beside explicit transitions, or
    whether parallelism stays in the work-package lane machine.
-8. **The work-package lifecycle as a declared state machine.**
-   - Core runs a second state machine per work package: `planned -> claimed -> in_progress ->
-     for_review -> in_review -> approved -> done`, plus `blocked` and `canceled`, with guards
-     (force, review evidence).
-   - Today it is hardcoded in core (`status_lanes`, `status/transitions.py`).
-   - By the responsibility split, its *declaration* belongs to the charter: states, transitions,
-     guards and events as pack data that a mission type references. Core keeps executing it.
-   - To decide: is it its own kind (a reusable lifecycle) or part of the mission type? Does each
-     mission type pick its lifecycle?
+8. *(Ruled, see "Work-package lifecycle" above.)*
 9. Where the event catalogue a pack may reference is published, and how its version is pinned.
 10. Whether a declared action may reference a code asset the pack delivers, for the client to run.
