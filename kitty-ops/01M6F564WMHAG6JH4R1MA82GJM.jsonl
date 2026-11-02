@@ -1,0 +1,4 @@
+{"event": "started", "invocation_id": "01M6F564WMHAG6JH4R1MA82GJM", "profile_id": "planner-priti", "action": "plan", "request_text": "Triage the open issues in spec-kitty/spec-kitty-charter against ADR-0048..0054 and publish the triage table to docs/plans/triage-2026-11-02.md", "actor": "claude", "mode_of_work": "task_execution", "governance_context_hash": "427ef00355c45629", "governance_context_available": true, "started_at": "2026-11-02T22:13:31.634015+00:00"}
+{"event": "completed", "invocation_id": "01M6F564WMHAG6JH4R1MA82GJM", "completed_at": "2026-11-02T22:27:10.467991+00:00", "outcome": "done", "closed_by": "agent"}
+{"event": "artifact_link", "invocation_id": "01M6F564WMHAG6JH4R1MA82GJM", "at": "2026-11-02T22:27:10.477366+00:00", "kind": "artifact", "ref": "docs/plans/triage-2026-11-02.md"}
+{"event": "commit_link", "invocation_id": "01M6F564WMHAG6JH4R1MA82GJM", "at": "2026-11-02T22:27:10.478907+00:00", "sha": "033b4d9"}
