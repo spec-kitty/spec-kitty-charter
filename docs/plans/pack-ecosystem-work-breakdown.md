@@ -41,7 +41,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
 | 5 | The `anti_pattern` kind and `rejects`; drop inline `anti_patterns` from procedure and styleguide | 0052 | M | 1 | #154 |
-| 6 | The authoring checklist for the tightened procedure definition (the closed schema already refuses outputs and `action:` references) | 0052 | S | 1 | #150 |
+| 6 | ~~The authoring checklist for the tightened procedure definition~~ (done 2026-11-02, [Author a procedure](/guides/author-a-procedure/); applied by review. The closed schema has no output field and refuses any undeclared key and `type: action`, but not an `action:` URN as a reference id: #350) | 0052 | S | 1 | #150, #350 |
 | 7 | The `event_registry` kind and the shared `emit` entry shape | 0051 | M | 2 (resolution uses the closure) | proposed: "event registry kind" |
 | 8 | The `guard` and `lifecycle` kinds; the asset `executable` block and the `implemented_by` relation | 0050, 0054 | M | 1 | #156 (renamed to guard); proposed: "lifecycle kind" |
 | 9 | Mission-type schema: transitions, guard entries `{ref, config?, blocking?}` (#155, closed into #156), actions, the `submachine` field, requirement kinds (#164), `term:` links | 0050 | L | 4, 7, 8 | #148, #155, #164 |
@@ -49,7 +49,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 11 | Mission type as an ordinary activatable kind (presets, deny list) | 0050 | M | 9 | #148 |
 | 12 | `applies_to_stacks` beside `applies_to_languages` | notes | S | 1 | #163 |
 | 13 | Contract sets for the new reads and registrations (glossary, anti-pattern, event registry, guard, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind |
-| 14 | ~~Close #153 (not planned), #161 (moot)~~ (done 2026-11-02); close #147 (into #146); document the single daemon per worktree (#183) | notes | S | 1 | #153, #161, #183 |
+| 14 | ~~Close #153 (not planned), #161 (moot)~~ (done 2026-11-02); close #147 (into #146); ~~document the single daemon per worktree (#183)~~ (done 2026-11-02, [one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); a fail-fast guard is #349) | notes | S | 1 | #153, #161, #183, #349 |
 
 Items 4 to 8 are independent of each other once item 1 is done, and can run in parallel as long as only one of them
 changes `contracts/` at a time.

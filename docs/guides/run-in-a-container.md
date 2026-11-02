@@ -2,7 +2,7 @@
 title: Run the service in a container
 description: Run the charter service under the container profile with docker compose, with its token as a mounted secret file and nothing secret committed.
 doc_status: draft
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -94,6 +94,9 @@ Among other checks, the service refuses to start, naming the property, file or d
   ([#232](https://github.com/spec-kitty/spec-kitty-charter/issues/232)).
 - **Configuration root.** The example's root, `/var/lib/spec-kitty/charter`, is local to the example until the image
   sets its own (#234).
+- **One container per configuration root.** Never start two containers, or a container and a local daemon, over
+  the same configuration root or volume. Only one process may write a pack, and nothing refuses a second one yet
+  ([one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); #349).
 - **Inspecting the file.** Never run `docker compose config` with a real `.env`: it prints the values.
 
 ## See also
