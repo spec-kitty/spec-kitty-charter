@@ -126,8 +126,9 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
     the enhancing pack that holds only the additions (references, guards, emits), plus a CRG `enhances` edge from it
     to the target step, `action:<type>/<step>`, pack-qualified as `<pack>::action:<type>/<step>` when the step is in
     another pack (decision 7). This is how an agent profile is augmented today. The edge
-    and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a mechanism of its own, and a
-    step-enhancement file with a `target:` field). The enhancing artifact's file layout is left to the schema work.
+    and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a
+    mechanism of its own, and a step-enhancement file with a `target:` field). The enhancing artifact's file layout
+    is left to the schema work.
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,
     `event-registry`, `anti-pattern`, and the same in `selections/{kind}` and `exclusions/{kind}`.
     - This is a breaking change on the 0.x line, with a `### Breaking` entry (ADR-0022): every multi-word `{kind}`
@@ -210,11 +211,11 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
    pack, with the `enhances` edge in that pack's graph shard, as for profiles.
 3. **URN kind tokens** (follows decision 23). When the path and kind tokens move to kebab case (`mission-type`), do
    the URN kind tokens move too (`mission-type:<id>`), or stay snake case (`mission_type:<id>`)? Only multi-word kinds
-   differ: `agent_profile`, `mission_step_contract`, `mission_type`, `anti_pattern`, `glossary_context` and
-   `event_registry`. *Recommended:* move them, inside the named-packs split migration, which already rewrites graph
-   shards (`<pack>::` references, the `glossary_pack` rename). For one release the reader also accepts the
-   snake-case form, so org packs written by others keep loading. Keeping snake case avoids that reader, at the cost
-   of two spellings of every multi-word kind, kept apart forever.
+   differ: `agent_profile`, `mission_step_contract`, `mission_type`, `anti_pattern` and `event_registry`; the
+   glossary context token is already settled (`glossary_context`, decision 13). *Recommended:* move them, inside the
+   named-packs split migration, which already rewrites graph shards (`<pack>::` references, the `glossary_pack`
+   rename). For one release the reader also accepts the snake-case form, so org packs written by others keep loading.
+   Keeping snake case avoids that reader, at the cost of two spellings of every multi-word kind, kept apart forever.
 
 ## Alternatives considered
 

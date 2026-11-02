@@ -86,6 +86,9 @@ chose. The project owns it, and a hosted service must never change it on its own
 - **Empty active charter.** Whether an empty active charter keeps ADR-0020 decision 6 (each kind at
   its default) or holds only what is required. Deferred by the operator to the built-in split
   (#145).
+  **Ruled 2026-11-02:** after the split, an empty active charter puts nothing in force
+  ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10). This is a breaking
+  change for a project that relied on "empty means defaults".
 
 ## Consequences
 
