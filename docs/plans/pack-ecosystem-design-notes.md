@@ -299,8 +299,9 @@ taken.
 5. The edge form a distribution pack uses to settle a sibling conflict.
 6. Whether a context's `applies_to` filters what is in force (like `applies_to_languages`), or is
    only advisory.
-7. Whether `depends_on` (a DAG, with parallel steps) comes back beside explicit transitions, or
-   whether parallelism stays in the work-package lane machine.
+7. *(Ruled 2026-11-02, for now.)* Inter-step `depends_on` does not come back. Explicit transitions
+   plus per-work-package lifecycles cover today's parallel work. A statechart parallel region (fork
+   and join) can be added later if a mission type needs one.
 8. *(Ruled, see "Work-package lifecycle" above.)*
 9. Where the event catalogue a pack may reference is published, and how its version is pinned.
 10. Whether a declared action may reference a code asset the pack delivers, for the client to run.
