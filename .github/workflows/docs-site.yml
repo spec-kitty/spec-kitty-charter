@@ -162,14 +162,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci --ignore-scripts
-      - name: Download the Javadoc built by service.yml
+      # Two producers, one artifact name each: on a pull request the `javadoc` job above, on main the
+      # `service` job (service.yml). Either way the artifact comes from this same run.
+      - name: Download the Javadoc
         # Published as is under /javadoc/ (site/public/javadoc is ignored by git), and walked by
         # check:built-links below like every other built page.
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: javadoc
           path: site/public/javadoc
-      - name: Download the contract bundle built by service.yml
+      - name: Download the contract bundle
         # Staged into site/openapi by the prebuild script, published under /reference/api/main/ and
         # compared with the published copy after the build. The path is relative to the workspace.
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
