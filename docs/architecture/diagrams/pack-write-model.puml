@@ -3,25 +3,34 @@
 '   contracts/packs/schemas/{pack-descriptor,graph-shard,org-fragment,org-charter,asset}.schema.json
 '   contracts/packs/file-kinds.yaml (node kinds, fragment kind vocabulary)
 '   service/kernel (kernel.domain): PackDescriptor, DrgNode, DrgEdge, Relation, PackLevel
+'   Decided design: ADR-0048 (composition), ADR-0049 (glossary), ADR-0050 (mission types, lifecycles, gates),
+'   ADR-0051 (event registry), ADR-0052 (anti-patterns). Accepted 2026-11-02; none of it is built yet.
 ' Edges carry no provenance: it is not authored and the schema refuses it (ADR-0017, DIV-019); a shard node may.
 ' charter.schema.json validates the project's charter.yaml, not a pack file, so it is not drawn.
 ' Notation: + required, - optional, [0..1] / [0..*] multiplicity.
+' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Pack write model: the authored pack files
+left to right direction
+title Pack write model — decided design (ADR-0048…ADR-0052)
 
 class Pack <<directory>> {
   one per Charter Pack
 }
 class PackDescriptor <<pack.yaml>> {
-  + pack_id : string [ULID]
+  + pack_id : string [ULID pattern, ADR-0048 d5]
   + pack_version : string [every level]
   + name : string
-  - parent_pack : string
-  - pack_level : PackLevel
+  - parent_pack : string [ULID pattern; lineage only, sets no load order]
+  - depends_on : DependsOn[] <color:#8A6D00>[pending ADR-0048 OQ6]</color>
+  - pack_level : PackLevel <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string [PEP 440]
   - active_charter : path
   - pack_drg : path
   unknown keys : warning pack_unknown_key
+}
+class DependsOn <<item of depends_on>> {
+  + pack_id : string [ULID]
+  + range : string <color:#8A6D00>[pending ADR-0048 OQ4: grammar]</color>
 }
 enum PackLevel {
   built-in
@@ -43,6 +52,7 @@ class ShardNode {
   - label : string
   - provenance : string
   - tags : string[]
+  anti_pattern node with no file : refused after migration <color:#8A6D00>[pending ADR-0052 OQ3]</color>
 }
 class FragmentNode {
   + id : string
@@ -58,9 +68,47 @@ class Edge {
   - when : string [shards only]
   - impacts : number [-1..1, only on impacts]
 }
-class ArtifactFile <<*.directive.yaml, *.tactic.yaml,\n*.styleguide.yaml, *.toolguide.yaml,\n*.paradigm.yaml, *.procedure.yaml,\n*.agent.yaml, *.step-contract.yaml>> {
+class ArtifactFile <<*.directive.yaml, *.tactic.yaml,\n*.styleguide.yaml, *.toolguide.yaml,\n*.paradigm.yaml, *.procedure.yaml,\n*.agent.yaml>> {
   + id : string [profile-id for *.agent.yaml]
   one schema per kind
+}
+class GlossaryFile <<pending>> {
+  glossaries/<context-id>.glossary.yaml
+  one glossary context per file, terms inside <color:#8A6D00>[pending ADR-0049 OQ1: layout]</color>
+}
+class AntiPatternFile <<pending>> {
+  anti_patterns/<id>.anti-pattern.yaml
+  severity : smell | severe | breaking
+  migrated entries default to smell <color:#8A6D00>[pending ADR-0052 OQ4]</color>
+  shape and layout <color:#8A6D00>[pending ADR-0052 OQ2]</color>
+}
+class LifecycleFile <<pending>> {
+  lifecycles/<id>.lifecycle.yaml
+  a reusable state machine
+  layout and shape <color:#8A6D00>[pending ADR-0050 OQ4]</color>
+}
+class GateFile <<pending>> {
+  gates/<id>.gate.yaml
+  severity, config_schema
+  the gate kind <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+}
+class EventRegistryFile <<pending>> {
+  event_registries/<id>.event-registry.yaml
+  event types only
+  layout; not a CRG node <color:#8A6D00>[pending ADR-0051 OQ3]</color>
+}
+class MissionTypeBundle <<directory>> {
+  mission_types/<type>/
+  <type>.mission-type.yaml
+  steps/<step>.prompt.md
+  steps/<step>.guidelines.md
+  step_contracts/<id>.step-contract.yaml
+  templates/...
+}
+class StepEnhancementFile <<pending>> {
+  enhancements/<id>.step-enhancement.yaml
+  target : action:<type>/<step>
+  authored in the enhancing pack <color:#8A6D00>[pending ADR-0050 OQ8]</color>
 }
 class AssetManifest <<*.asset.yaml>> {
   + id : string
@@ -76,17 +124,29 @@ class OrgCharter <<org-charter.yaml>> {
 enum FragmentKind {
   directives, tactics, styleguides, toolguides
   paradigms, procedures, agent_profiles
-  mission_step_contracts, glossary_packs, skills
-  anti_patterns, assets, templates
-  mission_types, actions
+  mission_step_contracts, skills
+  assets, templates, mission_types, actions
+  lifecycles
+  glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>
+  anti_patterns <color:#8A6D00>[pending ADR-0052 OQ3: file-less nodes]</color>
+  gates <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+  event_registries <color:#8A6D00>[pending ADR-0051 OQ3]</color>
 }
 
 Pack "1" *-- "0..1" PackDescriptor
 Pack "1" *-- "0..*" GraphShard
 Pack "1" *-- "0..1" OrgFragment : org packs: 1
 Pack "1" *-- "0..*" ArtifactFile
+Pack "1" *-- "0..*" GlossaryFile
+Pack "1" *-- "0..*" AntiPatternFile
+Pack "1" *-- "0..*" LifecycleFile
+Pack "1" *-- "0..*" GateFile
+Pack "1" *-- "0..*" EventRegistryFile
+Pack "1" *-- "0..*" MissionTypeBundle
+MissionTypeBundle "1" *-- "0..*" StepEnhancementFile
 Pack "1" *-- "0..*" AssetManifest
 Pack "1" *-- "0..1" OrgCharter
+PackDescriptor "1" *-- "0..*" DependsOn
 PackDescriptor ..> PackLevel
 GraphShard "1" *-- "0..*" ShardNode
 GraphShard "1" *-- "0..*" Edge
@@ -94,11 +154,34 @@ OrgFragment "1" *-- "0..*" FragmentNode
 OrgFragment "1" *-- "0..*" Edge
 FragmentNode ..> FragmentKind
 
+note right of PackDescriptor
+  Composition (ADR-0048). built-in is a distribution pack:
+  it holds no artifacts and aggregates members through depends_on (d12).
+  A member carries parent_pack: null (d15).
+  A specialist pack only adds; a sibling conflict is refused (d9).
+  Level rule: pack_level may not exceed the parent's (d7).
+  What a compose is <color:#8A6D00>[pending ADR-0048 OQ6]</color>
+end note
+
+note bottom of PackLevel
+  Level of our own opt-in packs (java, qa, ...):
+  org, or a new level? <color:#8A6D00>[pending ADR-0048 OQ1]</color>
+end note
+
+note bottom of Edge
+  A sibling conflict is settled by the distribution pack's
+  own overrides edge, naming the winner. <color:#8A6D00>[pending ADR-0048 OQ5]</color>
+end note
+
 note bottom of FragmentKind
   One name per concept (R14):
   mission_step_contracts, not mission_steps;
   mission_types, not mission_type.
-  Refused: mission_steps, mission_type,
-  glossary, glossary_scope.
+  Refused: mission_steps, mission_type, glossary_scope.
 end note
+
+legend right
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
+endlegend
 @enduml
