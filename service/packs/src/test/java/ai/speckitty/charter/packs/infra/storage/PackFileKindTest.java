@@ -38,6 +38,8 @@ class PackFileKindTest {
             Map.entry("core/toolguides/a.toolguide.yaml", "toolguide"),
             Map.entry("core/toolguides/a.guide.md", "toolguide-guide"),
             Map.entry("core/missions/plan/plan.mission-type.yaml", "mission-type"),
+            Map.entry("core/guards/subtasks-complete.guard.yaml", "guard"),
+            Map.entry("core/lifecycles/work-package.lifecycle.yaml", "lifecycle"),
             Map.entry("core/missions/plan/steps/specify.prompt.md", "mission-step-prompt"),
             Map.entry("core/missions/plan/steps/specify.guidelines.md", "mission-step-guidelines"),
             Map.entry("core/paradigms/a.paradigm.yaml", "paradigm"),
@@ -222,12 +224,14 @@ class PackFileKindTest {
 
     @Test
     void theVocabularyListsAreExposed() {
-        assertThat(KINDS.nodeKinds()).hasSize(15).contains("directive", "mission_type", "action");
+        assertThat(KINDS.nodeKinds()).hasSize(17).contains("directive", "mission_type", "action", "guard", "lifecycle");
         assertThat(KINDS.fragmentKinds())
+                .as("a fragment does not admit a guard or a lifecycle node yet (#156)")
                 .hasSize(15)
+                .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(23);
+        assertThat(KINDS.fileRules()).hasSize(25);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " pack.md's (#260)")

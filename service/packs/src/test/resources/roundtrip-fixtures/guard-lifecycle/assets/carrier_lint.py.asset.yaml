@@ -1,0 +1,10 @@
+id: carrier-lint
+mime: text/x-python
+path: carrier_lint.py
+title: Traceability carrier lint
+executable:
+  runtime: python
+  min_version: '3.11'
+  entry: carrier_lint.py
+  args:
+  - --guard

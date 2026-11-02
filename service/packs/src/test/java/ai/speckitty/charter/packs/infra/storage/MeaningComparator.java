@@ -68,7 +68,8 @@ final class MeaningComparator {
     /** ADR-0036's open maps per gate kind: top-level keys whose content is data, not fields. */
     private static final Map<String, Set<String>> OPEN_MAPS = Map.of(
             "styleguide", Set.of("tooling", "structural_lint_config"),
-            "agent-profile", Set.of("excluding"));
+            "agent-profile", Set.of("excluding"),
+            "guard", Set.of("config_schema"));
 
     private MeaningComparator() {}
 

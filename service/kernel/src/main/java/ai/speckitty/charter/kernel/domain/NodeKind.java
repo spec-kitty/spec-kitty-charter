@@ -34,7 +34,11 @@ public enum NodeKind {
     /** One action of one mission type, for example {@code action:software-dev/plan}; action-scoped context starts here. */
     ACTION,
     /** A node of the artifact kind {@link ArtifactKind#MISSION_TYPE}, for example {@code mission_type:software-dev}. */
-    MISSION_TYPE;
+    MISSION_TYPE,
+    /** A node of the artifact kind {@link ArtifactKind#GUARD}, for example {@code guard:subtasks-complete}. */
+    GUARD,
+    /** A node of the artifact kind {@link ArtifactKind#LIFECYCLE}, for example {@code lifecycle:work-package}. */
+    LIFECYCLE;
 
     /**
      * The spelling used in URNs.
@@ -43,6 +47,17 @@ public enum NodeKind {
      */
     public String token() {
         return name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * Whether a graph document or a relationship registration may name the kind as a node or an edge endpoint.
+     *
+     * @return {@code false} for {@link #GUARD} and {@link #LIFECYCLE}: their only edge is the {@code implemented_by} a
+     *     guard derives, and an authored edge to or from either is refused until their contract set lands (operator
+     *     ruling of 2026-11-02, #156; work breakdown item 13)
+     */
+    public boolean authoredInGraphs() {
+        return this != GUARD && this != LIFECYCLE;
     }
 
     /**
@@ -92,7 +107,7 @@ public enum NodeKind {
      * refused).
      *
      * @param plural the plural kind as written in {@code drg/fragment.yaml}
-     * @return the node kind, or empty when the name is not one of the 15 plurals
+     * @return the node kind, or empty when the name is not one of the 17 plurals
      */
     public static Optional<NodeKind> fromPlural(String plural) {
         return switch (plural) {

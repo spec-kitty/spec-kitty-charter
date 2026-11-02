@@ -1,0 +1,5 @@
+schema_version: '1.0'
+id: subtasks-ready
+title: Subtasks complete and implementation evidence present
+interface: guard/1
+implemented_by: builtin:implementation-ready

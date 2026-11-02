@@ -13,3 +13,14 @@ empty_kinds:
       GlossaryPackAndSkillCorpusTest and the open-packs seam test. The gate does not yet pair a companion (body_path)
       with its artifact; when the built-in pack gains a skill this entry goes stale and that pairing is due.
     issue: "#192"
+  - kind: guard
+    reason: >-
+      The pinned built-in pack has no guard yet: the foundation built-in guards and the qa lint as the first
+      asset-backed guard are spec-kitty-open-packs work (ADR-0054 follow-ups), and an asset-backed one waits for the
+      asset path fix (open-packs#75). Guards round-trip in GuardAndLifecycleYamlTest and GuardAndLifecycleLoadTest.
+    issue: "#156"
+  - kind: lifecycle
+    reason: >-
+      The pinned built-in pack has no lifecycle yet: the work-package lifecycle from core's lane table is
+      spec-kitty-open-packs P6. Lifecycles round-trip in GuardAndLifecycleYamlTest and GuardAndLifecycleLoadTest.
+    issue: "#156"

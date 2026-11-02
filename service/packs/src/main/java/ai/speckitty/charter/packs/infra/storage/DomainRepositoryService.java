@@ -359,8 +359,9 @@ public final class DomainRepositoryService
             }
         }
         Set<String> namable = MissionTemplates.namable(templates.values());
+        GuardClosure closure = GuardClosure.of(pack, read);
         for (KindBinding<?, ?> kind : KindBindings.all()) {
-            collect(pack, kind, read, builder, places, namable);
+            collect(pack, kind, read, builder, places, namable, closure);
         }
         read.assetFiles().forEach(builder::assetFile);
         templates.forEach((place, template) -> {
@@ -392,7 +393,8 @@ public final class DomainRepositoryService
      * Adds each readable element of one kind to the aggregate, failing closed: a domain-invalid element is recorded as
      * a violation, named by its id, rather than aborting assembly. A mission type whose output template names no
      * template of the pack (#277) is left out with a {@code reference} violation of its file, as the read's own check of
-     * a named file words it. Each added element's file is put in {@code places} under its URN.
+     * a named file words it; so is a guard or a lifecycle that does not close over its references (ADR-0054,
+     * {@link GuardClosure}). Each added element's file is put in {@code places} under its URN.
      */
     static <D, E extends CharterArtifact> void collect(
             PackIdentifier pack,
@@ -400,7 +402,8 @@ public final class DomainRepositoryService
             FilesystemPackStore.PackRead read,
             Pack.Builder builder,
             Map<Urn, String> places,
-            Set<String> namableTemplates) {
+            Set<String> namableTemplates,
+            GuardClosure closure) {
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
@@ -408,6 +411,11 @@ public final class DomainRepositoryService
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(
                             stored.file(), "reference", MissionTemplates.reason(unresolved.get())));
+                    continue;
+                }
+                Optional<String> unclosed = closure.firstUnresolved(entity);
+                if (unclosed.isPresent()) {
+                    builder.violation(new PackElementViolation(stored.file(), "reference", unclosed.get()));
                     continue;
                 }
                 Urn urn = entity.urn();

@@ -178,7 +178,9 @@ class PresetTest {
                         ArtifactKind.GLOSSARY_PACK,
                         ArtifactKind.ASSET,
                         ArtifactKind.TEMPLATE,
-                        ArtifactKind.MISSION_TYPE)));
+                        ArtifactKind.MISSION_TYPE,
+                        ArtifactKind.GUARD,
+                        ArtifactKind.LIFECYCLE)));
         for (ArtifactKind kind : Preset.ACTIVATION_KINDS) {
             assertThatCode(() -> preset("p", lists(kind, PresetItem.of("x")))).doesNotThrowAnyException();
         }

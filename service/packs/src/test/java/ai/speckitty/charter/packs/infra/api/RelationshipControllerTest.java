@@ -95,6 +95,37 @@ class RelationshipControllerTest {
     }
 
     @Test
+    void aDerivedRelationIsRefusedAndRegistersNothing() throws Exception {
+        // implemented_by is derived from a guard's own field (ADR-0054 decision 3), never registered.
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("requires", "implemented_by")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(
+                        jsonPath("$.detail")
+                                .value(
+                                        "relation type implemented_by is derived from an artifact's own field, never registered"));
+        assertThat(store.edges).isEmpty();
+    }
+
+    @Test
+    void anEdgeFromAGuardIsRefusedAndRegistersNothing() throws Exception {
+        // A guard or a lifecycle is not an authored edge endpoint until its contract set lands (#156).
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("directive:DIR_A", "guard:subtasks-ready")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("a guard or a lifecycle is not an authored edge endpoint until its contract set lands:"
+                                + " guard:subtasks-ready"));
+        assertThat(store.edges).isEmpty();
+    }
+
+    @Test
     void isIdempotentOnThePair() throws Exception {
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
                         .header("If-Match", store.currentRevision(PACK).token())

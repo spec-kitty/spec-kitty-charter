@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/lifecycle.schema.json",
+  "$defs": {
+    "GuardEntry": {
+      "additionalProperties": false,
+      "description": "A guard a transition names (ADR-0054 decision 2).",
+      "properties": {
+        "ref": {
+          "description": "The guard: its bare id in the same pack, or <pack>::guard:<id> in another pack.",
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::guard:)?[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "config": {
+          "description": "The entry's configuration, checked at load against the guard's config_schema; its content is open (ADR-0042 S4 as amended).",
+          "title": "Config",
+          "type": "object"
+        },
+        "blocking": {
+          "description": "Whether a failing guard blocks this transition (absent means true) or only reports.",
+          "title": "Blocking",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ref"
+      ],
+      "title": "GuardEntry",
+      "type": "object"
+    },
+    "State": {
+      "additionalProperties": false,
+      "description": "One state of the machine.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/StateId"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "terminal": {
+          "description": "Whether the state ends the machine: no transition leaves it.",
+          "title": "Terminal",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "State",
+      "type": "object"
+    },
+    "StateId": {
+      "description": "A state id: lower case, words joined by an underscore or a hyphen (core's lane names are snake_case). A word a YAML 1.1 reader takes for a boolean or null is refused, so every reader reads the same id.",
+      "not": {
+        "enum": [
+          "y",
+          "n",
+          "yes",
+          "no",
+          "on",
+          "off",
+          "true",
+          "false",
+          "null"
+        ]
+      },
+      "pattern": "^[a-z][a-z0-9]*([_-][a-z0-9]+)*$",
+      "title": "StateId",
+      "type": "string"
+    },
+    "Transition": {
+      "additionalProperties": false,
+      "description": "A transition between states.",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StateId"
+            },
+            {
+              "const": "*",
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/StateId"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          ],
+          "description": "The state the transition leaves: one state, a list of states, or * for every non-terminal state other than the transition's target (ADR-0050 decision 17 as annotated).",
+          "title": "From"
+        },
+        "to": {
+          "$ref": "#/$defs/StateId"
+        },
+        "event": {
+          "description": "The triggering event, a free token the client interprets (ADR-0050 decisions 8 and 17, the key renamed from on by the operator on 2026-11-02, since a YAML 1.1 reader takes a plain on key for true). A word a YAML 1.1 reader takes for a boolean or null is refused.",
+          "not": {
+            "enum": [
+              "y",
+              "n",
+              "yes",
+              "no",
+              "on",
+              "off",
+              "true",
+              "false",
+              "null"
+            ]
+          },
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Event",
+          "type": "string"
+        },
+        "guard": {
+          "items": {
+            "$ref": "#/$defs/GuardEntry"
+          },
+          "minItems": 1,
+          "title": "Guard",
+          "type": "array"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "title": "Transition",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A declared, reusable state machine (ADR-0050 decision 17): states, an initial state and transitions, each transition guarded by guard artifacts (ADR-0054). A mission step runs it as a submachine; the client runs and enforces it.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "The lifecycle's id, kebab-case; it is the file stem.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "initial": {
+      "$ref": "#/$defs/StateId"
+    },
+    "states": {
+      "items": {
+        "$ref": "#/$defs/State"
+      },
+      "minItems": 1,
+      "title": "States",
+      "type": "array"
+    },
+    "transitions": {
+      "items": {
+        "$ref": "#/$defs/Transition"
+      },
+      "minItems": 1,
+      "title": "Transitions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "initial",
+    "states",
+    "transitions"
+  ],
+  "title": "Lifecycle",
+  "type": "object"
+}

@@ -173,6 +173,28 @@ class PackPolicyGraphTest {
     }
 
     @Test
+    void anAuthoredEdgeToOrFromAGuardOrALifecycleIsAFinding() {
+        // Neither is an authored edge endpoint until its contract set lands (#156, work breakdown item 13).
+        GraphBuild build = build(List.of(
+                edge("guard:a", "directive:b", "requires", null), edge("tactic:a", "lifecycle:wp", "scope", null)));
+        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(details(build))
+                .containsExactly(
+                        "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:a'",
+                        "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
+    }
+
+    @Test
+    void aDerivedRelationAuthoredAsAnEdgeIsAFinding() {
+        // implemented_by is derived from a guard's own field (ADR-0054 decision 3), never authored as an edge.
+        GraphBuild build = build(List.of(edge("tactic:a", "asset:b", "implemented_by", null)));
+        assertThat(build.graph().relationships()).isEmpty();
+        assertThat(details(build))
+                .containsExactly("qa/tactic.graph.yaml: relation 'implemented_by' is derived from an artifact's own"
+                        + " field, never authored as an edge");
+    }
+
+    @Test
     void anInTensionWithEdgeBindsAsATensionAndNeverAsARelationship() {
         GraphBuild build = build(List.of(new RawEdge(
                 "tactic:a",

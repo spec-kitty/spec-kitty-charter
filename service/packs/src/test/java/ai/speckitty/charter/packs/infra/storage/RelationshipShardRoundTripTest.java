@@ -39,11 +39,13 @@ class RelationshipShardRoundTripTest {
 
     @Test
     void everyRegistrableRelationIsWrittenInAFormTheReaderAccepts() {
-        // impacts is refused on the registration path (RelationshipMerge); every other relation must read back clean,
-        // or the next registration over the shard is refused as unreadable.
-        List<Relationship> relationships = EnumSet.complementOf(EnumSet.of(RelationType.IMPACTS)).stream()
-                .map(type -> Relationship.of(A, new Urn(NodeKind.DIRECTIVE, "to-" + type.token()), type))
-                .toList();
+        // impacts is refused on the registration path (RelationshipMerge), and implemented_by is derived, never
+        // registered (RelationshipWire); every other relation must read back clean, or the next registration over the
+        // shard is refused as unreadable.
+        List<Relationship> relationships =
+                EnumSet.complementOf(EnumSet.of(RelationType.IMPACTS, RelationType.IMPLEMENTED_BY)).stream()
+                        .map(type -> Relationship.of(A, new Urn(NodeKind.DIRECTIVE, "to-" + type.token()), type))
+                        .toList();
 
         ShardRead read = RelationshipShard.read("qa", RelationshipShard.write(relationships));
 
