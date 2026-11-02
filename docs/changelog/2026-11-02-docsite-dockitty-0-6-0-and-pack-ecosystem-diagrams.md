@@ -9,7 +9,7 @@ kind: Changelog
 related:
   - architecture/descriptor-schemas
   - architecture/descriptors
-  - architecture/pack-schemas/README
+  - architecture/pack-schemas
   - adr/0048-pack-composition-and-the-named-packs-split
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
 audience:
