@@ -17,16 +17,16 @@ class Pack <<directory>> {
   one per Charter Pack
 }
 class PackDescriptor <<pack.yaml>> {
-  + pack_id : string [ULID pattern, ADR-0048 d5]
+  + pack_id : string [ULID pattern, ADR-0048 Consequences]
   + pack_version : string [every level]
   + name : string
   - parent_pack : string [ULID pattern; lineage only, sets no load order]
-  - depends_on : DependsOn[] <color:#8A6D00>[pending ADR-0048 OQ6]</color>
+  - depends_on : DependsOn[]
   - pack_level : PackLevel <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string [PEP 440]
   - active_charter : path
   - pack_drg : path
-  unknown keys : warning pack_unknown_key
+  unknown keys : refused (additionalProperties: false)
 }
 class DependsOn <<item of depends_on>> {
   + pack_id : string [ULID]
@@ -68,7 +68,7 @@ class Edge {
   - when : string [shards only]
   - impacts : number [-1..1, only on impacts]
 }
-class ArtifactFile <<*.directive.yaml, *.tactic.yaml,\n*.styleguide.yaml, *.toolguide.yaml,\n*.paradigm.yaml, *.procedure.yaml,\n*.agent.yaml>> {
+class ArtifactFile <<*.directive.yaml, *.tactic.yaml, *.styleguide.yaml, *.toolguide.yaml, *.paradigm.yaml, *.procedure.yaml, *.agent.yaml>> {
   + id : string [profile-id for *.agent.yaml]
   one schema per kind
 }
@@ -127,7 +127,7 @@ enum FragmentKind {
   mission_step_contracts, skills
   assets, templates, mission_types, actions
   lifecycles
-  glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>
+  <glossary plural> (not spelled by ADR-0049; follow-up #114)
   anti_patterns <color:#8A6D00>[pending ADR-0052 OQ3: file-less nodes]</color>
   gates <color:#8A6D00>[pending ADR-0050 OQ2]</color>
   event_registries <color:#8A6D00>[pending ADR-0051 OQ3]</color>
@@ -159,7 +159,7 @@ note right of PackDescriptor
   it holds no artifacts and aggregates members through depends_on (d12).
   A member carries parent_pack: null (d15).
   A specialist pack only adds; a sibling conflict is refused (d9).
-  Level rule: pack_level may not exceed the parent's (d7).
+  Level rule: pack_level may not exceed the parent's (d7). <color:#8A6D00>[pending ADR-0048 OQ7]</color>
   What a compose is <color:#8A6D00>[pending ADR-0048 OQ6]</color>
 end note
 

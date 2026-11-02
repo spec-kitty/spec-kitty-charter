@@ -36,7 +36,8 @@ class Reference <<directive/paradigm/procedure_reference>> {
 enum RefKind {
   directive, tactic, styleguide, toolguide,
   paradigm, procedure, agent_profile,
-  mission_step_contract, template
+  mission_step_contract, template, asset,
+  glossary_pack, anti_pattern, skill
 }
 
 class RejectsRef <<rejects entry (ADR-0052 d9)>> {
@@ -96,8 +97,8 @@ class Toolguide <<toolguide.schema.yaml>> {
 class Procedure <<procedure.schema.yaml>> {
   + schema_version : "1.0"
   + id : string ~ ^[a-z][a-z0-9-]*$
-  + name : string
-  + purpose : string
+  + title : string
+  + description : string
   + entry_condition : string
   + exit_condition : string
   + steps : ProcedureStep[1..]
@@ -109,7 +110,7 @@ class Procedure <<procedure.schema.yaml>> {
 class ProcedureStep {
   + title : string
   - description : string
-  - actor : human | agent | system = agent
+  - role : string ~ ^[a-z][a-z0-9-]*$
   - on_success : string
   - on_failure : string
 }

@@ -19,7 +19,8 @@ class MissionStepContract <<step_contracts.py>> {
 }
 note right of MissionStepContract
   Kept as a kind (ADR-0050 d5). File moves into the bundle:
-  mission_types/<type>/step_contracts/<id>.step-contract.yaml (d4).
+  mission_types/<type>/step_contracts/<id>.step-contract.yaml (d4);
+  today's suffix is kept if it differs (d5).
   gates and GateBinding are removed (follow-ups); a binding migrates
   to a guard on a lifecycle transition (ADR-0050 d12).
 end note
@@ -80,7 +81,7 @@ PackSkill *-- "0..1" SkillExpansion
 PackSkill *-- "*" SkillParameter
 PackSkill *-- "0..1" SkillInvocation
 
-class GlossaryContext <<glossary.schema.yaml (ADR-0049 d1, d2)>> {
+class GlossaryContext <<glossary.schema.json (ADR-0049 d1, d2)>> {
   + schema_version : "1.0"
   + id : string (kebab-case, the file stem)
   + name : string
@@ -109,7 +110,7 @@ class Term <<an item inside a context, not an artifact (d3)>> {
   --
   URN term:<context-id>/<term-id> (d4)
 }
-enum TermStatus {
+enum TermStatus <<pending>> {
   draft
   active
   deprecated

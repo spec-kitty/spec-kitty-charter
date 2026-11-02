@@ -15,7 +15,7 @@ class PackDescriptor <<pack.yaml>> {
   + pack_id : string [ULID pattern]
   + pack_version : string [every level]
   - parent_pack : string [ULID pattern; lineage only, sets no load order]
-  - depends_on : DependsOn[] <color:#8A6D00>[pending ADR-0048 OQ6]</color>
+  - depends_on : DependsOn[]
   + name : string
   - pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
   - requires_core : string
@@ -26,10 +26,10 @@ class DependsOn <<item of depends_on>> {
   + pack_id : string [ULID]
   + range : string <color:#8A6D00>[pending ADR-0048 OQ4: grammar]</color>
 }
-class DRGGraph <<*.graph.yaml / drg/fragment.yaml>> {
+class DRGGraph <<*.graph.yaml>> {
   + schema_version : "1.0"
   + generated_at : string
-  + generated_by : string
+  - generated_by : string
   + nodes : DRGNode[]
   + edges : DRGEdge[]
 }
@@ -41,12 +41,12 @@ class DRGNode {
   - tags : string[] = []
 }
 class DRGEdge {
-  + source : string [URN or bare id]
-  + target : string [URN or bare id]
+  + source : string [URN only; DIV-007]
+  + target : string [URN only; DIV-007]
   + relation : Relation
   - when : string
   - reason : string
-  - provenance : string
+  - impacts : number [shards only]
 }
 enum NodeKind {
   directive, tactic, paradigm, styleguide,
@@ -75,7 +75,7 @@ class OrgCharterPolicy <<org-charter.yaml>> {
     required_toolguides, required_procedures,
     required_agent_profiles,
     required_mission_step_contracts,
-    required_glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>,
+    required_<glossary plural>,
     required_assets,
     required_skills : string[] = []
   - skill_namespace : string
@@ -94,7 +94,7 @@ class GovernanceCharterConfig <<project charter>> {
     selected_agent_profiles,
     selected_mission_step_contracts,
     selected_mission_types, selected_anti_patterns,
-    selected_glossary <color:#8A6D00>[pending ADR-0049 d1: plural not spelled]</color>,
+    selected_<glossary plural>,
     selected_assets : string[] = []
   - available_tools : string[]
   - template_set : string
@@ -115,6 +115,14 @@ note bottom of NodeKind
   glossary_scope is retired (ADR-0049 d11): scope comes from the pack level.
   Token spelling is snake_case (mission_type, anti_pattern, event_registry) <color:#8A6D00>[pending ADR-0050 OQ9]</color>
   vocabulary targets glossary and term (ADR-0049 d4).
+end note
+note bottom of GovernanceCharterConfig
+  <glossary plural> is not spelled by ADR-0049 (follow-up #114).
+  selected_mission_types and selected_anti_patterns are derived names, not in any schema yet.
+end note
+note bottom of DRGGraph
+  An org fragment (drg/fragment.yaml) has nodes and edges only, no header fields (DIV-008).
+  An edge carries no provenance (DIV-019); a shard node may.
 end note
 legend right
   Yellow <<pending>> / [pending …]: decided in the cited ADR,
