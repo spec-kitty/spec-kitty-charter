@@ -151,7 +151,10 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
 12. **Migration of today's binding.**
     - `review.step-contract.yaml`'s `gates[0]` becomes `ref: spec-kitty-pre-review` on the foundation work-package
       lifecycle's `in_progress -> for_review` transition.
-    - `handler_kind` maps to `implemented_by`, and `fail_open` to `on_indeterminate`. `provenance` is dropped,
+    - `handler_kind` maps to `implemented_by`. `fail_open` does not migrate as a flag: it is core's blanket swallow of
+      every fault (`NO_COVERAGE` for any exception, `CANCELLED` for an interrupt), which is the behaviour this record
+      ends. A guard that must keep tolerating one condition declares that condition: `on_indeterminate: pass` when it
+      cannot evaluate, or a guard that returns pass itself. `provenance` is dropped,
       because the pack gives the origin.
     - `gates` and `$defs.GateBinding` leave `mission-step-contract.schema.json`.
     - Core's `GATE_REGISTRY` becomes its table of built-in implementations, and core #2599 becomes the asset runner.
