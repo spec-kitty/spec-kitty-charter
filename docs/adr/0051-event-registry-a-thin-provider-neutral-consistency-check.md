@@ -85,11 +85,13 @@ The rulings are not re-opened here. This record adds the shape details and the c
    [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)). Within one compose a full
    identifier is unique.
 4. **Layout** (proposed): `event_registries/<id>.event-registry.yaml`, read at
-   `/packs/{packId}/artifacts/{kind}/{id}` and registered through the ordinary registration route
-   (`PUT /packs/{packId}/artifacts/{kind}/{id}`,
+   `/packs/{packId}/artifacts/{kind}/{id}` and registered through a per-kind registration route, as every
+   registrable kind has today (`PUT /packs/{packId}/artifacts/event_registry/{id}`,
    [ADR-0026](/adr/0026-write-surface-is-functional-registration/)), with the kind token `event_registry` in the path
    (the spelling is ADR-0050 open question 9). The operator token is `event-registry`. A registry is not a CRG node in
-   this cut: the load checks `emit` entries against it directly.
+   this cut: the load checks `emit` entries against it directly. The kernel gives every artifact kind a node kind, so
+   either `event_registry` gets one that no edge targets (as `asset` has) or that rule gains a stated exception; the
+   follow-ups list it.
 5. **Not activatable.** A registry is reference data, like an asset or a template. It is in force when its pack
    is loaded, and no preset lists it.
 
@@ -155,6 +157,8 @@ Nothing below is applied in this record.
 - **Pack schemas.** `event-registry.schema.json` and the kind binding (#114, ADR-0037); a `files` rule for
   `*.event-registry.yaml`; the `pack-manifest` constituent kind enum. The `emit` entry shape is defined once and
   used by the mission-type, lifecycle and step-enhancement schemas (ADR-0050).
+- **Kernel facts** (`ArtifactKind`, `NodeKind`): the node kind for `event_registry` that no edge targets, or the
+  stated exception to "every artifact kind has a node kind" (decision 4).
 - **Contract, additive** ([ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)): the kind's
   read and registration paths.
 - **Contract, breaking on a 0.x minor** (a `### Breaking` entry, ADR-0022): the new member of the closed `Artifact`

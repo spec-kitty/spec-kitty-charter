@@ -312,9 +312,13 @@ Nothing below is applied in this record; each lands in a later contract-family P
   `enhancements/`), the URN alternations of `graph-shard` and `org-fragment`, and the `pack-manifest` constituent
   kind enum.
 - **Open shapes.** A guard's `config` and a gate's `config_schema` are open maps, which sanitized-shape rule S4
-  refuses ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)). They need a stated S4
-  exemption, as `structural_lint_config` has, and the API carries them as canonical JSON text, as `Styleguide`
-  does.
+  refuses ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)). They need an S4
+  exemption, which no record states yet (`structural_lint_config` and `tooling` are classified as open maps only in
+  [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)'s comparison table). The API carries them as
+  canonical JSON text, as `Styleguide` does for `structuralLintConfig`.
+- **Retired-rule reasons.** After the `mission_types/` rename (decision 4 of this record, ADR-0048 decision 16), the
+  `retired` rules in `contracts/packs/file-kinds.yaml` that say the mission-type file "moved to
+  `missions/<id>/<id>.mission-type.yaml`" are reworded to name the new layout.
 - **Contract, additive** ([ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)): the new
   `lifecycle` and `gate` paths, and an embedded-lifecycle representation of the mission-type read.
 - **Contract, breaking on a 0.x minor** (a `### Breaking` entry, ADR-0022): new values in `NodeKind`, and, for
@@ -349,7 +353,9 @@ Recommended defaults the operator rules on. The decisions above use the default 
 9. **The `{kind}` path token spelling** (decision 3): the snake_case kind token (`mission_type`, `event_registry`,
    `anti_pattern`) everywhere, as the contract and `ArtifactKind.fromToken` accept today and as the closed
    `SelectableKind` and `ActivatableKind` enums spell it. Reading the notes' `mission-type` as that token costs
-   nothing; the hyphenated operator token would be a breaking change on every `{kind}` path and on `Artifact.kind`.
+   nothing; the hyphenated operator token would break `selections/{kind}`, `exclusions/{kind}` and the URN kinds, and
+   would split the token between those and the artifact paths. The artifact `{kind}` parameter is a slug
+   (`^[a-z0-9][a-z0-9_-]*$`), so it admits a hyphen.
 10. **Lower-impact items** (decisions 26 to 28): as stated there.
 11. **One `emit` spelling** (decision 16): the notes rule two spellings (the joined string or `{namespace, type}`),
     which sanitized-shape rule S6 refuses for stored files. Recommended: both are accepted when authored, and the

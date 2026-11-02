@@ -167,7 +167,7 @@ level from directory presence.
 **Composition** (proposed, [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
 what it builds on as `depends_on: [{pack_id, range}]`. Packs compose into a graph that may form diamonds: a shared
 dependency loads once, and the ranges on it must overlap. `parent_pack` stays lineage only. Specialist packs only
-add; two siblings that refine the same artifact are refused unless the distribution pack settles it. `built-in`
+add; two siblings that change the same artifact are refused unless the distribution pack settles it. `built-in`
 becomes a distribution pack with no artifacts of its own, over a slimmed foundation pack; stack packs are opt-in.
 Cross-pack references (an `emit`, a `rejects`, a step enhancement) resolve within the `depends_on` closure.
 

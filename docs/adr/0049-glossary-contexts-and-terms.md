@@ -51,13 +51,15 @@ note in its `decision_status` at acceptance:
   which gains `glossary` and `term`;
 - [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 2 (R12), where a glossary pack's terms are
   artifacts of kind `glossary`. Under this record the contexts are the artifacts and the terms are items inside
-  them. The `artifacts` path segment of the same decision is re-affirmed (decision 9).
+  them, and R12's `?kind=glossary` listing becomes a per-kind list read
+  (`GET /packs/{packId}/artifacts/glossary`, decision 7). The `artifacts` path segment of the same decision is re-affirmed (decision 9).
 
 ## Context
 
 - **Today's shape is core's.** `glossary_packs/<id>.glossary-pack.yaml` holds `{id, description, provenance,
   terms[]}`; a term is `{surface, definition, status, confidence, aliases?, see_also?, synonyms_to_avoid?,
-  introduced_in_mission?}`. The census of spec-kitty-open-packs (`1060bfc`) finds one built-in glossary,
+  introduced_in_mission?}`; the pack schema (`contracts/packs/schemas/glossary-pack.schema.json`) also allows
+  `banned_synonyms?`. The census of spec-kitty-open-packs (`1060bfc`) finds one built-in glossary,
   `spec-kitty-core`, with 129 terms (103 active, 12 draft, 14 deprecated; 12 carry `synonyms_to_avoid`), and
   glossaries in qa (19 terms), event-driven (13) and internal (11).
 - **A term has no address.** It is not a CRG node, so a mission type or step cannot link to the term it relies on
@@ -112,7 +114,8 @@ note in its `decision_status` at acceptance:
    [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decision 26).
 5. **Dropped:** `confidence` and `introduced_in_mission` (ruled), and `provenance` (not in the ruled shape; it
    is the pack's history, which the pack's own version and repository hold). `surface` becomes `name` and
-   `synonyms_to_avoid` becomes `avoid`.
+   `synonyms_to_avoid` becomes `avoid`. The glossary pack schema's `banned_synonyms` folds into `avoid` as well, so
+   `avoid` is the one source of banned vocabulary (decision 15 and the work breakdown's C3).
 6. **Layout** (proposed): `glossaries/<context-id>.glossary.yaml`. The migration turns each existing glossary pack
    into one context with the same id, by the service's own writer, then a re-pin (as ADR-0043 and ADR-0044 did).
 
