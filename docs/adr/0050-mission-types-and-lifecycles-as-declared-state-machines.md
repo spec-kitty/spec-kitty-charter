@@ -1,0 +1,382 @@
+---
+title: "ADR-0050: Mission types and lifecycles as declared state machines"
+description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
+doc_status: draft
+updated: 2026-11-02T00:00:00Z
+decision_status: 'Proposed'
+decision_date: '2026-11-02'
+type: ADR
+kind: ADR
+related:
+  - adr/0044-mission-types-consolidated-into-one-sanitized-shape
+  - adr/0020-offering-and-activations
+  - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0036-round-trip-fidelity-is-equality-of-meaning
+  - adr/0009-contract-1-0-reservations-and-additive-contract-sets
+  - plans/pack-ecosystem-work-breakdown
+  - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
+  - adr/0032-steps-name-roles-and-profile-selection-order
+  - adr/0019-packs-resource-model-and-hypermedia
+  - adr/0037-kind-keyed-pack-registry-and-whole-pack-seam
+  - architecture/logical-model
+  - plans/pack-ecosystem-design-notes
+audience:
+  - profile: pack-author
+    guidance_text: Read this for how a mission type declares its transitions, guards and actions, how a lifecycle is declared, and how another pack may enhance or replace a step.
+  - profile: charter-service-contributor
+    guidance_text: Read this before changing the mission-type schema, binding the lifecycle or gate kinds, or writing the enhances and overrides checks.
+  - profile: core-maintainer
+    guidance_text: Read this for what core runs from these declarations (the lane machine, guards, emits) and what the charter no longer special-cases.
+---
+
+# ADR-0050: Mission types and lifecycles as declared state machines
+
+## Status
+
+**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
+recorded in the [pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) (section 4, "Mission
+types", the responsibility split, the work-package lifecycle, "Mission type as a state machine", and
+section 7, gates and guards), on epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142) and
+its children [#148](https://github.com/spec-kitty/spec-kitty-charter/issues/148),
+[#155](https://github.com/spec-kitty/spec-kitty-charter/issues/155),
+[#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156),
+[#161](https://github.com/spec-kitty/spec-kitty-charter/issues/161) and
+[#164](https://github.com/spec-kitty/spec-kitty-charter/issues/164).
+
+If accepted, it **supersedes in part** [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)
+(Accepted): decision 4 ("the list order is the only order") becomes the default of an explicit transition list,
+and decision 5's directory `missions/` becomes `mission_types/`, with the step contracts moved into the bundle.
+Two narrower points of ADR-0044 change too. Decision 3's references gain two neighbours rather than new `type`
+values: a `terms` list of `term:` URNs (ADR-0049) and a `rejects` list of `{type: anti_pattern, id, reason}`
+([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)); like references, both are
+kept verbatim and mint no relationship until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)
+rules on edge authority. Gates and lifecycles are bound through `guard` and `work_package_lifecycle`, not through
+references. Decision 5's path rule and the `contracts/packs/file-kinds.yaml` rules anchored to `missions/` (the
+prompt and guidelines `files` rules, the README and hidden-file exclusions, the template payload rule) move to
+`mission_types/`, and decision 6 gains retired rules for the old `missions/` layout so a stale copy is refused rather
+than ignored. (Decision 6's `*/mission_types/*.yaml` rules match one path segment and do not catch the new bundle.)
+ADR-0044 decision 3 dropped qa's own `states` and `transitions` block as behavior "no pack can define"; this
+record gives that behavior a declared home. Every other ADR-0044 decision stands: the one sanitized file, the step
+shape, roles, companions and the other retired file families.
+
+Decision 6 below makes a mission type an ordinary activatable kind. That supersedes in part
+[ADR-0020](/adr/0020-offering-and-activations/): its amendment of 2026-10-31 (no deny list for mission types), its
+`missionTypes` rule "absent means none" (the ordinary rule is "absent means all", as the logical model's kind table
+already shows), and, if the operator takes the recommended default, the `mission_type` spelling of the
+`selections/{kind}` segment (open question 9). It also supersedes in part
+[ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) decision 2 for the separate
+domain slot (`Preset.missionTypes`, `requiredMissionTypes()`); the `activated_mission_types` key is already the
+ordinary `activated_<plural>` key and stays. Each superseded record gets its "superseded in part" note at
+acceptance.
+
+## Context
+
+- **ADR-0044 consolidated the mission type** into one sanitized file: an ordered `steps` list, `on_demand_steps`,
+  and per step a role, prompt and guidelines companions, expected input and output artifacts, and references.
+  The order of `steps` is the run order, and a non-linear order "is not expressible; when one is needed, a later
+  decision adds it" (ADR-0044 decision 4). This is that decision.
+- **Today's mission type is a linear machine with no actions.** Mapped onto a finite-state machine:
+
+  | FSM concept | Today (ADR-0044) |
+  |---|---|
+  | State | a `steps[]` item, plus the implicit start and terminal (Mission created, Mission completed) |
+  | Composite state | a step with a `mission_step_contract` (sub-steps) |
+  | Transition | implicit: list order, step *i* to *i + 1* |
+  | Guard | blocking `expected_input_artifacts` (entry) and blocking `expected_output_artifacts` (exit) |
+  | Triggering event | external: the runtime's `next` |
+  | Global transitions | `on_demand_steps`, reachable from any state by an explicit command |
+  | Branches, rework loops, parallel regions | not modelled; rework lives in core's hardcoded work-package lane machine |
+  | Actions (entry, exit, transition) | none |
+
+- **Rework is invisible.** A review rejection that sends work back to implementation is a back-edge no mission
+  type declares. It lives in core's work-package lane machine (`status_lanes`, `status/transitions.py`):
+  `planned -> claimed -> in_progress -> for_review -> in_review -> approved -> done`, plus `blocked` and
+  `canceled`, with guards, all hardcoded. Core's census (spec-kitty/spec-kitty `9aed3a8`) finds the edges and guards
+  in one authority, `specify_cli/status/wp_state.py` (`allowed_targets()`, `guard_for`), with
+  `status/transitions.py` a read-only projection of it. Its initial lane is `genesis`, which cannot be authored; its
+  terminal lanes are `done` and `canceled`. An operator `force` (an actor and a reason) bypasses the edge check and
+  the guards, except two refusals that cannot be forced. The lane names mirror `spec_kitty_events.status.Lane`.
+- **Core already binds gates to transitions, narrowly.** A step contract's `GateBinding{on_transition, handler,
+  fail_open}` resolves through a registry holding one handler (`in_progress -> for_review`), and every handler runs
+  fail-open.
+- **Extension means copying.** To add an org's static-analysis gate before review, a pack must replace the whole
+  mission type.
+- **Gates have no home.** #155 asks for a versioned gate-binding schema on steps, #156 for a `gate` kind.
+
+### Theoretical origins
+
+The design borrows from four established bodies of work. Each is cited so a pack author or contributor can look
+up the formal meaning of a term used here.
+
+- **Finite-state machines and transducers.** A machine has states, an input alphabet and a transition function.
+  In a *Mealy* machine output belongs to the transition; in a *Moore* machine it belongs to the state. Here
+  `on_transition` is Mealy-style and `on_enter` and `on_exit` are Moore-style.
+  [Finite-state machine](https://en.wikipedia.org/wiki/Finite-state_machine); G. H. Mealy, "A Method for
+  Synthesizing Sequential Circuits", *Bell System Technical Journal* 34(5), 1955,
+  [doi:10.1002/j.1538-7305.1955.tb03788.x](https://doi.org/10.1002/j.1538-7305.1955.tb03788.x); E. F. Moore,
+  "Gedanken-Experiments on Sequential Machines", *Automata Studies*, 1956.
+- **Harel statecharts.** Hierarchical states, guards on transitions, entry and exit actions, and parallel regions.
+  A step with step-contract sub-steps is a composite state; a step that runs a lifecycle per work package holds
+  a submachine state. D. Harel, "Statecharts: a visual formalism for complex systems", *Science of Computer
+  Programming* 8(3), 1987,
+  [doi:10.1016/0167-6423(87)90035-9](https://doi.org/10.1016/0167-6423(87)90035-9). Standardized as
+  [UML state machines](https://www.omg.org/spec/UML/2.5.1/) (OMG UML 2.5.1, clause 14) and as
+  [W3C SCXML](https://www.w3.org/TR/scxml/) (2015), whose `<transition event cond target>`, `<onentry>` and
+  `<onexit>` are the models for `transitions[].on`, `guard`, `to`, `on_enter` and `on_exit`.
+- **Workflow nets.** Petri nets applied to workflow: pre- and postconditions as places and tokens, parallel
+  branches with joins. A step's `expected_input_artifacts` and `expected_output_artifacts` are exactly this.
+  W. M. P. van der Aalst, "The application of Petri nets to workflow management", *Journal of Circuits, Systems
+  and Computers* 8(1), 1998, [doi:10.1142/S0218126698000043](https://doi.org/10.1142/S0218126698000043); the
+  [Workflow Patterns](http://www.workflowpatterns.com/) catalog (sequence, exclusive choice, parallel split
+  and join, arbitrary cycles).
+- **Design by Contract.** A step's inputs and outputs are its pre- and postconditions (ADR-0044 ruling Q2).
+  B. Meyer, "Applying Design by Contract", *IEEE Computer* 25(10), 1992,
+  [doi:10.1109/2.161279](https://doi.org/10.1109/2.161279).
+
+## Decision
+
+### Responsibility split (ruled)
+
+1. **The charter is the single source of truth for intent and declarations.** It owns the model of a state
+   machine (states, transitions, guards, events), its contracts and specifications, and the delivery of pack
+   assets, executable code included. Whether a declared action may name such code is open (decision 16).
+2. **Running, wiring and enforcing the machine is the client's concern** (today core's CLI). The charter service
+   does not run a machine and does not check that a client follows it. Every guard and action below is a
+   declaration the client evaluates or performs.
+
+### The kind, its layout and activation (M1, M2, M4; ruled)
+
+3. **`mission_type` is an artifact kind** inside a pack (as ADR-0044 decided for the service), read at
+   `/packs/{packId}/artifacts/{kind}/{id}`. The notes write this path with `mission-type`; the contract's `{kind}`
+   segment takes the snake_case kind token today (`ArtifactKind.fromToken`), so the spelling is open question 9.
+   The `artifacts` path segment stays
+   ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 2, re-affirmed by the operator).
+4. **A mission type is a bundle** (M1). `missions/` is renamed `mission_types/` in the named-packs split
+   ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)):
+
+   ```text
+   <pack>/mission_types/<type>/<type>.mission-type.yaml
+   <pack>/mission_types/<type>/steps/<step>.prompt.md
+   <pack>/mission_types/<type>/steps/<step>.guidelines.md
+   <pack>/mission_types/<type>/step_contracts/<id>.step-contract.yaml
+   <pack>/mission_types/<type>/templates/...
+   ```
+
+5. **`mission_step_contract` stays a kind** (M2); its files move into the type's bundle. The contract file name
+   above keeps today's file suffix if it differs; only the directory changes.
+6. **Activation** (M4). A mission type is the cascade source, and is otherwise an ordinary kind: presets, the
+   deny list and listing apply to it as to any kind. No kind token has a special path (core's
+   `CHARTER_KIND_TOKENS` mission-type path and `MissionTypeNotAnArtifactKind` go; DIV-501 closes).
+7. **The shipped types stay in the foundation pack.** Topical packs plug in through `scope` edges or step
+   enhancements (decision 22).
+
+### Explicit transitions (proposed direction, now formalized)
+
+8. **A step may carry `transitions`**: a list of `{to, on?, guard?, on_transition?}`.
+   - `to` names a step id of the same type, or the reserved terminal `end`.
+   - `on` names the triggering event, a free token the client interprets (`next` when absent).
+   - `guard` and `on_transition` are decisions 12 and 15.
+9. **Absent `transitions` means "to the next step in the list"**, and the last step goes to `end`. Every current
+   mission-type file stays valid, and the list order is syntactic sugar for a linear machine (ADR-0044 decision 4
+   becomes this default).
+10. **Explicit entries add branches and back-edges**, for example `review -> implement` on `changes_requested`.
+    When a step declares `transitions`, it declares all of its outgoing transitions; the implicit "next" is not
+    added beside them.
+11. **`end` is a reserved id**, refused as a step id. The start state is the first item of `steps`.
+    `on_demand_steps` stay global transitions reachable by explicit command; they declare no `transitions`, and
+    control returns to the state they were invoked from. Inter-step `depends_on` does not come back (ruled, the notes' open
+    question 7): explicit transitions plus per-work-package lifecycles cover today's parallel work. A parallel
+    region (fork and join) can be added when a mission type needs one.
+
+### Guards and the `gate` kind (the notes' section 7, ruled; gate shape proposed)
+
+12. **A guard is a named condition that must hold before a transition is taken.** Transitions carry their guards:
+    `guard: [{gate: <gate-id>, config?}]`, in mission types and lifecycles alike. The charter declares it; the
+    client evaluates it.
+13. **Blocking expected artifacts are the simplest built-in guard.** A blocking `expected_output_artifacts` entry
+    guards every transition out of its step, and a blocking `expected_input_artifacts` entry guards every
+    transition into it. Existing files keep their meaning unchanged.
+14. **`gate` is a declared kind** (#156; the notes' recommended default, pending ruling): `gates/<id>.gate.yaml` with
+    `schema_version`, `id`, `title`, `description`, `severity` on the shared `smell` / `severe` / `breaking`
+    ladder ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/); to align with
+    core's ladder, spec-kitty/spec-kitty#3416), and an optional `config_schema` (a JSON Schema the `config` of a
+    guard entry is checked against at load, #164 Q3). #155's versioned gate-binding schema becomes the `guard`
+    field and closes into it.
+
+### Actions (proposed direction, now formalized)
+
+15. **Three action points.** A step (and a lifecycle state) may carry `on_enter` and `on_exit` (Moore-style), and a
+    transition may carry `on_transition` (Mealy-style).
+16. **An action only emits.** Each action point is `{emit: [<event>]}`, where `<event>` names an event type as the
+    joined string or as `{namespace, type}`, resolved against an event registry in the pack's `depends_on`
+    closure ([ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/)). The client sends
+    the events, fills their payload, and anyone may subscribe (an org's review cluster, for example). An action
+    that names a code asset for the client to run is not in this cut (the notes' question 10; open question 3 below); it would need
+    the trust work of #157.
+
+### The `lifecycle` kind (ruled: option a)
+
+17. **A lifecycle is its own declared, reusable state machine in a pack**, kind `lifecycle`, at
+    `lifecycles/<id>.lifecycle.yaml` (proposed), read at `/packs/{packId}/artifacts/lifecycle/{id}`. Proposed
+    shape:
+    - `schema_version`, `id`, `title`, `description`;
+    - `initial`: a state id;
+    - `states[]`: `{id, title, description?, terminal?, on_enter?, on_exit?}`;
+    - `transitions[]`: `{from, to, on?, guard?, on_transition?}`, where `from` may be a list of states or `"*"`
+      for a transition allowed from every non-terminal state (core's `blocked` and `canceled`).
+18. **A mission type references a lifecycle from the steps that work on work packages**, with
+    `work_package_lifecycle: <lifecycle-id>` on the step (proposed field name). In statechart terms the step holds a
+    submachine state, instantiated once per work package. One lifecycle can serve several types, and a type may
+    pick a lighter one. The step's exit guard may require every instance to be in a terminal state.
+19. **Storage and reads are separate concerns.** Storage keeps the mission type and the lifecycle as separate
+    artifacts linked by reference. A read may aggregate them (a mission-type read with its lifecycle embedded) to
+    keep callers simple; the service architecture allows such CQRS-style splits. The shipped work-package
+    lifecycle is core's lane machine as a pack artifact in the foundation pack, authored from `wp_state.py`'s edge
+    and guard tables (`initial: genesis`; terminal `done` and `canceled`; ten guards such as `subtasks_complete` and
+    `reviewer_approval`, each a declared gate). Core keeps executing it.
+20. **Forcing a transition stays the client's mechanism.** A lifecycle declares the machine, not its bypass. Core's
+    `force` rules, including the two refusals that cannot be forced, stay in core in this cut; declaring them is open
+    question 6 below.
+21. **The lane names are shared with the events provider.** While core's status events carry lane names, a
+    lifecycle whose states differ from `spec_kitty_events.status.Lane` cannot be used by core without a change on
+    that side. The charter does not check this (decision 2); the shipped lifecycle uses the lane names as they are.
+
+### Extension from another pack (M3, ruled)
+
+22. **`enhances` extends a step without copying it.** This is the M3 ruling's add-only step enhancement, a
+    mechanism of its own: the CRG's `enhances` relation keeps its field-merge meaning for the other kinds
+    (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
+    references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
+    An enhancement only adds. It cannot remove or reorder steps, change their transitions, or remove a guard.
+23. **How an enhancement is authored** (proposed): a step-enhancement file in the enhancing pack,
+    `mission_types/<type>/enhancements/<id>.step-enhancement.yaml`, with `target: action:<type>/<step>` and the
+    additions. The target's pack must be in the enhancing pack's `depends_on` closure. As ADR-0048 decision 9
+    stands, two sibling packs that both enhance or override one step are refused unless the distribution pack
+    settles it. Because a step enhancement only adds, letting sibling enhancements compose (a union, independent
+    of load order) is recommended; it needs an operator ruling on ADR-0048 decision 9 (open question 7).
+24. **`overrides` replaces a step or a whole type**: whole replacement, with a drift warning when the replaced
+    original changes (#164 D2). Only an override may remove a guard or change a transition.
+25. **A new workflow is a new mission type**, not an enhancement.
+
+### Lower-impact items (recommended defaults from the notes, pending ruling)
+
+26. **Requirement kinds** (#164): core #5956 D1 to D5 are written into the mission-type schema. Mission types and
+    steps link vocabulary through `term:` URNs
+    ([ADR-0049](/adr/0049-glossary-contexts-and-terms/); #164 D1/Q5).
+27. **#161** (`mission.yaml` and `mission-runtime.yaml` in a non-built-in tier) is moot under ADR-0044's single
+    file; the default is to confirm and close it.
+28. **#153** (mission-instance addendum layer): the default is to park it and close it as not planned until a need
+    shows.
+
+## Consequences
+
+### Positive
+
+- Branches, rework loops and per-work-package lanes are declared, so a pack can describe a non-linear workflow,
+  and core's lane machine becomes data.
+- An org adds a gate or an event to an existing step without copying the mission type.
+- Every current mission-type file stays valid: the linear default is the old meaning.
+
+### Negative
+
+- The mission-type schema grows (transitions, guards, actions, the lifecycle reference), and two kinds
+  (`lifecycle`, `gate`) and one file family (step enhancements) are added.
+- The charter declares guards it never evaluates; a client that ignores them is not caught by the service.
+
+### Risks
+
+- Moving `missions/` to `mission_types/` changes ADR-0044's fixed path rule and the payload rule
+  `*/missions/*/templates/**/*`; a template left under an unmatched path is unclassified and silently dropped, so
+  the rename must land with the file-kinds change and the split, in one re-pin.
+- A step enhancement is a new authoring surface; if it grows fields beyond "add", it becomes a hidden override.
+  The schema keeps it closed to the additions in decision 22.
+
+### Follow-ups
+
+Nothing below is applied in this record; each lands in a later contract-family PR.
+
+- **Pack schemas** (#114): `mission-type.schema.json` gains `transitions`, `on_enter`, `on_exit`,
+  `work_package_lifecycle`, `terms`, `rejects` and the requirement kinds; new `lifecycle.schema.json`,
+  `gate.schema.json` and `step-enhancement.schema.json`. `mission-step-contract.schema.json` loses `gates` and
+  `$defs.GateBinding` (whose `on_transition` is a lane string, a second meaning of the name this record gives an
+  action point); an existing binding migrates to a `guard` on the matching lifecycle transition. The vocabulary
+  sites gain `lifecycle` and `gate`: `file-kinds.yaml` node, artifact and fragment kind lists and new `files` rules
+  (`*.lifecycle.yaml`, `*.gate.yaml`, `*.step-enhancement.yaml`, hidden-file exclusions for `step_contracts/` and
+  `enhancements/`), the URN alternations of `graph-shard` and `org-fragment`, and the `pack-manifest` constituent
+  kind enum.
+- **Open shapes.** A guard's `config` and a gate's `config_schema` are open maps, which sanitized-shape rule S4
+  refuses ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/)). They need a stated S4
+  exemption, as `structural_lint_config` has, and the API carries them as canonical JSON text, as `Styleguide`
+  does.
+- **Contract, additive** ([ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)): the new
+  `lifecycle` and `gate` paths, and an embedded-lifecycle representation of the mission-type read.
+- **Contract, breaking on a 0.x minor** (a `### Breaking` entry, ADR-0022): new values in `NodeKind`, and, for
+  activatable kinds, `ActivatableKind`, `SelectableKind`, `CascadeKind`, `SelectedArtifacts` and
+  `DeactivatedArtifacts`; new members of the closed `Artifact` `oneOf`; new per-kind not-found and compose-refusal
+  codes. Making `mission_type` ordinary also changes `ActivationConfig.missionTypes` (absent today means none; an
+  ordinary kind's absent means all, or `missionTypes` retires for `selected.mission_type`), adds
+  `DeactivatedArtifacts.mission_type`, and adds `mission_types` to the preset's `activated_kinds`.
+- **Kind facts** ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), `ArtifactKind`): recommended,
+  `lifecycle` and `gate` are not activatable on their own (a mission type that references them brings them into
+  force), not org-requirable and not selection-overlayable; the logical model's kind table records the facts at
+  acceptance. Java paths that hardcode `missions/` (`PackFileSet`, `MissionTypeBinding`, `TemplateBinding`) follow
+  the rename.
+- **spec-kitty-open-packs**: the `missions/` to `mission_types/` move, the step contracts into the bundles, and the
+  work-package lifecycle authored from core's lane table.
+- **Core** (post-cutover): run the declared lifecycle instead of `status/transitions.py`, evaluate declared guards,
+  send declared emits, and drop the mission-type special path.
+
+## Open questions
+
+Recommended defaults the operator rules on. The decisions above use the default until then.
+
+1. **Terminal state name** (decision 11): reserved `end`.
+2. **The `gate` kind and its shape** (decision 14): a declared kind with severity and `config_schema`, as above.
+3. **Action code assets** (decision 16, the notes' question 10): not in the first cut; actions emit only.
+4. **Lifecycle file layout and shape** (decision 17): as above.
+5. **Lifecycle reference** (decision 18): `work_package_lifecycle` on the step.
+6. **Declaring `force`** (decision 20): not in this cut; core keeps its rules.
+7. **Sibling step enhancements** (decision 23): let add-only enhancements compose, narrowing ADR-0048 decision 9
+   to `overrides` for steps.
+8. **How an enhancement is authored** (decision 23): a step-enhancement file in the type's bundle path.
+9. **The `{kind}` path token spelling** (decision 3): the snake_case kind token (`mission_type`, `event_registry`,
+   `anti_pattern`) everywhere, as the contract and `ArtifactKind.fromToken` accept today and as the closed
+   `SelectableKind` and `ActivatableKind` enums spell it. Reading the notes' `mission-type` as that token costs
+   nothing; the hyphenated operator token would be a breaking change on every `{kind}` path and on `Artifact.kind`.
+10. **Lower-impact items** (decisions 26 to 28): as stated there.
+11. **One `emit` spelling** (decision 16): the notes rule two spellings (the joined string or `{namespace, type}`),
+    which sanitized-shape rule S6 refuses for stored files. Recommended: both are accepted when authored, and the
+    service's writer stores `{namespace, type}`, a change of form that keeps the meaning
+    ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)).
+
+## Alternatives considered
+
+### Keep the list order as the only order (ADR-0044 as is)
+
+Rejected. Rework loops and work-package lanes stay hardcoded in core, and inserting a step means replacing the
+whole type.
+
+### Inter-step `depends_on` (a DAG, as core's runtime `PromptStep` had)
+
+Rejected for now (the notes' question 7, ruled). A DAG expresses order and parallelism but not branches, guards or
+back-edges; explicit transitions do, and parallel work per work package is the lifecycle's.
+
+### The work-package lifecycle inside the mission type (option b) or left in core (option c)
+
+Rejected by the operator in favour of option a: a separate kind can be reused by several types and swapped for a
+lighter one.
+
+### Actions that run pack code
+
+Not in this cut (the notes' question 10; open question 3). Emitting events keeps the charter declarative and needs no trust model.
+
+## References
+
+- [Pack ecosystem design notes](/plans/pack-ecosystem-design-notes/), sections 4 and 7.
+- Epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142); #148, #155, #156, #161, #164, #153;
+  #157 (trust for delivered code).
+- Core: spec-kitty/spec-kitty#3416 (severity ladder), #5956 (requirement kinds), `status/transitions.py`.
+- The theory references are in "Theoretical origins" above.
