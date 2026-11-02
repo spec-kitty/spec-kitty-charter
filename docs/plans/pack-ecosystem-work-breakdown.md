@@ -180,6 +180,7 @@ The defaults the ADRs plan with until the operator rules. Each is restated in it
 | What a "compose" is | one `depends_on` closure at one level; ids unique within it, except an explicit `overrides` | ADR-0048 open question 6 |
 | An undeclared `pack_level` | the level rule reads the configured level; `pack_level` becomes required | ADR-0048 open question 7 |
 | The foundation pack's id | `foundation` | ADR-0048 open question 8 |
+| What an empty active charter means | revisit at acceptance; until then it keeps ADR-0020 decision 6 | ADR-0048 open question 9 |
 
 The notes write the read path as `/packs/{packId}/artifacts/mission-type/{id}`. The contract's `{kind}` segment
 takes the snake_case kind token (`ArtifactKind.fromToken`), and the closed `SelectableKind` and `ActivatableKind`
