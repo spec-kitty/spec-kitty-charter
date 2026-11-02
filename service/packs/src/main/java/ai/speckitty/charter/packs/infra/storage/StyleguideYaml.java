@@ -6,7 +6,7 @@ import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.packs.domain.ConfigValue;
+import ai.speckitty.charter.kernel.domain.ConfigValue;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -2,7 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.packs.domain.ConfigValue;
+import ai.speckitty.charter.kernel.domain.ConfigValue;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.util.LinkedHashMap;
 import java.util.List;
