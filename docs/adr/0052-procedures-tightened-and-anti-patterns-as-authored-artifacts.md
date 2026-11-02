@@ -135,6 +135,7 @@ this record; the original text stands and each changed point is annotated:
    | `severity` | yes | `smell`, `severe` or `breaking` |
    | `bad_example` | no | string |
    | `good_example` | no | string |
+
    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 30): `bad_example` is required; `good_example` stays optional.*
 
 9. **References.** Guidance rejects an anti-pattern with a `rejects` reference `{type: anti_pattern, id, reason}`,

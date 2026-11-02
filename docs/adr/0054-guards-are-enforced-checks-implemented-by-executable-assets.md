@@ -1,7 +1,7 @@
 ---
 title: "ADR-0054: Guards are enforced checks implemented by executable assets"
 description: "Transitions name guard artifacts, each implemented_by an executable asset or a closed built-in, run to a fixed interface and failing closed; replaces the gate kind."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-02'
@@ -124,7 +124,8 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    `implemented_by: builtin:<id>`. The `builtin:` ids are a closed list, versioned with the contract; the client's
    own code implements them, and a client refuses an id it does not know. Blocking expected artifacts stay the
    structural guard of ADR-0050 decision 13, with no artifact.
-7. **Guards fail closed.** A guard that could not be evaluated blocks its transition (with `blocking: true`). That
+7. **Guards fail closed.** A guard that could not be evaluated blocks its transition when the entry has `blocking: true`; with `blocking: false` the
+   result is reported and the transition proceeds. That
    covers exit 2, a timeout, a missing runtime, and an asset whose trust cannot be verified under the policy of
    [#157](https://github.com/spec-kitty/spec-kitty-charter/issues/157). The client's `force` (ADR-0050 decision 20)
    is the only bypass. Until #157 lands, asset-backed guards run only from packs the project explicitly trusts; a

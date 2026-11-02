@@ -3,7 +3,7 @@ title: "ADR-0033: The project's local activation file is the source of truth for
 description: Local activation.yaml is written through to the service, wins visibly on a cold-start divergence, names pack ids and versions; upgrades are opt-in per project.
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted; decision 6 superseded in part by ADR-0048 (2026-11-02)
+decision_status: 'Accepted; decision 6 superseded in part by ADR-0048 (2026-11-02); decision 5 amended by ADR-0053 (2026-11-02)'
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
@@ -28,6 +28,10 @@ audience:
 **Accepted** — 2026-10-26. Decider: Stijn Dejongh (operator), concept session of 2026-10-26
 ("Where the active charter lives", "One active charter, resolved per activation context" and
 "Upgrades" in the [conceptual model working notes](/context/conceptual-model/)).
+
+*Amendment 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10): after
+the named-packs split, an empty active charter puts nothing in force; "empty means defaults" in decision 5 no longer
+holds. This is a breaking change.*
 
 Supersedes in part:
 

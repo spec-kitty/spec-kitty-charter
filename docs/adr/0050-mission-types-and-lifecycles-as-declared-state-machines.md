@@ -276,7 +276,7 @@ up the formal meaning of a term used here.
     stands, two sibling packs that both enhance or override one step are refused unless the distribution pack
     settles it. Because a step enhancement only adds, letting sibling enhancements compose (a union, independent
     of load order) is recommended; it needs an operator ruling on ADR-0048 decision 9 (open question 7).
-    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): a step enhancement is an artifact in the enhancing pack holding only the additions, plus a CRG `enhances` edge to `<pack>::action:<type>/<step>`, the mechanism profile augmentation uses; add-only for steps. Sibling enhancements are refused unless settled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).*
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): a step enhancement is an artifact in the enhancing pack holding only the additions, plus a CRG `enhances` edge to `action:<type>/<step>` (pack-qualified as `<pack>::action:<type>/<step>` when the step is in another pack, ADR-0053 decision 7), the mechanism profile augmentation uses; add-only for steps. Sibling enhancements are refused unless settled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).*
 24. **`overrides` replaces a step or a whole type**: whole replacement, with a drift warning when the replaced
     original changes (#164 D2). Only an override may remove a guard or change a transition.
 25. **A new workflow is a new mission type**, not an enhancement.
