@@ -1,0 +1,81 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-02T19:15:44.409800Z",
+      "decision_id": "01M6EV0R4SHXB96AP33N7ZMDAY",
+      "final_answer": "Redraw the existing diagrams to the decided design, replacing today's picture",
+      "input_key": "diagram_state",
+      "mission_id": "01M6EV093RA1C88PG0DSQPXAQK",
+      "mission_slug": "docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09",
+      "opened_by": "cli",
+      "options": [
+        "Keep the current-state diagrams and add separate decided-design diagrams beside them",
+        "Redraw the existing diagrams to the decided design, replacing today's picture",
+        "One diagram set that draws today plus the decided changes marked as not built yet",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "The architecture pages and their diagrams describe what the code does today, and none of ADR-0048 to ADR-0052 is built yet. How should the diagrams reflect the accepted design?",
+      "rationale": null,
+      "resolved_at": "2026-11-02T19:23:30.922470Z",
+      "resolved_by": null,
+      "slot_key": "specify.diagrams.state",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-02T19:23:32.139865Z",
+      "decision_id": "01M6EVF0XBYJRQR1EQTZJG3HTW",
+      "final_answer": "OpenAPI reference pages for the charter contract and Schematic pages for the pack schemas",
+      "input_key": "toolkit_feature_adoption",
+      "mission_id": "01M6EV093RA1C88PG0DSQPXAQK",
+      "mission_slug": "docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09",
+      "opened_by": "cli",
+      "options": [
+        "OpenAPI reference pages for the charter contract and Schematic pages for the pack schemas",
+        "OpenAPI reference pages only",
+        "Schematic pages only",
+        "Version bump only; adopt features later",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which DocKitty 0.6.0 capabilities should the docsite adopt in this mission beyond the version bump?",
+      "rationale": null,
+      "resolved_at": "2026-11-02T19:32:33.116256Z",
+      "resolved_by": null,
+      "slot_key": "specify.toolkit.adoption",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-02T19:32:39.975260Z",
+      "decision_id": "01M6EVZQX7RRC4CM27JG3ZD2JX",
+      "final_answer": "Switch to build-time rendering with the pinned PlantUML service",
+      "input_key": "schematic_diagram_rendering",
+      "mission_id": "01M6EV093RA1C88PG0DSQPXAQK",
+      "mission_slug": "docsite-upgrade-and-pack-ecosystem-diagrams-01M6EV09",
+      "opened_by": "cli",
+      "options": [
+        "Keep browser rendering; Schematic pages without the diagram",
+        "Switch to build-time rendering with the pinned PlantUML service",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Schematic pages only draw their schema diagram when the docsite renders diagrams at build time against a PlantUML service; the docsite renders in the browser today, so the diagram section is left out. Should the docsite switch to build-time rendering?",
+      "rationale": null,
+      "resolved_at": "2026-11-02T19:33:23.953630Z",
+      "resolved_by": null,
+      "slot_key": "specify.toolkit.schematic-diagrams",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6EV093RA1C88PG0DSQPXAQK",
+  "version": 1
+}
