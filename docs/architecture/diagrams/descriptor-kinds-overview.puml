@@ -19,10 +19,11 @@ package "Charter Pack (pack.yaml)" as pack {
     name
     pack_level : PackTier <color:#8A6D00>[pending ADR-0048 OQ7: required?]</color>
     parent_pack : ref? [lineage only]
-    depends_on : {pack_id, range}[] <color:#8A6D00>[pending ADR-0048 OQ4, OQ6]</color>
+    depends_on : {pack_id, range}[] <color:#8A6D00>[pending ADR-0048 OQ4]</color>
     active_charter : path?
     pack_drg : path?
   }
+  entity "PackDescriptor\n(the parent pack)" as PDP <<authored>>
   entity "PackManifest" as PM <<generated>>
   entity "DRG fragment\n(*.graph.yaml | drg/fragment.yaml)" as FRAG {
     schema_version = "1.0"
@@ -45,10 +46,11 @@ package "Descriptor kinds (one YAML file per artifact)" as kinds {
   entity AgentProfile
   entity MissionStepContract
   entity MissionType <<ordinary kind>> {
-    transitions, guards, actions
+    steps (transitions, guards, actions)
   }
   entity Lifecycle {
     states, transitions, guards
+    <color:#8A6D00>[pending ADR-0050 OQ4]</color>
   }
   entity "Glossary\n(a context)" as Glossary {
     glossary:<id> <color:#8A6D00>[pending ADR-0049 OQ3]</color>
@@ -81,7 +83,7 @@ PD "1" *-- "0..1" FRAG : pack_drg
 PD "1" *-- "0..1" OC : active_charter
 PD "1" o-- "*" kinds : ships
 PD "*" --> "*" PD : depends_on\n(versioned range)\n<color:#8A6D00>[pending ADR-0048 OQ4, OQ6]</color>
-PD ..> PD : parent_pack\n(lineage only)
+PD ..> PDP : parent_pack\n(lineage only)
 FRAG ..> kinds : DRGNode.urn = kind:id
 OC ..> kinds : requires (org_requirable kinds)
 GC ..> kinds : selects (selected_* per activatable kind)
@@ -89,7 +91,7 @@ OC ..> GC : required ids union into selected_*
 
 ' Containment inside a mission type's bundle, and links between kinds
 MissionType "1" o-- "*" MissionStepContract : bundle (step_contracts/)
-MissionType ..> Lifecycle : work_package_lifecycle\n<color:#8A6D00>[pending ADR-0050 OQ5]</color>
+MissionType ..> Lifecycle : work_package_lifecycle\n(on a step)\n<color:#8A6D00>[pending ADR-0050 OQ5]</color>
 MissionType ..> Gate : guard {gate, config}
 Lifecycle ..> Gate : guard {gate, config}
 MissionType ..> EventRegistry : emit resolves against\n(the depends_on closure)

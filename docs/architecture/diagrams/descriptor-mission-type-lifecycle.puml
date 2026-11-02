@@ -21,10 +21,10 @@ class MissionType <<mission_type kind>> {
   requirement kinds written into the schema (d26) <color:#8A6D00>[pending ADR-0050 OQ10]</color>
 }
 class Step {
-  + id : string  (never `end`; d11)
+  + id : string  (never `end`; d11) <color:#8A6D00>[pending ADR-0050 OQ1]</color>
   - role, prompt, guidelines, expected_input_artifacts, ...  (ADR-0044, unchanged)
   - mission_step_contract : ref  (a composite state)
-  - transitions : Transition[]  (absent = to the next step; the last goes to end; d9)
+  - transitions : Transition[]  (absent = to the next step; the last goes to end; d9) <color:#8A6D00>[pending ADR-0050 OQ1]</color>
   - on_enter : ActionPoint  (Moore-style; d15)
   - on_exit : ActionPoint  (Moore-style; d15)
   - work_package_lifecycle : lifecycle-id <color:#8A6D00>[pending ADR-0050 OQ5: field name]</color>
@@ -32,7 +32,7 @@ class Step {
   - rejects : RejectsRef[]  (ADR-0052 d9)
 }
 class Transition {
-  + to : step-id | end
+  + to : step-id | end <color:#8A6D00>[pending ADR-0050 OQ1]</color>
   - on : string = next  (a free token the client interprets; d8)
   - guard : GuardEntry[]  (d12)
   - on_transition : ActionPoint  (Mealy-style; d15)
@@ -43,7 +43,7 @@ class "end" as End <<pending>> {
 }
 class GuardEntry {
   + gate : gate-id
-  - config : open map  (checked against the gate's config_schema at load)
+  - config : open map  (checked against the gate's config_schema at load) <color:#8A6D00>[pending ADR-0050 OQ2]</color>
 }
 class ActionPoint {
   - emit : EventRef[]  (an action only emits; d16) <color:#8A6D00>[pending ADR-0050 OQ11, ADR-0051 OQ4: one spelling]</color>
@@ -56,7 +56,7 @@ class EventRef {
   + type : string
   <color:#8A6D00>[pending ADR-0050 OQ11: the writer stores {namespace, type}]</color>
 }
-class EventRegistry <<pending>> {
+class EventRegistry {
   entries : {namespace, type, name}[1..]  (ADR-0051 d2)
   holds event types only; not activatable <color:#8A6D00>[pending ADR-0051 OQ1]</color>
   namespace overlap is refused <color:#8A6D00>[pending ADR-0051 OQ2]</color>
@@ -90,13 +90,13 @@ class Term <<node-only URN; ADR-0049 d4>> {
 MissionType *-- "1..*" Step : steps
 Step *-- "0..*" Transition : transitions
 Transition ..> Step : to
-Transition ..> End : to (terminal)
+Transition ..> End : to (terminal) <color:#8A6D00>[pending ADR-0050 OQ1]</color>
 Step *-- "0..2" ActionPoint : on_enter, on_exit
 Transition *-- "0..1" ActionPoint : on_transition
 Transition *-- "*" GuardEntry : guard
 GuardEntry ..> Gate : gate <color:#8A6D00>[pending ADR-0050 OQ2]</color>
 ActionPoint *-- "*" EventRef : emit
-EventRef ..> EventRegistry : must resolve in the declaring pack or its\ndepends_on closure (ADR-0051 d9) <color:#8A6D00>[pending ADR-0048 OQ6: closure]</color>
+EventRef ..> EventRegistry : must resolve in the declaring pack or its\ndepends_on closure (ADR-0051 d9)
 Step ..> Lifecycle : work_package_lifecycle,\none instance per work package (d18)\n<color:#8A6D00>[pending ADR-0050 OQ4, OQ5]</color>
 Lifecycle ..> Gate : guard {gate, config}
 Lifecycle ..> EventRegistry : emit resolves
@@ -110,12 +110,13 @@ note bottom of Step
   `overrides` replaces a step or a whole type; only an override may remove a guard
   or change a transition (d24). A new workflow is a new mission type (d25).
   Inter-step depends_on does not come back (d11).
+  A mission type's and a step's terms and rejects stay verbatim until #189 (ADR-0050 Status, ADR-0052 d9).
 end note
 note bottom of Transition
   Example (illustration only): specify -> plan -> implement -> review.
   implement has no transitions, so it goes to the next step.
   review declares all its outgoing transitions:
-    {to: end, on: next}, {to: implement, on: changes_requested}
+    {to: end, on: next} <color:#8A6D00>[pending ADR-0050 OQ1]</color>, {to: implement, on: changes_requested}
   A step that declares transitions gets no implicit next (d10).
 end note
 legend right
