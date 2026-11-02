@@ -189,6 +189,8 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends python3-venv
           python3 -m venv "$RUNNER_TEMP/docs-venv"
       - name: Wait for the PlantUML server
+        # A hard dependency even though no doc page renders PlantUML today: the 23 schema pages each carry a
+        # Schematic diagram that DocKitty builds from the schema and renders through this service.
         run: |
           for i in $(seq 1 30); do
             if [ "$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' http://plantuml:8080/svg/)" = 200 ]; then echo "PlantUML ready"; exit 0; fi
