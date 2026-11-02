@@ -12,7 +12,13 @@ related:
   - adr/0015-charter-repository-is-canonical-for-charter-structure
   - adr/0017-pack-schemas-imported-as-canonical-json-schema
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
+  - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
   - architecture/logical-model
+  - plans/pack-ecosystem-design-notes
+  - plans/pack-ecosystem-work-breakdown
 audience:
   - profile: pack-author
     guidance_text: Read this for how a pack declares what it builds on, how versions are checked, and what a specialist pack may and may not change in the packs below it.
@@ -36,6 +42,17 @@ on [#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145),
 before an architectural, planning and debrief pass. That pass may refine the consequences and the
 open questions, but not the decisions, without a new operator ruling.
 
+**Refined 2026-11-02** by that pass. No ruled decision changes. Decision 16 adds the ruled `missions/` to
+`mission_types/` rename (the notes' section 4, M1), which rides on the split
+([ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/)). The pass also adds the census of
+spec-kitty-open-packs at `1060bfc`, the contract consequences, and a recommended default for
+each open question. The other rulings of the same session are formalized in
+[ADR-0049](/adr/0049-glossary-contexts-and-terms/) (glossaries),
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) (mission types and lifecycles),
+[ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) (the event registry) and
+[ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) (procedures and
+anti-patterns).
+
 ## Context
 
 - **Identity is per pack.** A pack descriptor carries `pack_id` (a ULID), `pack_version` (a semantic
@@ -48,13 +65,17 @@ open questions, but not the decisions, without a new operator ruling.
 - **`built-in` is one pack** (`pack_id 01ARWG13C000000000000000FG`) holding about 420 files, split by
   kind into subdirectories: four Mission types, 27 agent profiles, 121 tactics, 39 directives, 37
   toolguides, 26 styleguides, 22 procedures, 14 paradigms and two presets (spec-kitty-open-packs
-  `a45afcf`).
+  `a45afcf`, the count at the time of the ruling; the formalization census below is current).
 - **`built-in` is too exhaustive.** It ships stack-specific content to every consumer, for example
   `java-conventions`, `maven-review-checks`, `drupal-conventions` and `python-review-checks`.
 - **Standalone packs already exist.** spec-kitty-open-packs already publishes `qa`, `event-driven` and
   `cave-kitty` as top-level packs beside `built-in`.
-- **A retired field.** The retired `accompanies_doctrine_pack` field (core ADR `2026-10-06-2`,
-  ADR-0042) no longer applies. There is no separate companion pack.
+- **A retired field.** The retired companion-pack field (core ADR `2026-10-06-2`, ADR-0042) no longer
+  applies. There is no separate companion pack.
+- **The census at `1060bfc`** (the formalization pass) counts 26 agent profiles, 39 directives, 14 paradigms,
+  22 procedures, 25 styleguides, 121 tactics, 18 toolguides, 4 mission types with 21 step contracts, one glossary of
+  129 terms, 6 assets, 2 templates and 2 presets in `built-in`. `internal` is a fifth top-level pack beside `qa`,
+  `event-driven` and `cave-kitty`.
 
 ## Decision
 
@@ -109,13 +130,15 @@ open questions, but not the decisions, without a new operator ruling.
 15. **Member packs are roots.** A member of `built-in` carries `parent_pack: null`; the distribution
     pack depends on it and does not derive it. An org pack that refines the built-in distribution names
     `built-in` as its parent.
-16. **Members version separately but release together.** Each member has its own `pack_version`.
+16. **The split renames `missions/` to `mission_types/`** in every member that holds a mission type, and moves
+    the step contracts into the type's bundle (ADR-0050 decisions 4 and 5). Both moves land in the split's re-pin.
+17. **Members version separately but release together.** Each member has its own `pack_version`.
     Until a need arises they are released in lockstep, and `built-in` pins its members' exact
     versions.
 
 ### Activation (S6, scope limit)
 
-17. **No whole-pack deactivation in this decision.** Every member of the distribution is loaded.
+18. **No whole-pack deactivation in this decision.** Every member of the distribution is loaded.
     Activation stays per artifact, through presets and the cascade by Mission type. Switching off a
     whole pack would be a new activation concept and needs its own ADR.
 
@@ -123,6 +146,17 @@ open questions, but not the decisions, without a new operator ruling.
 
 - **Schemas.** `depends_on` and the compose refusals go into the canonical pack schemas (#114). The
   reads they change reach the API only through an additive contract set (ADR-0009).
+- **Contract** (found by the formalization pass; none applied here). `pack-descriptor.schema.json` gains
+  `depends_on` with a closed item `{pack_id, range}`, and `pack_id` and `parent_pack` gain a ULID pattern. Three
+  contract shapes meet the decisions and change on a 0.x minor, with a `### Breaking` entry (ADR-0022):
+  `ActivationConfig.packs` says "a later pack wins over an earlier one", which decision 9 rules out for siblings;
+  `PackPin` pins one exact `version` under a lowercase `Slug` `packId`, which holds neither a range nor a ULID;
+  and the closed `OfferingPack` list has no place for members pulled in through `depends_on`. The new compose
+  refusal codes (cycle, unknown dependency, range, sibling conflict) are breaking as well (ADR-0009).
+- **Undeclared level.** `pack_level` is optional in the descriptor: an absent level is the `pack_level_missing`
+  diagnostic and the level the pack is configured at is used
+  ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)). The level rule (decision 7) has to say
+  which level it reads (open question 7).
 - **Charter service.** It needs a resolver for the dependency graph (ordering, cycle check, range
   check, deduplication by `pack_id`), the `parent_pack` existence and level checks, and the
   sibling-override refusal. ADR-0012's mutability policy still applies per pack.
@@ -138,23 +172,49 @@ open questions, but not the decisions, without a new operator ruling.
   Nothing is dropped silently.
 - **Curation.** Slimming the foundation pack is a content decision per artifact. It is done from a
   census and ruled by the operator, not inferred.
+- **Event registries, anti-patterns and step enhancements across packs** all resolve through the same
+  `depends_on` closure ([ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/),
+  [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/),
+  [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/)).
 - **Ordering of work.** The dependency graph lands first, behind a compatibility shim that keeps
   today's single `built-in` tree loading unchanged (#145's risk note). The split follows.
 
 ## Open questions
 
-These are for the architectural, planning and debrief pass. Each needs an operator ruling.
+Each needs an operator ruling. The formalization pass recommends a default for each; until ruled, the
+[work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the default.
 
 1. **Tier of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
-   `org`, or should the order gain a tier for them?
+   `org`, or should the order gain a tier for them? *Recommended:* `org`. The pass found no behavior a new tier
+   would need: an opt-in pack is registered the way an org pack is, and the level rule (decision 7) already lets
+   it name `built-in` as its parent.
 2. **Foundation membership.** Which directives, tactics, paradigms and agent profiles are "base",
-   which move to a topical pack, and which are cut? The census proposes; the operator rules.
+   which move to a topical pack, and which are cut? *Recommended:* the census proposal in the
+   [work breakdown](/plans/pack-ecosystem-work-breakdown/#foundation-membership-census-proposal). In short:
+   foundation keeps about 30 directives, 8 paradigms, 13 agent profiles, 5 styleguides, 3 toolguides, about 60
+   tactics, the four mission types, the step contracts, the glossary and both presets. Topical packs `writing`,
+   `architecture` (with DDD), `refactoring` and `spdd`, with `testing` folded into `qa`. Stack packs `java`,
+   `python`, `drupal` and `javascript` (node and frontend). Cuts and moves to `internal` are listed there.
 3. **Topical packs inside `built-in`.** Besides foundation, does `built-in` aggregate any topical pack
    (for example `writing`, if the documentation Mission type's guidance moves there), or does it hold
-   foundation alone?
+   foundation alone? *Recommended:* foundation and `writing`. The shipped documentation Mission type relies on the
+   writing styleguides and profiles, so leaving `writing` out would ship a Mission type whose guidance is opt-in.
 4. **Range syntax.** Which semantic-version range grammar (npm-style, Maven-style, or a minimal
-   subset)?
+   subset)? *Recommended:* a minimal subset: an exact version, `^`, `~`, and the comparison operators `>=`, `>`,
+   `<=`, `<` joined by a space (AND). No `||`, no wildcards, no pre-release matching beyond exact. Note that the
+   descriptor's `requires_core` already takes a PEP 440 specifier set (`>=4.0,<5.0`); reusing that grammar for
+   `range` is the alternative that keeps one range grammar per descriptor.
 5. **How settling a sibling conflict is written.** What exact edge form does the distribution pack use?
+   *Recommended:* the distribution pack declares its own `overrides` edge on the contested artifact, naming the
+   member whose version wins. No new edge type. Whether add-only step enhancements from siblings compose instead of
+   conflicting is ADR-0050 open question 7.
+6. **What a "compose" is** (decision 10). *Recommended:* one `depends_on` closure at one level. An id is unique
+   within it, except where an explicit `overrides` replaces it; across levels the layer merge applies (project over
+   org over built-in), as for glossary terms in [ADR-0049](/adr/0049-glossary-contexts-and-terms/).
+7. **An undeclared `pack_level`**. *Recommended:* the level rule reads the configured level, and the
+   pack-descriptor schema makes `pack_level` required in the version that adds `depends_on`.
+8. **The foundation pack's id.** The rulings write both `foundational` and "foundation pack". *Recommended:*
+   `foundation`.
 
 ## Alternatives considered
 

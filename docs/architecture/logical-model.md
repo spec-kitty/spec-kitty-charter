@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -22,6 +22,11 @@ related:
   - adr/0034-local-and-hosted-deployment-options
   - adr/0040-content-form-and-payload-kinds
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
+  - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -159,6 +164,13 @@ merged graph has *layers*, one per level. The layers merge built-in, then org, t
 under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
+**Composition** (proposed, [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
+what it builds on as `depends_on: [{pack_id, range}]`. Packs compose into a graph that may form diamonds: a shared
+dependency loads once, and the ranges on it must overlap. `parent_pack` stays lineage only. Specialist packs only
+add; two siblings that refine the same artifact are refused unless the distribution pack settles it. `built-in`
+becomes a distribution pack with no artifacts of its own, over a slimmed foundation pack; stack packs are opt-in.
+Cross-pack references (an `emit`, a `rejects`, a step enhancement) resolve within the `depends_on` closure.
+
 ### Pack-level files
 
 Four files describe a pack as a whole rather than one artifact. This service reads each into the
@@ -266,6 +278,20 @@ facts; it does not restate them.
   own domain model ([Mission types](#mission-types-actions-and-step-contracts)). It is activatable
   because a preset lists it in its own `activated_mission_types` slot, not among its activated
   kinds.
+
+### Proposed kinds and kind changes (epic #142)
+
+The rulings of 2026-11-02 change this table once their ADRs are accepted. Until then the table above stands.
+
+| Change | Record | Operator token |
+|---|---|---|
+| `glossary_pack` is renamed `glossary`; its artifact is a glossary context holding terms (`term:<context>/<term>`) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/) | `glossary` |
+| `mission_type` becomes an ordinary activatable kind; `CHARTER_KIND_TOKENS`' special path goes | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) | `mission-type` |
+| `lifecycle`: a reusable state machine, today's work-package lanes | ADR-0050 | `lifecycle` |
+| `gate`: a named guard condition with a severity and a config schema (recommended default, pending ruling) | ADR-0050 | `gate` |
+| `event_registry`: namespace, type and name per event, for the `emit` check; not activatable | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
+| `anti_pattern` becomes an authored file with a `smell` / `severe` / `breaking` severity, referenced by `rejects` | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) | `anti-pattern` |
+| `procedure` stays, with a tightened definition (one step, no deliverables, not a rule) | ADR-0052 | `procedure` |
 
 ## The Charter Reference Graph (CRG)
 
@@ -489,6 +515,50 @@ store binds the kind and depends on the module.
   models for mission types and profiles, a shared artifact interface lives in `kernel.domain`, the
   only home that can span those slices; otherwise mission types and profiles do not implement it.
 
+### Mission types as state machines (proposed)
+
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) (Proposed) reads a mission type as
+the **description of a finite-state machine**: which states exist, which transitions connect them, what guards a
+transition, and what happens when one is taken. The charter declares the machine; the client (today core's CLI)
+runs it, evaluates its guards and sends its events. The charter service runs no machine.
+
+| FSM concept | Today (ADR-0044) | Proposed (ADR-0050) |
+|---|---|---|
+| State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
+| Composite state | a step with a `mission_step_contract` | unchanged |
+| Submachine state | none; the work-package lanes are hardcoded in core | a step's `work_package_lifecycle`, one instance per work package |
+| Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, on?, guard?, on_transition?}]`; absent means "next in the list" |
+| Guard | blocking expected input and output artifacts | `guard: [{gate, config?}]`; blocking artifacts stay the built-in guard |
+| Triggering event | external: the runtime's `next` | `on`, a token the client interprets (`next` when absent) |
+| Global transitions | `on_demand_steps` | unchanged |
+| Actions | none | `on_enter`, `on_exit` (Moore) and `on_transition` (Mealy), each `{emit: [...]}` |
+| Branches and back-edges | not modelled | explicit transitions |
+| Parallel regions | not modelled | not modelled; per-work-package lifecycles cover today's parallel work |
+
+**Extension.** Another pack may enhance a step (a step enhancement: add references, guards and emits; never
+remove, reorder or re-route) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
+
+**Theoretical origins.**
+
+- **Finite-state machines and transducers.** States, an input alphabet and a transition function. In a Mealy
+  machine output belongs to the transition, in a Moore machine to the state.
+  [Finite-state machine](https://en.wikipedia.org/wiki/Finite-state_machine); G. H. Mealy, "A Method for
+  Synthesizing Sequential Circuits", *Bell System Technical Journal* 34(5), 1955,
+  [doi:10.1002/j.1538-7305.1955.tb03788.x](https://doi.org/10.1002/j.1538-7305.1955.tb03788.x); E. F. Moore,
+  "Gedanken-Experiments on Sequential Machines", *Automata Studies*, 1956.
+- **Harel statecharts.** Hierarchical states, guards, entry and exit actions, and parallel regions. D. Harel,
+  "Statecharts: a visual formalism for complex systems", *Science of Computer Programming* 8(3), 1987,
+  [doi:10.1016/0167-6423(87)90035-9](https://doi.org/10.1016/0167-6423(87)90035-9). Standardized as
+  [UML state machines](https://www.omg.org/spec/UML/2.5.1/) (OMG UML 2.5.1, clause 14) and
+  [W3C SCXML](https://www.w3.org/TR/scxml/) (2015: `<transition event cond target>`, `<onentry>`, `<onexit>`).
+- **Workflow nets.** Petri nets applied to workflow: pre- and postconditions as places and tokens. A step's
+  expected input and output artifacts are exactly this. W. M. P. van der Aalst, "The application of Petri nets to
+  workflow management", *Journal of Circuits, Systems and Computers* 8(1), 1998,
+  [doi:10.1142/S0218126698000043](https://doi.org/10.1142/S0218126698000043); the
+  [Workflow Patterns](http://www.workflowpatterns.com/) catalog.
+- **Design by Contract.** A step's inputs and outputs are its pre- and postconditions. B. Meyer, "Applying Design
+  by Contract", *IEEE Computer* 25(10), 1992, [doi:10.1109/2.161279](https://doi.org/10.1109/2.161279).
+
 ## Values and value impacts
 
 **What this means:** [Values and creeds](/context/conceptual-model/#values-and-creeds).
@@ -507,7 +577,12 @@ these are resources, used rather than followed.
 - A **pack skill** is a thin, parameterized entry point a team shares through a pack
   (`skill:<id>`). It renders as `<skill_namespace>-<id>/SKILL.md` into each configured
   tool's project skill root. A non-built-in skill needs a `skill_namespace`.
-- A **glossary pack** contributes terms to the project's vocabulary.
+- A **glossary pack** contributes terms to the project's vocabulary. Proposed
+  ([ADR-0049](/adr/0049-glossary-contexts-and-terms/)): the kind becomes `glossary`, whose artifact is a
+  **glossary context** (a ubiquitous-language bounded context, close to Contextive's) holding terms addressed as
+  `term:<context-id>/<term-id>`. Scope comes from the pack level, only a clash on the same `term:` URN is a
+  conflict, and the pack glossary becomes the only authored source of vocabulary; the terminology gates' banned
+  lists and Contextive files become projections of it.
 - An **asset** is a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`)
   and the **asset payload** it names: a file under the pack's `assets/`, with `path` relative to
   that directory. The payload (script, document, font, image) is held as its exact bytes. A
