@@ -2,7 +2,7 @@
 title: Open questions
 description: Decisions the charter design depends on that are not made yet, each with the default this repository assumes until someone rules.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -12,6 +12,9 @@ related:
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0046-service-release-line-and-native-packaging
+  - plans/pack-ecosystem-work-breakdown
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
 audience:
   - profile: core-maintainer
     guidance_text: Read this to rule on the questions that are core's to decide.
@@ -58,3 +61,4 @@ decides. A ruling becomes an ADR here or in core; decided rows stay, marked with
 | 30 | **Should the refusal-code enum be narrowed per HTTP response?** Each operation's refusal response lists every `CharterRefusalCode`, though only a few can occur on it (spec-kitty-charter#48). | Open; for the next contract version, because narrowing an enum is a breaking change. The orchestrator files the issue at closeout | Operator, with the contract's next release |
 | 31 | **Does core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) allow a hosted service?** It describes a loopback, per-worktree daemon only. | **Owed by core (2026-10-26):** an amendment making loopback the local option and allowing a configured remote endpoint with a standard login token that fails closed when unreachable; the proposed text is in [ADR-0034](/adr/0034-local-and-hosted-deployment-options/) decision 4. This repository does not change core | Operator, in core |
 | 32 | **Who shares one hosted deployment?** One team per deployment, or one deployment serving many teams? | **Undecided (operator, 2026-10-27).** The multi-instance spike ([#233](https://github.com/spec-kitty/spec-kitty-charter/issues/233)) designs for one team per deployment, possibly several replicas, without ruling out multi-tenancy, which would change the contract before 1.0.0. The hosted target is a platform-neutral container (#226) | Operator |
+| 33 | **Which defaults does the pack ecosystem plan with while its questions are open?** The rulings of 2026-11-02 on epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142) are Accepted as [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), and each record leaves questions open. | **Undecided.** The [open decisions table](/plans/pack-ecosystem-work-breakdown/#open-decisions-and-recommended-defaults) in the work breakdown lists each question with the recommended default the plan works from until it is ruled | Operator |
