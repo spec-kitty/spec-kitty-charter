@@ -85,13 +85,22 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Build the Javadoc
-        run: ./gradlew :charter-reports:aggregateJavadoc
+        run: ./gradlew :charter-reports:aggregateJavadoc :contracts:bundleContract
       - name: Upload the Javadoc
         # The same artifact service.yml uploads, so the build job below reads it either way.
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: javadoc
           path: service/charter-reports/build/docs/javadoc
+          if-no-files-found: error
+      - name: Upload the contract bundle
+        # The same artifact and paths as service.yml; the site publishes it as the API reference.
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: contract-bundle
+          path: |
+            build/contracts/contract/charter-openapi.yaml
+            build/contracts/contract/charter-openapi.yaml.sha256
           if-no-files-found: error
 
   build:
@@ -101,20 +110,47 @@ jobs:
       !cancelled() && !contains(needs.*.result, 'failure')
       && (needs.service.result == 'success' || needs.javadoc.result == 'success')
     runs-on: ubuntu-24.04
+    # Diagrams render at build time (DocKitty 0.6.0): Mermaid through Chromium, PlantUML through the
+    # self-hosted service below. The Playwright image carries Chromium and its OS libraries, so there is
+    # no `playwright install` step. Pinned by the multi-arch index digest, resolved on 2026-11-02 with
+    #   docker buildx imagetools inspect mcr.microsoft.com/playwright:v1.62.1-noble
+    #   -> Digest: sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    # The tag equals the `playwright` pin in site/package.json. Bump the tag, the digest and the pin together.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+      options: --ipc=host --init
+    services:
+      plantuml:
+        # Pinned by the multi-arch index digest of jetty-v1.2026.9 (the same as DocKitty v0.6.0 deploy.yml).
+        # In a container job the service is reached by name; no port mapping is needed.
+        image: plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
+        # SANDBOX: PlantUML refuses every URL read, so a diagram cannot reach the network.
+        env:
+          PLANTUML_SECURITY_PROFILE: SANDBOX
     permissions:
       contents: read
       # @spec-kitty/doc-toolkit is installed from GitHub Packages.
       packages: read
     defaults:
       run:
+        # A container job's default shell is sh (dash), which lacks `set -o pipefail`.
+        shell: bash
         working-directory: site
     steps:
+      - name: Probe the container toolchain
+        # Before checkout there is no site/ directory yet, so run from the root. The image ships no pip.
+        working-directory: .
+        run: |
+          python3 --version
+          pip --version || echo "no pip in the image"
+          git --version
+          curl --version | head -1
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Set up Node 22 with the GitHub Packages registry
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          # doc-kitty 0.5.0 (Astro 7) requires Node 22.22+.
+          # doc-kitty 0.6.0 (Astro 7) requires Node 22.22+.
           node-version: 22.22
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
@@ -125,7 +161,7 @@ jobs:
         # same dependencies as the pull request check did.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Download the Javadoc built by service.yml
         # Published as is under /javadoc/ (site/public/javadoc is ignored by git), and walked by
         # check:built-links below like every other built page.
@@ -133,20 +169,47 @@ jobs:
         with:
           name: javadoc
           path: site/public/javadoc
-      - name: Set up Python for the index generator
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      - name: Download the contract bundle built by service.yml
+        # Staged into site/openapi by the prebuild script, published under /reference/api/main/ and
+        # compared with the published copy after the build. The path is relative to the workspace.
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: scripts/docs/requirements.txt
+          name: contract-bundle
+          path: build/contracts/contract
+      - name: Set up Python for the index generator
+        # actions/setup-python cannot run in the Playwright image (no lsb_release), and the image ships
+        # python3 without pip or venv. Install python3-venv from apt (the job runs as root; it brings pip
+        # through python3-pip-whl), then use a venv.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends python3-venv
+          python3 -m venv "$RUNNER_TEMP/docs-venv"
+      - name: Wait for the PlantUML server
+        run: |
+          for i in $(seq 1 30); do
+            if [ "$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' http://plantuml:8080/svg/)" = 200 ]; then echo "PlantUML ready"; exit 0; fi
+            echo "waiting for PlantUML ($i/30)"; sleep 2
+          done
+          echo "PlantUML did not answer 200 on http://plantuml:8080/svg/" >&2; exit 1
+      - name: Restore the diagram render cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          # A container job's workspace is /__w/..., not the host path; the cache action maps it itself.
+          path: .dk-diagram-cache
+          # Bump the 0.6.0 in the key and restore-keys together with the @spec-kitty/doc-toolkit pin in site/package.json.
+          key: dk-diagram-0.6.0-${{ hashFiles('docs/**/*.md') }}
+          restore-keys: |
+            dk-diagram-0.6.0-
       - name: Generate the changelog and ADR indexes
         # The hubs commit an empty generated block; no pull request edits them (ADR-0047).
         # Fails when an entry lacks the frontmatter its index line needs.
         working-directory: .
         run: |
           set -euo pipefail
-          pip install -r scripts/docs/requirements.txt
-          python3 scripts/docs/generate_indexes.py --write
+          "$RUNNER_TEMP/docs-venv/bin/pip" install -r scripts/docs/requirements.txt
+          "$RUNNER_TEMP/docs-venv/bin/python" scripts/docs/generate_indexes.py --write
       - name: Validate frontmatter and source links
         run: npm run validate
       - name: Build
@@ -154,9 +217,36 @@ jobs:
         # (as noindex pages) rather than dropped.
         env:
           DK_PUBLISH_DRAFTS: 'on'
-          # Render Mermaid in the browser; the build needs no Chromium.
-          DK_DIAGRAM_BUILD_RENDER: client
-        run: npm run build
+          # Render Mermaid and PlantUML to static SVG at build time (Chromium from the container image).
+          DK_DIAGRAM_BUILD_RENDER: build
+          DK_PLANTUML_SERVER_URL: http://plantuml:8080/svg/
+        run: |
+          # Guard: reads the value declared above, so a later edit cannot silently fall back to client rendering.
+          test "$DK_DIAGRAM_BUILD_RENDER" = build || { echo "::error::DK_DIAGRAM_BUILD_RENDER must be build"; exit 1; }
+          export DK_BEOE_CACHE_DIR="$GITHUB_WORKSPACE/.dk-diagram-cache"
+          npm run build
+      - name: Check that every schema page carries a diagram
+        # Fails closed: one built page per contracts/packs/schemas/*.json (the hub excluded), each with the
+        # diagram figure DocKitty builds from the schema. The glob matching nothing is a failure.
+        run: |
+          shopt -s nullglob
+          schemas=(../contracts/packs/schemas/*.json)
+          pages=(dist/architecture/pack-schemas/*/index.html)
+          test "${#schemas[@]}" -gt 0 || { echo "::error::no schemas under contracts/packs/schemas"; exit 1; }
+          test "${#pages[@]}" -eq "${#schemas[@]}" || { echo "::error::${#pages[@]} schema pages built for ${#schemas[@]} schemas"; exit 1; }
+          missing=$(grep -L 'class="dk-diagram"' "${pages[@]}" || true)
+          test -z "$missing" || { echo "::error::schema pages without a diagram: $missing"; exit 1; }
+          echo "${#pages[@]} schema pages, each with a diagram"
+      - name: Check the published OpenAPI contract is the bundled one
+        # DocKitty's own .sha256 covers its published copy, so it always verifies. The real check is that the
+        # published file is the bundle the build produced: same SHA-256 as the bundler's.
+        run: |
+          cd dist/reference/api/main
+          sha256sum -c openapi.yaml.sha256
+          published=$(sha256sum openapi.yaml | cut -d' ' -f1)
+          bundled=$(cut -d' ' -f1 "$GITHUB_WORKSPACE/build/contracts/contract/charter-openapi.yaml.sha256")
+          test "$published" = "$bundled" || { echo "::error::published openapi.yaml $published differs from the bundle $bundled"; exit 1; }
+          echo "published openapi.yaml matches the bundle: $published"
       - name: Check links in the built site
         run: npm run check:built-links
       - name: Check OKF export conformance
