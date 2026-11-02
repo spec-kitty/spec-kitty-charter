@@ -1,7 +1,7 @@
 ---
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-02'
@@ -43,7 +43,7 @@ record, [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executabl
 
 ADR-0048 to ADR-0052 were accepted on 2026-11-02 with 32 open questions, each carrying a recommended default.
 The [work breakdown](/plans/pack-ecosystem-work-breakdown/) planned with those defaults until the operator ruled.
-The operator took most defaults and changed seven:
+The operator took most defaults and changed several:
 
 - cross-pack references carry the pack's name;
 - an empty active charter puts nothing in force after the split;
@@ -122,7 +122,8 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
     ADR-0048 decision 9 stands as written, for steps as for every artifact.
 22. **A step enhancement uses the same mechanism as every other augmentation** (question 8). It is an artifact in
     the enhancing pack that holds only the additions (references, guards, emits), plus a CRG `enhances` edge from it
-    to the target step, `<pack>::action:<type>/<step>`. This is how an agent profile is augmented today. The edge
+    to the target step, `action:<type>/<step>`, pack-qualified as `<pack>::action:<type>/<step>` when the step is in
+    another pack (decision 7). This is how an agent profile is augmented today. The edge
     and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decision 23 (a
     step-enhancement file with a `target:` field). The enhancing artifact's file layout is left to the schema work.
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,

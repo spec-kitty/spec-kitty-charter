@@ -38,7 +38,7 @@ The rulings are not re-opened here. This record adds the shape details and the c
 
 ### Amendment 2026-11-02
 
-The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 25 to 28), taking each default. No decision of
+The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 26 to 28, and decision 25, shared with ADR-0050), taking each default. No decision of
 this record changes.
 
 ## Context
