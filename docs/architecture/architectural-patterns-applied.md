@@ -93,7 +93,10 @@ The class diagram shows the DDD stereotypes of the types, with the core above th
 ![Structural class diagram of the charter offering service](diagrams/class-diagram.svg)
 
 The sources are `diagrams/c4-components.puml` and `diagrams/class-diagram.puml`. They show the
-realized layout.
+realized layout: the service as built. The class diagram's note says that Procedure stays a kind
+([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 1; not built
+yet). The pack-model diagrams on [Descriptor schemas](/architecture/descriptor-schemas/)
+draw the decided design instead.
 
 ## Walk through: Pack to Tactic to steps and references
 
