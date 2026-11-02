@@ -13,6 +13,9 @@ exclude = [
   '^https://github\.com/spec-kitty/spec-kitty-charter/(blob|tree)/main/',
   '^https?://localhost',
   '^https?://127\.0\.0\.1',
+  # The DOI resolver redirects to publisher sites that answer link checkers with 202 or 403 (bot
+  # protection), never a page; a DOI is a persistent identifier, so it is not checked.
+  '^https://doi\.org/',
 ]
 accept = [200, 206, 429]
 max_retries = 3
