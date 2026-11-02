@@ -209,5 +209,4 @@ taken.
    - To decide: is it its own kind (a reusable lifecycle) or part of the mission type? Does each
      mission type pick its lifecycle?
 9. Where the event catalogue a pack may reference is published, and how its version is pinned.
-
 10. Whether a declared action may reference a code asset the pack delivers, for the client to run.
