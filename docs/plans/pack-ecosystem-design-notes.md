@@ -204,6 +204,12 @@ replaced:
 - **The client is responsible for sending, shaping and using events.** E5 (payload from context)
   moves to the client, and the charter does not check payloads.
 - R5 stands: no built-in standard events in the charter.
+- **Entry shape (ruled, option b):**
+  - `namespace` is the reverse-DNS prefix (`com.acme`);
+  - `type` is the event's local name with its version (`review.requested.v1`);
+  - `name` is the human label ("Review requested").
+  - The full identifier is always `namespace + "." + type` and is never stored. An `emit` names it
+    either as the joined string or as `{namespace, type}`.
 
 ### Mission type as a state machine (client-side use)
 
