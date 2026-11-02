@@ -290,6 +290,32 @@ taken.
 - **Enhancement may add actions** (M3). An `enhances` may append `emit` entries and references to an
   existing step, but may not change its transitions.
 
+## 5. Procedures (#150, ruled 2026-11-02)
+
+- **`procedure` stays a kind** (option 1 of #150).
+- **Its definition is tightened** with a check: a procedure may not produce the Mission's
+  deliverables, may not span steps, and may not be a rule.
+- **Sorting of the 22 shipped procedures** (by title and description; the census confirms against
+  the bodies):
+  - **About 15 fit:** `disciplined-defect-diagnosis`, `test-first-bug-fixing`, `refactoring`,
+    `example-mapping-workshop`, `bdd-scenario-lifecycle`, `event-storming-discovery`,
+    `domain-aware-decision-interview`, `situational-assessment`, `legacy-codebase-triage`,
+    `documentation-gap-prioritization`, `drill-down-documentation`, `adversarial-squad-deployment`,
+    `development-assist-test-cleanup`, `post-merge-arch-gate-adjudication`,
+    `glossary-maintenance-workflow`.
+  - **Re-homed during curation:**
+    - `spike-timebox-policy` and `mission-tracer-files` become directives, with tactics for the
+      technique;
+    - `issue-triage-state-machine` becomes a `lifecycle`;
+    - `mission-wrap-up-sequence` becomes a mission-type step (on demand) or its own mission type;
+    - `onboard-external-agent-to-pack`, `migrate-project-guidance-to-spec-kitty-charter` and
+      `meeting-minutes-pipeline` become small mission types, or the last stays a procedure of a
+      `writing` pack if it is kept small.
+  - **Internal-pack candidates** (how the Spec Kitty team works, not product guidance):
+    `mission-tracer-files`, `mission-wrap-up-sequence`, `post-merge-arch-gate-adjudication`, and
+    possibly `adversarial-squad-deployment`.
+- Every procedure carries inline `anti_patterns`, so the ruling on #154 applies to procedures too.
+
 ## Open questions
 
 1. The tier of our own opt-in packs (`java`, `qa`, …).
