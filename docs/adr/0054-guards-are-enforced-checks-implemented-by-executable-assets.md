@@ -103,7 +103,8 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
      `on`, the work-package id when there is one, the repository root, the changed files, and the entry's `config`.
    - **Exit code:** 0 pass, 1 fail, 2 could not evaluate. Any other code, or overrunning `timeout_seconds`, counts
      as 2.
-   - **Output:** stdout carries `{verdict, findings: [{message, path?, severity?}]}`.
+   - **Output:** stdout carries `{verdict, findings: [{message, path?, severity?}]}`. A missing, non-JSON or
+     ill-formed verdict on stdout counts as 2, the same as a non-0/1/2 exit.
    - **The charter checks at load:** the guard's schema, that `implemented_by` resolves in the `depends_on`
      closure, that the asset declares an `executable` block (decision 5), and that every entry's `config` fits.
    - **The client enforces:** running the guard in a sandbox (a read-only repository and no network unless
@@ -122,14 +123,19 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
 6. **Core's lane checks are built-in guards.** `subtasks_complete`, `reviewer_approval`, `review_ref` and the rest,
    and today's `spec-kitty-pre-review`, become guard artifacts in the foundation pack with
    `implemented_by: builtin:<id>`. The `builtin:` ids are a closed list, versioned with the contract; the client's
-   own code implements them, and a client refuses an id it does not know. Blocking expected artifacts stay the
-   structural guard of ADR-0050 decision 13, with no artifact.
-7. **Guards fail closed.** A guard that could not be evaluated blocks its transition when the entry has `blocking: true`; with `blocking: false` the
-   result is reported and the transition proceeds. That
+   own code implements them, and a client refuses an id it does not know. A built-in runs in the client's own
+   process: `guard/1` is the protocol for asset-backed guards, and a built-in returns the same verdict shape, so the
+   transition rule reads one result either way. Blocking expected artifacts stay the structural guard of ADR-0050
+   decision 13, with no artifact.
+7. **Guards fail closed.** A guard that reports a *fail* blocks its transition when the entry has `blocking: true`; with `blocking: false` the
+   failure is reported and the transition proceeds. A guard that could not be evaluated is an *indeterminate* result:
+   it blocks under the same `blocking` rule, unless the guard itself declares `on_indeterminate: pass` (decision 8),
+   which makes it a pass. Indeterminate
    covers exit 2, a timeout, a missing runtime, and an asset whose trust cannot be verified under the policy of
    [#157](https://github.com/spec-kitty/spec-kitty-charter/issues/157). The client's `force` (ADR-0050 decision 20)
    is the only bypass. Until #157 lands, asset-backed guards run only from packs the project explicitly trusts; a
-   guard from any other pack is refused. Built-in guards need no trust check.
+   guard from any other pack is refused at load, and that refusal is not an indeterminate verdict, so neither
+   `blocking` nor `on_indeterminate` overrides it. Built-in guards need no trust check.
 8. **`on_indeterminate: pass` is allowed** (operator ruling). A guard may declare that "could not evaluate" counts
    as a pass, for example a check that cannot measure a project without tests. It is the guard author's decision,
    stated in the guard file, so a reader sees it.
@@ -181,8 +187,8 @@ executable: {runtime: python, min_version: "3.11", entry: qa_carrier_lint.py, ar
 
 ### Positive
 
-- A guard is deterministic as far as a declaration can make it: one interface, a sandbox, a timeout, and a verdict
-  the client cannot reinterpret.
+- A guard is deterministic as far as a declaration can make it: one verdict shape, a sandbox and a timeout for an
+  asset-backed guard, and a result the client cannot reinterpret.
 - Pack authors ship checks as scripts, not as requests to core. An org's static-analysis gate before review is a
   pack asset and a guard file.
 - Core's hardcoded lane guards become declared artifacts that can be inspected, without being rewritten.
