@@ -28,10 +28,13 @@ The structural authority for every descriptor file is the set of JSON Schemas in
 [ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/) (first imported from core's models;
 the import's changes are tabled in the
 [mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)). The service's YAML adapter validates against them. The authored
-files and how they nest are drawn in the [pack write model](#pack-write-model). The other diagrams on this
+files and how they nest are drawn in the [pack write model](#pack-write-model). Six diagrams on this
 page draw the decided design of ADR-0048 to ADR-0052 (each names its ADRs in its title), not
-today's schemas or code. Where one differs from a schema, the schema describes what the service
-reads today. Yellow «pending» classes and `[pending ADR-00xx OQn]` marks show an open question that
+today's schemas or code: the pack write model, the descriptor kinds, the charter kinds, the
+mission-step contract, skill and glossary schemas, the mission type, and the pack, CRG and charter
+configuration schemas. The agent-profile and directive-example diagrams are not decided design: they
+show today's schema and an instance. Where a decided-design diagram differs from a schema, the
+difference is the decision, not an error. Yellow «pending» classes and `[pending ADR-00xx OQn]` marks show an open question that
 no ruling has settled yet. Each of the 23 schemas also has its own page, with a diagram, under
 [Pack schemas](/architecture/pack-schemas/). Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
@@ -44,7 +47,15 @@ and a schema disagree about structure, the schema wins; where this page and
 [Descriptors](/architecture/descriptors/) disagree about meaning, that page wins. The diagrams
 show the decided design, so they do not draw today's details. The service's schemas already
 diverge from core's in a few places (see the
-[Divergence register](/conformance/divergence-register/)), and the diagrams follow the service.
+[Divergence register](/conformance/divergence-register/)), and the diagrams follow the service
+for the divergences below. The graph shard and org fragment follow DIV-007 (URN endpoints only),
+DIV-008 (no fragment header fields), DIV-009 (`generated_by` optional) and DIV-019 (no edge
+provenance); the procedure follows `procedure.schema.json`.
+
+Known core-derived details: the field lists of the org charter, the project charter configuration and
+the node and relation enums on the governance diagram, and of the directive, tactic, paradigm,
+styleguide and toolguide on the charter kinds diagram, are read from core's models and are not
+cross-checked field by field against the service schemas. Check the schema before relying on one.
 Whether `pack_level` becomes required is still open (ADR-0048 open question 7).
 
 ## Pack write model

@@ -26,7 +26,7 @@ the schemas, the contract or the service changes.
 **Before:**
 
 - The docsite ran on an older DocKitty and had no readable view of the charter contract.
-- Pack schemas were described in prose only, and the architecture diagrams drew today's shapes from core's models.
+- Pack schemas had no per-schema pages, and the architecture diagrams drew today's shapes from core's models.
 - The pages said the diagrams would be redrawn once the decided design was built.
 
 **Now:**
