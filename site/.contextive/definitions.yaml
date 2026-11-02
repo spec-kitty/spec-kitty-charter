@@ -31,6 +31,10 @@ contexts:
         definition: "What a project has chosen from the charter offering: its plate, as against the buffet. One active charter per project; there is no separate per-mission charter. It names the offering packs it builds on by id and version, and its activations and deactivations. The project's local `activation.yaml` is the source of truth, written through to the service (write-through active charter); the service resolves it per activation context. \"Active charter\" names the project's chosen set as a whole; \"active\" alone still describes one artifact; the `.kittify/charter/` tree is never called \"active\"."
         meta:
           status: "canonical"
+      - name: "Anti-pattern"
+        definition: "A practice to avoid, authored as its own file with a severity of `smell` (worth a remark), `severe` (should block review) or `breaking` (must block), and referenced from guidance through `rejects`. Decided in ADR-0052; until it is built an anti-pattern is only a graph node or an inline entry."
+        meta:
+          status: "canonical"
       - name: "Cat-7 Grandfathered Orphan"
         definition: "A dead-module or dead-symbol violation that has been explicitly classified as category 7 (\"deferred — grandfathered\") in the remediation tracking spreadsheet. Cat-7 items are excluded from the active failure count tracked by the ratchet baseline but must not be added to the allowlist via side-effect imports (the C2 anti-pattern). Each cat-7 record must carry a deferral reason and a target WP for cleanup."
       - name: "Catalog Miss"
@@ -46,11 +50,15 @@ contexts:
         meta:
           status: "canonical"
       - name: "Charter Pack"
-        definition: "A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`."
+        definition: "A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. Decided, not built yet: ADR-0048 composes packs through `depends_on` and names the distribution, foundation, specialist, topical and stack packs."
       - name: "Charter-Mediated Selection"
         definition: "Architectural pattern in which the project / org charter is the sole authority that decides which charter artifacts apply to a given mission run. The offering is the knowledge store; charter is the selector; runtime asks charter for the activated set rather than reaching into the offering directly. Enforced via the runtime → charter → offering boundary. This framing is correct at the architectural level; the MECHANISM by which the charter's activation decision is actually resolved today is activated_&lt;kind&gt; — not `selected_<kind>` alone. `selected_<kind>` is the authoring record of what an interview/pack once selected; `activated_<kind>` is what `PackContext.from_config` resolves via the INV-2 two-file pointer chase."
       - name: "CharterScope"
         definition: "A resolution context (`charter.scope::CharterScope`) that maps a filesystem path to the appropriate charter when multiple charters coexist in a monorepo. Single-project repositories use `CharterScope.default(repo_root)` which returns the root-scoped charter. Monorepos with multiple sub-project charters configure `charter_scopes:` in `.kittify/config.yaml`; `CharterScope.resolve(repo_root, feature_dir)` then finds the nearest-enclosing charter for any given feature directory. The resolved `scope.root` is forwarded to `build_charter_context` (or via `build_with_scope`) so the correct per-package charter governs prompt generation. See ADR-8 (`docs/adr/3.x/2026-05-18-1-monorepo-charter-scope.md`)."
+      - name: "Compose"
+        definition: "The set of packs loaded together through one `depends_on` closure at one level, in which an artifact id is unique unless an explicit `overrides` replaces it. Decided in ADR-0048; its exact boundary is still an open question there."
+        meta:
+          status: "canonical"
       - name: "Context-Scoped Selection"
         definition: "Selection mode in which an artifact applies only in a given activation context: the service resolves the active charter against what the client is doing (project, mission run of a type, step, work context) and returns only the applicable artifacts. A client that wants \"for this mission, also include X\" adds X to its active charter or passes it in its activation context; there is no separate per-mission charter. Core's form is the Activation Registry."
         meta:
@@ -67,18 +75,42 @@ contexts:
           status: "canonical"
       - name: "Directive"
         definition: "A constraint-oriented governance rule that applies across flows or phases. Directives encode required or advisory expectations and can reference lower-level tactics for execution."
+      - name: "Distribution pack"
+        definition: "A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048)."
+        meta:
+          status: "canonical"
       - name: "Charter Domain"
         definition: "The domain model that structures reusable governance knowledge in Spec Kitty. It organizes behavior and constraints into composable artifacts (paradigms, directives, tactics, templates, styleguides, and toolguides)."
+      - name: "Event registry"
+        definition: "A pack artifact that lists event types, each with a reverse-DNS namespace, a type and a name, so the charter can check that an `emit` names a declared event. It holds no schemas, envelopes or payloads, and the charter service still publishes no events (ADR-0051)."
+        meta:
+          status: "canonical"
       - name: "Example Mapping Workshop (Procedure)"
         definition: "Procedure `example-mapping-workshop`. Turns a behavior request into concrete rules, canonical examples, and open questions that stakeholders and implementers share as the current source of truth for the behavior."
+      - name: "Foundation pack"
+        definition: "The slimmed base pack the other packs build on: the cross-cutting directives, paradigms, glossary, base templates and assets, the shipped mission types with their step contracts, and the base agent profiles. `built-in` aggregates it (ADR-0048)."
+        meta:
+          status: "canonical"
+      - name: "Gate"
+        definition: "A declared kind: a named guard condition with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema, which a guard names. The kind is decided, but its exact shape is still pending an operator ruling (ADR-0050 decision 14)."
+        meta:
+          status: "proposed"
       - name: "Global Selection"
         definition: "Selection mode in which an artifact is in force for every step of every mission, whatever the action or mission type: it is on the project's active charter. What must be selected is stated by a requirement, authored as a preset; what a mission type adds while it runs is its recipe ingredients. Core expresses this today with `selected_<kind>` / `required_<kind>` lists (deprecated here), unioned onto the activated_&lt;kind&gt; base."
         meta:
           status: "canonical"
+      - name: "Glossary context"
+        definition: "A ubiquitous-language bounded context authored as a pack artifact of kind `glossary`, which replaces `glossary_pack`. It holds terms, which are addressed as `term:<context>/<term>` (ADR-0049)."
+        meta:
+          status: "canonical"
       - name: "Glossary Vocabulary — `vocabulary` (CRG Relation)"
-        definition: "A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`."
+        definition: "A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`. Decided, not built yet: ADR-0049 retargets it at `glossary` and `term` instead of `glossary_pack`."
       - name: "Governance Scope — `scope` (CRG Relation)"
         definition: "A directional Three-layer CRG relation from a mission-step action node to the directives and tactics that govern performing that action. It is the entry point of governance-context resolution: the resolver first walks `scope` edges from the action node, then expands through Hard Dependency and Soft Recommendation edges from what it found. It is one of the most heavily emitted relations tied to action nodes in the built-in graph. Distinct from Workflow Application — see that entry for the contrast. Canonical source: `RELATION_DESCRIPTIONS[Relation.SCOPE]` in `src/charter/offering/drg/models.py`."
+      - name: "Guard"
+        definition: "A named condition that must hold before a mission-type or lifecycle transition is taken, declared on the transition as `guard: [{gate, config?}]`. The charter declares it and the client evaluates it (ADR-0050)."
+        meta:
+          status: "canonical"
       - name: "Guideline"
         definition: "A high-level charter rule expressing non-negotiable or strongly preferred governance behavior. Guidelines sit at the highest precedence and bound what project-level charter may customize."
       - name: "Hard Dependency — `requires` (CRG Relation)"
@@ -87,6 +119,10 @@ contexts:
         definition: "A pull-based curation record for an external governance idea. Captures source provenance, target classification, adaptation notes, and adoption status before canonization."
       - name: "Integrity level"
         definition: "How much an artifact may be altered after it is introduced: `open`, `extendable` or `locked`. Set by the artifact's author; anyone below may tighten it, never loosen it. Independent of requirement (required-but-extendable is valid). A derived pack may remove an `open` or `extendable` artifact; a `locked` one is fully protected."
+        meta:
+          status: "canonical"
+      - name: "Lifecycle"
+        definition: "A reusable state machine authored as its own pack artifact, such as the work-package lanes. A step of a mission type can reference one, and it then runs once per work package (ADR-0050)."
         meta:
           status: "canonical"
       - name: "Lineage — `specializes_from` (CRG Relation)"
@@ -98,7 +134,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Mission type"
-        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model; it has no HTTP operations of its own yet (#194 out of scope). Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044)."
+        definition: "The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model; it has no HTTP operations of its own yet (#194 out of scope). Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044). Decided, not built yet: ADR-0050 declares it as a state machine with transitions and guards, and ADR-0048 renames its `missions/` directory to `mission_types/`."
         meta:
           status: "canonical"
       - name: "Mission-Type Profile"
@@ -128,7 +164,7 @@ contexts:
         meta:
           status: "proposed"
       - name: "Procedure"
-        definition: "A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action."
+        definition: "A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action. Decided, not built yet: ADR-0052 tightens this definition and moves its inline anti-patterns to authored anti-pattern files."
         meta:
           status: "canonical"
       - name: "Project layer"
@@ -144,7 +180,7 @@ contexts:
       - name: "Refinement — `refines` (CRG Relation)"
         definition: "A directional Three-layer CRG relation: an artifact narrows or sharpens the applicability or meaning of a parent or built-in target without replacing it. It is a first-class, traversable relation in its own right — never a stand-in for Workflow Application or Lineage. No built-in artifact currently emits a `refines` edge, so treat it as intended-but-dormant; an earlier version of the org-to-CRG bridge silently downgraded authored `refines` edges to `applies`, but that lossy downgrade has since been removed. Canonical source: `RELATION_DESCRIPTIONS[Relation.REFINES]` in `src/charter/offering/drg/models.py`."
       - name: "Rejection — `rejects` (CRG Relation)"
-        definition: "A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` (\"Tension vocabulary\")."
+        definition: "A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` (\"Tension vocabulary\"). Decided, not built yet: ADR-0052 adds a `rejects` list on guidance whose targets are authored anti-patterns."
       - name: "Removal"
         definition: "A pack-wide act by a derived pack: one named artifact (or role) is taken out of the offering for every project that uses the pack. Allowed for `open` and `extendable` artifacts, refused for `locked` ones; declared one artifact at a time, never by filter. Not deactivation, which is a per-project choice on the active charter (ADR-0030)."
         meta:
@@ -165,10 +201,22 @@ contexts:
           status: "deprecated"
       - name: "Soft Recommendation — `suggests` (CRG Relation)"
         definition: "A directional Three-layer CRG relation pointing at content that is relevant but optional. Unlike Hard Dependency, which is walked transitively with no depth limit, governance-context resolution only follows `suggests` edges a bounded number of hops, and the charter activation cascade treats a `suggests` target as something an operator may accept or decline. It is emitted more often than any other relation in the built-in graph, but that volume is incidental — the depth-bounded walk, not the count, is what separates it from `requires`. Canonical source: `RELATION_DESCRIPTIONS[Relation.SUGGESTS]` in `src/charter/offering/drg/models.py`."
+      - name: "Specialist pack"
+        definition: "A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change the same artifact are refused unless the distribution pack settles it (ADR-0048)."
+        meta:
+          status: "canonical"
+      - name: "Stack pack"
+        definition: "A specialist pack for one technology stack, such as `java`, `python` or `drupal`. It is opt-in and is not a member of `built-in` (ADR-0048)."
+        meta:
+          status: "canonical"
       - name: "Specification by Example (Paradigm)"
         definition: "A paradigm that builds shared understanding of behavior through concrete, business-readable examples which become the canonical source of truth for requirements, acceptance checks, and living documentation."
       - name: "Step contract"
         definition: "The structural sub-steps of one mission step and what each delegates to (the `mission_step_contract` kind). The step's role and expected artifacts live on the mission step, not on its contract (ADR-0044)."
+        meta:
+          status: "canonical"
+      - name: "Step enhancement"
+        definition: "An add-only extension that a specialist or org pack attaches to an existing step of a mission type: references, guards on its outgoing transitions and `emit` entries. It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050)."
         meta:
           status: "canonical"
       - name: "Step guidelines"
@@ -205,10 +253,18 @@ contexts:
           - "in_tension_with"
         meta:
           status: "canonical"
+      - name: "Term (glossary)"
+        definition: "One entry of a glossary context, held as an item inside it and not as an artifact of its own, with a name, a definition and optional aliases and `avoid` forms. Its URN is `term:<context-id>/<term-id>` (ADR-0049)."
+        meta:
+          status: "canonical"
       - name: "Three-layer CRG"
         definition: "The three-tier Charter Reference Graph composed of: (1) the shipped built-in layer (the per-kind `*.graph.yaml` fragments under `packs/built-in/`), (2) zero or more org-tier extension fragments (`drg/fragment.yaml` inside each configured org pack), and (3) optional project-tier annotations declared in the project charter. Each tier is additive; org and project tiers may only extend or annotate shipped nodes — they cannot remove or reclassify them. Resolved at runtime by `charter.drg.merge_three_layers`."
       - name: "Toolguide"
         definition: "A charter artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution."
+      - name: "Topical pack"
+        definition: "A specialist pack for one subject rather than one technology stack, such as `writing`, `architecture` or `refactoring`. Each is a full top-level pack, not nested under `built-in` (ADR-0048)."
+        meta:
+          status: "canonical"
       - name: "Trigger Registry"
         definition: "Canonical frozenset of agent-action tokens (e.g. `write_comment`, `write_docstring`, `rename_identifier`, `add_dependency`) the prompt builder knows how to emit \"when you <token>, …\" stanzas for. Any `triggers:` value declared on a shipped charter artifact must be a member of this set; the architectural test `test_trigger_registry_coverage.py` enforces no dead triggers. Mission B's WP05 populates the initial set."
       - name: "Usage Examples Sync (Tactic)"
@@ -333,7 +389,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Pack Level"
-        definition: "The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect."
+        definition: "The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect. Decided, not built yet: ADR-0048 composes packs through `depends_on`; `parent_pack` stays lineage only, and a pack's level may not be higher than its parent's."
       - name: "Precedence Rule"
         definition: "Ordering used when policy settings conflict."
       - name: "Primary role"

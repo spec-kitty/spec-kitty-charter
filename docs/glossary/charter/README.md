@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-27T10:19:53Z"
-  content_hash: "sha256:198d25a272f3"
+  at: "2026-11-02T18:54:17Z"
+  content_hash: "sha256:ec40f9eb3497"
 ---
 
 # Charter
@@ -41,7 +41,7 @@ What the client is doing right now, sent with a resolution request: for example 
 
 ## Activation preset
 
-A named selection that a Charter Pack ships (`presets/<name>.yaml`) and a project applies to its active charter. A preset has two jobs: as a governor it states what must be on the plate (its must-have items are the requirement), and as a convenience it offers an author's sane defaults to a project that does not want to customize. For the convenience job, applying a preset is a one-time write to the active charter; a governing preset keeps holding. How a governing preset is told apart from a convenience preset is an open question (ADR-0031). The built-in pack ships `default` and `minimal`.
+A named selection that a Charter Pack ships (`presets/<id>.yaml`, its `id` equal to the file stem) and a project applies to its active charter. A preset has two jobs: as a governor it states what must be on the plate (its must-have items are the requirement), and as a convenience it offers an author's sane defaults to a project that does not want to customize. For the convenience job, applying a preset is a one-time write to the active charter; a governing preset keeps holding. Its activation lists hold preset items, and a preset with at least one must-have item is a governing preset (ADR-0031, ADR-0042). The built-in pack ships `default` and `minimal`.
 
 **Meta:**
 
@@ -58,6 +58,16 @@ Charter-level list of `(activation_context, charter_pack_id, artifact_id)` tuple
 ## Active charter
 
 What a project has chosen from the charter offering: its plate, as against the buffet. One active charter per project; there is no separate per-mission charter. It names the offering packs it builds on by id and version, and its activations and deactivations. The project's local `activation.yaml` is the source of truth, written through to the service (write-through active charter); the service resolves it per activation context. "Active charter" names the project's chosen set as a whole; "active" alone still describes one artifact; the `.kittify/charter/` tree is never called "active".
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#anti-pattern}
+
+## Anti-pattern
+
+A practice to avoid, authored as its own file with a severity of `smell` (worth a remark), `severe` (should block review) or `breaking` (must block), and referenced from guidance through `rejects`. Decided in ADR-0052; until it is built an anti-pattern is only a graph node or an inline entry.
 
 **Meta:**
 
@@ -107,7 +117,7 @@ Everything a project could adopt: the buffet. It is made of Charter Packs, mostl
 
 ## Charter Pack
 
-A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`.
+A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. Decided, not built yet: ADR-0048 composes packs through `depends_on` and names the distribution, foundation, specialist, topical and stack packs.
 
 {#charter-mediated-selection}
 
@@ -120,6 +130,16 @@ Architectural pattern in which the project / org charter is the sole authority t
 ## CharterScope
 
 A resolution context (`charter.scope::CharterScope`) that maps a filesystem path to the appropriate charter when multiple charters coexist in a monorepo. Single-project repositories use `CharterScope.default(repo_root)` which returns the root-scoped charter. Monorepos with multiple sub-project charters configure `charter_scopes:` in `.kittify/config.yaml`; `CharterScope.resolve(repo_root, feature_dir)` then finds the nearest-enclosing charter for any given feature directory. The resolved `scope.root` is forwarded to `build_charter_context` (or via `build_with_scope`) so the correct per-package charter governs prompt generation. See ADR-8 (`docs/adr/3.x/2026-05-18-1-monorepo-charter-scope.md`).
+
+{#compose}
+
+## Compose
+
+The set of packs loaded together through one `depends_on` closure at one level, in which an artifact id is unique unless an explicit `overrides` replaces it. Decided in ADR-0048; its exact boundary is still an open question there.
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#context-scoped-selection}
 
@@ -163,17 +183,57 @@ A Charter Pack that builds on a broader one (an org pack on built-in) and custom
 
 A constraint-oriented governance rule that applies across flows or phases. Directives encode required or advisory expectations and can reference lower-level tactics for execution.
 
+{#distribution-pack}
+
+## Distribution pack
+
+A pack that holds no artifacts of its own and aggregates the packs it depends on. `built-in` becomes one, over a slimmed foundation pack (ADR-0048).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#charter-domain}
 
 ## Charter Domain
 
 The domain model that structures reusable governance knowledge in Spec Kitty. It organizes behavior and constraints into composable artifacts (paradigms, directives, tactics, templates, styleguides, and toolguides).
 
+{#event-registry}
+
+## Event registry
+
+A pack artifact that lists event types, each with a reverse-DNS namespace, a type and a name, so the charter can check that an `emit` names a declared event. It holds no schemas, envelopes or payloads, and the charter service still publishes no events (ADR-0051).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#example-mapping-workshop-procedure}
 
 ## Example Mapping Workshop (Procedure)
 
 Procedure `example-mapping-workshop`. Turns a behavior request into concrete rules, canonical examples, and open questions that stakeholders and implementers share as the current source of truth for the behavior.
+
+{#foundation-pack}
+
+## Foundation pack
+
+The slimmed base pack the other packs build on: the cross-cutting directives, paradigms, glossary, base templates and assets, the shipped mission types with their step contracts, and the base agent profiles. `built-in` aggregates it (ADR-0048).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#gate}
+
+## Gate
+
+A declared kind: a named guard condition with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema, which a guard names. The kind is decided, but its exact shape is still pending an operator ruling (ADR-0050 decision 14).
+
+**Meta:**
+
+- **status:** `proposed`
 
 {#global-selection}
 
@@ -185,17 +245,37 @@ Selection mode in which an artifact is in force for every step of every mission,
 
 - **status:** `canonical`
 
+{#glossary-context}
+
+## Glossary context
+
+A ubiquitous-language bounded context authored as a pack artifact of kind `glossary`, which replaces `glossary_pack`. It holds terms, which are addressed as `term:<context>/<term>` (ADR-0049).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#glossary-vocabulary-vocabulary-crg-relation}
 
 ## Glossary Vocabulary — `vocabulary` (CRG Relation)
 
-A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`.
+A directional Three-layer CRG relation from a resolved charter artifact to a glossary-scope node, meant to surface which glossary sections are relevant once governance context has been resolved for an action. The traversal step exists and is exercised by tests, but no built-in or org-pack artifact currently emits a `vocabulary` edge — treat it as intended-but-dormant rather than actively exercised. Canonical source: `RELATION_DESCRIPTIONS[Relation.VOCABULARY]` in `src/charter/offering/drg/models.py`. Decided, not built yet: ADR-0049 retargets it at `glossary` and `term` instead of `glossary_pack`.
 
 {#governance-scope-scope-crg-relation}
 
 ## Governance Scope — `scope` (CRG Relation)
 
 A directional Three-layer CRG relation from a mission-step action node to the directives and tactics that govern performing that action. It is the entry point of governance-context resolution: the resolver first walks `scope` edges from the action node, then expands through Hard Dependency and Soft Recommendation edges from what it found. It is one of the most heavily emitted relations tied to action nodes in the built-in graph. Distinct from Workflow Application — see that entry for the contrast. Canonical source: `RELATION_DESCRIPTIONS[Relation.SCOPE]` in `src/charter/offering/drg/models.py`.
+
+{#guard}
+
+## Guard
+
+A named condition that must hold before a mission-type or lifecycle transition is taken, declared on the transition as `guard: [{gate, config?}]`. The charter declares it and the client evaluates it (ADR-0050).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#guideline}
 
@@ -225,6 +305,16 @@ How much an artifact may be altered after it is introduced: `open`, `extendable`
 
 - **status:** `canonical`
 
+{#lifecycle}
+
+## Lifecycle
+
+A reusable state machine authored as its own pack artifact, such as the work-package lanes. A step of a mission type can reference one, and it then runs once per work package (ADR-0050).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#lineage-specializes-from-crg-relation}
 
 ## Lineage — `specializes_from` (CRG Relation)
@@ -241,7 +331,7 @@ Directive DIRECTIVE_037. Requires behavior-describing artifacts to evolve togeth
 
 ## Mission step
 
-One step of a mission type's recipe. A step names the role it needs, never a profile.
+One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its references (its action-scoped guidance) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044).
 
 **Meta:**
 
@@ -251,7 +341,7 @@ One step of a mission type's recipe. A step names the role it needs, never a pro
 
 ## Mission type
 
-The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model and endpoints.
+The recipe of the work: shipped in a pack and activated like any other artifact; once it is on the active charter, missions of that type can be run. Its steps say how to make the dish and ask for roles, never profiles. Its recipe ingredients are the guidance it names by id, added to the plate while a mission of that type runs. Modelled as its own concept, with its own domain model; it has no HTTP operations of its own yet (#194 out of scope). Stored as one file per type, `missions/<id>/<id>.mission-type.yaml`, its steps as sub-items; an artifact kind in the service, `mission_type`, where core keeps it a mission-tier concept outside its artifact kinds (ADR-0044). Decided, not built yet: ADR-0050 declares it as a state machine with transitions and guards, and ADR-0048 renames its `missions/` directory to `mission_types/`.
 
 **Meta:**
 
@@ -266,6 +356,16 @@ Superseded by the recipe's ingredients of a Mission type. Today's shipped `gover
 **Meta:**
 
 - **status:** `deprecated`
+
+{#on-demand-step}
+
+## On-demand step
+
+A mission step invoked by an explicit command, outside its mission type's run order, listed in the type's `on_demand_steps`; for example software-dev's `charter` and `tasks-outline`. Its authored order is kept, but it is not a run order (ADR-0044).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#organization-tier}
 
@@ -319,7 +419,7 @@ Whether something is a paradigm: a school of practice with a worldview that brin
 
 ## Procedure
 
-A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action.
+A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action. Decided, not built yet: ADR-0052 tightens this definition and moves its inline anti-patterns to authored anti-pattern files.
 
 **Meta:**
 
@@ -341,7 +441,7 @@ A snapshot of a quality metric (failure count, symbol count, dead-module count) 
 
 ## Recipe ingredients
 
-The guidance a mission type names by id (today in `governance-profile.yaml`). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
+The guidance a mission type names by id: the `references` of its mission-type file (core reads them from `governance-profile.yaml`, which the service retires). They are kept by id and mint no relationship until edge authority is ruled (#189); until then the graph's `scope` edges carry their activation meaning. While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
 
 **Meta:**
 
@@ -363,7 +463,7 @@ A directional Three-layer CRG relation: an artifact narrows or sharpens the appl
 
 ## Rejection — `rejects` (CRG Relation)
 
-A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary").
+A directional Three-layer CRG relation from a good artifact to a marked anti-pattern or smell node (`NodeKind.ANTI_PATTERN`), expressing rejection of a named bad practice. It is distinct from Tension — the target is not a competing equal, it is a bad practice — and from `replaces`/supersession, since the target was never a valid rule to begin with. Canonical source: `RELATION_DESCRIPTIONS[Relation.REJECTS]` in `src/charter/offering/drg/models.py`; human-readable mirror in `docs/architecture/charter-relationships.md` ("Tension vocabulary"). Decided, not built yet: ADR-0052 adds a `rejects` list on guidance whose targets are authored anti-patterns.
 
 {#removal}
 
@@ -417,6 +517,26 @@ Superseded. In the new model a mission type's guidance is named by id as its rec
 
 A directional Three-layer CRG relation pointing at content that is relevant but optional. Unlike Hard Dependency, which is walked transitively with no depth limit, governance-context resolution only follows `suggests` edges a bounded number of hops, and the charter activation cascade treats a `suggests` target as something an operator may accept or decline. It is emitted more often than any other relation in the built-in graph, but that volume is incidental — the depth-bounded walk, not the count, is what separates it from `requires`. Canonical source: `RELATION_DESCRIPTIONS[Relation.SUGGESTS]` in `src/charter/offering/drg/models.py`.
 
+{#specialist-pack}
+
+## Specialist pack
+
+A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change the same artifact are refused unless the distribution pack settles it (ADR-0048).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#stack-pack}
+
+## Stack pack
+
+A specialist pack for one technology stack, such as `java`, `python` or `drupal`. It is opt-in and is not a member of `built-in` (ADR-0048).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#specification-by-example-paradigm}
 
 ## Specification by Example (Paradigm)
@@ -427,7 +547,27 @@ A paradigm that builds shared understanding of behavior through concrete, busine
 
 ## Step contract
 
-The detailed version of a mission step: what the step does, its inputs and outputs, and the role it asks for.
+The structural sub-steps of one mission step and what each delegates to (the `mission_step_contract` kind). The step's role and expected artifacts live on the mission step, not on its contract (ADR-0044).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#step-enhancement}
+
+## Step enhancement
+
+An add-only extension that a specialist or org pack attaches to an existing step of a mission type: references, guards on its outgoing transitions and `emit` entries. It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#step-guidelines}
+
+## Step guidelines
+
+A mission step's working notes for the agent: the Markdown companion `steps/<id>.guidelines.md`, named by `guidelines_path`, with no frontmatter. Not the charter Guideline, which is a governance rule (ADR-0044).
 
 **Meta:**
 
@@ -437,7 +577,7 @@ The detailed version of a mission step: what the step does, its inputs and outpu
 
 ## Step template
 
-The prompt fed to the agent when a mission step runs.
+The prompt fed to the agent when a mission step runs: the step's Markdown companion `steps/<id>.prompt.md`, named by `prompt_path`. Its frontmatter holds only `description`, a detailed description longer than the step's one-line one. Not a template payload: a template is a file under `templates/` (ADR-0044).
 
 **Meta:**
 
@@ -511,6 +651,16 @@ An authored relationship between two rules that compete on the same decision; bo
 
 - **status:** `canonical`
 
+{#term-glossary}
+
+## Term (glossary)
+
+One entry of a glossary context, held as an item inside it and not as an artifact of its own, with a name, a definition and optional aliases and `avoid` forms. Its URN is `term:<context-id>/<term-id>` (ADR-0049).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#three-layer-crg}
 
 ## Three-layer CRG
@@ -522,6 +672,16 @@ The three-tier Charter Reference Graph composed of: (1) the shipped built-in lay
 ## Toolguide
 
 A charter artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution.
+
+{#topical-pack}
+
+## Topical pack
+
+A specialist pack for one subject rather than one technology stack, such as `writing`, `architecture` or `refactoring`. Each is a full top-level pack, not nested under `built-in` (ADR-0048).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#trigger-registry}
 
@@ -572,3 +732,133 @@ The stable, kebab-case identifier of a Workflow Sequence (e.g. `software-dev-def
 ## Workflow Sequence
 
 A named, ordered list of mission-action steps with declared entry conditions, exit conditions, and optional per-step runtime hooks. Stored as a `WorkflowSequence` Pydantic model in `spec-kitty next`'s internal runtime schema registry. Org packs may contribute custom workflow sequences that extend or override the shipped set when activated via the Activation Registry.
+
+{#asset}
+
+## Asset
+
+A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#asset-payload}
+
+## Asset payload
+
+A file under a pack's `assets/` directory, held as its exact bytes and written back byte for byte: the file an asset names, or one that no sidecar names (such as a tool configuration shipped beside the assets). The service holds each one as an `AssetFile` of the pack, not as an artifact, so it needs no id. A `README.md` under `assets/` is not one (ADR-0040).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#content-form}
+
+## Content form
+
+What a pack file-kind rule declares about how its files are read, held, written and compared: `yaml` (the default), `markdown`, `text` or `bytes` (`content_form` in `contracts/packs/file-kinds.yaml`). Never chosen by a file's extension or an asset's `mime`. Distinct from `YamlFormat`, the codec of one YAML kind, from `mime`, an asset's declared media type, and from `SerializationStrategy`, the store's YAML read and write. `yaml`, `markdown` and `bytes` are built; `text` is declared and not built (ADR-0040).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#markdown-content-form}
+
+## Markdown content form
+
+The `markdown` content form: a file read into a model of optional frontmatter, an optional H1 title, a preamble and the H2 sections in order, each a title and its content. Two files mean the same when their models are equal; a file is written back in one canonical form, and ambiguous Markdown (an unclosed fence, a carriage return, an indented or underlined heading) is refused naming the line. A `files` rule or a companion that declares it names a structure schema that validates the model (ADR-0040, ADR-0039).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#guide-toolguide}
+
+## Guide (toolguide)
+
+A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary, commands and references, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#sanitized-shape}
+
+## Sanitized shape
+
+The deliberately designed storage shape of a pack object, as opposed to one mirrored from the files a pack happens to hold. It follows the sanitized-shape rules: S1 to S8 for every storage object (ADR-0042) and S9 to S16 for artifact kinds (ADR-0043), such as `title` for the label, `description` for the summary, `content` for a body and `role` for who acts. Pack content in another shape is fixed in the pack, never tolerated by the service.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#template-pack}
+
+## Template (pack)
+
+A file under a pack's top-level `templates/` directory, read as an artifact whose local id is its path under that directory (`writing/meeting-minutes.md`, URN `template:writing/meeting-minutes.md`) and held as its exact bytes, frontmatter included. Not activatable. A mission template, a file under `missions/<type>/templates/`, is a template too, with the id `<type>/<path>` (ADR-0040, ADR-0044).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#preset-item}
+
+## Preset item
+
+One entry of an activation preset's list: the `id` of an artifact or a mission type, as its own file declares it (never a file stem), optionally carrying the must-have mark. Written `{id: <id>}` or `{id: <id>, must_have: true}`. One list names an id once (ADR-0042).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#must-have-mark}
+
+## Must-have mark
+
+The per-item flag `must_have: true` on a preset item. It makes the item part of the preset's required set, which the service derives from the marks and never reads from a second list. An item without the mark is not must-have; there is no `false` spelling. Not to be confused with the legacy `required_<plural>` lists of `org-charter.yaml` (#206) or with JSON Schema's `required` (ADR-0031, ADR-0042).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#governing-preset}
+
+## Governing preset
+
+An activation preset with at least one must-have item: it states what every project that takes it must have. A preset with none is a convenience preset, which only offers defaults. Derived from the items, never declared: a preset carries no flag of its own (ADR-0031, ADR-0042).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#pack-manifest}
+
+## Pack manifest
+
+A pack's `pack-manifest.yaml`: the machine-written inventory of its constituent artifacts (`kind`, `id`, `path`, `content_hash`) and its presets (`id`, `path`, `content_hash`), with a `manifest_hash` over the whole. Only the authored-pack variant is a pack file; the fetched-pack and charter-bundle fields are refused. Its hashes are derived fields. The service holds it beside the pack aggregate, not in it (ADR-0042).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#pack-document}
+
+## Pack document
+
+A pack's `pack.md`, at the pack root: its hand-authored Markdown description. The service holds it in the pack aggregate as the pack's document (optional frontmatter, an optional title, a preamble and the H2 sections), read and written through the `markdown` content form and validated by the `pack-document` structure schema. Its title is independent of the descriptor's `name` (ADR-0042, #260).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#derived-field}
+
+## Derived field
+
+A field of a storage object computed from other content, such as a pack manifest's `content_hash` (SHA-256 of the file's bytes with line endings normalized to LF) and `manifest_hash` (SHA-256 of the RFC 8785 canonical JSON of the manifest without it). Declared per kind in a decision record. The writer recomputes it from the bytes it writes, the reader takes it as written, and the round-trip gate verifies it on each side instead of comparing it (ADR-0042).
+
+**Meta:**
+
+- **status:** `canonical`

@@ -36,7 +36,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 
 | # | Work | ADR | Size | Depends on | Tracker |
 |---|---|---|---|---|---|
-| 1 | Operator rulings on the open decisions (below; still open); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); glossary entries (status `proposed`) for glossary context, term, lifecycle, gate, guard, step enhancement, event registry, anti-pattern, the distribution, foundation, specialist, topical and stack packs, and compose, promoted to `canonical` at acceptance | all | S | none | #142 |
+| 1 | Operator rulings on the open decisions (below; still open); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; `gate` stays `proposed` until its shape is ruled) | all | S | none | #142 |
 | 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar | 0048 | M | 1 | #145, #146 |
 | 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |

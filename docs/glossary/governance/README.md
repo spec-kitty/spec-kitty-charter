@@ -7,8 +7,8 @@ glossary_context: "Governance"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-10-27T09:25:39Z"
-  content_hash: "sha256:a467bff454be"
+  at: "2026-11-02T18:54:17Z"
+  content_hash: "sha256:50302f864d79"
 ---
 
 # Governance
@@ -153,7 +153,7 @@ The role performed by a human, the Human in Charge; a role like any other. A pro
 
 ## Pack Level
 
-The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect.
+The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect. Decided, not built yet: ADR-0048 composes packs through `depends_on`; `parent_pack` stays lineage only, and a pack's level may not be higher than its parent's.
 
 {#precedence-rule}
 
