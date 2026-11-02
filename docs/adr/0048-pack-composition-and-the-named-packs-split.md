@@ -3,7 +3,7 @@ title: "ADR-0048: Pack composition: a dependency graph of named packs, with buil
 description: Packs compose through versioned depends_on edges into a diamond-shaped graph; built-in becomes a content-free distribution pack over a slimmed foundation pack.
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -66,6 +66,13 @@ note in its `decision_status`:
 
 The resolution model's step 2 ("the later-declared pack wins", core #87) is not an ADR, so it is reworded
 instead (on the architecture page, as a note that the code has not changed).
+
+### Amendment 2026-11-02
+
+The operator ruled every open question on 2026-11-02, recorded in [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 1 to 10. One ruling changes a
+decision of this record. Decision 10 keeps an artifact's own URN unqualified, but a reference that crosses a pack
+boundary is now written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 7). An empty active charter puts nothing in force after
+the split ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10). The original text stands; the changed point is annotated where it stands.
 
 ## Context
 
@@ -131,6 +138,7 @@ instead (on the architecture page, as a note that the code has not changed).
    - There is no "last loaded wins", so the result never depends on the order packs are listed in.
 10. **Artifact identity does not change.** URNs stay global and unqualified. Which pack holds an
     artifact is provenance, not identity, and an id must be unique across every pack in a compose.
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 7): a reference to an artifact of another pack is written `<pack-name>::<urn>`, for example `foundation::directive:DIRECTIVE_001`; a reference inside one pack stays bare, and a bare reference that resolves only in another pack is refused. Pack names are unique within a compose.*
 
 ### The named-packs split (S3, S4)
 
@@ -205,10 +213,13 @@ instead (on the architecture page, as a note that the code has not changed).
 This record is accepted; the questions below still await an operator ruling, each with a recommended default. Until
 they are ruled, the [work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the defaults.
 
+*Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)): every question below is ruled; each ruling follows its question.*
+
 1. **Level of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
    `org`, or should the order gain a pack level for them? *Recommended:* `org`. The pass found no behavior a new
    level would need: an opt-in pack is registered the way an org pack is, and the level rule (decision 7) already lets
    it name `built-in` as its parent.
+   **Ruled 2026-11-02:** `org` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 1).
 2. **Foundation membership.** Which directives, tactics, paradigms and agent profiles are "base",
    which move to a topical pack, and which are cut? *Recommended:* the census proposal in the
    [work breakdown](/plans/pack-ecosystem-work-breakdown/#foundation-membership-census-proposal). In short:
@@ -217,30 +228,38 @@ they are ruled, the [work breakdown](/plans/pack-ecosystem-work-breakdown/) plan
    (decision 12). Topical packs `writing`, `architecture` (with DDD), `refactoring` and `spdd`, with `testing`
    folded into `qa`. Stack packs `java`, `python`, `drupal` and `javascript` (node and frontend). Cuts and moves
    to `internal` are listed there.
+   **Ruled 2026-11-02:** the census proposal, as the starting cut ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 2).
 3. **Topical packs inside `built-in`.** Besides foundation, does `built-in` aggregate any topical pack
    (for example `writing`, if the documentation mission type's guidance moves there), or does it hold
    foundation alone? *Recommended:* foundation and `writing`. The shipped documentation mission type relies on the
    writing styleguides and profiles, so leaving `writing` out would ship a mission type whose guidance is opt-in.
+   **Ruled 2026-11-02:** `foundation` and `writing` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 3).
 4. **Range syntax.** Which semantic-version range grammar (npm-style, Maven-style, or a minimal
    subset)? *Recommended:* a minimal subset: an exact version, `^`, `~`, and the comparison operators `>=`, `>`,
    `<=`, `<` joined by a space (AND). No `||`, no wildcards, no pre-release matching beyond exact. Note that the
    descriptor's `requires_core` already takes a PEP 440 specifier set (`>=4.0,<5.0`); reusing that grammar for
    `range` is the alternative that keeps one range grammar per descriptor.
+   **Ruled 2026-11-02:** PEP 440 version-specifier sets, the grammar `requires_core` already uses ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4).
 5. **How settling a sibling conflict is written.** What exact edge form does the distribution pack use?
    *Recommended:* the distribution pack declares its own `overrides` edge on the contested artifact, naming the
    member whose version wins. No new edge type. Whether add-only step enhancements from siblings compose instead of
    conflicting is ADR-0050 open question 7.
+   **Ruled 2026-11-02:** the distribution pack's own `overrides` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5).
 6. **What a "compose" is** (decision 10). *Recommended:* one `depends_on` closure at one level. An id is unique
    within it, except where an explicit `overrides` replaces it; across levels the layer merge applies (project over
    org over built-in), as for glossary terms in [ADR-0049](/adr/0049-glossary-contexts-and-terms/).
+   **Ruled 2026-11-02:** one `depends_on` closure at one level, and cross-pack references carry `<pack-name>::` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 6 and 7).
 7. **An undeclared `pack_level`**. *Recommended:* the level rule reads the configured level, and the
    pack-descriptor schema makes `pack_level` required in the version that adds `depends_on`.
+   **Ruled 2026-11-02:** the configured level; `pack_level` becomes required with `depends_on` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 8).
 8. **The foundation pack's id.** The rulings write both `foundational` and "foundation pack". *Recommended:*
    `foundation`.
+   **Ruled 2026-11-02:** `foundation` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 9).
 9. **What an empty active charter means.** [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
    decision 5 keeps ADR-0020 decision 6 (each kind at its default) until the built-in pack is split down to a
    minimal offering (epic #145). This ADR is that split. *Recommended:* revisit at acceptance (not ruled at acceptance on 2026-11-02; still open); until then an empty
    charter keeps today's meaning.
+   **Ruled 2026-11-02:** after the split an empty active charter puts nothing in force ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10).
 
 ## Alternatives considered
 
