@@ -103,7 +103,9 @@ Sources: `src/charter/offering/missions/step_contracts.py`,
 glossary pack have no JSON Schema file; their Pydantic models are the schema. This repository
 holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 
-> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to `glossary` and reshapes it into glossary contexts that hold terms. The diagram above is not redrawn until that is built.
+> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to
+> `glossary` and reshapes it into glossary contexts that hold terms. The diagram above is not redrawn until that is
+> built.
 
 ## Mission type
 
@@ -114,7 +116,11 @@ type from files the service retires (DIV-502). All three are closed
 [Descriptors](/architecture/descriptors/) explains the
 fields.
 
-> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds explicit transitions, guards and the `lifecycle` and `gate` kinds to the mission type, and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames `missions/` to `mission_types/`. The schema below is the one the service reads today, and the diagram is not redrawn until the change is built.
+> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds
+> explicit transitions, guards and the `lifecycle` kind to the mission type and, pending a ruling (ADR-0050 open
+> question 2), a `gate` kind, and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames
+> `missions/` to `mission_types/`. The schema below is the one the service reads today, and the diagram is not
+> redrawn until the change is built.
 
 **`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
 
@@ -146,7 +152,9 @@ preamble and H2 sections `{title, content}`. A prompt may have frontmatter holdi
 Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
 `src/charter/activation/org_charter.py`, `src/charter/activation/schemas.py`.
 
-> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` to the pack descriptor and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. The diagram above is not redrawn until that is built.
+> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on`
+> to the pack descriptor and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage.
+> The diagram above is not redrawn until that is built.
 
 ## Pack-level schemas
 

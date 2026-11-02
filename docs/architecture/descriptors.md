@@ -82,7 +82,10 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
 
-> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on: [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern to `pack_id` and `parent_pack`. `built-in` then becomes a distribution pack with no artifacts of its own, over a slimmed foundation pack. The schema and the code do not do this yet.
+> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
+> [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
+> to `pack_id` and `parent_pack`. `built-in` then becomes a distribution pack with no artifacts of its own, over a
+> slimmed foundation pack. The schema and the code do not do this yet.
 
 **Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also
 points to the pack's mutability policy file at the pack root, so a reader finds every
@@ -273,7 +276,9 @@ A multi-step operating procedure with entry and exit conditions. Schema:
   `applies_to_languages`. An optional list holds at least one entry when present.
 - **CRG:** `procedure:<id>`.
 
-> **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) tightens the procedure definition and drops the inline `anti_patterns` of a procedure and a styleguide in favor of authored anti-pattern files that `rejects` references. Today's schemas still carry them.
+> **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
+> tightens the procedure definition and drops the inline `anti_patterns` of a procedure and a styleguide in favor
+> of authored anti-pattern files that `rejects` references. Today's schemas still carry them.
 
 ### Agent profile — `*.agent.yaml`
 
@@ -311,7 +316,9 @@ Terms a pack contributes.
   `definition`, `status`, `confidence`).
 - **CRG:** `glossary_pack:<id>`.
 
-> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames the kind `glossary`. Its artifact becomes a glossary context that holds terms addressed as `term:<context>/<term>`, and the file layout is still an open question there. Today's `*.glossary-pack.yaml` and `glossary_pack:<id>` stay until then.
+> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames the kind `glossary`. Its
+> artifact becomes a glossary context that holds terms addressed as `term:<context>/<term>`, and the file layout is
+> still an open question there. Today's `*.glossary-pack.yaml` and `glossary_pack:<id>` stay until then.
 
 ### Pack skill — `*.skill.yaml` plus body
 
@@ -378,7 +385,11 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 - **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node until
   edge authority is ruled ([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)).
 
-> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle` and `gate` kinds. With [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) it renames `missions/` to `mission_types/` and moves the step contracts into the type's bundle. This section describes the shape the service reads today.
+> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
+> the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`
+> kind and, pending a ruling (ADR-0050 open question 2), a `gate` kind. With
+> [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) it renames `missions/` to `mission_types/` and
+> moves the step contracts into the type's bundle. This section describes the shape the service reads today.
 
 ### Anti-pattern and template
 
@@ -388,7 +399,9 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
   whose id is its path there; a file under `missions/<type>/templates/` is one whose id is
   `<type>/<path>`. Both are held as bytes and linked with `instantiates` edges.
 
-> **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes an anti-pattern an authored file with a `smell`, `severe` or `breaking` severity, which `rejects` references. Its exact shape and layout still await a ruling.
+> **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
+> makes an anti-pattern an authored file with a `smell`, `severe` or `breaking` severity, which `rejects`
+> references. Its exact shape and layout still await a ruling.
 
 ## Project-side configuration
 

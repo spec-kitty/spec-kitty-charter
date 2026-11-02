@@ -289,7 +289,7 @@ The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-an
 | `mission_type` becomes an ordinary activatable kind; `CHARTER_KIND_TOKENS`' special path goes | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) | `mission-type` |
 | `lifecycle`: a reusable state machine, today's work-package lanes | ADR-0050 | `lifecycle` |
 | `gate`: a named guard condition with a severity and a config schema (recommended default, pending ruling) | ADR-0050 | `gate` |
-| `event_registry`: namespace, type and name per event, for the `emit` check; not activatable | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
+| `event_registry`: namespace, type and name per event, for the `emit` check; not activatable (recommended default, pending ruling) | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
 | `anti_pattern` becomes an authored file with a `smell` / `severe` / `breaking` severity, referenced by `rejects` | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) | `anti-pattern` |
 | `procedure` stays, with a tightened definition (one step, no deliverables, not a rule) | ADR-0052 | `procedure` |
 
@@ -522,7 +522,7 @@ the **description of a finite-state machine**: which states exist, which transit
 transition, and what happens when one is taken. The charter declares the machine; the client (today core's CLI)
 runs it, evaluates its guards and sends its events. The charter service runs no machine.
 
-| FSM concept | Today (ADR-0044) | Accepted (ADR-0050) |
+| FSM concept | Today (ADR-0044) | Accepted (ADR-0050; names pending where it marks them proposed) |
 |---|---|---|
 | State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
 | Composite state | a step with a `mission_step_contract` | unchanged |
