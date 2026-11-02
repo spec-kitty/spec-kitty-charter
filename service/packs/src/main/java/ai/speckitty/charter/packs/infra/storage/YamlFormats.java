@@ -20,7 +20,9 @@ final class YamlFormats {
             SkillYaml.INSTANCE,
             AssetYaml.INSTANCE,
             ProcedureYaml.INSTANCE,
-            MissionTypeYaml.INSTANCE);
+            MissionTypeYaml.INSTANCE,
+            GuardYaml.INSTANCE,
+            LifecycleYaml.INSTANCE);
 
     private YamlFormats() {}
 

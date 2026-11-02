@@ -20,12 +20,26 @@ class RelationTypeTest {
 
     @Test
     void everyRelationTypeTokenHasAMatchingRelation() {
-        // The reverse direction: no RelationType may carry a token the Relation catalogue lacks.
+        // The reverse direction: no RelationType may carry a token the Relation catalogue lacks, but a derived one
+        // (implemented_by, ADR-0054 decision 3), which no graph document spells and so Relation does not list.
         for (RelationType type : RelationType.values()) {
+            if (type.derived()) {
+                assertThat(Relation.fromToken(type.token()))
+                        .as("derived '%s'", type.token())
+                        .isEmpty();
+                continue;
+            }
             assertThat(Relation.fromToken(type.token()))
                     .as("Relation for token '%s'", type.token())
                     .isPresent();
         }
+    }
+
+    @Test
+    void implementedByIsTheOneDerivedRelationType() {
+        assertThat(java.util.Arrays.stream(RelationType.values()).filter(RelationType::derived))
+                .containsExactly(RelationType.IMPLEMENTED_BY);
+        assertThat(RelationType.IMPLEMENTED_BY.directionality()).isEqualTo(Directionality.DIRECTED);
     }
 
     @Test

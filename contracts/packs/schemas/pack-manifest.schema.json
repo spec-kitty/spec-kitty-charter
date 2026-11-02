@@ -22,7 +22,9 @@
             "anti_pattern",
             "asset",
             "template",
-            "mission_type"
+            "mission_type",
+            "guard",
+            "lifecycle"
           ],
           "title": "Kind",
           "type": "string"

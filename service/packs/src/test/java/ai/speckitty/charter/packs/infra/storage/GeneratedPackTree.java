@@ -114,6 +114,8 @@ final class GeneratedPackTree {
         SKILL("skill"),
         PROCEDURE("procedure"),
         MISSION_TYPE("mission-type"),
+        GUARD("guard"),
+        LIFECYCLE("lifecycle"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset");
 
@@ -512,16 +514,22 @@ final class GeneratedPackTree {
         // A procedure's id is its file stem (ADR-0043 S1), and the id cannot hold a dot: a procedure is planted under
         // its id, and never in a shape whose stem holds a dot (a hidden or a config stem), where a tactic stands in.
         boolean dottedStem = shape == Shape.LOADED_HIDDEN_STEM || shape == Shape.LOADED_CONFIG_STEM;
-        // A mission type sits at missions/<id>/<id>.mission-type.yaml (ADR-0044): it is planted there in the plain
+        // A mission type sits at missions/<id>/<id>.mission-type.yaml (ADR-0044), a guard at guards/<id>.guard.yaml
+        // and a lifecycle at lifecycles/<id>.lifecycle.yaml (ADR-0054, ADR-0050): each is planted there in the plain
         // shape, and a tactic stands in for it in every other shape.
-        Kind kind =
-                (wanted == Kind.PROCEDURE && dottedStem) || (wanted == Kind.MISSION_TYPE && shape != Shape.LOADED_PLAIN)
-                        ? Kind.TACTIC
-                        : wanted;
-        String stem = kind == Kind.PROCEDURE || kind == Kind.MISSION_TYPE ? idOf(kind, n) : "e" + n;
-        String path = kind == Kind.MISSION_TYPE
-                ? "missions/" + stem + "/" + stem + ".mission-type.yaml"
-                : loadedPath(shape, stem, kind);
+        boolean placed = wanted == Kind.MISSION_TYPE || wanted == Kind.GUARD || wanted == Kind.LIFECYCLE;
+        Kind kind = (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
+                ? Kind.TACTIC
+                : wanted;
+        boolean stemIsId =
+                kind == Kind.PROCEDURE || kind == Kind.MISSION_TYPE || kind == Kind.GUARD || kind == Kind.LIFECYCLE;
+        String stem = stemIsId ? idOf(kind, n) : "e" + n;
+        String path = switch (kind) {
+            case MISSION_TYPE -> "missions/" + stem + "/" + stem + ".mission-type.yaml";
+            case GUARD -> "guards/" + stem + ".guard.yaml";
+            case LIFECYCLE -> "lifecycles/" + stem + ".lifecycle.yaml";
+            default -> loadedPath(shape, stem, kind);
+        };
         boolean valid =
                 pack.paths(kind).stream().map(pack.planted::get).noneMatch(Planted::valid) || random.nextInt(5) != 0;
         String id = idOf(kind, n);
@@ -752,6 +760,8 @@ final class GeneratedPackTree {
             case SKILL -> "sk-" + n;
             case PROCEDURE -> "pr-" + n;
             case MISSION_TYPE -> "mt-" + n;
+            case GUARD -> "g-" + n;
+            case LIFECYCLE -> "lc-" + n;
             case ASSET -> "a-" + n;
         };
     }
@@ -781,6 +791,13 @@ final class GeneratedPackTree {
                         + "\ntitle: T\ndescription: D\nentry_condition: E\nexit_condition: X\nsteps:\n  - title: S\n";
             case MISSION_TYPE ->
                 "schema_version: '1.0'\nid: " + id + "\ntitle: T\ndescription: D\nsteps:\n  - id: s\n    title: S\n";
+            // A built-in guard names no asset, so the tree plants the guard file alone.
+            case GUARD ->
+                "schema_version: '1.0'\nid: " + id
+                        + "\ntitle: T\ninterface: guard/1\nimplemented_by: builtin:review-ref\n";
+            case LIFECYCLE ->
+                "schema_version: '1.0'\nid: " + id + "\ntitle: T\ninitial: a\nstates:\n  - id: a\n    title: A\n"
+                        + "  - id: b\n    title: B\n    terminal: true\ntransitions:\n  - from: a\n    to: b\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

@@ -6,9 +6,11 @@
 # added here and in the schemas in the same change.
 #
 # Shape
-#   node_kinds       The service's DRG node kind tokens (NodeKind.java), in schema order.
+#   node_kinds       The service's DRG node kind tokens (NodeKind.java), in schema order. guard and lifecycle
+#                    are node kinds the graph documents do not admit yet (NodeKind.authoredInGraphs).
 #   artifact_kinds   The artifact kind tokens (ArtifactKind.java). Each is also a node kind.
-#   fragment_kinds   Fragment node `kind` plural -> node kind. One name per concept (R14).
+#   fragment_kinds   Fragment node `kind` plural -> node kind. One name per concept (R14). Only the kinds the
+#                    graph documents admit (NodeKind.authoredInGraphs).
 #   files            Rules that map a pack file to the schema that validates it, each with an
 #                    optional `content_form`.
 #   exclusions       Rules for files that are not pack content or have no schema, each with a
@@ -74,6 +76,8 @@ node_kinds:
   - template
   - action
   - mission_type
+  - guard
+  - lifecycle
 
 artifact_kinds:
   - directive
@@ -90,6 +94,8 @@ artifact_kinds:
   - asset
   - template
   - mission_type
+  - guard
+  - lifecycle
 
 fragment_kinds:
   directives: directive
@@ -171,6 +177,13 @@ files:
   - match: "*/missions/*/steps/*.guidelines.md"
     schema: mission-step-guidelines
     content_form: markdown
+  # Guards (ADR-0054): one file per guard, guards/<id>.guard.yaml; a file anywhere else is refused by placement, not
+  # skipped, so the rule matches the token anywhere.
+  - match: "**/*.guard.yaml"
+    schema: guard
+  # Lifecycles (ADR-0050 decision 17): one file per lifecycle, lifecycles/<id>.lifecycle.yaml, placed as a guard is.
+  - match: "**/*.lifecycle.yaml"
+    schema: lifecycle
 
 exclusions:
   - match: "built-in.source.yaml"

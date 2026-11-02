@@ -59,6 +59,10 @@ public final class PackPolicy {
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
 
+    /** The finding text of an authored edge to or from a guard or a lifecycle (#156), before the endpoint. */
+    public static final String NOT_AUTHORED =
+            "a guard or a lifecycle is not an authored edge endpoint until its contract set lands: ";
+
     /**
      * Today's spelling of the tension relationship in a graph document (ADR-0036 Decision 4). The domain binds it to a
      * {@link Tension} held beside the relationships, never to a relation type (ADR-0028, ADR-0045); the writers spell
@@ -496,7 +500,9 @@ public final class PackPolicy {
     }
 
     private static Optional<DrgNode> shardNode(RawNode node) {
-        return Urn.parse(node.ref()).map(urn -> boundNode(urn, node));
+        return Urn.parse(node.ref())
+                .filter(urn -> urn.kind().authoredInGraphs())
+                .map(urn -> boundNode(urn, node));
     }
 
     /** The node with every field written for it; a fragment node has a body path, a shard node provenance and tags. */
@@ -508,7 +514,9 @@ public final class PackPolicy {
         if (node.ref().isEmpty()) {
             return Optional.empty();
         }
-        return NodeKind.fromPlural(node.kind()).map(kind -> boundNode(new Urn(kind, node.ref()), node));
+        return NodeKind.fromPlural(node.kind())
+                .filter(NodeKind::authoredInGraphs)
+                .map(kind -> boundNode(new Urn(kind, node.ref()), node));
     }
 
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
@@ -537,6 +545,10 @@ public final class PackPolicy {
         Optional<RelationType> relation = RelationType.fromToken(raw.relation());
         if (relation.isEmpty()) {
             return origin + ": unknown relation '" + raw.relation() + "'";
+        }
+        if (relation.get().derived()) {
+            return origin + ": relation '" + raw.relation() + "' is derived from an artifact's own field, never"
+                    + " authored as an edge";
         }
         Optional<String> strengthProblem = strengthProblem(relation.get(), raw.impacts());
         if (strengthProblem.isPresent()) {
@@ -577,6 +589,11 @@ public final class PackPolicy {
         }
         if (source.get().equals(target.get())) {
             return origin + ": a relationship cannot join '" + source.get() + "' to itself";
+        }
+        for (Urn endpoint : List.of(source.get(), target.get())) {
+            if (!endpoint.kind().authoredInGraphs()) {
+                return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
+            }
         }
         return new Endpoints(source.get(), target.get());
     }

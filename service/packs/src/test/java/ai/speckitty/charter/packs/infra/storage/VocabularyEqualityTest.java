@@ -62,9 +62,12 @@ class VocabularyEqualityTest {
         return new TreeSet<>(Arrays.asList(m.group(1).split("\\|")));
     }
 
+    /** The node kinds a graph document admits: guard and lifecycle wait for their contract set (#156). */
     private static Set<String> nodeKindTokens() {
-        return new TreeSet<>(
-                Arrays.stream(NodeKind.values()).map(NodeKind::token).toList());
+        return new TreeSet<>(Arrays.stream(NodeKind.values())
+                .filter(NodeKind::authoredInGraphs)
+                .map(NodeKind::token)
+                .toList());
     }
 
     // ---- node kinds -----------------------------------------------------------------------------
@@ -123,6 +126,9 @@ class VocabularyEqualityTest {
         assertThat(enumValues).as("the schema's kind enum").isEqualTo(new TreeSet<>(table.keySet()));
         Set<String> domain = new TreeSet<>();
         for (NodeKind kind : NodeKind.values()) {
+            if (!kind.authoredInGraphs()) {
+                continue;
+            }
             String plural = kind.artifactKind().map(ArtifactKind::plural).orElse(kind.token() + "s");
             if (NodeKind.fromPlural(plural).filter(kind::equals).isPresent()) {
                 domain.add(plural);
@@ -190,9 +196,11 @@ class VocabularyEqualityTest {
 
         assertThat(FileSystemPackInspector.artifactKinds()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(FileSystemPackInspector.artifactKinds())
-                .as("the ten kinds that were listed by hand, and the mission type (#194)")
+                .as("the ten kinds that were listed by hand, the mission type (#194), the guard and the lifecycle")
                 .containsExactlyInAnyOrder(
                         "mission-type",
+                        "guard",
+                        "lifecycle",
                         "directive",
                         "tactic",
                         "styleguide",
@@ -224,6 +232,7 @@ class VocabularyEqualityTest {
 
     @Test
     void theSchemasRelationsAreTheDomainsRelationsPlusExactlyTheTensionSpelling() throws IOException {
+        // A derived relation type (implemented_by, ADR-0054 decision 3) is not a Relation: no document spells it.
         Set<String> domain = new TreeSet<>(
                 Arrays.stream(Relation.values()).map(Relation::token).toList());
         Set<String> shard = new TreeSet<>(

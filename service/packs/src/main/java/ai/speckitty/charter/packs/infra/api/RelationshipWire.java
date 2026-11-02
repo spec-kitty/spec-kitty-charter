@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -75,8 +76,17 @@ final class RelationshipWire {
         Urn fromUrn =
                 Urn.parse(from).orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + from));
         Urn toUrn = Urn.parse(to).orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
+        for (Urn endpoint : List.of(fromUrn, toUrn)) {
+            if (!endpoint.kind().authoredInGraphs()) {
+                throw new IllegalArgumentException(PackPolicy.NOT_AUTHORED + endpoint);
+            }
+        }
         RelationType relationType = RelationType.fromToken(type)
                 .orElseThrow(() -> new IllegalArgumentException("unknown relation type: " + type));
+        if (relationType.derived()) {
+            throw new IllegalArgumentException(
+                    "relation type " + type + " is derived from an artifact's own field, never registered");
+        }
         return new Relationship(
                 fromUrn, toUrn, relationType, Optional.ofNullable(when), Optional.ofNullable(rationale));
     }

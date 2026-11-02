@@ -300,6 +300,8 @@ class PackFileSetExactnessTest {
             typed.put(Kind.SKILL, ids(read.dsos(SkillBinding.INSTANCE), SkillDso::id));
             typed.put(Kind.PROCEDURE, ids(read.dsos(ProcedureBinding.INSTANCE), ProcedureDso::id));
             typed.put(Kind.MISSION_TYPE, ids(read.dsos(MissionTypeBinding.INSTANCE), MissionTypeDso::id));
+            typed.put(Kind.GUARD, ids(read.dsos(GuardBinding.INSTANCE), GuardDso::id));
+            typed.put(Kind.LIFECYCLE, ids(read.dsos(LifecycleBinding.INSTANCE), LifecycleDso::id));
             typed.put(Kind.ASSET, ids(read.dsos(AssetBinding.INSTANCE), AssetDso::id));
             Set<String> observed = new LinkedHashSet<>();
             observed.add(PACK_YAML);

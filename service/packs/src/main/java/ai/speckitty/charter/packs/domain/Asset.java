@@ -23,13 +23,19 @@ public final class Asset implements CharterArtifact {
 
     private static final ModularRuleset<Asset> RULES = ModularRuleset.<Asset>emptyRules()
             .must(Constraints.of("An asset needs a mime that is not blank.", asset -> !asset.mime.isBlank()))
-            .must(Constraints.of("An asset needs a path that is not blank.", asset -> !asset.path.isBlank()));
+            .must(Constraints.of("An asset needs a path that is not blank.", asset -> !asset.path.isBlank()))
+            .must(Constraints.of(
+                    "An executable's entry is the asset's own path (ADR-0054 decision 5).",
+                    asset -> asset.executable
+                            .map(e -> e.entry().equals(asset.path))
+                            .orElse(true)));
 
     private final AssetIdentifier id;
     private final PackIdentifier packId;
     private final String mime;
     private final String path;
     private final Optional<String> title;
+    private final Optional<Executable> executable;
 
     /**
      * Reconstructs an asset from its parts; reachable only inside the domain package.
@@ -39,14 +45,22 @@ public final class Asset implements CharterArtifact {
      * @param mime the authored MIME type
      * @param path the authored path of the payload file, relative to the pack's {@code assets/} directory
      * @param title the title, possibly empty
+     * @param executable how the asset runs, possibly empty
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
-    Asset(AssetIdentifier id, PackIdentifier packId, String mime, String path, Optional<String> title) {
+    Asset(
+            AssetIdentifier id,
+            PackIdentifier packId,
+            String mime,
+            String path,
+            Optional<String> title,
+            Optional<Executable> executable) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.mime = Objects.requireNonNull(mime, "mime");
         this.path = Objects.requireNonNull(path, "path");
         this.title = Objects.requireNonNull(title, "title");
+        this.executable = Objects.requireNonNull(executable, "executable");
         RULES.guard(this);
     }
 
@@ -101,7 +115,7 @@ public final class Asset implements CharterArtifact {
         return Optional.empty();
     }
 
-    /** An asset mints no relationships. */
+    /** An asset mints no relationships: a guard's {@code implemented_by} edge is the guard's own. */
     @Override
     public List<Relationship> relationships() {
         return List.of();
@@ -134,6 +148,16 @@ public final class Asset implements CharterArtifact {
         return title;
     }
 
+    /**
+     * How the asset runs, when it declares that it does (ADR-0054 decision 5). Only an asset with one can implement a
+     * guard.
+     *
+     * @return the executable block, empty when the asset does not run
+     */
+    public Optional<Executable> executable() {
+        return executable;
+    }
+
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -157,6 +181,7 @@ public final class Asset implements CharterArtifact {
         private @Nullable String mime;
         private @Nullable String path;
         private Optional<String> title = Optional.empty();
+        private Optional<Executable> executable = Optional.empty();
 
         private Builder() {}
 
@@ -216,6 +241,17 @@ public final class Asset implements CharterArtifact {
         }
 
         /**
+         * Sets how the asset runs.
+         *
+         * @param value the executable block, or null for none
+         * @return this builder
+         */
+        public Builder executable(@Nullable Executable value) {
+            this.executable = Optional.ofNullable(value);
+            return this;
+        }
+
+        /**
          * Builds the asset.
          *
          * @return the validated asset
@@ -228,7 +264,8 @@ public final class Asset implements CharterArtifact {
                     Objects.requireNonNull(packId, "packId"),
                     Objects.requireNonNull(mime, "mime"),
                     Objects.requireNonNull(path, "path"),
-                    title);
+                    title,
+                    executable);
         }
     }
 }

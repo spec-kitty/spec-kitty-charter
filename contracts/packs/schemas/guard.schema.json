@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/guard.schema.json",
+  "$defs": {
+    "Limits": {
+      "additionalProperties": false,
+      "description": "What the client allows an asset-backed guard while it runs. A built-in guard runs in the client's own process; the client applies what it can.",
+      "properties": {
+        "timeout_seconds": {
+          "description": "The longest the guard may run, at most a day. Overrunning it counts as could not evaluate (exit 2).",
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "network": {
+          "description": "Whether the guard may reach the network. Absent means false.",
+          "title": "Network",
+          "type": "boolean"
+        }
+      },
+      "title": "Limits",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "An enforced check a transition names (ADR-0054): implemented_by an executable asset or a closed built-in, run to the guard/1 interface, failing closed. A guard carries no severity; whether a failure blocks is the transition entry's blocking.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "The guard's id, kebab-case; it is the file stem.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "interface": {
+      "const": "guard/1",
+      "description": "The interface the guard is run to: one JSON object on stdin; exit 0 pass, 1 fail, 2 could not evaluate; a verdict on stdout.",
+      "title": "Interface",
+      "type": "string"
+    },
+    "implemented_by": {
+      "description": "The guard's one implementation: asset:<id> (an asset of this pack that declares an executable block), <pack>::asset:<id> (an asset of another pack), or builtin:<id> from the closed list the client's own code implements.",
+      "pattern": "^(builtin:(transition-context-complete|dependency-ready|implementation-ready|review-approved|review-ref|spec-kitty-pre-review)|([a-z0-9]+(-[a-z0-9]+)*::)?asset:[A-Za-z0-9_/.-]+)$",
+      "title": "Implemented By",
+      "type": "string"
+    },
+    "config_schema": {
+      "description": "A JSON Schema (draft 2020-12) that a transition entry's config is checked against at load. Its content is open: it is itself a schema, checked at load against the draft 2020-12 meta-schema and compiled offline, as the bundled schemas are: an unknown keyword and a $ref outside the document are refused (ADR-0042 S4 as amended). format is an annotation, not checked.",
+      "title": "Config Schema",
+      "type": "object"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    },
+    "on_indeterminate": {
+      "description": "What a could-not-evaluate result counts as: block (when absent) or pass. The guard author's decision, stated in the file (ADR-0054 decision 8).",
+      "enum": [
+        "block",
+        "pass"
+      ],
+      "title": "On Indeterminate",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "interface",
+    "implemented_by"
+  ],
+  "title": "Guard",
+  "type": "object"
+}

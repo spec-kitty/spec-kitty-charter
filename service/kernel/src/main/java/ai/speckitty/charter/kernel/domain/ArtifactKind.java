@@ -40,7 +40,18 @@ public enum ArtifactKind {
      * slot rather than among its activated kinds; it is neither org-requirable nor selection-overlayable. Core has no
      * such artifact kind (a recorded divergence).
      */
-    MISSION_TYPE("mission_type", "mission_types", true, false, false, InForceWhenAbsent.ALL);
+    MISSION_TYPE("mission_type", "mission_types", true, false, false, InForceWhenAbsent.ALL),
+    /**
+     * A guard: an enforced check a transition names, {@code implemented_by} an executable asset or a closed built-in
+     * (ADR-0054). It is in force with its pack, as an event registry is (ADR-0053 decision 26): never activated,
+     * required or selected; a transition that is in force puts its guards in force.
+     */
+    GUARD("guard", "guards", false, false, false, InForceWhenAbsent.ALL),
+    /**
+     * A lifecycle: a declared, reusable state machine a mission step runs as a submachine (ADR-0050 decision 17). It is
+     * in force with its pack, like a guard: never activated, required or selected.
+     */
+    LIFECYCLE("lifecycle", "lifecycles", false, false, false, InForceWhenAbsent.ALL);
 
     /** What is in force while a kind's activation key is absent. */
     public enum InForceWhenAbsent {

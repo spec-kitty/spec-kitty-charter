@@ -1,8 +1,52 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/asset.schema.json",
+  "$defs": {
+    "Executable": {
+      "additionalProperties": false,
+      "description": "How the client runs the asset (ADR-0054 decision 5). The client builds the argv as the runtime's own executable, then entry, then args, and spawns it without a shell; no field holds a command string. runtime is a vetted token, never an executable path, so a shell or an absolute path cannot be named.",
+      "properties": {
+        "runtime": {
+          "description": "The runtime, from the fixed allowlist of vetted tokens; the client maps it to an executable. Widening it is a reviewed change to this schema, not a pack edit.",
+          "enum": [
+            "python"
+          ],
+          "title": "Runtime",
+          "type": "string"
+        },
+        "min_version": {
+          "description": "The lowest runtime version the asset needs, as dotted numbers.",
+          "pattern": "^[0-9]+(\\.[0-9]+){0,2}$",
+          "title": "Min Version",
+          "type": "string"
+        },
+        "entry": {
+          "description": "The asset's payload, relative to the pack's assets/ directory; it must equal the sidecar's path. No absolute path, no .. or hidden segment, no whitespace or backslash.",
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "args": {
+          "description": "The arguments after entry, each one argv element. entry is not repeated among them.",
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Args",
+          "type": "array"
+        }
+      },
+      "required": [
+        "runtime",
+        "entry"
+      ],
+      "title": "Executable",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
-  "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.",
+  "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.\nexecutable:\n    Optional. Declares that the asset runs (ADR-0054 decision 5): the runtime from a\n    fixed allowlist, the entry (the asset's own payload path, one argv element), and\n    the arguments after it. Only an asset with this block can implement a guard.",
   "properties": {
     "id": {
       "minLength": 1,
@@ -30,6 +74,9 @@
       ],
       "default": null,
       "title": "Title"
+    },
+    "executable": {
+      "$ref": "#/$defs/Executable"
     }
   },
   "required": [

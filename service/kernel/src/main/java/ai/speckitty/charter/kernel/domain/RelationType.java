@@ -53,12 +53,33 @@ public enum RelationType {
     /** From a reconciling artifact to one side of a pair joined by a {@link Tension} (ADR-0028 Decision 4). */
     RECONCILES_TENSION(Directionality.DIRECTED),
     /** From a good artifact to an {@code anti_pattern} node. */
-    REJECTS(Directionality.DIRECTED);
+    REJECTS(Directionality.DIRECTED),
+    /**
+     * From a guard to the executable asset that implements it (ADR-0054 decision 3). It is {@link #derived()}: the
+     * guard's {@code implemented_by} field is its one authoring, so a graph shard or a registration that names it is
+     * refused.
+     */
+    IMPLEMENTED_BY(Directionality.DIRECTED, true);
 
     private final Directionality directionality;
+    private final boolean derived;
 
     RelationType(Directionality directionality) {
+        this(directionality, false);
+    }
+
+    RelationType(Directionality directionality, boolean derived) {
         this.directionality = directionality;
+        this.derived = derived;
+    }
+
+    /**
+     * Whether the relation is only ever derived from an artifact's own field, never authored as an edge.
+     *
+     * @return {@code true} only for {@link #IMPLEMENTED_BY}
+     */
+    public boolean derived() {
+        return derived;
     }
 
     /**
