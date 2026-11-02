@@ -281,16 +281,16 @@ facts; it does not restate them.
 
 ### Accepted kinds and kind changes (epic #142, not built yet)
 
-The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)) and change this table once they are built. Until then the table above describes the code.
+The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)) and change this table once they are built; their open questions are ruled in [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/). Until then the table above describes the code.
 
 | Change | Record | Operator token |
 |---|---|---|
-| `glossary_pack` is renamed `glossary`; its artifact is a glossary context holding terms (`term:<context>/<term>`) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/) | `glossary` |
+| `glossary_pack` is renamed `glossary`; its artifact is a glossary context (`glossary_context:<id>`) holding terms (`term:<context>/<term>`) | [ADR-0049](/adr/0049-glossary-contexts-and-terms/), ADR-0053 | `glossary` |
 | `mission_type` becomes an ordinary activatable kind; `CHARTER_KIND_TOKENS`' special path goes | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) | `mission-type` |
 | `lifecycle`: a reusable state machine, today's work-package lanes | ADR-0050 | `lifecycle` |
-| `gate`: a named guard condition with a severity and a config schema (recommended default, pending ruling) | ADR-0050 | `gate` |
-| `event_registry`: namespace, type and name per event, for the `emit` check; not activatable (recommended default, pending ruling) | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
-| `anti_pattern` becomes an authored file with a `smell` / `severe` / `breaking` severity, referenced by `rejects` | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) | `anti-pattern` |
+| `guard`: an enforced check on a transition, `implemented_by` an executable asset or a closed `builtin:` id, run to the guard/1 interface, failing closed (replaces the proposed `gate` kind) | [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) | `guard` |
+| `event_registry`: namespace, type and name per event, for the `emit` check; not activatable | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) | `event-registry` |
+| `anti_pattern` becomes an authored file with a `smell` / `severe` / `breaking` severity and a required bad example, referenced by `rejects` | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) | `anti-pattern` |
 | `procedure` stays, with a tightened definition (one step, no deliverables, not a rule) | ADR-0052 | `procedure` |
 
 ## The Charter Reference Graph (CRG)
@@ -526,17 +526,19 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 |---|---|---|
 | State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
 | Composite state | a step with a `mission_step_contract` | unchanged |
-| Submachine state | none; the work-package lanes are hardcoded in core | a step's `work_package_lifecycle`, one instance per work package |
+| Submachine state | none; the work-package lanes are hardcoded in core | a step's `submachine: {lifecycle, per: work_package}`, one instance per work package |
 | Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, on?, guard?, on_transition?}]`; absent means "next in the list" |
-| Guard | blocking expected input and output artifacts | `guard: [{gate, config?}]`; blocking artifacts stay the built-in guard |
+| Guard | blocking expected input and output artifacts | `guard: [{ref, config?, blocking?}]` naming guard artifacts backed by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); blocking artifacts stay the built-in guard |
 | Triggering event | external: the runtime's `next` | `on`, a token the client interprets (`next` when absent) |
 | Global transitions | `on_demand_steps` | unchanged |
-| Actions | none | `on_enter`, `on_exit` (Moore) and `on_transition` (Mealy), each `{emit: [...]}` |
+| Actions | none | `on_enter`, `on_exit` (Moore) and `on_transition` (Mealy), each emitting events or, behind trust, running a pack asset |
 | Branches and back-edges | not modelled | explicit transitions |
 | Parallel regions | not modelled | not modelled; per-work-package lifecycles cover today's parallel work |
 
-**Extension.** Another pack may enhance a step (a step enhancement: add references, guards and emits; never
-remove, reorder or re-route) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
+**Extension.** Another pack may enhance a step (a step enhancement: an artifact holding the additions, joined to
+the step by a CRG `enhances` edge, as profiles are augmented; it adds references, guards and emits and never
+removes, reorders or re-routes) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
+A reference across packs is written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)).
 
 **Theoretical origins.**
 

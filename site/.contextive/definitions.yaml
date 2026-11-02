@@ -92,9 +92,9 @@ contexts:
         meta:
           status: "canonical"
       - name: "Gate"
-        definition: "A named guard condition that a guard names. Recommended (ADR-0050 decision 14, pending ruling): a declared kind with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema."
+        definition: "Superseded by Guard (ADR-0054, 2026-11-02). Was proposed as a declared kind with a severity and a config schema (ADR-0050 decision 14); the operator ruled instead that guards are enforced checks implemented by executable assets."
         meta:
-          status: "proposed"
+          status: "deprecated"
       - name: "Global Selection"
         definition: "Selection mode in which an artifact is in force for every step of every mission, whatever the action or mission type: it is on the project's active charter. What must be selected is stated by a requirement, authored as a preset; what a mission type adds while it runs is its recipe ingredients. Core expresses this today with `selected_<kind>` / `required_<kind>` lists (deprecated here), unioned onto the activated_&lt;kind&gt; base."
         meta:
@@ -108,7 +108,7 @@ contexts:
       - name: "Governance Scope — `scope` (CRG Relation)"
         definition: "A directional Three-layer CRG relation from a mission-step action node to the directives and tactics that govern performing that action. It is the entry point of governance-context resolution: the resolver first walks `scope` edges from the action node, then expands through Hard Dependency and Soft Recommendation edges from what it found. It is one of the most heavily emitted relations tied to action nodes in the built-in graph. Distinct from Workflow Application — see that entry for the contrast. Canonical source: `RELATION_DESCRIPTIONS[Relation.SCOPE]` in `src/charter/offering/drg/models.py`."
       - name: "Guard"
-        definition: "A named condition that must hold before a mission-type or lifecycle transition is taken, declared on the transition as `guard: [{gate, config?}]`. The charter declares it and the client evaluates it (ADR-0050)."
+        definition: "An enforced check that must pass before a mission-type or lifecycle transition is taken. A guard is an artifact (`guards/<id>.guard.yaml`) `implemented_by` an executable asset or a closed built-in, run by the client to the guard/1 interface (context on stdin; exit 0 pass, 1 fail, 2 could not evaluate) and failing closed. A transition names it as `guard: [{ref, config?, blocking?}]`. The charter declares it and the client runs it (ADR-0050, ADR-0054)."
         meta:
           status: "canonical"
       - name: "Guideline"
