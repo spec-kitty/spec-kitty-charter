@@ -79,6 +79,104 @@ ADRs and issues. Composition and the named-packs split are already drafted as
   (ADR-0019 D2). It keeps kinds apart from the other pack sub-resources, gives the cross-kind listing
   a home, and lets one route serve every kind.
 
+## 4. Mission types
+
+- **Kind.** `mission_type` is an artifact kind inside a pack, served at
+  `/packs/{packId}/artifacts/mission-type/{id}`. This matches ADR-0044. Core aligns with it (#148) and
+  retires `MissionTypeNotAnArtifactKind` and DIV-501.
+- **M1, layout.** A mission type is a bundle artifact: `mission_types/<type>/` holds the type file,
+  `steps/` and `templates/`. `missions/` is renamed to `mission_types/` during the named-packs split.
+- **M2, step contracts.** `mission_step_contract` stays a kind. Its files move into the type's bundle
+  (`mission_types/<type>/step_contracts/`).
+- **M3, extending from another pack** (operator refinement):
+  - **Replace** a step or a whole type with `overrides`: whole replacement, with a drift warning when
+    the replaced original changes (the #164 D2 rule).
+  - **Extend or enhance** a step with `enhances`: a specialist or org pack attaches more guidance to an
+    existing step without copying it. For example, an org links the `review` step to its internal
+    static-analysis or review-agent cluster.
+  - An enhancement only adds. It cannot remove or reorder steps, or change their transitions.
+  - A new workflow is a new mission type.
+- **M4, activation.** A mission type is the cascade source, and is otherwise an ordinary kind:
+  presets, the deny list and listing all apply. Core's special `CHARTER_KIND_TOKENS` path goes.
+- **The shipped types stay in the foundation pack.** Topical packs plug in through `scope` edges or step
+  enhancements.
+
+### Mission type as a state machine (client-side use)
+
+On the client, a mission type is the **description of a finite-state machine**: it must say which
+states exist, which transitions connect them, what guards a transition, and what happens when one is
+taken.
+
+**Theoretical origins**, for the logical-model docs:
+
+- **Finite-state machines and transducers.** States, an input alphabet, and a transition function.
+  - In a Mealy machine, output (an action) belongs to the transition.
+  - In a Moore machine, output belongs to the state.
+  - References: [Finite-state machine](https://en.wikipedia.org/wiki/Finite-state_machine);
+    G. H. Mealy, "A Method for Synthesizing Sequential Circuits", *Bell System Technical Journal*
+    34(5), 1955, [doi:10.1002/j.1538-7305.1955.tb03788.x](https://doi.org/10.1002/j.1538-7305.1955.tb03788.x);
+    E. F. Moore, "Gedanken-Experiments on Sequential Machines", *Automata Studies*, 1956.
+- **Harel statecharts.** Hierarchical (nested) states, guards on transitions, entry and exit actions,
+  and parallel regions.
+  - A step with its step-contract sub-steps is a composite state.
+  - Reference: D. Harel, "Statecharts: a visual formalism for complex systems", *Science of Computer
+    Programming* 8(3), 1987,
+    [doi:10.1016/0167-6423(87)90035-9](https://doi.org/10.1016/0167-6423(87)90035-9).
+  - Standardized as [UML state machines](https://www.omg.org/spec/UML/2.5.1/) (OMG UML 2.5.1, clause 14)
+    and as [W3C SCXML](https://www.w3.org/TR/scxml/) (2015), which defines `<transition event cond target>`,
+    `<onentry>` and `<onexit>`.
+- **Workflow nets** (Petri nets applied to workflow). Pre- and postconditions as places and tokens,
+  and parallel branches with joins.
+  - The step's `expected_input_artifacts` and `expected_output_artifacts` are exactly this.
+  - Reference: W. M. P. van der Aalst, "The application of Petri nets to workflow management",
+    *Journal of Circuits, Systems and Computers* 8(1), 1998,
+    [doi:10.1142/S0218126698000043](https://doi.org/10.1142/S0218126698000043).
+  - Catalogue: [Workflow Patterns](http://www.workflowpatterns.com/) (sequence, exclusive choice,
+    parallel split and join, arbitrary cycles).
+- **Design by Contract.** A step's inputs and outputs are its pre- and postconditions (ADR-0044
+  ruling Q2).
+  - B. Meyer, "Applying Design by Contract", *IEEE Computer* 25(10), 1992,
+    [doi:10.1109/2.161279](https://doi.org/10.1109/2.161279).
+
+**How the current shape maps** (ADR-0044):
+
+| FSM concept | Today |
+|---|---|
+| State | a `steps[]` item, plus the implicit start and terminal (mission created and completed) |
+| Composite state | a step with a `mission_step_contract` (sub-steps) |
+| Transition | **implicit**: list order, step *i* to *i+1* (ADR-0044 decision 4, "the list order is the only order") |
+| Guard | blocking `expected_input_artifacts` (entry) and blocking `expected_output_artifacts` (exit) |
+| Triggering event | external: the runtime's `next` (`NextStepIssued` in spec-kitty-events) |
+| Global transitions | `on_demand_steps`, reachable from any state by an explicit command |
+| Branches, rework loops, parallel regions | **not modelled**. Rework lives in core's separate, hardcoded work-package lane machine (`status/transitions.py`) |
+| Actions (entry, exit, transition) | **none** |
+
+**Gaps:**
+
+- **Transitions are positional.** They cannot be named, guarded on anything but artifacts, or
+  extended. Inserting a step means replacing the whole type.
+- **Core's runtime schema already had more.** Its `PromptStep` and `AuditStep` carry `depends_on`
+  (a DAG), RACI and significance. The sanitized charter shape dropped `depends_on` for the list order.
+- **No loop is modelled.** A review rejection back to implementation is a back-edge that no mission
+  type declares.
+
+**Proposed direction** (to refine):
+
+- **Explicit transitions.** Each step may carry
+  `transitions: [{to, on?, guard?, on_transition?}]`. Absent means "to the next step in the list",
+  so every current file stays valid and the list order is syntactic sugar for a linear machine.
+  Explicit entries add branches and back-edges. There is an explicit terminal state.
+- **Entry and exit actions.** `on_enter` and `on_exit` on a step (Moore-style actions), beside
+  `on_transition` (Mealy-style actions).
+- **Actions only emit events.** An action is limited to `emit: [{event_type, payload?}]`. A pack never
+  runs code (see the trust and SBOM work, #157). An org's review cluster *subscribes* to the event.
+- **Event types are validated at ingestion** against the event catalogue of the pinned
+  spec-kitty-events contract. An unknown type is refused.
+- **The engine always emits the standard lifecycle events** (step entered, step exited, transition
+  taken). A pack declares only *additional*, domain-specific events.
+- **Enhancement may add actions** (M3). An `enhances` may append `emit` entries and references to an
+  existing step, but may not change its transitions.
+
 ## Open questions
 
 1. The tier of our own opt-in packs (`java`, `qa`, …).
@@ -88,3 +186,8 @@ ADRs and issues. Composition and the named-packs split are already drafted as
 5. The edge form a distribution pack uses to settle a sibling conflict.
 6. Whether a context's `applies_to` filters what is in force (like `applies_to_languages`), or is
    only advisory.
+7. Whether `depends_on` (a DAG, with parallel steps) comes back beside explicit transitions, or
+   whether parallelism stays in the work-package lane machine.
+8. Whether the work-package lane machine itself becomes declarable data, a second machine that a
+   mission type references, instead of core code.
+9. Where the event catalogue a pack may reference is published, and how its version is pinned.
