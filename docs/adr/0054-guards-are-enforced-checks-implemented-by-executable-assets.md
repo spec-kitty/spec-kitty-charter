@@ -55,6 +55,14 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
 - **An asset sidecar cannot say it is executable.** It holds `id`, `mime`, `path` and `title`, closed. No relation
   names "implemented by". The built-in `docs_structural_lint.py.asset.yaml` path is anchored wrongly, the defect
   [ADR-0040](/adr/0040-content-form-and-payload-kinds/) names.
+- **Core already accepted asset-backed gates.** Core ADR `3.x/2026-08-13-2` (carried here as
+  [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), from core #3418) designed gates as asset-backed
+  artifacts with a gate-to-asset edge. Its acceptance was amended on 2026-09-27 with hardening:
+  - `interpreter` is checked against a fixed allowlist of vetted tokens, and a shell (`sh`, `bash`, …) or an absolute
+    path is refused at load;
+  - `args` is a list, with the asset as exactly one argv element, and no shell-string field exists.
+
+  This record keeps that hardening and moves it to the asset's `executable` block (decision 5).
 
 ## Decision
 
@@ -106,6 +114,11 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    `{runtime, min_version?, entry, args?}`, for example `{runtime: python, min_version: "3.11", entry:
    qa_carrier_lint.py, args: ["--guard"]}`. Only an asset with this block can implement a guard, or be named by a
    declared action (ADR-0053 decision 17). The asset path anchoring defect is fixed before any asset backs a guard.
+   The block carries core ADR `3.x/2026-08-13-2`'s hardening:
+   - `runtime` is one of a fixed allowlist of vetted tokens (`python` first), checked at load;
+   - a shell or an absolute path is refused;
+   - `args` is a list in which `entry` is exactly one argv element;
+   - there is no shell-string field.
 6. **Core's lane checks are built-in guards.** `subtasks_complete`, `reviewer_approval`, `review_ref` and the rest,
    and today's `spec-kitty-pre-review`, become guard artifacts in the foundation pack with
    `implemented_by: builtin:<id>`. The `builtin:` ids are a closed list, versioned with the contract; the client's
@@ -242,7 +255,8 @@ Rejected by the operator. A guard that silently passes is not enforced.
 
 - [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decisions 12 to 14 and 20;
   [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 7, 16, 17 and 19.
-- #155, #156, #157, #339, #340; core #2599 and constraint C-003.
+- #155 (closed into #156), #156, #157, #339, #340; core #2599, #3418 and constraint C-003; core ADR
+  `3.x/2026-08-13-2` and its 2026-09-27 amended acceptance.
 - Core `9aed3a8`: `review/gate_registry.py`, `review/gate_bindings.py`, `status/wp_state.py`,
   `cli/commands/agent/tasks_move_task_gates.py`; spec-kitty-open-packs `1060bfc`: `packs/qa/assets/qa_carrier_lint.py`,
   `packs/built-in/missions/built_in_step_contracts/review.step-contract.yaml`.

@@ -44,12 +44,12 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 6 | The authoring checklist for the tightened procedure definition (the closed schema already refuses outputs and `action:` references) | 0052 | S | 1 | #150 |
 | 7 | The `event_registry` kind and the shared `emit` entry shape | 0051 | M | 2 (resolution uses the closure) | proposed: "event registry kind" |
 | 8 | The `guard` and `lifecycle` kinds; the asset `executable` block and the `implemented_by` relation | 0050, 0054 | M | 1 | #156 (renamed to guard); proposed: "lifecycle kind" |
-| 9 | Mission-type schema: transitions, guards (closes #155), actions, `work_package_lifecycle`, requirement kinds (#164), `term:` links | 0050 | L | 4, 7, 8 | #148, #155, #164 |
+| 9 | Mission-type schema: transitions, guard entries `{ref, config?, blocking?}` (#155, closed into #156), actions, the `submachine` field, requirement kinds (#164), `term:` links | 0050 | L | 4, 7, 8 | #148, #155, #164 |
 | 10 | Step enhancements and `overrides` checks, with the drift warning | 0050 | M | 3, 9 | #148 |
 | 11 | Mission type as an ordinary activatable kind (presets, deny list) | 0050 | M | 9 | #148 |
 | 12 | `applies_to_stacks` beside `applies_to_languages` | notes | S | 1 | #163 |
 | 13 | Contract sets for the new reads and registrations (glossary, anti-pattern, event registry, guard, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind |
-| 14 | Close #153 (not planned), #161 (moot), #147 (into #146); document the single daemon per worktree (#183) | notes | S | 1 | #153, #161, #183 |
+| 14 | ~~Close #153 (not planned), #161 (moot)~~ (done 2026-11-02); close #147 (into #146); document the single daemon per worktree (#183) | notes | S | 1 | #153, #161, #183 |
 
 Items 4 to 8 are independent of each other once item 1 is done, and can run in parallel as long as only one of them
 changes `contracts/` at a time.
@@ -116,23 +116,24 @@ From the census of spec-kitty-open-packs at `1060bfc`. The operator adopted it a
 
 ## Core follow-up list (post-cutover unless marked)
 
-From a read of spec-kitty/spec-kitty at `9aed3a8`. No core PR is opened from this repository; core files and orders
-these.
+From a read of spec-kitty/spec-kitty at `9aed3a8`. No core PR is opened from this repository. Each follow-up is filed
+as a task under the 4.x cutover epic #69 (2026-11-02); C1 and C12 are in the "4.x cutover" milestone, the rest in
+"Post-cutover". C8 and C9 were rewritten after ADR-0054.
 
-| # | Follow-up | Driven by | Size | After |
-|---|---|---|---|---|
-| C1 | Retire the dead glossary learning and clarification pipeline (pipeline, attachment, middleware, clarification, checkpoint, resolution, `glossary_hook`, `build_glossary_drg_layer`); no production caller | 0049 decision 17 | M | none; may precede the cutover |
-| C2 | Point the chokepoint and the template renderer at the active glossary contexts; drop the four `GlossaryScope` values; keep `mission_local` as runtime state | 0049 | L | charter 4 |
-| C3 | Project the terminology gates' banned lists from `avoid` (no checker reads `synonyms_to_avoid` today) | 0049 decision 15 | M | C2 |
-| C4 | Rename `glossary_pack` to `glossary` in activation keys and `--include` tokens, with a migration | 0049 | M | charter 4 |
-| C5 | Make mission type an artifact kind: remove `MissionTypeNotAnArtifactKind`, the special `CHARTER_KIND_TOKENS` entry and the `mission_type_activations` key | 0050 decision 6 | M | charter 11 |
-| C6 | Read `mission_types/<type>/` bundles (runtime bridge, discovery, step repository, org expected artifacts) | 0050 decision 4 | M | open-packs P2 |
-| C7 | Load the lane machine from the declared lifecycle: `wp_state.py` reads edges and guards from the artifact, guards resolve through an evaluator registry | 0050 decisions 17 to 21 | L | charter 8, open-packs P6 |
-| C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 |
-| C9 | A guard runner for the guard/1 interface and the `builtin:` guard table; fail-closed, with `on_indeterminate` and per-entry `blocking` (#340) | 0054 | M | charter 8 |
-| C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue |
-| C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 |
-| C12 | Render activated anti-patterns in review prompts instead of the hardcoded checklist | 0052 | S | none; may precede the cutover |
+| # | Follow-up | Driven by | Size | After | Issue |
+|---|---|---|---|---|---|
+| C1 | Retire the dead glossary learning and clarification pipeline (pipeline, attachment, middleware, clarification, checkpoint, resolution, `glossary_hook`, `build_glossary_drg_layer`); no production caller | 0049 decision 17 | M | none; may precede the cutover | #332 |
+| C2 | Point the chokepoint and the template renderer at the active glossary contexts; drop the four `GlossaryScope` values; keep `mission_local` as runtime state | 0049 | L | charter 4 | #333 |
+| C3 | Project the terminology gates' banned lists from `avoid` (no checker reads `synonyms_to_avoid` today) | 0049 decision 15 | M | C2 | #334 |
+| C4 | Rename `glossary_pack` to `glossary` in activation keys and `--include` tokens, with a migration | 0049 | M | charter 4 | #335 |
+| C5 | Make mission type an artifact kind: remove `MissionTypeNotAnArtifactKind`, the special `CHARTER_KIND_TOKENS` entry and the `mission_type_activations` key | 0050 decision 6 | M | charter 11 | #336 |
+| C6 | Read `mission_types/<type>/` bundles (runtime bridge, discovery, step repository, org expected artifacts) | 0050 decision 4 | M | open-packs P2 | #337 |
+| C7 | Load the lane machine from the declared lifecycle: `wp_state.py` reads edges and guards from the artifact, guards resolve through an evaluator registry | 0050 decisions 17 to 21 | L | charter 8, open-packs P6 | #338 |
+| C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 | #339 |
+| C9 | A guard runner for the guard/1 interface and the `builtin:` guard table; fail-closed, with `on_indeterminate` and per-entry `blocking` (#340) | 0054 | M | charter 8 | #340 |
+| C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue | #341 |
+| C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 | #342 |
+| C12 | Render activated anti-patterns in review prompts instead of the hardcoded checklist | 0052 | S | none; may precede the cutover | #343 |
 
 Two upstream items sit outside both repositories: an issue on spec-kitty-events for generic step events (the notes'
 E4), and agreement there on who owns the lane names (ADR-0050 decision 21).
@@ -147,7 +148,7 @@ E4), and agreement there on who owns the lane names (ADR-0050 decision 21).
 6. **Generic step events** (spec-kitty-events): the notes' E4.
 7. **Open-packs: named-packs split, mission-type bundles, stack packs, curation pass, glossary contexts, lifecycle
    and registry** (spec-kitty-open-packs, P1 to P6).
-8. **Core C1 to C12** (spec-kitty/spec-kitty, under core epic #2466).
+8. ~~**Core C1 to C12**~~ filed 2026-11-02 as #332 to #343 under the 4.x cutover epic #69.
 
 {#open-decisions-and-recommended-defaults}
 
