@@ -4,3 +4,6 @@ dist/
 # Staged by ./gradlew :charter-reports:stageJavadocForSite (and in CI); built, never committed.
 public/javadoc/
 okf-export/
+# Staged by scripts/stage-docs-inputs.mjs (predev, prebuild) from contracts/ and build/; never committed.
+schemas/
+openapi/

@@ -18,6 +18,8 @@ audience:
 
 # Service contract
 
+The built operations are also readable as [API reference pages](/reference/api/main/), published from the contract bundle (unreleased). The raw contract is at [`openapi.yaml`](/reference/api/main/openapi.yaml), with its [SHA-256 checksum](/reference/api/main/openapi.yaml.sha256).
+
 The planned operations, error model and transports of the charter service's OpenAPI contract. The surface derives from the reads core's Python charter answers today (`charter.activation` and `charter.offering` in core), from core ADR [`2026-10-03-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-03-1-charter-read-write-service-strangler.md) (the staged Java service strangler), [ADR-0001](/adr/0001-java-service-with-openapi-contract/) and [ADR-0002](/adr/0002-contract-source-of-record/). Every operation is a proposal until it is in `contracts/charter/openapi.yaml`.
 
 > **Partly built.** The operations under [Built surface](#built-surface) are in the contract and served by the Java service: the API root, the service info, the contract document, the offering's pack list, the generic artifact reads and the registrations. The other operations on this page are designed only. See the [API overview](/api/).
