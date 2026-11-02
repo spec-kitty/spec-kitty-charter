@@ -127,6 +127,9 @@ the closure is refused and names C.
 | FR-018 | Today's single tree still loads | As an operator, I want the current single `built-in` tree to load unchanged until the open-packs split lands, so that this mission does not force the split. | High | Open | [ratchet] | no |
 | FR-019 | The contract carries the new refusals | As a contract consumer, I want the resolver's refusals as named codes, so that I can branch on them instead of on a message. | High | Open | [build] | no |
 | FR-020 | The pack reads carry the dependency facts | As a contract consumer, I want the pack pin and offering reads to expose what a compose resolved, so that I can see the dependency a pack declared and the version that satisfied it. | Medium | Open | [build] | no |
+| FR-021 | The logical model and architecture describe composition | As a maintainer, I want the logical model and the architecture pages to describe `depends_on`, the compose and the resolver's refusals, so that the docs do not describe a pack model the code no longer has. | High | Open | [build] | no |
+| FR-022 | The glossary carries the new terms | As a pack author, I want Compose, Closure, Dependency edge and Qualified reference defined in the glossary and the contextive definitions, so that the specification and the code use one vocabulary. | Medium | Open | [build] | no |
+| FR-023 | The change is recorded where readers look | As an operator, I want a changelog entry and the work-breakdown items 2 and 3 marked done, so that the split's plan reflects what landed. | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
 
@@ -172,6 +175,7 @@ the closure is refused and names C.
 - **SC-003**: A compose built only from today's packs produces offering and pack responses with zero differences other than additive fields, across the existing fixture set. — [ratchet] · no-op passable: no
 - **SC-004**: A cross-pack reference written pack-qualified resolves, and the same reference written bare is refused and names the holding pack, in 100% of fixtures, with both assertions on one shared fixture. — [build] · no-op passable: no
 - **SC-005**: The contract change set is recorded with a `### Breaking` entry where it breaks the 0.x line, and no code outside the recorded set changes. — [build] · no-op passable: no
+- **SC-006**: Every page that describes the pack model either describes `depends_on` and the compose or links to the page that does, and the docs checks (`check_docs.py all`, markdownlint, cspell) pass with zero findings. — [build] · no-op passable: no
 
 ## Assumptions
 

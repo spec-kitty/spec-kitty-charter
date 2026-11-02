@@ -99,6 +99,10 @@ No charter violations to justify.
   bare reference that only resolves elsewhere, and the closure check naming the missing pack.
 - **IC-05 Compatibility and evidence.** The single-tree shim, the offering read's unchanged answers, and the contract
   change set with its breaking entries.
+- **IC-06 Documentation.** The logical model and architecture pages describe composition; the glossary and contextive
+  definitions carry Compose, Closure, Dependency edge and Qualified reference; the work breakdown marks items 2 and 3
+  done; a changelog entry records the change. Every page that describes the pack model either states the new shape or
+  links to the page that does.
 
 ## Phase 0: Research
 
