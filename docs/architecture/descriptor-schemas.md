@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -11,6 +11,9 @@ related:
   - architecture/resolution-model
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - adr/0044-mission-types-consolidated-into-one-sanitized-shape
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
 audience:
   - profile: pack-author
     guidance_text: Read this for entity diagrams of the descriptor schemas and their edges.
@@ -100,6 +103,8 @@ Sources: `src/charter/offering/missions/step_contracts.py`,
 glossary pack have no JSON Schema file; their Pydantic models are the schema. This repository
 holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 
+> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to `glossary` and reshapes it into glossary contexts that hold terms. The diagram above is not redrawn until that is built.
+
 ## Mission type
 
 The `mission-type` schema and the structure schemas of a step's two Markdown companions were
@@ -108,6 +113,8 @@ type from files the service retires (DIV-502). All three are closed
 ([ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/), accepted 2026-10-31).
 [Descriptors](/architecture/descriptors/) explains the
 fields.
+
+> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds explicit transitions, guards and the `lifecycle` and `gate` kinds to the mission type, and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames `missions/` to `mission_types/`. The schema below is the one the service reads today, and the diagram is not redrawn until the change is built.
 
 **`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
 
@@ -138,6 +145,8 @@ preamble and H2 sections `{title, content}`. A prompt may have frontmatter holdi
 
 Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
 `src/charter/activation/org_charter.py`, `src/charter/activation/schemas.py`.
+
+> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` to the pack descriptor and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. The diagram above is not redrawn until that is built.
 
 ## Pack-level schemas
 

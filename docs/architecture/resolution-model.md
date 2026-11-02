@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -12,6 +12,7 @@ related:
   - adr/0012-pack-mutability-policy
   - adr/0013-persistent-deactivation
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
+  - adr/0048-pack-composition-and-the-named-packs-split
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the behavior the domain must reproduce, step by step.
@@ -69,6 +70,8 @@ flowchart LR
    does not raise it yet
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
+
+   > **Decided, not built yet:** for sibling packs, [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 refuses a conflict between two packs that change the same artifact, and leaves no "last loaded wins". The distribution pack settles a conflict with an explicit edge. The rule above is what the code does today.
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either
