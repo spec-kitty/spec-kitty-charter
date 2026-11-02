@@ -86,8 +86,9 @@ anti-patterns).
 1. **Versions live at the pack level.** A pack declares what it builds on as
    `depends_on: [{pack_id, range}]`, where `range` is a semantic-version range against the dependency's
    `pack_version`.
-2. **Artifact links stay unversioned.** Consistency between artifacts is checked by the existing CRG
-   closure check: a link to an artifact that no loaded pack provides fails at load.
+2. **Artifact links stay unversioned.** Consistency between artifacts is checked by a CRG closure check at
+   compose time, so a link to an artifact that no pack in the closure provides is refused. The check is new:
+   today such an edge is listed with a null label (DIV-102) and not refused.
 3. **Skills keep their own content `version`.** A skill is a separate entry point and deliverable, so
    it is versioned on its own.
 4. **Resolution fails closed.** It refuses with a structured error on a dependency cycle, an unknown
@@ -162,8 +163,8 @@ anti-patterns).
   ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)). The level rule (decision 7) has to say
   which level it reads (open question 7).
 - **Charter service.** It needs a resolver for the dependency graph (ordering, cycle check, range
-  check, deduplication by `pack_id`), the `parent_pack` existence and level checks, and the
-  sibling-override refusal. ADR-0012's mutability policy still applies per pack.
+  check, deduplication by `pack_id`), the closure check (decision 2), the `parent_pack` existence and level
+  checks, and the sibling-override refusal. ADR-0012's mutability policy still applies per pack.
 - **Core: pin and fetch.** Core keeps one pin per spec-kitty-open-packs commit (`built-in.source.yaml`)
   and one bump command. `make sync-packs` fetches `built-in` and every pack it pulls in, from that
   commit, and checks each tree's digest.
@@ -227,7 +228,7 @@ Each needs an operator ruling. The formalization pass recommends a default for e
 - **Members nested under `built-in/<name>`.** Rejected by the operator. Members are first-class packs
   that can be reused and registered on their own.
 - **Versions per artifact.** Rejected. Every edit would mean a version bump for little gain, because
-  the closure check already catches a link to an artifact that is missing.
+  the closure check (decision 2) catches a link to an artifact that is missing.
 - **`parent_pack` as the composition edge.** Rejected. It conflates lineage with load order, and a
   pack can have only one parent, which cannot express a diamond.
 - **Last loaded wins for sibling overrides.** Rejected. It would make the effective charter depend on
