@@ -164,6 +164,34 @@ ADRs and issues. Composition and the named-packs split are already drafted as
 - **The client emits.** A client emits both core and pack events through its own transport (the
   responsibility split).
 
+**Revision after operator review (2026-11-02): no coupling to any events provider.** The charter
+service must not depend on spec-kitty-events or any other events provider. E1 to E3 are replaced by:
+
+- **R1, event contracts are registered.** An events contract is an artifact (kind `event_contract`),
+  registered into a pack through the ordinary registration route (ADR-0026:
+  `PUT /packs/{packId}/artifacts/event-contract/{id}`), and read like any other artifact.
+  - The service knows the *shape* of a contract, never who publishes it.
+  - spec-kitty-events becomes one registrant among others: its release registers, or is vendored as,
+    a pack holding the `ai.spec-kitty` contract.
+- **R2, a neutral shape.** A contract declares:
+  - its `namespace`, a reverse-DNS prefix it claims;
+  - its envelope format as a token (for example `cloudevents/1.0`), stored and returned but not
+    interpreted;
+  - `types[]`, each with `type`, `version`, `description` and a closed JSON Schema for its data.
+  - Ingesting an [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/latest) document
+    could come later as an import format.
+- **R3, ownership of a namespace.** A namespace is claimed by exactly one contract in a compose.
+  Overlapping claims are refused. Reserved namespaces, if any, are deployment configuration, not
+  code.
+- **R4, resolution.** A pack that emits events lists the contract's pack in `depends_on`, with a
+  version range, like any other dependency. An `emit` must resolve to a type in a contract within the
+  pack's `depends_on` closure. Otherwise the load is refused. There is no separate pin mechanism.
+- **R5, standard events stay out of the charter.** Which lifecycle events a client always sends is
+  the client's concern. A lifecycle or mission type may *declare* them in `on_enter` and `on_exit` like
+  any other event, but the service holds no built-in list.
+- **E4 stays an issue for the events provider:** step-specific core event types do not fit declared
+  mission types. E5 (payload from the transition context) is unchanged.
+
 ### Mission type as a state machine (client-side use)
 
 On the client, a mission type is the **description of a finite-state machine**: it must say which
