@@ -12,7 +12,6 @@
     "dev": "astro dev",
     "prebuild": "node scripts/stage-docs-inputs.mjs",
     "build": "astro build",
-    "build:astro": "astro build",
     "preview": "astro preview",
     "validate": "dockitty-validate-frontmatter ../docs && dockitty-check-links ../docs",
     "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-charter --site https://spec-kitty.github.io",
