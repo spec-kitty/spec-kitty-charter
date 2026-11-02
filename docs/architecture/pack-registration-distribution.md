@@ -197,7 +197,15 @@ Repository ports (domain-owned, impl in storage ring):
 
 > This slice reproduces the [Resolution model](/architecture/resolution-model/) pipeline (load → merge → activate → answer) and inherits its fail-loud rules. It is adjacent to, not part of, registration: registration *delivers verified packs*; artifacts *merge and answer from them*.
 >
-> **Decided, not built yet:** the kinds table changes. [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to `glossary`, [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes `anti_pattern` an authored file, and [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes `mission_type` an ordinary activatable kind and adds `lifecycle` and `gate`; [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds `event_registry`. [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` composition, so a pack's `parent_pack` is lineage only and sibling packs have no load order. This page does not describe the target.
+> **Decided, not built yet:** the kinds table changes. [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames
+> `glossary_pack` to `glossary`,
+> [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes `anti_pattern` an
+> authored file, and [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
+> `mission_type` an ordinary activatable kind and adds the `lifecycle` kind and, pending a ruling (ADR-0050 open
+> question 2), a `gate` kind; [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds
+> `event_registry`. [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on`
+> composition, so a pack's `parent_pack` is lineage only and sibling packs have no load order. This page does not
+> describe the target.
 
 ---
 

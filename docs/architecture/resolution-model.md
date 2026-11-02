@@ -71,7 +71,10 @@ flowchart LR
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
 
-   > **Decided, not built yet:** for sibling packs, [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 refuses a conflict between two packs that change the same artifact, and leaves no "last loaded wins". The distribution pack settles a conflict with an explicit edge. The rule above is what the code does today.
+   > **Decided, not built yet:** for sibling packs,
+   > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 refuses a conflict between two
+   > packs that change the same artifact, and leaves no "last loaded wins". The distribution pack settles a
+   > conflict with an explicit edge. The rule above is what the code does today.
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either

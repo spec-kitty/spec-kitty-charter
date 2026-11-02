@@ -22,7 +22,10 @@ Why the charter service publishes no events, where it meets Spec Kitty's publish
 
 > **Status:** decided in core, code not caught up yet. [What the labels mean](/#status).
 >
-> **Decided, not built yet:** [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) lets a pack hold an `event_registry`: a thin list of event types (namespace, type and name) so the charter can check that an `emit` in a mission type or lifecycle names a declared event. The charter still publishes no events and holds no event schemas, payloads or envelopes, and the service still never writes to the ledger.
+> **Decided, not built yet:** [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) lets
+> a pack hold an `event_registry`: a thin list of event types (namespace, type and name) so the charter can check
+> that an `emit` in a mission type or lifecycle names a declared event. The charter still publishes no events and
+> holds no event schemas, payloads or envelopes, and the service still never writes to the ledger.
 
 Core ADR
 [`4.x/2026-10-13-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-13-2-the-event-ledger-is-the-publication-seam-default-on-with-local-retention.md) (Accepted) makes the ledger the publication seam,
