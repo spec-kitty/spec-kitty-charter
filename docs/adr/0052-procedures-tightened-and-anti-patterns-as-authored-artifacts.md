@@ -1,9 +1,9 @@
 ---
 title: "ADR-0052: Procedures tightened, and anti-patterns as authored artifacts"
 description: "The procedure kind stays with a tightened definition and a re-homing list; anti-patterns become authored files with a severity, referenced through rejects."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: 'Proposed'
+decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -30,14 +30,14 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02 on
+**Accepted**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02 on
 [#150](https://github.com/spec-kitty/spec-kitty-charter/issues/150) (procedures) and
 [#154](https://github.com/spec-kitty/spec-kitty-charter/issues/154) (anti-patterns, AP1 to AP4), recorded in the
 [pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) (sections 5 and 6), on epic
 [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142).
 
-If accepted, it **supersedes** [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)
-(Proposed) decision 3 ("anti-patterns: entries, not a kind"), and **supersedes in part**
+It **supersedes** [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)
+(itself Proposed) decision 3 ("anti-patterns: entries, not a kind"), and **supersedes in part**
 [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Accepted) decision 4, where an anti-pattern is
 a graph node only and a standalone file "must not exist". If decision 14 is ruled as recommended, it also
 **supersedes in part** [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) (Accepted) R14, for the
@@ -148,7 +148,7 @@ changes below.
     rejects it does not activate it on its own.
 14. **Graph-fragment anti-pattern nodes** (recommended): after the migration, an `anti_pattern` node declared only in a
     graph fragment, with no file, is refused. That supersedes in part
-    [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) R14 for this kind, at acceptance.
+    [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) R14 for this kind.
 
 ### Migration and curation
 
@@ -194,14 +194,14 @@ Nothing below is applied in this record.
   `Artifact.styleguide.yaml` retire; `Styleguide`'s "relationships always empty" invariant (FR-013) ends once
   `rejects` mints; the `Artifact` `oneOf` gains the kind.
 - **Kernel facts** (`ArtifactKind`): `anti_pattern`'s documentation ("never a standalone file") and its absence from
-  `CHARTER_KIND_TOKENS` change; the logical model's kind-table note follows at acceptance.
+  `CHARTER_KIND_TOKENS` change; the logical model's kind-table note follows.
 - **spec-kitty-open-packs**: the curation pass (re-homing, the anti-pattern migration and dedupe).
 - **Core** (can come before the cutover): render the activated anti-patterns in review prompts instead of the
   hardcoded checklist.
 
 ## Open questions
 
-Recommended defaults the operator rules on.
+This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
 1. **Census corrections** (decision 7): take all three: re-home the five procedures in curation, move
    `development-assist-test-cleanup` with the wrap-up sequence, and keep `post-merge-arch-gate-adjudication` and

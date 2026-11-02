@@ -1,9 +1,9 @@
 ---
 title: "ADR-0048: Pack composition: a dependency graph of named packs, with built-in as a distribution pack"
 description: Packs compose through versioned depends_on edges into a diamond-shaped graph; built-in becomes a content-free distribution pack over a slimmed foundation pack.
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: 'Proposed'
+decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -34,7 +34,7 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-11-02
+**Accepted**, 2026-11-02. Decider: Stijn Dejongh (operator). Records the operator rulings of 2026-11-02
 on [#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145),
 [#146](https://github.com/spec-kitty/spec-kitty-charter/issues/146) and
 [#147](https://github.com/spec-kitty/spec-kitty-charter/issues/147) (epic
@@ -53,8 +53,8 @@ each open question. The other rulings of the same session are formalized in
 [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) (procedures and
 anti-patterns).
 
-If accepted, it **supersedes in part** these Accepted records, and each gets a "superseded in part by ADR-0048"
-note in its `decision_status` at acceptance:
+It **supersedes in part** these Accepted records, and each carries a "superseded in part by ADR-0048"
+note in its `decision_status`:
 
 - [ADR-0020](/adr/0020-offering-and-activations/)'s `packs` row ("a later pack wins over an earlier one") and
   ruling 7 of its amendment of 2026-10-31, and [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
@@ -64,8 +64,8 @@ note in its `decision_status` at acceptance:
   added to `pack_id`", because the Consequences below add one to `pack_id` and `parent_pack`. That also breaks the
   contract scenarios that use `pack_id: qa`.
 
-The resolution model's step 2 ("the later-declared pack wins", core #87) is not an ADR, so it is reworded at
-acceptance instead.
+The resolution model's step 2 ("the later-declared pack wins", core #87) is not an ADR, so it is reworded
+instead (on the architecture page, as a note that the code has not changed).
 
 ## Context
 
@@ -202,7 +202,8 @@ acceptance instead.
 
 ## Open questions
 
-Each needs an operator ruling. The formalization pass recommends a default for each; until ruled, the
+The record is accepted; each question below still awaits an operator ruling. The formalization pass recommends a
+default for each; until ruled, the
 [work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the default.
 
 1. **Level of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
@@ -239,7 +240,7 @@ Each needs an operator ruling. The formalization pass recommends a default for e
    `foundation`.
 9. **What an empty active charter means.** [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
    decision 5 keeps ADR-0020 decision 6 (each kind at its default) until the built-in pack is split down to a
-   minimal offering (epic #145). This ADR is that split. *Recommended:* revisit at acceptance; until then an empty
+   minimal offering (epic #145). This ADR is that split. *Recommended:* revisit when the split lands; until then an empty
    charter keeps today's meaning.
 
 ## Alternatives considered

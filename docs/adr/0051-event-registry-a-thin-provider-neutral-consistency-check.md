@@ -1,9 +1,9 @@
 ---
 title: "ADR-0051: The event registry: a thin, provider-neutral artifact for a consistency check"
 description: "A pack may hold an event_registry (namespace, type, name per event) so an emit can be checked; the charter holds no schemas, envelopes, payloads or built-in events."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: 'Proposed'
+decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -30,7 +30,7 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
+**Accepted**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
 recorded in the [pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) (section 4, "Event
 declarations": R3, R4, R5 and the second revision with the entry shape, option b), on epic
 [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142). It answers the notes' open question 9.
@@ -171,7 +171,7 @@ Nothing below is applied in this record.
 
 ## Open questions
 
-Recommended defaults the operator rules on.
+This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
 1. **Activation** (decision 5): not activatable; in force with its pack.
 2. **Overlap** (decision 7): equal or nested on a dot boundary is an overlap. The stricter reading follows the ruling

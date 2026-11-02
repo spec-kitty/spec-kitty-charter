@@ -1,9 +1,9 @@
 ---
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: 'Proposed'
+decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -36,7 +36,7 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
+**Accepted**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
 recorded in the [pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) (section 4, "Mission
 types", the responsibility split, the work-package lifecycle, "Mission type as a state machine", and
 section 7, gates and guards), on epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142) and
@@ -46,7 +46,7 @@ its children [#148](https://github.com/spec-kitty/spec-kitty-charter/issues/148)
 [#161](https://github.com/spec-kitty/spec-kitty-charter/issues/161) and
 [#164](https://github.com/spec-kitty/spec-kitty-charter/issues/164).
 
-If accepted, it **supersedes in part** [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)
+It **supersedes in part** [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)
 (Accepted): decision 4 ("the list order is the only order") becomes the default of an explicit transition list,
 and decision 5's directory `missions/` becomes `mission_types/`, with the step contracts moved into the bundle.
 Two narrower points of ADR-0044 change too. Decision 3's references gain two neighbors rather than new `type`
@@ -69,8 +69,7 @@ already shows), and, if the operator takes the recommended default, the `mission
 `selections/{kind}` segment (open question 9). It also supersedes in part
 [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) decision 2 for the separate
 domain slot (`Preset.missionTypes`, `requiredMissionTypes()`); the `activated_mission_types` key is already the
-ordinary `activated_<plural>` key and stays. Each superseded record gets its "superseded in part" note at
-acceptance.
+ordinary `activated_<plural>` key and stays. Each superseded record carries its "superseded in part" note.
 
 ## Context
 
@@ -329,8 +328,7 @@ Nothing below is applied in this record; each lands in a later contract-family P
   `DeactivatedArtifacts.mission_type`, and adds `mission_types` to the preset's `activated_kinds`.
 - **Kind facts** ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), `ArtifactKind`): recommended,
   `lifecycle` and `gate` are not activatable on their own (a mission type that references them brings them into
-  force), not org-requirable and not selection-overlayable; the logical model's kind table records the facts at
-  acceptance. Java paths that hardcode `missions/` (`PackFileSet`, `MissionTypeBinding`, `TemplateBinding`) follow
+  force), not org-requirable and not selection-overlayable; the logical model's kind table records the facts. Java paths that hardcode `missions/` (`PackFileSet`, `MissionTypeBinding`, `TemplateBinding`) follow
   the rename.
 - **spec-kitty-open-packs**: the `missions/` to `mission_types/` move, the step contracts into the bundles, and the
   work-package lifecycle authored from core's lane table.
@@ -339,7 +337,8 @@ Nothing below is applied in this record; each lands in a later contract-family P
 
 ## Open questions
 
-Recommended defaults the operator rules on. The decisions above use the default until then.
+This record is accepted; the questions below still await an operator ruling, each with a recommended default. The
+decisions above use the default until then.
 
 1. **Terminal state name** (decision 11): reserved `end`.
 2. **The `gate` kind and its shape** (decision 14): a declared kind with severity and `config_schema`, as above.

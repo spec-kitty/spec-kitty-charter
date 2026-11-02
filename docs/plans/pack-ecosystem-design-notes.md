@@ -1,6 +1,6 @@
 ---
 title: Pack ecosystem design notes
-description: "Working notes of the operator design pass on epic #142: the rulings of 2026-11-02, formalized as ADR-0048 to ADR-0052 (Proposed)."
+description: "Working notes of the operator design pass on epic #142: the rulings of 2026-11-02, formalized as ADR-0048 to ADR-0052 (Accepted)."
 doc_status: draft
 updated: 2026-11-02T00:00:00Z
 type: Plan
@@ -26,9 +26,9 @@ audience:
 Working record of the operator design pass on epic
 [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142), started 2026-11-02. These are rulings
 in conversation. Composition and the named-packs split were drafted first, as
-[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) (Proposed).
+[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) (Accepted).
 
-**Formalized 2026-11-02** as Proposed ADRs, for operator acceptance. This page stays the record of the rulings; the
+**Formalized 2026-11-02** as ADRs, and accepted the same day. This page stays the record of the rulings; the
 ADRs add shape details, consequences and recommended defaults, and the
 [work breakdown](/plans/pack-ecosystem-work-breakdown/) orders the work.
 
