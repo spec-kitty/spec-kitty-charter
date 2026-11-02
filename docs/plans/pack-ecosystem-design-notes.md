@@ -334,6 +334,36 @@ taken.
   different shapes, and different activation (terms are not activated alone). A later optional
   cross-link (an anti-pattern's `see_also` to term URNs) is additive and can be added if a need shows.
 
+## 7. Gates and guards (#156, #155, ruled 2026-11-02)
+
+- **Guards are special checks on a transition.** A guard is a named condition that must hold before
+  a transition is taken. The charter declares it; the client evaluates it.
+- **Binding.** Transitions carry their guards: `transitions: [{to, guard: [{gate: <id>, config}]}]`,
+  in mission types and lifecycles alike. Today's blocking `expected_*_artifacts` are the simplest
+  built-in guard, so existing files stay valid. #155's versioned gate-binding schema becomes this
+  `guard` field and closes into it.
+- **Extension** follows the "specialist packs only add" rule. An `enhances` may add guards to a
+  transition (for example an org's static-analysis gate before `review -> approved`). It may not
+  remove one; only an `overrides` can.
+- **Left for formalization** (recommended default): a gate is its own declared kind, with id,
+  description, severity on the `smell` / `severe` / `breaking` ladder (to align with core's ladder,
+  #3416) and a config schema (#164 Q3).
+
+## Lower-impact items: defaults for the formalization pass
+
+| Item | Recommended default |
+|---|---|
+| #153 addendum per Mission instance | Park; close as not planned until a need shows. |
+| #161 `mission.yaml` and `mission-runtime.yaml` | Moot under ADR-0044's single mission-type file; confirm and close. |
+| #163 stack scope | Add `applies_to_stacks`, with the same admission rules as `applies_to_languages`. |
+| #164 requirement kinds | Write the ruled design (core #5956 D1 to D5) into the mission-type schema. |
+| #183 more than one writer process | Not supported; document the single daemon per worktree. |
+| Tier of our opt-in packs | `org`, unless the pass finds a reason for a new tier. |
+| `applies_to` on glossary contexts | Advisory, unless the pass finds a reason to filter. |
+| Action code assets (question 10) | Not in the first cut; actions emit events only. |
+| Range grammar | A minimal semantic-version subset (`^`, `~`, comparison operators). |
+| Settling a sibling conflict | The distribution pack declares its own `overrides` edge on the contested artifact. |
+
 ## Open questions
 
 1. The tier of our own opt-in packs (`java`, `qa`, …).
