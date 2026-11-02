@@ -79,9 +79,10 @@ service/
     └── src/test/java/.../packs/                   # unit tests, one per refusal
 ```
 
-**Structure Decision**: the resolver is a domain service in `service/packs`, beside the existing offering read. The
-descriptor's new value object lives in `service/kernel/.../domain` next to `PackDescriptor`, because the descriptor is
-a kernel type. Contract changes stay in `contracts/`, which generates the DTOs; no hand-written DTO is added.
+**Structure Decision**: the resolver is an application service in `service/packs/.../application`, beside the offering
+read it feeds (ArchUnit allows application to see domain and kernel). The descriptor's new value object lives in
+`service/kernel/.../domain` next to `PackDescriptor`, because the descriptor is a kernel type. Contract changes stay in
+`contracts/`, which generates the DTOs; no hand-written DTO is added.
 
 ## Complexity Tracking
 
