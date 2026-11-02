@@ -1,6 +1,6 @@
 ---
 title: Pack ecosystem design notes
-description: Working notes of the operator design pass on epic #142 — rulings so far, not yet formalized as ADRs.
+description: "Working notes of the operator design pass on epic #142: the rulings made so far, not yet formalized as ADRs."
 doc_status: draft
 updated: 2026-11-02T00:00:00Z
 type: Plan
