@@ -316,6 +316,24 @@ taken.
     possibly `adversarial-squad-deployment`.
 - Every procedure carries inline `anti_patterns`, so the ruling on #154 applies to procedures too.
 
+## 6. Anti-patterns (#154, ruled 2026-11-02)
+
+- **AP1, its own file.** An anti-pattern is authored as its own artifact,
+  `anti_patterns/<id>.anti-pattern.yaml`, with title, description, bad and good examples, and
+  severity.
+  - Artifacts reference it with `rejects` references `{type: anti_pattern, id, reason}`.
+  - The 131 inline blocks (18 styleguides, 16 procedures) are migrated out and deduplicated in a
+    curation pass.
+  - This reverses the 3.x squad's "keep them inline" approach. Its reason (graph nodes could not hold
+    a description) no longer holds under the sanitized storage shapes (ADR-0043).
+- **AP2, severity.** `smell`, `severe` or `breaking`.
+- **AP3, placement.** An anti-pattern lives in the pack whose guidance rejects it. Foundation holds
+  the general ones. A `rejects` across packs needs `depends_on`.
+- **AP4, glossary `avoid`.** Kept separate for now. `avoid` is about words, an anti-pattern is about
+  practice. They have different consumers (a lexical terminology check versus guidance and review),
+  different shapes, and different activation (terms are not activated alone). A later optional
+  cross-link (an anti-pattern's `see_also` to term URNs) is additive and can be added if a need shows.
+
 ## Open questions
 
 1. The tier of our own opt-in packs (`java`, `qa`, …).
