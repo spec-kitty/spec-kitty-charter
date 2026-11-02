@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-11-02T18:54:17Z"
-  content_hash: "sha256:ec40f9eb3497"
+  at: "2026-11-02T19:01:42Z"
+  content_hash: "sha256:d1016384299d"
 ---
 
 # Charter
@@ -135,7 +135,7 @@ A resolution context (`charter.scope::CharterScope`) that maps a filesystem path
 
 ## Compose
 
-The set of packs loaded together through one `depends_on` closure at one level, in which an artifact id is unique unless an explicit `overrides` replaces it. Decided in ADR-0048; its exact boundary is still an open question there.
+The set of packs loaded together through one `depends_on` closure; an artifact id is unique across it (ADR-0048 decisions 8 and 10). Its exact boundary is ADR-0048 open question 6.
 
 **Meta:**
 
@@ -229,7 +229,7 @@ The slimmed base pack the other packs build on: the cross-cutting directives, pa
 
 ## Gate
 
-A declared kind: a named guard condition with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema, which a guard names. The kind is decided, but its exact shape is still pending an operator ruling (ADR-0050 decision 14).
+A named guard condition that a guard names. Recommended (ADR-0050 decision 14, pending ruling): a declared kind with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema.
 
 **Meta:**
 
@@ -531,7 +531,7 @@ A pack that builds on the packs below it and only adds artifacts and graph edges
 
 ## Stack pack
 
-A specialist pack for one technology stack, such as `java`, `python` or `drupal`. It is opt-in and is not a member of `built-in` (ADR-0048).
+An opt-in pack for one technology stack, such as `java`, `python` or `drupal`; it is not a member of `built-in` (ADR-0048 decision 14).
 
 **Meta:**
 
@@ -677,7 +677,7 @@ A charter artifact defining tool-specific operational guidance, syntax, and cons
 
 ## Topical pack
 
-A specialist pack for one subject rather than one technology stack, such as `writing`, `architecture` or `refactoring`. Each is a full top-level pack, not nested under `built-in` (ADR-0048).
+A full top-level pack in spec-kitty-open-packs for one subject, for example `foundation`, `writing`, `java` or `drupal`; none is nested under `built-in/` (ADR-0048 decision 11).
 
 **Meta:**
 
