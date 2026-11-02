@@ -30,3 +30,5 @@ Future work for this repository. The target design lives in
   operator design pass on epic #142, formalized as ADR-0048 to ADR-0052 (Accepted).
 - [Pack ecosystem work breakdown](/plans/pack-ecosystem-work-breakdown/) — the ordered, sized work for epic
   #142, the open-packs and core follow-ups, and the open decisions with recommended defaults.
+- [Issue triage, 2026-11-02](/plans/triage-2026-11-02/) — every open issue typed, prioritized, parented and
+  given a milestone after the pack-ecosystem rulings, with the decisions left to the operator.
