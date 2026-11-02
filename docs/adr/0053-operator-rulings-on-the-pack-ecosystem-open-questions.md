@@ -98,6 +98,8 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 13. **The glossary context URN token is `glossary_context`** (question 3): a context is `glossary_context:<id>`.
     This avoids core's retiring `glossary` node kind, so the seam no longer waits for core to retire it. It amends
     ADR-0049 decision 4; term URNs stay `term:<context-id>/<term-id>`.
+    The split from the kind token is intended (operator, 2026-11-02): the artifact kind and its operator and path
+    token stay `glossary`, and only the URN prefix is `glossary_context`.
 14. **Term `status` is `draft`, `active` or `deprecated`** (question 4).
 
 ### Mission types and lifecycles (ADR-0050)

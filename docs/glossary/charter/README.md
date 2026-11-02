@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.5.0"
-  at: "2026-11-02T19:01:42Z"
-  content_hash: "sha256:d1016384299d"
+  at: "2026-11-02T21:42:59Z"
+  content_hash: "sha256:1c5596e0b7fa"
 ---
 
 # Charter
