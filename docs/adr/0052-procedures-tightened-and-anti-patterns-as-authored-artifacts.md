@@ -39,7 +39,9 @@ audience:
 If accepted, it **supersedes** [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)
 (Proposed) decision 3 ("anti-patterns: entries, not a kind"), and **supersedes in part**
 [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/) (Accepted) decision 4, where an anti-pattern is
-a graph node only and a standalone file "must not exist". ADR-0043 decision 2 (the procedure shape) stands, with the
+a graph node only and a standalone file "must not exist". If decision 14 is ruled as recommended, it also
+**supersedes in part** [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) (Accepted) R14, for the
+`anti_pattern` kind. ADR-0043 decision 2 (the procedure shape) stands, with the
 changes below.
 
 ## Context
@@ -125,7 +127,8 @@ changes below.
 
 9. **References.** Guidance rejects an anti-pattern with a `rejects` reference `{type: anti_pattern, id, reason}`,
    held in a `rejects` list of its own, beside `references`, with the same shape on every guidance kind. Where a
-   kind's references mint relationships today (directive, tactic, paradigm), a `rejects` entry mints the existing
+   kind's references mint relationships today (directive, tactic, paradigm), and for the styleguide, whose
+   relationships are always empty today (FR-013), a `rejects` entry mints the existing
    `Relation.rejects`, never `suggests`; where they mint none until
    [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) rules (procedure, mission type and step), it is
    kept verbatim like them. Today a `references` entry of `type: anti_pattern` is minted as `suggests`, which the
@@ -181,7 +184,7 @@ changes below.
 Nothing below is applied in this record.
 
 - **Pack schemas** (#114): `anti-pattern.schema.json`; a `rejects` list on directive, tactic, paradigm, procedure,
-  styleguide and the mission-type step; `anti_patterns` removed from `procedure.schema.json` and
+  styleguide, the mission type and its steps; `anti_patterns` removed from `procedure.schema.json` and
   `styleguide.schema.json`; `file-kinds.yaml` rules (`*.anti-pattern.yaml`, and the kind in the artifact kind
   list); the `pack-manifest` constituent kind enum.
 - **Contract, additive** ([ADR-0009](/adr/0009-contract-1-0-reservations-and-additive-contract-sets/)): the kind's

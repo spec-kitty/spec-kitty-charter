@@ -184,5 +184,7 @@ The defaults the ADRs plan with until the operator rules. Each is restated in it
 
 The notes write the read path as `/packs/{packId}/artifacts/mission-type/{id}`. The contract's `{kind}` segment
 takes the snake_case kind token (`ArtifactKind.fromToken`), and the closed `SelectableKind` and `ActivatableKind`
-enums spell `mission_type`. Reading the notes' path as that token costs nothing; the hyphenated operator token
-would be a breaking change on every `{kind}` path.
+enums spell `mission_type`. Reading the notes' path as that token costs nothing. The artifact `{kind}` parameter is
+a slug (`^[a-z0-9][a-z0-9_-]*$`), so it admits a hyphen, but the hyphenated operator token would break
+`selections/{kind}`, `exclusions/{kind}` and the URN kinds, and would split the token between those and the
+artifact paths.

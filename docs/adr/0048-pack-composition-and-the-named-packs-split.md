@@ -124,7 +124,7 @@ acceptance instead.
    specialists. A shared dependency is loaded once, deduplicated by `pack_id`, and the version ranges
    that every dependent declares on it must overlap. Otherwise the compose is refused.
 9. **Specialist packs only add.** A specialist pack adds artifacts and CRG edges.
-   - When two sibling packs both refine the same artifact (`enhances` or `overrides`) inside one
+   - When two sibling packs both change the same artifact (`enhances` or `overrides`) inside one
      compound, the compose is refused.
    - The distribution pack may settle it explicitly with its own edge.
    - There is no "last loaded wins", so the result never depends on the order packs are listed in.
@@ -164,7 +164,8 @@ acceptance instead.
 ## Consequences
 
 - **Schemas.** `depends_on` and the compose refusals go into the canonical pack schemas (#114). The
-  reads they change reach the API only through an additive contract set (ADR-0009).
+  reads they add reach the API through an additive contract set (ADR-0009); the existing shapes they touch
+  change as breaking (below).
 - **Contract** (found by the formalization pass; none applied here). `pack-descriptor.schema.json` gains
   `depends_on` with a closed item `{pack_id, range}`, and `pack_id` and `parent_pack` gain a ULID pattern. Three
   contract shapes meet the decisions and change on a 0.x minor, with a `### Breaking` entry (ADR-0022):
