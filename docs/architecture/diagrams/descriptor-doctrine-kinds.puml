@@ -2,8 +2,11 @@
 ' Field-level schemas of the six doctrine descriptor kinds.
 ' Sources: src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml
 ' Notation: + required, - optional. All top-level objects are additionalProperties:false.
+' Decided design: ADR-0052 (procedures tightened, anti-patterns as authored artifacts), accepted 2026-11-02; not built yet.
+'   Inline anti-patterns leave procedure and styleguide (d4, d16); guidance carries rejects (d9); AntiPattern is a file (d8).
+' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Doctrine descriptor schemas (directive, tactic, paradigm, styleguide, toolguide, procedure)
+title Doctrine descriptor schemas — decided design (ADR-0052)
 
 class Directive <<directive.schema.yaml>> {
   + id : string ~ ^[A-Z][A-Z0-9_-]*$
@@ -17,6 +20,7 @@ class Directive <<directive.schema.yaml>> {
   - validation_criteria : string[]
   - explicit_allowances : string[1..] [required if lenient-adherence]
   - references : Reference[]
+  - rejects : RejectsRef[]
 }
 enum Enforcement {
   required
@@ -35,6 +39,12 @@ enum RefKind {
   mission_step_contract, template
 }
 
+class RejectsRef <<rejects entry (ADR-0052 d9)>> {
+  + type : anti_pattern
+  + id : string
+  + reason : string
+}
+
 class Tactic <<tactic.schema.yaml>> {
   + id : string ~ ^[a-z][a-z0-9-]*$
   + schema_version : "1.0"
@@ -44,6 +54,7 @@ class Tactic <<tactic.schema.yaml>> {
   - failure_modes : string[]
   - applies_to_languages : string[]
   - references : TacticReference[1..]
+  - rejects : RejectsRef[]
   - notes : string
 }
 class TacticStep {
@@ -66,6 +77,7 @@ class Paradigm <<paradigm.schema.yaml>> {
   + summary : string
   - directive_refs : string[] ~ ^DIRECTIVE_\d{3}$
   - references : Reference[]
+  - rejects : RejectsRef[]
 }
 
 class Toolguide <<toolguide.schema.yaml>> {
@@ -89,10 +101,10 @@ class Procedure <<procedure.schema.yaml>> {
   + entry_condition : string
   + exit_condition : string
   + steps : ProcedureStep[1..]
-  - anti_patterns : AntiPattern[]
   - applies_to_languages : string[]
   - notes : string
   - references : Reference[]
+  - rejects : RejectsRef[]
 }
 class ProcedureStep {
   + title : string
@@ -101,10 +113,12 @@ class ProcedureStep {
   - on_success : string
   - on_failure : string
 }
-class "AntiPattern (procedure)" as PAP {
-  + name : string
-  + description : string
-}
+note right of Procedure
+  A repeatable, bounded episode used inside one step (ADR-0052 d2).
+  It may not produce the Mission's deliverables, span steps or be a rule.
+  The check is curation by review, not a schema refusal (d3).
+  Inline anti_patterns are removed (d4, d16); use rejects.
+end note
 
 class Styleguide <<styleguide.schema.yaml>> {
   + id : string ~ ^[a-z][a-z0-9-]*$
@@ -113,11 +127,11 @@ class Styleguide <<styleguide.schema.yaml>> {
   + scope : StyleScope
   + principles : string[1..]
   - patterns : Pattern[1..]
-  - anti_patterns : StyleAntiPattern[1..]
   - tooling : map<string,string>
   - quality_test : string
   - applies_to_languages : string[]
   - references : string[]
+  - rejects : RejectsRef[]
   - structural_lint_config : StructuralLintConfig
 }
 enum StyleScope {
@@ -130,9 +144,23 @@ class Pattern {
   - bad_example : string
   - good_example : string
 }
-class StyleAntiPattern {
-  + name, description,
-    bad_example, good_example : string
+class AntiPattern <<pending>> <<anti-pattern.schema.yaml>> {
+  + schema_version : "1.0"
+  + id : string (kebab-case, the file stem)
+  + title : string
+  + description : string
+  + severity : Severity <color:#8A6D00>[pending ADR-0052 OQ2]</color>
+  - bad_example : string
+  - good_example : string
+  --
+  file: anti_patterns/<id>.anti-pattern.yaml <color:#8A6D00>[pending ADR-0052 OQ2]</color>
+  migrated entries default to smell <color:#8A6D00>[pending ADR-0052 OQ4]</color>
+  a file-less anti_pattern node is refused <color:#8A6D00>[pending ADR-0052 OQ3]</color>
+}
+enum Severity {
+  smell
+  severe
+  breaking
 }
 class StructuralLintConfig {
   - curated_complete_sections, point_in_time_patterns,
@@ -149,9 +177,27 @@ Tactic *-- "1..*" TacticStep
 Tactic *-- "*" TacticReference
 TacticStep *-- "*" TacticReference
 Procedure *-- "1..*" ProcedureStep
-Procedure *-- "*" PAP
 Styleguide --> StyleScope
 Styleguide *-- "*" Pattern
-Styleguide *-- "*" StyleAntiPattern
+Directive ..> RejectsRef
+Tactic ..> RejectsRef
+Paradigm ..> RejectsRef
+Styleguide ..> RejectsRef
+Procedure ..> RejectsRef
+RejectsRef ..> AntiPattern : type + id
+AntiPattern --> Severity
 Styleguide *-- "0..1" StructuralLintConfig
+note bottom of RejectsRef
+  rejects sits beside references, same shape on every guidance kind (ADR-0052 d9).
+  Toolguide and agent profiles carry none; mission types and their steps do
+  (drawn in descriptor-mission-type-lifecycle).
+  Directive, tactic, paradigm and styleguide mint Relation.rejects, never suggests;
+  a procedure's entry is kept verbatim until #189 rules (d9).
+  Glossary avoid is not an anti-pattern (d12).
+end note
+legend right
+  + required, - optional.
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
+endlegend
 @enduml

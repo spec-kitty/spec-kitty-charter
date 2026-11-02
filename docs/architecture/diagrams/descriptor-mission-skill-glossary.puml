@@ -2,10 +2,13 @@
 ' Sources:
 '   src/charter/offering/missions/step_contracts.py   (MissionStepContract; no JSON schema file)
 '   src/charter/offering/schemas/skill.schema.yaml + pack_skills/models.py (PackSkill)
-'   src/charter/offering/glossary_packs/models.py     (GlossaryPack; no JSON schema file)
+'   ADR-0049 (GlossaryContext, Term); today's glossary_packs/models.py (GlossaryPack) is superseded
 ' Notation: + required, - optional (Pydantic default shown after =).
+' Decided design: ADR-0049 (glossary contexts and terms) and ADR-0050 (step contract moves into the mission-type
+' bundle, loses gates), accepted 2026-11-02; not built yet. PackSkill is unchanged.
+' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
 !include _style.iuml
-title Mission-step contract, pack skill and glossary pack descriptor schemas
+title Mission-step contract, pack skill and glossary descriptor schemas — decided design (ADR-0049, ADR-0050)
 
 class MissionStepContract <<step_contracts.py>> {
   + id : string
@@ -13,8 +16,13 @@ class MissionStepContract <<step_contracts.py>> {
   + action : string
   + mission : string
   + steps : ContractStep[1..]
-  - gates : GateBinding[] = []
 }
+note right of MissionStepContract
+  Kept as a kind (ADR-0050 d5). File moves into the bundle:
+  mission_types/<type>/step_contracts/<id>.step-contract.yaml (d4).
+  gates and GateBinding are removed (follow-ups); a binding migrates
+  to a guard on a lifecycle transition (ADR-0050 d12).
+end note
 class ContractStep {
   + id : string
   + description : string
@@ -32,16 +40,7 @@ class DelegatesTo {
   + kind : ArtifactKind
   + candidates : string[1..]
 }
-class GateBinding {
-  + on_transition : string
-  + handler : string
-  - handler_kind : mission_step_contract | asset = mission_step_contract
-  + schema_version : string
-  - fail_open : bool = true
-  - provenance : string
-}
 MissionStepContract *-- "1..*" ContractStep
-MissionStepContract *-- "*" GateBinding
 ContractStep *-- "*" StepInput
 ContractStep *-- "0..1" DelegatesTo
 
@@ -81,26 +80,57 @@ PackSkill *-- "0..1" SkillExpansion
 PackSkill *-- "*" SkillParameter
 PackSkill *-- "0..1" SkillInvocation
 
-class GlossaryPack <<glossary_packs/models.py>> {
-  + id : string
-  + provenance : string
-  + terms : GlossaryTerm[1..]
-  - description : string
+class GlossaryContext <<glossary.schema.yaml (ADR-0049 d1, d2)>> {
+  + schema_version : "1.0"
+  + id : string (kebab-case, the file stem)
+  + name : string
+  + description : string (its applicability)
+  - tags : string[1..]
+  - applies_to : AppliesTo <color:#8A6D00>[pending ADR-0049 OQ2: advisory]</color>
+  + terms : Term[1..]
+  --
+  file: glossaries/<context-id>.glossary.yaml <color:#8A6D00>[pending ADR-0049 OQ1]</color>
+  URN glossary:<id> <color:#8A6D00>[pending ADR-0049 OQ3]</color>
 }
-class GlossaryTerm {
-  + surface : string
+class AppliesTo {
+  - paths : string[] (globs)
+  - languages : string[]
+  - stacks : string[] (once #163 lands)
+}
+class Term <<an item inside a context, not an artifact (d3)>> {
+  + id : string (kebab-case, unique in the context)
+  + name : string (canonical surface form)
   + definition : string
-  + confidence : float
-  + status : string
-  - see_also : string[]
-  - introduced_in_mission : string
-  - synonyms_to_avoid : string[]
+  - examples : string[]
   - aliases : string[]
-  - banned_synonyms : string[]
+  - avoid : string[]
+  + status : TermStatus <color:#8A6D00>[pending ADR-0049 OQ4]</color>
+  - see_also : string[] (term URNs)
+  --
+  URN term:<context-id>/<term-id> (d4)
 }
-GlossaryPack *-- "1..*" GlossaryTerm
+enum TermStatus {
+  draft
+  active
+  deprecated
+}
+GlossaryContext *-- "1..*" Term
+GlossaryContext *-- "0..1" AppliesTo
+Term --> TermStatus
+Term ..> Term : see_also
+note bottom of Term
+  Dropped (d5): confidence, introduced_in_mission, provenance.
+  surface becomes name; synonyms_to_avoid becomes avoid;
+  banned_synonyms folds into avoid.
+  Only a clash on the same term: URN is a conflict (d12, d13).
+end note
 note right of PackSkill
   id pattern (skill.schema.yaml:21):
   ""^(?!.*<U+005C>n)[a-z][a-z0-9]*(-[a-z0-9]+)*$""
 end note
+legend right
+  + required, - optional.
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
+endlegend
 @enduml

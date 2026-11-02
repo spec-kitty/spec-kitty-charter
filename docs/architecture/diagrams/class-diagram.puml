@@ -398,7 +398,7 @@ Toolguide .. AsymNote
 AsymNote .. TacticReadService
 AsymNote .. TacticController
 
-note "Procedure kind deferred pending #150." as ProcNote #FFF3CD
+note "Procedure stays a kind (ADR-0052 decision 1); not built yet." as ProcNote #FFF3CD
 Toolguide .. ProcNote
 
 note bottom of DomainRepositoryService
