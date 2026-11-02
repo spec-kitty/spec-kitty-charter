@@ -3,7 +3,7 @@ title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
 updated: 2026-11-01T00:00:00Z
-decision_status: Accepted (2026-10-31)
+decision_status: Accepted (2026-10-31); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
 decision_date: '2026-10-30'
 type: ADR
 kind: ADR
@@ -166,6 +166,8 @@ artifacts live on the mission step only. A mission type is a pack-manifest const
 
 ### 3. The mission-type shape (D2, D5)
 
+*(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: references gain a `terms` list and a `rejects` list, and the machine behavior this decision dropped gets a declared home.)*
+
 `contracts/packs/schemas/mission-type.schema.json`, closed at every level:
 
 | Field | Required | Shape | From |
@@ -300,6 +302,8 @@ steps:
 
 ### 4. One sequence (D3)
 
+*(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: list order becomes the default of an explicit transition list.)*
+
 `steps` is the one order. The runtime's planner order wins over `step.yaml`'s sequence index, because it is the order
 the runtime walks. The pinned `depends_on` lists are dropped: every runtime chain is linear, so the order holds all of
 their meaning. A non-linear order is not expressible; when one is needed, a later decision adds it. The software-dev
@@ -307,6 +311,8 @@ runtime's `discovery` step and the `research` step directory it reaches through 
 `discovery`, with that prompt.
 
 ### 5. Layout and companions (D4, D1a)
+
+*(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `missions/` becomes `mission_types/`, with the step contracts in the bundle.)*
 
 ```text
 <pack>/missions/<type>/<type>.mission-type.yaml
@@ -335,6 +341,8 @@ listed in spec-kitty/spec-kitty-open-packs#96. A pinned step with no prompt, or 
 `prompt_path`. "Guidelines" here are a step's working notes, not the glossary's charter Guideline.
 
 ### 6. Retired files
+
+*(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: the old `missions/` layout joins the retired files.)*
 
 `mission_types/<t>.yaml`, `mission.yaml`, `mission-runtime.yaml`, `governance-profile.yaml`,
 `expected-artifacts.yaml`, `actions/<a>/index.yaml`, `mission-steps/**/step.yaml`, the `prompt.md` and

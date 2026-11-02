@@ -3,7 +3,7 @@ title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
-decision_status: Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31)
+decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and its #190 amendment by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -57,6 +57,7 @@ first kind that needs both. It changes decisions 4 and 6 and no other decision.
   location of an existing file resolve through the binding. An agent profile is `*.agent.yaml`,
   validated by `agent-profile`, with its id under `profile-id`. No schema file is renamed:
   `contracts/packs` is consumed by core. A mission step contract (#191) uses the same seam.
+  *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02, for the glossary schema only: the glossary schema is renamed and reshaped.)*
 - **Decision 6 is reversed: a kind of another slice is in this registry.** A kind whose domain
   belongs to another slice is bound in `packs.infra.storage` like any other kind. The store depends
   inward on that slice's domain, and that slice never depends on `packs`. The `AgentProfile`
@@ -174,6 +175,7 @@ nothing about how a new kind is shaped.
      *(Built by #195, 2026-10-28, ADR-0042, for presets and the manifest: presets in a `Pack` slot
      of their own, the manifest beside the aggregate. `pack.md` is built by #260, 2026-10-30, in a
      `Pack` slot of its own through #194's `markdown` form. See the amendments under Status.)*
+   *(Superseded in part by [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), accepted 2026-11-02: an anti-pattern becomes an authored file with a severity, and a standalone file is allowed.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
    reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:
    - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is
