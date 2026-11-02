@@ -164,7 +164,7 @@ merged graph has *layers*, one per level. The layers merge built-in, then org, t
 under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
-**Composition** (proposed, [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
+**Composition** (accepted, not built yet; [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
 what it builds on as `depends_on: [{pack_id, range}]`. Packs compose into a graph that may form diamonds: a shared
 dependency loads once, and the ranges on it must overlap. `parent_pack` stays lineage only. Specialist packs only
 add; two siblings that change the same artifact are refused unless the distribution pack settles it. `built-in`
@@ -279,9 +279,9 @@ facts; it does not restate them.
   because a preset lists it in its own `activated_mission_types` slot, not among its activated
   kinds.
 
-### Proposed kinds and kind changes (epic #142)
+### Accepted kinds and kind changes (epic #142, not built yet)
 
-The rulings of 2026-11-02 change this table once their ADRs are accepted. Until then the table above stands.
+The rulings of 2026-11-02 are accepted ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)) and change this table once they are built. Until then the table above describes the code.
 
 | Change | Record | Operator token |
 |---|---|---|
@@ -515,14 +515,14 @@ store binds the kind and depends on the module.
   models for mission types and profiles, a shared artifact interface lives in `kernel.domain`, the
   only home that can span those slices; otherwise mission types and profiles do not implement it.
 
-### Mission types as state machines (proposed)
+### Mission types as state machines (accepted, not built yet)
 
-[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) (Proposed) reads a mission type as
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) (Accepted) reads a mission type as
 the **description of a finite-state machine**: which states exist, which transitions connect them, what guards a
 transition, and what happens when one is taken. The charter declares the machine; the client (today core's CLI)
 runs it, evaluates its guards and sends its events. The charter service runs no machine.
 
-| FSM concept | Today (ADR-0044) | Proposed (ADR-0050) |
+| FSM concept | Today (ADR-0044) | Accepted (ADR-0050) |
 |---|---|---|
 | State | a `steps[]` item, plus the implicit start and terminal | the same, with a reserved terminal `end` |
 | Composite state | a step with a `mission_step_contract` | unchanged |
@@ -577,7 +577,7 @@ these are resources, used rather than followed.
 - A **pack skill** is a thin, parameterized entry point a team shares through a pack
   (`skill:<id>`). It renders as `<skill_namespace>-<id>/SKILL.md` into each configured
   tool's project skill root. A non-built-in skill needs a `skill_namespace`.
-- A **glossary pack** contributes terms to the project's vocabulary. Proposed
+- A **glossary pack** contributes terms to the project's vocabulary. Accepted, not built yet
   ([ADR-0049](/adr/0049-glossary-contexts-and-terms/)): the kind becomes `glossary`, whose artifact is a
   **glossary context** (a ubiquitous-language bounded context, close to Contextive's) holding terms addressed as
   `term:<context-id>/<term-id>`. Scope comes from the pack level, only a clash on the same `term:` URN is a

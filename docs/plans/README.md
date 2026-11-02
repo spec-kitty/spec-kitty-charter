@@ -27,6 +27,6 @@ Future work for this repository. The target design lives in
 - [Open questions](/plans/open-questions/) — decisions this design depends on that nobody has
   made yet, each with a suggested default.
 - [Pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) — working rulings of the
-  operator design pass on epic #142, formalized as ADR-0048 to ADR-0052 (Proposed).
+  operator design pass on epic #142, formalized as ADR-0048 to ADR-0052 (Accepted).
 - [Pack ecosystem work breakdown](/plans/pack-ecosystem-work-breakdown/) — the ordered, sized work for epic
   #142, the open-packs and core follow-ups, and the open decisions with recommended defaults.

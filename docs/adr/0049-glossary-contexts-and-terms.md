@@ -1,9 +1,9 @@
 ---
 title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary"
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
-doc_status: draft
+doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: 'Proposed'
+decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -34,12 +34,12 @@ audience:
 
 ## Status
 
-**Proposed**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
+**Accepted**, 2026-11-02. Decider: Stijn Dejongh (operator). Formalizes the operator rulings of 2026-11-02
 recorded in the [pack ecosystem design notes](/plans/pack-ecosystem-design-notes/) (section 2, "Glossaries", and
 section 3, "API paths"), on epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142).
 
-If accepted, it **supersedes in part** these Accepted records, and each gets a "superseded in part by ADR-0049"
-note in its `decision_status` at acceptance:
+It **supersedes in part** these Accepted records, and each carries a "superseded in part by ADR-0049"
+note in its `decision_status`:
 
 - [ADR-0039](/adr/0039-a-kind-binding-can-carry-companion-files/) decision 9, where the kind token "stays
   `glossary_pack`", the file keeps its authored path whatever its stem, and a new one is created as
@@ -204,7 +204,7 @@ Nothing below is applied in this record.
 
 ## Open questions
 
-Recommended defaults the operator rules on.
+This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
 1. **File layout** (decision 6): `glossaries/<context-id>.glossary.yaml`, one context per file.
 2. **`applies_to`** (decision 14, the notes' question 6): advisory.
