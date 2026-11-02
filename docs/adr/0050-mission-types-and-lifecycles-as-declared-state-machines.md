@@ -81,7 +81,8 @@ this record; the original text stands and each changed point is annotated where 
   [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/), which supersedes decision 14 and amends decision 12;
 - decision 16: a declared action may also name a pack-delivered code asset, behind trust ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 17);
 - decision 18: the lifecycle reference is the generic `submachine` field ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 19);
-- decision 23: a step enhancement is an additions artifact plus a CRG `enhances` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
+- decisions 22 and 23: a step enhancement is an additions artifact plus a CRG `enhances` edge, the mechanism profile
+  augmentation uses, not a mechanism of its own ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
 - decisions 26 to 28: the defaults are ruled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
 
 ## Context
@@ -270,6 +271,7 @@ up the formal meaning of a term used here.
     (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
     references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
     An enhancement only adds. It cannot remove or reorder steps, change their transitions, or remove a guard.
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): the enhancement is an artifact in the enhancing pack that holds only the additions, joined to the target step by a CRG `enhances` edge, the same mechanism profile augmentation uses. It is no longer a mechanism of its own, so the sentence above that separates it from the relation no longer holds; the add-only rule stands.*
 23. **How an enhancement is authored** (proposed): a step-enhancement file in the enhancing pack,
     `mission_types/<type>/enhancements/<id>.step-enhancement.yaml`, with `target: action:<type>/<step>` and the
     additions. The target's pack must be in the enhancing pack's `depends_on` closure. As ADR-0048 decision 9

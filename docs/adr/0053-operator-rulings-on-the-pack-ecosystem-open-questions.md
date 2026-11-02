@@ -126,7 +126,7 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
     the enhancing pack that holds only the additions (references, guards, emits), plus a CRG `enhances` edge from it
     to the target step, `action:<type>/<step>`, pack-qualified as `<pack>::action:<type>/<step>` when the step is in
     another pack (decision 7). This is how an agent profile is augmented today. The edge
-    and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decision 23 (a
+    and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a mechanism of its own, and a
     step-enhancement file with a `target:` field). The enhancing artifact's file layout is left to the schema work.
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,
     `event-registry`, `anti-pattern`, and the same in `selections/{kind}` and `exclusions/{kind}`.
