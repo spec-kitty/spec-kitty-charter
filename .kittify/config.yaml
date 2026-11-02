@@ -27,6 +27,7 @@ agents:
   available:
   - claude
   - codex
+  - opencode
   auto_commit: true
   lint_on_edit: false
 charter: .kittify/charter/charter.yaml
