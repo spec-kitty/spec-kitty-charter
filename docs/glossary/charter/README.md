@@ -229,11 +229,11 @@ The slimmed base pack the other packs build on: the cross-cutting directives, pa
 
 ## Gate
 
-A named guard condition that a guard names. Recommended (ADR-0050 decision 14, pending ruling): a declared kind with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema.
+Superseded by Guard (ADR-0054, 2026-11-02). Was proposed as a declared kind with a severity and a config schema (ADR-0050 decision 14); the operator ruled instead that guards are enforced checks implemented by executable assets.
 
 **Meta:**
 
-- **status:** `proposed`
+- **status:** `deprecated`
 
 {#global-selection}
 
@@ -271,7 +271,7 @@ A directional Three-layer CRG relation from a mission-step action node to the di
 
 ## Guard
 
-A named condition that must hold before a mission-type or lifecycle transition is taken, declared on the transition as `guard: [{gate, config?}]`. The charter declares it and the client evaluates it (ADR-0050).
+An enforced check that must pass before a mission-type or lifecycle transition is taken. A guard is an artifact (`guards/<id>.guard.yaml`) `implemented_by` an executable asset or a closed built-in, run by the client to the guard/1 interface (context on stdin; exit 0 pass, 1 fail, 2 could not evaluate) and failing closed. A transition names it as `guard: [{ref, config?, blocking?}]`. The charter declares it and the client runs it (ADR-0050, ADR-0054).
 
 **Meta:**
 

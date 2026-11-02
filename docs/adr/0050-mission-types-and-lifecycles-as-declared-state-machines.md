@@ -3,7 +3,7 @@ title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -70,6 +70,19 @@ already shows), and, if the operator takes the recommended default, the `mission
 [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) decision 2 for the separate
 domain slot (`Preset.missionTypes`, `requiredMissionTypes()`); the `activated_mission_types` key is already the
 ordinary `activated_<plural>` key and stays. Each superseded record carries its "superseded in part" note.
+
+### Amendment 2026-11-02
+
+The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 15 to 25). Several rulings change decisions of
+this record; the original text stands and each changed point is annotated where it stands:
+
+- decision 3: the `{kind}` path segment uses the kebab operator token (`mission-type`) ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 23);
+- decisions 12 and 14: there is no `gate` kind; a transition names guard artifacts implemented by executable assets,
+  [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/), which supersedes decision 14 and amends decision 12;
+- decision 16: a declared action may also name a pack-delivered code asset, behind trust ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 17);
+- decision 18: the lifecycle reference is the generic `submachine` field ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 19);
+- decision 23: a step enhancement is an additions artifact plus a CRG `enhances` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
+- decisions 26 to 28: the defaults are ruled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
 
 ## Context
 
@@ -155,6 +168,7 @@ up the formal meaning of a term used here.
    segment takes the snake_case kind token today (`ArtifactKind.fromToken`), so the spelling is open question 9.
    The `artifacts` path segment stays
    ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/) decision 2, re-affirmed by the operator).
+   *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 23): the `{kind}` segment uses the kebab operator token, `/packs/{packId}/artifacts/mission-type/{id}`, in `selections/{kind}` and `exclusions/{kind}` too; a breaking change on the 0.x line.*
 4. **A mission type is a bundle** (M1). `missions/` is renamed `mission_types/` in the named-packs split
    ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)):
 
@@ -197,6 +211,7 @@ up the formal meaning of a term used here.
 12. **A guard is a named condition that must hold before a transition is taken.** Transitions carry their guards:
     `guard: [{gate: <gate-id>, config?}]`, in mission types and lifecycles alike. The charter declares it; the
     client evaluates it.
+    *Amended 2026-11-02 ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 2): the entry is `guard: [{ref, config?, blocking?}]`, where `ref` names a guard artifact.*
 13. **Blocking expected artifacts are the simplest built-in guard.** A blocking `expected_output_artifacts` entry
     guards every transition out of its step, and a blocking `expected_input_artifacts` entry guards every
     transition into it. Existing files keep their meaning unchanged.
@@ -206,6 +221,7 @@ up the formal meaning of a term used here.
     core's ladder, spec-kitty/spec-kitty#3416), and an optional `config_schema` (a JSON Schema the `config` of a
     guard entry is checked against at load, #164 Q3). #155's versioned gate-binding schema becomes the `guard`
     field and closes into it.
+    *Superseded 2026-11-02 by [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/): no `gate` kind; a guard is an artifact `implemented_by` an executable asset or a closed built-in, run to the guard/1 interface, failing closed.*
 
 ### Actions (proposed direction, now formalized)
 
@@ -217,6 +233,7 @@ up the formal meaning of a term used here.
     the events, fills their payload, and anyone may subscribe (an org's review cluster, for example). An action
     that names a code asset for the client to run is not in this cut (the notes' question 10; open question 3 below); it would need
     the trust work of #157.
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 17): an action may also name a code asset the pack delivers, for the client to run, behind the trust policy of #157.*
 
 ### The `lifecycle` kind (ruled: option a)
 
@@ -232,6 +249,7 @@ up the formal meaning of a term used here.
     `work_package_lifecycle: <lifecycle-id>` on the step (proposed field name). In statechart terms the step holds a
     submachine state, instantiated once per work package. One lifecycle can serve several types, and a type may
     pick a lighter one. The step's exit guard may require every instance to be in a terminal state.
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 19): the field is `submachine: {lifecycle: <id>, per: work_package, add_guards?}`.*
 19. **Storage and reads are separate concerns.** Storage keeps the mission type and the lifecycle as separate
     artifacts linked by reference. A read may aggregate them (a mission-type read with its lifecycle embedded) to
     keep callers simple; the service architecture allows such CQRS-style splits. The shipped work-package
@@ -258,6 +276,7 @@ up the formal meaning of a term used here.
     stands, two sibling packs that both enhance or override one step are refused unless the distribution pack
     settles it. Because a step enhancement only adds, letting sibling enhancements compose (a union, independent
     of load order) is recommended; it needs an operator ruling on ADR-0048 decision 9 (open question 7).
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): a step enhancement is an artifact in the enhancing pack holding only the additions, plus a CRG `enhances` edge to `<pack>::action:<type>/<step>`, the mechanism profile augmentation uses; add-only for steps. Sibling enhancements are refused unless settled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).*
 24. **`overrides` replaces a step or a whole type**: whole replacement, with a drift warning when the replaced
     original changes (#164 D2). Only an override may remove a guard or change a transition.
 25. **A new workflow is a new mission type**, not an enhancement.
@@ -269,8 +288,10 @@ up the formal meaning of a term used here.
     ([ADR-0049](/adr/0049-glossary-contexts-and-terms/); #164 D1/Q5).
 27. **#161** (`mission.yaml` and `mission-runtime.yaml` in a non-built-in pack level) is moot under ADR-0044's single
     file; the default is to confirm and close it.
+    *Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24): closed as moot.*
 28. **#153** (mission-instance addendum layer): the default is to park it and close it as not planned until a need
     shows.
+    *Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24): closed as not planned.*
 
 <!-- markdownlint-enable MD029 -->
 
@@ -340,26 +361,39 @@ Nothing below is applied in this record; each lands in a later contract-family P
 This record is accepted; the questions below still await an operator ruling, each with a recommended default. The
 decisions above use the default until then.
 
+*Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)): every question below is ruled; each ruling follows its question.*
+
 1. **Terminal state name** (decision 11): reserved `end`.
+   **Ruled 2026-11-02:** `end` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 15).
 2. **The `gate` kind and its shape** (decision 14): a declared kind with severity and `config_schema`, as above.
+   **Ruled 2026-11-02:** no `gate` kind; see [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 16).
 3. **Action code assets** (decision 16, the notes' question 10): not in the first cut; actions emit only.
+   **Ruled 2026-11-02:** yes, behind trust (#157) ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 17).
 4. **Lifecycle file layout and shape** (decision 17): as above.
+   **Ruled 2026-11-02:** as proposed ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 18).
 5. **Lifecycle reference** (decision 18): `work_package_lifecycle` on the step.
+   **Ruled 2026-11-02:** the generic `submachine` field ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 19).
 6. **Declaring `force`** (decision 20): not in this cut; core keeps its rules.
+   **Ruled 2026-11-02:** not in this cut ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 20).
 7. **Sibling step enhancements** (decision 23): let add-only enhancements compose, narrowing ADR-0048 decision 9
    to `overrides` for steps.
+   **Ruled 2026-11-02:** refused unless the distribution pack settles them; ADR-0048 decision 9 stands ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).
 8. **How an enhancement is authored** (decision 23): a step-enhancement file in the type's bundle path.
+   **Ruled 2026-11-02:** an additions artifact plus a CRG `enhances` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22).
 9. **The `{kind}` path token spelling** (decision 3): the snake_case kind token (`mission_type`, `event_registry`,
    `anti_pattern`) everywhere, as the contract and `ArtifactKind.fromToken` accept today and as the closed
    `SelectableKind` and `ActivatableKind` enums spell it. Reading the notes' `mission-type` as that token costs
    nothing; the hyphenated operator token would break `selections/{kind}`, `exclusions/{kind}` and the URN kinds, and
    would split the token between those and the artifact paths. The artifact `{kind}` parameter is a slug
    (`^[a-z0-9][a-z0-9_-]*$`), so it admits a hyphen.
+   **Ruled 2026-11-02:** the kebab operator token ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 23).
 10. **Lower-impact items** (decisions 26 to 28): as stated there.
+    **Ruled 2026-11-02:** all three defaults ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
 11. **One `emit` spelling** (decision 16): the notes rule two spellings (the joined string or `{namespace, type}`),
     which sanitized-shape rule S6 refuses for stored files. Recommended: both are accepted when authored, and the
     service's writer stores `{namespace, type}`, a change of form that keeps the meaning
     ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)).
+    **Ruled 2026-11-02:** either form when authored; stored as `{namespace, type}` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 25).
 
 ## Alternatives considered
 
