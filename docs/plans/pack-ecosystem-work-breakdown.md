@@ -118,7 +118,7 @@ From the census of spec-kitty-open-packs at `1060bfc`. The operator adopted it a
 
 From a read of spec-kitty/spec-kitty at `9aed3a8`. No core PR is opened from this repository. Each follow-up is filed
 as a task under the 4.x cutover epic #69 (2026-11-02); C1 and C12 are in the "4.x cutover" milestone, the rest in
-"Post-cutover". C8 and C9 were rewritten after ADR-0054.
+"Post-cutover". C9 was rewritten after ADR-0054.
 
 | # | Follow-up | Driven by | Size | After | Issue |
 |---|---|---|---|---|---|
@@ -129,7 +129,7 @@ as a task under the 4.x cutover epic #69 (2026-11-02); C1 and C12 are in the "4.
 | C5 | Make mission type an artifact kind: remove `MissionTypeNotAnArtifactKind`, the special `CHARTER_KIND_TOKENS` entry and the `mission_type_activations` key | 0050 decision 6 | M | charter 11 | #336 |
 | C6 | Read `mission_types/<type>/` bundles (runtime bridge, discovery, step repository, org expected artifacts) | 0050 decision 4 | M | open-packs P2 | #337 |
 | C7 | Load the lane machine from the declared lifecycle: `wp_state.py` reads edges and guards from the artifact, guards resolve through an evaluator registry | 0050 decisions 17 to 21 | L | charter 8, open-packs P6 | #338 |
-| C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 | #339 |
+| C8 | Replace `GateBinding{on_transition, handler, handler_kind, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 | #339 |
 | C9 | A guard runner for the guard/1 interface and the `builtin:` guard table; fail-closed, with `on_indeterminate` and per-entry `blocking` (#340) | 0054 | M | charter 8 | #340 |
 | C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue | #341 |
 | C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 | #342 |

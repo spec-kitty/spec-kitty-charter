@@ -111,7 +111,9 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 17. **A declared action may name a code asset the pack delivers, for the client to run, behind trust** (question 3,
     the notes' question 10). The asset must pass the trust policy of
     [#157](https://github.com/spec-kitty/spec-kitty-charter/issues/157); until then, only packs the project
-    explicitly trusts may supply one (as for guards, ADR-0054). This amends ADR-0050 decision 16, under which an
+    explicitly trusts may supply one (as for guards, ADR-0054). The field that names the asset, the relation it is
+    derived into, and the interface the client runs it to are left to the schema work (work-breakdown item 9); this
+    ruling settles only that a code asset may be named and run. This amends ADR-0050 decision 16, under which an
     action only emits.
 18. **The lifecycle layout and shape are as proposed** (question 4, ADR-0050 decision 17).
 19. **A step references its lifecycle with a generic submachine field** (question 5):
