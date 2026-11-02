@@ -56,7 +56,7 @@ contexts:
       - name: "CharterScope"
         definition: "A resolution context (`charter.scope::CharterScope`) that maps a filesystem path to the appropriate charter when multiple charters coexist in a monorepo. Single-project repositories use `CharterScope.default(repo_root)` which returns the root-scoped charter. Monorepos with multiple sub-project charters configure `charter_scopes:` in `.kittify/config.yaml`; `CharterScope.resolve(repo_root, feature_dir)` then finds the nearest-enclosing charter for any given feature directory. The resolved `scope.root` is forwarded to `build_charter_context` (or via `build_with_scope`) so the correct per-package charter governs prompt generation. See ADR-8 (`docs/adr/3.x/2026-05-18-1-monorepo-charter-scope.md`)."
       - name: "Compose"
-        definition: "The set of packs loaded together through one `depends_on` closure at one level, in which an artifact id is unique unless an explicit `overrides` replaces it. Decided in ADR-0048; its exact boundary is still an open question there."
+        definition: "The set of packs loaded together through one `depends_on` closure; an artifact id is unique across it (ADR-0048 decisions 8 and 10). Its exact boundary is ADR-0048 open question 6."
         meta:
           status: "canonical"
       - name: "Context-Scoped Selection"
@@ -92,7 +92,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Gate"
-        definition: "A declared kind: a named guard condition with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema, which a guard names. The kind is decided, but its exact shape is still pending an operator ruling (ADR-0050 decision 14)."
+        definition: "A named guard condition that a guard names. Recommended (ADR-0050 decision 14, pending ruling): a declared kind with a severity on the `smell` / `severe` / `breaking` ladder and an optional config schema."
         meta:
           status: "proposed"
       - name: "Global Selection"
@@ -206,7 +206,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Stack pack"
-        definition: "A specialist pack for one technology stack, such as `java`, `python` or `drupal`. It is opt-in and is not a member of `built-in` (ADR-0048)."
+        definition: "An opt-in pack for one technology stack, such as `java`, `python` or `drupal`; it is not a member of `built-in` (ADR-0048 decision 14)."
         meta:
           status: "canonical"
       - name: "Specification by Example (Paradigm)"
@@ -262,7 +262,7 @@ contexts:
       - name: "Toolguide"
         definition: "A charter artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution."
       - name: "Topical pack"
-        definition: "A specialist pack for one subject rather than one technology stack, such as `writing`, `architecture` or `refactoring`. Each is a full top-level pack, not nested under `built-in` (ADR-0048)."
+        definition: "A full top-level pack in spec-kitty-open-packs for one subject, for example `foundation`, `writing`, `java` or `drupal`; none is nested under `built-in/` (ADR-0048 decision 11)."
         meta:
           status: "canonical"
       - name: "Trigger Registry"
