@@ -101,6 +101,14 @@ ADRs and issues. Composition and the named-packs split are already drafted as
 - **The shipped types stay in the foundation pack.** Topical packs plug in through `scope` edges or step
   enhancements.
 
+### Responsibility split (operator ruling, 2026-11-02)
+
+- **The charter is the single source of truth for intent and declarations.** It owns the model of a
+  state machine (states, transitions, guards, events), its contracts and specifications, and the
+  delivery of pack assets, executable code included.
+- **Running, wiring and enforcing it is the client's concern** (today core's CLI). The charter service
+  does not run a machine and does not check that a client follows it.
+
 ### Mission type as a state machine (client-side use)
 
 On the client, a mission type is the **description of a finite-state machine**: it must say which
@@ -168,8 +176,11 @@ taken.
   Explicit entries add branches and back-edges. There is an explicit terminal state.
 - **Entry and exit actions.** `on_enter` and `on_exit` on a step (Moore-style actions), beside
   `on_transition` (Mealy-style actions).
-- **Actions only emit events.** An action is limited to `emit: [{event_type, payload?}]`. A pack never
-  runs code (see the trust and SBOM work, #157). An org's review cluster *subscribes* to the event.
+- **Actions are declarations.** An action is `emit: [{event_type, payload?}]`: the declaration says
+  which events a transition produces, and the client sends them. An org's review cluster *subscribes*
+  to the event. Whether a declared action may also name a code asset the pack delivers, for the client
+  to run, is open (question 10). Running it would be the client's decision, gated by the trust work in
+  #157.
 - **Event types are validated at ingestion** against the event catalogue of the pinned
   spec-kitty-events contract. An unknown type is refused.
 - **The engine always emits the standard lifecycle events** (step entered, step exited, transition
@@ -188,6 +199,15 @@ taken.
    only advisory.
 7. Whether `depends_on` (a DAG, with parallel steps) comes back beside explicit transitions, or
    whether parallelism stays in the work-package lane machine.
-8. Whether the work-package lane machine itself becomes declarable data, a second machine that a
-   mission type references, instead of core code.
+8. **The work-package lifecycle as a declared state machine.**
+   - Core runs a second state machine per work package: `planned -> claimed -> in_progress ->
+     for_review -> in_review -> approved -> done`, plus `blocked` and `canceled`, with guards
+     (force, review evidence).
+   - Today it is hardcoded in core (`status_lanes`, `status/transitions.py`).
+   - By the responsibility split, its *declaration* belongs to the charter: states, transitions,
+     guards and events as pack data that a mission type references. Core keeps executing it.
+   - To decide: is it its own kind (a reusable lifecycle) or part of the mission type? Does each
+     mission type pick its lifecycle?
 9. Where the event catalogue a pack may reference is published, and how its version is pinned.
+
+10. Whether a declared action may reference a code asset the pack delivers, for the client to run.
