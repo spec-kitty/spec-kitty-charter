@@ -85,11 +85,14 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 8. **An undeclared `pack_level`** (question 7): the level rule reads the configured level, and the
    pack-descriptor version that adds `depends_on` makes `pack_level` required.
 9. **The foundation pack's id is `foundation`** (question 8).
-10. **After the split, an empty active charter puts nothing in force** (question 9). A project activates a preset or
-    artifacts explicitly. This replaces, at the split, the meaning that
+10. **After the split, only what the charter activates is in force** (questions 1 and 9, both ruled on 2026-11-02). An
+    absent activation key means none, not the per-kind default, so an empty active charter puts nothing in force and a
+    charter that sets one key puts only that key in force. A project activates a preset or artifacts explicitly;
+    deactivation is expressed by activating nothing, which is what the profiles and presets system exists for. This
+    replaces, at the split, the meaning that
     [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) decision 5 kept from
-    [ADR-0020](/adr/0020-offering-and-activations/) decision 6 (each kind at its default) for the empty charter.
-    What a charter that sets some activation keys but not others means is open (question 1 below).
+    [ADR-0020](/adr/0020-offering-and-activations/) decision 6 (each kind at its default) for the empty charter and
+    for every absent key. It is a breaking change.
 
 ### Glossary contexts (ADR-0049)
 
@@ -206,18 +209,18 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 
 ## Open questions
 
-1. **A partly empty charter.** After the split, is a kind whose activation key is absent from an otherwise non-empty
-   charter "all" (today's per-kind default) or "none"? *Recommended:* keep the per-kind default, so that only a
-   wholly empty charter means nothing.
+1. ~~**A partly empty charter.**~~ **Ruled 2026-11-02 (operator):** an absent activation key means none, so an empty
+   active charter puts nothing in force and a partly empty one puts only the keys it names in force. Deactivation is
+   expressed by activating nothing; the profiles and presets system exists for this. Recorded in decision 10 and as a
+   breaking change. The per-kind default is withdrawn, not kept beside a "none" spelling.
 2. **Where an enhancing artifact lives** (decision 22). *Recommended:* beside the kind it adds to in the enhancing
    pack, with the `enhances` edge in that pack's graph shard, as for profiles.
-3. **URN kind tokens** (follows decision 23). When the path and kind tokens move to kebab case (`mission-type`), do
-   the URN kind tokens move too (`mission-type:<id>`), or stay snake case (`mission_type:<id>`)? Only multi-word kinds
-   differ: `agent_profile`, `mission_step_contract`, `mission_type`, `anti_pattern` and `event_registry`; the
-   glossary context token is already settled (`glossary_context`, decision 13). *Recommended:* move them, inside the
-   named-packs split migration, which already rewrites graph shards (`<pack>::` references, the `glossary_pack`
-   rename). For one release the reader also accepts the snake-case form, so org packs written by others keep loading.
-   Keeping snake case avoids that reader, at the cost of two spellings of every multi-word kind, kept apart forever.
+3. ~~**URN kind tokens**~~ **Ruled 2026-11-02 (operator):** the multi-word URN kind tokens move to kebab case directly
+   (`agent-profile:<id>`, `mission-step-contract:<id>`, `mission-type:<id>`, `anti-pattern:<id>`,
+   `event-registry:<id>`), in the same change as the kebab path token. No split-migration reader: the service has no
+   consumers yet, so there is nothing to keep loading the snake-case spelling for. The glossary context token stays
+   `glossary_context` (decision 13), because it is not a multi-word kind token but the deliberate split of a URN
+   prefix from its `glossary` kind.
 
 ## Alternatives considered
 

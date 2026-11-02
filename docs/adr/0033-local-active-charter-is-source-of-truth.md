@@ -30,8 +30,9 @@ audience:
 "Upgrades" in the [conceptual model working notes](/context/conceptual-model/)).
 
 *Amendment 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10): after
-the named-packs split, an empty active charter puts nothing in force; "empty means defaults" in decision 5 no longer
-holds. This is a breaking change.*
+the named-packs split, an empty active charter puts nothing in force and an absent activation key means none rather
+than the per-kind default, so "empty means defaults" in decision 5 no longer holds for any kind. This is a breaking
+change.*
 
 Supersedes in part:
 
@@ -86,7 +87,8 @@ chose. The project owns it, and a hosted service must never change it on its own
 - **Empty active charter.** Whether an empty active charter keeps ADR-0020 decision 6 (each kind at
   its default) or holds only what is required. Deferred by the operator to the built-in split
   (#145).
-  **Ruled 2026-11-02:** after the split, an empty active charter puts nothing in force
+  **Ruled 2026-11-02:** an absent activation key means none, so after the split an empty active charter puts nothing in
+  force and a partly empty one puts only the keys it names in force
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10). This is a breaking
   change for a project that relied on "empty means defaults".
 

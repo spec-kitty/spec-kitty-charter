@@ -161,7 +161,8 @@ the proposed `gate` kind. The rulings that differ from the recommended defaults:
 |---|---|---|
 | Range grammar | PEP 440 version specifiers, as `requires_core` | ADR-0053 decision 4 |
 | Cross-pack references | written `<pack-name>::<urn>`, required across packs | ADR-0053 decision 7 |
-| What an empty active charter means | after the split, nothing is in force | ADR-0053 decision 10 |
+| What an empty active charter means | an absent activation key means none, so an empty charter puts nothing in force and a partly empty one only what it names | ADR-0053 decision 10 |
+| URN kind tokens | kebab case directly (`mission-type:<id>`), in the same change as the path token, with no split-migration reader | ADR-0053 open question 3 (ruled 2026-11-02) |
 | The glossary context URN | `glossary_context:<id>` | ADR-0053 decision 13 |
 | The `gate` kind | none; guards are artifacts implemented by executable assets | ADR-0054 |
 | Action code assets | allowed, behind trust (#157) | ADR-0053 decision 17 |
