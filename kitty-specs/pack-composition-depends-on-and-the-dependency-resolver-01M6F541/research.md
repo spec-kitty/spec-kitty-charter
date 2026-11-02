@@ -54,6 +54,11 @@
   is a contract decision for FR-020, not a free addition.
 - `PackPolicy` is where descriptor-level rules and their finding texts live; invalid ranges may belong there as
   findings rather than as resolver refusals.
+- `kernel.domain.Pep440` only **validates** a specifier set (`isValidSpecifierSet`); it does not resolve, compare or
+  satisfy one. Satisfying `range` against `pack_version` (and proving two ranges overlap) is therefore its own piece
+  of work inside the resolver package: a PEP 440 version comparator and a specifier-set satisfaction check, with the
+  pre/post/dev/epoch cases pinned by tests. The resolver must not reach for a new dependency (charter: no unverified
+  dependency enters the build).
 - BDD scenarios under `contracts/charter/scenarios/*.feature` are picked up automatically by
   `CharterContractSuite`; `HexagonalArchitectureTest` enforces the layer and `@NullMarked` rules a new class must
   satisfy, and `import` of generated DTOs outside `infra.api` is refused.

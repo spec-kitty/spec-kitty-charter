@@ -39,7 +39,8 @@ class PackRoundTripTest {
             Optional.of("org"),
             Optional.of(">=1.0"),
             Optional.of("org-charter.yaml"),
-            Optional.of("drg/fragment.yaml"));
+            Optional.of("drg/fragment.yaml"),
+            List.of());
 
     private static final TacticDso ALPHA = new TacticDso(
             ALPHA_ID,
@@ -220,7 +221,8 @@ class PackRoundTripTest {
                 Optional.of("project"),
                 d.requiresCore(),
                 d.activeCharter(),
-                d.packDrg());
+                d.packDrg(),
+                d.dependencies());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
@@ -92,7 +93,19 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
                 .scalar("requires_core", descriptor.requiresCore())
                 .scalar("active_charter", descriptor.activeCharter())
                 .scalar("pack_drg", descriptor.packDrg())
+                .mappings(
+                        "depends_on",
+                        descriptor.dependencies().stream()
+                                .map(YamlSerializationStrategy::dependencyEntry)
+                                .toList())
                 .dump();
+    }
+
+    private static Map<String, Object> dependencyEntry(PackDependency dependency) {
+        Map<String, Object> entry = YamlDumpEmitter.mapping();
+        entry.put("pack_id", dependency.packId());
+        entry.put("range", dependency.range());
+        return entry;
     }
 
     @Override

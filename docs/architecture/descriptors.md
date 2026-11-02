@@ -81,11 +81,13 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
+| `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4); a pack that declares one must also declare `pack_level` |
 
-> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
+> **Accepted, partly built:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
 > [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
-> to `pack_id` and `parent_pack`. `built-in` then becomes a distribution pack with no artifacts of its own, over a
-> slimmed foundation pack. The schema and the code do not do this yet; the [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw it.
+> to `pack_id` and `parent_pack`. The schema accepts `depends_on` now and the descriptor reader reports it; the
+> dependency resolver, the composition ordering and the pack-qualified reference grammar are not built yet. The
+> [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw the decided shape.
 
 **Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also
 points to the pack's mutability policy file at the pack root, so a reader finds every

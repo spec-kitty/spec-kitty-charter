@@ -43,6 +43,36 @@
       "title": "Pack Level",
       "type": "string"
     },
+    "depends_on": {
+      "default": [],
+      "description": "The packs this pack depends on, each by pack id and a PEP 440 version range (ADR-0048 decision 10, ADR-0053 decision 4). The item is closed. A pack that declares a dependency must also declare pack_level.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "description": "The depended-on pack's pack_id (ULID, 26 characters).",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+            "title": "Pack Id",
+            "type": "string"
+          },
+          "range": {
+            "description": "A PEP 440 version-specifier set the held pack version must satisfy.",
+            "minLength": 1,
+            "title": "Range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pack_id",
+          "range"
+        ],
+        "title": "Pack Dependency",
+        "type": "object"
+      },
+      "title": "Depends On",
+      "type": "array",
+      "uniqueItems": true
+    },
     "requires_core": {
       "anyOf": [
         {
@@ -87,6 +117,25 @@
     "pack_id",
     "name",
     "pack_version"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "depends_on": {
+            "minItems": 1
+          }
+        },
+        "required": [
+          "depends_on"
+        ]
+      },
+      "then": {
+        "required": [
+          "pack_level"
+        ]
+      }
+    }
   ],
   "title": "PackDescriptor",
   "type": "object"

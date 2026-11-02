@@ -1,10 +1,12 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +52,24 @@ final class PackDescriptorReader {
                         required(root, "name"),
                         level,
                         optional(root, "requires_core"),
-                        new PackPaths(optional(root, "active_charter"), optional(root, "pack_drg"))));
+                        new PackPaths(optional(root, "active_charter"), optional(root, "pack_drg")),
+                        dependencies(root)));
+    }
+
+    /** The declared dependencies; the schema has already closed every entry. */
+    private static List<PackDependency> dependencies(Map<?, ?> root) {
+        @Nullable Object raw = root.get("depends_on");
+        if (!(raw instanceof List<?> items)) {
+            return List.of();
+        }
+        List<PackDependency> declared = new ArrayList<>(items.size());
+        for (Object item : items) {
+            if (!(item instanceof Map<?, ?> entry)) {
+                throw new IllegalStateException("a depends_on entry passed the schema but is no mapping");
+            }
+            declared.add(new PackDependency(required(entry, "pack_id"), required(entry, "range")));
+        }
+        return List.copyOf(declared);
     }
 
     /** A string the schema has already required; anything else means the reader and the schema have drifted apart. */

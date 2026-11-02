@@ -164,7 +164,8 @@ merged graph has *layers*, one per level. The layers merge built-in, then org, t
 under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/3.x/2026-05-16-1-doctrine-layer-merge-semantics.md) (how the layers merge). Implementations read the configured inputs and never infer a
 level from directory presence.
 
-**Composition** (accepted, not built yet; [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
+**Composition** (accepted; the descriptor accepts `depends_on` now, the resolver is not built yet;
+[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
 what it builds on as `depends_on: [{pack_id, range}]`. Packs compose into a graph that may form diamonds: a shared
 dependency loads once, and the ranges on it must overlap. `parent_pack` stays lineage only. Specialist packs only
 add; two siblings that change the same artifact are refused unless the distribution pack settles it. `built-in`

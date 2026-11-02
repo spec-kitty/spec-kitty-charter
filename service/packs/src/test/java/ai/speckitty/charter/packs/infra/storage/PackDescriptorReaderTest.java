@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -49,6 +50,34 @@ class PackDescriptorReaderTest {
     @Test
     void anAbsentLevelIsReportedAsEmptyNotDefaulted() {
         assertThat(read(VALID).declaredLevel()).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void anAbsentDependsOnIsEmptyNotDefaulted() {
+        assertThat(read(VALID).dependencies()).isEmpty();
+    }
+
+    @Test
+    void declaredDependenciesAreReportedInFileOrder() {
+        PackDescriptor descriptor = read(VALID + """
+                pack_level: org
+                depends_on:
+                  - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+                    range: '>=1.0,<2'
+                  - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                    range: 1.2.3
+                """);
+
+        assertThat(descriptor.dependencies())
+                .containsExactly(
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943R", ">=1.0,<2"),
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943S", "1.2.3"));
+    }
+
+    @Test
+    void aDependencyWithoutItsRangeIsUnreadable() {
+        assertThat(details(VALID + "depends_on:\n  - pack_id: 01M4P01D5TWB5FKZGNNQG3943R\n"))
+                .isNotEmpty();
     }
 
     @Test
@@ -124,6 +153,7 @@ class PackDescriptorReaderTest {
                         "parent_pack",
                         "name",
                         "pack_level",
+                        "depends_on",
                         "requires_core",
                         "active_charter",
                         "pack_drg");

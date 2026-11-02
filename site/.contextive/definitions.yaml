@@ -55,8 +55,16 @@ contexts:
         definition: "Architectural pattern in which the project / org charter is the sole authority that decides which charter artifacts apply to a given mission run. The offering is the knowledge store; charter is the selector; runtime asks charter for the activated set rather than reaching into the offering directly. Enforced via the runtime → charter → offering boundary. This framing is correct at the architectural level; the MECHANISM by which the charter's activation decision is actually resolved today is activated_&lt;kind&gt; — not `selected_<kind>` alone. `selected_<kind>` is the authoring record of what an interview/pack once selected; `activated_<kind>` is what `PackContext.from_config` resolves via the INV-2 two-file pointer chase."
       - name: "CharterScope"
         definition: "A resolution context (`charter.scope::CharterScope`) that maps a filesystem path to the appropriate charter when multiple charters coexist in a monorepo. Single-project repositories use `CharterScope.default(repo_root)` which returns the root-scoped charter. Monorepos with multiple sub-project charters configure `charter_scopes:` in `.kittify/config.yaml`; `CharterScope.resolve(repo_root, feature_dir)` then finds the nearest-enclosing charter for any given feature directory. The resolved `scope.root` is forwarded to `build_charter_context` (or via `build_with_scope`) so the correct per-package charter governs prompt generation. See ADR-8 (`docs/adr/3.x/2026-05-18-1-monorepo-charter-scope.md`)."
+      - name: "Closure"
+        definition: "The set of packs reachable from the configured packs through `depends_on`, each pack id once. A pack named by a reference outside the closure is a refusal that names the missing pack (ADR-0048, ADR-0053 decision 7)."
+        meta:
+          status: "canonical"
       - name: "Compose"
-        definition: "The set of packs loaded together through one `depends_on` closure; an artifact id is unique across it (ADR-0048 decisions 8 and 10). Its exact boundary is ADR-0048 open question 6."
+        definition: "The set of packs loaded together through one `depends_on` closure at one level; a pack id and a pack name are each unique across it, except where an explicit `overrides` replaces one (ADR-0048 decision 6, ADR-0053 decisions 6 and 7)."
+        meta:
+          status: "canonical"
+      - name: "Dependency Edge"
+        definition: "One `depends_on` entry a pack declares: the depended-on pack's `pack_id` and a PEP 440 version range the held version must satisfy. The item is closed, and a pack that declares one must also declare `pack_level` (ADR-0048 decision 10, ADR-0053 decision 4)."
         meta:
           status: "canonical"
       - name: "Context-Scoped Selection"

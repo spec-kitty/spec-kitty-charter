@@ -1,5 +1,6 @@
 package ai.speckitty.charter.kernel.domain;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ import java.util.Optional;
  * @param declaredLevel the pack's {@code pack_level}; empty when the file declares none
  * @param requiresCore the raw {@code requires_core} text; empty when the file has none
  * @param paths the declared {@code active_charter} and {@code pack_drg} paths, grouped
+ * @param dependencies the packs this pack declares it depends on; empty when it declares none
  */
 public record PackDescriptor(
         String packId,
@@ -22,7 +24,8 @@ public record PackDescriptor(
         String name,
         Optional<PackLevel> declaredLevel,
         Optional<String> requiresCore,
-        PackPaths paths) {
+        PackPaths paths,
+        List<PackDependency> dependencies) {
     /**
      * Builds a descriptor that declares neither {@code active_charter} nor {@code pack_drg}.
      *
@@ -40,7 +43,29 @@ public record PackDescriptor(
             String name,
             Optional<PackLevel> declaredLevel,
             Optional<String> requiresCore) {
-        this(packId, packVersion, parentPack, name, declaredLevel, requiresCore, PackPaths.none());
+        this(packId, packVersion, parentPack, name, declaredLevel, requiresCore, PackPaths.none(), List.of());
+    }
+
+    /**
+     * Builds a descriptor that declares no dependencies.
+     *
+     * @param packId the pack's {@code pack_id}
+     * @param packVersion the pack's {@code pack_version}
+     * @param parentPack the pack's {@code parent_pack}, possibly empty
+     * @param name the pack's {@code name}
+     * @param declaredLevel the declared level, possibly empty
+     * @param requiresCore the raw {@code requires_core}, possibly empty
+     * @param paths the declared paths
+     */
+    public PackDescriptor(
+            String packId,
+            String packVersion,
+            Optional<String> parentPack,
+            String name,
+            Optional<PackLevel> declaredLevel,
+            Optional<String> requiresCore,
+            PackPaths paths) {
+        this(packId, packVersion, parentPack, name, declaredLevel, requiresCore, paths, List.of());
     }
 
     /**
@@ -53,6 +78,7 @@ public record PackDescriptor(
      * @param declaredLevel the declared level, possibly empty
      * @param requiresCore the raw {@code requires_core}, possibly empty
      * @param paths the declared paths
+     * @param dependencies the declared dependencies
      */
     public PackDescriptor {
         Objects.requireNonNull(packId, "packId");
@@ -62,5 +88,7 @@ public record PackDescriptor(
         Objects.requireNonNull(declaredLevel, "declaredLevel");
         Objects.requireNonNull(requiresCore, "requiresCore");
         Objects.requireNonNull(paths, "paths");
+        Objects.requireNonNull(dependencies, "dependencies");
+        dependencies = List.copyOf(dependencies);
     }
 }
