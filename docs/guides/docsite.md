@@ -42,6 +42,7 @@ with the `read:packages` scope, because the toolkit is published to GitHub Packa
 2. Install, check and build from `site/`:
 
    ```sh
+   (cd .. && ./gradlew :contracts:bundleContract)   # the OpenAPI bundle the build stages
    cd site
    npm ci                      # installs exactly what package-lock.json records
    npm run validate            # frontmatter and source links in ../docs
@@ -50,6 +51,17 @@ with the `read:packages` scope, because the toolkit is published to GitHub Packa
    npm run check:okf           # the OKF export bundle passes conformance
    npm run preview
    ```
+
+Run the Gradle step first. The build stages the contract bundle (the OpenAPI file and its
+checksum) and the pack-schema pages before it renders, and it stops with "contract bundle
+missing" when the bundle is not there. The bundle is published as the API reference at
+`/reference/api/main/`. Every pack schema under `contracts/packs/schemas/` also needs a page
+under `docs/architecture/pack-schemas/`; the staging script fails the build and names the
+schema when a page is missing.
+
+Diagrams render at build time. A local `npm run build` renders no diagrams unless you set
+`DK_DIAGRAM_BUILD_RENDER=build` and have Playwright's Chromium and a PlantUML server (set
+`DK_PLANTUML_SERVER_URL`) available; CI supplies both, as described below.
 
 `site/.npmrc` maps the `@spec-kitty` scope to GitHub Packages and every other package to the
 public npm registry. It holds no secret. Because the registry is set there, a default
@@ -187,19 +199,38 @@ red run names what failed:
 
 `.github/workflows/docs-site.yml` builds and publishes the site:
 
-1. the Javadoc, as the `javadoc` artifact:
+1. the Javadoc and the contract bundle, as the `javadoc` and `contract-bundle` artifacts:
    - on a push to `main`, the `service` job calls `.github/workflows/service.yml`, the main build
-     workflow, which runs `./gradlew verifyAll` and uploads the aggregated Javadoc;
-   - on a pull request, the `javadoc` job builds `:charter-reports:aggregateJavadoc` alone, because
-     the CI gate already runs the full build for the pull request;
-2. `npm ci`, reading the toolkit from GitHub Packages with the workflow's own token
-   (`packages: read`);
-3. the `javadoc` artifact of the same run is downloaded into `site/public/javadoc` (ignored
-   by Git), so it is published unchanged under `/javadoc/`
-   ([Java API reference](/api/javadoc/));
-4. `validate`, `build`, `check:built-links` and `check:okf`, as above; the link check walks
-   the Javadoc pages too, and the OKF check validates the exported knowledge-format bundle;
-5. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
+     workflow, which runs `./gradlew verifyAll` and uploads both;
+   - on a pull request, the `javadoc` job builds `:charter-reports:aggregateJavadoc` and
+     `:contracts:bundleContract` alone, because the CI gate already runs the full build for the
+     pull request;
+2. the `build` job runs in a Playwright container pinned by image digest, so Chromium and its
+   system libraries are fixed and need no install step, next to a PlantUML render service
+   (`plantuml/plantuml-server`, also pinned by digest, in `SANDBOX` mode so a diagram cannot
+   reach the network). The job waits until the service answers before it builds. The service is
+   required even though no hand-written page uses PlantUML: each pack-schema page carries a
+   diagram that DocKitty builds from the schema and renders through it;
+3. `npm ci --ignore-scripts`, reading the toolkit from GitHub Packages with the workflow's own
+   token (`packages: read`). The install scripts stay off; the build runs the staging script
+   explicitly through `prebuild`;
+4. the `javadoc` artifact is downloaded into `site/public/javadoc` (ignored by Git), so it is
+   published unchanged under `/javadoc/` ([Java API reference](/api/javadoc/)). The
+   `contract-bundle` artifact is downloaded into `build/contracts/contract`, and `prebuild`
+   stages it into `site/openapi`;
+5. `validate`, then `build` with `DK_DIAGRAM_BUILD_RENDER=build`. The step checks that value
+   before it builds, so a later edit cannot fall back to rendering in the browser. The build
+   publishes the API reference at `/reference/api/main/` and one page for each of the 23 pack
+   schemas under `/architecture/pack-schemas/`;
+6. two guards that fail the job closed:
+   - **Schema pages**: one built page for each schema file, and each page holds a diagram figure
+     with a rendered SVG in it;
+   - **OpenAPI contract**: the published `openapi.yaml` has the same SHA-256 as the bundle
+     the build produced. The checksum file DocKitty publishes always matches its own copy, so
+     only this comparison proves the published file is the bundled one;
+7. `check:built-links` and `check:okf`, as above; the link check walks the Javadoc pages
+   too, and the OKF check validates the exported knowledge-format bundle;
+8. on `main` only, upload `site/dist` and deploy it to GitHub Pages at
    `https://spec-kitty.github.io/spec-kitty-charter/`.
 
 To see the Javadoc in a local build, run `./gradlew :charter-reports:stageJavadocForSite`
