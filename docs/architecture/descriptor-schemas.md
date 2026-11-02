@@ -29,8 +29,11 @@ The structural authority for every descriptor file is the set of JSON Schemas in
 the import's changes are tabled in the
 [mission research](https://github.com/spec-kitty/spec-kitty-charter/blob/main/kitty-specs/pack-schemas-and-level-policy-01M5AFMA/research.md#import-changes-c1-c16)). The service's YAML adapter validates against them. The authored
 files and how they nest are drawn in the [pack write model](#pack-write-model). The other diagrams on this
-page were drawn from core's models and sources (cited in each section) before the schemas
-landed; where one differs from a schema, the schema wins. Notation in the field diagrams: `+` required, `-`
+page draw the decided design of ADR-0048 to ADR-0052 (each names its ADRs in its title), not
+today's schemas or code. Where one differs from a schema, the schema describes what the service
+reads today. Yellow «pending» classes and `[pending ADR-00xx OQn]` marks show an open question that
+no ruling has settled yet. Each of the 23 schemas also has its own page, with a diagram, under
+[Pack schemas](/architecture/pack-schemas/). Notation in the field diagrams: `+` required, `-`
 optional, `~` regex pattern, `[1..]` non-empty list, `= x` default.
 
 All `src/charter/...` and `packs/...` paths on this page are in core,
@@ -38,30 +41,30 @@ All `src/charter/...` and `packs/...` paths on this page are in core,
 
 These diagrams are explained by [Descriptors](/architecture/descriptors/). Where a diagram
 and a schema disagree about structure, the schema wins; where this page and
-[Descriptors](/architecture/descriptors/) disagree about meaning, that page wins. Known older
-details in the core-derived diagrams: `pack_version` is required at every level, not only for
-`built-in` (DIV-004); `pack_level` is optional; edge endpoints are URNs only (DIV-007); the
-org fragment has no header fields (DIV-008); and the node-kind names follow the
-[pack write model](#pack-write-model). See the
-[Divergence register](/conformance/divergence-register/).
+[Descriptors](/architecture/descriptors/) disagree about meaning, that page wins. The diagrams
+show the decided design, so they do not draw today's details. The service's schemas already
+diverge from core's in a few places (see the
+[Divergence register](/conformance/divergence-register/)), and the diagrams follow the service.
+Whether `pack_level` becomes required is still open (ADR-0048 open question 7).
 
 ## Pack write model
 
 ![Pack write model](diagrams/pack-write-model.svg)
 
-The authored pack files at C4 code level: the pack descriptor, graph shards, the org fragment,
-nodes, edges, artifact files, the asset manifest and the org charter, with their
-multiplicities, drawn from the schemas and the domain records. Source:
-`diagrams/pack-write-model.puml`. A node of a fragment names its kind with one canonical
-plural (`mission_step_contracts`, not `mission_steps`); see [Domain](/context/domain/). An artifact
-file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may carry an optional
-`provenance`; an edge may not. `charter.schema.json` is not drawn: it validates
-the project's `charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level
-`preset` and `pack-manifest` schemas are not drawn yet; they are described in
-[Pack-level schemas](#pack-level-schemas). Nor is the `mission-type` schema with its step
-companions; it is described in [Mission type](#mission-type). The other two Markdown structure
-schemas are not drawn either: `toolguide-guide` is described in [Descriptors](/architecture/descriptors/),
-and `pack-document` in the [logical model](/architecture/logical-model/).
+The authored pack files at C4 code level: the pack descriptor, graph shards, the org fragment, nodes, edges,
+artifact files, the asset manifest and the org charter, with their multiplicities. It draws the decided
+design ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to
+[ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)), not the files the
+service reads today. Source: `diagrams/pack-write-model.puml`. A node of a fragment names its kind with one
+canonical plural (`mission_step_contracts`, not `mission_steps`); see [Domain](/context/domain/). An
+artifact file's identity is `id`, or `profile-id` in a `*.agent.yaml`. A shard node may carry an optional
+`provenance`; an edge may not. `charter.schema.json` is not drawn: it validates the project's
+`charter.yaml`, which is not a pack file (`file-kinds.yaml`). The pack-level `preset` and `pack-manifest`
+schemas are not drawn yet; they are described in [Pack-level schemas](#pack-level-schemas). Today's
+`mission-type` schema with its step companions is not drawn either; it is described in [Mission
+type](#mission-type), which also has the decided-design diagram. The other two Markdown structure schemas
+are not drawn either: `toolguide-guide` is described in [Descriptors](/architecture/descriptors/), and
+`pack-document` in the [logical model](/architecture/logical-model/).
 
 ## Kinds, containment and edges
 
@@ -70,18 +73,23 @@ and `pack-document` in the [logical model](/architecture/logical-model/).
 A Charter Pack (`pack.yaml`) ships descriptor files, an optional CRG fragment and an
 optional org charter. CRG nodes refer to descriptors by URN `<kind>:<id>`. An org
 charter's `required_<plural>` lists overlay the project charter's `selected_<plural>`
-lists; which kinds do is in the [Artifact kinds table](/architecture/logical-model/#artifact-kinds). The edge counts come from
-`packs/built-in/*.graph.yaml`.
+lists; which kinds do is in the [Artifact kinds table](/architecture/logical-model/#artifact-kinds).
 
-Sources: `src/charter/offering/artifact_kinds.py`, `src/charter/offering/drg/models.py`,
-`src/charter/offering/packs/pack_descriptor.py`, `src/charter/activation/org_charter.py`,
-`src/charter/activation/schemas.py`, `packs/built-in/*.graph.yaml`.
+> **Decided design:** this diagram draws the kinds as decided in ADR-0048 to ADR-0052: `glossary` for
+> `glossary_pack`, an `AntiPattern` kind, `lifecycle`, an ordinary `MissionType` and an event registry
+> (activation pending ADR-0051 OQ1). Today's code and schemas still have the old shape; the sources for that
+> shape are `src/charter/offering/artifact_kinds.py` and `src/charter/offering/drg/models.py` in core.
 
 ## Charter kinds
 
 ![Charter descriptor schemas](diagrams/descriptor-doctrine-kinds.svg)
 
-Sources: `src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml`.
+> **Decided design:** this diagram draws
+> [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/): anti-patterns are
+> authored files that `rejects` references, not inline fields. Today's schemas still carry the inline
+> anti-patterns. Today's shape comes from
+> `src/charter/offering/schemas/{directive,tactic,paradigm,styleguide,toolguide,procedure}.schema.yaml` in
+> core.
 
 Example instance (`packs/built-in/directives/018-doctrine-versioning-requirement.directive.yaml`, folded text shortened):
 
@@ -97,15 +105,13 @@ Source: `src/charter/offering/schemas/agent-profile.schema.yaml` (schema-version
 
 ![Mission-step contract, skill and glossary pack schemas](diagrams/descriptor-mission-skill-glossary.svg)
 
-Sources: `src/charter/offering/missions/step_contracts.py`,
-`src/charter/offering/schemas/skill.schema.yaml` with `src/charter/offering/pack_skills/models.py`,
-`src/charter/offering/glossary_packs/models.py`. In core, the mission-step contract and the
-glossary pack have no JSON Schema file; their Pydantic models are the schema. This repository
-holds a closed JSON Schema for each (`contracts/packs/schemas/`).
-
-> **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to
-> `glossary` and reshapes it into glossary contexts that hold terms. The diagram above is not redrawn until that is
-> built.
+> **Decided design:** the diagram above draws [ADR-0049](/adr/0049-glossary-contexts-and-terms/) and
+> [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/): `glossary_pack` becomes
+> `glossary`, a glossary context that holds terms. Today's code and schemas still have the old shape. In
+> core, the mission-step contract and the glossary pack have no JSON Schema file; their Pydantic models
+> (`src/charter/offering/missions/step_contracts.py`, `src/charter/offering/glossary_packs/models.py`) are
+> the schema, and the skill schema is `src/charter/offering/schemas/skill.schema.yaml`. This repository
+> holds a closed JSON Schema for each (`contracts/packs/schemas/`).
 
 ## Mission type
 
@@ -116,11 +122,15 @@ type from files the service retires (DIV-502). All three are closed
 [Descriptors](/architecture/descriptors/) explains the
 fields.
 
-> **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds
+> **Decided design:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds
 > explicit transitions, guards and the `lifecycle` kind to the mission type and, pending a ruling (ADR-0050 open
 > question 2), a `gate` kind, and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames
-> `missions/` to `mission_types/`. The schema below is the one the service reads today, and the diagram is not
-> redrawn until the change is built.
+> `missions/` to `mission_types/`. The diagram below draws that design, and the code does not do it yet. The
+> field list below it is the schema the service reads today.
+
+![Mission type as a declared state machine](diagrams/descriptor-mission-type-lifecycle.svg)
+
+The mission type as a declared state machine, as decided in ADR-0050 and ADR-0051.
 
 **`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
 
@@ -149,12 +159,12 @@ preamble and H2 sections `{title, content}`. A prompt may have frontmatter holdi
 
 ![Pack, CRG and charter configuration schemas](diagrams/descriptor-governance.svg)
 
-Sources: `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
-`src/charter/activation/org_charter.py`, `src/charter/activation/schemas.py`.
-
-> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on`
-> to the pack descriptor and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage.
-> The diagram above is not redrawn until that is built.
+> **Decided design:** the diagram above draws ADR-0048 to ADR-0052.
+> [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` to the pack descriptor
+> and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. Today's code and
+> schemas still have the old shape; its sources in core are `src/charter/offering/packs/pack_descriptor.py`,
+> `src/charter/offering/drg/models.py`, `src/charter/activation/org_charter.py` and
+> `src/charter/activation/schemas.py`.
 
 ## Pack-level schemas
 
@@ -201,12 +211,25 @@ and charter-bundle fields of core's manifest (`charter`, `fetched_at`, `source_u
 
 ## Regenerating the diagrams
 
-The `.puml` files in `docs/architecture/diagrams/` are the sources; the committed `.svg`
-files are rendered from them because the docs site renders diagrams client-side and has
-no PlantUML step. After editing a source, run:
+The `.puml` files in `docs/architecture/diagrams/` are the sources. The committed `.svg` files
+are rendered from them with the repository's pinned PlantUML jar. The version, download URL and
+SHA-256 of that jar are in `scripts/docs/plantuml_pins.json` (PlantUML 1.2026.6). The jar needs
+Graphviz and Java 21. Download the jar, check its hash against the pin, then run it headless:
 
 ```bash
-cd docs/architecture/diagrams && plantuml -tsvg descriptor-*.puml pack-write-model.puml
+cd docs/architecture/diagrams && java -Djava.awt.headless=true -jar plantuml.jar -tsvg *.puml
 ```
+
+CI checks that the committed SVGs are current: the "PlantUML diagrams are current" job of
+`docs-cleanliness.yml` runs `python3 scripts/docs/check_docs.py plantuml`. To match CI exactly,
+render in an `ubuntu:24.04` container with `python3`, `python3-venv`, `curl`, `git`, `graphviz`
+and `openjdk-21-jre-headless` installed, and a virtual environment built from
+`scripts/docs/requirements.txt`. Another PlantUML version or Graphviz build can produce SVGs that
+differ and fail that job.
+
+The docs site also renders diagrams, but at build time, through a render service pinned by image
+digest (`plantuml/plantuml-server:jetty-v1.2026.9`). That is how the pages under
+[Pack schemas](/architecture/pack-schemas/) get their diagrams. The SVGs committed here still come from the
+repository jar, not from that service.
 
 `_style.iuml` holds the shared styling and is included by every diagram.

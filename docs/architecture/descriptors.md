@@ -36,7 +36,7 @@ nest are drawn in the pack write model below.
 
 ![Pack write model](diagrams/pack-write-model.svg)
 
-> **Status:** the schemas exist here and the service's load path validates against them. [What the labels mean](/#status).
+> **Decided design:** the diagram draws the decided design of [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) to [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), and the code does not do all of it yet. Yellow «pending» classes and `[pending ADR-00xx OQn]` marks show open questions that no ruling has settled. Today's schemas are in `contracts/packs/schemas/`, with a page each under [Pack schemas](/architecture/pack-schemas/). [What the labels mean](/#status).
 
 ## Where descriptors live
 
@@ -85,7 +85,7 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 > **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
 > [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
 > to `pack_id` and `parent_pack`. `built-in` then becomes a distribution pack with no artifacts of its own, over a
-> slimmed foundation pack. The schema and the code do not do this yet.
+> slimmed foundation pack. The schema and the code do not do this yet; the [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw it.
 
 **Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also
 points to the pack's mutability policy file at the pack root, so a reader finds every
@@ -278,7 +278,7 @@ A multi-step operating procedure with entry and exit conditions. Schema:
 
 > **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
 > tightens the procedure definition and drops the inline `anti_patterns` of a procedure and a styleguide in favor
-> of authored anti-pattern files that `rejects` references. Today's schemas still carry them.
+> of authored anti-pattern files that `rejects` references. Today's schemas still carry them. The [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) draws the decided shape.
 
 ### Agent profile — `*.agent.yaml`
 
@@ -318,7 +318,7 @@ Terms a pack contributes.
 
 > **Decided, not built yet:** [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames the kind `glossary`. Its
 > artifact becomes a glossary context that holds terms addressed as `term:<context>/<term>`, and the file layout is
-> still an open question there. Today's `*.glossary-pack.yaml` and `glossary_pack:<id>` stay until then.
+> still an open question there. Today's `*.glossary-pack.yaml` and `glossary_pack:<id>` stay until then. The [mission-step contract, skill and glossary diagram](/architecture/descriptor-schemas/#mission-step-contract-pack-skill-glossary-pack) draws the decided shape.
 
 ### Pack skill — `*.skill.yaml` plus body
 
@@ -389,7 +389,7 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 > the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`
 > kind and, pending a ruling (ADR-0050 open question 2), a `gate` kind. With
 > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) it renames `missions/` to `mission_types/` and
-> moves the step contracts into the type's bundle. This section describes the shape the service reads today.
+> moves the step contracts into the type's bundle. This section describes the shape the service reads today; the [mission type lifecycle diagram](/architecture/descriptor-schemas/#mission-type) draws the decided shape.
 
 ### Anti-pattern and template
 
@@ -401,7 +401,7 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 
 > **Decided, not built yet:** [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)
 > makes an anti-pattern an authored file with a `smell`, `severe` or `breaking` severity, which `rejects`
-> references. Its exact shape and layout still await a ruling.
+> references. Its exact shape and layout still await a ruling; the [Charter kinds diagram](/architecture/descriptor-schemas/#charter-kinds) marks them pending.
 
 ## Project-side configuration
 
