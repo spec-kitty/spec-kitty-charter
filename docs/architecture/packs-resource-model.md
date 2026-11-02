@@ -75,7 +75,7 @@ flowchart LR
   packs -->|register| packs
   pack -->|collection| packs
   pack -->|artifacts| arts["/packs/{packId}/artifacts"]
-  pack -->|graph| graph["/packs/{packId}/graph"]
+  pack -->|graph| crg["/packs/{packId}/graph"]
   pack -->|presets| presets["/packs/{packId}/presets"]
   pack -->|assets| assets["/packs/{packId}/assets"]
   pack -->|resolution| res["/packs/{packId}/resolution"]
