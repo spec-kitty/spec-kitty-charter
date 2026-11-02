@@ -36,7 +36,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 
 | # | Work | ADR | Size | Depends on | Tracker |
 |---|---|---|---|---|---|
-| 1 | Operator rulings on the open decisions (below; still open); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; `gate` stays `proposed` until its shape is ruled) | all | S | none | #142 |
+| 1 | Operator rulings on the open decisions (below; still open); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; `gate` stays `proposed` until the kind and its shape are ruled) | all | S | none | #142 |
 | 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar | 0048 | M | 1 | #145, #146 |
 | 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
@@ -180,7 +180,7 @@ The defaults the ADRs plan with until the operator rules. Each is restated in it
 | What a "compose" is | one `depends_on` closure at one level; ids unique within it, except an explicit `overrides` | ADR-0048 open question 6 |
 | An undeclared `pack_level` | the level rule reads the configured level; `pack_level` becomes required | ADR-0048 open question 7 |
 | The foundation pack's id | `foundation` | ADR-0048 open question 8 |
-| What an empty active charter means | revisit when the split lands; until then it keeps ADR-0020 decision 6 | ADR-0048 open question 9 |
+| What an empty active charter means | revisit at acceptance (not ruled at acceptance on 2026-11-02; still open); until then it keeps ADR-0020 decision 6 | ADR-0048 open question 9 |
 
 The notes write the read path as `/packs/{packId}/artifacts/mission-type/{id}`. The contract's `{kind}` segment
 takes the snake_case kind token (`ArtifactKind.fromToken`), and the closed `SelectableKind` and `ActivatableKind`
