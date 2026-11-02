@@ -131,7 +131,7 @@ shape of one file, its DSO.
 | S1. One identity name | The identity field is `id`, never `name` or a kebab-case variant. Where the object has a file of its own, the `id` equals the file stem. |
 | S2. One version header | An authored YAML object carries `schema_version`, a required string, `"1.0"`. |
 | S3. One name per concept | A family of fields shares one pattern. All activation lists are `activated_<plural>`. One identity is keyed the same way everywhere in an object. |
-| S4. Closed objects | `additionalProperties: false` at every level. No pack-level object has an open map. |
+| S4. Closed objects | `additionalProperties: false` at every level. No pack-level object has an open map. *Amended 2026-11-02 (operator, #156): two kinds of value are open by declaration, each named in its kind's schema: a value that is itself a JSON Schema document (a guard's `config_schema`, checked at load against the Draft 2020-12 meta-schema and compiled offline), and a value whose shape another artifact's declared schema gives (a guard entry's `config`, checked at load against its guard's `config_schema`). Everything around them stays closed.* |
 | S5. No retired, variant or always-null fields | A field of another variant, a field that repeats another, or provenance that no hash covers is not in the shape. |
 | S6. One way to say a thing | No two spellings of one meaning. |
 | S7. Explicit types | Every field has a JSON type. A hash is 64 lowercase hex characters. |
