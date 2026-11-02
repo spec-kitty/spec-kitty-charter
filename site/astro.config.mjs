@@ -34,8 +34,8 @@ export default defineConfig({
     // Brain Kitty brand mark (olive bow tie) over the Spec Kitty theme.
     theme: { extends: specKittyTheme, assets: { logo: './src/assets/brain-kitty.png' } },
     markua: true,
-    // Mermaid fences render in the browser (doc-kitty's client renderer); no PlantUML
-    // or Chromium is needed at build time. PlantUML diagrams are committed as SVGs.
+    // Diagrams render at build time (DocKitty 0.6.0, DK_DIAGRAM_BUILD_RENDER=build in CI): Mermaid
+    // through Playwright's Chromium, PlantUML through the render service (DK_PLANTUML_SERVER_URL).
     diagrams: true,
     // Render ```gherkin fences as structured scenarios and warn on imperative steps
     // (silence a step with @dk:allow=imperative). Fences only: no generated feature
