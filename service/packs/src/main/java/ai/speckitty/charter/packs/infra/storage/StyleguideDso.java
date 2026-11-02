@@ -1,6 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
-import ai.speckitty.charter.packs.domain.ConfigValue;
+import ai.speckitty.charter.kernel.domain.ConfigValue;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;

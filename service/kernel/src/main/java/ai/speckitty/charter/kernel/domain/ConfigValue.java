@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain;
+package ai.speckitty.charter.kernel.domain;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
