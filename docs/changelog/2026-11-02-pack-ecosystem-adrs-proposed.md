@@ -24,12 +24,13 @@ Epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142).
 
 **Before:**
 
-- The rulings of the 2026-11-02 design session lived only in the
-  [design notes](/plans/pack-ecosystem-design-notes/), with ADR-0048 drafted.
+- The rulings of the 2026-11-02 design session on epic #142 were recorded only on the tracker (the rulings comment
+  on #145), and no ADR or plan page held them.
 
 **Now** (all Proposed; no schema, contract or service code changes):
 
-- [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), refined: census and recommended defaults.
+- [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/): pack composition and the named-packs split,
+  with the census and recommended defaults.
 - [ADR-0049](/adr/0049-glossary-contexts-and-terms/): glossary contexts and terms.
 - [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/): mission types and lifecycles as
   declared state machines, guards and the `gate` kind.
