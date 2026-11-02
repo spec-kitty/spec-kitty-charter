@@ -85,7 +85,7 @@ From the census of spec-kitty-open-packs at `1060bfc`. The operator rules on it 
   - **toolguides (3):** efficient-local-tooling, git-agent-commit-signing, git-worktree-pr-workflow;
   - **tactics (about 60):** the root tactics (less the reasons-canvas and common-docs ones), `testing/*`,
     `security/*`, `code-patterns/*`, and the analysis tactics not taken by `architecture`;
-  - the four mission types and their step contracts, the `spec-kitty-core` glossary, both presets.
+  - the four mission types and their step contracts, the `spec-kitty-core` glossary. The two presets stay on `built-in` (ADR-0048 decision 12).
 - **Topical packs:**
   - **writing:** 9 styleguides (plain-language, professional-communications, divio-type-discipline,
     docs-accessibility, docs-freshness-sla, publication-authority, common-docs, meeting-minutes-format,

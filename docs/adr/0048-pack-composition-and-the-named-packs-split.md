@@ -211,9 +211,10 @@ Each needs an operator ruling. The formalization pass recommends a default for e
    which move to a topical pack, and which are cut? *Recommended:* the census proposal in the
    [work breakdown](/plans/pack-ecosystem-work-breakdown/#foundation-membership-census-proposal). In short:
    foundation keeps about 30 directives, 8 paradigms, 13 agent profiles, 5 styleguides, 3 toolguides, about 60
-   tactics, the four mission types, the step contracts, the glossary and both presets. Topical packs `writing`,
-   `architecture` (with DDD), `refactoring` and `spdd`, with `testing` folded into `qa`. Stack packs `java`,
-   `python`, `drupal` and `javascript` (node and frontend). Cuts and moves to `internal` are listed there.
+   tactics, the four mission types, the step contracts and the glossary. The two presets stay on `built-in`
+   (decision 12). Topical packs `writing`, `architecture` (with DDD), `refactoring` and `spdd`, with `testing`
+   folded into `qa`. Stack packs `java`, `python`, `drupal` and `javascript` (node and frontend). Cuts and moves
+   to `internal` are listed there.
 3. **Topical packs inside `built-in`.** Besides foundation, does `built-in` aggregate any topical pack
    (for example `writing`, if the documentation Mission type's guidance moves there), or does it hold
    foundation alone? *Recommended:* foundation and `writing`. The shipped documentation Mission type relies on the
