@@ -133,7 +133,8 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    which makes it a pass. Indeterminate
    covers exit 2, a timeout, a missing runtime, and an asset whose trust cannot be verified under the policy of
    [#157](https://github.com/spec-kitty/spec-kitty-charter/issues/157). The client's `force` (ADR-0050 decision 20)
-   is the only bypass. Until #157 lands, asset-backed guards run only from packs the project explicitly trusts; a
+   is the only bypass. Until #157 lands, asset-backed guards run only from packs the project explicitly trusts, and
+   the project's activation file names them (open question 3, ruled on 2026-11-02); a
    guard from any other pack is refused at load, and that refusal is not an indeterminate verdict, so neither
    `blocking` nor `on_indeterminate` overrides it. Built-in guards need no trust check.
 8. **`on_indeterminate: pass` is allowed** (operator ruling). A guard may declare that "could not evaluate" counts
@@ -239,9 +240,10 @@ Nothing below is applied in this record.
    enumerated in the contract when the guard schema lands.
 2. **The changed-files input.** *Recommended:* relative to the repository root, against the transition's base
    (the work package's base commit).
-3. **Where the interim trust mark lives.** Until #157 lands, an asset-backed guard runs only from a pack the project
-   explicitly trusts, and no record yet says where that trust is written. *Recommended:* the project's activation
-   file, where the pack ids and versions are already named, so one read settles it.
+3. ~~**Where the interim trust mark lives.**~~ **Ruled 2026-11-02 (operator):** the project's activation file names the
+   packs it explicitly trusts, where the pack ids and versions are already named, so one read settles the trust check.
+   That file is the source of truth for the anchors, so the load-time refusal has one owner; #157 may widen the
+   policy, not move the mark.
 
 ## Alternatives considered
 
