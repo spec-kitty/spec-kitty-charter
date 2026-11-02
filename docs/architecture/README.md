@@ -66,7 +66,7 @@ The design is grounded in three core ADRs and this repository's own records:
   (ADR-0020).
 - [Resolution model](/architecture/resolution-model/) — what the domain computes: layer merge,
   activation, cascade, action-scoped context and profile resolution.
-- [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, loopback binding,
+- [Service lifecycle](/architecture/service-lifecycle/) — per-worktree scope, one writer per pack, loopback binding,
   credentials, freshness and failure behavior of the local option (the hosted option is
   [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)).
 - [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,

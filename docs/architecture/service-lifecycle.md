@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -12,6 +12,8 @@ related:
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0041-containerized-configuration-model
   - guides/run-in-a-container
+  - adr/0038-one-configuration-root-a-directory-per-domain
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -47,6 +49,41 @@ Each worktree can carry different packs and a different active charter, so a sha
 would answer from the wrong inputs. A service instance, its endpoint, process identity,
 credential, source fingerprints and compiled state belong to one worktree and are never
 shared implicitly.
+
+## One writer per pack
+
+Only one process writes a pack: the service daemon of its worktree. Several writer processes over one
+pack are not supported. The [design notes](/plans/pack-ecosystem-design-notes/#lower-impact-items-defaults-for-the-formalization-pass)
+recorded that as the default for [#183](https://github.com/spec-kitty/spec-kitty-charter/issues/183), and the
+operator confirmed it on 2026-11-02. ADR-0053 does not name #183. Its decision 24 takes only ADR-0050's
+lower-impact items.
+
+- **Why.** A registration holds the pack's write lock across its load, its `If-Match` check and its
+  commit. That lock is per JVM (`PackWriteLocks`). It serializes requests inside one service, but not
+  other processes. A commit copies the live pack directory, writes into the copy and swaps it in by two
+  renames (`PackCommitStore`).
+- **What a second writer breaks.**
+  - Two processes can each copy the pack before either swaps. The later swap then discards the earlier
+    commit, which was already acknowledged. `If-Match` does not help, because each process checks it
+    only against what it sees.
+  - Another process's listing can restore the old copy of this pack in the middle of this process's
+    swap. The second rename then fails and the commit is refused, after the caller has been told nothing.
+    [ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/) accepts that as a residual.
+  - A listing can rename directories in `packs/` while it repairs an interrupted commit (ADR-0038). So a
+    second service over the same configuration root is a writer even if it only reads.
+- **What counts as a second writer.** Any of these:
+  - a second daemon on the same worktree;
+  - a container that shares the configuration root's volume;
+  - a replica over the same configuration root. Whether several hosted instances are ever supported is
+    [#233](https://github.com/spec-kitty/spec-kitty-charter/issues/233)
+    ([ADR-0041](/adr/0041-containerized-configuration-model/), out of scope);
+  - a hand edit to a pack's directory while a commit is copying or swapping that pack. The swap moves the
+    directory that holds the edit aside and deletes it.
+- **What enforces it today.** Nothing.
+  [ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/) decision 2 has core's launcher
+  start one daemon per worktree, but the launcher is not built yet
+  ([#70](https://github.com/spec-kitty/spec-kitty-charter/issues/70)). The service has no cross-process
+  lock of its own. A fail-fast guard is [#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349).
 
 ## Who starts it
 
