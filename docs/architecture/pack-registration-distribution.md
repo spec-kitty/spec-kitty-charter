@@ -2,7 +2,7 @@
 title: Pack registration and distribution
 description: "How the charter service registers, stores, verifies and distributes packs of every level: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -13,6 +13,11 @@ related:
   - architecture/overview
   - architecture/resolution-model
   - architecture/contract-and-dtos
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
+  - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the layering, the domain model, the ArchUnit rules and the API surface you build against.
@@ -191,6 +196,8 @@ Repository ports (domain-owned, impl in storage ring):
 - Ports: `ArtifactRepository`, `ActiveGraphRepository`.
 
 > This slice reproduces the [Resolution model](/architecture/resolution-model/) pipeline (load → merge → activate → answer) and inherits its fail-loud rules. It is adjacent to, not part of, registration: registration *delivers verified packs*; artifacts *merge and answer from them*.
+>
+> **Decided, not built yet:** the kinds table changes. [ADR-0049](/adr/0049-glossary-contexts-and-terms/) renames `glossary_pack` to `glossary`, [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes `anti_pattern` an authored file, and [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes `mission_type` an ordinary activatable kind and adds `lifecycle` and `gate`; [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds `event_registry`. [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` composition, so a pack's `parent_pack` is lineage only and sibling packs have no load order. This page does not describe the target.
 
 ---
 

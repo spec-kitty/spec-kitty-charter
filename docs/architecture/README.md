@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Architecture
 description: The Java charter service design — containers, hexagonal modules, the OpenAPI contract, strangler stages, and the local (per-worktree) and hosted deployment options.
 doc_status: draft
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 type: Architecture
 kind: Hub
 audience:
@@ -68,7 +68,8 @@ The design is grounded in three core ADRs and this repository's own records:
   credentials, freshness and failure behavior of the local option (the hosted option is
   [ADR-0034](/adr/0034-local-and-hosted-deployment-options/)).
 - [Events and the ledger](/architecture/events-and-ledger/) — why the charter publishes no events,
-  and where it meets the publish, ledger, subscribe model.
+  and where it meets the publish, ledger, subscribe model. It also notes the thin event registry of
+  [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/), decided and not built yet.
 
 ## Transition
 
