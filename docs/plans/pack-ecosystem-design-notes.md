@@ -125,6 +125,45 @@ ADRs and issues. Composition and the named-packs split are already drafted as
   lifecycle embedded, to keep callers simple. The service architecture exists to allow MVC/CQRS-style
   splits between display, storage and domain logic.
 
+### Event declarations (Q9, proposal under discussion)
+
+**Findings in spec-kitty-events.**
+- The catalogue is `producer_contract/registry.json` (`registry_version` 1.1.0, non-normative until
+  the ADR 0001 cut-over).
+  - It has 36 CloudEvents types under the prefix `ai.spec-kitty`, each versioned by suffix
+    (`...v1`).
+  - Each type has a closed data schema addressed by a `urn:ai.spec-kitty:schema:` dataschema URN,
+    plus scope and subject rules.
+  - A shared envelope profile and conformance fixtures sit beside the registry.
+- **Some core event types name software-dev's steps:**
+  `ai.spec-kitty.mission.{specify,plan,tasks}.{started,completed}.v1`. A pack-declared mission type
+  with other steps has no event of its own. Generic step events are needed (the
+  `run.step.issued` and `run.step.autocompleted` events are close).
+
+**Proposal:**
+- **E1, two namespaces, two sources of truth.** spec-kitty-events owns the core namespace
+  `ai.spec-kitty.*`. A pack may declare domain event types only in its own reverse-DNS namespace
+  (for example `com.acme.review.requested.v1`), never inside `ai.spec-kitty`. This follows the
+  CloudEvents convention for the `type` attribute
+  ([CloudEvents spec](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md)).
+- **E2, a declared kind.** A pack declares its event types as artifacts (an `event_type` kind): type,
+  version suffix, a closed data schema, scope and subject. For pack events the charter is the source
+  of truth. The charter checks each declaration against the envelope profile of the pinned events
+  contract.
+- **E3, pinning.** A pack declares the range of the core catalogue it targets
+  (`requires_events: <range>` against `registry_version`), the same way `depends_on` works. The charter
+  pins one events contract release. An `emit` must resolve to a core type within range, or to a type
+  declared by the pack or a pack in its `depends_on` closure. Otherwise the load is refused.
+- **E4, generic standard events.** The standard events the client always emits (step entered, step
+  exited, transition taken) must not depend on the mission type: the step and type travel in the data,
+  not in the type name. The step-specific core types are deprecated in favour of the generic ones.
+  This is an issue to raise on spec-kitty-events.
+- **E5, payload.** An `emit` entry's payload is filled from the transition context (Mission id, step
+  id, work-package id, actor) and checked against the type's data schema where that is possible at
+  load.
+- **The client emits.** A client emits both core and pack events through its own transport (the
+  responsibility split).
+
 ### Mission type as a state machine (client-side use)
 
 On the client, a mission type is the **description of a finite-state machine**: it must say which
