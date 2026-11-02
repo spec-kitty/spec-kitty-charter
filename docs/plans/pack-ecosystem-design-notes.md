@@ -1,12 +1,17 @@
 ---
 title: Pack ecosystem design notes
-description: "Working notes of the operator design pass on epic #142: the rulings made so far, not yet formalized as ADRs."
+description: "Working notes of the operator design pass on epic #142: the rulings of 2026-11-02, formalized as ADR-0048 to ADR-0052 (Proposed)."
 doc_status: draft
 updated: 2026-11-02T00:00:00Z
 type: Plan
 kind: Planning
 related:
   - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0049-glossary-contexts-and-terms
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
+  - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
+  - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
+  - plans/pack-ecosystem-work-breakdown
   - adr/0019-packs-resource-model-and-hypermedia
   - architecture/logical-model
 audience:
@@ -20,9 +25,20 @@ audience:
 
 Working record of the operator design pass on epic
 [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142), started 2026-11-02. These are rulings
-in conversation, **not yet formalized**. The architectural, planning and debrief pass turns them into
-ADRs and issues. Composition and the named-packs split are already drafted as
+in conversation. Composition and the named-packs split were drafted first, as
 [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) (Proposed).
+
+**Formalized 2026-11-02** as Proposed ADRs, for operator acceptance. This page stays the record of the rulings; the
+ADRs add shape details, consequences and recommended defaults, and the
+[work breakdown](/plans/pack-ecosystem-work-breakdown/) orders the work.
+
+| Section | Record |
+|---|---|
+| 1. Composition and the split | [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) (refined) |
+| 2. Glossaries, 3. API paths | [ADR-0049](/adr/0049-glossary-contexts-and-terms/) |
+| 4. Mission types, lifecycle, state machine; 7. Gates and guards | [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) |
+| 4. Event declarations | [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) |
+| 5. Procedures, 6. Anti-patterns | [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) |
 
 ## 1. Composition and the split (drafted in ADR-0048)
 
@@ -128,6 +144,7 @@ ADRs and issues. Composition and the named-packs split are already drafted as
 ### Event declarations (Q9, proposal under discussion)
 
 **Findings in spec-kitty-events.**
+
 - The catalogue is `producer_contract/registry.json` (`registry_version` 1.1.0, non-normative until
   the ADR 0001 cut-over).
   - It has 36 CloudEvents types under the prefix `ai.spec-kitty`, each versioned by suffix
@@ -141,6 +158,7 @@ ADRs and issues. Composition and the named-packs split are already drafted as
   `run.step.issued` and `run.step.autocompleted` events are close).
 
 **Proposal:**
+
 - **E1, two namespaces, two sources of truth.** spec-kitty-events owns the core namespace
   `ai.spec-kitty.*`. A pack may declare domain event types only in its own reverse-DNS namespace
   (for example `com.acme.review.requested.v1`), never inside `ai.spec-kitty`. This follows the
@@ -270,7 +288,9 @@ taken.
 - **No loop is modelled.** A review rejection back to implementation is a back-edge that no mission
   type declares.
 
-**Proposed direction** (to refine):
+**Proposed direction** (to refine). *Formalized in ADR-0050. Three bullets below are superseded by later rulings
+on this page and are marked; the `emit` entry names `namespace.type` or `{namespace, type}`, and payloads are the
+client's (the event-registry revision).*
 
 - **Explicit transitions.** Each step may carry
   `transitions: [{to, on?, guard?, on_transition?}]`. Absent means "to the next step in the list",
@@ -278,15 +298,18 @@ taken.
   Explicit entries add branches and back-edges. There is an explicit terminal state.
 - **Entry and exit actions.** `on_enter` and `on_exit` on a step (Moore-style actions), beside
   `on_transition` (Mealy-style actions).
-- **Actions are declarations.** An action is `emit: [{event_type, payload?}]`: the declaration says
+- *(Entry shape superseded by the event-registry revision: an `emit` names `namespace.type` or
+  `{namespace, type}`, and payloads are the client's.)* **Actions are declarations.** An action is
+  `emit: [{event_type, payload?}]`: the declaration says
   which events a transition produces, and the client sends them. An org's review cluster *subscribes*
   to the event. Whether a declared action may also name a code asset the pack delivers, for the client
   to run, is open (question 10). Running it would be the client's decision, gated by the trust work in
   #157.
-- **Event types are validated at ingestion** against the event catalogue of the pinned
-  spec-kitty-events contract. An unknown type is refused.
-- **The engine always emits the standard lifecycle events** (step entered, step exited, transition
-  taken). A pack declares only *additional*, domain-specific events.
+- *(Superseded by R4 and the thin event registry: no pinned events contract.)* **Event types are validated at
+  ingestion** against the event catalogue of the pinned spec-kitty-events contract. An unknown type is refused.
+- *(Superseded by R5: no built-in standard events in the charter.)* **The engine always emits the standard
+  lifecycle events** (step entered, step exited, transition taken). A pack declares only *additional*,
+  domain-specific events.
 - **Enhancement may add actions** (M3). An `enhances` may append `emit` entries and references to an
   existing step, but may not change its transitions.
 
@@ -314,7 +337,8 @@ taken.
   - **Internal-pack candidates** (how the Spec Kitty team works, not product guidance):
     `mission-tracer-files`, `mission-wrap-up-sequence`, `post-merge-arch-gate-adjudication`, and
     possibly `adversarial-squad-deployment`.
-- Every procedure carries inline `anti_patterns`, so the ruling on #154 applies to procedures too.
+- Procedures carry inline `anti_patterns` (16 of the 22, the census finds), so the ruling on #154 applies to
+  procedures too.
 
 ## 6. Anti-patterns (#154, ruled 2026-11-02)
 
@@ -323,7 +347,8 @@ taken.
   severity.
   - Artifacts reference it with `rejects` references `{type: anti_pattern, id, reason}`.
   - The 131 inline blocks (18 styleguides, 16 procedures) are migrated out and deduplicated in a
-    curation pass.
+    curation pass. *(The census counts 165 entries in 40 built-in files: 24 styleguides, 16 procedures; see
+    ADR-0052.)*
   - This reverses the 3.x squad's "keep them inline" approach. Its reason (graph nodes could not hold
     a description) no longer holds under the sanitized storage shapes (ADR-0043).
 - **AP2, severity.** `smell`, `severe` or `breaking`.
@@ -366,16 +391,25 @@ taken.
 
 ## Open questions
 
-1. The tier of our own opt-in packs (`java`, `qa`, …).
-2. Foundation membership and the curation cuts (from a census).
-3. Whether `built-in` aggregates any topical pack besides foundation.
-4. The version-range grammar.
-5. The edge form a distribution pack uses to settle a sibling conflict.
+Each carries the formalization pass's recommended default; the operator rules. The full list, with the decisions
+the ADRs add, is in the [work breakdown](/plans/pack-ecosystem-work-breakdown/#open-decisions-and-recommended-defaults).
+
+1. The tier of our own opt-in packs (`java`, `qa`, …). *Recommended:* `org` (ADR-0048).
+2. Foundation membership and the curation cuts (from a census). *Recommended:* the census proposal in the work
+   breakdown (ADR-0048).
+3. Whether `built-in` aggregates any topical pack besides foundation. *Recommended:* `writing`, because the shipped
+   documentation Mission type relies on it (ADR-0048).
+4. The version-range grammar. *Recommended:* exact, `^`, `~` and comparison operators (ADR-0048).
+5. The edge form a distribution pack uses to settle a sibling conflict. *Recommended:* its own `overrides` edge
+   (ADR-0048).
 6. Whether a context's `applies_to` filters what is in force (like `applies_to_languages`), or is
-   only advisory.
+   only advisory. *Recommended:* advisory (ADR-0049).
 7. *(Ruled 2026-11-02, for now.)* Inter-step `depends_on` does not come back. Explicit transitions
    plus per-work-package lifecycles cover today's parallel work. A statechart parallel region (fork
    and join) can be added later if a mission type needs one.
-8. *(Ruled, see "Work-package lifecycle" above.)*
-9. Where the event catalogue a pack may reference is published, and how its version is pinned.
+8. *(Ruled.)* Where the work-package lifecycle lives: its own `lifecycle` kind (option a); see
+   "Work-package lifecycle" above and ADR-0050.
+9. *(Answered by the event-registry revision.)* The catalogue a pack may reference is an `event_registry` in a
+   pack, and its version is pinned by the `depends_on` range on that pack (ADR-0051).
 10. Whether a declared action may reference a code asset the pack delivers, for the client to run.
+    *Recommended:* not in the first cut; actions emit only (ADR-0050).
