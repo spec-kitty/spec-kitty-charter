@@ -53,6 +53,20 @@ each open question. The other rulings of the same session are formalized in
 [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) (procedures and
 anti-patterns).
 
+If accepted, it **supersedes in part** these Accepted records, and each gets a "superseded in part by ADR-0048"
+note in its `decision_status` at acceptance:
+
+- [ADR-0020](/adr/0020-offering-and-activations/)'s `packs` row ("a later pack wins over an earlier one") and
+  ruling 7 of its amendment of 2026-10-31, and [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
+  decision 6 (packs in merge order), for sibling packs: decision 9 refuses the conflict and leaves no "last loaded
+  wins";
+- [ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/) decision 4, "No ULID pattern is
+  added to `pack_id`", because the Consequences below add one to `pack_id` and `parent_pack`. That also breaks the
+  contract scenarios that use `pack_id: qa`.
+
+The resolution model's step 2 ("the later-declared pack wins", core #87) is not an ADR, so it is reworded at
+acceptance instead.
+
 ## Context
 
 - **Identity is per pack.** A pack descriptor carries `pack_id` (a ULID), `pack_version` (a semantic
@@ -220,6 +234,10 @@ Each needs an operator ruling. The formalization pass recommends a default for e
    pack-descriptor schema makes `pack_level` required in the version that adds `depends_on`.
 8. **The foundation pack's id.** The rulings write both `foundational` and "foundation pack". *Recommended:*
    `foundation`.
+9. **What an empty active charter means.** [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
+   decision 5 keeps ADR-0020 decision 6 (each kind at its default) until the built-in pack is split down to a
+   minimal offering (epic #145). This ADR is that split. *Recommended:* revisit at acceptance; until then an empty
+   charter keeps today's meaning.
 
 ## Alternatives considered
 
