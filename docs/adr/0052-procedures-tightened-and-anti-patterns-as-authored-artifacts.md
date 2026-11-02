@@ -60,6 +60,8 @@ changes below.
 
 ## Decision
 
+<!-- markdownlint-disable MD029 -->
+<!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### The procedure kind stays, with a tightened definition (#150, ruled)
 
 1. **`procedure` stays a kind** (option 1 of #150).
@@ -154,6 +156,8 @@ changes below.
 16. **Order.** The kind and its schema land first; the migration runs by the service's own writer, then a re-pin, as
     ADR-0043 and ADR-0044 did. The procedure and styleguide schemas drop `anti_patterns` in the same contract-family
     change.
+
+<!-- markdownlint-enable MD029 -->
 
 ## Consequences
 
