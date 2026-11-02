@@ -3,7 +3,7 @@ title: "ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in 
 description: Sanitized-shape rules for artifact kinds; the procedure shape; the structured toolguide guide as a Markdown companion, sent over HTTP as content or a fetched URI.
 doc_status: draft
 updated: 2026-10-29T00:00:00Z
-decision_status: Proposed
+decision_status: Proposed; decision 3 superseded by ADR-0052 (2026-11-02)
 decision_date: '2026-10-29'
 type: ADR
 kind: ADR
@@ -148,6 +148,8 @@ anti_patterns:
 ```
 
 ### 3. Anti-patterns: entries, not a kind
+
+*(Superseded by [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), accepted 2026-11-02: an anti-pattern becomes an authored kind, and a procedure's inline entries are dropped.)*
 
 There is no standalone anti-pattern kind or file (ADR-0037 decision 4). A procedure's anti-pattern
 is an `AntiPatternEntry`, a value of its procedure with no identity: `title` (required), `content`

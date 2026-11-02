@@ -3,7 +3,7 @@ title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
 updated: 2026-11-01T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added)'
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02)'
 decision_date: '2026-10-28'
 type: ADR
 kind: ADR
@@ -192,6 +192,7 @@ lists, in authored order. It derives three things:
 - `requiredMissionTypes()`: the must-have mission-type ids, kept apart because a mission type is
   not an `ArtifactKind` *(since ADR-0044, 2026-10-30, it is one; the slot stays apart because a
   preset activates mission types in its own `activated_mission_types` list)*;
+  *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: with `mission_type` an ordinary activatable kind, the separate domain slot goes.)*
 - `governing()`: true when either is not empty.
 
 Its invariants refuse an id outside the grammar, an id twice in one list, a kind twice in the gate,
@@ -223,6 +224,8 @@ whole-pack write's undeclared-keys refusal are removed. `pack_unknown_key` stays
 `DiagnosticCode` enum as a retired value, never raised. Its description says so, with a contract
 `CHANGELOG` line and no shape change (operator approval on #195, 2026-10-28). DIV-005 and DIV-006
 are retired. No ULID pattern is added to `pack_id`: the contract scenarios use `pack_id: qa`.
+
+*(Superseded in part by [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), accepted 2026-11-02: a ULID pattern is added to `pack_id` and `parent_pack`, which breaks the contract scenarios that use `pack_id: qa`.)*
 
 ### 5. The manifest: the authored-pack variant, with derived hashes
 

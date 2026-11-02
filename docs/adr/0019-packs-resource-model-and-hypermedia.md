@@ -3,7 +3,7 @@ title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
-decision_status: Accepted
+decision_status: Accepted; decision 2 (R12) superseded in part by ADR-0049 (2026-11-02)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -118,6 +118,7 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
    `{packId}` is the pack's minted `pack_id` ULID, which `PackSummary.packId` already answers.
    Glossary packs are packs: their terms are artifacts of kind `glossary`, read through
    `/packs/{packId}/artifacts?kind=glossary` (R12), not a resource of their own.
+   *(Superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: a glossary context is the artifact and its terms are items inside it; a per-kind list read, `GET /packs/{packId}/artifacts/glossary`, replaces the `?kind=glossary` listing.)*
 3. **Hypermedia is one `Links` component with a closed link object (shape: default).** Every
    success schema carries a required `_links` property that references it; `Problem` and
    `CharterRefusal` keep their shape. `_links` maps a relation name to a link object

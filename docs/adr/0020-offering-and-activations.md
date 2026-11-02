@@ -3,7 +3,7 @@ title: "ADR-0020: The offering and activations are separate resources, and the s
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125)
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -198,6 +198,8 @@ holds `{packId, version?}` objects, and the last two rows are left out of the do
 | `languages` | Language list, as authored; core's derived languages are not sent | `catalog.languages` |
 | `contextActivations` | *Left out (ruling 2, 2026-10-31).* Artifacts active only in one mission type or action | `governance.activations` |
 | `appliedPresets` | *Left out (ruling 3, 2026-10-31).* Provenance only: which presets were applied, when | not persisted today |
+
+*(Superseded in part by [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), accepted 2026-11-02: for sibling packs the `packs` row's "a later pack wins over an earlier one" gives way to a refused conflict. Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `missionTypes` becomes an ordinary activatable kind, where absent means all, not none.)*
 
 **Three states, exactly as core has them** (core response, 2026-10-20): for `activatedKinds`,
 `missionTypes`, `languages` and each `selected.<kind>`, an absent key is the default, `[]` is
@@ -566,13 +568,16 @@ change.
 4. **Skills and mission types.** `selected.skill` absent means only the required skills, which the must-have items
    of the governing presets derive (ADR-0031, ADR-0042). `missionTypes` absent and `[]` both mean none in force; the
    two stay distinct on the wire, so a fetched document registers unchanged.
+   *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: a mission type is an ordinary kind, so absent means all.)*
 5. **Kinds.** `selected` and `deactivated` hold one member per activatable artifact kind: every artifact kind except
    `template` and `asset`, and except `mission_type`, which `missionTypes` holds (11; the snake_case tokens of
    `NodeKind`). They align with the charter schema's `activated_<plural>` keys, which a test checks.
+   *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `mission_type` joins `selected` and `deactivated` like any other kind.)*
 6. **Cascade.** `cascade` is a non-empty array of kinds, or exactly `["all"]`; absent means no cascade, as core's
    `CascadeScope` is either "all" or a set of kinds. `all` beside kinds is a semantic `422`.
 7. **Packs** are `{packId, version?}`, in merge order (ADR-0033 D6); `version` absent means the version the service
    holds.
+   *(Superseded in part by [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), accepted 2026-11-02: for sibling packs, no "last loaded wins".)*
 8. **`requiredBy` and `violations`** are optional members of the vendored shared `Problem`, not of `CharterRefusal`
    alone: `CharterRefusal` extends the closed `Problem`. **This corrects D10's "The vendored `Problem` is
    unchanged."**

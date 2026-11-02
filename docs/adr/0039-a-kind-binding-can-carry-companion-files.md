@@ -3,7 +3,7 @@ title: "ADR-0039: A kind binding can carry companion files"
 description: An artifact may name text files beside its own, like a skill's body; the store reads, writes and fingerprints them with it under one path rule.
 doc_status: active
 updated: 2026-10-29T00:00:00Z
-decision_status: Accepted, with Amendment 2026-10-27 and Amendment 2026-10-29 (pending ADR-0043 acceptance)
+decision_status: 'Accepted, with Amendment 2026-10-27 and Amendment 2026-10-29 (pending ADR-0043 acceptance); decisions 8 and 9 superseded in part by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -185,6 +185,8 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    and, for a skill's body, the `*.skill.md` entry of its `*.md` row: a body is compared byte for
    byte, with no line-ending or final-newline normalization.
 
+   *(Decision 8's `glossary-pack` row is superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the `**/*.glossary.yaml` file of a glossary context replaces it.)*
+
    | Files (`match`) | Schema | Compared as | Sets (member identity) | Unknown fields refused |
    | --- | --- | --- | --- | --- |
    | `**/*.glossary-pack.yaml` | glossary-pack | YAML; `terms` is a sequence, `confidence` a number | none (a repeated `surface` is a domain violation) | yes |
@@ -206,6 +208,9 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    [open-packs#47](https://github.com/spec-kitty/spec-kitty-open-packs/issues/47)); a new one is
    created as `<id>.glossary-pack.yaml`. A glossary pack is pack content, unrelated to this
    repository's own glossary ([ADR-0029](/adr/0029-charter-glossary-is-owned-here/)).
+
+   *(Decision 9's `glossary_pack` token and `<id>.glossary-pack.yaml` name are superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the kind becomes `glossary`.)*
+
 10. **Nothing is normalized.** Core's skill model forces `model_invocable` off when a skill declares
     side effects and fills defaults (`tools`, `version`, `user_invocable`, `required`). Neither is
     done here: the round trip compares with the file (ADR-0036). Core's lax conversions (a quoted

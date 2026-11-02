@@ -3,7 +3,7 @@ title: "ADR-0033: The project's local activation file is the source of truth for
 description: Local activation.yaml is written through to the service, wins visibly on a cold-start divergence, names pack ids and versions; upgrades are opt-in per project.
 doc_status: active
 updated: 2026-10-26T00:00:00Z
-decision_status: Accepted
+decision_status: Accepted; decision 6 superseded in part by ADR-0048 (2026-11-02)
 decision_date: '2026-10-26'
 type: ADR
 kind: ADR
@@ -66,6 +66,7 @@ chose. The project owns it, and a hosted service must never change it on its own
    [#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145)), when the operator revisits
    it. See Open questions.
 6. **It names the offering packs it builds on, by id and version.**
+   *(Superseded in part by [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), accepted 2026-11-02: packs compose through `depends_on` edges; for sibling packs there is no merge order, and a conflict is refused.)*
 7. **Upgrades are opt-in per project.** The service holds several versions of a pack side by side.
    A project moves when it re-registers or updates its active charter, and that update is the
    acknowledgement. At that moment newly required or locked items apply, items that no longer
