@@ -3,7 +3,7 @@ title: "ADR-0049: Glossary contexts and terms: one authored source of vocabulary
 description: "glossary_pack becomes glossary: an artifact is a glossary context of terms addressed as term:<context>/<term>, scoped by pack level, the one source of vocabulary."
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -53,6 +53,12 @@ note in its `decision_status`:
   artifacts of kind `glossary`. Under this record the contexts are the artifacts and the terms are items inside
   them, and R12's `?kind=glossary` listing becomes a per-kind list read
   (`GET /packs/{packId}/artifacts/glossary`, decision 7). The `artifacts` path segment of the same decision is re-affirmed (decision 9).
+
+### Amendment 2026-11-02
+
+The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 11 to 14). One ruling changes a decision of
+this record: the glossary context URN token is `glossary_context`, not `glossary` (decision 4), so the seam does not
+wait for core to retire its own `glossary` node kind. The original text stands; the changed point is annotated.
 
 ## Context
 
@@ -112,12 +118,14 @@ note in its `decision_status`:
    is gone (open question 3). Mission types and steps link to the terms they rely on
    through `term:` URNs (#164 D1/Q5;
    [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decision 26).
+   *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 13): a glossary context's URN is `glossary_context:<id>`; term URNs are unchanged. The wait on core's retiring `glossary` node kind no longer applies.*
 5. **Dropped:** `confidence` and `introduced_in_mission` (ruled), and `provenance` (not in the ruled shape; it
    is the pack's history, which the pack's own version and repository hold). `surface` becomes `name` and
    `synonyms_to_avoid` becomes `avoid`. The glossary pack schema's `banned_synonyms` folds into `avoid` as well, so
    `avoid` is the one source of banned vocabulary (decision 15 and the work breakdown's C3).
 6. **Layout** (proposed): `glossaries/<context-id>.glossary.yaml`. The migration turns each existing glossary pack
    into one context with the same id, by the service's own writer, then a re-pin (as ADR-0043 and ADR-0044 did).
+   *Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 11): this layout is adopted.*
 
 ### Reads (ruled)
 
@@ -206,12 +214,18 @@ Nothing below is applied in this record.
 
 This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
+*Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)): every question below is ruled; each ruling follows its question.*
+
 1. **File layout** (decision 6): `glossaries/<context-id>.glossary.yaml`, one context per file.
+   **Ruled 2026-11-02:** `glossaries/<context-id>.glossary.yaml` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 11).
 2. **`applies_to`** (decision 14, the notes' question 6): advisory.
+   **Ruled 2026-11-02:** advisory ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 12).
 3. **The `glossary:` URN** (decision 4): keep `glossary:<id>` for a context, and gate the seam on core retiring its
    own `glossary` node kind. The alternative is a distinct token (`glossary_context:`), which avoids the wait at the
    cost of a longer name.
+   **Ruled 2026-11-02:** a new token, `glossary_context:<id>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 13).
 4. **Term `status` values** (decision 3): `draft`, `active`, `deprecated`.
+   **Ruled 2026-11-02:** `draft`, `active`, `deprecated` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 14).
 
 ## Alternatives considered
 

@@ -256,3 +256,7 @@ dataschema
 raci
 spdd
 lifecycles
+builtin
+stdin
+stdout
+kebab

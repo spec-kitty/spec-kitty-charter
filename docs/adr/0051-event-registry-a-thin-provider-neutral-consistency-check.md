@@ -3,7 +3,7 @@ title: "ADR-0051: The event registry: a thin, provider-neutral artifact for a co
 description: "A pack may hold an event_registry (namespace, type, name per event) so an emit can be checked; the charter holds no schemas, envelopes, payloads or built-in events."
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -35,6 +35,11 @@ recorded in the [pack ecosystem design notes](/plans/pack-ecosystem-design-notes
 declarations": R3, R4, R5 and the second revision with the entry shape, option b), on epic
 [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142). It answers the notes' open question 9.
 The rulings are not re-opened here. This record adds the shape details and the consequences.
+
+### Amendment 2026-11-02
+
+The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 25 to 28), taking each default. No decision of
+this record changes.
 
 ## Context
 
@@ -173,11 +178,17 @@ Nothing below is applied in this record.
 
 This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
+*Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)): every question below is ruled; each ruling follows its question.*
+
 1. **Activation** (decision 5): not activatable; in force with its pack.
+   **Ruled 2026-11-02:** not activatable ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 26).
 2. **Overlap** (decision 7): equal or nested on a dot boundary is an overlap. The stricter reading follows the ruling
    ("overlapping claims are refused") and keeps joined identifiers unique.
+   **Ruled 2026-11-02:** equal or nested on a dot boundary ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 27).
 3. **Layout and node kind** (decision 4): `event_registries/<id>.event-registry.yaml`; not a CRG node.
+   **Ruled 2026-11-02:** `event_registries/<id>.event-registry.yaml`; not a CRG node ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 28).
 4. **One `emit` spelling**: see ADR-0050 open question 11.
+   **Ruled 2026-11-02:** either form when authored; stored as `{namespace, type}` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 25).
 
 ## Alternatives considered
 

@@ -3,7 +3,7 @@ title: "ADR-0052: Procedures tightened, and anti-patterns as authored artifacts"
 description: "The procedure kind stays with a tightened definition and a re-homing list; anti-patterns become authored files with a severity, referenced through rejects."
 doc_status: active
 updated: 2026-11-02T00:00:00Z
-decision_status: Accepted
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -43,6 +43,16 @@ a graph node only and a standalone file "must not exist". If decision 14 is rule
 **supersedes in part** [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) (Accepted) R14, for the
 `anti_pattern` kind. ADR-0043 decision 2 (the procedure shape) stands, with the
 changes below.
+
+### Amendment 2026-11-02
+
+The operator ruled every open question on 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decisions 29 to 32). Three rulings change decisions of
+this record; the original text stands and each changed point is annotated:
+
+- decision 7: corrections (a) and (c) are taken, (b) is not, so `development-assist-test-cleanup` stays a fit
+  procedure ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 29);
+- decision 8: `bad_example` is required ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 30);
+- decision 15: a migrated anti-pattern has no default severity ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 32).
 
 ## Context
 
@@ -109,6 +119,7 @@ changes below.
    - `post-merge-arch-gate-adjudication` and `adversarial-squad-deployment` are product guidance (they drive the
      product's own lanes and CLI; the internal pack already holds the team-specific refinement), so they would leave
      the internal-pack candidates.
+   *Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 29): corrections (a) and (c) are taken; (b) is not, so `development-assist-test-cleanup` stays a fit procedure.*
 
 ### Anti-patterns as authored artifacts (#154, ruled)
 
@@ -124,6 +135,7 @@ changes below.
    | `severity` | yes | `smell`, `severe` or `breaking` |
    | `bad_example` | no | string |
    | `good_example` | no | string |
+   *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 30): `bad_example` is required; `good_example` stays optional.*
 
 9. **References.** Guidance rejects an anti-pattern with a `rejects` reference `{type: anti_pattern, id, reason}`,
    held in a `rejects` list of its own, beside `references`, with the same shape on every guidance kind. Where a
@@ -149,6 +161,7 @@ changes below.
 14. **Graph-fragment anti-pattern nodes** (recommended): after the migration, an `anti_pattern` node declared only in a
     graph fragment, with no file, is refused. That supersedes in part
     [ADR-0017](/adr/0017-pack-schemas-imported-as-canonical-json-schema/) R14 for this kind.
+    *Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 31): adopted.*
 
 ### Migration and curation
 
@@ -156,6 +169,7 @@ changes below.
     nothing (165 to 164); merging by meaning, read by hand, gives about ten clusters over about 27 entries, so
     roughly **150 distinct built-in anti-patterns** (about 205 across all packs). The 13 file-less graph nodes seed the
     general set in the foundation pack. Severity is assigned per anti-pattern in curation; the default is `smell`.
+    *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 32): there is no default severity; curation assigns each one, and an entry without one is refused.*
 16. **Order.** The kind and its schema land first; the migration runs by the service's own writer, then a re-pin, as
     ADR-0043 and ADR-0044 did. The procedure and styleguide schemas drop `anti_patterns` in the same contract-family
     change.
@@ -203,12 +217,18 @@ Nothing below is applied in this record.
 
 This record is accepted; the questions below still await an operator ruling, each with a recommended default.
 
+*Ruled 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)): every question below is ruled; each ruling follows its question.*
+
 1. **Census corrections** (decision 7): take all three: re-home the five procedures in curation, move
    `development-assist-test-cleanup` with the wrap-up sequence, and keep `post-merge-arch-gate-adjudication` and
    `adversarial-squad-deployment` as product guidance.
+   **Ruled 2026-11-02:** (a) and (c), not (b) ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 29).
 2. **The anti-pattern shape and layout** (decision 8): as proposed there.
+   **Ruled 2026-11-02:** as proposed, with `bad_example` required ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 30).
 3. **Graph-fragment anti-pattern nodes** (decision 14): refused after the migration.
+   **Ruled 2026-11-02:** refused ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 31).
 4. **Default severity of a migrated entry** (decision 15): `smell`, raised in curation.
+   **Ruled 2026-11-02:** no default; assigned per entry in curation ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 32).
 
 ## Alternatives considered
 

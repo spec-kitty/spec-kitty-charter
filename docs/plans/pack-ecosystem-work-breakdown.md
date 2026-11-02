@@ -36,19 +36,19 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 
 | # | Work | ADR | Size | Depends on | Tracker |
 |---|---|---|---|---|---|
-| 1 | Operator rulings on the open decisions (below; still open); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; `gate` stays `proposed` until the kind and its shape are ruled) | all | S | none | #142 |
+| 1 | ~~Operator rulings on the open decisions~~ (done 2026-11-02, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) and [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; "Gate" deprecated for "Guard" by ADR-0054) | all | S | none | #142 |
 | 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar | 0048 | M | 1 | #145, #146 |
 | 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
 | 5 | The `anti_pattern` kind and `rejects`; drop inline `anti_patterns` from procedure and styleguide | 0052 | M | 1 | #154 |
 | 6 | The authoring checklist for the tightened procedure definition (the closed schema already refuses outputs and `action:` references) | 0052 | S | 1 | #150 |
 | 7 | The `event_registry` kind and the shared `emit` entry shape | 0051 | M | 2 (resolution uses the closure) | proposed: "event registry kind" |
-| 8 | The `gate` and `lifecycle` kinds | 0050 | M | 1 | #156; proposed: "lifecycle kind" |
+| 8 | The `guard` and `lifecycle` kinds; the asset `executable` block and the `implemented_by` relation | 0050, 0054 | M | 1 | #156 (renamed to guard); proposed: "lifecycle kind" |
 | 9 | Mission-type schema: transitions, guards (closes #155), actions, `work_package_lifecycle`, requirement kinds (#164), `term:` links | 0050 | L | 4, 7, 8 | #148, #155, #164 |
 | 10 | Step enhancements and `overrides` checks, with the drift warning | 0050 | M | 3, 9 | #148 |
 | 11 | Mission type as an ordinary activatable kind (presets, deny list) | 0050 | M | 9 | #148 |
 | 12 | `applies_to_stacks` beside `applies_to_languages` | notes | S | 1 | #163 |
-| 13 | Contract sets for the new reads and registrations (glossary, anti-pattern, event registry, gate, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind |
+| 13 | Contract sets for the new reads and registrations (glossary, anti-pattern, event registry, guard, lifecycle, embedded lifecycle) | all | M each | the kind it serves | proposed, one per kind |
 | 14 | Close #153 (not planned), #161 (moot), #147 (into #146); document the single daemon per worktree (#183) | notes | S | 1 | #153, #161, #183 |
 
 Items 4 to 8 are independent of each other once item 1 is done, and can run in parallel as long as only one of them
@@ -70,7 +70,7 @@ Sibling-repository work; draft issues use `open-packs#TBD-<slug>` until the orch
 
 ## Foundation membership (census proposal)
 
-From the census of spec-kitty-open-packs at `1060bfc`. The operator rules on it (ADR-0048 open question 2).
+From the census of spec-kitty-open-packs at `1060bfc`. The operator adopted it as the starting cut on 2026-11-02 (ADR-0053 decision 2).
 
 - **Foundation:**
   - **directives (about 30):** 001, 003, 010, 018, 024, 025, 028 to 035, 040, 041, 043 to 046, 048 to 053,
@@ -108,7 +108,7 @@ From the census of spec-kitty-open-packs at `1060bfc`. The operator rules on it 
   (node-norris, javascript-supply-chain, typescript-mutation-tools; frontend-freddy, the atomic-design paradigm and
   its state and review tactics). `powershell-syntax` stays in foundation until a second PowerShell artifact exists.
 - **Moves to `internal`:** `tiered-standards`, the `agentic-framework-core-team` audience, `mission-tracer-files`,
-  `mission-wrap-up-sequence`, `development-assist-test-cleanup`.
+  `mission-wrap-up-sequence`. (`development-assist-test-cleanup` stays a product procedure, ADR-0053 decision 29.)
 - **Cut candidates:** directive 039 (a culture bundle named after a person); the brownfield-onboarding paradigm
   (marked provisional in its own text); overlaps to merge in curation: directive 028 against the toolguide of the
   same title, 036 against `black-box-integration-testing`, 042 against `common-docs`, the three mutation-testing
@@ -129,7 +129,7 @@ these.
 | C6 | Read `mission_types/<type>/` bundles (runtime bridge, discovery, step repository, org expected artifacts) | 0050 decision 4 | M | open-packs P2 |
 | C7 | Load the lane machine from the declared lifecycle: `wp_state.py` reads edges and guards from the artifact, guards resolve through an evaluator registry | 0050 decisions 17 to 21 | L | charter 8, open-packs P6 |
 | C8 | Replace `GateBinding{on_transition, handler, fail_open}` with `transitions[].guard`; blocking expected artifacts as the built-in guard; additive step enhancements | 0050 decisions 12, 13, 22 | M | charter 9, 10 |
-| C9 | A gate registry with the `smell` / `severe` / `breaking` ladder; `fail_open` derived from severity (#3416) | 0050 decision 14, 0052 decision 10 | M | charter 8 |
+| C9 | A guard runner for the guard/1 interface and the `builtin:` guard table; fail-closed, with `on_indeterminate` and per-entry `blocking` (#340) | 0054 | M | charter 8 |
 | C10 | Send declared `emit`s; generic step events beside the `Specify*`, `Plan*`, `Tasks*` ones | 0051 | M | charter 7, the spec-kitty-events issue |
 | C11 | Remove `software-dev` special-casing: work-package behavior from whether a step references a lifecycle | 0050 decision 18 | L | C5, C7 |
 | C12 | Render activated anti-patterns in review prompts instead of the hardcoded checklist | 0052 | S | none; may precede the cutover |
@@ -149,42 +149,27 @@ E4), and agreement there on who owns the lane names (ADR-0050 decision 21).
    and registry** (spec-kitty-open-packs, P1 to P6).
 8. **Core C1 to C12** (spec-kitty/spec-kitty, under core epic #2466).
 
-## Open decisions and recommended defaults
+{#open-decisions-and-recommended-defaults}
 
-The defaults the ADRs plan with until the operator rules. Each is restated in its ADR.
+## Rulings on the open decisions
 
-| Decision | Recommended default | Where |
+The operator ruled every open decision on 2026-11-02: [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) records the rulings, and [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) the guard model that replaces
+the proposed `gate` kind. The rulings that differ from the recommended defaults:
+
+| Decision | Ruling | Record |
 |---|---|---|
-| Pack level of our opt-in packs | `org` | ADR-0048 open question 1 |
-| Foundation membership | the census proposal above | ADR-0048 open question 2 |
-| `built-in` members besides foundation | `writing` only | ADR-0048 open question 3 |
-| Range grammar | exact, `^`, `~`, comparison operators, space as AND | ADR-0048 open question 4 |
-| Settling a sibling conflict | the distribution pack's own `overrides` edge | ADR-0048 open question 5 |
-| Glossary `applies_to` | advisory | ADR-0049 decision 14 |
-| Glossary file layout | `glossaries/<context-id>.glossary.yaml` | ADR-0049 decision 6 |
-| Terminal state name | reserved `end` | ADR-0050 decision 11 |
-| Lifecycle reference field | `work_package_lifecycle` on the step | ADR-0050 decision 18 |
-| How `force` is declared | not declared; core keeps its rules | ADR-0050 decision 20 |
-| How an enhancement is authored | a step-enhancement file in the type's bundle path | ADR-0050 decision 23 |
-| Action code assets | not in the first cut; actions emit only | ADR-0050 decision 16 |
-| Namespace overlap | equal or nested on a dot boundary (keeps joined identifiers unique) | ADR-0051 decision 7 |
-| Event registry activation | not activatable; in force with its pack | ADR-0051 decision 5 |
-| Census corrections to the procedure sorting: re-home five "fit" procedures, move `development-assist-test-cleanup` with the wrap-up sequence, keep `post-merge-arch-gate-adjudication` and `adversarial-squad-deployment` as product guidance | take all three | ADR-0052 decision 7 |
-| Graph-fragment anti-pattern nodes after the migration | refused | ADR-0052 decision 14 |
-| The `gate` kind and its shape | a declared kind: severity on the shared ladder, optional `config_schema` | ADR-0050 decision 14 |
-| `lifecycle` and `gate` activatable on their own | no; a mission type that references them brings them into force | ADR-0050 follow-ups |
-| Sibling step enhancements | compose (add-only), narrowing ADR-0048 decision 9 to `overrides` for steps | ADR-0050 decision 23 |
-| One stored `emit` spelling | accept both when authored; store `{namespace, type}` | ADR-0050 open question 11 |
-| `{kind}` path token spelling | the snake_case kind token (`mission_type`), as the contract accepts today | ADR-0050 open question 9 |
-| The `glossary:` URN | keep it; the seam carries it once core's retiring `glossary` node kind is gone | ADR-0049 decision 4 |
-| What a "compose" is | one `depends_on` closure at one level; ids unique within it, except an explicit `overrides` | ADR-0048 open question 6 |
-| An undeclared `pack_level` | the level rule reads the configured level; `pack_level` becomes required | ADR-0048 open question 7 |
-| The foundation pack's id | `foundation` | ADR-0048 open question 8 |
-| What an empty active charter means | revisit at acceptance (not ruled at acceptance on 2026-11-02; still open); until then it keeps ADR-0020 decision 6 | ADR-0048 open question 9 |
+| Range grammar | PEP 440 version specifiers, as `requires_core` | ADR-0053 decision 4 |
+| Cross-pack references | written `<pack-name>::<urn>`, required across packs | ADR-0053 decision 7 |
+| What an empty active charter means | after the split, nothing is in force | ADR-0053 decision 10 |
+| The glossary context URN | `glossary_context:<id>` | ADR-0053 decision 13 |
+| The `gate` kind | none; guards are artifacts implemented by executable assets | ADR-0054 |
+| Action code assets | allowed, behind trust (#157) | ADR-0053 decision 17 |
+| Lifecycle reference field | `submachine: {lifecycle, per: work_package, add_guards?}` | ADR-0053 decision 19 |
+| Sibling step enhancements | refused unless settled; ADR-0048 decision 9 stands | ADR-0053 decision 21 |
+| How an enhancement is authored | an additions artifact plus a CRG `enhances` edge, as for profiles | ADR-0053 decision 22 |
+| `{kind}` path token spelling | the kebab operator token (`mission-type`); breaking | ADR-0053 decision 23 |
+| Census corrections to the procedure sorting | (a) and (c); not (b) | ADR-0053 decision 29 |
+| Anti-pattern shape | `bad_example` required | ADR-0053 decision 30 |
+| Severity of a migrated anti-pattern | no default; assigned in curation | ADR-0053 decision 32 |
 
-The notes write the read path as `/packs/{packId}/artifacts/mission-type/{id}`. The contract's `{kind}` segment
-takes the snake_case kind token (`ArtifactKind.fromToken`), and the closed `SelectableKind` and `ActivatableKind`
-enums spell `mission_type`. Reading the notes' path as that token costs nothing. The artifact `{kind}` parameter is
-a slug (`^[a-z0-9][a-z0-9_-]*$`), so it admits a hyphen, but the hyphenated operator token would break
-`selections/{kind}`, `exclusions/{kind}` and the URN kinds, and would split the token between those and the
-artifact paths.
+Every other decision took its recommended default; ADR-0053 lists them all.
