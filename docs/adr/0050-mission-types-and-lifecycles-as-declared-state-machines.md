@@ -49,7 +49,7 @@ its children [#148](https://github.com/spec-kitty/spec-kitty-charter/issues/148)
 If accepted, it **supersedes in part** [ADR-0044](/adr/0044-mission-types-consolidated-into-one-sanitized-shape/)
 (Accepted): decision 4 ("the list order is the only order") becomes the default of an explicit transition list,
 and decision 5's directory `missions/` becomes `mission_types/`, with the step contracts moved into the bundle.
-Two narrower points of ADR-0044 change too. Decision 3's references gain two neighbours rather than new `type`
+Two narrower points of ADR-0044 change too. Decision 3's references gain two neighbors rather than new `type`
 values: a `terms` list of `term:` URNs (ADR-0049) and a `rejects` list of `{type: anti_pattern, id, reason}`
 ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)); like references, both are
 kept verbatim and mint no relationship until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)
@@ -138,6 +138,8 @@ up the formal meaning of a term used here.
 
 ## Decision
 
+<!-- markdownlint-disable MD029 -->
+<!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### Responsibility split (ruled)
 
 1. **The charter is the single source of truth for intent and declarations.** It owns the model of a state
@@ -270,6 +272,8 @@ up the formal meaning of a term used here.
     file; the default is to confirm and close it.
 28. **#153** (mission-instance addendum layer): the default is to park it and close it as not planned until a need
     shows.
+
+<!-- markdownlint-enable MD029 -->
 
 ## Consequences
 

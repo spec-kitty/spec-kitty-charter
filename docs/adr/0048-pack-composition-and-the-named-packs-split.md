@@ -79,6 +79,8 @@ anti-patterns).
 
 ## Decision
 
+<!-- markdownlint-disable MD029 -->
+<!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### Versioning and dependencies (A1)
 
 1. **Versions live at the pack level.** A pack declares what it builds on as
@@ -141,6 +143,8 @@ anti-patterns).
 18. **No whole-pack deactivation in this decision.** Every member of the distribution is loaded.
     Activation stays per artifact, through presets and the cascade by Mission type. Switching off a
     whole pack would be a new activation concept and needs its own ADR.
+
+<!-- markdownlint-enable MD029 -->
 
 ## Consequences
 

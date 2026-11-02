@@ -56,6 +56,8 @@ The rulings are not re-opened here. This record adds the shape details and the c
 
 ## Decision
 
+<!-- markdownlint-disable MD029 -->
+<!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### A thin `event_registry` kind
 
 1. **A pack may contain `event_registry` artifacts.** An event registry lists event types. It holds nothing
@@ -124,6 +126,8 @@ The rulings are not re-opened here. This record adds the shape details and the c
 13. **No provider coupling.** The service knows the shape of a registry, never who publishes it.
     spec-kitty-events becomes one registrant among others: a pack (registered, or vendored into
     spec-kitty-open-packs) holds an `event_registry` with its `ai.spec-kitty` entries.
+
+<!-- markdownlint-enable MD029 -->
 
 ## Consequences
 

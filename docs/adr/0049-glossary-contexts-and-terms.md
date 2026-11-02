@@ -71,6 +71,8 @@ note in its `decision_status` at acceptance:
 
 ## Decision
 
+<!-- markdownlint-disable MD029 -->
+<!-- Decisions are numbered across the sections so they can be cited by number. -->
 ### The kind and its artifact
 
 1. **`glossary_pack` is renamed `glossary`** (kind token `glossary`, operator token `glossary`). Its artifact is a
@@ -152,6 +154,8 @@ note in its `decision_status` at acceptance:
     (`chokepoint`, `strictness`, `conflict`) stays as a consumer. The learning and clarification pipeline is retired,
     subject to a census of what is live (the core follow-up list in the
     [work breakdown](/plans/pack-ecosystem-work-breakdown/)).
+
+<!-- markdownlint-enable MD029 -->
 
 ## Consequences
 
