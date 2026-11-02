@@ -2,7 +2,7 @@
 title: "ADR-0039: A kind binding can carry companion files"
 description: An artifact may name text files beside its own, like a skill's body; the store reads, writes and fingerprints them with it under one path rule.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: 'Accepted, with Amendment 2026-10-27 and Amendment 2026-10-29 (pending ADR-0043 acceptance); decisions 8 and 9 superseded in part by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
@@ -185,7 +185,7 @@ Asset payloads and templates (#193) and a toolguide's `guide_path` file need the
    and, for a skill's body, the `*.skill.md` entry of its `*.md` row: a body is compared byte for
    byte, with no line-ending or final-newline normalization.
 
-   *(Decision 8's `glossary-pack` row is superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the `**/*.glossary.yaml` file of a glossary context replaces it.)*
+   *(Decision 8's `glossary-pack` row is superseded in part by [ADR-0049](/adr/0049-glossary-contexts-and-terms/), accepted 2026-11-02: the `glossary` kind's row replaces it; its file layout is ADR-0049 open question 1.)*
 
    | Files (`match`) | Schema | Compared as | Sets (member identity) | Unknown fields refused |
    | --- | --- | --- | --- | --- |

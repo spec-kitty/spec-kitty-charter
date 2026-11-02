@@ -202,9 +202,8 @@ instead (on the architecture page, as a note that the code has not changed).
 
 ## Open questions
 
-The record is accepted; each question below still awaits an operator ruling. The formalization pass recommends a
-default for each; until ruled, the
-[work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the default.
+This record is accepted; the questions below still await an operator ruling, each with a recommended default. Until
+they are ruled, the [work breakdown](/plans/pack-ecosystem-work-breakdown/) plans with the defaults.
 
 1. **Level of our own opt-in packs.** Should the packs we publish but don't ship (`java`, `qa`, …) be
    `org`, or should the order gain a pack level for them? *Recommended:* `org`. The pass found no behavior a new
@@ -240,7 +239,7 @@ default for each; until ruled, the
    `foundation`.
 9. **What an empty active charter means.** [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)
    decision 5 keeps ADR-0020 decision 6 (each kind at its default) until the built-in pack is split down to a
-   minimal offering (epic #145). This ADR is that split. *Recommended:* revisit when the split lands; until then an empty
+   minimal offering (epic #145). This ADR is that split. *Recommended:* revisit at acceptance (not ruled at acceptance on 2026-11-02; still open); until then an empty
    charter keeps today's meaning.
 
 ## Alternatives considered

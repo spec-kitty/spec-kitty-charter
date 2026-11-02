@@ -2,7 +2,7 @@
 title: "ADR-0019: Packs are a navigable REST resource with hypermedia links"
 description: Proposes one meaning for /packs, a per-pack resource tree for pack contents, a Links component with a closed link object, and an API root, all landing before 1.0.0.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: Accepted; decision 2 (R12) superseded in part by ADR-0049 (2026-11-02)
 decision_date: '2026-10-24'
 type: ADR

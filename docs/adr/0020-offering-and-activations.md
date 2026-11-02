@@ -2,7 +2,7 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-02T00:00:00Z
 decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02)
 decision_date: '2026-10-24'
 type: ADR
@@ -572,7 +572,7 @@ change.
 5. **Kinds.** `selected` and `deactivated` hold one member per activatable artifact kind: every artifact kind except
    `template` and `asset`, and except `mission_type`, which `missionTypes` holds (11; the snake_case tokens of
    `NodeKind`). They align with the charter schema's `activated_<plural>` keys, which a test checks.
-   *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `mission_type` joins `selected` and `deactivated` like any other kind.)*
+   *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `mission_type` joins `selected` and `deactivated` like any other kind. Its `mission_type` spelling in the `selections/{kind}` segment is superseded if ADR-0050 open question 9 is ruled as recommended.)*
 6. **Cascade.** `cascade` is a non-empty array of kinds, or exactly `["all"]`; absent means no cascade, as core's
    `CascadeScope` is either "all" or a set of kinds. `all` beside kinds is a semantic `422`.
 7. **Packs** are `{packId, version?}`, in merge order (ADR-0033 D6); `version` absent means the version the service

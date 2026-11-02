@@ -2,8 +2,8 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and its #190 amendment by ADR-0049 (2026-11-02)'
+updated: 2026-11-02T00:00:00Z
+decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -171,11 +171,11 @@ nothing about how a new kind is shaped.
      and the strategy and the whole-pack write move text, not bytes;
    - kinds that are not files of their own (anti-patterns are nodes in a graph shard): a binding
      would write standalone files that must not exist;
+     *(Superseded in part by [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), accepted 2026-11-02: an anti-pattern becomes an authored file with a severity, and a standalone file is allowed.)*
    - pack-level files (#195).
      *(Built by #195, 2026-10-28, ADR-0042, for presets and the manifest: presets in a `Pack` slot
      of their own, the manifest beside the aggregate. `pack.md` is built by #260, 2026-10-30, in a
      `Pack` slot of its own through #194's `markdown` form. See the amendments under Status.)*
-   *(Superseded in part by [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/), accepted 2026-11-02: an anti-pattern becomes an authored file with a severity, and a standalone file is allowed.)*
 5. **The whole pack is loaded from and written to a directory, by `WholePackStore`.** The load
    reads the descriptor and every bound kind into the aggregate. Beside the aggregate it returns:
    - a **layout** (artifact to pack-relative path), since where a file sits is how a pack is
