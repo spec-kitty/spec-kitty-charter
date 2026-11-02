@@ -208,6 +208,13 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
    wholly empty charter means nothing.
 2. **Where an enhancing artifact lives** (decision 22). *Recommended:* beside the kind it adds to in the enhancing
    pack, with the `enhances` edge in that pack's graph shard, as for profiles.
+3. **URN kind tokens** (follows decision 23). When the path and kind tokens move to kebab case (`mission-type`), do
+   the URN kind tokens move too (`mission-type:<id>`), or stay snake case (`mission_type:<id>`)? Only multi-word kinds
+   differ: `agent_profile`, `mission_step_contract`, `mission_type`, `anti_pattern`, `glossary_context` and
+   `event_registry`. *Recommended:* move them, inside the named-packs split migration, which already rewrites graph
+   shards (`<pack>::` references, the `glossary_pack` rename). For one release the reader also accepts the
+   snake-case form, so org packs written by others keep loading. Keeping snake case avoids that reader, at the cost
+   of two spellings of every multi-word kind, kept apart forever.
 
 ## Alternatives considered
 
