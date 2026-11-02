@@ -31,7 +31,7 @@ System_Boundary(svc, "charter offering service") {
   Container_Boundary(packs, "packs  (vertical slice module)") {
 
     Container_Boundary(pdomain, "packs.domain  (CORE)") {
-      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + ALL regular artefacts (Tactic, Directive, Styleguide, Paradigm, Toolguide; Procedure deferred pending #150). The single aggregate root; load → mutate → revalidate gates every write.", $tags="core")
+      Component(pack, "«AggregateRoot» Pack", "plain Java", "identity PackIdentifier; holds PackDescriptor + ALL regular artefacts (Tactic, Directive, Styleguide, Paradigm, Toolguide; Procedure stays a kind (ADR-0052 decision 1); not built yet). The single aggregate root; load → mutate → revalidate gates every write.", $tags="core")
       Component(artefacts, "«Entity» CharterArtifact family", "plain Java", "Tactic / Directive / Styleguide / Paradigm / Toolguide child entities; identity-equals within the pack. Each exposes relationships(): List<Relationship>.", $tags="core")
       Component(vos, "«ValueObject»s", "plain Java", "Per-kind identity VOs + distinctive VOs (TacticStep, references, patterns, Enforcement, ConfigValue tree, PackPaths…). Grouped, not enumerated.", $tags="core")
       Component(resolver, "«Port» ComponentResolver", "framework-free interface", "resolve(Urn) → Optional<CharterArtifact>; dispatches on urn.kind() to that kind's repository/read service, fetching only the one neighbour.", $tags="core")

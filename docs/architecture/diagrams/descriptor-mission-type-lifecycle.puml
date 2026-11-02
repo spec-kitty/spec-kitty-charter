@@ -1,0 +1,126 @@
+@startuml descriptor-mission-type-lifecycle
+' A mission type as a declared state machine, with the lifecycle, gate, step-enhancement and event-registry kinds around it.
+' Decided design: ADR-0050 (mission types and lifecycles as declared state machines) and ADR-0051 (event registry, for emit),
+' accepted 2026-11-02; none of it is built yet. The charter declares the machine; the client runs it (ADR-0050 d1, d2).
+' Sources: ADR-0050 decisions 3-26 and its Open questions; ADR-0051 decisions 1-5, 9; ADR-0049 d4; ADR-0052 d9.
+' Not drawn: a named-pack instance graph (built-in, foundation ...); most of it is open (ADR-0048 OQ1, OQ2, OQ3, OQ8).
+' Pending: a yellow <<pending>> class or a [pending ADR-00xx OQn] suffix marks a part whose open question is not ruled.
+!include _style.iuml
+title Mission type as a declared state machine — decided design (ADR-0050, ADR-0051)
+
+class MissionType <<mission_type kind>> {
+  + id : string
+  + steps : Step[1..]  (the first item is the start state; d11)
+  - on_demand_steps : Step[]  (global transitions; declare no transitions; d11)
+  - terms : string[]  (term: URNs) <color:#8A6D00>[pending ADR-0050 OQ10: d26]</color>
+  - rejects : RejectsRef[]  (ADR-0052 d9)
+  --
+  bundle: mission_types/<type>/<type>.mission-type.yaml (d4)
+  an ordinary activatable kind; the cascade source (d6)
+  read at /packs/{packId}/artifacts/{kind}/{id}  <color:#8A6D00>[pending ADR-0050 OQ9: {kind} spelling]</color>
+  requirement kinds written into the schema (d26) <color:#8A6D00>[pending ADR-0050 OQ10]</color>
+}
+class Step {
+  + id : string  (never `end`; d11)
+  - role, prompt, guidelines, expected_input_artifacts, ...  (ADR-0044, unchanged)
+  - mission_step_contract : ref  (a composite state)
+  - transitions : Transition[]  (absent = to the next step; the last goes to end; d9)
+  - on_enter : ActionPoint  (Moore-style; d15)
+  - on_exit : ActionPoint  (Moore-style; d15)
+  - work_package_lifecycle : lifecycle-id <color:#8A6D00>[pending ADR-0050 OQ5: field name]</color>
+  - terms : string[]  (term: URNs) <color:#8A6D00>[pending ADR-0050 OQ10: d26]</color>
+  - rejects : RejectsRef[]  (ADR-0052 d9)
+}
+class Transition {
+  + to : step-id | end
+  - on : string = next  (a free token the client interprets; d8)
+  - guard : GuardEntry[]  (d12)
+  - on_transition : ActionPoint  (Mealy-style; d15)
+}
+class "end" as End <<pending>> {
+  reserved terminal state; refused as a step id (d11)
+  <color:#8A6D00>[pending ADR-0050 OQ1: terminal state name]</color>
+}
+class GuardEntry {
+  + gate : gate-id
+  - config : open map  (checked against the gate's config_schema at load)
+}
+class ActionPoint {
+  - emit : EventRef[]  (an action only emits; d16) <color:#8A6D00>[pending ADR-0050 OQ11, ADR-0051 OQ4: one spelling]</color>
+  --
+  no code assets in this cut <color:#8A6D00>[pending ADR-0050 OQ3: action code assets]</color>
+}
+class EventRef {
+  the joined string, or
+  + namespace : string
+  + type : string
+  <color:#8A6D00>[pending ADR-0050 OQ11: the writer stores {namespace, type}]</color>
+}
+class EventRegistry <<pending>> {
+  entries : {namespace, type, name}[1..]  (ADR-0051 d2)
+  holds event types only; not activatable <color:#8A6D00>[pending ADR-0051 OQ1]</color>
+  namespace overlap is refused <color:#8A6D00>[pending ADR-0051 OQ2]</color>
+  event_registries/<id>.event-registry.yaml; not a CRG node <color:#8A6D00>[pending ADR-0051 OQ3]</color>
+}
+class Gate <<pending>> {
+  + id, title, description : string
+  + severity : smell | severe | breaking  (ADR-0052 d10)
+  - config_schema : JSON Schema
+  gates/<id>.gate.yaml (d14) <color:#8A6D00>[pending ADR-0050 OQ2: the gate kind and its shape]</color>
+}
+class Lifecycle <<pending>> {
+  + id, title, description : string
+  + initial : state-id
+  + states : LifecycleState[]  (id, title, description?, terminal?, on_enter?, on_exit?)
+  + transitions : LifecycleTransition[]  ({from | list | "*", to, on?, guard?, on_transition?})
+  lifecycles/<id>.lifecycle.yaml (d17) <color:#8A6D00>[pending ADR-0050 OQ4: layout and shape]</color>
+  the shipped work-package lifecycle is core's lane machine, authored as an artifact (d19)
+  forcing a transition stays in core, not declared <color:#8A6D00>[pending ADR-0050 OQ6]</color>
+}
+class StepEnhancement <<pending>> {
+  + target : action:<type>/<step>  (d23)
+  adds only: references, guards on outgoing transitions, emit entries (d22)
+  mission_types/<type>/enhancements/<id>.step-enhancement.yaml <color:#8A6D00>[pending ADR-0050 OQ8]</color>
+  sibling enhancements compose, a union <color:#8A6D00>[pending ADR-0050 OQ7]</color>
+}
+class Term <<node-only URN; ADR-0049 d4>> {
+  URN term:<context-id>/<term-id>
+}
+
+MissionType *-- "1..*" Step : steps
+Step *-- "0..*" Transition : transitions
+Transition ..> Step : to
+Transition ..> End : to (terminal)
+Step *-- "0..2" ActionPoint : on_enter, on_exit
+Transition *-- "0..1" ActionPoint : on_transition
+Transition *-- "*" GuardEntry : guard
+GuardEntry ..> Gate : gate <color:#8A6D00>[pending ADR-0050 OQ2]</color>
+ActionPoint *-- "*" EventRef : emit
+EventRef ..> EventRegistry : must resolve in the declaring pack or its\ndepends_on closure (ADR-0051 d9) <color:#8A6D00>[pending ADR-0048 OQ6: closure]</color>
+Step ..> Lifecycle : work_package_lifecycle,\none instance per work package (d18)\n<color:#8A6D00>[pending ADR-0050 OQ4, OQ5]</color>
+Lifecycle ..> Gate : guard {gate, config}
+Lifecycle ..> EventRegistry : emit resolves
+MissionType ..> Term : terms\n<color:#8A6D00>[pending ADR-0050 OQ10]</color>
+Step ..> Term : terms\n<color:#8A6D00>[pending ADR-0050 OQ10]</color>
+StepEnhancement ..> Step : target (add-only, d22)\n<color:#8A6D00>[pending ADR-0050 OQ7, OQ8]</color>
+
+note bottom of Step
+  Blocking expected_output_artifacts guard every transition out of the step;
+  blocking expected_input_artifacts guard every transition into it (d13).
+  `overrides` replaces a step or a whole type; only an override may remove a guard
+  or change a transition (d24). A new workflow is a new mission type (d25).
+  Inter-step depends_on does not come back (d11).
+end note
+note bottom of Transition
+  Example (illustration only): specify -> plan -> implement -> review.
+  implement has no transitions, so it goes to the next step.
+  review declares all its outgoing transitions:
+    {to: end, on: next}, {to: implement, on: changes_requested}
+  A step that declares transitions gets no implicit next (d10).
+end note
+legend right
+  Solid diamond = contained in the file; dashed = reference by id or URN.
+  Yellow <<pending>> / [pending …]: decided in the cited ADR,
+  but the cited open question is not ruled.
+endlegend
+@enduml
