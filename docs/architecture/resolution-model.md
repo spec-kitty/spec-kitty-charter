@@ -48,11 +48,11 @@ charter-pack cutover removes every read-side fallback after a one-time upgrade m
 ```mermaid
 flowchart LR
   load["load packs<br/>check pack_level"] --> merge["merge layers<br/>built-in, org, project"]
-  merge --> graph["active graph<br/>validated CRG"]
-  act["active charter<br/>+ org required_kind"] --> graph
-  graph --> ctx["action-scoped<br/>context"]
-  graph --> prof["profile<br/>resolution"]
-  graph --> q["graph queries<br/>listings"]
+  merge --> crg["active graph<br/>validated CRG"]
+  act["active charter<br/>+ org required_kind"] --> crg
+  crg --> ctx["action-scoped<br/>context"]
+  crg --> prof["profile<br/>resolution"]
+  crg --> q["graph queries<br/>listings"]
 ```
 
 1. **Load.** Each pack's `pack.yaml` is read and its `pack_level` checked against where it
