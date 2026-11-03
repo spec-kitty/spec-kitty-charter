@@ -94,16 +94,20 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void aCycleIsRefusedAndNamesAPackInIt() {
-        PackUnderResolution a =
+    void aCycleIsRefusedAndNamesAPackOnItNotOneOnlyDownstreamOfIt() {
+        // 01AAA only depends on the cycle 01BBB <-> 01CCC, and sorts first among the packs Kahn's pass leaves over.
+        PackUnderResolution downstream =
                 pack("01AAA", "a", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BBB", ">=1.0")));
         PackUnderResolution b =
-                pack("01BBB", "b", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01AAA", ">=1.0")));
+                pack("01BBB", "b", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01CCC", ">=1.0")));
+        PackUnderResolution c =
+                pack("01CCC", "c", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BBB", ">=1.0")));
 
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(a, b)))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .satisfies(refusal -> assertThat(((PackCompositionResolver.Refusal) refusal).failure())
-                        .isEqualTo(Failure.CYCLE));
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(downstream, b, c)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
+                    assertThat(refusal.packId()).isIn("01BBB", "01CCC");
+                });
     }
 
     @Test
@@ -112,8 +116,11 @@ class PackCompositionResolverTest {
                 pack("01SELF", "self", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01SELF", ">=1.0")));
 
         assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(self)))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .hasMessageContaining("depends on itself");
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
+                    assertThat(refusal.packId()).isEqualTo("01SELF");
+                    assertThat(refusal.detail()).contains("depends on itself");
+                });
     }
 
     @Test

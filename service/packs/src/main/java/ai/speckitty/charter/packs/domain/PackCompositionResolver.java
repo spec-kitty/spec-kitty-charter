@@ -525,16 +525,31 @@ public final class PackCompositionResolver {
             }
         }
         if (ordered.size() != packs.size()) {
-            String offender = packs.stream()
-                    .map(pack -> pack.descriptor().packId())
-                    .filter(id -> {
-                        Integer count = outstanding.get(id);
-                        return count != null && count > 0;
-                    })
-                    .findFirst()
-                    .orElse("unknown");
-            throw new Refusal(Failure.CYCLE, offender, "the dependency graph contains a cycle at " + offender);
+            String onCycle = packOnCycle(ordered, dependenciesByPack);
+            throw new Refusal(Failure.CYCLE, onCycle, "the dependency graph contains a cycle through " + onCycle);
         }
         return List.copyOf(ordered);
+    }
+
+    /**
+     * A pack that lies on a cycle. What Kahn's pass leaves behind is the cycles and everything downstream of them, and
+     * the first leftover in the stable order may be only downstream. Every leftover has an unplaced dependency, so
+     * walking from one along unplaced dependencies must repeat a pack, and the first repeat is on a cycle.
+     */
+    private static String packOnCycle(List<PackUnderResolution> placed, Map<String, List<String>> dependenciesByPack) {
+        Set<String> done = new LinkedHashSet<>();
+        placed.forEach(pack -> done.add(pack.descriptor().packId()));
+        String current = dependenciesByPack.keySet().stream()
+                .filter(id -> !done.contains(id))
+                .findFirst()
+                .orElseThrow();
+        Set<String> walked = new LinkedHashSet<>();
+        while (walked.add(current)) {
+            current = dependenciesByPack.getOrDefault(current, List.of()).stream()
+                    .filter(id -> !done.contains(id))
+                    .findFirst()
+                    .orElseThrow();
+        }
+        return current;
     }
 }
