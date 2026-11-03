@@ -72,8 +72,8 @@ Applied on the tracker before this page was written:
 | [145](#issue-145) | Epic: Split built-in charter content into packs + compound packs … | A | `scope-change` | re-scope + retitle | yes |
 | [148](#issue-148) | Promote mission types + step contracts to full charter artifact kinds | A | `scope-change` | re-scope + retitle | yes |
 | [149](#issue-149) | Standalone pack validator as a lightweight CI entry point | A | `scope-change` | re-scope + retitle | yes |
-| [154](#issue-154) | Promote the inline anti_patterns corpus to first-class `DRG` nodes | A | `scope-change` | re-scope + retitle |  |
-| [157](#issue-157) | Packs declare executable paths/requirements + ship `SBOMs` for … | A | `scope-change` | re-scope + retitle | yes |
+| [154](#issue-154) | Promote the inline `anti_patterns` corpus to first-class `DRG` nodes | A | `scope-change` | re-scope + retitle |  |
+| [157](#issue-157) | Packs declare executable `paths/requirements` + ship `SBOMs` for … | A | `scope-change` | re-scope + retitle | yes |
 | [160](#issue-160) | Built-in pack policy file and the replaceable-builtins deprecation … | A | `scope-change` | re-scope + retitle | yes |
 | [164](#issue-164) | Mission-type requirement-kind declaration: schema, ingestion and … | A | `scope-change` | re-scope + retitle |  |
 | [178](#issue-178) | Align artifact schema field names across kinds (`name`/`title`, … | A | `scope-change` | re-scope | yes |
@@ -81,7 +81,7 @@ Applied on the tracker before this page was written:
 | [36](#issue-36) | Follow-ups from the charter-offering bootstrap review (#35) | A | `factual` | re-scope | yes |
 | [136](#issue-136) | Ask core to carry the pack terms in its glossary | A | `scope-change` | re-scope + retitle |  |
 | [203](#issue-203) | Mirror the red-main procedure-to-directive move from open-packs#74 | A | `factual` | re-scope + retitle |  |
-| [335](#issue-335) | Core: rename glossary_pack to glossary in activation keys and tokens, … | A | `scope-change` | re-scope |  |
+| [335](#issue-335) | Core: rename `glossary_pack` to glossary in activation keys and tokens, … | A | `scope-change` | re-scope |  |
 | [338](#issue-338) | Core: load the work-package lane machine from the declared lifecycle | A | `scope-change` | re-scope |  |
 | [342](#issue-342) | Core: remove the software-dev special-casing from the mission runtime | A | `factual` | re-scope |  |
 | [42](#issue-42) | Mission-step profile-role resolution is a hardcoded central table in … | A | `scope-change` | re-scope + retitle | yes |
@@ -97,7 +97,7 @@ Applied on the tracker before this page was written:
 | [106](#issue-106) | Cutover read R12: Glossary packs: decide and shape | B | `scope-change` | re-scope + retitle | yes |
 | [109](#issue-109) | Cutover read R15: Override and pack policy: decide and shape | B | `scope-change` | re-scope | yes |
 | [110](#issue-110) | Cutover read R16: Built-in pin, manifest freshness and snapshot … | B | `scope-change` | re-scope | yes |
-| [111](#issue-111) | Cutover read R17: SPDD/REASONS blocks: decide and shape | B | `scope-change` | close instead | yes |
+| [111](#issue-111) | Cutover read R17: `SPDD/REASONS` blocks: decide and shape | B | `scope-change` | close instead | yes |
 | [112](#issue-112) | Cutover read R18: Kind taxonomy facts: decide and shape | B | `scope-change` | re-scope |  |
 | [70](#issue-70) | Launcher and service lifecycle: core starts and stops the charter … | B | `scope-change` | re-scope + retitle | yes |
 | [71](#issue-71) | Cross-OS packaging of the charter service | B | `scope-change` | re-scope | yes |
@@ -106,7 +106,7 @@ Applied on the tracker before this page was written:
 | [17](#issue-17) | Creeds and Values (1/7): Re-baseline the design against 4.x and this … | C | `scope-change` | re-scope + retitle |  |
 | [23](#issue-23) | Creeds and Values (7/7): N-generic first-order matrix and ranking … | C | `scope-change` | re-scope | yes |
 | [29](#issue-29) | Epic: Behavior-first charter-offering overhaul (bootstrap, P1-P3) | C | `scope-change` | re-scope + retitle | yes |
-| [30](#issue-30) | P1: Author the offering's boundary/role scenarios beyond the three … | C | `scope-change` | re-scope + retitle |  |
+| [30](#issue-30) | P1: Author the offering's `boundary/role` scenarios beyond the three … | C | `scope-change` | re-scope + retitle |  |
 | [31](#issue-31) | P1: Wire the in-repo Layer-B acceptance harness (Cucumber-JVM) … | C | `scope-change` | re-scope + retitle |  |
 | [33](#issue-33) | P1: Render the BDD scenarios and PROMISES map in the docsite | C | `scope-change` | re-scope + retitle |  |
 | [55](#issue-55) | Epic: Charter Pack governance: override, extend and enforce policy … | C | `factual` | re-scope + retitle |  |
@@ -125,7 +125,7 @@ Applied on the tracker before this page was written:
 | [15](#issue-15) | Nightly acceptance tests using BDD / Gherkin + Allure | D | `scope-change` | re-scope + retitle | yes |
 | [140](#issue-140) | ArchUnit: slice-coverage meta-rule so a new slice cannot land ungated | D | `scope-change` | re-scope + retitle |  |
 | [185](#issue-185) | Pack commit swap: readers in the swap window, staging leftovers, … | D | `scope-change` | re-scope + retitle |  |
-| [196](#issue-196) | Protect contract-charter-v* tags with a ruleset before the first … | D | `scope-change` | re-scope + retitle |  |
+| [196](#issue-196) | Protect `contract-charter-v*` tags with a ruleset before the first … | D | `scope-change` | re-scope + retitle |  |
 | [205](#issue-205) | Re-render class-diagram and c4-components PlantUML for the ADR-0035 … | D | `scope-change` | re-scope + retitle |  |
 | [210](#issue-210) | Contract scenarios for `GET /openapi.yaml` | D | `factual` | close instead | yes |
 | [211](#issue-211) | Add IntelliJ HTTP Client examples … | D | `scope-change` | re-scope + retitle | yes |
@@ -133,7 +133,7 @@ Applied on the tracker before this page was written:
 | [226](#issue-226) | Hosted service configuration (profiles, validated properties, … | D | `factual` | re-scope + retitle | yes |
 | [231](#issue-231) | Profile guard tests: loopback invariant locally, missing-secret … | D | `scope-change` | re-scope + retitle |  |
 | [243](#issue-243) | Report three spec-kitty CLI (4.0.0rc8) charter-synthesis defects … | D | `factual` | re-scope | yes |
-| [254](#issue-254) | PackPolicy: report an org-fragment body_path that escapes the pack … | D | `scope-change` | re-scope + retitle |  |
+| [254](#issue-254) | PackPolicy: report an org-fragment `body_path` that escapes the pack … | D | `scope-change` | re-scope + retitle |  |
 
 ## Open questions
 
