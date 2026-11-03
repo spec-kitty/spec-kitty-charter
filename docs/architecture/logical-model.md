@@ -23,6 +23,8 @@ related:
   - adr/0040-content-form-and-payload-kinds
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - guides/compose-packs
   - adr/0049-glossary-contexts-and-terms
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
   - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
@@ -165,42 +167,39 @@ under core ADR [`2026-05-16-1`](https://github.com/spec-kitty/spec-kitty/blob/ma
 level from directory presence.
 
 **Composition** (built for one compose;
-[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)). A pack declares
-what it builds on as `depends_on: [{pack_id, range}]`, a closed item whose `pack_id` is a ULID and whose `range` is
-a PEP 440 specifier set; a pack that declares a dependency must also declare `pack_level`. One `depends_on` closure
-at one level is a **compose**. The resolver orders it — every dependency before the packs that need it, a shared
-dependency once, the merge order across levels kept — and the offering read serves the compose in that order or, when
-the graph is broken, refuses it and names the offending pack rather than serving part of it: a cycle
-(`pack_dependency_cycle`), an unknown dependency (`pack_dependency_unknown`), a held version outside every declared
-range, or two ranges on one pack that share no version, touching ones such as `<2` and `>=2` included
-(`pack_dependency_out_of_range`), an unresolvable `parent_pack` (`pack_parent_unresolved`), a dependency that
-crosses the level rule — a pack may depend only on its own level or a lower one (`pack_level_violation`) — two packs
-declaring
-one name (`pack_name_conflict`) or one `pack_id` (`pack_duplicate_id`), and two sibling packs at one level that
-change the same artifact with no `overrides` edge settling it (`pack_sibling_conflict`). `parent_pack`
-stays lineage only. A pack settles a sibling contest by declaring `overrides: [{artifact, member}]` on its
-descriptor, naming a member that contests the artifact. Until #358 any pack of the compose may declare the edge, and
-until #357 (the merge) settling only clears the refusal: the member's version is not yet put in force. Today the service configures every pack it holds, so every
-configured pack is in the compose. A pack's `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member`
-are ULIDs, and its `name` follows the identifier grammar `^[a-z0-9][a-z0-9_-]*$`, because the name is the qualifier of a
-cross-pack reference.
+[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/),
+[ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)). A pack declares what it builds on
+as `depends_on`, a list of dependency edges, each naming a pack and a PEP 440 range on its version. The
+[compose](/glossary/charter/#compose) is the [closure](/glossary/charter/#closure) of `depends_on` rooted at one
+level's configured packs, including dependencies at levels nearer built-in. Today every configured pack is a root;
+roots from the activation set come with #360. The resolver orders the compose with dependencies first and each
+level contiguous, in merge order: built-in, then org, then project. The offering serves it whole, or refuses it by
+naming the pack, rather than serving part of it.
 
-**Cross-pack references** (built). A reference is written `<pack-name>::<urn>`, bare inside its own pack. A graph edge
-`source` or `target`, and the `id` of every typed reference (`{type, id}` in a tactic and its steps, a directive, a
-paradigm, a procedure and a mission type with its steps), accept the optional `<pack-name>::` prefix with the pack-name
-grammar above. `Urn` carries the pack of a qualified reference (`PackQualifiedReference` is the one parser), so a
-qualified typed reference becomes a relationship whose target names the pack, never a URN with `::` in its id. When the
-compose resolves, the offering read checks the references of every pack, from graph edges and typed references alike,
-on one path: a bare reference that resolves only in another pack is refused, naming the holding pack
-(`pack_reference_unqualified`), and a qualified reference whose pack is outside the *referring pack's own* `depends_on`
-closure is refused, naming the missing pack (`pack_reference_pack_missing`). Both therefore surface on `GET /offering`.
-Bare ids in a directive's `procedures` and a paradigm's `directive_refs` are not typed references and are not checked.
-The offering response carries what a compose resolved:
-each pack lists its configured `packId`, the `pack_id` its descriptor declares (`descriptorPackId`, which the
-dependency edges name) and its declared dependencies with the range and the version that satisfied each. Not built
-yet: `built-in` becomes a distribution pack with no artifacts of its own, over a slimmed foundation pack, and stack
-packs are opt-in — that is the open-packs split, not this model's code; and no read answers an activation yet — the
-activation set is reserved (issue #125) — so the pack pin's resolved facts wait beside the offering's.
+- **Level direction.** A pack may take a `parent_pack`, and may `depends_on` a pack, only at its own level or one
+  nearer built-in. `parent_pack` stays lineage only; it orders nothing.
+- **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
+  within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
+- **Sibling conflict.** Two packs at one level that both change or both define the same artifact id are a
+  [sibling conflict](/glossary/charter/#sibling-conflict), refused unless an
+  [`overrides` edge](/glossary/charter/#overrides-edge) naming a contesting member settles it. There is no
+  "last loaded wins". Until #358 any pack of the compose may declare the edge; until #357 settling only clears the
+  refusal and the member's version is not yet put in force.
+- **Qualified reference.** A reference to an artifact of another pack is written `<pack-name>::<urn>`
+  ([qualified reference](/glossary/charter/#qualified-reference)). The pack is provenance, not identity: the
+  artifact's URN stays bare, and a qualified typed reference becomes a relationship whose target names the pack. The
+  named pack must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A composed read
+  checks every reference, and following one across packs is part of a served read.
+- **Refusals.** A broken compose refuses every composed read with a 500 that names the violating packs. A pack-scoped
+  read of one artifact by id still answers. The causes and fixes are one table in
+  [Compose packs](/guides/compose-packs/#read-a-refusal).
+
+The offering response carries what a compose resolved: each pack lists its configured `packId`, its
+`descriptorPackId` (the descriptor ULID that dependency edges name) and its declared dependencies with the range and
+the version that satisfied each. Not built yet: `built-in` becomes a distribution pack with no artifacts of its own,
+over a slimmed foundation pack, and stack packs are opt-in. That is the open-packs split, not this model's code. No
+read answers an activation yet (the activation set is reserved, issue #125), so the pack pin carries no resolved
+facts (#359).
 
 ### Pack-level files
 

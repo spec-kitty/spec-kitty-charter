@@ -173,10 +173,10 @@ preamble and H2 sections `{title, content}`. A prompt may have frontmatter holdi
 
 > **Decided design:** the diagram above draws ADR-0048 to ADR-0052.
 > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on` to the pack descriptor
-> and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. Today's code and
-> schemas still have the old shape; its sources in core are `src/charter/offering/packs/pack_descriptor.py`,
-> `src/charter/offering/drg/models.py`, `src/charter/activation/org_charter.py` and
-> `src/charter/activation/schemas.py`.
+> and a ULID pattern to `pack_id` and `parent_pack`, and narrows `parent_pack` to lineage. The pack descriptor schema
+> in this repository already has that shape; the diagram is the decided design for the other pack-level files. Its
+> sources in core are `src/charter/offering/packs/pack_descriptor.py`, `src/charter/offering/drg/models.py`,
+> `src/charter/activation/org_charter.py` and `src/charter/activation/schemas.py`.
 
 ## Pack-level schemas
 

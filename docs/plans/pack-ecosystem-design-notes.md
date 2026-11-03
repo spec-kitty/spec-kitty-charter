@@ -47,7 +47,7 @@ ADRs add shape details, consequences and recommended defaults, and the
 - `depends_on: [{pack_id, range}]`. Versions are per pack. Artifact links stay unversioned, and the
   CRG closure check covers consistency. Skills keep their own `version`.
 - `parent_pack` is lineage only. It must resolve to a registered pack, and the level rule applies
-  (project < org < built-in).
+  (project < org < built-in). *Superseded 2026-11-03 by [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 7 as amended: a pack takes a `parent_pack`, or a `depends_on` target, only at its own level or one nearer built-in.*
 - Packs compose into a graph that may form diamonds. A shared dependency loads once, and the version
   ranges on it must overlap. Specialist packs only add. Sibling overrides are refused unless the
   distribution pack settles them.

@@ -13,6 +13,8 @@ related:
   - adr/0013-persistent-deactivation
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - guides/compose-packs
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for the behavior the domain must reproduce, step by step.
@@ -72,10 +74,15 @@ flowchart LR
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
 
    > **Partly built:** for sibling packs at one level,
-   > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that change
-   > the same artifact are refused with `pack_sibling_conflict` unless a pack of the compose declares the
-   > settling `overrides` edge, so siblings leave no "last loaded wins". The layer merge across levels keeps the
-   > rule above; the split's remaining moves are the open-packs work, not this page's pipeline.
+   > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that both
+   > change or both define the same artifact are refused with `pack_sibling_conflict` unless an `overrides` edge naming
+   > a contesting member settles it, so siblings leave no "last loaded wins". Until
+   > [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) the edge only clears the refusal: the named
+   > member's version is not yet put in force, and the merge does not apply the settled choice. Until #358 any pack of
+   > the compose may declare the edge. The layer merge across levels keeps the rule above: the same id at two levels is
+   > a legitimate override. Every composition refusal is in the table of
+   > [Compose packs](/guides/compose-packs/#read-a-refusal); the split's remaining moves are the open-packs work, not
+   > this page's pipeline.
 3. **Activate.** A per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either

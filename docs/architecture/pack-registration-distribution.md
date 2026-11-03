@@ -14,6 +14,7 @@ related:
   - architecture/resolution-model
   - architecture/contract-and-dtos
   - adr/0048-pack-composition-and-the-named-packs-split
+  - guides/compose-packs
   - adr/0049-glossary-contexts-and-terms
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
   - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
@@ -205,8 +206,9 @@ Repository ports (domain-owned, impl in storage ring):
 > executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/); the proposed
 > `gate` kind was not taken); [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds
 > `event_registry`. [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on`
-> composition, built for one compose now: the offering read resolves the configured packs' `depends_on` closure and
-> refuses a broken one instead of serving part of it, `parent_pack` is lineage only, and sibling packs have no load
+> composition, built for one compose now: the offering read resolves the `depends_on` closure rooted at the
+> configured packs and refuses a broken one instead of serving part of it (the refusals are in
+> [Compose packs](/guides/compose-packs/#read-a-refusal)), `parent_pack` is lineage only, and sibling packs have no load
 > order. This page does not
 > describe the target.
 

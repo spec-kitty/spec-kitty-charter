@@ -103,7 +103,7 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129). The
 | #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
 | #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3, now superseded: the corpus over core's CLI is no longer the acceptance oracle (ADR-0055 D3; [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). To be re-scoped |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
-| #145, #146 | Pack-composition resolver: the `depends_on` and `parent_pack` checks, and the dependency resolver | Roadmap step 3a. Moved here from Post-cutover on 2026-11-03: the layer merge is built on it, so it lands before #10 and #11 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2) |
+| #145, #146 | Pack-composition resolver: the `depends_on` and `parent_pack` checks, and the dependency resolver | Roadmap step 3a. Moved here from Post-cutover on 2026-11-03: the layer merge is built on it, so it lands before #10 and #11 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2). **Done 2026-11-03** (#145; deferred: #357, #358, #359, #360, #363) |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5. Accepted against the design-derived packs (ADR-0055 D3) |
 | #13 | Core ingests the contract: generated client and routing proxy | Phase 2: core vendors the client once the service is built ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1). Moved from 4.0 GA on 2026-11-03 |
 | #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |

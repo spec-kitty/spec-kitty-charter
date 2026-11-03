@@ -107,6 +107,7 @@ the split ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-ques
 1. **Versions live at the pack level.** A pack declares what it builds on as
    `depends_on: [{pack_id, range}]`, where `range` is a semantic-version range against the dependency's
    `pack_version`.
+   *Amended 2026-11-03 (operator, #145 pre-PR review): the range grammar is PEP 440, a specifier set such as `>=1.2,<2`, per [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4.*
 2. **Artifact links stay unversioned.** Consistency between artifacts is checked by a CRG closure check at
    compose time, so a link to an artifact that no pack in the closure provides is refused. The check is new:
    today such an edge is listed with a null label (DIV-102) and not refused.
@@ -123,6 +124,7 @@ the split ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-ques
    is refused.
 7. **Level rule.** A pack's `pack_level` may not be higher than its parent's, in the order
    project < org < built-in.
+   *Amended 2026-11-03 (operator, #145 pre-PR review): the wording is "its own level or one nearer built-in", never "higher" or "lower". A pack may take a `parent_pack` only at its own level or one nearer built-in, and the rule extends to `depends_on`: a pack may depend only on packs at its own level or one nearer built-in. The resolver refuses a violation with `pack_level_violation`. The original wording above names the same direction and stays readable.*
 
 ### Composition shape (S1, S2)
 
@@ -186,6 +188,7 @@ the split ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-ques
   diagnostic and the level the pack is configured at is used
   ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)). The level rule (decision 7) has to say
   which level it reads (open question 7).
+  *Amended 2026-11-03 (operator, #145 pre-PR review): the level the rule reads is the configured level, and `pack_level` is required whenever `depends_on` is non-empty ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 8). The rule is "its own level or one nearer built-in", for `parent_pack` and for `depends_on` alike.*
 - **Charter service.** It needs a resolver for the dependency graph (ordering, cycle check, range
   check, deduplication by `pack_id`), the closure check (decision 2), the `parent_pack` existence and level
   checks, and the sibling-override refusal. ADR-0012's mutability policy still applies per pack.
