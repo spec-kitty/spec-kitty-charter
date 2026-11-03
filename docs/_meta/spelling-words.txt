@@ -27,6 +27,7 @@ checksummed
 chokepoint
 clarification
 code
+codeql
 compiler
 context
 convention
@@ -66,6 +67,7 @@ import
 instantiates
 instantiation
 interview
+junit
 kind
 kinded
 kitty
@@ -78,7 +80,9 @@ mapping
 mediated
 miss
 mission
+mockmvc
 monorepo
+nullness
 offering
 organization
 orphan
@@ -117,6 +121,7 @@ requires
 resolution
 retargets
 rule
+sast
 schema
 scope
 scoped
@@ -124,8 +129,10 @@ selected
 selection
 sequence
 soft
+sonarcloud
 specializes
 specification
+spotbugs
 stijn
 strictness
 styleguide
