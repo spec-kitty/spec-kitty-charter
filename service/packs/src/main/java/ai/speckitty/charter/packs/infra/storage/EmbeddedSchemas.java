@@ -86,7 +86,7 @@ final class EmbeddedSchemas {
             compiled.validate(PackSchemas.toTree(java.util.Map.of()));
             return List.of();
         } catch (RuntimeException refused) {
-            return List.of("it does not compile offline (an unknown keyword or a $ref outside the document): "
+            return List.of("it does not compile offline (an unknown keyword, or a pattern RE2 cannot run): "
                     + refused.getClass().getSimpleName() + ": " + refused.getMessage());
         }
     }
@@ -94,7 +94,9 @@ final class EmbeddedSchemas {
     /**
      * Collects every reference keyword anywhere in the schema tree. An embedded config schema has no use for them, and a
      * self-referencing one ({@code $ref: '#'}, a {@code $defs} cycle) overflows the stack when it is evaluated, which no
-     * probe against an empty mapping can be trusted to reach.
+     * probe against an empty mapping can be trusted to reach. It deliberately also refuses a key literally named
+     * {@code $ref} inside {@code properties}, {@code const}, {@code enum}, {@code default} or {@code examples}: that fails
+     * closed.
      */
     private static void referenceKeywords(JsonNode node, String at, List<String> found) {
         if (node.isObject()) {
