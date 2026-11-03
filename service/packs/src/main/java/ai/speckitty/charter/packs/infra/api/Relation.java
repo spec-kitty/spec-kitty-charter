@@ -29,7 +29,10 @@ public enum Relation {
     FIRST("first"),
 
     /** The next page of a paged list, absent on the last. */
-    NEXT("next");
+    NEXT("next"),
+
+    /** The pack-scoped read of the artifact a resolved reference names. */
+    ARTIFACT("artifact");
 
     private final String wireKey;
 

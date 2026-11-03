@@ -3,6 +3,7 @@ files:
   - Artifact.yaml
   - ArtifactKindToken.yaml
   - ArtifactPage.yaml
+  - ArtifactReferenceList.yaml
   - ArtifactSummary.yaml
   - CharterRefusal.yaml
   - CharterRefusalCode.yaml
@@ -11,10 +12,12 @@ files:
   - Link.yaml
   - Links.yaml
   - NodeKind.yaml
+  - HoldingPack.yaml
   - Offering.yaml
   - OfferingPack.yaml
   - PackLevel.yaml
   - PackQualifiedReference.yaml
+  - ReferencedArtifact.yaml
   - Relation.yaml
   - ResolvedDependency.yaml
   - ServiceInfo.yaml

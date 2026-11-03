@@ -1,0 +1,36 @@
+title: HoldingPack
+description: >-
+  The pack of the compose that holds what a reference names: its configured identifier, the pack_id its pack.yaml
+  declares and its name, the three identities a client may join on, as an offering entry carries them.
+type: object
+additionalProperties: false
+required:
+  - packId
+  - descriptorPackId
+  - name
+properties:
+  packId:
+    type: string
+    minLength: 1
+    description: The configured identifier of the holding pack, as the pack-scoped paths name it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ConfiguredPack.java
+      symbol: ConfiguredPack.id
+  descriptorPackId:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The pack_id the holding pack's pack.yaml declares; the same value as descriptorPackId of its offering entry.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackDescriptor.java
+      symbol: PackDescriptor.packId
+  name:
+    type: string
+    minLength: 1
+    description: The holding pack's name, which is the qualifier a pack-qualified reference spells.
+    x-source:
+      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackDescriptor.java
+      symbol: PackDescriptor.name
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositeComponentResolver.java
+  symbol: CompositeComponentResolver.Composed.holder

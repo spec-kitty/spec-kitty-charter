@@ -7,12 +7,14 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -23,6 +25,8 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -384,6 +388,87 @@ public final class ArtifactReadService {
     }
 
     /**
+     * One reference an artifact writes, resolved through the compose.
+     *
+     * @param written the reference as the artifact writes it, bare or pack-qualified
+     * @param relation the relation it is written under; empty for a reference the artifact keeps without a relationship
+     * @param holder the pack of the compose that holds what it names; empty when no pack holds it
+     * @param urn the bare URN it resolves to
+     */
+    public record Reference(
+            PackQualifiedReference written,
+            Optional<RelationType> relation,
+            Optional<PackCompositionResolver.PackUnderResolution> holder,
+            Urn urn) {}
+
+    /**
+     * The references one artifact writes, each resolved through the compose, in the order it writes them and without
+     * repeats, with the digest of the inputs they were read from. A composed read: the compose is resolved once,
+     * inside the read, so a compose the resolver cannot serve refuses it with the composition code the offering is
+     * refused with, and every hop resolves against that one closure. A reference naming no URN of a known kind is not
+     * listed.
+     *
+     * @param pack the referring pack's identity
+     * @param kindToken the referring artifact's kind token, as the request names it
+     * @param id the referring artifact's id
+     * @return the references and the verified fingerprint
+     * @throws CharterRefusal as {@link #item(PackIdentifier, String, String)} refuses for the pack, the kind and the
+     *     artifact; with a composition code as the offering refuses a compose the resolver cannot serve; with
+     *     {@link RefusalCode#PACK_UNREADABLE} when the artifact writes a reference outside the grammar, which the
+     *     schemas refuse on read
+     */
+    public ConsistentRead.Verified<List<Reference>> references(PackIdentifier pack, String kindToken, String id) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(kindToken, "kindToken");
+        Objects.requireNonNull(id, "id");
+        Optional<ArtifactKind> kind = servedKind(kindToken);
+        if (kind.isEmpty()) {
+            return refusedAfterThePack(
+                    pack,
+                    new CharterRefusal(
+                            RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
+        }
+        String stale = "The inputs changed while the references were read; read them again.";
+        ConsistentRead.Verified<ConsistentRead.Verified<List<Reference>>> judged = read.read(stale, () -> {
+            judgeDescriptor(pack);
+            // The compose is resolved once, inside this read, before the artifact: a broken compose refuses the read.
+            CompositeComponentResolver.Composed composed = components.over(offerings.composed());
+            ConsistentRead.Verified<Item> referrer = servedItem(pack, kind.get(), id);
+            return new ConsistentRead.Verified<>(
+                    resolved(composed, pack, referrer.value().artifact()), referrer.fingerprint());
+        });
+        if (!judged.fingerprint().equals(judged.value().fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, stale);
+        }
+        return new ConsistentRead.Verified<>(judged.value().value(), judged.fingerprint());
+    }
+
+    private static List<Reference> resolved(
+            CompositeComponentResolver.Composed composed, PackIdentifier pack, CharterArtifact referrer) {
+        List<PackQualifiedReference> written;
+        Map<String, RelationType> relations = new HashMap<>();
+        try {
+            written = referrer.writtenReferences();
+            referrer.relationships()
+                    .forEach(relationship ->
+                            relations.putIfAbsent(relationship.toReference().toString(), relationship.type()));
+        } catch (IllegalArgumentException malformed) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, String.valueOf(malformed.getMessage()), malformed);
+        }
+        List<Reference> references = new ArrayList<>();
+        for (PackQualifiedReference reference : written) {
+            reference
+                    .asUrn()
+                    .ifPresent(urn -> references.add(new Reference(
+                            reference,
+                            Optional.ofNullable(relations.get(reference.toString())),
+                            composed.holder(reference, pack),
+                            urn)));
+        }
+        return List.copyOf(references);
+    }
+
+    /**
      * The not-found of a reference that resolves to no artifact of the compose: the kind's own not-found when the
      * reference's URN names a served kind, and {@link RefusalCode#KIND_NOT_FOUND} when it names no kind the service
      * serves. The URN reaches the existing {@link Urn} machinery verbatim; nothing here re-spells it (C-005).
@@ -480,7 +565,7 @@ public final class ArtifactReadService {
      * A refusal taken inside one verified read that first loads the pack, so an unknown pack is
      * {@link RefusalCode#PACK_NOT_FOUND} whatever else the request names, and changed inputs are stale.
      */
-    private ConsistentRead.Verified<Item> refusedAfterThePack(PackIdentifier pack, CharterRefusal refusal) {
+    private <T> ConsistentRead.Verified<T> refusedAfterThePack(PackIdentifier pack, CharterRefusal refusal) {
         return read.read(STALE_ONE, () -> {
             load(pack);
             throw refusal;

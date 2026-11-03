@@ -6,6 +6,7 @@ files:
   - Artifact.tactic.yaml
   - Artifact.toolguide.yaml
   - ArtifactPage.first-page.yaml
+  - ArtifactReferenceList.cross-pack.yaml
   - CharterRefusal.action-not-found.yaml
   - CharterRefusal.tactic-not-found.yaml
   - Offering.three-levels.yaml

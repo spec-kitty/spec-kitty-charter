@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.api.model.ReferencedArtifact;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,8 @@ public class ProblemJson {
                 .setMixInAnnotation(CharterRefusal.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(Problem.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(Link.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(Artifact.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(Artifact.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(ReferencedArtifact.class, OmitAbsentMembers.class);
     }
 
     /**

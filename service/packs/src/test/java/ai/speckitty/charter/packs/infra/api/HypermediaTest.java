@@ -123,6 +123,14 @@ class HypermediaTest {
         assertThat(Relation.values())
                 .extracting(Relation::wireKey)
                 .containsExactly(
-                        "self", "collection", "info", "offering", "artifacts", "service-desc", "first", "next");
+                        "self",
+                        "collection",
+                        "info",
+                        "offering",
+                        "artifacts",
+                        "service-desc",
+                        "first",
+                        "next",
+                        "artifact");
     }
 }

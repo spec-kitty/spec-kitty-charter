@@ -1,0 +1,22 @@
+title: ArtifactReferenceList
+description: >-
+  The references one artifact writes, each resolved through the compose, in the order the artifact writes them,
+  without repeats. It is a composed read: the compose is resolved once, inside the read, and a compose the
+  resolver cannot serve refuses the read with the same composition code as the offering. The list and its
+  fingerprint come from one verified read.
+type: object
+additionalProperties: false
+required:
+  - items
+  - _links
+properties:
+  items:
+    type: array
+    description: The artifact's references in written order; empty when it writes none.
+    items:
+      $ref: ReferencedArtifact.yaml
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ArtifactReadService.java
+      symbol: ArtifactReadService.references
+  _links:
+    $ref: Links.yaml
