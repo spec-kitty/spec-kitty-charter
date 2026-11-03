@@ -182,6 +182,16 @@ class PackPolicyGraphTest {
                 .containsExactly(
                         "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:a'",
                         "qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
+        // The node path says the same: a guard or lifecycle node is not authored, in a shard or in a fragment.
+        GraphBuild shardNode =
+                PackPolicy.graph("qa", shard(List.of(new RawNode("guard:x", "guard", Optional.empty())), List.of()));
+        GraphBuild fragmentNode =
+                PackPolicy.graph("qa", fragment(List.of(new RawNode("wp", "lifecycles", Optional.empty())), List.of()));
+        assertThat(shardNode.graph().nodes()).isEmpty();
+        assertThat(details(shardNode))
+                .containsExactly("qa/tactic.graph.yaml: " + PackPolicy.NOT_AUTHORED + "'guard:x'");
+        assertThat(details(fragmentNode))
+                .containsExactly("qa/drg/fragment.yaml: " + PackPolicy.NOT_AUTHORED + "'lifecycle:wp'");
     }
 
     @Test

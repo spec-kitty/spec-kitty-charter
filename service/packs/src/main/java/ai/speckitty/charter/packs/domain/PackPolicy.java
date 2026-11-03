@@ -521,11 +521,18 @@ public final class PackPolicy {
 
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
         return switch (shape) {
-            case SHARD -> origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
+            case SHARD ->
+                Urn.parse(node.ref()).isPresent()
+                        ? origin + ": " + NOT_AUTHORED + "'" + node.ref() + "'"
+                        : origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
             case FRAGMENT ->
                 node.ref().isEmpty()
                         ? origin + ": " + emptyId(node.kind())
-                        : origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'";
+                        : NodeKind.fromPlural(node.kind()).isPresent()
+                                ? origin + ": " + NOT_AUTHORED + "'"
+                                        + new Urn(
+                                                NodeKind.fromPlural(node.kind()).get(), node.ref()) + "'"
+                                : origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'";
         };
     }
 
