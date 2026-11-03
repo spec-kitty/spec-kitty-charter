@@ -23,12 +23,7 @@ public final class Asset implements CharterArtifact {
 
     private static final ModularRuleset<Asset> RULES = ModularRuleset.<Asset>emptyRules()
             .must(Constraints.of("An asset needs a mime that is not blank.", asset -> !asset.mime.isBlank()))
-            .must(Constraints.of("An asset needs a path that is not blank.", asset -> !asset.path.isBlank()))
-            .must(Constraints.of(
-                    "An executable's entry is the asset's own path (ADR-0054 decision 5).",
-                    asset -> asset.executable
-                            .map(e -> e.entry().equals(asset.path))
-                            .orElse(true)));
+            .must(Constraints.of("An asset needs a path that is not blank.", asset -> !asset.path.isBlank()));
 
     private final AssetIdentifier id;
     private final PackIdentifier packId;

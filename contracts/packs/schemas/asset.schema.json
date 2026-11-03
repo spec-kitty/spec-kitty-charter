@@ -21,7 +21,7 @@
           "type": "string"
         },
         "entry": {
-          "description": "The asset's payload, relative to the pack's assets/ directory; it must equal the sidecar's path. No absolute path, no .. or hidden segment, no whitespace or backslash.",
+          "description": "A payload file of the same pack, relative to its assets/ directory: the asset's own or another's. The load checks that the pack holds it (ADR-0054 decision 5 as amended on 2026-11-03). No absolute path, no .. or hidden segment, no whitespace or backslash.",
           "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*$",
           "title": "Entry",
           "type": "string"
@@ -64,7 +64,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.\nexecutable:\n    Optional. Declares that the asset runs (ADR-0054 decision 5): the runtime from a\n    fixed allowlist, the entry (the asset's own payload path, one argv element), and\n    the arguments after it. Only an asset with this block can implement a guard.",
+  "description": "Sidecar manifest describing one ASSET blob.\n\nFields\n------\nid:\n    Stable artifact identifier, unique per pack per kind (global\n    cross-pack uniqueness is enforced separately by the merge scan, not\n    here).\nmime:\n    Declared MIME type of the referenced blob, e.g. ``\"image/png\"``.\n    Shape (``type/subtype``) and consistency with ``path``'s extension\n    are validated by the pack validator, not here.\npath:\n    Path to the blob, relative to the pack's ``assets/`` directory.\n    Containment (no absolute path, no ``..`` escape, no symlink escape)\n    is enforced by the pack validator, not here.\ntitle:\n    Optional human-facing display name.\nexecutable:\n    Optional. Declares that the asset runs (ADR-0054 decision 5): the runtime from a\n    fixed allowlist, the entry (a payload file of the same pack, one argv element), and\n    the arguments after it. Only an asset with this block can implement a guard.",
   "properties": {
     "id": {
       "minLength": 1,

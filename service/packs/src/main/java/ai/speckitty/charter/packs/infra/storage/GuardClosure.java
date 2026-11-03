@@ -10,6 +10,7 @@ import ai.speckitty.charter.missions.domain.GuardEntry;
 import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.missions.domain.LifecycleTransition;
 import ai.speckitty.charter.packs.domain.Asset;
+import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Guard;
 import ai.speckitty.charter.packs.domain.GuardImplementation;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -18,6 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The charter's load-time checks of guards and lifecycles (ADR-0054 decision 4): the one place the pack store enforces
@@ -26,8 +29,10 @@ import java.util.Optional;
  * is refused in turn.
  *
  * <ul>
- *   <li>A guard's {@code implemented_by} asset is an asset of the pack that declares an {@code executable} block; a
- *       built-in needs nothing more than the schema's closed list.
+ *   <li>An asset's {@code executable} entry names a payload file the pack holds under {@code assets/}, its own or
+ *       another's (ADR-0054 decision 5 as amended on 2026-11-03).
+ *   <li>A guard's {@code implemented_by} asset is an asset of the pack that closes and declares an {@code executable}
+ *       block; a built-in needs nothing more than the schema's closed list.
  *   <li>A guard's {@code config_schema} is a Draft 2020-12 schema that compiles offline.
  *   <li>A lifecycle's guard entries name guards of the pack that resolve, and each entry's {@code config} fits its
  *       guard's {@code config_schema}; a {@code config} for a guard that declares none is refused, since nothing can
@@ -41,12 +46,16 @@ final class GuardClosure {
     private static final String CROSS_PACK =
             ", a pack-qualified reference; it is refused until the pack dependency closure resolves it";
 
+    private final Set<String> payloads;
     private final Map<String, Asset> assets;
     private final Map<String, Guard> guards;
 
-    private GuardClosure(Collection<Asset> assets, Collection<Guard> candidates) {
+    private GuardClosure(Collection<Asset> assets, Collection<AssetFile> files, Collection<Guard> candidates) {
+        this.payloads = files.stream().map(AssetFile::path).collect(Collectors.toSet());
         Map<String, Asset> byAssetId = new LinkedHashMap<>();
-        assets.forEach(asset -> byAssetId.putIfAbsent(asset.localId(), asset));
+        assets.stream()
+                .filter(asset -> unresolved(asset).isEmpty())
+                .forEach(asset -> byAssetId.putIfAbsent(asset.localId(), asset));
         this.assets = byAssetId;
         Map<String, Guard> resolved = new LinkedHashMap<>();
         for (Guard guard : candidates) {
@@ -67,7 +76,9 @@ final class GuardClosure {
      */
     static GuardClosure of(PackIdentifier pack, FilesystemPackStore.PackRead read) {
         return new GuardClosure(
-                entities(pack, read, AssetBinding.INSTANCE), entities(pack, read, GuardBinding.INSTANCE));
+                entities(pack, read, AssetBinding.INSTANCE),
+                read.assetFiles(),
+                entities(pack, read, GuardBinding.INSTANCE));
     }
 
     /**
@@ -77,7 +88,7 @@ final class GuardClosure {
      * @return the closure
      */
     static GuardClosure of(Pack pack) {
-        return new GuardClosure(pack.assets(), pack.artifacts(ArtifactKind.GUARD, Guard.class));
+        return new GuardClosure(pack.assets(), pack.assetFiles(), pack.artifacts(ArtifactKind.GUARD, Guard.class));
     }
 
     /**
@@ -88,6 +99,7 @@ final class GuardClosure {
      */
     Optional<String> firstUnresolved(CharterArtifact artifact) {
         return switch (artifact) {
+            case Asset asset -> unresolved(asset);
             case Guard guard -> unresolved(guard);
             case Lifecycle lifecycle -> unresolved(lifecycle);
             default -> Optional.empty();
@@ -107,6 +119,14 @@ final class GuardClosure {
                 throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, reason);
             });
         }
+    }
+
+    /** An executable asset's entry names a payload the pack holds (ADR-0054 decision 5 as amended 2026-11-03). */
+    private Optional<String> unresolved(Asset asset) {
+        return asset.executable()
+                .filter(executable -> !payloads.contains(executable.entry()))
+                .map(executable -> "asset '" + asset.localId() + "' declares executable entry '" + executable.entry()
+                        + "', which is not a payload file the pack holds under assets/");
     }
 
     private Optional<String> unresolved(Guard guard) {

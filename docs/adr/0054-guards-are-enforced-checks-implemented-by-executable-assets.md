@@ -120,6 +120,14 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    - a shell or an absolute path is refused;
    - `args` is a list in which `entry` is exactly one argv element;
    - there is no shell-string field.
+
+   *Ruled 2026-11-03 (operator, #156): `entry` may name any payload file the same pack holds, relative to its
+   `assets/` directory, not only the asset's own `path`. The original rule, that the entry equals the sidecar's path,
+   is relaxed: a runner script can then be shared by several assets or ship beside the data it reads. Every shape
+   refusal above stands (no absolute or escaping path, no hidden segment, no whitespace or backslash, a runtime from
+   the allowlist, `entry` never repeated in `args`). The charter checks at load, and before a whole-pack write, that
+   the entry resolves to an asset payload of the pack, not to a sidecar or a file of another kind; an asset whose entry
+   does not is left out with a `reference` violation, and a guard and lifecycle that name it are refused in turn.*
 6. **Core's lane checks are built-in guards.** `subtasks_complete`, `reviewer_approval`, `review_ref` and the rest,
    and today's `spec-kitty-pre-review`, become guard artifacts in the foundation pack with
    `implemented_by: builtin:<id>`. The `builtin:` ids are a closed list, versioned with the contract; the client's

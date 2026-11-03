@@ -594,8 +594,9 @@ these are resources, used rather than followed.
   does not exist is refused. `mime` is metadata; it does not decide how the payload is read.
   An asset that runs declares an **executable** block (`runtime`, `min_version?`, `entry`, `args?`;
   [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 5): `runtime` is a
-  token from a closed allowlist (`python`), never a shell or an executable path; `entry` is the asset's own `path`
-  and exactly one argv element, never repeated in `args`; no field holds a command string. Only such an asset can
+  token from a closed allowlist (`python`), never a shell or an executable path; `entry` is a payload file of the same pack
+  (the asset's own or another's, which the load checks the pack holds) and exactly one argv element, never repeated in
+  `args`; no field holds a command string. Only such an asset can
   implement a guard.
 - A **guard** (`guards/<id>.guard.yaml`, ADR-0054) is an enforced check a transition names. It is
   `implemented_by` an executable asset of its pack (`asset:<id>`; another pack's, `<pack>::asset:<id>`, is refused
