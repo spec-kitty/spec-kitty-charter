@@ -83,6 +83,7 @@ public final class ArtifactReadService {
     private final StyleguideReadService styleguides;
     private final ParadigmReadService paradigms;
     private final ToolguideReadService toolguides;
+    private final OfferingReadService offerings;
     private final CompositeComponentResolver components;
 
     /**
@@ -218,6 +219,7 @@ public final class ArtifactReadService {
      * @param styleguides the styleguide reads an item of that kind delegates to
      * @param paradigms the paradigm reads an item of that kind delegates to
      * @param toolguides the toolguide reads an item of that kind delegates to
+     * @param offerings the offering read whose compose a reference is resolved against, resolved once per read
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      */
     @Autowired
@@ -231,6 +233,7 @@ public final class ArtifactReadService {
             StyleguideReadService styleguides,
             ParadigmReadService paradigms,
             ToolguideReadService toolguides,
+            OfferingReadService offerings,
             CompositeComponentResolver components) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.catalog = Objects.requireNonNull(catalog, "catalog");
@@ -241,6 +244,7 @@ public final class ArtifactReadService {
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
+        this.offerings = Objects.requireNonNull(offerings, "offerings");
         this.components = Objects.requireNonNull(components, "components");
     }
 
@@ -338,8 +342,8 @@ public final class ArtifactReadService {
      * @param reference the reference as the artifact writes it, for example
      *     {@code foundation::directive:DIRECTIVE_001}
      * @return the artifact typed by its kind, and the verified fingerprint
-     * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
-     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has the referring pack's
+     * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when the reference is outside the grammar (a
+     *     malformed qualified form); with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has the referring pack's
      *     identifier; with {@link RefusalCode#PACK_UNREADABLE} when the referring pack has no readable
      *     {@code pack.yaml}; with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
      *     {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} as the resolution refuses; with the not-found code of the
@@ -350,13 +354,23 @@ public final class ArtifactReadService {
     public ConsistentRead.Verified<Item> referenced(PackIdentifier pack, String reference) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(reference, "reference");
-        PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+        PackQualifiedReference parsed;
+        try {
+            parsed = PackQualifiedReference.parse(reference);
+        } catch (IllegalArgumentException malformed) {
+            // A reference outside the grammar is a refused request, never a fault of the service.
+            throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(malformed.getMessage()), malformed);
+        }
         String stale = "The inputs changed while the referenced artifact was read; read it again.";
         ConsistentRead.Verified<ConsistentRead.Verified<Item>> judged = read.read(stale, () -> {
             judgeDescriptor(pack);
             CharterArtifact target;
             try {
-                target = components.resolveReference(reference, pack).orElseThrow(() -> resolvesToNoArtifact(parsed));
+                // The compose is resolved once, inside this read, and every hop resolves against that one closure.
+                target = components
+                        .over(offerings.composed())
+                        .resolveReference(reference, pack)
+                        .orElseThrow(() -> resolvesToNoArtifact(parsed));
             } catch (ConstraintBreachException malformed) {
                 // An id the kind's identifier rules refuse names no artifact of the kind, exactly as an item's id does.
                 throw resolvesToNoArtifact(parsed);

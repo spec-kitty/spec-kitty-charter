@@ -147,13 +147,13 @@ class ArtifactControllerTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
+                new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(
                         new DirectiveReadService(store, store, read, revisions),
                         new StyleguideReadService(store, store, read, revisions),
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read),
-                        new OfferingReadService(store, store, store, read)));
+                        new TacticReadService(store, store, read)));
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
