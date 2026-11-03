@@ -15,7 +15,8 @@ charter_packs:
     packs:
     # spec-kitty-internal (org tier): the maintainer doctrine that authored the
     # charter-offering BDD suite -- charter-offering-scenario-extraction procedure
-    # and feature-and-scenario-authoring styleguide. Vendored, never shipped.
+    # and feature-and-scenario-authoring styleguide. Synced from open-packs at the pin, never shipped;
+    # run ./gradlew syncPacks once per worktree before these packs resolve.
     - name: internal
       local_path: packs/internal
     # spec-kitty-qa (org tier): governs description -> BDD scenario -> acceptance CI
