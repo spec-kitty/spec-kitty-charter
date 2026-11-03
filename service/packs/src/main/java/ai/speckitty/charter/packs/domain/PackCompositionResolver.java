@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Function;
@@ -135,7 +136,9 @@ public final class PackCompositionResolver {
         /** A bare reference resolves only in another pack of the compose; the refusal names the holding pack. */
         REFERENCE_UNQUALIFIED(RefusalCode.PACK_REFERENCE_UNQUALIFIED),
         /** A pack-qualified reference names a pack outside the compose's closure; the refusal names the missing pack. */
-        REFERENCE_PACK_MISSING(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+        REFERENCE_PACK_MISSING(RefusalCode.PACK_REFERENCE_PACK_MISSING),
+        /** A pack-qualified reference names a pack of the closure, and that pack does not hold the artifact. */
+        REFERENCE_ARTIFACT_MISSING(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
 
         private final RefusalCode code;
 
@@ -276,8 +279,9 @@ public final class PackCompositionResolver {
      * @param referringPackId the {@code pack_id} of the pack whose artifacts write the references
      * @param references the references as the artifact read resolved them, in the artifact's order
      * @throws Refusal with {@link Failure#REFERENCE_UNQUALIFIED} when a bare reference resolves only in another
-     *     pack, or with {@link Failure#REFERENCE_PACK_MISSING} when a qualified reference names a pack outside the
-     *     referring pack's closure
+     *     pack, with {@link Failure#REFERENCE_PACK_MISSING} when a qualified reference names a pack outside the
+     *     referring pack's closure, or with {@link Failure#REFERENCE_ARTIFACT_MISSING} when it names a pack of the
+     *     closure that does not hold the artifact
      */
     public static void checkReferences(
             List<PackUnderResolution> packs, String referringPackId, List<ResolvedReference> references) {
@@ -312,6 +316,17 @@ public final class PackCompositionResolver {
                             concat(referringPack, named(target)),
                             referringLabel + " writes the reference `" + reference + "`, but " + label(target)
                                     + " is outside its depends_on closure");
+                }
+                Optional<Urn> urn = reference.asUrn();
+                if (urn.isPresent()
+                        && urn.get().kind().authoredInGraphs()
+                        && urn.get().kind().artifactKind().isPresent()
+                        && !target.holds(urn.get().toString())) {
+                    throw new Refusal(
+                            Failure.REFERENCE_ARTIFACT_MISSING,
+                            concat(referringPack, named(target)),
+                            referringLabel + " writes the reference `" + reference + "`, but " + label(target)
+                                    + " does not hold `" + urn.get() + "`");
                 }
             } else if (!resolved.holdingPackId().equals(referringPackId)) {
                 PackUnderResolution holding = byId.get(resolved.holdingPackId());

@@ -132,7 +132,6 @@ public class RefusalHandler {
             case VALIDATION_FAILED, ACTIVATION_INVALID -> HttpStatus.UNPROCESSABLE_CONTENT;
             case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION, ARTIFACT_REQUIRED, ARTIFACT_LOCKED ->
                 HttpStatus.CONFLICT;
-            // TODO(batch B): pack_reference_artifact_missing joins the composition codes below as a 500.
             case PACK_LEVEL_MISMATCH,
                     PACK_UNREADABLE,
                     DRG_SCHEMA_ERROR,
@@ -147,6 +146,7 @@ public class RefusalHandler {
                     PACK_SIBLING_CONFLICT,
                     PACK_REFERENCE_UNQUALIFIED,
                     PACK_REFERENCE_PACK_MISSING,
+                    PACK_REFERENCE_ARTIFACT_MISSING,
                     INTERNAL_ERROR,
                     STALE_INPUT -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

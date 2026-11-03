@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -440,8 +441,8 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void aQualifiedReferenceToAPackOfTheComposeIsAccepted() {
-        PackUnderResolution writing = pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN);
+    void aQualifiedReferenceToAnArtifactThePackHoldsIsAccepted() {
+        PackUnderResolution writing = defining("01WRI", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
         PackUnderResolution reader =
                 pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
 
@@ -451,6 +452,28 @@ class PackCompositionResolverTest {
                         List.of(new PackCompositionResolver.ResolvedReference(
                                 PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aQualifiedReferenceToAnArtifactThePackDoesNotHoldIsRefusedNamingTheReferrerThenTheTarget() {
+        PackUnderResolution writing = pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution reader =
+                pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
+
+        assertThatThrownBy(() -> PackCompositionResolver.checkReferences(
+                        List.of(writing, reader),
+                        "01REA",
+                        List.of(new PackCompositionResolver.ResolvedReference(
+                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
+                    assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                    assertThat(refusal.packs())
+                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                    assertThat(refusal.detail())
+                            .contains("`reader` (01REA)")
+                            .contains("`writing` (01WRI) does not hold `directive:DIRECTIVE_009`");
+                });
     }
 
     @Test

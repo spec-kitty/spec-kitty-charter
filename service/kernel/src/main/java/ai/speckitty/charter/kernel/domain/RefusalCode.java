@@ -109,7 +109,9 @@ public enum RefusalCode {
     /** A reference that resolves only in another pack is written bare rather than pack-qualified. */
     PACK_REFERENCE_UNQUALIFIED("pack_reference_unqualified"),
     /** A pack-qualified reference names a pack outside the compose's closure. */
-    PACK_REFERENCE_PACK_MISSING("pack_reference_pack_missing");
+    PACK_REFERENCE_PACK_MISSING("pack_reference_pack_missing"),
+    /** A pack-qualified reference names a pack of the closure that does not hold the artifact. */
+    PACK_REFERENCE_ARTIFACT_MISSING("pack_reference_artifact_missing");
 
     private final String token;
 
