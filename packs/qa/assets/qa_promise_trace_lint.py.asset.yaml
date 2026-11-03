@@ -1,4 +1,0 @@
-id: qa-promise-trace-lint
-mime: text/x-python
-path: qa_promise_trace_lint.py
-title: QA promise trace lint (promise -> scenario chain)

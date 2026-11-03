@@ -23,14 +23,17 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Acceptance check 11 (post-plan P4): the revision and {@code If-Match} work over a pack whose asset files are binary.
- * A copy of the repository's {@code packs/internal} (OTF fonts and a PNG under {@code assets/debrief/}) sits in a temp
- * storage root behind the production locations, revision store and registration service.
+ * A copy of the pinned open-packs {@code packs/internal} (OTF fonts and a PNG under {@code assets/debrief/}) sits in a temp
+ * storage root behind the production locations, revision store and registration service. Runs under
+ * {@code :packs:openPacksRoundTrip}, which supplies the checkout.
  */
+@Tag("open-packs")
 class BinaryPayloadRevisionTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("internal");
@@ -39,7 +42,7 @@ class BinaryPayloadRevisionTest {
     @Test
     void theRevisionOfAPackWithBinaryPayloadsComputesAndIfMatchFollowsAPayloadByte(@TempDir Path host)
             throws IOException {
-        Path packDir = copyOfRepositoryInternalPack(host);
+        Path packDir = copyOfPinnedInternalPack(host);
         StorageRootLocations locations = new StorageRootLocations(host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
@@ -97,12 +100,9 @@ class BinaryPayloadRevisionTest {
                 .isEqualTo(edited);
     }
 
-    private static Path copyOfRepositoryInternalPack(Path host) throws IOException {
-        String root = System.getProperty("charter.repositoryRoot");
-        if (root == null) {
-            throw new IllegalStateException("charter.repositoryRoot is not set by the build");
-        }
-        Path source = Path.of(root, "packs", "internal");
+    private static Path copyOfPinnedInternalPack(Path host) throws IOException {
+        OpenPacksCorpus.assertPinned();
+        Path source = OpenPacksCorpus.packsDirectory().resolve("internal");
         Path target = host.resolve(PACK.value());
         try (Stream<Path> walk = Files.walk(source)) {
             for (Path path : walk.sorted(Comparator.naturalOrder()).toList()) {

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -288,10 +289,11 @@ class CompanionFilesTest {
     }
 
     @Test
+    @Tag("open-packs")
     @DisplayName("a bound kind without companions reads exactly as its strategy reads it (positive control)")
     void aKindWithoutCompanionsIsUnchanged() throws IOException {
-        Path tactics =
-                Path.of(System.getProperty("charter.repositoryRoot", "../..")).resolve("packs/internal/tactics");
+        OpenPacksCorpus.assertPinned();
+        Path tactics = OpenPacksCorpus.packsDirectory().resolve("internal/tactics");
         Path source;
         try (java.util.stream.Stream<Path> files = Files.list(tactics)) {
             source = files.filter(f -> f.toString().endsWith(".tactic.yaml"))

@@ -1,0 +1,14 @@
+# Digests of the packs synced from spec-kitty-open-packs at the commit pinned by openPacksRef in gradle.properties.
+# Written by `./gradlew syncPacks -PupdatePacksLock=true` (scripts/packs/sync_packs.py); never edit by hand.
+# A pin bump changes openPacksRef, this file's commit and these digests in one commit.
+#
+# algorithm tree-sha256-v1: sha256 over the regular files of the tree, in ascending order of their relative path
+# (POSIX separators, compared as UTF-8 bytes). Per file, the digest is fed: the relative path as UTF-8, a NUL byte,
+# the decimal byte length of the file, a NUL byte, then the file's bytes. File modes, timestamps, empty
+# directories and line endings are not part of it (the bytes are taken as stored). A symbolic link or other
+# non-regular entry in a tree is refused.
+algorithm: tree-sha256-v1
+commit: 86d9284695a18a71f9f7cc934f0305b1b03de19e
+trees:
+  packs/internal: 1d11306cf6122adcacc35bd2b4eafb9b3f0df867a1e9a90507ae3cf016b108a1
+  packs/qa: 9d4223164f5fc4e9e16f6b6210436883ca15f38203c547c3699a2ed691925f0e

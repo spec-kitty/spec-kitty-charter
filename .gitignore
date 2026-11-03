@@ -54,3 +54,8 @@ javac.*.args
 
 # Aggregate lifecycle telemetry (not per-mission; machine-local)
 kitty-ops/lifecycle.jsonl
+
+# Packs are synced from the spec-kitty-open-packs commit pinned by openPacksRef in gradle.properties, never
+# authored here: run `./gradlew syncPacks` (once per worktree). packs/open-packs.lock.yaml records their digests.
+/packs/internal/
+/packs/qa/

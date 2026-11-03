@@ -1,4 +1,0 @@
-id: qa-traceability-lint
-mime: text/x-python
-path: qa_carrier_lint.py
-title: QA traceability carrier lint (coverage validator)

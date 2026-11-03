@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
  * fails the run rather than being skipped.
  *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout. The pin
- * itself is asserted by {@code VendoredPacksTest}; fidelity does not depend on the exact commit.
+ * itself is asserted by the corpus tests that call {@code assertPinned()}; fidelity does not depend on the exact commit.
  */
 @Tag("open-packs")
 class PackDoctrineCorpusRoundTripTest {
