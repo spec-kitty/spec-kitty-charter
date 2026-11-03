@@ -23,8 +23,18 @@ tasks.register<Exec>("syncPacks") {
     group = "verification"
     description = "Syncs packs/internal and packs/qa from the pinned open-packs commit and verifies their digests."
     val script = layout.projectDirectory.file("scripts/packs/sync_packs.py")
-    val checkOnly = providers.gradleProperty("checkPacks").map { it == "true" }.orElse(false)
-    val updateLock = providers.gradleProperty("updatePacksLock").map { it == "true" }.orElse(false)
+    // A bare `-Pflag` is Gradle's usual way to say yes; `=false` says no; anything else is a typo, not a silent no.
+    fun booleanProperty(name: String) = providers.gradleProperty(name)
+        .map { raw ->
+            when (raw.trim().lowercase()) {
+                "", "true" -> true
+                "false" -> false
+                else -> throw GradleException("-$name takes true or false (or is given bare), but is '$raw'")
+            }
+        }
+        .orElse(false)
+    val checkOnly = booleanProperty("checkPacks")
+    val updateLock = booleanProperty("updatePacksLock")
     val openPacksDir = providers.gradleProperty("openPacksDir")
     workingDir = layout.projectDirectory.asFile
     environment.remove("PYTHONPATH")
