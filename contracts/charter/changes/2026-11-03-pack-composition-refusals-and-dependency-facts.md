@@ -22,8 +22,8 @@
   declared PEP 440 `range` and the `version` that satisfied it (`[]` for a pack that declares none), in a new
   `ResolvedDependency` schema, and the required `descriptorPackId`, the `pack_id` the pack's `pack.yaml` declares,
   which `dependsOn[].descriptorPackId` names (`packId` stays the configured identifier, so a client joins a dependency edge to
-  its offering entry by `descriptorPackId`); `PackPin` carries the same facts as an optional member, mirrored into
-  `../offering/schemas/ActivationConfig.schema.json`. The additive response properties are graded `ERR` by
+  its offering entry by `descriptorPackId`). `PackPin` does not carry these facts yet: the activation reads that
+  would fill them are reserved, and the member is deferred to #359. The additive response properties are graded `ERR` by
   `../compat/severity-levels.txt`, so `info.version` moves `0.1.0-SNAPSHOT` → `0.2.0-SNAPSHOT` (ADR-0022: a 0.x
   breaking change takes a minor bump and this `### Breaking` entry). No released contract is broken incompatibly:
   no release was cut under any version (C-002), so the compatibility check has no baseline. Scenarios: the new
