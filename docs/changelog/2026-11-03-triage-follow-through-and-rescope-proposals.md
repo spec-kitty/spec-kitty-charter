@@ -22,9 +22,9 @@ audience:
 # 2026-11-03 — Issue triage follow-through: every open issue prioritized, re-scope proposals drafted
 
 The [2026-11-02 triage](/plans/triage-2026-11-02/) is now applied on the tracker. Every open issue carries exactly
-one priority label, four duplicates were merged into their targets (#167 into #240, #46 into #128, #144 into #58,
-#323 into #291), the core follow-ups C2 to C11 moved under the new epic #361, and #13 moved to the 4.x cutover
-([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1).
+one priority label; four duplicates were merged into their targets (#167 went into #240, #46 into #128, #144
+into #58, and #323 into #291); the core follow-ups C2 to C11 moved under the new epic #361; and #13 moved to the
+4.x cutover ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1).
 
 The 66 issues the triage marked for re-scoping keep their bodies for now. One proposed new scope per issue is
 drafted on the [re-scope proposals page](/plans/triage-2026-11-02-rescopes/) — 57 scope changes, 9 factual

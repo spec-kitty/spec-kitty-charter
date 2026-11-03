@@ -261,3 +261,4 @@ builtin
 stdin
 stdout
 kebab
+rescopes
