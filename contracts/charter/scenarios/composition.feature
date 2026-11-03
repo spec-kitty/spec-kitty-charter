@@ -72,24 +72,6 @@ Feature: The compose resolves the configured packs' dependency graph
       }
       """
 
-  Scenario: A descriptor that declares no depends_on resolves exactly as today
-    The negative control of the whole family (User Story 1, scenario 3): a descriptor without
-    depends_on changes nothing but the new member, which the read always computes.
-    Given the org pack "qa" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.0.0
-      parent_pack: null
-      name: qa-pack
-      pack_level: org
-      """
-    When I GET "/offering"
-    Then the response status is 200
-    And the response body is:
-      """
-      {"packs": [{"packId": "qa", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "level": "org", "name": "qa-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/qa/artifacts"}}}], "_links": {"self": {"href": "/api/v1/offering"}}}
-      """
-
   Scenario: The single built-in tree still loads
     A built-in pack with one graph shard resolves as before (FR-018's scenario level; the
     byte-level ratchet is WP04's).
@@ -153,34 +135,6 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
-  Scenario: A chain with no cycle resolves, the dependency first
-    The negative control of the cycle refusal: the same two packs with one edge instead of two.
-    The dependency comes before the pack that needs it even though its pack_id sorts after the
-    dependent's, so the order is the resolution's, not the directory listing's.
-    Given the org pack "alpha" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.0.0
-      parent_pack: null
-      name: alpha-pack
-      pack_level: org
-      depends_on:
-      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-        range: '>=1.0.0'
-      """
-    And the org pack "beta" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.0.0
-      parent_pack: null
-      name: beta-pack
-      pack_level: org
-      """
-    When I GET "/offering"
-    Then the response status is 200
-    And the field at "/packs/0/packId" is "beta"
-    And the field at "/packs/1/packId" is "alpha"
-
   Scenario: A dependency no configured pack declares refuses the compose
     Alpha depends on an id no configured pack declares; the refusal names alpha and the missing id.
     Given the org pack "alpha" with the file "pack.yaml":
@@ -203,8 +157,10 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A declared dependency a configured pack declares resolves
-    The negative control of the unknown-dependency refusal: the same descriptor with the target
-    configured, in range. The entry carries the resolved edge: the target's pack_id, the declared
+    The negative control of the unknown-dependency and the cycle refusals: the same descriptor with
+    the target configured, in range, and one edge instead of two. The dependency comes before the
+    pack that needs it even though its pack_id sorts after the dependent's, so the order is the
+    resolution's, not the directory listing's. The entry carries the resolved edge: the target's pack_id, the declared
     range and the version that satisfied it.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -232,6 +188,80 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/dependsOn/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
     And the field at "/packs/1/dependsOn/0/range" is ">=1.0.0"
     And the field at "/packs/1/dependsOn/0/version" is "1.0.0"
+
+  Scenario: Two ranges on one pack that share no version refuse the compose
+    Left asks apex for <2 and right asks apex for >=2: the compose holds one copy of apex, so no
+    version can satisfy both, and the refusal comes before the held version is checked against either
+    range. It names both declaring packs and both ranges. The control is the diamond above, whose two
+    ranges on apex overlap.
+    Given the org pack "apex" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: apex-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '<2'
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+        range: '>=2'
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_out_of_range"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943S) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943T) require pack `apex-pack` (01M4P01D5TWB5FKZGNNQG3943R) in ranges `<2` and `>=2`, which no version satisfies together"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943T"
+    And the field at "/packs/0/name" is "right-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "left-pack"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A depends_on range that is no PEP 440 specifier refuses the offering as unreadable
+    A malformed range answers the same code whichever path reads the pack: the descriptor rules of
+    validate mode run on the offering too, so the answer is pack_unreadable (500), never a
+    composition code. The control is the scenario above that resolves a declared dependency in range.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: banana
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: beta-pack
+      pack_level: org
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "pack.yaml of alpha: depends_on[0] range 'banana' is not a PEP 440 version specifier"
+    And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: An exact range the held version misses refuses as out-of-range, not unknown
     The target is configured and holds 1.9.0; alpha declares ==2.0.0. The refusal is the range,
@@ -458,30 +488,6 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/name" is "shared-house-rules"
     And the response has no "Charter-Source-Fingerprint" header
 
-  Scenario: Two packs with distinct names resolve
-    The negative control of the name-conflict refusal: the same two configured packs, each with its
-    own name, served in the stable order.
-    Given the org pack "one" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.0.0
-      parent_pack: null
-      name: one-pack
-      pack_level: org
-      """
-    And the org pack "two" with the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.0.0
-      parent_pack: null
-      name: two-pack
-      pack_level: org
-      """
-    When I GET "/offering"
-    Then the response status is 200
-    And the field at "/packs/0/packId" is "one"
-    And the field at "/packs/1/packId" is "two"
-
   Scenario: Two configured packs declaring one pack_id refuse the compose
     A pack_id appears once in a compose (data-model invariant 2); two configured directories
     declaring the same id is a misconfiguration, and the refusal names the id.
@@ -512,8 +518,9 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: Two configured packs with distinct pack_ids resolve
-    The negative control of the duplicate-id refusal: the same two configured packs, each declaring
-    its own id.
+    The negative control of the duplicate-id and the name-conflict refusals: the same two configured
+    packs, each declaring its own id and its own name, served in the stable order. A descriptor that
+    declares no depends_on is served with dependsOn [] (offering.feature's ordering scenario).
     Given the org pack "one" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R

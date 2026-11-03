@@ -14,14 +14,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
  * The resolution cost is bounded (NFR-003): a compose of fifty packs with two hundred dependency edges — levels mixed,
  * every range satisfied, a few diamonds — resolves within 250 ms at p95. This is a bounded smoke, not a benchmark
  * harness: a warm-up keeps JIT noise out of the number, and if the case ever flakes it is quarantined and recorded,
- * never deleted or weakened.
+ * never deleted or weakened. Tagged {@code timing}: it runs under {@code :packs:timingBudgets}, alone, and not in the
+ * unit tier.
  */
+@Tag("timing")
 class ResolverCostBoundTest {
 
     private static final int PACKS = 50;
