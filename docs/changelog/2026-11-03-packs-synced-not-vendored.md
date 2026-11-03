@@ -35,12 +35,16 @@ The operator ruled that vendored copies cause drift. This repository no longer c
 - **Digests.** `packs/open-packs.lock.yaml` records a tree digest per pack at the pin. A mismatch fails closed;
   `-PcheckPacks=true` only verifies. CI runs the sync after the open-packs checkout.
 - **Tests.** The corpus tests that read the copies now read the pinned open-packs checkout and run in
-  `:packs:openPacksRoundTrip`. `VendoredPacksTest` is gone: the digest check replaces it.
+  `:packs:openPacksRoundTrip`. `VendoredPacksTest` is gone: the copies are produced from the pin, so the drifted-copy
+  failure it guarded cannot recur, and the lockfile check fails a pin bump that does not update the digests.
 - **Pin bump.** One commit: `openPacksRef`, then `./gradlew syncPacks -PupdatePacksLock=true`, then commit the
   lockfile. [Syncing the packs](/guides/service-build/#syncing-the-packs) has the steps.
 
 **Unchanged:** `.kittify/config.yaml` and the agent-profile manifest keep their `packs/...` paths; they resolve once
 the packs are synced.
 
-**Lost with the copies:** the colon-form fix to `validate-pr-body.py` (`Closes: #5`) is not at the pin. It returns
-when [open-packs#92](https://github.com/spec-kitty/spec-kitty-open-packs/issues/92) lands and the pin moves.
+**Gone with the copies:** the local `PROVENANCE.md` and `README.md` in both packs; upstream's versions now apply. The
+pinned `internal` one still calls this repository a *vendored mirror*, which is no longer true —
+[open-packs#114](https://github.com/spec-kitty/spec-kitty-open-packs/issues/114) updates it at the next pin. The
+colon-form fix to `validate-pr-body.py` (`Closes: #5`) is also not at the pin; it returns when
+[open-packs#92](https://github.com/spec-kitty/spec-kitty-open-packs/issues/92) lands and the pin moves.
