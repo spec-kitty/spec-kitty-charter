@@ -2,7 +2,7 @@
 title: "ADR-0054: Guards are enforced checks implemented by executable assets"
 description: "Transitions name guard artifacts, each implemented_by an executable asset or a closed built-in, run to a fixed interface and failing closed; replaces the gate kind."
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
@@ -122,8 +122,8 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    - there is no shell-string field.
 
    *Ruled 2026-11-03 (operator, #156): `entry` may name any payload file the same pack holds, relative to its
-   `assets/` directory, not only the asset's own `path`. The original rule, that the entry equals the sidecar's path,
-   is relaxed: a runner script can then be shared by several assets or ship beside the data it reads. Every shape
+   `assets/` directory, not only the asset's own `path`. Decision 5 never tied `entry` to the asset's own `path`; the first
+   implementation did, and this ruling settles that it does not: a runner script can then be shared by several assets or ship beside the data it reads. Every shape
    refusal above stands (no absolute or escaping path, no hidden segment, no whitespace or backslash, a runtime from
    the allowlist, `entry` never repeated in `args`). The charter checks at load, and before a whole-pack write, that
    the entry resolves to an asset payload of the pack, not to a sidecar or a file of another kind; an asset whose entry
@@ -152,13 +152,13 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    `smell` / `severe` / `breaking` ladder
    ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 10) may appear on
    findings, for reporting.
-10. **A step may add guards to the lifecycle it runs.** `submachine.add_guards: [{transition: {from, to}, guard: [...]}]`
+10. **A step may add guards to the lifecycle it runs.** `submachine.add_guards: [{on: {from, to}, guard: [...]}]`
     attaches guards to transitions of the shared lifecycle for this mission type only. It is add-only and may not
     remove a guard.
 
     *Amended 2026-11-03 (operator, #156): the key that names the transition is `transition`, not `on`, because a YAML
     1.1 reader takes a plain `on` key for `true`, the trap that moved the lifecycle transition's trigger to `event`
-    (ADR-0050 decision 17 as amended). The entry is `{transition: {from, to}, guard: [...]}`.*
+    (ADR-0050 decision 17 as amended). The entry is now `submachine.add_guards: [{transition: {from, to}, guard: [...]}]`.*
 11. **A cross-pack asset is pinned by the pack, not the reference.** A guard in pack A implemented by an asset in
     pack B relies on A's `depends_on` range on B and B's pack fingerprint, with no digest per reference.
 12. **Migration of today's binding.**

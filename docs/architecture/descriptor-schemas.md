@@ -2,7 +2,7 @@
 title: Descriptor schemas
 description: PlantUML views of the charter descriptor kinds, their fields, enums and CRG edges, with the pack JSON Schemas as the structural authority.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -141,7 +141,7 @@ fields.
 
 ![Mission type as a declared state machine](diagrams/descriptor-mission-type-lifecycle.svg)
 
-The mission type as a declared state machine, as decided in ADR-0050 and ADR-0051.
+The mission type as a declared state machine, as decided in ADR-0050 and ADR-0051. The `lifecycle` and `guard` kinds are stored and checked (#156).
 
 **`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
 

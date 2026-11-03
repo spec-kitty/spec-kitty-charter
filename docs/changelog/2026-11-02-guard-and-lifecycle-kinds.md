@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Guards, lifecycles and executable assets are stored and checked
 description: "The guard and lifecycle kinds, the asset executable block and the derived implemented_by relation load, round-trip and fail closed when their references do not resolve."
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
