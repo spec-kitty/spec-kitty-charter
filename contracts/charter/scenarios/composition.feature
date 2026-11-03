@@ -156,6 +156,37 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
+  Scenario: A broken compose refuses the composed read, while a pack-scoped read of one artifact still answers
+    A broken compose never reaches a composed read (operator ruling of 2026-11-03), but the pack-scoped read of
+    one artifact by id resolves no compose, so an author can inspect a broken pack. The control of the refusal is
+    the scenario below: the same descriptor with its dependency configured is served.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943X
+        range: '>=1.0.0'
+      """
+    And the org pack "alpha" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_unknown"
+    When I GET "/packs/alpha/artifacts/directive/SHARE"
+    Then the response status is 200
+    And the field "id" of the response body is "SHARE"
+    And the field at "/directive/title" is "Share the load"
+
   Scenario: A declared dependency a configured pack declares resolves
     The negative control of the unknown-dependency and the cycle refusals: the same descriptor with
     the target configured, in range, and one edge instead of two. The dependency comes before the
