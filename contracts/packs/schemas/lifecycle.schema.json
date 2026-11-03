@@ -10,7 +10,10 @@
           "description": "The guard: its bare id in the same pack, or <pack>::guard:<id> in another pack.",
           "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::guard:)?[a-z0-9]+(-[a-z0-9]+)*$",
           "title": "Ref",
-          "type": "string"
+          "type": "string",
+          "not": {
+            "$ref": "#/$defs/YamlWord"
+          }
         },
         "config": {
           "description": "The entry's configuration, checked at load against the guard's config_schema; its content is open (ADR-0042 S4 as amended).",
@@ -62,17 +65,7 @@
     "StateId": {
       "description": "A state id: lower case, words joined by an underscore or a hyphen (core's lane names are snake_case). A word a YAML 1.1 reader takes for a boolean or null is refused, so every reader reads the same id.",
       "not": {
-        "enum": [
-          "y",
-          "n",
-          "yes",
-          "no",
-          "on",
-          "off",
-          "true",
-          "false",
-          "null"
-        ]
+        "$ref": "#/$defs/YamlWord"
       },
       "pattern": "^[a-z][a-z0-9]*([_-][a-z0-9]+)*$",
       "title": "StateId",
@@ -109,17 +102,7 @@
         "event": {
           "description": "The triggering event, a free token the client interprets (ADR-0050 decisions 8 and 17, the key renamed from on by the operator on 2026-11-02, since a YAML 1.1 reader takes a plain on key for true). A word a YAML 1.1 reader takes for a boolean or null is refused.",
           "not": {
-            "enum": [
-              "y",
-              "n",
-              "yes",
-              "no",
-              "on",
-              "off",
-              "true",
-              "false",
-              "null"
-            ]
+            "$ref": "#/$defs/YamlWord"
           },
           "pattern": "^[a-z][a-z0-9_-]*$",
           "title": "Event",
@@ -140,6 +123,21 @@
       ],
       "title": "Transition",
       "type": "object"
+    },
+    "YamlWord": {
+      "description": "A word a YAML 1.1 reader takes for a boolean or null (core reads packs with one, so an id of this word would be read as true, false or null there).",
+      "enum": [
+        "y",
+        "n",
+        "yes",
+        "no",
+        "on",
+        "off",
+        "true",
+        "false",
+        "null"
+      ],
+      "title": "YamlWord"
     }
   },
   "additionalProperties": false,
@@ -154,7 +152,10 @@
       "description": "The lifecycle's id, kebab-case; it is the file stem.",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
       "title": "Id",
-      "type": "string"
+      "type": "string",
+      "not": {
+        "$ref": "#/$defs/YamlWord"
+      }
     },
     "title": {
       "minLength": 1,
