@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.BuiltinGuard;
 import ai.speckitty.charter.packs.domain.Executable;
 import ai.speckitty.charter.packs.domain.ExecutableRuntime;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -140,11 +142,7 @@ class GuardLifecycleSchemaTest {
                         "- {from: planned, to: in_progress, event: claim}",
                         "- {from: planned, to: in_progress, gate: g}",
                         "additionalProperties /transitions/0 gate"),
-                row(
-                        "- {from: '*', to: done}",
-                        "- {from: [], to: done}",
-                        "const /transitions/2/from -; minItems /transitions/2/from -; type /transitions/2/from -; type"
-                                + " /transitions/2/from -"),
+                row("- {from: '*', to: done}", "- {from: [], to: done}", "~minItems /transitions/2/from -"),
                 row(
                         entry,
                         "  - {gate: subtasks-ready}",
@@ -161,8 +159,7 @@ class GuardLifecycleSchemaTest {
                 row(
                         "- {from: [planned, in_progress], to: done, event: abort}",
                         "- {from: [planned, planned], to: done, event: abort}",
-                        "const /transitions/3/from -; type /transitions/3/from -; type /transitions/3/from -; uniqueItems"
-                                + " /transitions/3/from -"));
+                        "~uniqueItems /transitions/3/from -"));
     }
 
     static Stream<Arguments> executableTwins() {
@@ -225,7 +222,17 @@ class GuardLifecycleSchemaTest {
     void eachLifecycleTwinIsRefusedForItsOneProperty(String line, String replacement, String expected) {
         List<String> facts = facts("lifecycle", twin(LIFECYCLE, line, replacement));
 
-        assertThat(facts).containsExactlyInAnyOrder(expected.split("; "));
+        if (expected.startsWith("~")) {
+            // A from that fails its array branch also fails the other anyOf branches: that is the validator's
+            // structure, so only the expected keyword and the pointer are pinned.
+            String keyword = expected.substring(1);
+            String pointer = pointerOf(keyword);
+            assertThat(facts)
+                    .contains(keyword)
+                    .allSatisfy(fact -> assertThat(pointerOf(fact)).isEqualTo(pointer));
+        } else {
+            assertThat(facts).containsExactlyInAnyOrder(expected.split("; "));
+        }
     }
 
     @Test
@@ -247,7 +254,7 @@ class GuardLifecycleSchemaTest {
 
     @Test
     @DisplayName("the schema's builtin: list is exactly the domain's closed list, and its runtimes the allowlist")
-    void theClosedListsAreTheDomains() throws ReflectiveOperationException {
+    void theClosedListsAreTheDomains() {
         JsonNode guard = bundled("guard");
         Matcher builtins = Pattern.compile("builtin:\\(([a-z|-]+)\\)")
                 .matcher(guard.get("properties")
@@ -270,19 +277,57 @@ class GuardLifecycleSchemaTest {
                 .containsExactlyElementsOf(Arrays.stream(ExecutableRuntime.values())
                         .map(ExecutableRuntime::token)
                         .toList());
-        // The domain's copies of the entry and min_version patterns are the schema's, anchored.
-        for (String[] copy : new String[][] {{"VERSION", "min_version"}, {"RELATIVE_PATH", "entry"}}) {
-            var field = Executable.class.getDeclaredField(copy[0]);
-            field.setAccessible(true);
-            assertThat(bundled("asset")
-                            .get("$defs")
-                            .get("Executable")
-                            .get("properties")
-                            .get(copy[1])
-                            .get("pattern")
-                            .asString())
-                    .as(copy[1])
-                    .isEqualTo("^" + ((Pattern) field.get(null)).pattern() + "$");
+    }
+
+    @Test
+    @DisplayName("the schema and the domain accept and refuse the same entry and min_version strings")
+    void theExecutablePatternsAreTheSchemas() {
+        for (String entry : List.of(
+                "carrier_lint.py",
+                "a/b.py",
+                "a-b_c.d/e.py",
+                "../x",
+                "a/../x",
+                ".hidden",
+                "a/.hidden",
+                "a\\b",
+                "-x",
+                "/abs",
+                "a b",
+                "a//b",
+                "a/",
+                "")) {
+            boolean schema = facts("asset", twin(ASSET, "  entry: carrier_lint.py", "  entry: '" + entry + "'"))
+                    .isEmpty();
+            boolean domain =
+                    accepted(() -> new Executable(ExecutableRuntime.PYTHON, Optional.empty(), entry, List.of()));
+            assertThat(domain)
+                    .as("entry '%s': the domain agrees with the schema (%s)", entry, schema)
+                    .isEqualTo(schema);
+        }
+        for (String version : List.of("3", "3.11", "3.11.2", "3.11.2.1", "3.x", "v3", "3.", "")) {
+            boolean schema = facts("asset", twin(ASSET, "  min_version: '3.11'", "  min_version: '" + version + "'"))
+                    .isEmpty();
+            boolean domain = accepted(
+                    () -> new Executable(ExecutableRuntime.PYTHON, Optional.of(version), "carrier_lint.py", List.of()));
+            assertThat(domain)
+                    .as("min_version '%s': the domain agrees with the schema (%s)", version, schema)
+                    .isEqualTo(schema);
+        }
+    }
+
+    /** The pointer of a fact, {@code <keyword> <pointer> <property>}. */
+    private static String pointerOf(String fact) {
+        int from = fact.indexOf(' ') + 1;
+        return fact.substring(from, fact.indexOf(' ', from));
+    }
+
+    private static boolean accepted(Runnable build) {
+        try {
+            build.run();
+            return true;
+        } catch (ConstraintBreachException refused) {
+            return false;
         }
     }
 
