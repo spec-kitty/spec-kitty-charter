@@ -92,6 +92,16 @@ enum:
   - artifact_required
   - artifact_locked
   - activation_invalid
+  - pack_dependency_cycle
+  - pack_dependency_unknown
+  - pack_dependency_out_of_range
+  - pack_parent_unresolved
+  - pack_level_violation
+  - pack_name_conflict
+  - pack_duplicate_id
+  - pack_sibling_refinement_conflict
+  - pack_reference_unqualified
+  - pack_reference_pack_missing
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -190,6 +200,46 @@ x-refusal:
     status: 422
     retryable: false
     raised: false
+  pack_dependency_cycle:
+    status: 422
+    retryable: false
+    raised: true
+  pack_dependency_unknown:
+    status: 422
+    retryable: false
+    raised: true
+  pack_dependency_out_of_range:
+    status: 422
+    retryable: false
+    raised: true
+  pack_parent_unresolved:
+    status: 422
+    retryable: false
+    raised: true
+  pack_level_violation:
+    status: 422
+    retryable: false
+    raised: true
+  pack_name_conflict:
+    status: 422
+    retryable: false
+    raised: true
+  pack_duplicate_id:
+    status: 422
+    retryable: false
+    raised: true
+  pack_sibling_refinement_conflict:
+    status: 409
+    retryable: false
+    raised: true
+  pack_reference_unqualified:
+    status: 422
+    retryable: false
+    raised: true
+  pack_reference_pack_missing:
+    status: 422
+    retryable: false
+    raised: true
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

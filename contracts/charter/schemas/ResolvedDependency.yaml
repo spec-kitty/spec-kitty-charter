@@ -1,0 +1,36 @@
+title: ResolvedDependency
+description: >-
+  One dependency the compose resolved (FR-020): the pack the descriptor's depends_on names, the range it
+  declared and the version the held pack satisfied. The facts are derived from the resolver's closure,
+  never authored: no write path carries them.
+type: object
+additionalProperties: false
+required:
+  - packId
+  - range
+  - version
+properties:
+  packId:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The depended-on pack's pack_id, as the depending pack.yaml's depends_on names it.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      symbol: ResolvedEdge.to
+  range:
+    type: string
+    minLength: 1
+    maxLength: 256
+    description: The PEP 440 version-specifier set the descriptor declared for the dependency.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      symbol: ResolvedEdge.range
+  version:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The held pack_version that satisfied the declared range.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      symbol: ResolvedEdge.version

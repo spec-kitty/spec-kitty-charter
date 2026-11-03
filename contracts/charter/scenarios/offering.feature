@@ -15,50 +15,50 @@ Feature: The offering lists the configured packs in force
     upper-case one at every level; neither the configured order nor a case-blind order is the answer.
     Given the project pack "charlie" with the file "pack.yaml":
       """
-      pack_id: charlie
+      pack_id: 01ARWG13C0000000000CHAR11E
       pack_version: 1.0.0
       parent_pack: null
-      name: charlie pack
+      name: charlie-pack
       pack_level: project
       """
     And the project pack "Kilo" with the file "pack.yaml":
       """
-      pack_id: Kilo
+      pack_id: 01ARWG13C0000000000000K110
       pack_version: 1.0.0
       parent_pack: null
-      name: Kilo pack
+      name: kilo-pack
       pack_level: project
       """
     And the org pack "bravo" with the file "pack.yaml":
       """
-      pack_id: bravo
+      pack_id: 01ARWG13C000000000000BRAV0
       pack_version: 1.0.0
       parent_pack: null
-      name: bravo pack
+      name: bravo-pack
       pack_level: org
       """
     And the org pack "Omega" with the file "pack.yaml":
       """
-      pack_id: Omega
+      pack_id: 01ARWG13C0000000000000MEGA
       pack_version: 1.0.0
       parent_pack: null
-      name: Omega pack
+      name: omega-pack
       pack_level: org
       """
     And the built-in pack "alpha" with the file "pack.yaml":
       """
-      pack_id: alpha
+      pack_id: 01ARWG13C000000000000A1PHA
       pack_version: 1.0.0
       parent_pack: null
-      name: alpha pack
+      name: alpha-pack
       pack_level: built-in
       """
     And the built-in pack "Zeta" with the file "pack.yaml":
       """
-      pack_id: Zeta
+      pack_id: 01ARWG13C0000000000000ZETA
       pack_version: 1.0.0
       parent_pack: null
-      name: Zeta pack
+      name: zeta-pack
       pack_level: built-in
       """
     When I GET "/offering"
@@ -69,12 +69,12 @@ Feature: The offering lists the configured packs in force
       """
       {
         "packs": [
-          {"packId": "Zeta", "level": "built-in", "name": "Zeta pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/Zeta/artifacts"}}},
-          {"packId": "alpha", "level": "built-in", "name": "alpha pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/alpha/artifacts"}}},
-          {"packId": "Omega", "level": "org", "name": "Omega pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/Omega/artifacts"}}},
-          {"packId": "bravo", "level": "org", "name": "bravo pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/bravo/artifacts"}}},
-          {"packId": "Kilo", "level": "project", "name": "Kilo pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/Kilo/artifacts"}}},
-          {"packId": "charlie", "level": "project", "name": "charlie pack", "version": "1.0.0", "_links": {"artifacts": {"href": "/api/v1/packs/charlie/artifacts"}}}
+          {"packId": "Zeta", "descriptorPackId": "01ARWG13C0000000000000ZETA", "level": "built-in", "name": "zeta-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Zeta/artifacts"}}},
+          {"packId": "alpha", "descriptorPackId": "01ARWG13C000000000000A1PHA", "level": "built-in", "name": "alpha-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/alpha/artifacts"}}},
+          {"packId": "Omega", "descriptorPackId": "01ARWG13C0000000000000MEGA", "level": "org", "name": "omega-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Omega/artifacts"}}},
+          {"packId": "bravo", "descriptorPackId": "01ARWG13C000000000000BRAV0", "level": "org", "name": "bravo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/bravo/artifacts"}}},
+          {"packId": "Kilo", "descriptorPackId": "01ARWG13C0000000000000K110", "level": "project", "name": "kilo-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/Kilo/artifacts"}}},
+          {"packId": "charlie", "descriptorPackId": "01ARWG13C0000000000CHAR11E", "level": "project", "name": "charlie-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/charlie/artifacts"}}}
         ],
         "_links": {"self": {"href": "/api/v1/offering"}}
       }
@@ -83,10 +83,10 @@ Feature: The offering lists the configured packs in force
   Scenario: The configured level wins over the level pack.yaml declares
     Given the project pack "local" with the file "pack.yaml":
       """
-      pack_id: local
+      pack_id: 01ARWG13C00000000000010CA1
       pack_version: 1.0.0
       parent_pack: null
-      name: local pack
+      name: local-pack
       pack_level: org
       """
     When I GET "/offering"
@@ -97,16 +97,16 @@ Feature: The offering lists the configured packs in force
   Scenario: A pack whose pack.yaml declares no level is listed at its configured level
     Given the built-in pack "core" with the file "pack.yaml":
       """
-      pack_id: core
+      pack_id: 01ARWG13C0000000000000C0RE
       pack_version: 1.0.0
       parent_pack: null
-      name: core pack
+      name: core-pack
       """
     When I GET "/offering"
     Then the response status is 200
     And the field at "/packs/0/packId" is "core"
     And the field at "/packs/0/level" is "built-in"
-    And the field at "/packs/0/name" is "core pack"
+    And the field at "/packs/0/name" is "core-pack"
     And the field at "/packs/0/version" is "1.0.0"
 
   Scenario: Without configured packs the offering is empty
@@ -121,18 +121,18 @@ Feature: The offering lists the configured packs in force
   Scenario: The artifacts link of every pack answers its artifacts
     Given the built-in pack "core" with the file "pack.yaml":
       """
-      pack_id: core
+      pack_id: 01ARWG13C0000000000000C0RE
       pack_version: 1.0.0
       parent_pack: null
-      name: core pack
+      name: core-pack
       pack_level: built-in
       """
     And the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
-      name: qa pack
+      name: qa-pack
       pack_level: org
       """
     And the org pack "qa" with the file "tactics/rehearse.tactic.yaml":
@@ -152,15 +152,15 @@ Feature: The offering lists the configured packs in force
     answers nothing rather than a partial list.
     Given the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
-      name: qa pack
+      name: qa-pack
       pack_level: org
       """
     And the org pack "broken" with the file "pack.yaml":
       """
-      pack_id: broken
+      pack_id: 01ARWG13C00000000000BR0KEN
       pack_version: [unclosed
       """
     When I GET "/offering"
@@ -174,10 +174,10 @@ Feature: The offering lists the configured packs in force
     canonical pack, so the offering cannot name it and answers nothing rather than a partial list.
     Given the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
-      name: qa pack
+      name: qa-pack
       pack_level: org
       """
     And the org pack "bare" with the file "tactics/rehearse.tactic.yaml":
@@ -196,18 +196,18 @@ Feature: The offering lists the configured packs in force
   Scenario: A configured pack whose directory is missing refuses the offering with pack_unreadable
     Given the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
-      name: qa pack
+      name: qa-pack
       pack_level: org
       """
     And the org pack "gone" with the file "pack.yaml":
       """
-      pack_id: gone
+      pack_id: 01ARWG13C0000000000000G0NE
       pack_version: 1.0.0
       parent_pack: null
-      name: gone pack
+      name: gone-pack
       pack_level: org
       """
     And the directory of the pack "gone" is missing
@@ -219,10 +219,10 @@ Feature: The offering lists the configured packs in force
   Scenario: An offering whose inputs change while it is answered is refused with stale_input
     Given the built-in pack "core" with the file "pack.yaml":
       """
-      pack_id: core
+      pack_id: 01ARWG13C0000000000000C0RE
       pack_version: 1.0.0
       parent_pack: null
-      name: core pack
+      name: core-pack
       pack_level: built-in
       """
     And the built-in pack "core" with the file "mission_type.graph.yaml":

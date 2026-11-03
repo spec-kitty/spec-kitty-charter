@@ -12,7 +12,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   Background:
     Given the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
       name: qa
@@ -222,7 +222,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
     upper-case letters, which a locale-aware collation that ignores punctuation would not give.
     Given the org pack "order" with the file "pack.yaml":
       """
-      pack_id: order
+      pack_id: 01ARWG13C0000000000000RDER
       pack_version: 1.0.0
       parent_pack: null
       name: order
@@ -299,7 +299,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   Scenario: An empty pack answers an empty page
     Given the org pack "empty" with the file "pack.yaml":
       """
-      pack_id: empty
+      pack_id: 01ARWG13C000000000000EMPTY
       pack_version: 1.0.0
       parent_pack: null
       name: empty
@@ -323,7 +323,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   Scenario: A kind the pack holds none of answers an empty page
     Given the org pack "order" with the file "pack.yaml":
       """
-      pack_id: order
+      pack_id: 01ARWG13C0000000000000RDER
       pack_version: 1.0.0
       parent_pack: null
       name: order
@@ -393,7 +393,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   Scenario: A next link keeps the kind filter and the page size, and its page keeps first without the cursor
     Given the org pack "order" with the file "pack.yaml":
       """
-      pack_id: order
+      pack_id: 01ARWG13C0000000000000RDER
       pack_version: 1.0.0
       parent_pack: null
       name: order
@@ -436,7 +436,7 @@ Feature: A pack's artifacts are read through one generic list and one generic it
   Scenario: The anchor of a cursor deleted between two pages still pages on from its position
     Given the org pack "order" with the file "pack.yaml":
       """
-      pack_id: order
+      pack_id: 01ARWG13C0000000000000RDER
       pack_version: 1.0.0
       parent_pack: null
       name: order
