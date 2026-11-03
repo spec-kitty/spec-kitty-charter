@@ -23,6 +23,11 @@ core included, adapt. A refresh from core never overwrites a change listed below
   them; the service writes them only on a 409 `artifact_required`/`artifact_locked` and a 422
   `activation_invalid`. The two new files use inline patterns, so `_shared` names nothing under
   `contracts/charter/`.
+- `schemas/Problem.yaml` gains the optional member `packs` (a list of `schemas/RefusalPack.yaml`, a new file here)
+  on the same terms as `requiredBy` and `violations`: `CharterRefusal` extends the closed `Problem` with `allOf`,
+  so the member must be declared on `Problem`. The service writes it only on the refusals of the pack composition
+  (`GET /offering`, and the artifact reads that raise a reference refusal): the packs the refusal names, the pack
+  that broke the rule first.
 - `schemas/PageInfo.yaml` cites each property, and the schema itself, with an `x-derived` (#126,
   research R-16; #125): the charter's `resource-property-cited` lint judges every titled object
   schema of the bundle, and `ArtifactPage.page` and the effective artifact listing bring `PageInfo`

@@ -201,7 +201,7 @@ class CompositeComponentResolverTest {
         assertThatThrownBy(() -> twoPackResolver().resolveReference("charlie::directive:OWN_1", PACK))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                    assertThat(refused.getMessage()).contains("charlie").contains("does not hold");
+                    assertThat(refused.getMessage()).contains("charlie").contains("holds no pack");
                 });
     }
 

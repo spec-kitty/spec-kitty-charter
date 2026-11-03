@@ -63,6 +63,14 @@ description: >-
   every other code is a deterministic refusal, and the same read is refused the same way again
   until the request or the configured packs change.
 
+  The ten codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
+  fine and the configured packs are not, so the same read is refused the same way until a pack is fixed.
+  They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
+  pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
+  pack_sibling_refinement_conflict, pack_reference_unqualified and pack_reference_pack_missing. Each one's
+  detail reads as a sentence naming the pack that broke the rule, and its packs member lists the packs
+  it names, that pack first, each with its pack_id and name.
+
   unresolved_edge_endpoint is no longer raised: a graph edge endpoint is a URN, and an endpoint
   that is not one is refused as drg_schema_error. The value stays in the enum so that the
   contract keeps accepting it.
@@ -201,43 +209,43 @@ x-refusal:
     retryable: false
     raised: false
   pack_dependency_cycle:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_dependency_unknown:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_dependency_out_of_range:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_parent_unresolved:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_level_violation:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_name_conflict:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_duplicate_id:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_sibling_refinement_conflict:
-    status: 409
+    status: 500
     retryable: false
     raised: true
   pack_reference_unqualified:
-    status: 422
+    status: 500
     retryable: false
     raised: true
   pack_reference_pack_missing:
-    status: 422
+    status: 500
     retryable: false
     raised: true
 x-source:

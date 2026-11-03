@@ -187,7 +187,7 @@ public final class CompositeComponentResolver {
         try {
             PackCompositionResolver.checkReferences(closure, referringPackId, List.of(resolved));
         } catch (PackCompositionResolver.Refusal refusal) {
-            throw new CharterRefusal(referenceCodeOf(refusal.failure()), refusal.detail());
+            throw new CharterRefusal(referenceCodeOf(refusal.failure()), refusal.detail(), refusal.packs());
         }
     }
 

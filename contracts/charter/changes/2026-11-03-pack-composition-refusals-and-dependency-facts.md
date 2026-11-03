@@ -6,7 +6,10 @@
   one pack that share no version), `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
   `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge or a typed reference, that resolves only in
   another pack) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
-  `depends_on` closure) with 422, and `pack_sibling_refinement_conflict` with 409. The read exposes what the compose
+  `depends_on` closure) and `pack_sibling_refinement_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
+  configured packs do not compose (operator ruling of 2026-11-03). Each names the violating pack in `detail` and in the new
+  optional `packs` member of the refusal body (`Problem.packs`, a list of `RefusalPack`: the `pack_id` and `name` of every pack
+  the refusal names, the violating pack first). The read exposes what the compose
   resolved (FR-019, FR-020).
   `Urn` also accepts the pack-qualified `<pack-name>::<kind>:<id>` of a relationship that relies on another pack.
   The pack descriptor tightens in the same set: `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member`
