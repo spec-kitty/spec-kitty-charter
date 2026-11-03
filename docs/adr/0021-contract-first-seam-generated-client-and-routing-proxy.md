@@ -2,7 +2,7 @@
 title: "ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation"
 description: Proposes that the published contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
 doc_status: active
-updated: 2026-10-24T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-24'
 type: ADR
@@ -19,6 +19,7 @@ related:
   - adr/0022-contract-versions-start-at-0-x
   - architecture/strangler-transition
   - api/service-contract
+  - adr/0055-cutover-sequencing-the-java-service-first
 audience:
   - profile: core-maintainer
     guidance_text: Read this for what core adopts now, how the proxy routes each operation, and what switching one operation takes.
@@ -45,6 +46,19 @@ This record amends:
 - Issue [#13](https://github.com/spec-kitty/spec-kitty-charter/issues/13) ("core ingests the
   contract and returns generated DTOs from the seam") grows from DTOs to the whole generated client
   and the proxy (D2, D3).
+
+### Amendment 2026-11-03
+
+The operator ruled on 2026-11-03 that the Java service is built first and core's integration changes after
+([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1 to D3). Three points of this record change, and each is annotated where it stands:
+
+- **D2** and **D6:** core vendors the client when the service is built, not as soon as 0.1.0 is published, and its
+  adoption no longer waits on the first release alone (ADR-0055 D1).
+- **D5:** the conformance corpus no longer gates a switch. The design is the acceptance oracle (ADR-0055 D3). What
+  gates each switch in phase 2 is an open question in ADR-0055.
+
+D1, D3, D4 and the rest of D5 (per-operation switching, fail closed) are unchanged. They now apply in phase 2, when
+core integrates. The original text stands.
 
 ## Context
 
@@ -76,6 +90,9 @@ shape the seam needs that the contract lacks is requested here as an issue, beca
 repository owns the contract (ADR-0015); core does not add it locally.
 
 ### D2. Core vendors a client generated from the released bundle, now (ruled)
+
+*Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1): "now" no longer holds. Core vendors the client in phase 2, once the service
+answers the cutover reads, not as soon as 0.1.0 is published.*
 
 Core vendors the released, checksummed bundle (#45) and generates a Python client from it. It does
 so as soon as 0.1.0 is published, before any operation is served by the service, and
@@ -112,6 +129,10 @@ routing.
 
 ### D5. Each operation switches on its own, fail closed (default)
 
+*Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3): "the corpus passes for it" no longer gates a switch, because the design, not
+core's Python answers, is the acceptance oracle. What gates a switch in phase 2 is an open question in ADR-0055.
+Per-operation switching and fail closed are unchanged.*
+
 An operation moves from in-process (or shadow) to remote when the service implements it and the
 corpus passes for it. After it moves:
 
@@ -126,6 +147,9 @@ reversible ones; the point of no return is still the removal of the Python reads
 switch for every operation, which keeps the risk the proxy exists to remove.
 
 ### D6. Publishing the contract is on core's critical path, and that is accepted (ruled)
+
+*Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1): core's adoption no longer waits on the first release alone. It waits for the
+service to answer the cutover reads (phase 1).*
 
 Core's adoption waits on the first release. The slowdown is the price of a contract both sides
 code against from the start. Under ADR-0022 the first release is 0.1.0, published from today's

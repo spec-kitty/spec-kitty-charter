@@ -37,8 +37,8 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | # | Work | ADR | Size | Depends on | Tracker |
 |---|---|---|---|---|---|
 | 1 | ~~Operator rulings on the open decisions~~ (done 2026-11-02, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) and [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); ~~ADRs 0048 to 0052 accepted, and the "superseded in part" notes added to the Accepted records they touch~~ (done 2026-11-02); ~~glossary entries for the new terms~~ (done 2026-11-02; "Gate" deprecated for "Guard" by ADR-0054) | all | S | none | #142 |
-| 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar | 0048 | M | 1 | #145, #146 |
-| 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading | 0048 | L | 2 | #145 |
+| 2 | `depends_on` and `parent_pack` checks in the pack-descriptor schema; the range grammar (on the 4.x cutover path, before the layer merge: [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2) | 0048 | M | 1 | #145, #146 |
+| 3 | The dependency resolver: ordering, cycles, ranges, dedupe by `pack_id`, sibling refusal; a compatibility shim keeping the single `built-in` tree loading (on the 4.x cutover path, before the layer merge: [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2) | 0048 | L | 2 | #145 |
 | 4 | The `glossary` kind: schema, binding, migration of four glossaries, the two context reads | 0049 | L | 1 | proposed: "glossary contexts and terms" |
 | 5 | The `anti_pattern` kind and `rejects`; drop inline `anti_patterns` from procedure and styleguide | 0052 | M | 1 | #154 |
 | 6 | ~~The authoring checklist for the tightened procedure definition~~ (done 2026-11-02, [Author a procedure](/guides/author-a-procedure/); applied by review. The closed schema has no output field and refuses any undeclared key and `type: action`, but not an `action:` URN as a reference id: #350) | 0052 | S | 1 | #150, #350 |

@@ -2,7 +2,7 @@
 title: Strangler transition
 description: The stages that move charter reads, then writes, from core Python to the Java service, with the evidence for each and the point of no return.
 doc_status: draft
-updated: 2026-10-24T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -11,6 +11,7 @@ related:
   - plans/roadmap
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
+  - adr/0055-cutover-sequencing-the-java-service-first
 audience:
   - profile: core-maintainer
     guidance_text: Read this for the stages, the evidence each needs and the point of no return.
@@ -25,14 +26,22 @@ replaces the Python charter, which stays in core as the oracle until its reads a
 retire ([ADR-0008](/adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts/)), so the
 seam and the shadow comparison run in core and the service runs from this repository.
 
-> **Status:** design only; this repository is at stage 0. The cutover scope, the merged stages 3
-> and 4 and the corpus-only gate are provisional decisions of 2026-10-19
-> ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
+> **Status:** the service is being built, and no production read goes through it yet. Stage 1, callers on the
+> seam, is done in core (spec-kitty#6188), so core is past stage 0; stage 2 has not started. The cutover scope and
+> the merged stages 3 and 4 are provisional decisions of 2026-10-19
+> ([ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)). Its corpus-only gate was superseded on 2026-11-03
+> ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3). [Problem](/context/problem/) describes core's seam today. [What the labels mean](/#status).
 >
 > **Decided, provisionally** ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)):
 > core adopts a client generated from the published contract (0.1.0 first, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)) now, behind a proxy that routes
 > each operation to core's Python, a shadow or the service. Stages 2 to 4 then happen one
 > operation at a time, each switch fail closed.
+>
+> **Amended 2026-11-03** ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)): the cutover is built in
+> two phases. In phase 1 the Java service is built first, on the `depends_on` resolver of
+> [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) (D2). In phase 2 core vendors the client and
+> builds the proxy and the shadow (D1). "Now" in the paragraph above means phase 2, not as soon as 0.1.0 is
+> published. The service is accepted against the design, not against core's Python answers (D3).
 
 ## Stages
 
@@ -43,7 +52,7 @@ seam and the shadow comparison run in core and the service runs from this reposi
 | 2. Read shadow | Python; Java compared out of band | Python | Contract and fixture equivalence |
 | 3. Java authoritative | Java; loud, observable Python fallback | Python | Conformance is a blocking gate; freshness and failure behavior proven |
 | 4. Java reads complete | Java only | Python | Fallback-retirement criteria met |
-| **3 + 4, as decided** | **Java only; the seam fails closed** | Python | **The conformance corpus passes as a blocking gate** |
+| **3 + 4, as decided** | **Java only; the seam fails closed** | Python | ~~**The conformance corpus passes as a blocking gate**~~ **Gate per switch: open question in [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)** |
 | 5. Write migration | Java | Python or Java, per operation | Codec identity, mapping identity, confined mutation, negative-fixture equivalence |
 | 6. End state | Java | Java | Every write operation migrated |
 
@@ -76,13 +85,17 @@ structure, are decided in this repository.
 
 Python reads retire only when all of these hold:
 
-- the supported conformance corpus passes, as a blocking gate in core's CI;
+- ~~the supported conformance corpus passes, as a blocking gate in core's CI~~ the gate for each switch holds.
+  Since 2026-11-03 the design, not core's Python answers, is the acceptance oracle
+  ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3). What gates each switch in core is an open
+  question there;
 - the behavior of a stale or unavailable service is proven by tests;
 - cross-OS packaging is supported.
 
 The original plan also asked for an observation period. That was dropped on 2026-10-19
-(provisional, [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)): the corpus is the only
-evidence for the switch-over, so every behavior that matters must be a corpus case.
+(provisional, [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/)): the corpus was then the only
+evidence for the switch-over, so every behavior that matters had to be a corpus case. The Python reads still retire
+only at the end, after the last switch. The corpus is no longer the gate (ADR-0055 D3).
 
 ## Stepping back
 

@@ -2,7 +2,7 @@
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-02'
 type: ADR
@@ -213,8 +213,9 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
    active charter puts nothing in force and a partly empty one puts only the keys it names in force. Deactivation is
    expressed by activating nothing; the profiles and presets system exists for this. Recorded in decision 10 and as a
    breaking change. The per-kind default is withdrawn, not kept beside a "none" spelling.
-2. **Where an enhancing artifact lives** (decision 22). *Recommended:* beside the kind it adds to in the enhancing
-   pack, with the `enhances` edge in that pack's graph shard, as for profiles.
+2. ~~**Where an enhancing artifact lives** (decision 22).~~ **Ruled 2026-11-03 (operator), as recommended:** beside
+   the kind it adds to in the enhancing pack, with the `enhances` edge in that pack's graph shard, as for profiles. No
+   separate enhancements area. Recorded with [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/).
 3. ~~**URN kind tokens**~~ **Ruled 2026-11-02 (operator):** the multi-word URN kind tokens move to kebab case directly
    (`agent-profile:<id>`, `mission-step-contract:<id>`, `mission-type:<id>`, `anti-pattern:<id>`,
    `event-registry:<id>`), in the same change as the kebab path token. No split-migration reader: the service has no
