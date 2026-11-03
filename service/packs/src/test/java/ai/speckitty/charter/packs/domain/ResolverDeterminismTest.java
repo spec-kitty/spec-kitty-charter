@@ -51,7 +51,7 @@ class ResolverDeterminismTest {
             Collections.shuffle(shuffled, new Random(0x5EED_0000L + run));
             assertThat(idsOf(PackCompositionResolver.resolve(shuffled)))
                     .as("run %d", run)
-                    .containsExactly("01AAA", "01FFF", "01BBB", "01CCC", "01EEE", "01DDD", "01HHH", "01GGG");
+                    .containsExactly("01AAA", "01FFF", "01BBB", "01CCC", "01DDD", "01EEE", "01GGG", "01HHH");
         }
 
         List<PackUnderResolution> resolved = PackCompositionResolver.resolve(fixture);
@@ -77,6 +77,17 @@ class ResolverDeterminismTest {
                     .as("run %d: level rank, then pack id by code point", run)
                     .containsExactly("ﬁ", "😀", "Omega", "omega", "Kilo", "kilo");
         }
+    }
+
+    @Test
+    void aLevelStaysContiguousWhenItsDependencyIsMetLate() {
+        // B2 (built-in) needs B1 (built-in); O1 (org) needs nothing. FIFO would answer B1, O1, B2.
+        List<PackUnderResolution> fixture = List.of(
+                pack("01O1", "o1", PackLevel.ORG),
+                pack("01B2", "b2", PackLevel.BUILT_IN, new PackDependency("01B1", ">=1.0")),
+                pack("01B1", "b1", PackLevel.BUILT_IN));
+
+        assertThat(idsOf(PackCompositionResolver.resolve(fixture))).containsExactly("01B1", "01B2", "01O1");
     }
 
     private static void assertEveryDependencyPrecedesItsDependent(List<PackUnderResolution> resolved) {

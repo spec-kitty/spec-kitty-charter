@@ -49,9 +49,9 @@ class ComposeLevelSeparationTest {
         List<String> ids = idsOf(resolved);
 
         assertThat(ids)
-                .as("SC-001: alpha before bravo and charlie, both before delta, alpha once; echo joins the queue"
-                        + " the moment alpha frees it, ahead of delta, which waits on both siblings")
-                .containsExactly("01AAA", "01BBB", "01CCC", "01EEE", "01DDD");
+                .as("SC-001: alpha before bravo and charlie, both before delta, alpha once; delta and echo are ready"
+                        + " together once bravo and charlie are placed, and the stable order puts delta first")
+                .containsExactly("01AAA", "01BBB", "01CCC", "01DDD", "01EEE");
         assertThat(ids).containsOnlyOnce("01AAA");
         int alphaAt = ids.indexOf("01AAA");
         assertThat(ids.indexOf("01BBB")).as("bravo after alpha").isGreaterThan(alphaAt);

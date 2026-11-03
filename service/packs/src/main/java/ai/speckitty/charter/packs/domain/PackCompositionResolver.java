@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
@@ -502,7 +503,10 @@ public final class PackCompositionResolver {
             }
         });
 
-        List<PackUnderResolution> ready = new ArrayList<>();
+        // A priority queue on the stable order, not a FIFO: a pack whose dependency is met late would otherwise land
+        // after a dependency-free pack of a nearer level. A dependency points only to the pack's own level or one
+        // nearer built-in, so taking the smallest ready pack keeps each level contiguous.
+        PriorityQueue<PackUnderResolution> ready = new PriorityQueue<>(STABLE_ORDER);
         packs.stream()
                 .filter(pack -> {
                     Integer count = outstanding.get(pack.descriptor().packId());
@@ -511,7 +515,7 @@ public final class PackCompositionResolver {
                 .forEach(ready::add);
         List<PackUnderResolution> ordered = new ArrayList<>(packs.size());
         while (!ready.isEmpty()) {
-            PackUnderResolution pack = ready.remove(0);
+            PackUnderResolution pack = ready.poll();
             ordered.add(pack);
             for (String dependent : dependents.getOrDefault(pack.descriptor().packId(), List.of())) {
                 int remaining = outstanding.merge(dependent, -1, Integer::sum);
