@@ -72,13 +72,16 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
    (`>=1.2,<2`), the grammar the descriptor's `requires_core` already uses, so a descriptor has one range grammar.
 5. **A sibling conflict is settled by the distribution pack's own `overrides` edge** (question 5) on the contested
    artifact, naming the member whose version wins. No new edge type.
+   *Amended 2026-11-03 (operator, #145 pre-PR review): a sibling conflict also covers two packs at one level that both define the same artifact id, not only two that both change it, and is refused as `pack_sibling_conflict`. Until [#358](https://github.com/spec-kitty/spec-kitty-charter/issues/358) any pack of the compose may declare the edge, not only the distribution pack. Until [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) settling only clears the refusal; the named member's version is not yet put in force.*
 6. **A compose is one `depends_on` closure at one level** (question 6). An id is unique within it, except where an
    explicit `overrides` replaces it. Across levels the layer merge applies (project over org over built-in).
+   *Amended 2026-11-03 (operator, #145 pre-PR review): the closure is rooted at one level's configured packs and includes dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360). Pack ids and pack names are unique across a compose without exception. An artifact id is unique within a level except where an `overrides` edge settles it; across levels the same id is a legitimate layer override.*
 7. **A reference that crosses a pack boundary is qualified with the target pack's name** (question 6, operator
    addition), written `<pack-name>::<urn>`, for example `foundation::directive:DIRECTIVE_001`.
    - The prefix is required on every reference to an artifact of another pack. A reference inside one pack stays
      bare.
    - A bare reference that resolves only in another pack is refused at load.
+     *Amended 2026-11-03 (operator, #145 pre-PR review): it is refused when the compose resolves, not at load (`pack_reference_unqualified`). The check is also at the artifact level: a qualified reference must name a pack in the *referring* pack's own `depends_on` closure (`pack_reference_pack_missing`), and that pack must hold the artifact (`pack_reference_artifact_missing`).*
    - Pack names must be unique within a compose and stable.
    - This amends ADR-0048 decision 10 ("URNs stay global and unqualified"). The artifact's own URN stays
      unqualified; only references across packs carry the prefix.

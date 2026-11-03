@@ -13,6 +13,8 @@ related:
   - adr/0048-pack-composition-and-the-named-packs-split
   - adr/0049-glossary-contexts-and-terms
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - guides/compose-packs
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
 audience:
   - profile: pack-author
@@ -77,22 +79,20 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_version` | semantic version of the pack content; required at every level (open question 13; DIV-004) |
 | `name` | human handle and the `<name>::` qualifier of a cross-pack reference, so it follows the identifier grammar `^[a-z0-9][a-z0-9_-]*$` (lower-case letters, digits, `-` and `_`, starting with a letter or digit) |
 | `parent_pack` | parent pack, or `null` for a root pack |
-| `pack_level` | optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
+| `pack_level` | required when `depends_on` is non-empty, otherwise optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
-| `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `pack_id` is a ULID and `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4). A pack that declares one must also declare `pack_level`. The resolver enforces it: the offering read resolves the compose and refuses a broken one with the refusal that names the pack |
-| `overrides` | optional; the sibling contests this pack settles, each a closed item `{artifact, member}` where `member` is the contesting member's `pack_id`, a ULID; until #358 any pack of the compose may declare it, and until #357 it only clears the refusal, the member's version is not yet put in force ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5); a second edge on one artifact refuses the descriptor |
+| `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `pack_id` is a ULID and `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4). A pack that declares one must also declare `pack_level`. A pack may depend only on packs at its own level or one nearer built-in. The offering read resolves the compose and refuses a broken one; each refusal is in the table of [Compose packs](/guides/compose-packs/#read-a-refusal) |
+| `overrides` | optional; the sibling conflicts this pack settles, each a closed item `{artifact, member}` where `member` is the contesting member's `pack_id`, a ULID; until #358 any pack of the compose may declare it, and until #357 it only clears the refusal, the member's version is not yet put in force ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5); a second edge on one artifact refuses the descriptor |
 
 > **Accepted, partly built:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
 > [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
-> to `pack_id` and `parent_pack`. The schema accepts `depends_on` and `overrides` now (the ULID pattern pins the
-> dependency and override targets) and the descriptor reader reports them; the dependency resolver is built: the
-> offering read resolves one compose — dependencies before dependents, a shared dependency once — and refuses a
-> broken one with the matching refusal code instead of serving part of it, and the offering read checks a
-> pack-qualified `<pack-name>::<urn>` reference against the referring pack's own `depends_on` closure. The offering response exposes what a
-> compose resolved — each pack's declared dependencies with the version that satisfied each; the pack pin of an
-> activation shows the same facts once the reserved activation reads exist (#125). The
+> to `pack_id` and `parent_pack`. The schema accepts `depends_on` and `overrides` now, and the dependency resolver is
+> built: the offering read resolves one compose, dependencies first, and refuses a broken one instead of serving part
+> of it ([Compose packs](/guides/compose-packs/) has the refusal table). The offering response exposes what a compose
+> resolved: each pack's configured `packId`, its `descriptorPackId`, and its declared dependencies with the version
+> that satisfied each. The pack pin of an activation waits for the reserved activation reads (#125, #359). The
 > [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw the decided shape.
 
 **Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also

@@ -7,8 +7,8 @@ glossary_context: "Governance"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.6.0"
-  at: "2026-11-03T17:31:37Z"
-  content_hash: "sha256:f864f30691a9"
+  at: "2026-11-03T20:16:18Z"
+  content_hash: "sha256:ecffd3f6d8c2"
 ---
 
 # Governance
@@ -153,7 +153,7 @@ The role performed by a human, the Human in Charge; a role like any other. A pro
 
 ## Pack Level
 
-The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect. ADR-0048's composition is built: a pack may depend only on its own level or a lower one, and the resolver refuses a level violation; `parent_pack` is lineage only and carries no level rule.
+The tier a Charter Pack occupies, declared by the `pack_level` field in the pack's `pack.yaml` — one of `built-in`, `org` or `project`, in ascending precedence (ADR 2026-10-11-2). The level is no longer inferred from where a pack is wired in; a pack states its own level. The three level names have one authority, `kernel.pack_tiers`, and the tier token and the provenance/layer value share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` that omits the field (`PACK_LEVEL_MISSING`); for one release an org pack with no `pack.yaml` loads with a deprecation warning that names the file to add, before the refusal takes effect. ADR-0048's composition is built: a pack may take a `parent_pack`, or `depends_on` a pack, only at its own level or one nearer built-in, and the resolver refuses a violation (`pack_level_violation`); `pack_level` is required when `depends_on` is non-empty.
 
 {#precedence-rule}
 

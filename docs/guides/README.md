@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Guides
 description: Task-oriented how-tos for contributors to the charter service and, later, for its consumers.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Guide
 kind: Hub
 audience:
@@ -26,6 +26,8 @@ audience:
   container per configuration root.
 - [Author a procedure](/guides/author-a-procedure/) — the checklist for a procedure: what the closed
   schema refuses, and the three refusals of ADR-0052 that review applies.
+- [Compose packs](/guides/compose-packs/) — declaring `depends_on`, qualifying references across packs, settling
+  a sibling conflict, and the table of the eleven composition refusals.
 
 Consumer how-tos (depending on a contract release, running the service locally) will be
 added when there is something to depend on and run.

@@ -35,7 +35,7 @@ Work breakdown item 8, [#156](https://github.com/spec-kitty/spec-kitty-charter/i
 - **`implemented_by`** is worked out from a guard's own field, never authored. Nothing reads it yet.
 - **Load-time checks fail closed:** an executable's entry is a payload the pack holds; a guard's asset is held
   and executable; its `config_schema` must compile offline, use no `$ref` or other reference keyword, and hold only
-  linear-time (RE2) patterns; a lifecycle's guard entries resolve and their `config` fits. A pack-qualified reference
+  linear-time (RE2) patterns; a lifecycle's guard entries resolve and their `config` fits. A qualified reference
   waits for the dependency closure. What does not close is left out (`reference` violation).
 - **A lifecycle is refused** with no terminal state, an unreachable state, or two targets for one state and event.
 - **Rulings (operator, 2026-11-02):** six `builtin:` ids; ADR-0042 S4 admits `config_schema` and an entry's `config`;
