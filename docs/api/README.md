@@ -20,11 +20,13 @@ audience:
 
 # API
 
-> **Partly built, partly designed.** Four operations are in the contract
-> (`contracts/charter/openapi.yaml`) and served by the Java charter service: pack listing
-> (`listPacks`, `GET /packs`), action-scoped context (`getActionContext`,
-> `GET /mission-types/{missionType}/actions/{action}/context`), service info
-> (`getServiceInfo`, `GET /info`) and pack refresh (`refreshPacks`, `POST /packs/refresh`). The
+> **Partly built, partly designed.** The operations the contract (`contracts/charter/openapi.yaml`)
+> declares, and which of them the Java charter service serves, are listed in the
+> [service contract](/api/service-contract/), with their status. Built today: the API root, service info and the OpenAPI document; the
+> offering (`getOffering`, `GET /offering`); the pack-scoped artifact reads (`listPackArtifacts`,
+> `getPackArtifact`) and an artifact's references across packs (`listArtifactReferences`); and the
+> registration writes for directives, paradigms, styleguides, toolguides and relationships. The
+> activation set, the effective reads and the action-scoped context are declared and answer `501`. The
 > [Java API reference](/api/javadoc/) documents the service's hand-written modules. Still
 > only designed: the other reads of the [service contract](/api/service-contract/), which the
 > cutover read inventory ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94))
