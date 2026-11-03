@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 @Tag("open-packs")
 @DisplayName("Every pinned mission type reads into the domain (#194)")
 class MissionTypeCorpusTest {
+
+    /** Fail with the pin's own message rather than as a count mismatch when the checkout is at another commit. */
+    @BeforeAll
+    static void theCheckoutIsAtThePin() {
+        OpenPacksCorpus.assertPinned();
+    }
 
     /** The descriptor added to a copy of a pack that has none, so the store can read it. */
     private static final String PACK_YAML = """
