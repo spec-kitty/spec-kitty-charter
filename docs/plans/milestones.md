@@ -72,7 +72,9 @@ it verified). PR #180 delivered the toolguide half of #168: directive, styleguid
 toolguide can be read and registered. PR #198 fixed #119 (one generated model per schema) and built
 the publishing workflow of #45. ADR-0035 settled #171 (the shared artifact interface lives in the
 kernel). The [2026-11-02 triage](/plans/triage-2026-11-02/) closed #168, #169, #175 and #176 as delivered,
-merged #167 into #240, and moved #13 to the 4.x cutover (ADR-0055 D1).
+merged #167 into #240, and moved #13 to the 4.x cutover (ADR-0055 D1). #125 (the activation set), #126 (the
+offering reads under `/offering`), #131 (`activated_glossary_packs` in the charter schema) and #174 (a symlinked
+pack root loading as empty) were delivered days before the triage and leave the table here.
 
 **Release 0.1.0 is held** (operator, 2026-10-27): the workflow is ready, and no tag is cut yet. When
 it is cut, the tag ruleset (#196) comes first. Numbering of the next minor (operator, 2026-10-27):
@@ -82,12 +84,8 @@ the activation set (#125) is 0.2.0, and an additive change that is ready earlier
 | Issue | Title | Why it is here |
 |---|---|---|
 | #45 | Contract release publishing | Built (PR #198); open until 0.1.0 is cut, which is held |
-| #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
-| #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
-| #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
 | #240 | Re-evaluate the artifact fields that mint relationships | The graph documents (CRG) are the authoritative copy of an edge (operator, 2026-10-27); the registration bodies' `relationships` may change before 1.0.0 |
 | #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
-| #174 | A pack root configured through a symlink loads as an empty pack | A symlinked open-packs checkout would silently serve nothing |
 
 ### 4.x cutover
 
