@@ -219,5 +219,7 @@ tasks.test {
     inputs.dir(offering).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("offering")
     systemProperty("charter.offering", offering.asFile.absolutePath)
 }
+// The open-packs tests report no coverage: jacocoTestReport depends on `test`, which excludes the open-packs tag, and
+// this repository sets no coverage threshold (the charter's min_coverage is 0). The tag narrows the report, not a gate.
 tasks.check { dependsOn(openPacksRoundTrip) }
 
