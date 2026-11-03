@@ -70,6 +70,8 @@ def pin() -> str:
 
 def tree_digest(root: Path) -> str:
     """The ``tree-sha256-v1`` digest of the directory ``root``."""
+    if root.is_symlink():
+        raise SyncError(f"{root} is a symbolic link; a synced pack is a real directory, never a link to one")
     files = []
     for path in root.rglob("*"):
         if path.is_symlink() or (not path.is_dir() and not path.is_file()):
@@ -120,7 +122,10 @@ def read_lock() -> tuple[str, dict[str, str]]:
 def write_lock(commit: str, digests: dict[str, str]) -> None:
     body = f"{LOCK_HEADER}algorithm: {ALGORITHM}\ncommit: {commit}\ntrees:\n"
     body += "".join(f"  {subtree}: {digests[subtree]}\n" for subtree in SUBTREES)
-    LOCK.write_text(body, encoding="utf-8")
+    # Replace atomically: a crash must not leave the tracked lockfile truncated next to already-synced trees.
+    temporary = LOCK.with_name(LOCK.name + ".tmp")
+    temporary.write_text(body, encoding="utf-8")
+    temporary.replace(LOCK)
 
 
 def git(repo: Path, *args: str) -> bytes:
@@ -205,7 +210,10 @@ def run(args: argparse.Namespace) -> None:
         for subtree in SUBTREES:
             target = REPO / subtree
             target.parent.mkdir(parents=True, exist_ok=True)
-            if target.exists():
+            if target.is_symlink() or target.is_file():
+                # A link or file at a pack's path is not a synced tree; replace it rather than fail on rmtree.
+                target.unlink()
+            elif target.exists():
                 shutil.rmtree(target)
             shutil.copytree(staged[subtree], target)
     for subtree in SUBTREES:
