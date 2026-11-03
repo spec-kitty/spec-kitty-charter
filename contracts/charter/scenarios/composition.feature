@@ -148,7 +148,7 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 422
     And the problem code is "pack_dependency_cycle"
-    And the field "detail" of the response body is "the dependency graph contains a cycle at 01M4P01D5TWB5FKZGNNQG3943R"
+    And the field "detail" of the response body is "the dependency graph contains a cycle through 01M4P01D5TWB5FKZGNNQG3943R"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A chain with no cycle resolves, the dependency first
