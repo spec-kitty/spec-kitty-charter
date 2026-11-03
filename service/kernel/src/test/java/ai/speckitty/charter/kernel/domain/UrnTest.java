@@ -13,7 +13,21 @@ class UrnTest {
     }
 
     @Test
+    void aPackQualifiedUrnKeepsItsQualifierAndIsADifferentIdentityFromTheBareOne() {
+        Urn qualified = Urn.parse("writing-pack::directive:DIRECTIVE_010").orElseThrow();
+
+        assertThat(qualified.pack()).contains("writing-pack");
+        assertThat(qualified.id()).isEqualTo("DIRECTIVE_010");
+        assertThat(qualified).hasToString("writing-pack::directive:DIRECTIVE_010");
+        assertThat(qualified).isNotEqualTo(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_010"));
+    }
+
+    @Test
     void refusesWhatIsNotAUrn() {
+        assertThat(Urn.parse("Bad::directive:x")).isEmpty();
+        assertThat(Urn.parse("::directive:x")).isEmpty();
+        assertThat(Urn.parse("a::b::directive:x")).isEmpty();
+        assertThat(Urn.parse("writing::unknown:x")).isEmpty();
         assertThat(Urn.parse("QA_001")).isEmpty();
         assertThat(Urn.parse("profile:x")).isEmpty();
         assertThat(Urn.parse("directive:")).isEmpty();
