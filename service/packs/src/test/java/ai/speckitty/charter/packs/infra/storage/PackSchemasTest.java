@@ -235,6 +235,8 @@ class PackSchemasTest {
         "tactic,/$defs/TacticReference/properties/id/pattern",
         "directive,/$defs/DirectiveReference/properties/id/pattern",
         "paradigm,/$defs/ParadigmReference/properties/id/pattern",
+        "paradigm,/properties/directive_refs/items/pattern",
+        "directive,/properties/procedures/items/pattern",
         "procedure,/$defs/Reference/properties/id/pattern",
         "mission-type,/$defs/Reference/properties/id/pattern"
     })

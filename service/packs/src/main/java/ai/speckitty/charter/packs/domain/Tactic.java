@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -127,6 +128,21 @@ public final class Tactic implements CharterArtifact {
                         Optional.empty()))
                 .toList();
         return ArtifactEdges.build(urn(), typed, NodeKind.of(ArtifactKind.DIRECTIVE), List.of());
+    }
+
+    /**
+     * The references the tactic writes: those its relationships mint, and the references of its steps, which are kept
+     * but are not edges of the walk.
+     *
+     * @return the references, bare or pack-qualified
+     */
+    @Override
+    public List<PackQualifiedReference> writtenReferences() {
+        List<PackQualifiedReference> written = new ArrayList<>(CharterArtifact.super.writtenReferences());
+        for (TacticStep step : steps) {
+            step.references().forEach(ref -> written.add(PackQualifiedReference.typed(ref.type(), ref.id())));
+        }
+        return written.stream().distinct().toList();
     }
 
     /**

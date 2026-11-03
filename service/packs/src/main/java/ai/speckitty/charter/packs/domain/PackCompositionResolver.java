@@ -78,6 +78,17 @@ public final class PackCompositionResolver {
         }
 
         /**
+         * Whether the pack holds the artifact a bare URN names: the one answer, from the list the pack was read with.
+         * A reference of a kind the pack holds no artifacts of is held by no pack, so it fails open to nothing.
+         *
+         * @param urn the bare URN text, {@code <kind>:<id>}
+         * @return {@code true} when the pack's held artifacts name it
+         */
+        public boolean holds(String urn) {
+            return definedArtifacts.contains(urn);
+        }
+
+        /**
          * A pack under resolution whose graphs name artifacts it changes and that holds no artifact of its own.
          *
          * @param configured the configured pack

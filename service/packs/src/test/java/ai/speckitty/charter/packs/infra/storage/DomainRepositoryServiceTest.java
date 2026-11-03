@@ -474,6 +474,87 @@ class DomainRepositoryServiceTest {
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
+    /**
+     * The references a pack writes are the ones its artifacts' relationships follow, and both endpoints of its graph
+     * edges: the bare references of a directive's procedures and a paradigm's directive refs carry a qualifier like
+     * every typed reference, and a qualified edge source is checked beside its target.
+     */
+    @Test
+    void referencesOfCoversEveryFieldTheWalkFollowsAndBothEdgeEndpoints(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("D1.directive.yaml"), """
+                id: D1
+                schema_version: '1.0'
+                title: One
+                intent: one
+                enforcement: required
+                procedures: [ops::release, local-release]
+                """);
+        Files.writeString(pack.resolve("p1.paradigm.yaml"), """
+                id: p1
+                schema_version: '1.0'
+                name: One
+                summary: one
+                directive_refs: [rules::D9]
+                """);
+        Files.writeString(pack.resolve("edges.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: other::tactic:t, target: directive:D1, relation: requires}
+                """);
+
+        assertThat(overOne("pack-descriptor-only", pack).referencesOf(new PackIdentifier("pack-descriptor-only")))
+                .containsExactlyInAnyOrder(
+                        "other::tactic:t",
+                        "directive:D1",
+                        "ops::procedure:release",
+                        "procedure:local-release",
+                        "rules::directive:D9");
+    }
+
+    /** A reference list that skipped an unreadable file would pass a reference it never saw: it fails closed. */
+    @Test
+    void aPackWithAnUnreadableArtifactRefusesItsReferencesAndHeldArtifactsWhileItsLoadStillAnswers() {
+        assertThat(service.load(BY_ID).violations()).isNotEmpty();
+
+        for (Runnable read :
+                List.<Runnable>of(() -> service.referencesOf(BY_NAME), () -> service.definedArtifacts(BY_NAME))) {
+            assertThatThrownBy(read::run).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                assertThat(refused.getMessage()).contains(BROKEN_FILE);
+            });
+        }
+    }
+
+    /** The held list answers for every kind a reference can name, so a kind outside the served five is not failed open. */
+    @Test
+    void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("D1.directive.yaml"), """
+                id: D1
+                schema_version: '1.0'
+                title: One
+                intent: one
+                enforcement: required
+                """);
+        Files.writeString(pack.resolve("release.procedure.yaml"), """
+                id: release
+                schema_version: '1.0'
+                title: Release
+                description: ship it
+                entry_condition: ready
+                exit_condition: shipped
+                steps:
+                - title: Ship
+                  description: ship it
+                """);
+
+        assertThat(overOne("pack-descriptor-only", pack).definedArtifacts(new PackIdentifier("pack-descriptor-only")))
+                .containsExactlyInAnyOrder("directive:D1", "procedure:release");
+    }
+
     private static DomainRepositoryService overOne(String name, Path directory) {
         PackLocation location = new PackLocation(name, PackLevel.ORG, directory);
         return new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy());

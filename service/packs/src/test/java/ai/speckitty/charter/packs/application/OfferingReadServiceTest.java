@@ -30,6 +30,8 @@ class OfferingReadServiceTest {
     private final Map<String, Optional<PackDescriptor>> descriptors = new HashMap<>();
     private final Map<String, CharterRefusal> unreadable = new HashMap<>();
     private final Map<String, List<String>> refined = new HashMap<>();
+    private final Map<String, List<String>> defined = new HashMap<>();
+    private final Map<String, List<String>> written = new HashMap<>();
 
     private ConfiguredPack configured(String id, PackLevel level) {
         descriptors.putIfAbsent(id, Optional.of(descriptor(id, Optional.empty())));
@@ -151,6 +153,27 @@ class OfferingReadServiceTest {
                 });
     }
 
+    /**
+     * A bare reference is held by the pack that holds the artifact it names, whatever the kind: a procedure, which no
+     * read path of the service serves, is refused when it resolves only in another pack, and resolves when the
+     * referring pack holds it (the control, same shape).
+     */
+    @Test
+    void aBareReferenceToAKindOutsideTheServedFiveIsRefusedWhenOnlyAnotherPackHoldsIt() {
+        List<ConfiguredPack> packs = List.of(configured("alpha", PackLevel.ORG), configured("bravo", PackLevel.ORG));
+        defined.put("bravo", List.of("procedure:release"));
+        written.put("alpha", List.of("procedure:release"));
+
+        assertThatThrownBy(() -> service(packs).offering()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
+            assertThat(refused.getMessage()).contains("procedure:release").contains("bravo");
+        });
+
+        defined.put("alpha", List.of("procedure:release"));
+        defined.remove("bravo");
+        assertThat(service(packs).offering().value()).hasSize(2);
+    }
+
     /** The descriptors by pack id; an id in {@link #unreadable} refuses, as storage refuses an invalid pack.yaml. */
     private final class InMemoryDescriptors implements PackDescriptorRepository {
 
@@ -180,6 +203,16 @@ class OfferingReadServiceTest {
         @Override
         public List<String> changedArtifacts(PackIdentifier pack) {
             return refined.getOrDefault(pack.value(), List.of());
+        }
+
+        @Override
+        public List<String> definedArtifacts(PackIdentifier pack) {
+            return defined.getOrDefault(pack.value(), List.of());
+        }
+
+        @Override
+        public List<String> referencesOf(PackIdentifier pack) {
+            return written.getOrDefault(pack.value(), List.of());
         }
     }
 }

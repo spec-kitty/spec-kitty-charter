@@ -115,6 +115,7 @@
     },
     "procedures": {
       "items": {
+        "pattern": "^([a-z0-9][a-z0-9_-]*::)?(?![\\s\\S]*::)[\\s\\S]*$",
         "type": "string"
       },
       "title": "Procedures",
