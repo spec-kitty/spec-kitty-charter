@@ -2,7 +2,7 @@
 title: Charter descriptor files
 description: Every charter descriptor file — pack, manifest, graph fragment, org charter, preset and each artifact kind — with its purpose, key fields, file naming, location and CRG links.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -73,19 +73,27 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 
 | Field | Meaning |
 |---|---|
-| `pack_id` | ULID, the pack's stable identity |
+| `pack_id` | ULID (26 characters, `^[0-9A-HJKMNP-TV-Z]{26}$`), the pack's stable identity; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape |
 | `pack_version` | semantic version of the pack content; required at every level (open question 13; DIV-004) |
-| `name` | human handle |
+| `name` | human handle and the `<name>::` qualifier of a cross-pack reference, so it follows the identifier grammar `^[a-z0-9][a-z0-9_-]*$` (lower-case letters, digits, `-` and `_`, starting with a letter or digit) |
 | `parent_pack` | parent pack, or `null` for a root pack |
 | `pack_level` | optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |
 | `pack_drg` | org packs: path to the graph fragment, usually `drg/fragment.yaml` |
+| `depends_on` | optional; the packs this pack builds on, each a closed item `{pack_id, range}` where `pack_id` is a ULID and `range` is a PEP 440 specifier set ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/), [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 4). A pack that declares one must also declare `pack_level`. The resolver enforces it: the offering read resolves the compose and refuses a broken one with the refusal that names the pack |
+| `overrides` | optional; the sibling contests this pack settles, each a closed item `{artifact, member}` where `member` is the contesting member's `pack_id`, a ULID; until #358 any pack of the compose may declare it, and until #357 it only clears the refusal, the member's version is not yet put in force ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9, [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5); a second edge on one artifact refuses the descriptor |
 
-> **Decided, not built yet:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
+> **Accepted, partly built:** [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on:
 > [{pack_id, range}]` so packs compose into a graph, narrows `parent_pack` to lineage only, and adds a ULID pattern
-> to `pack_id` and `parent_pack`. `built-in` then becomes a distribution pack with no artifacts of its own, over a
-> slimmed foundation pack. The schema and the code do not do this yet; the [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw it.
+> to `pack_id` and `parent_pack`. The schema accepts `depends_on` and `overrides` now (the ULID pattern pins the
+> dependency and override targets) and the descriptor reader reports them; the dependency resolver is built: the
+> offering read resolves one compose — dependencies before dependents, a shared dependency once — and refuses a
+> broken one with the matching refusal code instead of serving part of it, and the offering read checks a
+> pack-qualified `<pack-name>::<urn>` reference against the referring pack's own `depends_on` closure. The offering response exposes what a
+> compose resolved — each pack's declared dependencies with the version that satisfied each; the pack pin of an
+> activation shows the same facts once the reserved activation reads exist (#125). The
+> [pack write model](/architecture/descriptor-schemas/#pack-write-model) and the [configuration diagram](/architecture/descriptor-schemas/#pack-crg-and-charter-configuration) draw the decided shape.
 
 **Planned** (provisional, [ADR-0012](/adr/0012-pack-mutability-policy/)): `pack.yaml` also
 points to the pack's mutability policy file at the pack root, so a reader finds every
@@ -387,7 +395,7 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
 
 > **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
 > the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`
-> kind and, pending a ruling (ADR-0050 open question 2), a `gate` kind. With
+> kind, and a `guard` kind implemented by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/); the proposed `gate` kind was not taken). With
 > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) it renames `missions/` to `mission_types/` and
 > moves the step contracts into the type's bundle. This section describes the shape the service reads today; the [mission type lifecycle diagram](/architecture/descriptor-schemas/#mission-type) draws the decided shape.
 

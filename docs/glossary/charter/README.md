@@ -6,9 +6,9 @@ kind: Glossary
 glossary_context: "Charter"
 doc_status: active
 generated:
-  by: "doc-kitty-glossary/0.5.0"
-  at: "2026-11-02T21:42:59Z"
-  content_hash: "sha256:1c5596e0b7fa"
+  by: "doc-kitty-glossary/0.6.0"
+  at: "2026-11-03T19:02:16Z"
+  content_hash: "sha256:f6f1efd424d1"
 ---
 
 # Charter
@@ -117,7 +117,7 @@ Everything a project could adopt: the buffet. It is made of Charter Packs, mostl
 
 ## Charter Pack
 
-A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. Decided, not built yet: ADR-0048 composes packs through `depends_on` and names the distribution, foundation, specialist, topical and stack packs.
+A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack is identified by its `charter_pack_id` (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. ADR-0048 composes packs through `depends_on`, and this part is built: the resolver orders the compose and the reads refuse a broken one. Still decided and not yet built: the named-packs split that makes `built-in` a distribution pack over the foundation, specialist, topical and stack packs.
 
 {#charter-mediated-selection}
 
@@ -131,11 +131,31 @@ Architectural pattern in which the project / org charter is the sole authority t
 
 A resolution context (`charter.scope::CharterScope`) that maps a filesystem path to the appropriate charter when multiple charters coexist in a monorepo. Single-project repositories use `CharterScope.default(repo_root)` which returns the root-scoped charter. Monorepos with multiple sub-project charters configure `charter_scopes:` in `.kittify/config.yaml`; `CharterScope.resolve(repo_root, feature_dir)` then finds the nearest-enclosing charter for any given feature directory. The resolved `scope.root` is forwarded to `build_charter_context` (or via `build_with_scope`) so the correct per-package charter governs prompt generation. See ADR-8 (`docs/adr/3.x/2026-05-18-1-monorepo-charter-scope.md`).
 
+{#closure}
+
+## Closure
+
+The set of packs reachable from a pack, or from the configured packs, through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (ADR-0048, ADR-0053 decision 7).
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#compose}
 
 ## Compose
 
-The set of packs loaded together through one `depends_on` closure; an artifact id is unique across it (ADR-0048 decisions 8 and 10). Its exact boundary is ADR-0048 open question 6.
+The set of packs loaded together through one `depends_on` closure at one level; a pack id and a pack name are each unique across it without exception, and an artifact id is unique across it except where an explicit `overrides` replaces it (ADR-0048 decision 6, ADR-0053 decisions 6 and 7).
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#dependency-edge}
+
+## Dependency Edge
+
+One `depends_on` entry a pack declares: the depended-on pack's `pack_id` and a PEP 440 version range the held version must satisfy. The item is closed, and a pack that declares one must also declare `pack_level` (ADR-0048 decision 10, ADR-0053 decision 4).
 
 **Meta:**
 
@@ -271,7 +291,7 @@ A directional Three-layer CRG relation from a mission-step action node to the di
 
 ## Guard
 
-An enforced check that must pass before a mission-type or lifecycle transition is taken. A guard is an artifact (`guards/<id>.guard.yaml`) `implemented_by` an executable asset or a closed built-in, run by the client to the guard/1 interface (context on stdin; exit 0 pass, 1 fail, 2 could not evaluate) and failing closed. A transition names it as `guard: [{ref, config?, blocking?}]`. The charter declares it and the client runs it (ADR-0050, ADR-0054).
+An enforced check that must pass before a mission-type or lifecycle transition is taken. A guard is an artifact (`guards/<id>.guard.yaml`) `implemented_by` an executable asset or a closed built-in, run by the client to the guard/1 interface (context on stdin; exit 0 pass, 1 fail, 2 could not evaluate) and failing closed. A transition names it as `guard: [{ref, config?, blocking?}]`. The charter declares it and the client runs it (ADR-0050, ADR-0054). A `builtin:` guard runs in the client's own process and returns the same verdict shape; only an asset-backed guard speaks guard/1 (ADR-0054 decision 6).
 
 **Meta:**
 
@@ -430,6 +450,16 @@ A playbook: a bounded, step-by-step way to handle one situation, with entry and 
 ## Project layer
 
 The project's own charter components, under the one flat root `.kittify/charter-packs/` (`charter_pack_id` `project`). It is part of the Charter offering, ships no presets, and is listed by `spec-kitty charter pack list` as the `project` row. `spec-kitty charter synthesize` writes here.
+
+{#qualified-reference}
+
+## Qualified reference
+
+A cross-pack reference written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`).
+
+**Meta:**
+
+- **status:** `canonical`
 
 {#ratchet-baseline}
 
@@ -737,7 +767,7 @@ A named, ordered list of mission-action steps with declared entry conditions, ex
 
 ## Asset
 
-A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040).
+A pack resource described by a sidecar manifest (`*.asset.yaml`: `id`, `mime`, `path`, optional `title`) and carrying one asset payload, the file its `path` names relative to the pack's `assets/` directory. Not activatable. A sidecar whose payload does not exist is refused. Its `mime` is metadata and never decides how the payload is read (ADR-0040). Decided, not built yet: an optional `executable` block makes the asset able to implement a guard (ADR-0054 decision 5).
 
 **Meta:**
 
