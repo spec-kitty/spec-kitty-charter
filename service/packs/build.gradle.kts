@@ -178,6 +178,9 @@ tasks.register<Test>("timingBudgets") {
     classpath = testSourceSet.runtimeClasspath
     useJUnitPlatform { includeTags("timing") }
     maxParallelForks = 1
+    // Each budget measures in a fresh JVM: a timing class that ran earlier in the same JVM leaves heap and JIT state
+    // that costs the next one's measured thread about 10% (ResolverCostBoundTest before PackFileSetBudgetTest).
+    setForkEvery(1)
     // Never beside this module's other test tasks, when they are named in the same invocation.
     mustRunAfter(tasks.test, openPacksRoundTrip)
     doNotTrackState("a budget measured on another run says nothing about this one (#316)")
