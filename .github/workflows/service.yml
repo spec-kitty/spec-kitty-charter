@@ -28,6 +28,9 @@ on:
       - ".github/workflows/contract-release.yml"
       - ".github/workflows/service-release.yml"
       - "scripts/release/**"
+      # The pack sync and its lockfile (packs/internal and packs/qa are synced from open-packs, not committed).
+      - "scripts/packs/**"
+      - "packs/open-packs.lock.yaml"
       # The deployable's tests check the compose example, the env template and the ignore rules (#229).
       - "deploy/**"
       - ".gitignore"
@@ -92,6 +95,12 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-disabled: ${{ inputs.cache-disabled || false }}
+
+      # packs/internal and packs/qa are not committed: sync them from the checkout above and verify their digests
+      # against packs/open-packs.lock.yaml. Fails closed, so a pin bump without the lockfile update is red. The tests
+      # read the open-packs checkout directly; this step is what guards the lockfile and the sync itself.
+      - name: Sync and verify the packs
+        run: ./gradlew syncPacks -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
 
       # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
       - name: Verify
