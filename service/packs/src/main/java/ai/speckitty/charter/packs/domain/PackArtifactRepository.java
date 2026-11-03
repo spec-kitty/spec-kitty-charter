@@ -4,12 +4,12 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import java.util.List;
 
 /**
- * The port through which what a pack's graphs say is read, whatever the storage: the artifacts they say it changes,
- * and the references they write. One pack
- * refines an artifact when one of its DRG documents writes an {@code enhances} or {@code overrides} relation on it;
- * whether two refiners of one artifact are siblings of one compose is the resolver's business, not this port's.
+ * The port through which what a pack holds and what its graphs say is read, whatever the storage: the artifacts it
+ * defines, the artifacts its graphs change and the references they write. One pack changes an artifact when one of its
+ * DRG documents writes an {@code enhances} or {@code overrides} relation on it; whether two packs that change or define
+ * one artifact are siblings of one compose is the resolver's business, not this port's.
  */
-public interface PackRefinementRepository {
+public interface PackArtifactRepository {
 
     /**
      * The artifacts the pack's graph documents say it changes: the distinct targets of its {@code enhances} and
@@ -20,7 +20,7 @@ public interface PackRefinementRepository {
      * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when one of the pack's
      *     graph documents cannot be read: a partial graph is never judged, so the caller fails closed
      */
-    List<String> refinedArtifacts(PackIdentifier pack);
+    List<String> changedArtifacts(PackIdentifier pack);
 
     /**
      * The artifacts the pack itself holds, as bare URNs ({@code <kind>:<id>}) of the kinds the service serves. Two packs

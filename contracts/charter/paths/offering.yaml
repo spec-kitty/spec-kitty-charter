@@ -17,7 +17,7 @@ get:
     pack_dependency_unknown, pack_dependency_out_of_range (also two ranges on one pack that share no
     version, and a pack_version that is no PEP 440 version), pack_parent_unresolved, pack_level_violation
     (a dependency or a parent further from built-in than the pack), pack_name_conflict, pack_duplicate_id,
-    pack_sibling_refinement_conflict (two packs of one level that change or define one artifact with no
+    pack_sibling_conflict (two packs of one level that change or define one artifact with no
     overrides edge settling it), pack_reference_unqualified and pack_reference_pack_missing. Each names the
     violating pack in detail and in the packs member of the body, with the pack_id and name of every pack it
     names. Like every operation it needs the worktree token.

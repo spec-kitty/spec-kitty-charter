@@ -6,7 +6,7 @@
   one pack that share no version), `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
   `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge or a typed reference, that resolves only in
   another pack) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
-  `depends_on` closure) and `pack_sibling_refinement_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
+  `depends_on` closure) and `pack_sibling_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
   configured packs do not compose (operator ruling of 2026-11-03). Each names the violating pack in `detail` and in the new
   optional `packs` member of the refusal body (`Problem.packs`, a list of `RefusalPack`: the `pack_id` and `name` of every pack
   the refusal names, the violating pack first). The read exposes what the compose
@@ -14,10 +14,10 @@
   `Urn` also accepts the pack-qualified `<pack-name>::<kind>:<id>` of a relationship that relies on another pack.
   The pack descriptor tightens in the same set: `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member`
   must be ULIDs and `name` must match `^[a-z0-9][a-z0-9_-]*$`, or `pack.yaml` is unreadable (`pack_unreadable`).
-  `OfferingPack` answers the required `dependsOn` array per pack: each declared dependency's target `pack_id`, the
+  `OfferingPack` answers the required `dependsOn` array per pack: each declared dependency's target `pack_id` as `descriptorPackId`, the
   declared PEP 440 `range` and the `version` that satisfied it (`[]` for a pack that declares none), in a new
   `ResolvedDependency` schema, and the required `descriptorPackId`, the `pack_id` the pack's `pack.yaml` declares,
-  which `dependsOn[].packId` names (`packId` stays the configured identifier, so a client joins a dependency edge to
+  which `dependsOn[].descriptorPackId` names (`packId` stays the configured identifier, so a client joins a dependency edge to
   its offering entry by `descriptorPackId`); `PackPin` carries the same facts as an optional member, mirrored into
   `../offering/schemas/ActivationConfig.schema.json`. The additive response properties are graded `ERR` by
   `../compat/severity-levels.txt`, so `info.version` moves `0.1.0-SNAPSHOT` → `0.2.0-SNAPSHOT` (ADR-0022: a 0.x

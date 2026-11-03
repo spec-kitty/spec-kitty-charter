@@ -13,8 +13,8 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.HashMap;
 import java.util.List;
@@ -196,7 +196,7 @@ class OfferingReadServiceTest {
         List<ConfiguredPack> packs = List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG));
 
         assertThatThrownBy(() -> service(packs).offering()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_REFINEMENT_CONFLICT);
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refused.getMessage()).contains("left").contains("right").contains("directive:DIRECTIVE_009");
         });
     }
@@ -262,10 +262,10 @@ class OfferingReadServiceTest {
     }
 
     /** The refined artifacts by pack id; a pack with no graph documents refines none. */
-    private final class InMemoryRefinements implements PackRefinementRepository {
+    private final class InMemoryRefinements implements PackArtifactRepository {
 
         @Override
-        public List<String> refinedArtifacts(PackIdentifier pack) {
+        public List<String> changedArtifacts(PackIdentifier pack) {
             return refined.getOrDefault(pack.value(), List.of());
         }
     }

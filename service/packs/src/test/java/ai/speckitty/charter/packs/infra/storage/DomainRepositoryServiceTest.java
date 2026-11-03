@@ -434,14 +434,14 @@ class DomainRepositoryServiceTest {
         assertUnreadable(overOne("gone", host.resolve("gone")), "gone");
     }
 
-    // ---- PackRefinementRepository ---------------------------------------------------------------------
+    // ---- PackArtifactRepository ---------------------------------------------------------------------
 
     /**
      * FR-012: the refined artifacts are the distinct targets of a pack's {@code enhances} and {@code overrides}
      * relations, in first-seen order; a {@code requires} relation refines nothing.
      */
     @Test
-    void refinedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
+    void changedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), """
                 schema_version: '1.0'
@@ -453,13 +453,13 @@ class DomainRepositoryServiceTest {
                 - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
                 """);
 
-        assertThat(overOne("pack-a", pack).refinedArtifacts(BY_NAME)).containsExactly("directive:DIRECTIVE_009");
+        assertThat(overOne("pack-a", pack).changedArtifacts(BY_NAME)).containsExactly("directive:DIRECTIVE_009");
     }
 
     /** A pack with no graph documents refines nothing: the empty answer, not a refusal. */
     @Test
     void aPackWithoutGraphDocumentsRefinesNothing() {
-        assertThat(service.refinedArtifacts(BY_NAME)).isEmpty();
+        assertThat(service.changedArtifacts(BY_NAME)).isEmpty();
     }
 
     /** The offering judges a partial graph never: a graph document that cannot be read refuses the refinements. */
@@ -468,7 +468,7 @@ class DomainRepositoryServiceTest {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), "edges: [\n");
 
-        assertThatThrownBy(() -> overOne("pack-a", pack).refinedArtifacts(BY_NAME))
+        assertThatThrownBy(() -> overOne("pack-a", pack).changedArtifacts(BY_NAME))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));

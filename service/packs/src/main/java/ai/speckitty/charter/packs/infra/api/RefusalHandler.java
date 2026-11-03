@@ -144,7 +144,7 @@ public class RefusalHandler {
                     PACK_LEVEL_VIOLATION,
                     PACK_NAME_CONFLICT,
                     PACK_DUPLICATE_ID,
-                    PACK_SIBLING_REFINEMENT_CONFLICT,
+                    PACK_SIBLING_CONFLICT,
                     PACK_REFERENCE_UNQUALIFIED,
                     PACK_REFERENCE_PACK_MISSING,
                     INTERNAL_ERROR,

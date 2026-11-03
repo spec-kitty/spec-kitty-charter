@@ -64,9 +64,9 @@ Feature: The compose resolves the configured packs' dependency graph
       {
         "packs": [
           {"packId": "apex", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "level": "org", "name": "apex-pack", "version": "1.0.0", "dependsOn": [], "_links": {"artifacts": {"href": "/api/v1/packs/apex/artifacts"}}},
-          {"packId": "left", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943S", "level": "org", "name": "left-pack", "version": "2.0.0", "dependsOn": [{"packId": "01M4P01D5TWB5FKZGNNQG3943R", "range": ">=1.0,<2", "version": "1.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/left/artifacts"}}},
-          {"packId": "right", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943T", "level": "org", "name": "right-pack", "version": "3.0.0", "dependsOn": [{"packId": "01M4P01D5TWB5FKZGNNQG3943R", "range": ">=1.0", "version": "1.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/right/artifacts"}}},
-          {"packId": "top", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943V", "level": "org", "name": "top-pack", "version": "4.0.0", "dependsOn": [{"packId": "01M4P01D5TWB5FKZGNNQG3943S", "range": ">=2.0", "version": "2.0.0"}, {"packId": "01M4P01D5TWB5FKZGNNQG3943T", "range": "<4.0", "version": "3.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/top/artifacts"}}}
+          {"packId": "left", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943S", "level": "org", "name": "left-pack", "version": "2.0.0", "dependsOn": [{"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "range": ">=1.0,<2", "version": "1.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/left/artifacts"}}},
+          {"packId": "right", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943T", "level": "org", "name": "right-pack", "version": "3.0.0", "dependsOn": [{"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943R", "range": ">=1.0", "version": "1.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/right/artifacts"}}},
+          {"packId": "top", "descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943V", "level": "org", "name": "top-pack", "version": "4.0.0", "dependsOn": [{"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943S", "range": ">=2.0", "version": "2.0.0"}, {"descriptorPackId": "01M4P01D5TWB5FKZGNNQG3943T", "range": "<4.0", "version": "3.0.0"}], "_links": {"artifacts": {"href": "/api/v1/packs/top/artifacts"}}}
         ],
         "_links": {"self": {"href": "/api/v1/offering"}}
       }
@@ -229,7 +229,7 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 200
     And the field at "/packs/0/packId" is "beta"
     And the field at "/packs/1/packId" is "alpha"
-    And the field at "/packs/1/dependsOn/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/dependsOn/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
     And the field at "/packs/1/dependsOn/0/range" is ">=1.0.0"
     And the field at "/packs/1/dependsOn/0/version" is "1.0.0"
 
@@ -590,7 +590,7 @@ Feature: The compose resolves the configured packs' dependency graph
       """
     When I GET "/offering"
     Then the response status is 500
-    And the problem code is "pack_sibling_refinement_conflict"
+    And the problem code is "pack_sibling_conflict"
     And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both change the artifact `directive:software-dev/test-first`, and no pack of the compose declares an overrides edge settling it"
     And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
     And the field at "/packs/0/name" is "right-pack"
@@ -704,7 +704,7 @@ Feature: The compose resolves the configured packs' dependency graph
       """
     When I GET "/offering"
     Then the response status is 500
-    And the problem code is "pack_sibling_refinement_conflict"
+    And the problem code is "pack_sibling_conflict"
     And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and no pack of the compose declares an overrides edge settling it"
     And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
     And the field at "/packs/0/name" is "right-pack"

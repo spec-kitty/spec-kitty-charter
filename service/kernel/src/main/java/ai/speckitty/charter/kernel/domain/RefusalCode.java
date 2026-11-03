@@ -105,7 +105,7 @@ public enum RefusalCode {
     /** Two configured packs declare the same {@code pack_id}. */
     PACK_DUPLICATE_ID("pack_duplicate_id"),
     /** Two sibling packs refine one artifact and no distribution pack declares an {@code overrides} edge. */
-    PACK_SIBLING_REFINEMENT_CONFLICT("pack_sibling_refinement_conflict"),
+    PACK_SIBLING_CONFLICT("pack_sibling_conflict"),
     /** A reference that resolves only in another pack is written bare rather than pack-qualified. */
     PACK_REFERENCE_UNQUALIFIED("pack_reference_unqualified"),
     /** A pack-qualified reference names a pack outside the compose's closure. */

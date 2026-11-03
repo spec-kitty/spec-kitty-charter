@@ -7,13 +7,13 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackPolicy;
-import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +41,7 @@ public final class OfferingReadService {
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
-    private final PackRefinementRepository refinements;
+    private final PackArtifactRepository refinements;
     private final ConsistentRead read;
 
     /**
@@ -96,7 +96,7 @@ public final class OfferingReadService {
     public OfferingReadService(
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
-            PackRefinementRepository refinements,
+            PackArtifactRepository refinements,
             ConsistentRead read) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
@@ -185,7 +185,7 @@ public final class OfferingReadService {
                     .map(pack -> new PackUnderResolution(
                             pack,
                             descriptorOf(pack),
-                            refinements.refinedArtifacts(pack.id()),
+                            refinements.changedArtifacts(pack.id()),
                             refinements.definedArtifacts(pack.id())))
                     .toList());
             for (PackUnderResolution pack : closure) {
@@ -254,7 +254,7 @@ public final class OfferingReadService {
             case LEVEL_VIOLATION -> RefusalCode.PACK_LEVEL_VIOLATION;
             case NAME_CONFLICT -> RefusalCode.PACK_NAME_CONFLICT;
             case DUPLICATE_ID -> RefusalCode.PACK_DUPLICATE_ID;
-            case SIBLING_CONFLICT -> RefusalCode.PACK_SIBLING_REFINEMENT_CONFLICT;
+            case SIBLING_CONFLICT -> RefusalCode.PACK_SIBLING_CONFLICT;
             case REFERENCE_UNQUALIFIED -> RefusalCode.PACK_REFERENCE_UNQUALIFIED;
             case REFERENCE_PACK_MISSING -> RefusalCode.PACK_REFERENCE_PACK_MISSING;
         };

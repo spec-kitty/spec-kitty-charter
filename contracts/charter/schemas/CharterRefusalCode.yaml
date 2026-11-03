@@ -67,7 +67,7 @@ description: >-
   fine and the configured packs are not, so the same read is refused the same way until a pack is fixed.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
-  pack_sibling_refinement_conflict, pack_reference_unqualified and pack_reference_pack_missing. Each one's
+  pack_sibling_conflict, pack_reference_unqualified and pack_reference_pack_missing. Each one's
   detail reads as a sentence naming the pack that broke the rule, and its packs member lists the packs
   it names, that pack first, each with its pack_id and name.
 
@@ -107,7 +107,7 @@ enum:
   - pack_level_violation
   - pack_name_conflict
   - pack_duplicate_id
-  - pack_sibling_refinement_conflict
+  - pack_sibling_conflict
   - pack_reference_unqualified
   - pack_reference_pack_missing
 x-refusal:
@@ -236,7 +236,7 @@ x-refusal:
     status: 500
     retryable: false
     raised: true
-  pack_sibling_refinement_conflict:
+  pack_sibling_conflict:
     status: 500
     retryable: false
     raised: true

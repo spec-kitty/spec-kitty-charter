@@ -32,9 +32,9 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -388,7 +388,7 @@ class ArtifactControllerTest {
                     ToolguideRepository,
                     PackCatalogRepository,
                     PackDescriptorRepository,
-                    PackRefinementRepository {
+                    PackArtifactRepository {
 
         @Override
         public Pack load(PackIdentifier asked) {
@@ -420,7 +420,7 @@ class ArtifactControllerTest {
 
         /** No route this controller serves resolves a reference, so the fixture's packs refine none. */
         @Override
-        public List<String> refinedArtifacts(PackIdentifier asked) {
+        public List<String> changedArtifacts(PackIdentifier asked) {
             return List.of();
         }
 

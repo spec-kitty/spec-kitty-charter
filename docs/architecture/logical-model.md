@@ -177,7 +177,7 @@ range, or two ranges on one pack that share no version, touching ones such as `<
 crosses the level rule — a pack may depend only on its own level or a lower one (`pack_level_violation`) — two packs
 declaring
 one name (`pack_name_conflict`) or one `pack_id` (`pack_duplicate_id`), and two sibling packs at one level that
-change the same artifact with no `overrides` edge settling it (`pack_sibling_refinement_conflict`). `parent_pack`
+change the same artifact with no `overrides` edge settling it (`pack_sibling_conflict`). `parent_pack`
 stays lineage only. A pack settles a sibling contest by declaring `overrides: [{artifact, member}]` on its
 descriptor, naming a member that contests the artifact. Until #358 any pack of the compose may declare the edge, and
 until #357 (the merge) settling only clears the refusal: the member's version is not yet put in force. Today the service configures every pack it holds, so every

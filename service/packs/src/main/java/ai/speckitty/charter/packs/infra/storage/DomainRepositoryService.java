@@ -18,11 +18,11 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
-import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -80,7 +80,7 @@ public final class DomainRepositoryService
                 ParadigmRepository,
                 PackDescriptorRepository,
                 PackCatalogRepository,
-                PackRefinementRepository,
+                PackArtifactRepository,
                 PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
@@ -286,7 +286,7 @@ public final class DomainRepositoryService
                 .toList();
     }
 
-    // ---- PackRefinementRepository -------------------------------------------------------------------------------
+    // ---- PackArtifactRepository -------------------------------------------------------------------------------
 
     /**
      * The artifacts the pack's graph documents say it changes: the distinct targets of its {@code enhances} and
@@ -294,7 +294,7 @@ public final class DomainRepositoryService
      * rather than letting the offering judge a partial graph, where the whole-pack load reports it as a violation.
      */
     @Override
-    public List<String> refinedArtifacts(PackIdentifier pack) {
+    public List<String> changedArtifacts(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         if (!graphs.violations().isEmpty()) {

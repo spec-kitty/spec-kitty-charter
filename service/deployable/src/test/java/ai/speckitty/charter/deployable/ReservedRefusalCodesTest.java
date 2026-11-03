@@ -307,7 +307,7 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PACK_LEVEL_VIOLATION,
                 RefusalCode.PACK_NAME_CONFLICT,
                 RefusalCode.PACK_DUPLICATE_ID,
-                RefusalCode.PACK_SIBLING_REFINEMENT_CONFLICT,
+                RefusalCode.PACK_SIBLING_CONFLICT,
                 RefusalCode.PACK_REFERENCE_UNQUALIFIED,
                 RefusalCode.PACK_REFERENCE_PACK_MISSING
             };
