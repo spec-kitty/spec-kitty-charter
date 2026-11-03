@@ -34,7 +34,9 @@ How to build the charter service and run every check CI runs.
   stash or clean the checkout).
 - **The synced packs**, once per worktree: `./gradlew syncPacks`. `packs/internal` and `packs/qa` are not
   committed; they are copied from that open-packs checkout at the pin and checked against
-  `packs/open-packs.lock.yaml`. See [Syncing the packs](#syncing-the-packs).
+  `packs/open-packs.lock.yaml`. They are needed for this repository's own Spec Kitty governance
+  (`.kittify/config.yaml` and the `qa-*` agent profiles), not for `verifyAll`: the build and its tests read the
+  open-packs checkout directly. See [Syncing the packs](#syncing-the-packs).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
   last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
   you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
@@ -67,7 +69,7 @@ How to build the charter service and run every check CI runs.
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
 | `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
-| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the pinned `internal` and `qa` packs are read as they are synced here. It fails, never skips, without a checkout |
+| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the pinned `internal` and `qa` packs are read from the same checkout. It fails, never skips, without a checkout |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
