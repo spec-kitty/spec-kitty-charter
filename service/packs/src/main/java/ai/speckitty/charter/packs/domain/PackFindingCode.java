@@ -12,6 +12,8 @@ public enum PackFindingCode {
     PACK_UNREADABLE(Severity.BLOCKING),
     /** {@code requires_core} is not a valid specifier set. */
     REQUIRES_CORE_INVALID(Severity.BLOCKING),
+    /** {@code pack_version} is not a PEP 440 version, so no {@code depends_on} range can be decided against it. */
+    PACK_VERSION_INVALID(Severity.BLOCKING),
     /** A {@code depends_on[].range} is not a valid specifier set. */
     DEPENDENCY_RANGE_INVALID(Severity.BLOCKING),
     /** An org pack has no {@code drg/fragment.yaml}. */
@@ -63,8 +65,11 @@ public enum PackFindingCode {
     public RefusalCode refusal() {
         return switch (this) {
             case PACK_LEVEL_MISMATCH -> RefusalCode.PACK_LEVEL_MISMATCH;
-            case PACK_UNREADABLE, REQUIRES_CORE_INVALID, DEPENDENCY_RANGE_INVALID, ORG_FRAGMENT_MISSING ->
-                RefusalCode.PACK_UNREADABLE;
+            case PACK_UNREADABLE,
+                    REQUIRES_CORE_INVALID,
+                    PACK_VERSION_INVALID,
+                    DEPENDENCY_RANGE_INVALID,
+                    ORG_FRAGMENT_MISSING -> RefusalCode.PACK_UNREADABLE;
             case DRG_SCHEMA_ERROR -> RefusalCode.DRG_SCHEMA_ERROR;
             default -> throw new IllegalStateException(name() + " has no refusal on the load path");
         };

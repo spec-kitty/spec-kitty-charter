@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.ArrayList;
@@ -222,11 +223,23 @@ public final class OfferingReadService {
         return resolved;
     }
 
+    /**
+     * The pack's descriptor, judged by the descriptor rules validate mode runs: a {@code requires_core} or a
+     * {@code depends_on} range that is no PEP 440 specifier set makes the descriptor unreadable here too, so a
+     * malformed range answers {@code pack_unreadable} on the offering as it does on the load path, and never reaches
+     * the resolver.
+     */
     private PackDescriptor descriptorOf(ConfiguredPack pack) {
-        return descriptors
+        PackDescriptor descriptor = descriptors
                 .find(pack.id())
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " has no pack.yaml"));
+        PackPolicy.descriptorFindings(pack.id().value(), descriptor).stream()
+                .findFirst()
+                .ifPresent(finding -> {
+                    throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, finding.detail());
+                });
+        return descriptor;
     }
 
     private static RefusalCode codeOf(Failure failure) {

@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Pep440;
+import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
@@ -228,10 +229,24 @@ public final class PackPolicy {
     private static final String DEPENDS_ON = "depends_on";
 
     /**
-     * {@code requires_core} and every {@code depends_on[].range} must be a PEP 440 specifier set (R3, FR-002). An
+     * {@code requires_core} and every {@code depends_on[].range} must be a PEP 440 specifier set (R3, FR-002), and
+     * {@code pack_version} a PEP 440 version, because a range is decided against it. An
      * undeclared key never reaches here: the closed schema makes its file unreadable (ADR-0036 decision 3).
      */
     private static List<PackFinding> descriptorRules(String name, PackDescriptor descriptor) {
+        return descriptorFindings(name, descriptor);
+    }
+
+    /**
+     * The descriptor rules on their own: the findings of an invalid {@code requires_core} or {@code depends_on} range.
+     * Validate mode runs them with every other rule; the offering runs them on each descriptor it reads, so one
+     * malformed range gets one answer, whichever path reads the pack.
+     *
+     * @param name the pack's name, for the finding text
+     * @param descriptor what the pack's {@code pack.yaml} states
+     * @return the findings; empty when the descriptor passes
+     */
+    public static List<PackFinding> descriptorFindings(String name, PackDescriptor descriptor) {
         List<PackFinding> findings = new ArrayList<>();
         Optional<String> requiresCore = descriptor.requiresCore();
         if (requiresCore.isPresent() && !Pep440.isValidSpecifierSet(requiresCore.get())) {
@@ -241,6 +256,14 @@ public final class PackPolicy {
                     List.of(REQUIRES_CORE),
                     "pack.yaml of " + name + ": requires_core '" + requiresCore.get()
                             + "' is not a PEP 440 version specifier"));
+        }
+        if (!Pep440Range.isVersion(descriptor.packVersion())) {
+            findings.add(new PackFinding(
+                    PackFindingCode.PACK_VERSION_INVALID,
+                    PACK_YAML,
+                    List.of("pack_version"),
+                    "pack.yaml of " + name + ": pack_version '" + descriptor.packVersion()
+                            + "' is not a PEP 440 version"));
         }
         List<PackDependency> dependencies = descriptor.dependencies();
         for (int i = 0; i < dependencies.size(); i++) {

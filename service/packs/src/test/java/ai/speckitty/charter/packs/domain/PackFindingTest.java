@@ -18,6 +18,7 @@ class PackFindingTest {
             PackFindingCode.PACK_LEVEL_MISMATCH,
             PackFindingCode.PACK_UNREADABLE,
             PackFindingCode.REQUIRES_CORE_INVALID,
+            PackFindingCode.PACK_VERSION_INVALID,
             PackFindingCode.DEPENDENCY_RANGE_INVALID,
             PackFindingCode.ORG_FRAGMENT_MISSING,
             PackFindingCode.DRG_SCHEMA_ERROR);

@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -139,6 +140,30 @@ class PackPolicyRulesTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {"1.0.0-alpha.beta|true", "latest|true", "1.0.0|false", "2.0rc1|false", "1!1.0.post2|false"})
+    void aPackVersionThatIsNoPep440VersionIsBlockingAndNamesThePack(String version, boolean refused) {
+        PackDescriptor versioned = new PackDescriptor(
+                "01ARWG13C00000000000001ABC",
+                version,
+                Optional.empty(),
+                "qa",
+                Optional.of(PackLevel.ORG),
+                Optional.empty());
+
+        assertThat(judge(contents(new FileRead.Read<>("pack.yaml", versioned), List.of(), List.of(), List.of())))
+                .isEqualTo(
+                        refused
+                                ? List.of(new PackFinding(
+                                        PackFindingCode.PACK_VERSION_INVALID,
+                                        "pack.yaml",
+                                        List.of("pack_version"),
+                                        "pack.yaml of qa: pack_version '" + version + "' is not a PEP 440 version"))
+                                : List.of());
     }
 
     @Test
