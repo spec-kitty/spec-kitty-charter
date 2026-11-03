@@ -16,6 +16,8 @@ import ai.speckitty.charter.missions.domain.Lifecycle;
 import ai.speckitty.charter.missions.domain.LifecycleTransition;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.BuiltinGuard;
+import ai.speckitty.charter.packs.domain.Executable;
+import ai.speckitty.charter.packs.domain.ExecutableRuntime;
 import ai.speckitty.charter.packs.domain.Guard;
 import ai.speckitty.charter.packs.domain.GuardImplementation;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -376,7 +378,16 @@ class GuardAndLifecycleLoadTest {
 
         Path missing = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "missing"));
         edit(missing, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n"));
-        assertDroppedWithItsGuard(load(missing), "is not a payload file the pack holds");
+        assertDroppedWithItsGuard(load(missing), "reference", "is not a payload file the pack holds");
+    }
+
+    @Test
+    @DisplayName("an executable whose args repeat its entry is dropped with its guard, never fatal to the load")
+    void aDomainRefusedAssetIsDroppedNotFatal() throws IOException {
+        Path pack = pack();
+        edit(pack, ASSET, text -> text.replace("  - --guard\n", "  - --guard\n  - carrier_lint.py\n"));
+
+        assertDroppedWithItsGuard(load(pack), "domain", "exactly one argv element");
     }
 
     @Test
@@ -448,6 +459,33 @@ class GuardAndLifecycleLoadTest {
                 .hasMessage("guard 'traceability-ready' is implemented_by asset:missing-lint, which the pack does not"
                         + " hold");
         assertThat(target).doesNotExist();
+        // The same refusal for an executable whose entry names a payload the pack does not hold.
+        Asset asset = loaded.pack().assets().stream()
+                .filter(a -> a.localId().equals("carrier-lint"))
+                .findFirst()
+                .orElseThrow();
+        Asset strayEntry = Asset.builder()
+                .id(asset.id())
+                .packId(asset.packId())
+                .mime(asset.mime())
+                .path(asset.path())
+                .title(asset.title().orElse(null))
+                .executable(new Executable(
+                        ExecutableRuntime.PYTHON,
+                        asset.executable().orElseThrow().minVersion(),
+                        "other.py",
+                        asset.executable().orElseThrow().args()))
+                .build();
+        WholePackStore.LoadedPack strayed = new WholePackStore.LoadedPack(
+                loaded.pack().with(strayEntry),
+                loaded.layout(),
+                loaded.graphs(),
+                loaded.unmodelled(),
+                loaded.manifest());
+        assertThatThrownBy(() -> store.write(strayed, target))
+                .isInstanceOf(CharterRefusal.class)
+                .hasMessageContaining("executable entry 'other.py', which is not a payload file the pack holds");
+        assertThat(target).doesNotExist();
         try (Stream<Path> left = Files.exists(out) ? Files.list(out) : Stream.empty()) {
             assertThat(left).as("no staging directory is left").isEmpty();
         }
@@ -460,8 +498,8 @@ class GuardAndLifecycleLoadTest {
                 "guard 'traceability-ready' is implemented_by asset:carrier-lint, which the pack does not hold");
     }
 
-    /** The asset is left out with a domain violation naming its rule, and the guard and lifecycle it backs with it. */
-    private static void assertDroppedWithItsGuard(Pack loaded, String rule) {
+    /** The asset is left out with one violation of the given kind naming its rule, and the guard and lifecycle it backs with it. */
+    private static void assertDroppedWithItsGuard(Pack loaded, String kind, String rule) {
         assertThat(loaded.assets()).extracting(a -> a.id().value()).containsExactly("notes");
         assertThat(ids(loaded, ArtifactKind.GUARD))
                 .as("the guard it backs fails closed")
@@ -471,7 +509,7 @@ class GuardAndLifecycleLoadTest {
                 .isEmpty();
         assertThat(loaded.violations()).hasSize(3);
         assertThat(loaded.violations().get(0)).satisfies(violation -> {
-            assertThat(violation.kind()).isEqualTo("reference");
+            assertThat(violation.kind()).isEqualTo(kind);
             assertThat(violation.reason()).contains(rule);
         });
         assertThat(loaded.violations().subList(1, 3))
