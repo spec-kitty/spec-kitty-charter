@@ -122,17 +122,17 @@ class LifecycleTest {
                         edge("planned", "doing"),
                         edge("doing", "planned")));
         assertRefused(
-                "Every state of a lifecycle is reachable from its initial state.",
+                "state 'island' is not reachable from the initial state",
                 () -> lifecycle(
                         "planned",
                         List.of(state("planned"), state("island"), terminal("done")),
                         edge("planned", "done")));
         List<LifecycleState> fork = List.of(state("planned"), state("doing"), terminal("done"));
         assertRefused(
-                "A lifecycle is deterministic: no state and event lead to two different states.",
+                "'planned' on 'next' leads to both 'doing' and 'done'",
                 () -> lifecycle("planned", fork, edge("planned", "doing"), edge("planned", "done")));
         assertRefused(
-                "A lifecycle is deterministic: no state and event lead to two different states.",
+                "'planned' on 'next' leads to both 'doing' and 'done'",
                 () -> lifecycle(
                         "planned",
                         fork,

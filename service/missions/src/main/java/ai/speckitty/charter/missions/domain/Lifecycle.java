@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -50,16 +51,7 @@ public final class Lifecycle implements CharterArtifact {
                     "A lifecycle declares each transition once: no two share a from state, a to state and an event.",
                     Lifecycle::transitionsAreUnique))
             .must(Constraints.of(
-                    "A lifecycle transition names each guard once.", Lifecycle::guardsAreUniquePerTransition))
-            .must(Constraints.of(
-                    "A lifecycle declares at least one terminal state.",
-                    l -> l.states.stream().anyMatch(LifecycleState::isTerminal)))
-            .must(Constraints.of(
-                    "Every state of a lifecycle is reachable from its initial state.",
-                    l -> l.reachableFromInitial().size() == l.states.size()))
-            .must(Constraints.of(
-                    "A lifecycle is deterministic: no state and event lead to two different states.",
-                    Lifecycle::transitionsAreDeterministic));
+                    "A lifecycle transition names each guard once.", Lifecycle::guardsAreUniquePerTransition));
 
     private final LifecycleIdentifier id;
     private final PackIdentifier packId;
@@ -101,6 +93,21 @@ public final class Lifecycle implements CharterArtifact {
         this.states = List.copyOf(states);
         this.transitions = List.copyOf(transitions);
         RULES.guard(this);
+        requireWellFormedMachine();
+    }
+
+    /** The checks whose refusal names the offender; they read the transitions, so they follow the ruleset. */
+    private void requireWellFormedMachine() {
+        if (states.stream().noneMatch(LifecycleState::isTerminal)) {
+            throw new ConstraintBreachException("A lifecycle declares at least one terminal state.");
+        }
+        Set<String> reached = reachableFromInitial();
+        states.stream().filter(s -> !reached.contains(s.id())).findFirst().ifPresent(s -> {
+            throw new ConstraintBreachException("state '" + s.id() + "' is not reachable from the initial state");
+        });
+        nondeterminism().ifPresent(message -> {
+            throw new ConstraintBreachException(message);
+        });
     }
 
     /**
@@ -284,18 +291,20 @@ public final class Lifecycle implements CharterArtifact {
         return reached;
     }
 
-    /** No (state, event) pair, an absent event being {@code next}, leaves for two different targets. */
-    private boolean transitionsAreDeterministic() {
+    /** The first (state, event) pair, an absent event being {@code next}, that leaves for two different targets. */
+    private Optional<String> nondeterminism() {
         java.util.Map<List<String>, String> targets = new java.util.HashMap<>();
         for (LifecycleTransition t : transitions) {
             for (String source : sources(t)) {
-                String other = targets.putIfAbsent(List.of(source, t.event().orElse("next")), t.to());
+                String event = t.event().orElse("next");
+                String other = targets.putIfAbsent(List.of(source, event), t.to());
                 if (other != null && !other.equals(t.to())) {
-                    return false;
+                    return Optional.of(
+                            "'" + source + "' on '" + event + "' leads to both '" + other + "' and '" + t.to() + "'");
                 }
             }
         }
-        return true;
+        return Optional.empty();
     }
 
     private boolean guardsAreUniquePerTransition() {
