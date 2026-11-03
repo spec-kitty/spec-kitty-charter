@@ -9,6 +9,14 @@ here too.
 A contract change does not edit this file: it adds a fragment under `changes/`, which the release
 pull request assembles into the top version section (`changes/README.md`, ADR-0047).
 
+## 0.2.0-SNAPSHOT
+
+The 0.2 line of the unreleased contract: while the major is 0, a minor version may break (ADR-0022).
+No release was cut under `0.1.0-SNAPSHOT`, so nothing released breaks incompatibly; what this line
+changes is recorded in the fragments under `changes/`, assembled here at release. The pack composition
+mission's one change set — the refusal codes of the dependency resolver and the resolved dependency
+facts — is the fragment `2026-11-03-pack-composition-refusals-and-dependency-facts.md`.
+
 ## 0.1.0-SNAPSHOT
 
 The first contract version core will vendor, not yet released: an unreleased contract version

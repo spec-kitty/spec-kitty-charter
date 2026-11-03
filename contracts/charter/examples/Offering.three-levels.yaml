@@ -2,23 +2,35 @@ summary: One configured pack at each level, in the merge order.
 value:
   packs:
     - packId: spec-kitty
+      descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
       level: built-in
-      name: Spec Kitty
+      name: spec-kitty
       version: 4.0.0
+      dependsOn: []
       _links:
         artifacts:
           href: /api/v1/packs/spec-kitty/artifacts
     - packId: qa
+      descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943S
       level: org
-      name: QA house rules
+      name: qa-house-rules
       version: 1.2.0
+      dependsOn:
+        - packId: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=4.0.0'
+          version: 4.0.0
       _links:
         artifacts:
           href: /api/v1/packs/qa/artifacts
     - packId: my-project
+      descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943T
       level: project
-      name: My project
+      name: my-project
       version: 0.1.0
+      dependsOn:
+        - packId: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=4.0.0'
+          version: 4.0.0
       _links:
         artifacts:
           href: /api/v1/packs/my-project/artifacts

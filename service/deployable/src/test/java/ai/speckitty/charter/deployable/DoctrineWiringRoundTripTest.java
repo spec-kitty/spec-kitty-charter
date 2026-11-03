@@ -49,7 +49,7 @@ import org.springframework.test.context.DynamicPropertySource;
 class DoctrineWiringRoundTripTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-    private static final PackIdentifier PACK = new PackIdentifier("01M5JHD0DOCTRINEWIRING0000A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5JHD0D0CTR1NEW1R1NG000A");
     private static Path packs = Path.of("");
 
     @Autowired
@@ -75,7 +75,7 @@ class DoctrineWiringRoundTripTest {
         packs = Files.createDirectories(
                 Files.createTempDirectory("charter-doctrine-wiring").resolve(ConfigRoot.PACKS));
         write("fixture/pack.yaml", """
-                pack_id: 01M5JHD0DOCTRINEWIRING0000A
+                pack_id: 01M5JHD0D0CTR1NEW1R1NG000A
                 pack_version: 1.0.0
                 parent_pack: null
                 name: fixture

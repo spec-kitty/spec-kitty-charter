@@ -60,7 +60,7 @@ class RegularArtefactWiringTest {
         packs = Files.createDirectories(
                 Files.createTempDirectory("charter-regular-artefact-wiring").resolve(ConfigRoot.PACKS));
         write("qa/pack.yaml", """
-                pack_id: qa
+                pack_id: 01ARWG13C000000000000000QA
                 pack_version: 1.0.0
                 parent_pack: null
                 name: qa

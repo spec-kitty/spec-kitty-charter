@@ -202,3 +202,13 @@ Feature: Failures outside the charter's refusals
       | validation_failed           |
       | registration_conflict       |
       | governance_policy_violation |
+      | pack_dependency_cycle       |
+      | pack_dependency_unknown     |
+      | pack_dependency_out_of_range |
+      | pack_parent_unresolved      |
+      | pack_level_violation        |
+      | pack_name_conflict          |
+      | pack_duplicate_id           |
+      | pack_sibling_refinement_conflict |
+      | pack_reference_unqualified  |
+      | pack_reference_pack_missing |

@@ -192,7 +192,7 @@ class CharterWiringTest {
     void validateModeIsWiredOverTheFileBasedInspector(@TempDir Path dir) throws IOException {
         Files.writeString(
                 dir.resolve("pack.yaml"),
-                "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
         Files.createDirectories(dir.resolve("drg"));
         Files.writeString(dir.resolve("drg/fragment.yaml"), "nodes: []\nedges: []\n");
 

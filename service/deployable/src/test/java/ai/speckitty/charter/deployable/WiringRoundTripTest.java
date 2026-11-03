@@ -31,7 +31,7 @@ import org.springframework.test.context.DynamicPropertySource;
 class WiringRoundTripTest {
 
     private static final String TOKEN = "0123456789abcdef0123456789abcdef0123";
-    private static final PackIdentifier PACK = new PackIdentifier("01M5EET9WIRINGFIXTURE0000A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5EET9W1R1NGF1XTVRE0000A");
     private static final TacticIdentifier ALPHA = new TacticIdentifier("alpha-tactic");
     private static Path packs = Path.of("");
 
@@ -49,7 +49,7 @@ class WiringRoundTripTest {
         packs = Files.createDirectories(
                 Files.createTempDirectory("charter-wiring-roundtrip").resolve(ConfigRoot.PACKS));
         write("fixture/pack.yaml", """
-                pack_id: 01M5EET9WIRINGFIXTURE0000A
+                pack_id: 01M5EET9W1R1NGF1XTVRE0000A
                 pack_version: 1.0.0
                 parent_pack: null
                 name: fixture

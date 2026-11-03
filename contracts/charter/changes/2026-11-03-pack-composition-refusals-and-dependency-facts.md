@@ -1,0 +1,26 @@
+### Breaking
+
+- The pack composition mission's one change set (C-006; `pack-composition-depends-on-and-the-dependency-resolver-01M6F541`):
+  the ten refusal codes of the dependency resolver are declared, and `GET /offering` raises all ten:
+  `pack_dependency_cycle`, `pack_dependency_unknown`, `pack_dependency_out_of_range` (which also covers two ranges on
+  one pack that share no version), `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
+  `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge or a typed reference, that resolves only in
+  another pack) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
+  `depends_on` closure) with 422, and `pack_sibling_refinement_conflict` with 409. The read exposes what the compose
+  resolved (FR-019, FR-020).
+  `Urn` also accepts the pack-qualified `<pack-name>::<kind>:<id>` of a relationship that relies on another pack.
+  The pack descriptor tightens in the same set: `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member`
+  must be ULIDs and `name` must match `^[a-z0-9][a-z0-9_-]*$`, or `pack.yaml` is unreadable (`pack_unreadable`).
+  `OfferingPack` answers the required `dependsOn` array per pack: each declared dependency's target `pack_id`, the
+  declared PEP 440 `range` and the `version` that satisfied it (`[]` for a pack that declares none), in a new
+  `ResolvedDependency` schema, and the required `descriptorPackId`, the `pack_id` the pack's `pack.yaml` declares,
+  which `dependsOn[].packId` names (`packId` stays the configured identifier, so a client joins a dependency edge to
+  its offering entry by `descriptorPackId`); `PackPin` carries the same facts as an optional member, mirrored into
+  `../offering/schemas/ActivationConfig.schema.json`. The additive response properties are graded `ERR` by
+  `../compat/severity-levels.txt`, so `info.version` moves `0.1.0-SNAPSHOT` → `0.2.0-SNAPSHOT` (ADR-0022: a 0.x
+  breaking change takes a minor bump and this `### Breaking` entry). No released contract is broken incompatibly:
+  no release was cut under any version (C-002), so the compatibility check has no baseline. Scenarios: the new
+  `scenarios/composition.feature` drives the ten codes `GET /offering` raises with a negative control on the same
+  fixture shape, plus the diamond, the descriptor without `depends_on` and the settled sibling contest; the raised-codes
+  table of `scenarios/errors.feature` lists the ten codes. Core's seam: a client that reads `GET /offering` must
+  tolerate the `dependsOn` member (or move to the new version) and may now meet the ten refusal codes.

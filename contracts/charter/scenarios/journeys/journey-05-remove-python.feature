@@ -8,7 +8,7 @@ Feature: Journey 05 — We Hate Snakes LLC removes the Python artifacts
   Background:
     Given the org pack "qa" with the file "pack.yaml":
       """
-      pack_id: qa
+      pack_id: 01ARWG13C000000000000000QA
       pack_version: 1.0.0
       parent_pack: null
       name: qa

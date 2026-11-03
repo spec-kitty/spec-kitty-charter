@@ -222,6 +222,44 @@
           "minLength": 1,
           "maxLength": 64,
           "description": "The pack version the activation builds on, as the pack declares it (pack_version). Absent means the version the service holds; with several versions held side by side, the newest (ADR-0033 D7)."
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResolvedDependency"
+          },
+          "description": "The dependencies the compose resolved for this pack (FR-020), each with the range its descriptor declared and the version that satisfied it. Absent means the pin was written without them; the service answers them once it builds the activation reads (the activation set is reserved, #125)."
+        }
+      }
+    },
+    "ResolvedDependency": {
+      "title": "ResolvedDependency",
+      "description": "One dependency the compose resolved (FR-020): the pack the descriptor's depends_on names, the range it declared and the version the held pack satisfied. The facts are derived from the resolver's closure, never authored: no write path carries them.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packId",
+        "range",
+        "version"
+      ],
+      "properties": {
+        "packId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The depended-on pack's pack_id, as the depending pack.yaml's depends_on names it."
+        },
+        "range": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "The PEP 440 version-specifier set the descriptor declared for the dependency."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The held pack_version that satisfied the declared range."
         }
       }
     },

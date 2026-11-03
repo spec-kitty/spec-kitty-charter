@@ -15,6 +15,7 @@ files:
   - OfferingPack.yaml
   - PackLevel.yaml
   - Relation.yaml
+  - ResolvedDependency.yaml
   - ServiceInfo.yaml
   - Sha256Digest.yaml
   - Slug.yaml
