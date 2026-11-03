@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayList;
@@ -116,25 +117,40 @@ public final class PackCompositionResolver {
      */
     public enum Failure {
         /** A dependency edge closes a cycle, including a pack that depends on itself. */
-        CYCLE,
+        CYCLE(RefusalCode.PACK_DEPENDENCY_CYCLE),
         /** A dependency names a pack id no configured pack declares. */
-        UNKNOWN_DEPENDENCY,
+        UNKNOWN_DEPENDENCY(RefusalCode.PACK_DEPENDENCY_UNKNOWN),
         /** The held version fits no declared range for that pack. */
-        OUT_OF_RANGE,
+        OUT_OF_RANGE(RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE),
         /** A {@code parent_pack} names an id no configured pack declares. */
-        PARENT_UNRESOLVED,
+        PARENT_UNRESOLVED(RefusalCode.PACK_PARENT_UNRESOLVED),
         /** A pack depends on, or takes as parent, a pack further from built-in than its own level. */
-        LEVEL_VIOLATION,
+        LEVEL_VIOLATION(RefusalCode.PACK_LEVEL_VIOLATION),
         /** Two packs in the compose declare the same name. */
-        NAME_CONFLICT,
+        NAME_CONFLICT(RefusalCode.PACK_NAME_CONFLICT),
         /** Two configured packs declare the same {@code pack_id}. */
-        DUPLICATE_ID,
+        DUPLICATE_ID(RefusalCode.PACK_DUPLICATE_ID),
         /** Two siblings at one level change or define one artifact and no pack of the compose settles it with an {@code overrides} edge. */
-        SIBLING_CONFLICT,
+        SIBLING_CONFLICT(RefusalCode.PACK_SIBLING_CONFLICT),
         /** A bare reference resolves only in another pack of the compose; the refusal names the holding pack. */
-        REFERENCE_UNQUALIFIED,
+        REFERENCE_UNQUALIFIED(RefusalCode.PACK_REFERENCE_UNQUALIFIED),
         /** A pack-qualified reference names a pack outside the compose's closure; the refusal names the missing pack. */
-        REFERENCE_PACK_MISSING
+        REFERENCE_PACK_MISSING(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+
+        private final RefusalCode code;
+
+        Failure(RefusalCode code) {
+            this.code = code;
+        }
+
+        /**
+         * The refusal code the contract serves for this reason: the one mapping from a failure to a code.
+         *
+         * @return the code
+         */
+        public RefusalCode code() {
+            return code;
+        }
     }
 
     /**

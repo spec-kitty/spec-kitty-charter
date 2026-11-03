@@ -174,7 +174,7 @@ public final class CompositeComponentResolver {
                 if (pack.configured().id().equals(referringPack)) {
                     continue;
                 }
-                if (resolve(pack.configured().id(), parsed.urn()).isPresent()) {
+                if (pack.holds(parsed.urn())) {
                     checked(
                             closure,
                             referringId,
@@ -215,16 +215,8 @@ public final class CompositeComponentResolver {
         try {
             PackCompositionResolver.checkReferences(closure, referringPackId, List.of(resolved));
         } catch (PackCompositionResolver.Refusal refusal) {
-            throw new CharterRefusal(referenceCodeOf(refusal.failure()), refusal.detail(), refusal.packs());
+            throw new CharterRefusal(refusal.failure().code(), refusal.detail(), refusal.packs());
         }
-    }
-
-    private static RefusalCode referenceCodeOf(PackCompositionResolver.Failure failure) {
-        return switch (failure) {
-            case REFERENCE_UNQUALIFIED -> RefusalCode.PACK_REFERENCE_UNQUALIFIED;
-            case REFERENCE_PACK_MISSING -> RefusalCode.PACK_REFERENCE_PACK_MISSING;
-            default -> throw new IllegalStateException("not a reference failure: " + failure);
-        };
     }
 
     private Optional<CharterArtifact> resolve(PackIdentifier pack, Urn urn) {
