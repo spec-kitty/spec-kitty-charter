@@ -19,7 +19,7 @@ import tools.jackson.databind.JsonNode;
  *
  * <p>An embedded schema is checked against the Draft 2020-12 metaschema, then compiled with the same strict dialect as
  * the bundled schemas (an unknown keyword is refused) in a registry of its own whose loader allows exactly the Draft
- * 2020-12 metaschema and vocabulary IRIs: a {@code $ref} outside the document is never fetched, and refuses the schema instead. Problems are short
+ * 2020-12 metaschema and vocabulary IRIs: a reference keyword ({@code $ref}, {@code $dynamicRef}, an anchor) anywhere in the schema refuses it instead. Problems are short
  * facts ({@code <keyword> at <location>}); the validator's localized message text is never read.
  */
 final class EmbeddedSchemas {
@@ -37,6 +37,10 @@ final class EmbeddedSchemas {
             METASCHEMA_BASE + "meta/meta-data",
             METASCHEMA_BASE + "meta/format-annotation",
             METASCHEMA_BASE + "meta/content");
+
+    /** The keywords that point at another schema; an embedded config schema is self-contained and may use none. */
+    private static final java.util.Set<String> REFERENCE_KEYWORDS =
+            java.util.Set.of("$ref", "$dynamicRef", "$dynamicAnchor", "$recursiveRef", "$recursiveAnchor", "$anchor");
 
     private static final SchemaRegistry REGISTRY = SchemaRegistry.withDefaultDialect(
             Dialect.builder(Dialects.getDraft202012())
@@ -64,6 +68,11 @@ final class EmbeddedSchemas {
         if (!problems.isEmpty()) {
             return problems;
         }
+        List<String> references = new ArrayList<>();
+        referenceKeywords(node, "", references);
+        if (!references.isEmpty()) {
+            return references;
+        }
         try {
             Schema compiled = REGISTRY.getSchema(node);
             compiled.initializeValidators();
@@ -74,6 +83,28 @@ final class EmbeddedSchemas {
         } catch (RuntimeException refused) {
             return List.of("it does not compile offline (an unknown keyword or a $ref outside the document): "
                     + refused.getClass().getSimpleName() + ": " + refused.getMessage());
+        }
+    }
+
+    /**
+     * Collects every reference keyword anywhere in the schema tree. An embedded config schema has no use for them, and a
+     * self-referencing one ({@code $ref: '#'}, a {@code $defs} cycle) overflows the stack when it is evaluated, which no
+     * probe against an empty mapping can be trusted to reach.
+     */
+    private static void referenceKeywords(JsonNode node, String at, List<String> found) {
+        if (node.isObject()) {
+            for (var field : node.properties()) {
+                String where = at + "/" + field.getKey();
+                if (REFERENCE_KEYWORDS.contains(field.getKey())) {
+                    found.add("a reference keyword is not allowed in an embedded schema: " + field.getKey() + " at "
+                            + where);
+                }
+                referenceKeywords(field.getValue(), where, found);
+            }
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                referenceKeywords(node.get(i), at + "/" + i, found);
+            }
         }
     }
 

@@ -60,7 +60,7 @@
       "type": "string"
     },
     "config_schema": {
-      "description": "A JSON Schema (draft 2020-12) that a transition entry's config is checked against at load. Its content is open: it is itself a schema, checked at load against the draft 2020-12 meta-schema and compiled offline, as the bundled schemas are: an unknown keyword and a $ref outside the document are refused (ADR-0042 S4 as amended). format is an annotation, not checked.",
+      "description": "A JSON Schema (draft 2020-12) that a transition entry's config is checked against at load. Its content is open: it is itself a schema, checked at load against the draft 2020-12 meta-schema and compiled offline, as the bundled schemas are: an unknown keyword is refused, and so is every reference keyword anywhere in it ($ref, $dynamicRef, $dynamicAnchor, $recursiveRef, $recursiveAnchor, $anchor), which the load check enforces and this schema does not express (ADR-0042 S4 as amended). format is an annotation, not checked.",
       "title": "Config Schema",
       "type": "object"
     },

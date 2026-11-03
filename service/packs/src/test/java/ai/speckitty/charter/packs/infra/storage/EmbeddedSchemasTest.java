@@ -42,17 +42,22 @@ class EmbeddedSchemasTest {
                 .allSatisfy(problem -> assertThat(problem).endsWith(" at /type"));
         assertThat(EmbeddedSchemas.schemaProblems(tree("{$schema: 'http://json-schema.org/draft-07/schema#'}")))
                 .containsExactly("$schema is not https://json-schema.org/draft/2020-12/schema");
-        for (String unusable : List.of(
-                "{type: object, x-check: true}",
+        assertThat(EmbeddedSchemas.schemaProblems(tree("{type: object, x-check: true}")))
+                .singleElement()
+                .asString()
+                .startsWith("it does not compile offline (an unknown keyword or a $ref outside the document): ");
+        for (String reference : List.of(
                 "{$ref: 'https://example.com/evil.schema.json'}",
                 "{$ref: 'https://json-schema.org/draft/2020-12/not-a-vocabulary'}",
                 "{$ref: '#/$defs/missing'}",
-                "{$dynamicRef: '#meta'}")) {
-            assertThat(EmbeddedSchemas.schemaProblems(tree(unusable)))
-                    .as(unusable)
-                    .singleElement()
-                    .asString()
-                    .startsWith("it does not compile offline (an unknown keyword or a $ref outside the document): ");
+                "{$dynamicRef: '#meta'}",
+                "{$ref: '#'}",
+                "{$defs: {a: {$ref: '#/$defs/b'}, b: {$ref: '#/$defs/a'}}, $ref: '#/$defs/a'}",
+                "{properties: {b: {$dynamicRef: '#meta'}}}")) {
+            assertThat(EmbeddedSchemas.schemaProblems(tree(reference)))
+                    .as(reference)
+                    .isNotEmpty()
+                    .allSatisfy(problem -> assertThat(problem).startsWith("a reference keyword is not allowed"));
         }
     }
 }
