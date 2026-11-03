@@ -22,14 +22,3 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/PackPin/properties/version'
-  dependsOn:
-    type: array
-    items:
-      $ref: ResolvedDependency.yaml
-    description: >-
-      The dependencies the compose resolved for this pack (FR-020), each with the range its descriptor
-      declared and the version that satisfied it. Absent means the pin was written without them; the
-      service answers them once it builds the activation reads (the activation set is reserved, #125).
-    x-source:
-      path: contracts/offering/schemas/ActivationConfig.schema.json
-      symbol: '#/$defs/PackPin/properties/dependsOn'
