@@ -88,7 +88,28 @@ public enum RefusalCode {
      * kind, artifact or mission type (ADR-0020 D9); the refusal lists each refused part. Answered as 422. Reserved
      * (#125).
      */
-    ACTIVATION_INVALID("activation_invalid");
+    ACTIVATION_INVALID("activation_invalid"),
+
+    /** A dependency edge closes a cycle, or a pack depends on itself. */
+    PACK_DEPENDENCY_CYCLE("pack_dependency_cycle"),
+    /** A dependency names a pack id no configured pack declares. */
+    PACK_DEPENDENCY_UNKNOWN("pack_dependency_unknown"),
+    /** The held version fits no declared range for that pack. */
+    PACK_DEPENDENCY_OUT_OF_RANGE("pack_dependency_out_of_range"),
+    /** A {@code parent_pack} names an id no configured pack declares. */
+    PACK_PARENT_UNRESOLVED("pack_parent_unresolved"),
+    /** A pack depends across a level boundary it may not cross. */
+    PACK_LEVEL_VIOLATION("pack_level_violation"),
+    /** Two packs in a compose declare the same name. */
+    PACK_NAME_CONFLICT("pack_name_conflict"),
+    /** Two configured packs declare the same {@code pack_id}. */
+    PACK_DUPLICATE_ID("pack_duplicate_id"),
+    /** Two sibling packs refine one artifact and no distribution pack declares an {@code overrides} edge. */
+    PACK_SIBLING_REFINEMENT_CONFLICT("pack_sibling_refinement_conflict"),
+    /** A reference that resolves only in another pack is written bare rather than pack-qualified. */
+    PACK_REFERENCE_UNQUALIFIED("pack_reference_unqualified"),
+    /** A pack-qualified reference names a pack outside the compose's closure. */
+    PACK_REFERENCE_PACK_MISSING("pack_reference_pack_missing");
 
     private final String token;
 
