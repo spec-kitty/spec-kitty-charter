@@ -33,15 +33,14 @@ import org.springframework.stereotype.Service;
  * <strong>never</strong> throws for an unresolvable kind: emptiness is the normal answer for the 44% of real edges that
  * target currently-unwired kinds.
  *
- * <p>A {@link Urn} names only a {@code kind} and an {@code id}; a pack's DRG is walked within one pack, so the pack is
- * bound once — {@link #forPack(PackIdentifier)} yields the pack-scoped {@link ComponentResolver} the application-layer
- * walk driver consumes, exactly as the slice tests bind their resolver to the pack under walk. This service is
- * component-scanned; the composition root needs no {@code @Bean}.
+ * <p>A {@link Urn} is bare, naming only a {@code kind} and an {@code id}, so a pack is bound once —
+ * {@link #forPack(PackIdentifier)} yields the pack-scoped {@link ComponentResolver} the application-layer walk driver
+ * consumes. This service is component-scanned; the composition root needs no {@code @Bean}.
  *
- * <p>Besides the in-pack URNs, it resolves a reference as an artifact writes it — bare or pack-qualified — against the
- * compose closure the offering already resolved ({@link #resolveReference(String, PackIdentifier)}). The two graphs
- * stay unmerged (research): the pack composition is consumed read-only through {@link OfferingReadService}, and the
- * component resolution still goes through the per-kind read services alone.
+ * <p>Besides the in-pack URNs, it resolves a reference as an artifact writes it — bare or pack-qualified — against a
+ * compose closure the caller resolved once for its read ({@link #over(List)}). The two graphs stay unmerged
+ * (research): the pack composition is handed in read-only, and the component resolution still goes through the
+ * per-kind read services alone.
  */
 @Service
 public final class CompositeComponentResolver {
@@ -51,17 +50,15 @@ public final class CompositeComponentResolver {
     private final ParadigmReadService paradigms;
     private final ToolguideReadService toolguides;
     private final TacticReadService tactics;
-    private final OfferingReadService offerings;
 
     /**
-     * A resolver over the injected per-kind read services and the offering that owns the compose closure.
+     * A resolver over the injected per-kind read services.
      *
      * @param directives the directive read path
      * @param styleguides the styleguide read path
      * @param paradigms the paradigm read path
      * @param toolguides the toolguide read path
      * @param tactics the tactic read path
-     * @param offerings the offering read whose resolved closure a pack-qualified reference is resolved against
      */
     @Autowired
     public CompositeComponentResolver(
@@ -69,14 +66,12 @@ public final class CompositeComponentResolver {
             StyleguideReadService styleguides,
             ParadigmReadService paradigms,
             ToolguideReadService toolguides,
-            TacticReadService tactics,
-            OfferingReadService offerings) {
+            TacticReadService tactics) {
         this.directives = Objects.requireNonNull(directives, "directives");
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
         this.tactics = Objects.requireNonNull(tactics, "tactics");
-        this.offerings = Objects.requireNonNull(offerings, "offerings");
     }
 
     /**
@@ -184,18 +179,6 @@ public final class CompositeComponentResolver {
             }
             return Optional.empty();
         }
-    }
-
-    /**
-     * Resolves one reference against the compose the offering resolves now.
-     *
-     * @param reference the reference as the artifact writes it
-     * @param referringPack the pack whose artifact writes the reference
-     * @return the referenced component; empty when it resolves nowhere in the compose
-     * @see Composed#resolveReference(String, PackIdentifier)
-     */
-    public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
-        return over(offerings.compose().value()).resolveReference(reference, referringPack);
     }
 
     /**

@@ -109,13 +109,13 @@ class ArtifactReadServiceTest {
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
                 new ToolguideReadService(store, store, read, revisions),
+                new OfferingReadService(store, store, store, read),
                 new CompositeComponentResolver(
                         new DirectiveReadService(store, store, read, revisions),
                         new StyleguideReadService(store, store, read, revisions),
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read),
-                        new OfferingReadService(store, store, store, read)));
+                        new TacticReadService(store, store, read)));
     }
 
     private ArtifactReadService serviceWhoseInputsChange() {
@@ -464,42 +464,31 @@ class ArtifactReadServiceTest {
         assertThat(read.fingerprint()).isEqualTo(D1);
     }
 
+    /** The resolution of a reference is covered by CompositeComponentResolverTest; this is the read's own contract. */
     @Test
-    void aPackQualifiedReferenceToTheReferringPackItselfReadsItsOwnArtifact() {
-        ConsistentRead.Verified<ArtifactReadService.Item> read =
-                referenceFixture(() -> D1).referenced(PACK, "alpha::directive:OWN_1");
+    void aReferenceReadResolvesTheComposeOnceNotOncePerHop() {
+        AtomicInteger counted = new AtomicInteger();
+        ArtifactReadService counting = referenceFixture(() -> {
+            counted.incrementAndGet();
+            return D1;
+        });
 
-        assertThat(read.value().artifact().localId()).isEqualTo("OWN_1");
-        assertThat(read.value().artifact().packId()).isEqualTo(PACK);
+        counting.referenced(PACK, "bravo::directive:SHARED_1");
+
+        // The outer read digests twice, the kind's read that resolves the reference twice more, and the kind's read that
+        // serves it twice again; a compose verified on its own would add two more for every reference it resolves.
+        assertThat(counted).hasValue(6);
     }
 
     @Test
-    void aBareReferenceReadsTheArtifactOfTheReferringPack() {
-        ConsistentRead.Verified<ArtifactReadService.Item> read =
-                referenceFixture(() -> D1).referenced(PACK, "directive:OWN_1");
-
-        assertThat(read.value()).isInstanceOf(ArtifactReadService.Item.OfDirective.class);
-        assertThat(read.value().artifact().localId()).isEqualTo("OWN_1");
-        assertThat(read.value().artifact().packId()).isEqualTo(PACK);
-        assertThat(read.fingerprint()).isEqualTo(D1);
-    }
-
-    @Test
-    void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
-        assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, "directive:SHARED_1"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
-                    assertThat(refused.getMessage()).contains("bravo").contains("pack-qualified");
-                });
-    }
-
-    @Test
-    void aQualifiedReferenceOutsideTheClosureIsRefusedNamingTheMissingPack() {
-        assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, "charlie::directive:SHARED_1"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                    assertThat(refused.getMessage()).contains("charlie").contains("holds no pack");
-                });
+    void aReferenceOutsideTheGrammarIsARefusalAndNeverAFault() {
+        for (String malformed : List.of("::directive:SHARED_1", "Bad Pack::directive:SHARED_1", "a::b::directive:x")) {
+            assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, malformed))
+                    .as(malformed)
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refused -> assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
+        }
     }
 
     @Test

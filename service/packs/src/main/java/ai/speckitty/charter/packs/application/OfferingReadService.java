@@ -126,7 +126,7 @@ public final class OfferingReadService {
      * @return the entries
      */
     private List<OfferingEntry> entries() {
-        List<PackUnderResolution> closure = composeOf();
+        List<PackUnderResolution> closure = composed();
         Map<String, String> heldVersions = new HashMap<>();
         for (PackUnderResolution pack : closure) {
             heldVersions.put(pack.descriptor().packId(), pack.descriptor().packVersion());
@@ -175,10 +175,17 @@ public final class OfferingReadService {
      *     when the inputs changed while the compose was read
      */
     public ConsistentRead.Verified<List<PackUnderResolution>> compose() {
-        return read.read(STALE, this::composeOf);
+        return read.read(STALE, this::composed);
     }
 
-    private List<PackUnderResolution> composeOf() {
+    /**
+     * The compose, resolved now and not verified: for a read that already runs inside its own {@link ConsistentRead},
+     * so it resolves the compose once for itself and never nests a second verified read per reference or per hop.
+     *
+     * @return the compose's closure, dependencies first, each pack once
+     * @throws CharterRefusal as {@link #compose()} refuses
+     */
+    public List<PackUnderResolution> composed() {
         try {
             List<PackUnderResolution> closure = PackCompositionResolver.resolve(catalog.configured().stream()
                     .map(pack -> new PackUnderResolution(

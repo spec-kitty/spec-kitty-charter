@@ -114,8 +114,7 @@ class CompositeComponentResolverTest {
                     new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
                     new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
                     new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
-                    new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()),
-                    noOffering())
+                    new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()))
             .forPack(PACK);
 
     @Test
@@ -216,6 +215,17 @@ class CompositeComponentResolverTest {
     }
 
     @Test
+    void aBareReferenceReadsTheReferringPacksArtifactWhenAnotherPackHoldsTheSameIdAndTheQualifiedOneReadsTheOther() {
+        // FR-014: alpha writes directive:SHARE bare, and bravo holds one too. Alpha's own shadows it, with no refusal.
+        CompositeComponentResolver.Composed shadowing = shadowingResolver();
+
+        assertThat(shadowing.resolveReference("directive:SHARE", PACK))
+                .hasValueSatisfying(found -> assertThat(found.packId()).isEqualTo(PACK));
+        assertThat(shadowing.resolveReference("bravo::directive:SHARE", PACK))
+                .hasValueSatisfying(found -> assertThat(found.packId()).isEqualTo(PACK_B));
+    }
+
+    @Test
     void aBareReferenceThatResolvesNowhereKeepsTheEmptyAnswerOfTheWalk() {
         assertThat(twoPackResolver().resolveReference("directive:NOWHERE", PACK))
                 .isEmpty();
@@ -233,62 +243,64 @@ class CompositeComponentResolverTest {
         return new ConsistentRead(() -> "sha256:" + "a".repeat(64));
     }
 
-    /** An offering over no packs: the in-pack resolution tests never consult the closure. */
-    private static OfferingReadService noOffering() {
-        return new OfferingReadService(
-                List::of,
-                new PackDescriptorRepository() {
-                    @Override
-                    public PackDescriptor get(PackIdentifier pack) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public Optional<PackDescriptor> find(PackIdentifier pack) {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public void save(PackIdentifier pack, PackDescriptor descriptor) {
-                        throw new UnsupportedOperationException();
-                    }
-                },
-                pack -> List.of(),
-                fixedDigest());
-    }
-
     /**
      * The shared two-pack fixture of the grammar (SC-004): alpha ({@code pack-a}, directive {@code OWN_1}) and bravo
      * ({@code pack-b}, directive {@code SHARED_1}) in one compose closure, resolved through the offering.
      */
-    private CompositeComponentResolver twoPackResolver() {
+    private CompositeComponentResolver.Composed twoPackResolver() {
         DirectivesByPack directives = new DirectivesByPack();
         directives.held.put(PACK, directiveIn(PACK, "OWN_1"));
         directives.held.put(PACK_B, directiveIn(PACK_B, "SHARED_1"));
-        return new CompositeComponentResolver(
-                new DirectiveReadService(new UnusedPacks(), directives, fixedDigest(), NO_REVISION),
-                new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
-                new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
-                new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
-                new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()),
-                new OfferingReadService(
-                        () -> List.of(
-                                new ConfiguredPack(PACK, PackLevel.ORG), new ConfiguredPack(PACK_B, PackLevel.ORG)),
-                        new NamedDescriptors(),
-                        new PackArtifactRepository() {
-                            @Override
-                            public List<String> changedArtifacts(PackIdentifier pack) {
-                                return List.of();
-                            }
+        return composed(
+                directives,
+                Map.of(
+                        PACK, List.of("directive:OWN_1"),
+                        PACK_B, List.of("directive:SHARED_1", "procedure:release")),
+                PackLevel.ORG);
+    }
 
-                            @Override
-                            public List<String> definedArtifacts(PackIdentifier pack) {
-                                return pack.equals(PACK_B)
-                                        ? List.of("directive:SHARED_1", "procedure:release")
-                                        : List.of("directive:OWN_1");
-                            }
-                        },
-                        fixedDigest()));
+    /**
+     * The FR-014 fixture: alpha (project) and bravo (org) both hold {@code directive:SHARE}, so alpha's shadows
+     * bravo's, as a project artifact shadows an org one.
+     */
+    private CompositeComponentResolver.Composed shadowingResolver() {
+        DirectivesByPack directives = new DirectivesByPack();
+        directives.held.put(PACK, directiveIn(PACK, "SHARE"));
+        directives.held.put(PACK_B, directiveIn(PACK_B, "SHARE"));
+        return composed(
+                directives,
+                Map.of(PACK, List.of("directive:SHARE"), PACK_B, List.of("directive:SHARE")),
+                PackLevel.PROJECT);
+    }
+
+    /** The compose over alpha at {@code alphaLevel} and bravo at org, resolved once, as a read resolves it. */
+    private CompositeComponentResolver.Composed composed(
+            DirectivesByPack directives, Map<PackIdentifier, List<String>> held, PackLevel alphaLevel) {
+        return new CompositeComponentResolver(
+                        new DirectiveReadService(new UnusedPacks(), directives, fixedDigest(), NO_REVISION),
+                        new StyleguideReadService(
+                                new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
+                        new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
+                        new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
+                        new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()))
+                .over(new OfferingReadService(
+                                () -> List.of(
+                                        new ConfiguredPack(PACK, alphaLevel),
+                                        new ConfiguredPack(PACK_B, PackLevel.ORG)),
+                                new NamedDescriptors(),
+                                new PackArtifactRepository() {
+                                    @Override
+                                    public List<String> changedArtifacts(PackIdentifier pack) {
+                                        return List.of();
+                                    }
+
+                                    @Override
+                                    public List<String> definedArtifacts(PackIdentifier pack) {
+                                        return held.get(pack);
+                                    }
+                                },
+                                fixedDigest())
+                        .composed());
     }
 
     private static Directive directiveIn(PackIdentifier pack, String id) {
