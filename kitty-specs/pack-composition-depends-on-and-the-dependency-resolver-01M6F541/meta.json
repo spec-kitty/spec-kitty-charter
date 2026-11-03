@@ -1,0 +1,30 @@
+{
+  "accept_commit": "0e5cf70155f4fc4ebc79830e6146938707725ae4",
+  "acceptance_history": [
+    {
+      "accept_commit": "0e5cf70155f4fc4ebc79830e6146938707725ae4",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-03T19:04:51.867054+00:00",
+      "accepted_by": "claude-orchestrator",
+      "accepted_from_commit": "df1e8e402a0fa42ab5b8f133219c35071928bf19"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-03T19:04:51.867054+00:00",
+  "accepted_by": "claude-orchestrator",
+  "accepted_from_commit": "df1e8e402a0fa42ab5b8f133219c35071928bf19",
+  "created_at": "2026-11-02T22:12:18.558348+00:00",
+  "flattened": false,
+  "friendly_name": "Pack composition: depends_on and the dependency resolver",
+  "mid8": "01M6F541",
+  "mission_id": "01M6F541ZKWC9Z8JHND13QTDNS",
+  "mission_number": null,
+  "mission_slug": "pack-composition-depends-on-and-the-dependency-resolver-01M6F541",
+  "mission_type": "software-dev",
+  "purpose_context": "The named-packs split (ADR-0048) and the 2026-11-02 rulings (ADR-0053) define packs that compose through versioned depends_on edges, but the descriptor cannot express a dependency yet and nothing resolves one. This mission adds the schema, the resolver and the pack-qualified reference grammar, keeping today's single built-in tree loading unchanged.",
+  "purpose_tldr": "A pack descriptor that declares its dependencies, a resolver that orders and refuses bad graphs, and cross-pack references that name the pack they rely on.",
+  "slug": "pack-composition-depends-on-and-the-dependency-resolver-01M6F541",
+  "status_phase": "1",
+  "target_branch": "issue-145-pack-composition",
+  "topology": "single_branch"
+}

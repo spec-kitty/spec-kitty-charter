@@ -1,0 +1,239 @@
+{
+  "mission_slug": "pack-composition-depends-on-and-the-dependency-resolver-01M6F541",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified at d1004c32). Code: contracts/packs/schemas/pack-descriptor.schema.json depends_on closed item {pack_id(ULID), range}; PackDescriptorReader dependencies; kernel PackDependency. Tests green on forced re-run 2026-11-03 (:packs:test 2716/0 fail): PackDescriptorReaderTest#declaredDependenciesAreReportedInFileOrder (:64); composition.feature 'A shared dependency appears once' asserts dependsOn per pack.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T18:59:56.865299+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (remediated 6168bb2d). Read-time check: PackPolicy.descriptorRules validates every depends_on[].range with Pep440.isValidSpecifierSet -> DEPENDENCY_RANGE_INVALID (BLOCKING, maps to pack_unreadable), naming the declaring pack and depends_on[i].range; resolver fallback names the declaring pack. Satisfaction: Pep440Range. Tests green: PackPolicyRulesTest#aMalformedDependsOnRangeIsBlockingAndNamesTheDeclaringPackAndPlace (:118, 3 malformed ranges, valid sibling range raises no finding = negative control); PackCompositionResolverTest#aMalformedRangeIsRefusedNamingTheDeclaringPackNotTheTarget (:133); PackFindingTest. Concern: no HTTP scenario for the malformed-range refusal.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T18:59:58.692914+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (remediated b67ba037). pack-descriptor.schema.json $defs/Ulid ^[0-9A-HJKMNP-TV-Z]{26}$ on pack_id, parent_pack, depends_on[].pack_id, overrides[].member; name constrained to ^[a-z0-9][a-z0-9_-]*$. Tests green: PackDescriptorReaderTest#anIdentityThatBreaksItsGrammarMakesThePackUnreadable (:319; short, lower-case, I/L/O/U, parent_pack, 4 bad names), #aNestedPackIdThatIsNoUlidMakesThePackUnreadable (:334, depends_on and overrides), VALID fixture with a ULID reads (positive control); PackSchemasTest name-grammar parity. All fixtures and real packs (packs/internal/pack.yaml) moved to ULIDs.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:00.431231+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified at d1004c32). PackCompositionResolver topologicalOrder. Tests green: PackCompositionResolverTest#aDependencyComesBeforeThePackThatDeclaresIt (:76); composition.feature 'A chain with no cycle resolves, the dependency first' and the diamond scenario (full body); ResolverDeterminismTest.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:02.192732+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). PackCompositionResolver indexById + topological order emits each pack once. Tests green: PackCompositionResolverTest#aSharedDependencyAppearsOnce (:86); composition.feature diamond scenario asserts apex once in the full response body.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:03.958805+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). Cycle/self-dependency detection -> pack_dependency_cycle. Tests green: composition.feature 'A dependency cycle refuses the compose naming a pack on it' (422, exact detail) with control 'A chain with no cycle resolves'; PackCompositionResolverTest#aCycleIsRefusedAndNamesAPackInIt (:98).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:05.794020+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). UNKNOWN_DEPENDENCY -> pack_dependency_unknown naming referrer and missing id. Tests green: composition.feature 'A dependency no configured pack declares refuses the compose' + control 'A declared dependency a configured pack declares resolves'; PackCompositionResolverTest#anUnknownDependencyIsRefusedAndNamesTheMissingId (:121).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:07.566164+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified; US1 scenario 2 as amended by ruling D6). OUT_OF_RANGE naming pack, target, range, held version; refuseDisjointRanges runs before the held-version check (4c4a4b33). Tests green: composition.feature 'An exact range the held version misses refuses as out-of-range, not unknown' + control; PackCompositionResolverTest#aVersionOutsideEveryRangeIsRefusedWithBothVersions (:182), #rangesNoVersionSatisfiesTogetherAreRefusedNamingBothPacksBeforeTheHeldVersionIsChecked (:157, 3 refusals incl. touching <2/>=2, 2 overlapping controls). Concern: the range-intersection refusal has no HTTP scenario.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:09.323704+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). PARENT_UNRESOLVED -> pack_parent_unresolved, no degrade to root. Tests green: composition.feature 'A parent_pack no configured pack declares refuses the compose' + control; PackCompositionResolverTest#anUnresolvableParentIsRefusedNotDegraded (:218).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:11.089331+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). rank(dependency) > rank(own) -> pack_level_violation. Tests green: composition.feature 'An org pack depending on a project pack refuses the compose' + control 'A project pack depending on an org pack resolves'; PackCompositionResolverTest level cases.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:12.836416+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS against the amended text (operator ruling D1, 2026-11-03, recorded in spec.md). Deferred part (roots from the activation set): issue #360 OPEN; scenario 'The compose is the closure of the activated packs, not every available pack' authored at contracts/charter/scenarios/composition.feature:614, tagged @WIP and excluded by CharterContractSuite @ExcludeTags(WIP). In-scope part proven: OfferingReadService.composeOf resolves every configured pack as a root of the transitive depends_on closure; a depended-on pack that is not configured is refused (pack_dependency_unknown); ids and names unique inside it. Tests green: composition.feature diamond/chain scenarios, 'Two configured packs declaring one pack_id refuse the compose' + control, 'Two packs declaring one name refuse the compose' + control. Concern: while every configured pack is a root, the in-scope half is close to definitional; the discriminating case is the @WIP scenario.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:14.587862+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS against the amended text (2026-11-03 ruling recorded in spec.md: 'distribution pack only' deferred to #358, OPEN; US2 scenario 7 'member's version in force' deferred to #357, OPEN). In scope: refuseSiblingContests refuses two siblings changing one artifact unless a pack of the compose declares an overrides edge naming a contestant. Tests green: composition.feature 'Two siblings changing one artifact, unsettled, refuse the compose' (409 pack_sibling_refinement_conflict, exact detail) + control 'An overrides edge settling the contest serves the compose' (200, three packs); PackCompositionResolverTest#twoSiblingsChangingOneArtifactAreRefusedNamingBothPacksAndTheArtifact (:238).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:16.353885+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (remediated d0441d44, 6b0dc0af, d1004c32). <pack-name>:: accepted in graph-edge endpoints (graph-shard/org-fragment schemas) and every typed-reference id (tactic, directive, paradigm, procedure, mission-type schemas); Urn carries the qualifier; ArtifactEdges.target mints a qualified relationship target; CompositeComponentResolver.forPack resolves a qualified neighbour in the named pack; OfferingReadService.composeOf checks references on every compose. Tests green: composition.feature 'A pack-qualified reference inside the closure resolves' and 'A pack-qualified typed reference inside the closure resolves' (200, beta before alpha); ArtifactRelationshipsTest#aQualifiedTypedReferenceMintsAQualifiedTarget + malformed-qualifier refusal; UrnTest; ArtifactReadServiceTest#aPackQualifiedReferenceReadsTheArtifactOfTheNamedPack (:456); CompositeComponentResolverTest (:162). Concern: the HTTP scenarios assert the offering is served; no HTTP scenario reads the referenced artifact through the qualified reference (proven at service level only).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:18.116717+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). Bare in-pack references: OfferingReadService.referencesOf skips a bare reference the pack itself holds; CompositeComponentResolver resolves bare in the referring pack first. Tests green: PackCompositionResolverTest#aBareReferenceThatResolvesInTheReferringPackIsAccepted (:343); ArtifactReadServiceTest#aBareReferenceReadsTheArtifactOfTheReferringPack (:477); CompositeComponentResolverTest#aBareReferenceResolvesOnlyInsideTheReferringPack (:181); the single built-in tree (all bare refs) still serves (SingleTreeCompatRatchetTest, composition.feature 'The single built-in tree still loads').",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:19.872227+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (remediated 6b0dc0af, d1004c32; scenarios no longer @WIP). OfferingReadService.composeOf -> referencesOf (graph edge targets + typed references of tactics/steps, directives, paradigms, procedures, mission types/steps) -> PackCompositionResolver.checkReferences REFERENCE_UNQUALIFIED -> pack_reference_unqualified naming the holding pack. Tests green over HTTP: composition.feature 'A bare cross-pack reference is refused naming the holding pack' (graph edge) and 'A bare cross-pack reference in a tactic's typed references is refused naming the holding pack' (422, exact detail), with the qualified-inside-closure scenarios as negative controls on the same fixture; PackCompositionResolverTest (:354); ArtifactReadServiceTest (:488). Concern: DomainRepositoryService.holds covers only directive, styleguide, paradigm, toolguide, tactic (the kinds the read path resolves), so a bare reference to another kind held only by another pack is not refused.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:21.640592+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). indexByName -> pack_name_conflict. Tests green: composition.feature 'Two packs declaring one name refuse the compose' + control 'Two packs with distinct names resolve'; PackCompositionResolverTest#twoPacksWithOneNameAreRefused (:195).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:23.454645+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (remediated 6b0dc0af; scoped to the referring pack's own depends_on closure per the 2026-11-03 ruling). checkReferences.closureOf(referringPackId) -> REFERENCE_PACK_MISSING -> pack_reference_pack_missing naming the missing pack, also for a pack absent from the compose. Tests green: composition.feature 'A pack-qualified reference outside the referring pack's closure is refused naming the missing pack' (422, exact detail: beta is in the compose but not in alpha's closure) with control 'A pack-qualified reference inside the closure resolves'; PackCompositionResolverTest#aQualifiedReferenceToAPackOnlyAnotherPackDependsOnIsRefusedNamingThatPack (:324), #aQualifiedReferenceToAPackOutsideTheComposeIsRefusedNamingTheMissingPack (:370).",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:25.349264+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). Single built-in tree loads; packs/internal/pack.yaml has a ULID pack_id and a grammar-conforming name. Tests green: SingleTreeCompatRatchetTest (100-read golden values; golden entry now carries the additive descriptorPackId only); composition.feature 'A descriptor that declares no depends_on resolves exactly as today' and 'The single built-in tree still loads'.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:27.182501+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS (re-verified). RefusalCode (10 codes), CharterRefusalCode.yaml, RefusalHandler status map, OfferingReadService.codeOf. Tests green: composition.feature drives all ten codes over HTTP, each with a negative control (24/24 non-WIP scenarios); ReservedRefusalCodesTest, WireTokenParityTest, RefusalHandlerTest; contracts :contracts:test 251/0 fail.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:29.046945+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PASS against the amended text (ruling D5, recorded in spec.md; PackPin half deferred to #359, OPEN). Offering: OfferingReadService.dependenciesOf + OfferingController; OfferingPack.yaml requires dependsOn and descriptorPackId (0bb4f343). Tests green: composition.feature diamond scenario asserts each pack's packId, descriptorPackId and dependsOn [{packId, range, version}] in the full body; offering.feature full bodies with descriptorPackId; OfferingReadServiceTest diamond edges.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:00:30.894913+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Verify FR-021 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "PASS by inspection at 220e1379; check_docs.py all green (8 checks ok). logical-model.md:167-202 describes depends_on, the compose, the ten refusal codes, the range-intersection refusal, the ULID/name grammar, and qualified references checked against the referring pack's own closure. :181-183 now says any pack may settle a sibling contest until #358, and settling only clears the refusal until #357, matching PackCompositionResolver.refuseSiblingContests (no merge applied). descriptors.md:85 carries the same caveats; descriptors.md:92-93 scopes qualified references to the referring pack's closure, matching checkReferences.closureOf. resolution-model.md:74-78 consistent. Earlier wording concerns resolved. Remaining: none found.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:03:43.728329+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-022",
+      "description": "Verify FR-022 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "PASS by inspection at 220e1379; check_docs.py terms ok. site/.contextive/definitions.yaml and the regenerated docs/glossary/charter/README.md (stamp 2026-11-03T19:02:16Z) define Closure, Compose, Dependency Edge and Qualified reference with identical text. Closure and Qualified reference now scope the refusal to the referring pack's own depends_on closure (matches checkReferences.closureOf and the FR-017 BDD scenario). Compose says pack ids and names are unique without exception (matches indexById/indexByName). Remaining concern: Compose also says an artifact id is unique across the compose except where overrides replaces it. That is ruled design (ADR-0048 d6, ADR-0053 d6) and is not enforced: the resolver refuses only sibling packs at one level that refine the same artifact, and the bare-reference check takes the first other pack that holds an id, so duplicate artifact ids across packs are not refused.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:03:45.565508+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-023",
+      "description": "Verify FR-023 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "PASS by inspection at 220e1379; check_docs.py changelog ok. docs/changelog/2026-11-03-pack-composition-depends-on-and-resolver.md now leads with the breaking pack.yaml change (ULIDs on pack_id, parent_pack, depends_on[].pack_id and overrides[].member; name grammar; pack_unreadable; matches the b67ba037 schema). It also records the read-time malformed-range refusal, the range-intersection refusal, the qualifier on graph edges and typed references, referrer-closure scoping and descriptorPackId. A Not-yet section names #357, #358, #359 and #360 (all OPEN) and #363 / open-packs#113 (OPEN). The contract change record adds the descriptor tightening. docs/plans/pack-ecosystem-work-breakdown.md items 2 and 3 are marked done and accurate. Minor: the depends_on bullet's '(pack_level becomes required)' is required only when depends_on is declared, as the logical model states. I did not exercise the internal+built-in refusal claim with a test.",
+      "pass_fail": "pass",
+      "verified_by": "qa-reporter-rhea",
+      "verified_at": "2026-11-03T19:03:47.394988+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

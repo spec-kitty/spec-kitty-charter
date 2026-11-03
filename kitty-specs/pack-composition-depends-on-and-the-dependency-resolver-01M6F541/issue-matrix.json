@@ -1,0 +1,41 @@
+{
+  "rows": {
+    "#142": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#145": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#146": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
