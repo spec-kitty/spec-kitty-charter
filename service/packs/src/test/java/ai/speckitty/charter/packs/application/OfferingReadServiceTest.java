@@ -137,8 +137,6 @@ class OfferingReadServiceTest {
         assertThat(service(List.of()).offering().value()).isEmpty();
     }
 
-    // ---- the resolved dependency facts (FR-020) -------------------------------------------------------
-
     @Test
     void inputsThatChangeWhileTheOfferingIsReadAreStale() {
         AtomicInteger count = new AtomicInteger();

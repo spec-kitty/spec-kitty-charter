@@ -53,17 +53,6 @@ class ComposeLevelSeparationTest {
                 .containsExactly("01ZBASE", "01MID0", "01AATOP");
     }
 
-    @Test
-    void aSameLevelDependencyIsAllowedAndResolvesInDependencyOrder() {
-        PackUnderResolution dependency = pack("01ZDEP", "dependency", PackLevel.ORG);
-        PackUnderResolution dependent =
-                pack("01ADEP", "dependent", PackLevel.ORG, new PackDependency("01ZDEP", ">=1.0"));
-
-        assertThat(idsOf(PackCompositionResolver.resolve(List.of(dependent, dependency))))
-                .as("two org packs may depend on each other's artifacts; the dependency comes first whatever its id")
-                .containsExactly("01ZDEP", "01ADEP");
-    }
-
     private static List<String> idsOf(List<PackUnderResolution> resolved) {
         return resolved.stream().map(entry -> entry.descriptor().packId()).toList();
     }

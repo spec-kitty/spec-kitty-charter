@@ -348,9 +348,7 @@ public final class ArtifactReadService {
      * @param id the referring artifact's id
      * @return the references and the verified fingerprint
      * @throws CharterRefusal as {@link #item(PackIdentifier, String, String)} refuses for the pack, the kind and the
-     *     artifact; with a composition code as the offering refuses a compose the resolver cannot serve; with
-     *     {@link RefusalCode#PACK_UNREADABLE} when the artifact writes a reference outside the grammar, which the
-     *     schemas refuse on read
+     *     artifact; with a composition code as the offering refuses a compose the resolver cannot serve
      */
     public ConsistentRead.Verified<List<Reference>> references(PackIdentifier pack, String kindToken, String id) {
         Objects.requireNonNull(pack, "pack");
@@ -380,16 +378,12 @@ public final class ArtifactReadService {
 
     private static List<Reference> resolved(
             CompositeComponentResolver.Composed composed, PackIdentifier pack, CharterArtifact referrer) {
-        List<PackQualifiedReference> written;
+        // The schemas refuse a malformed reference when a pack is read, so the grammar's parser cannot refuse one here.
+        List<PackQualifiedReference> written = referrer.writtenReferences();
         Map<String, RelationType> relations = new HashMap<>();
-        try {
-            written = referrer.writtenReferences();
-            referrer.relationships()
-                    .forEach(relationship ->
-                            relations.putIfAbsent(relationship.toReference().toString(), relationship.type()));
-        } catch (IllegalArgumentException malformed) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, String.valueOf(malformed.getMessage()), malformed);
-        }
+        referrer.relationships()
+                .forEach(relationship ->
+                        relations.putIfAbsent(relationship.toReference().toString(), relationship.type()));
         List<Reference> references = new ArrayList<>();
         for (PackQualifiedReference reference : written) {
             reference
