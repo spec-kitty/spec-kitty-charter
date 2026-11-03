@@ -328,7 +328,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "root"
 
   Scenario: An org pack depending on a project pack refuses the compose
-    A pack may depend only on its own level or a lower one (ADR-0048 decision 6), so an org pack
+    A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048
+    decision 7), so an org pack
     leaning on a project pack is refused, naming both packs and both levels. A same-level edge is
     allowed (spec.md User Story 2 scenario 5 as corrected in 33cbb7d0, data-model.md invariant 3 and
     the resolver agree), and the same-level case is proven by the cycle and diamond scenarios above.
@@ -354,12 +355,12 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 422
     And the problem code is "pack_level_violation"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R at org depends on 01M4P01D5TWB5FKZGNNQG3943W at project; a pack may depend only on its own level or a lower one"
+    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R at org depends on 01M4P01D5TWB5FKZGNNQG3943W at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A project pack depending on an org pack resolves
     The negative control of the level-violation refusal: the same two packs with the dependency
-    pointing downward, project onto org. The org pack is answered first.
+    pointing from the project pack onto the org pack, one level nearer built-in. The org pack is answered first.
     Given the org pack "house" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -383,6 +384,32 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 200
     And the field at "/packs/0/packId" is "house"
     And the field at "/packs/1/packId" is "team"
+
+  Scenario: An org pack naming a project pack as its parent_pack refuses the compose
+    The parent edge follows the same level rule as depends_on (ADR-0048 decision 7): a pack may take
+    a parent only at its own level or one nearer built-in. The negative control is the scenario above
+    that resolves an org child under an org parent.
+    Given the org pack "child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943W
+      name: child-pack
+      pack_level: org
+      """
+    And the project pack "team" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943W
+      pack_version: 1.0.0
+      parent_pack: null
+      name: team-pack
+      pack_level: project
+      """
+    When I GET "/offering"
+    Then the response status is 422
+    And the problem code is "pack_level_violation"
+    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943S at org names as parent_pack 01M4P01D5TWB5FKZGNNQG3943W at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
+    And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: Two packs declaring one name refuse the compose
     A name is unique inside a compose (data-model invariant 2), so a pack-qualified reference is

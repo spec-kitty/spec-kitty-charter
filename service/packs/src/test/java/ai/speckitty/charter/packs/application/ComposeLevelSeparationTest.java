@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 /**
  * One compose is one closure rooted at one level (FR-011), with dependencies before dependents (FR-004) and a shared
  * dependency loaded once (FR-005) — SC-001's five-pack diamond. Composition stays separate from the layer merge
- * across levels: a pack may depend only on its own level or a lower one, an upward edge is refused with
+ * across levels: a pack may take a dependency only at its own level or one nearer built-in, a further edge is refused with
  * {@code pack_level_violation}, and packs at different levels changing one artifact compose as a layer merge, not a
  * sibling contest.
  */
