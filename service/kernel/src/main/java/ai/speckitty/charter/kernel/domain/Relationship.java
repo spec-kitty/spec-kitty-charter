@@ -19,13 +19,15 @@ import java.util.Optional;
 public final class Relationship {
 
     private final Urn from;
+    private final Optional<String> fromPack;
     private final Urn to;
+    private final Optional<String> toPack;
     private final RelationType type;
     private final Optional<String> when;
     private final Optional<String> rationale;
 
     /**
-     * Creates a relationship.
+     * Creates a relationship between two bare components.
      *
      * @param from the component the relationship is authored from
      * @param to the component the relationship is authored to
@@ -36,14 +38,50 @@ public final class Relationship {
      *     {@code to} (a self-loop)
      */
     public Relationship(Urn from, Urn to, RelationType type, Optional<String> when, Optional<String> rationale) {
+        this(from, Optional.empty(), to, Optional.empty(), type, when, rationale);
+    }
+
+    /**
+     * Creates a relationship whose endpoints may be written pack-qualified. The URNs stay bare and decide identity; a
+     * qualifier is the pack the writer relies on for that endpoint (ADR-0053 decision 7), carried beside it.
+     *
+     * @param from the component the relationship is authored from
+     * @param fromPack the pack the source reference names; empty for a bare reference
+     * @param to the component the relationship is authored to
+     * @param toPack the pack the target reference names; empty for a bare reference
+     * @param type what the relationship means
+     * @param when the authored edge condition that must round-trip; empty when absent, never {@code null}
+     * @param rationale the authored reason; empty when absent, never {@code null}
+     * @throws IllegalArgumentException when any argument is {@code null}, a qualifier breaks the pack-name grammar, or
+     *     {@code from} equals {@code to} as bare identities (a self-loop, qualified or not)
+     */
+    public Relationship(
+            Urn from,
+            Optional<String> fromPack,
+            Urn to,
+            Optional<String> toPack,
+            RelationType type,
+            Optional<String> when,
+            Optional<String> rationale) {
         this.from = requireArg(from, "from");
+        this.fromPack = requirePack(fromPack, "fromPack");
         this.to = requireArg(to, "to");
+        this.toPack = requirePack(toPack, "toPack");
         this.type = requireArg(type, "type");
         this.when = requireArg(when, "when");
         this.rationale = requireArg(rationale, "rationale");
         if (from.equals(to)) {
             throw new IllegalArgumentException("A relationship cannot be a self-loop: " + from);
         }
+    }
+
+    private static Optional<String> requirePack(Optional<String> pack, String name) {
+        if (requireArg(pack, name)
+                .filter(value -> !PackQualifiedReference.isPackName(value))
+                .isPresent()) {
+            throw new IllegalArgumentException(name + " follows the pack-name grammar: " + pack.get());
+        }
+        return pack;
     }
 
     private static <T> T requireArg(T value, String name) {
@@ -82,6 +120,42 @@ public final class Relationship {
      */
     public Urn to() {
         return to;
+    }
+
+    /**
+     * The pack the source reference names.
+     *
+     * @return the pack a qualified source relies on; empty for a bare source
+     */
+    public Optional<String> fromPack() {
+        return fromPack;
+    }
+
+    /**
+     * The pack the target reference names.
+     *
+     * @return the pack a qualified target relies on; empty for a bare target
+     */
+    public Optional<String> toPack() {
+        return toPack;
+    }
+
+    /**
+     * The source as the writer wrote it.
+     *
+     * @return the source reference, pack-qualified when the writer qualified it
+     */
+    public PackQualifiedReference fromReference() {
+        return new PackQualifiedReference(fromPack, from.toString());
+    }
+
+    /**
+     * The target as the writer wrote it.
+     *
+     * @return the target reference, pack-qualified when the writer qualified it
+     */
+    public PackQualifiedReference toReference() {
+        return new PackQualifiedReference(toPack, to.toString());
     }
 
     /**

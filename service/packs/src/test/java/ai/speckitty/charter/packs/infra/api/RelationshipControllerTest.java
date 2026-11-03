@@ -110,6 +110,26 @@ class RelationshipControllerTest {
         assertThat(store.edges).isEmpty();
     }
 
+    /** A pack is provenance, not identity: a target may be qualified and reads back qualified, a source may not be. */
+    @Test
+    void aQualifiedTargetRegistersAndReadsBackQualifiedWhileAQualifiedSourceIsRefused() throws Exception {
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("procedure:p", "ops::procedure:p")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.relationship.to").value("ops::procedure:p"));
+        assertThat(store.edges).hasSize(1);
+
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("directive:DIR_A", "ops::directive:DIR_A")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
+        assertThat(store.edges).hasSize(1);
+    }
+
     @Test
     void anEdgeFromAGuardIsRefusedAndRegistersNothing() throws Exception {
         // A guard or a lifecycle is not an authored edge endpoint until its contract set lands (#156).

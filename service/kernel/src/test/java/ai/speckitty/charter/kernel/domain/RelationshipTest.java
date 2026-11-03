@@ -52,6 +52,34 @@ class RelationshipTest {
     }
 
     @Test
+    void aQualifierIsProvenanceSoAQualifiedTargetIsTheSameIdentityAndALoopOntoTheOwnerIsASelfLoop() {
+        Relationship bare = Relationship.of(A, B, RelationType.REQUIRES);
+        Relationship qualified = new Relationship(
+                A,
+                Optional.empty(),
+                B,
+                Optional.of("writing"),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+
+        assertThat(qualified).isEqualTo(bare);
+        assertThat(qualified.toPack()).contains("writing");
+        assertThat(qualified.toReference()).hasToString("writing::tactic:b");
+        assertThat(bare.toReference()).hasToString("tactic:b");
+        assertThatThrownBy(() -> new Relationship(
+                        A,
+                        Optional.empty(),
+                        A,
+                        Optional.of("writing"),
+                        RelationType.REQUIRES,
+                        Optional.empty(),
+                        Optional.empty()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("self-loop");
+    }
+
+    @Test
     void aDirectedRelationshipStillReportsItsStoredOrientation() {
         Relationship forward = Relationship.of(A, B, RelationType.REQUIRES);
 

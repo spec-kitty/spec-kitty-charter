@@ -28,8 +28,8 @@ final class RelationshipMapper {
      */
     static DrgEdge toDso(Relationship relationship) {
         return new DrgEdge(
-                relationship.from().toString(),
-                relationship.to().toString(),
+                relationship.fromReference().toString(),
+                relationship.toReference().toString(),
                 relationship.type().token(),
                 Optional.empty(),
                 relationship.when(),

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.kernel.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,13 +14,13 @@ class UrnTest {
     }
 
     @Test
-    void aPackQualifiedUrnKeepsItsQualifierAndIsADifferentIdentityFromTheBareOne() {
-        Urn qualified = Urn.parse("writing-pack::directive:DIRECTIVE_010").orElseThrow();
-
-        assertThat(qualified.pack()).contains("writing-pack");
-        assertThat(qualified.id()).isEqualTo("DIRECTIVE_010");
-        assertThat(qualified).hasToString("writing-pack::directive:DIRECTIVE_010");
-        assertThat(qualified).isNotEqualTo(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_010"));
+    void aUrnIsBareAndAPackQualifiedReferenceIsNotOne() {
+        assertThat(Urn.parse("writing-pack::directive:DIRECTIVE_010")).isEmpty();
+        assertThatThrownBy(() -> new Urn(NodeKind.DIRECTIVE, "writing-pack::DIRECTIVE_010"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(PackQualifiedReference.parse("writing-pack::directive:DIRECTIVE_010")
+                        .asUrn())
+                .contains(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_010"));
     }
 
     @Test

@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
+import ai.speckitty.charter.packs.domain.ComposeResolver;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -80,94 +81,121 @@ public final class CompositeComponentResolver {
 
     /**
      * The {@link ComponentResolver} bound to one pack: every URN it resolves is read from {@code pack}'s read paths.
+     * A URN is bare, so the resolver knows nothing of a pack qualifier; a walk across packs asks the
+     * {@linkplain #over(List) compose} which pack a qualified reference names, then binds the resolver to that pack.
      *
      * @param pack the pack whose DRG is being walked
      * @return a resolver that dispatches a neighbour URN to its kind's read path within {@code pack}
      */
     public ComponentResolver forPack(PackIdentifier pack) {
         Objects.requireNonNull(pack, "pack");
-        return urn -> urn.pack().isPresent() ? resolveQualified(urn) : resolve(pack, urn);
+        return urn -> resolve(pack, urn);
     }
 
     /**
-     * A pack-qualified neighbour of a walk: resolved inside the pack the qualifier names in the compose, or empty when
-     * the compose holds no such pack. The reference checks of the compose refuse an unreachable pack when it resolves,
-     * so a walk only continues past it.
+     * The packs of one resolved compose, as a {@link ComposeResolver} a walk can cross packs with. The closure is the
+     * one the caller resolved for the read it serves, so a read resolves the compose once, never once per hop.
+     *
+     * @param closure the compose's closure, as the offering resolved it
+     * @return the compose view over those packs
      */
-    private Optional<CharterArtifact> resolveQualified(Urn qualified) {
-        String named = qualified.pack().orElseThrow();
-        return offerings.compose().value().stream()
-                .filter(pack -> pack.descriptor().name().equals(named))
-                .findFirst()
-                .flatMap(pack -> resolve(pack.configured().id(), new Urn(qualified.kind(), qualified.id())));
+    public Composed over(List<PackCompositionResolver.PackUnderResolution> closure) {
+        return new Composed(List.copyOf(Objects.requireNonNull(closure, "closure")));
+    }
+
+    /** The compose a read resolved once: the pack a name stands for, a resolver per pack, and references. */
+    public final class Composed implements ComposeResolver {
+
+        private final List<PackCompositionResolver.PackUnderResolution> closure;
+
+        private Composed(List<PackCompositionResolver.PackUnderResolution> closure) {
+            this.closure = closure;
+        }
+
+        @Override
+        public Optional<PackIdentifier> packNamed(String name) {
+            return closure.stream()
+                    .filter(pack -> pack.descriptor().name().equals(name))
+                    .map(pack -> pack.configured().id())
+                    .findFirst();
+        }
+
+        @Override
+        public ComponentResolver inPack(PackIdentifier pack) {
+            return forPack(pack);
+        }
+
+        /**
+         * Resolves one reference as an artifact writes it — bare ({@code <urn>}), a reference inside the referring
+         * pack, or pack-qualified ({@code <pack-name>::<urn>}), which names the pack it relies on (FR-013, FR-014,
+         * FR-015, FR-017). The reference resolves to {@code (holding pack, bare URN)}: a qualified reference names a
+         * pack of the compose, and its URN part resolves inside that pack through the same per-kind dispatch an in-pack
+         * neighbour takes — the referring pack's own artifacts are reachable both bare and qualified. A name the
+         * compose does not hold is refused {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming the missing pack,
+         * and never falls back to the referring pack. A bare reference resolves only inside the referring pack; when
+         * its id resolves only in another pack of the compose, that accidental coupling is refused
+         * {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding pack, so it cannot resolve by load order.
+         * A bare id that resolves nowhere keeps the empty answer an absent in-scope component always gets.
+         *
+         * <p>Both verdicts are the compose resolver's: {@link PackCompositionResolver#checkReferences} refuses, so the
+         * reference codes travel the same path the other compose refusals travel. A token no known kind holds resolves
+         * empty, exactly as a bare neighbour of an unwired kind does (research Decision 6).
+         *
+         * @param reference the reference as the artifact writes it, for example
+         *     {@code foundation::directive:DIRECTIVE_001}
+         * @param referringPack the pack whose artifact writes the reference; a bare reference resolves only inside it
+         * @return the referenced component when its kind is in scope and the pack it names holds it; empty when it
+         *     resolves nowhere in the compose
+         * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
+         * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names
+         *     a pack outside the compose, or with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference
+         *     resolves only in another pack of the compose
+         */
+        public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
+            Objects.requireNonNull(reference, "reference");
+            Objects.requireNonNull(referringPack, "referringPack");
+            PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+            String referringId = closure.stream()
+                    .filter(pack -> pack.configured().id().equals(referringPack))
+                    .map(pack -> pack.descriptor().packId())
+                    .findFirst()
+                    .orElse(referringPack.value());
+            if (parsed.qualified()) {
+                checked(closure, referringId, new PackCompositionResolver.ResolvedReference(parsed, referringId));
+                PackIdentifier holder =
+                        packNamed(parsed.packName().orElseThrow()).orElseThrow();
+                return resolve(holder, parsed.urn());
+            }
+            Optional<CharterArtifact> inPack = resolve(referringPack, parsed.urn());
+            if (inPack.isPresent()) {
+                return inPack;
+            }
+            for (PackCompositionResolver.PackUnderResolution pack : closure) {
+                if (pack.configured().id().equals(referringPack)) {
+                    continue;
+                }
+                if (resolve(pack.configured().id(), parsed.urn()).isPresent()) {
+                    checked(
+                            closure,
+                            referringId,
+                            new PackCompositionResolver.ResolvedReference(
+                                    parsed, pack.descriptor().packId()));
+                }
+            }
+            return Optional.empty();
+        }
     }
 
     /**
-     * Resolves one reference as an artifact writes it — bare ({@code <urn>}), a reference inside the referring pack,
-     * or pack-qualified ({@code <pack-name>::<urn>}), which names the pack it relies on (FR-013, FR-014, FR-015,
-     * FR-017). A qualified reference names a pack of the compose closure the offering already resolved, and its URN
-     * part resolves inside that pack through the same per-kind dispatch an in-pack neighbour takes — the referring
-     * pack's own artifacts are reachable both bare and qualified. A name the closure does not hold is refused
-     * {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming the missing pack, and never falls back to the referring
-     * pack. A bare reference resolves only inside the referring pack; when its id resolves only in another pack of the
-     * closure, that accidental coupling is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding
-     * pack, so it cannot resolve by load order. A bare id that resolves nowhere keeps the empty answer an absent
-     * in-scope component always gets.
+     * Resolves one reference against the compose the offering resolves now.
      *
-     * <p>Both verdicts are the compose resolver's: the resolution names the pack that holds the id and
-     * {@link PackCompositionResolver#checkReferences} refuses, so the reference codes travel the same path the other
-     * compose refusals travel. The URN part is opaque to the reference grammar (ADR-0053 open question 3, ruled; the
-     * mission writes no URN-parsing code): it reaches the existing {@link Urn} machinery verbatim and is never
-     * re-spelled, and a token no known kind holds resolves empty, exactly as a bare neighbour of an unwired kind does
-     * (research Decision 6).
-     *
-     * @param reference the reference as the artifact writes it, for example
-     *     {@code foundation::directive:DIRECTIVE_001}
-     * @param referringPack the pack whose artifact writes the reference; a bare reference resolves only inside it
-     * @return the referenced component when its kind is in scope and the pack it names holds it; empty when it
-     *     resolves nowhere in the closure
-     * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
-     * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names a
-     *     pack outside the closure, with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference resolves
-     *     only in another pack of the closure, or as the offering's read of the closure refuses
+     * @param reference the reference as the artifact writes it
+     * @param referringPack the pack whose artifact writes the reference
+     * @return the referenced component; empty when it resolves nowhere in the compose
+     * @see Composed#resolveReference(String, PackIdentifier)
      */
     public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
-        Objects.requireNonNull(reference, "reference");
-        Objects.requireNonNull(referringPack, "referringPack");
-        PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
-        List<PackCompositionResolver.PackUnderResolution> closure =
-                offerings.compose().value();
-        String referringId = closure.stream()
-                .filter(pack -> pack.configured().id().equals(referringPack))
-                .map(pack -> pack.descriptor().packId())
-                .findFirst()
-                .orElse(referringPack.value());
-        if (parsed.qualified()) {
-            String named = parsed.packName().orElseThrow();
-            Optional<PackCompositionResolver.PackUnderResolution> target = closure.stream()
-                    .filter(pack -> pack.descriptor().name().equals(named))
-                    .findFirst();
-            // The closure check of the referring pack decides whether the named pack may be relied on.
-            checked(closure, referringId, new PackCompositionResolver.ResolvedReference(parsed, referringId));
-            return resolve(target.orElseThrow().configured().id(), parsed.urn());
-        }
-        Optional<CharterArtifact> inPack = resolve(referringPack, parsed.urn());
-        if (inPack.isPresent()) {
-            return inPack;
-        }
-        for (PackCompositionResolver.PackUnderResolution pack : closure) {
-            if (pack.configured().id().equals(referringPack)) {
-                continue;
-            }
-            if (resolve(pack.configured().id(), parsed.urn()).isPresent()) {
-                checked(
-                        closure,
-                        referringId,
-                        new PackCompositionResolver.ResolvedReference(
-                                parsed, pack.descriptor().packId()));
-            }
-        }
-        return Optional.empty();
+        return over(offerings.compose().value()).resolveReference(reference, referringPack);
     }
 
     /**

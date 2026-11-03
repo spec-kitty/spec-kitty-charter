@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
+import ai.speckitty.charter.packs.domain.ComposeResolver;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -165,6 +166,63 @@ class GraphWalkTest {
         assertThat(resolver.requested).containsExactly(kept);
     }
 
+    @Test
+    @DisplayName(
+            "a walk across packs keys its visited set by (holding pack, bare urn) and keeps a bare reference in the"
+                    + " pack of the artifact that writes it")
+    void crossPackWalkTerminatesAndResolvesBareReferencesInTheHoldingPack() {
+        PackIdentifier packA = new PackIdentifier("pack-a");
+        PackIdentifier packB = new PackIdentifier("pack-b");
+        Urn x = urn("X");
+        Urn y = urn("Y");
+        Urn z = urn("Z");
+        // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again; absent::W is passed
+        // over
+        Node nodeX = new Node(packA, x, List.of(qualified(x, y, "b"), qualified(x, urn("W"), "absent")));
+        Node nodeY = new Node(packB, y, List.of(qualified(y, x, "a"), Relationship.of(y, z, RelationType.REQUIRES)));
+        Node nodeZ = new Node(packB, z, List.of(qualified(z, x, "a")));
+        // Z exists only in pack b, so a bare reference that stayed in pack a would never find it
+        Map<PackIdentifier, Map<Urn, CharterArtifact>> packs =
+                Map.of(packA, Map.of(x, nodeX), packB, Map.of(y, nodeY, z, nodeZ));
+        List<String> asked = new ArrayList<>();
+        ComposeResolver compose = new ComposeResolver() {
+            @Override
+            public Optional<PackIdentifier> packNamed(String name) {
+                return switch (name) {
+                    case "a" -> Optional.of(packA);
+                    case "b" -> Optional.of(packB);
+                    default -> Optional.empty();
+                };
+            }
+
+            @Override
+            public ComponentResolver inPack(PackIdentifier pack) {
+                return urn -> {
+                    asked.add(pack.value() + "/" + urn);
+                    return Optional.ofNullable(packs.get(pack).get(urn));
+                };
+            }
+        };
+        Recorder recorder = new Recorder();
+
+        new GraphWalk(compose).walk(nodeX, recorder);
+
+        assertThat(recorder.visited).containsExactly(x, y, z);
+        // X is the start and is never resolved again; each of Y and Z is resolved once, in its own pack
+        assertThat(asked).containsExactly("pack-b/directive:Y", "pack-b/directive:Z");
+    }
+
+    private static Relationship qualified(Urn from, Urn to, String pack) {
+        return new Relationship(
+                from,
+                Optional.empty(),
+                to,
+                Optional.of(pack),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+    }
+
     private static Urn urn(String id) {
         return new Urn(NodeKind.DIRECTIVE, id);
     }
@@ -225,7 +283,14 @@ class GraphWalkTest {
         private final Urn urn;
         private final List<Relationship> relationships;
 
+        private final PackIdentifier pack;
+
         Node(Urn urn, List<Relationship> relationships) {
+            this(new PackIdentifier("01TESTPACK"), urn, relationships);
+        }
+
+        Node(PackIdentifier pack, Urn urn, List<Relationship> relationships) {
+            this.pack = pack;
             this.urn = urn;
             this.relationships = List.copyOf(relationships);
         }
@@ -237,7 +302,7 @@ class GraphWalkTest {
 
         @Override
         public PackIdentifier packId() {
-            return new PackIdentifier("01TESTPACK");
+            return pack;
         }
 
         @Override

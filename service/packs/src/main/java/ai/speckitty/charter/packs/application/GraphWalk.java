@@ -4,9 +4,11 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.GraphWalker;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
+import ai.speckitty.charter.packs.domain.ComposeResolver;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,15 +25,41 @@ import java.util.Set;
  */
 public final class GraphWalk {
 
-    private final ComponentResolver resolver;
+    /** A component's place: the pack that holds it and its bare URN. The visited set is keyed by it. */
+    private record Held(PackIdentifier pack, Urn urn) {}
+
+    private final ComposeResolver resolvers;
 
     /**
-     * Creates a walk driver.
+     * Creates a walk driver over one pack's resolver. A pack-qualified neighbour names a pack this resolver cannot
+     * reach, so the walk passes over it, as it does an unwired kind.
      *
      * @param resolver the port that resolves a neighbour URN to its component on demand
      */
     public GraphWalk(ComponentResolver resolver) {
-        this.resolver = Objects.requireNonNull(resolver, "resolver");
+        Objects.requireNonNull(resolver, "resolver");
+        this.resolvers = new ComposeResolver() {
+            @Override
+            public Optional<PackIdentifier> packNamed(String name) {
+                return Optional.empty();
+            }
+
+            @Override
+            public ComponentResolver inPack(PackIdentifier pack) {
+                return resolver;
+            }
+        };
+    }
+
+    /**
+     * Creates a walk driver across the packs of one compose. A bare reference resolves in the pack that holds the
+     * artifact writing it, also after a qualified hop into another pack; a qualified reference resolves in the pack it
+     * names, and is passed over when the compose holds none.
+     *
+     * @param resolvers the compose, resolved once for the read the walk serves
+     */
+    public GraphWalk(ComposeResolver resolvers) {
+        this.resolvers = Objects.requireNonNull(resolvers, "resolvers");
     }
 
     /**
@@ -60,8 +88,8 @@ public final class GraphWalk {
      *
      * @return {@code true} to keep the overall walk going, {@code false} once a {@link Descent#STOP} has halted it
      */
-    private boolean visit(CharterArtifact component, GraphWalker visitor, Set<Urn> visited) {
-        visited.add(component.urn());
+    private boolean visit(CharterArtifact component, GraphWalker visitor, Set<Held> visited) {
+        visited.add(new Held(component.packId(), component.urn()));
         Descent nodeDescent = visitor.onNode(new DrgNode(component.urn(), Optional.of(component.label())));
         if (nodeDescent == Descent.STOP) {
             return false;
@@ -78,12 +106,18 @@ public final class GraphWalk {
                 continue;
             }
             // An effective-origin edge is either authored from this component or a bidirectional edge that names it
-            // as `to`; the neighbour is always the other endpoint.
-            Urn neighbour = relationship.from().equals(component.urn()) ? relationship.to() : relationship.from();
-            if (visited.contains(neighbour)) {
+            // as `to`; the neighbour is always the other endpoint. Its reference resolves to (holding pack, bare URN)
+            // before anything is compared: a qualified one names its pack, a bare one is in the pack of the component
+            // that writes it.
+            boolean forward = relationship.from().equals(component.urn());
+            Urn neighbour = forward ? relationship.to() : relationship.from();
+            Optional<String> qualifier = forward ? relationship.toPack() : relationship.fromPack();
+            Optional<PackIdentifier> holder =
+                    qualifier.isPresent() ? resolvers.packNamed(qualifier.get()) : Optional.of(component.packId());
+            if (holder.isEmpty() || visited.contains(new Held(holder.get(), neighbour))) {
                 continue;
             }
-            Optional<CharterArtifact> resolved = resolver.resolve(neighbour);
+            Optional<CharterArtifact> resolved = resolvers.inPack(holder.get()).resolve(neighbour);
             if (resolved.isEmpty()) {
                 continue;
             }

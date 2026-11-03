@@ -56,25 +56,28 @@ final class ArtifactEdges {
         List<Relationship> relationships = new ArrayList<>(typed.size() + bare.size());
         for (TypedRef ref : typed) {
             NodeKind kind = NodeKind.of(ArtifactKind.fromToken(ref.type()).orElseThrow());
-            relationships.add(
-                    new Relationship(owner, target(kind, ref.id()), RelationType.SUGGESTS, ref.when(), ref.reason()));
+            relationships.add(reference(owner, kind, ref.id(), RelationType.SUGGESTS, ref.when(), ref.reason()));
         }
         for (String id : bare) {
-            relationships.add(Relationship.of(owner, new Urn(bareTargetKind, id), RelationType.REQUIRES));
+            relationships.add(
+                    reference(owner, bareTargetKind, id, RelationType.REQUIRES, Optional.empty(), Optional.empty()));
         }
         return effectiveOrigin(owner, relationships);
     }
 
     /**
-     * The URN a typed reference names: a reference id may carry the {@code <pack-name>::} qualifier of a cross-pack
-     * reference (ADR-0053 decision 7), which {@link PackQualifiedReference}, the one parser, splits off, so the target
-     * carries the pack and its id never holds a {@code ::}.
+     * The relationship a reference id mints. The id may carry the {@code <pack-name>::} qualifier of a cross-pack
+     * reference (ADR-0053 decision 7); {@link PackQualifiedReference}, the one parser, splits it off, so the target
+     * is a bare {@link Urn} (a pack is provenance, not identity, ADR-0048 decision 10) and the relationship carries
+     * the qualifier beside it.
      *
      * @throws IllegalArgumentException when the qualifier is malformed; the schemas refuse such an id on read
      */
-    static Urn target(NodeKind kind, String id) {
+    private static Relationship reference(
+            Urn owner, NodeKind kind, String id, RelationType type, Optional<String> when, Optional<String> reason) {
         PackQualifiedReference reference = PackQualifiedReference.parse(id);
-        return new Urn(kind, reference.urn(), reference.packName());
+        return new Relationship(
+                owner, Optional.empty(), new Urn(kind, reference.urn()), reference.packName(), type, when, reason);
     }
 
     /**
