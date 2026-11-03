@@ -110,6 +110,8 @@ class GuardLifecycleSchemaTest {
                         "additionalProperties /limits sandbox"),
                 row("config_schema: {type: object}", "config_schema: object", "type /config_schema -"),
                 row("id: traceability-ready", "id: Traceability", "pattern /id -"),
+                // A word a YAML 1.1 reader takes for a boolean or null would be read as one by core (ADR-0036).
+                row("id: traceability-ready", "id: 'on'", "not /id -"),
                 row(
                         "limits: {timeout_seconds: 60, network: false}",
                         "limits: {timeout_seconds: 4294967297, network: false}",
@@ -145,6 +147,8 @@ class GuardLifecycleSchemaTest {
                 row(entry, "  - {ref: 'guard:subtasks-ready'}", "pattern /transitions/1/guard/0/ref -"),
                 // A word a YAML 1.1 reader takes for a boolean is refused as a state id or an event (ADR-0036).
                 row("initial: planned", "initial: 'no'", "not /initial -"),
+                row("id: work-package", "id: 'off'", "not /id -"),
+                row(entry, "  - {ref: 'null'}", "not /transitions/1/guard/0/ref -"),
                 row(
                         "- {from: planned, to: in_progress, event: claim}",
                         "- {from: planned, to: in_progress, event: 'yes'}",
@@ -165,6 +169,7 @@ class GuardLifecycleSchemaTest {
                 row("  entry: carrier_lint.py", "  entry: python carrier_lint.py", "pattern /executable/entry -"),
                 row("  entry: carrier_lint.py", "  entry: 'C:\\carrier_lint.py'", "pattern /executable/entry -"),
                 row("  args: [--guard]", "  args: --guard", "type /executable/args -"),
+                row("  args: [--guard]", "  args: ['yes']", "not /executable/args/0 -"),
                 row(
                         "  args: [--guard]",
                         "  command: python carrier_lint.py --guard",

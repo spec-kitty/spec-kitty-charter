@@ -21,6 +21,21 @@
       },
       "title": "Limits",
       "type": "object"
+    },
+    "YamlWord": {
+      "description": "A word a YAML 1.1 reader takes for a boolean or null (core reads packs with one, so an id of this word would be read as true, false or null there).",
+      "enum": [
+        "y",
+        "n",
+        "yes",
+        "no",
+        "on",
+        "off",
+        "true",
+        "false",
+        "null"
+      ],
+      "title": "YamlWord"
     }
   },
   "additionalProperties": false,
@@ -35,7 +50,10 @@
       "description": "The guard's id, kebab-case; it is the file stem.",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
       "title": "Id",
-      "type": "string"
+      "type": "string",
+      "not": {
+        "$ref": "#/$defs/YamlWord"
+      }
     },
     "title": {
       "minLength": 1,
