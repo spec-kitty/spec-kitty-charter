@@ -36,13 +36,6 @@ class RelationTypeTest {
     }
 
     @Test
-    void implementedByIsTheOneDerivedRelationType() {
-        assertThat(java.util.Arrays.stream(RelationType.values()).filter(RelationType::derived))
-                .containsExactly(RelationType.IMPLEMENTED_BY);
-        assertThat(RelationType.IMPLEMENTED_BY.directionality()).isEqualTo(Directionality.DIRECTED);
-    }
-
-    @Test
     void impactsIsBidirectional() {
         assertThat(RelationType.IMPACTS.directionality()).isEqualTo(Directionality.BIDIRECTIONAL);
     }

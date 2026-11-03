@@ -140,7 +140,11 @@ class GuardLifecycleSchemaTest {
                         "- {from: planned, to: in_progress, event: claim}",
                         "- {from: planned, to: in_progress, gate: g}",
                         "additionalProperties /transitions/0 gate"),
-                row("- {from: '*', to: done}", "- {from: [], to: done}", "minItems /transitions/2/from -"),
+                row(
+                        "- {from: '*', to: done}",
+                        "- {from: [], to: done}",
+                        "const /transitions/2/from -; minItems /transitions/2/from -; type /transitions/2/from -; type"
+                                + " /transitions/2/from -"),
                 row(
                         entry,
                         "  - {gate: subtasks-ready}",
@@ -157,7 +161,8 @@ class GuardLifecycleSchemaTest {
                 row(
                         "- {from: [planned, in_progress], to: done, event: abort}",
                         "- {from: [planned, planned], to: done, event: abort}",
-                        "uniqueItems /transitions/3/from -"));
+                        "const /transitions/3/from -; type /transitions/3/from -; type /transitions/3/from -; uniqueItems"
+                                + " /transitions/3/from -"));
     }
 
     static Stream<Arguments> executableTwins() {
@@ -220,7 +225,7 @@ class GuardLifecycleSchemaTest {
     void eachLifecycleTwinIsRefusedForItsOneProperty(String line, String replacement, String expected) {
         List<String> facts = facts("lifecycle", twin(LIFECYCLE, line, replacement));
 
-        assertThat(facts).containsAll(List.of(expected.split("; ")));
+        assertThat(facts).containsExactlyInAnyOrder(expected.split("; "));
     }
 
     @Test

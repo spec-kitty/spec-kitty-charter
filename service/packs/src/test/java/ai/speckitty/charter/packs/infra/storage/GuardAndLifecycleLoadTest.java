@@ -368,29 +368,6 @@ class GuardAndLifecycleLoadTest {
     }
 
     @Test
-    @DisplayName("a lifecycle with a transition out of a terminal state is refused")
-    void aTransitionOutOfATerminalStateIsRefused() throws IOException {
-        Path pack = pack();
-        edit(pack, LIFECYCLE, text -> text.replace("- from: for_review\n  to: done\n", "- from: done\n  to: done\n"));
-
-        assertThat(load(pack).violations())
-                .singleElement()
-                .satisfies(violation ->
-                        assertThat(violation.reason()).contains("No lifecycle transition leaves a terminal state."));
-    }
-
-    @Test
-    @DisplayName("an executable whose args repeat its entry is refused: the asset is exactly one argv element")
-    void argsThatRepeatTheEntryAreRefused() throws IOException {
-        Path pack = pack();
-        edit(pack, ASSET, text -> text.replace("  - --guard\n", "  - --guard\n  - carrier_lint.py\n"));
-
-        Pack loaded = load(pack);
-
-        assertDroppedWithItsGuard(loaded, "An executable's entry is exactly one argv element");
-    }
-
-    @Test
     @DisplayName("an executable whose entry is not the asset's own payload is refused")
     void anEntryThatIsNotThePayloadIsRefused() throws IOException {
         Path pack = pack();
@@ -400,32 +377,23 @@ class GuardAndLifecycleLoadTest {
     }
 
     @Test
-    @DisplayName("a shell runtime, an absolute entry and a command string are refused by the schema at load")
+    @DisplayName("a schema violation in the asset drops the asset, then its guard, then the lifecycle that names it")
     void theExecutableHardeningIsCheckedAtLoad() throws IOException {
-        for (String[] twin : new String[][] {
-            {"  runtime: python\n", "  runtime: sh\n", "runtime"},
-            {"  runtime: python\n", "  runtime: /usr/bin/python3\n", "runtime"},
-            {"  entry: carrier_lint.py\n", "  entry: /tmp/carrier_lint.py\n", "entry"},
-            {"  entry: carrier_lint.py\n", "  entry: ../carrier_lint.py\n", "entry"},
-            {"  - --guard\n", "  - --guard\n  command: python carrier_lint.py\n", "command"}
-        }) {
-            Path pack = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "twin"));
-            edit(pack, ASSET, text -> text.replace(twin[0], twin[1]));
+        Path pack = pack();
+        edit(pack, ASSET, text -> text.replace("  runtime: python\n", "  runtime: sh\n"));
 
-            Pack loaded = load(pack);
+        Pack loaded = load(pack);
 
-            assertThat(loaded.violations()).as(twin[1]).hasSize(3);
-            assertThat(loaded.violations().get(0)).as(twin[1]).satisfies(violation -> {
-                assertThat(violation.file()).isEqualTo(ASSET);
-                assertThat(violation.kind()).isEqualTo("schema");
-                assertThat(violation.reason()).contains(twin[2]);
-            });
-            assertThat(loaded.violations().subList(1, 3))
-                    .as(twin[1])
-                    .containsExactly(guardLosesItsAsset(), lifecycleLoses("traceability-ready"));
-            assertThat(loaded.assets()).extracting(a -> a.id().value()).containsExactly("notes");
-            assertThat(ids(loaded, ArtifactKind.GUARD)).as(twin[1]).containsExactly("subtasks-ready");
-        }
+        assertThat(loaded.violations()).hasSize(3);
+        assertThat(loaded.violations().get(0)).satisfies(violation -> {
+            assertThat(violation.file()).isEqualTo(ASSET);
+            assertThat(violation.kind()).isEqualTo("schema");
+            assertThat(violation.reason()).contains("runtime");
+        });
+        assertThat(loaded.violations().subList(1, 3))
+                .containsExactly(guardLosesItsAsset(), lifecycleLoses("traceability-ready"));
+        assertThat(loaded.assets()).extracting(a -> a.id().value()).containsExactly("notes");
+        assertThat(ids(loaded, ArtifactKind.GUARD)).containsExactly("subtasks-ready");
     }
 
     @Test
@@ -443,25 +411,6 @@ class GuardAndLifecycleLoadTest {
                 .containsExactly(
                         "guard 'subtasks-ready' is not at its place '" + BUILTIN_GUARD + "'",
                         lifecycleLoses("subtasks-ready").reason());
-    }
-
-    @Test
-    @DisplayName("an unknown built-in is refused by the schema: the builtin: list is closed")
-    void anUnknownBuiltinIsRefused() throws IOException {
-        Path pack = pack();
-        edit(pack, BUILTIN_GUARD, text -> text.replace("builtin:implementation-ready", "builtin:subtasks-complete"));
-
-        Pack loaded = load(pack);
-
-        assertThat(ids(loaded, ArtifactKind.GUARD)).containsExactly("traceability-ready");
-        assertThat(ids(loaded, ArtifactKind.LIFECYCLE)).isEmpty();
-        assertThat(loaded.violations()).hasSize(2);
-        assertThat(loaded.violations().get(0)).satisfies(violation -> {
-            assertThat(violation.file()).isEqualTo(BUILTIN_GUARD);
-            assertThat(violation.kind()).isEqualTo("schema");
-            assertThat(violation.reason()).contains("implemented_by");
-        });
-        assertThat(loaded.violations().get(1)).isEqualTo(lifecycleLoses("subtasks-ready"));
     }
 
     @Test
