@@ -36,7 +36,9 @@ public class RefusalHandler {
      * Answers a refusal with its problem body: 404 when the refusal is about what was asked, 500 otherwise. A
      * server-error (5xx) refusal is logged first with its cause, like {@link ProblemHandler}, so every 500 the
      * service returns leaves a diagnostic trail even though its body names nothing of the failure. {@code stale_input}
-     * is the exception: it is routine and retryable, so it is logged at INFO without the stack trace. A not-found
+     * is routine and retryable, so it is logged at INFO without the stack trace. A refusal that says the configured
+     * packs are broken ({@code pack_unreadable}, the composition codes) is no bug of the service: it is logged at WARN
+     * with its code, detail and packs and no stack trace, which only {@code internal_error} keeps. A not-found
      * that hides an underlying failure (an unreadable pack answered as {@code pack_not_found}) carries that failure
      * as its cause; the 404 body names nothing of it, so it is logged at WARN here with the cause.
      *
@@ -48,8 +50,13 @@ public class RefusalHandler {
         if (refusal.code() == RefusalCode.STALE_INPUT) {
             // Routine and retryable (an input changed under the read): one line, no stack trace.
             LOGGER.info("Refusal " + refusal.code().token() + ": " + refusal.getMessage());
-        } else if (statusOf(refusal.code()).is5xxServerError()) {
+        } else if (refusal.code() == RefusalCode.INTERNAL_ERROR) {
+            // A fault of the service itself: the trail keeps the stack trace.
             LOGGER.error("Server refusal " + refusal.code().token(), refusal);
+        } else if (statusOf(refusal.code()).is5xxServerError()) {
+            // The configured packs are broken, not the service: an unreadable pack, a graph that cannot be read or the
+            // pack composition. The code, the detail and the packs say what to fix; a stack trace would say nothing.
+            LOGGER.warn("Refusal " + refusal.code().token() + ": " + refusal.getMessage() + packsOf(refusal));
         } else if (refusal.getCause() != null) {
             // A client refusal that hides an underlying failure: the body names nothing of it, so keep the trail.
             LOGGER.warn("Refusal " + refusal.code().token() + " hides a cause", refusal);
@@ -86,6 +93,15 @@ public class RefusalHandler {
     static ResponseEntity<CharterRefusal> internalError() {
         return respond(new ai.speckitty.charter.kernel.domain.CharterRefusal(
                 RefusalCode.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL));
+    }
+
+    /** The packs a refusal names, as {@code [packs: name (pack_id), ...]}; nothing when it names none. */
+    private static String packsOf(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
+        return refusal.packs().isEmpty()
+                ? ""
+                : refusal.packs().stream()
+                        .map(pack -> pack.name() + " (" + pack.packId() + ")")
+                        .collect(java.util.stream.Collectors.joining(", ", " [packs: ", "]"));
     }
 
     private static ResponseEntity<CharterRefusal> respond(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {

@@ -475,7 +475,8 @@ class ArtifactReadServiceTest {
 
         counting.referenced(PACK, "bravo::directive:SHARED_1");
 
-        // The outer read digests twice, the kind's read that resolves the reference twice more, and the kind's read that
+        // The outer read digests twice, the kind's read that resolves the reference twice more, and the kind's read
+        // that
         // serves it twice again; a compose verified on its own would add two more for every reference it resolves.
         assertThat(counted).hasValue(6);
     }

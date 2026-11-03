@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,13 +48,36 @@ class RefusalHandlerLoggingTest {
     }
 
     @Test
-    void aServerRefusalOtherThanStaleInputIsStillLoggedAtErrorWithItsCause() {
-        new RefusalHandler().refused(new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read"));
+    void aFaultOfTheServiceIsLoggedAtErrorWithItsStackTrace() {
+        new RefusalHandler()
+                .refused(new CharterRefusal(RefusalCode.INTERNAL_ERROR, "boom", new IllegalStateException()));
 
         assertThat(events.list).singleElement().satisfies(event -> {
             assertThat(event.getLevel()).isEqualTo(Level.ERROR);
             assertThat(event.getThrowableProxy()).isNotNull();
         });
+    }
+
+    @Test
+    void aBrokenPackConfigurationIsLoggedAtWarnWithItsCodeDetailAndPacksAndNoStackTrace() {
+        new RefusalHandler()
+                .refused(new CharterRefusal(
+                        RefusalCode.PACK_DEPENDENCY_CYCLE,
+                        "pack `a` is on a cycle",
+                        List.of(new RefusalPack("01A", "a"), new RefusalPack("01B", "b"))));
+        new RefusalHandler().refused(new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read"));
+
+        assertThat(events.list).hasSize(2).allSatisfy(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.WARN);
+            assertThat(event.getThrowableProxy()).isNull();
+        });
+        assertThat(events.list.get(0).getFormattedMessage())
+                .contains("pack_dependency_cycle")
+                .contains("pack `a` is on a cycle")
+                .contains("a (01A), b (01B)");
+        assertThat(events.list.get(1).getFormattedMessage())
+                .contains("pack_unreadable")
+                .contains("cannot read");
     }
 
     @Test
