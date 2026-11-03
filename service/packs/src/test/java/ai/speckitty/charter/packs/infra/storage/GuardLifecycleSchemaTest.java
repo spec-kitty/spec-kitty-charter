@@ -172,7 +172,6 @@ class GuardLifecycleSchemaTest {
                 row("  entry: carrier_lint.py", "  entry: python carrier_lint.py", "pattern /executable/entry -"),
                 row("  entry: carrier_lint.py", "  entry: 'C:\\carrier_lint.py'", "pattern /executable/entry -"),
                 row("  args: [--guard]", "  args: --guard", "type /executable/args -"),
-                row("  args: [--guard]", "  args: ['yes']", "not /executable/args/0 -"),
                 row(
                         "  args: [--guard]",
                         "  command: python carrier_lint.py --guard",

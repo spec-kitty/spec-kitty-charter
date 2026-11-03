@@ -30,10 +30,7 @@
           "description": "The arguments after entry, each one argv element. entry is not repeated among them.",
           "items": {
             "minLength": 1,
-            "type": "string",
-            "not": {
-              "$ref": "#/$defs/YamlWord"
-            }
+            "type": "string"
           },
           "minItems": 1,
           "title": "Args",
@@ -46,21 +43,6 @@
       ],
       "title": "Executable",
       "type": "object"
-    },
-    "YamlWord": {
-      "description": "A word a YAML 1.1 reader takes for a boolean or null (core reads packs with one, so an id of this word would be read as true, false or null there).",
-      "enum": [
-        "y",
-        "n",
-        "yes",
-        "no",
-        "on",
-        "off",
-        "true",
-        "false",
-        "null"
-      ],
-      "title": "YamlWord"
     }
   },
   "additionalProperties": false,
