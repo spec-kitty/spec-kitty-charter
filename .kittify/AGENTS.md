@@ -232,3 +232,12 @@ Rules:
 - Hard-break policy: do not introduce or preserve `feature*` aliases (API/query params, routes, fields, flags, env vars, command names, or docs) when the domain object is a Mission.
 - Use `Mission` / `Missions` as the only canonical term in active codepaths and interfaces.
 - Historical archived artifacts may retain legacy wording only as immutable snapshots and must be explicitly marked legacy.
+
+---
+
+## Packs: synced, never vendored
+
+- `packs/internal` and `packs/qa` (listed in `.kittify/config.yaml`; the `qa-*` profiles in `.kittify/agent_profiles_manifest.json` resolve there) are **not committed**. They are ignored copies of the `spec-kitty-open-packs` commit pinned by `openPacksRef` in `gradle.properties`.
+- Fetch them once per worktree, after cloning `spec-kitty-open-packs` beside this repository: `./gradlew syncPacks` (or `python3 scripts/packs/sync_packs.py`; `-PopenPacksDir=<path>` / `--open-packs-dir <path>` names another checkout). The sync reads the pinned commit, not the checkout's working tree, and fails closed on a digest that differs from `packs/open-packs.lock.yaml`. `./gradlew syncPacks -PcheckPacks=true` only verifies.
+- Never edit a synced file. A change goes to `spec-kitty-open-packs` and arrives with a pin bump.
+- Bumping the pin is one commit: change `openPacksRef`, run `./gradlew syncPacks -PupdatePacksLock=true` (re-syncs and rewrites the lockfile's commit and digests), and commit both. Never weaken an expectation to make a bump green.

@@ -186,7 +186,8 @@ From the repository root:
    `../spec-kitty-open-packs` (or `-PopenPacksDir=<path>`: an absolute path, or one relative to the
    repository root) and stops on a checkout that is missing, not clean or not at `openPacksRef` in
    `gradle.properties`. It names the directory it looked in, and for an unclean or unpinned
-   checkout it prints the command that fixes it.
+   checkout it prints the command that fixes it. Then run `./gradlew syncPacks` once: `packs/internal` and `packs/qa`
+   are not committed, and the sync copies them from that checkout at the pin and verifies their digests.
 3. **Fetch the full history and tags.** The contract's breaking-change check compares against the
    last released contract tag: `git fetch --unshallow --tags origin` (or `git fetch --tags` when
    the clone is already complete).
