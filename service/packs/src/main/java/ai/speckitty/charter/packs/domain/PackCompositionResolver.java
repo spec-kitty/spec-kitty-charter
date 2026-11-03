@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -6,7 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;

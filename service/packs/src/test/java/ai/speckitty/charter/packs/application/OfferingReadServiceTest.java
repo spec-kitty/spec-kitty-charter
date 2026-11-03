@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRefinementRepository;
+import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

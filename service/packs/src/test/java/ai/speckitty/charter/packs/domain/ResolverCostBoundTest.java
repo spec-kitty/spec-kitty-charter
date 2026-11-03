@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,8 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
-import ai.speckitty.charter.packs.application.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;

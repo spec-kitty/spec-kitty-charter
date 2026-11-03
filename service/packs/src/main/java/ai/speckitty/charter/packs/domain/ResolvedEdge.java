@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain;
 
 import java.util.Objects;
 

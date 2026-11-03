@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,9 +10,8 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
-import ai.speckitty.charter.packs.application.PackCompositionResolver.Failure;
-import ai.speckitty.charter.packs.application.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
