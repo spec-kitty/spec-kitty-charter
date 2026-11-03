@@ -1,0 +1,177 @@
+{
+  "event_count": 36,
+  "last_event_id": "01M6H594WKVWEQM2NWBGXDYYAS",
+  "materialized_at": "2026-11-03T16:53:34.227617+00:00",
+  "mission_number": "",
+  "mission_slug": "pack-composition-depends-on-and-the-dependency-resolver-01M6F541",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 5,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6H594WKVWEQM2NWBGXDYYAS",
+      "last_transition_at": "2026-11-03T16:53:34.227617+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- [2026-11-03T00:18:10Z] java-jenny: Out-of-map touch recorded: new port PackRefinementRepository (packs.domain) realized by DomainRepositoryService over FilesystemPackStore.readGraphs; unreadable graph docs fail closed as PACK_UNREADABLE; the port is covered in DomainRepositoryServiceTest. Gates green at branch tip: :packs:test, :kernel:test, :charter-api:validateContract, :deployable:test (incl. ReservedRefusalCodesTest, WireTokenParityTest, RefusalHandlerTest, PackSchemasTest), spotlessCheck, checkstyleMain, :kernel:javadoc, :packs:javadoc. Recorded via the canonical emit_inner_state_changed seam because 'agent tasks add-history' cannot route to a lane worktree (it has no --owned-checkout option).",
+        "Ready for review",
+        "Review passed (reviewer-renata): sibling contest scoped to one configured level with cross-level layer merge preserved; refusal names both packs, the artifact and the absent settling edge; raised:true backed by OfferingReadService.codeOf and the errors.feature row; duplicate-override surfaced honestly as a synthetic uniqueItems SchemaViolation; PackRefinementRepository port is hexagonal and its out-of-map touch is recorded. Fresh runs green: :packs:test +:kernel:test 3445/0/0 (1 skipped), WireTokenParityTest 7, RefusalHandlerTest 48, PackSchemasTest 67, ReservedRefusalCodesTest 34. Residuals accepted: member-in-compose and settler-is-distribution-pack checks deferred to the distribution-pack flow, member unconsumed until then.",
+        "- 2026-11-03T16:50:53Z – java-jenny – B1 fixed in 9717908a: overrides edge settles a contest only if member is a contestant; stale member refused PACK_SIBLING_REFINEMENT_CONFLICT. Ran :packs:test, :kernel:test, targeted suites green; spotlessCheck clean for touched files (3 untouched WholePack* test files have pre-existing format violations).",
+        "Re-review of 9717908a (B1 fix) started by reviewer-renata",
+        "APPROVED (reviewer-renata), cycle 3. Re-reviewed 9717908a against B1 of cycle 2: an overrides edge now settles a contest only when its member is one of the packs contesting that artifact at that level (PackCompositionResolver.refuseSiblingContests); any other member leaves the contest unsettled and refuses SIBLING_CONFLICT -> pack_sibling_refinement_conflict 409, the detail naming both siblings, the artifact and the non-contestant member; the no-edge text is unchanged. Resolver still pure. New parameterized control anOverridesEdgeNamingAMemberThatIsNotAContestantDoesNotSettleTheContest is not vacuous: rows 01GHOST (outside the compose) and 01DSTR (in the compose, not a contestant) are distinct cases, assert failure type, member and reason, and fail on revert by construction. OfferingReadServiceTest settling fixture now names contestant right, assertions unchanged. WP01 acceptance re-checked: closed optional overrides item round-trips; refusal names both packs and the artifact; settled compose resolves; cross-level layer merge untouched; parity rows present. Fresh runs (--rerun) green at HEAD: PackCompositionResolverTest 20, OfferingReadServiceTest 11, PackDescriptorReaderTest 32, PackRoundTripTest 8, DomainRepositoryServiceTest 23, 0 failures. Process: wp-base ref set by hand to 886fb26f = 9717908a^, verified; root cause is action implement refusing on the untracked dist/. Non-blocking residuals: N1 settler not restricted to the distribution pack (no such concept yet); N2 spec scenario 7 member version in force is unconsumed by any merge, a planner/mission-review item; N3 artifact compared as an opaque string, fails closed on spelling mismatch; a stale edge beside a valid one is tolerated silently."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/kitty-specs/pack-composition-depends-on-and-the-dependency-resolver-01M6F541/tasks/WP01-sibling-refinement-refusal/review-cycle-1.md",
+        "reference": "review-cycle://pack-composition-depends-on-and-the-dependency-resolver-01M6F541/WP01-sibling-refinement-refusal/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
+    },
+    "WP02": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6FVCS3SSEZXTZ9K13TPNG2A",
+      "last_transition_at": "2026-11-03T04:41:33.049343+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-03T02:38:08Z – java-jenny – Out-of-map touch: OfferingReadService gained public compose() returning the already-resolved closure under its ConsistentRead fingerprint — minimal way for the resolver to consume one compose instead of duplicating composition logic; entries() now derives from it.",
+        "- 2026-11-03T02:38:08Z – java-jenny – Out-of-map ripple: ArtifactControllerTest needed the new ArtifactReadService constructor argument and PackRefinementRepository on its fixture store — forced compile fixes, no behavior asserted there.",
+        "- 2026-11-03T02:38:08Z – java-jenny – Landed as a9e36abc (offering compose read), c3523da3 (reference grammar resolver + 6 tests), d62c17e9 (artifact read seam + 7 tests + controller ripple), 750eaeaf (tracer entries); each code commit verified green in isolation; all gates green at HEAD.",
+        "Ready for review",
+        "APPROVED (reviewer-renata). Reviewed a9e36abc/c3523da3/d62c17e9. compose() stays inside ConsistentRead: read.read(STALE, composeOf); entries() derives from the same supplier — one resolution, one fingerprint path, no second compose, no divergent read path. resolveReference precedence correct: bare resolves in-pack first and returns early, so an id present in both packs stays bare (no false refusal); closure probe runs only on in-pack absence and a probe hit refuses via checkReferences — PACK_REFERENCE_UNQUALIFIED naming the holding pack, PACK_REFERENCE_PACK_MISSING naming the missing pack, no fallback for qualified misses. referenced() mirrors item() faithfully: judgeDescriptor first, one verified read, outer/inner fingerprint equality with stale mapping, ConstraintBreachException and empty resolution map to the kind's ABSENT code or KIND_NOT_FOUND — no not-found leaks to a 500. C-005 holds: only the :: prefix is grammar; the urn reaches kernel Urn.parse verbatim, no re-spelling. Tests drive production seams (CompositeComponentResolverTest 10, ArtifactReadServiceTest 44, green at HEAD; build green); both refusals fail on revert by construction; SC-004 met: one shared two-pack fixture per test file carries qualified-resolves + bare-refused + missing-pack. Out-of-map touches (OfferingReadService.compose, ArtifactControllerTest ripple) are recorded in WP02 history. Non-blocking residuals: (1) PackQualifiedReference name grammar [a-z0-9][a-z0-9_-]* is stricter than the pattern-free descriptor-schema name — a pack named outside the grammar is loadable but unreachable by reference; parser is WP01's kernel artifact (fcf54bc9) — align schema or file follow-up; (2) bare shadow case (id in referring AND another pack) behaves correctly but is untested — recommend WP03 covers it as a negative control; (3) ArtifactReadService.referenced() has no production caller until WP03 wires it — dead-code gate must re-check at WP03/mission review; (4) refused() passes referringPack.value() as holdingPackId on the missing-pack path — inert today (checkReferences ignores it for qualified refs), cosmetic only."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-composition-depends-on-and-the-dependency-resolver-01M6F541/WP02-pack-qualified-reference-grammar/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP03": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6G149A88B81HGRZM1QBY8R6",
+      "last_transition_at": "2026-11-03T06:21:46.184239+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Resolved dependency facts, the 0.2 contract line with a Breaking fragment, composition.feature with a negative control per refusal, and the contract/parity suites green.",
+        "APPROVED (reviewer-renata). Reviewed 734c0d78/aa98bd74/aa116dd5/3a436702. 0.2 move correct per ADR-0022 D2: OfferingPack.dependsOn is a response-required-property-added, ERR-graded by contracts/compat/severity-levels.txt, so info.version 0.1.0-SNAPSHOT->0.2.0-SNAPSHOT with the ### Breaking fragment; no git tag exists, so no released contract breaks (C-002 holds); CHANGELOG gained only the 0.2.0-SNAPSHOT section header naming the fragment, not assembled content. FR-020 exact: ResolvedEdge(from,to,range,version) matches data-model.md with no invented field; ResolvedDependency(packId,range,version) is its faithful projection with 'from' implied by the enclosing entry; edges are derived from the resolver's ordered closure (no recomputation; resolver untouched); ActivationJson needed no edit (existing OmitAbsentMembers mix-in covers the new optional PackPin member; NullOmissionTest 50/50 green proves it). Scenarios: 19/19 green in CharterContractSuite (JUnit results inspected), eight refusal codes each with a same-fixture negative control driving the real deployable over GET /offering with per-exchange OpenAPI conformance; diamond, no-depends_on and built-in-tree positives present. Parity: CharterRefusalCode.yaml, RefusalCode and the errors.feature raised table agree on all ten codes; no generated-source edits. Suites re-run green at HEAD: :packs:test, :kernel:test, :deployable:test, :contracts:check. Carried residuals, non-blocking: (1) pack_reference_unqualified/pack_reference_pack_missing scenarios and their shared-fixture control are @WIP-excluded because verified no operation of this version reaches ArtifactReadService.referenced() (ArtifactController calls only list/item); contract-level no-op proof for these two stays at WP02's unit tests; tags must come off when a reference-read surface lands; (2) referenced() still has no production caller - dead-code re-check owed at mission review per WP02 residual; (3) bare-id-in-both-packs shadow case still untested (covering test files are WP02-owned; contract surface unreachable) - carried to mission review; (4) out-of-map touches (CHANGELOG.md header, offering.feature exact-body pin, three-levels example, _index.yaml, ActivationConfig.schema.json mirror) are mechanically required, documented in commit bodies; (5) spec US2-S5 vs data-model invariant 3 tension is carried in the scenario prose - operator reporting deferred to mission review."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-composition-depends-on-and-the-dependency-resolver-01M6F541/WP03-contract-change-set-dependency-facts-and-scenarios/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done"
+      }
+    },
+    "WP04": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6G4PD21RCBPRR1N0NPTK13H",
+      "last_transition_at": "2026-11-03T07:24:05.569776+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ratchet, determinism, level separation and the 50-pack/200-edge p95 bound pinned by four suites; module gates green.",
+        "Delivery evidence (java-jenny). T016 ratchet: SingleTreeCompatRatchetTest pins golden literals over in-memory ports for the single built-in tree, the out-of-order three-level fixture and the U+FB01/U+1F600 code-point fixture; full-record equality on OfferingEntry tolerates only WP03's additive dependency fact (empty list for a dependency-free pack); 100 reads per fixture; compose() pinned too. T017: ResolverDeterminismTest, 8 packs over 3 levels with a diamond, 100 seeded shuffles, sequence pinned plus dependency-precedence and shared-pack-once properties. T018: ResolverCostBoundTest, programmatic 50-pack/200-edge DAG (mixed levels, diamonds at 6/18/30/42), 10 warm-ups then 100 measured, nearest-rank p95 observed 0.77 ms against the 250 ms contract. T019: ComposeLevelSeparationTest - SC-001 diamond golden A,B,C,E,D; three-level merge order preserved; same-level edge allowed; cross-level refiners compose as a layer merge; upward edge refused as pack_level_violation through OfferingReadService. Red-state proof (local, reverted): reversing STABLE_ORDER's id tie-break fails 4 tests across ratchet/determinism/diamond; disabling requireLevel fails the pack_level_violation control. Gates: :packs:test, spotlessCheck, checkstyleMain, checkstyleTest, javadoc green (one transient Gradle worker EOFException re-ran clean). Zero production diffs. Finding: mission auto-commit raced the per-concern commit chain - 3ce3890d (runtime-authored) landed three of the four test files without the Co-Authored-By trailer; 2115b19d carries it; not amended per the no-rewrite rule.",
+        "Review passed. Ratchet pins literal goldens (never re-derived; only WP03's additive empty-fact tolerated; red on any real change). Determinism: 100 seeded shuffles, exact sequence incl. surrogate-pair code-point case. Level separation: downward-only enforced w/ pack_level_violation negative control + same-level positive control + layer-merge-not-contest. Cost: warm-up 10, 100 measured, nearest-rank p95, 250.0 ms = NFR-003. Prior stale-class red noted for the record; committed measurement passes clean (:packs:test, 11/11 green). Residual: diamond test pins FIFO queue order beyond the strict partial-order contract (defensible as documented seeded-queue behavior)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-composition-depends-on-and-the-dependency-resolver-01M6F541/WP04-compatibility-ratchet-and-resolver-qualities/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP05": {
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6G51HR4890NGXFJHA35Y1XC",
+      "last_transition_at": "2026-11-03T07:30:10.820264+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Verified 458f7b13 against HEAD: resolver's ten refusal codes wired to the contract, depends_on/overrides schema claims, qualified-reference wiring, the four canonical terms, struck items 2/3 and the removed gate-kind sentences all check out. Corrected one wrong claim in 606fa24c: the offering response DOES carry what a compose resolved (required dependsOn, pinned in offering.feature) — what stays open is the reserved activation set (#125), so the pack pin's mirror waits; the exposure note stays visible in work-breakdown item 3. Out-of-map one-liners recorded with rationale: the WP's own changelog caveat, and contract-and-dtos.md's status line moved from 0.1.0-SNAPSHOT to the landed 0.2.0-SNAPSHOT. Gates: check_docs all green, markdownlint 0 errors over 236 files, cspell 0 issues on touched files. Diagrams (.puml/.svg) untouched, left for the follow-up; generated glossary READMEs untouched (contextive source is the authority).",
+        "Review passed (reviewer-renata). Verified 458f7b13+606fa24c claim-by-claim against HEAD: PackCompositionResolver orders one closure (level violation message matches docs verbatim), all ten refusal codes raised in CharterRefusalCode with OfferingPack.dependsOn required at 0.2.0-SNAPSHOT and pinned in offering.feature; PackPin.dependsOn matches the corrected open-exposure (#125 reserved activation reads); depends_on/overrides closed items, ULID patterns on dependency/override targets, pack_level if/then, second-edge refusal and Pep440Range.admits all confirmed. Work-breakdown items 2/3 struck and dated in item 1's convention with the open exposure visible; items 4+ untouched. The three gate-kind sentences are gone; Guard/Asset entries match ADR-0054 decisions 6/5. Changelog is consumer-focused and claims nothing undelivered. No .puml touched. Gates: check_docs.py all green, markdownlint 0 errors (236 files), cspell 0 issues on touched files. Residual risk recorded: generated docs/glossary pages are stale vs. the corrected contextive source (Compose still says open question 6; Charter Pack/Pack Level still decided-not-built) — per repo policy they are not hand-editable and regenerate at the next docs build; the source of truth is fixed, so the exposure self-heals on regeneration."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://pack-composition-depends-on-and-the-dependency-resolver-01M6F541/WP05-documented-composition-model/review-cycle-1.md",
+        "reviewer": "reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done"
+      }
+    }
+  }
+}
