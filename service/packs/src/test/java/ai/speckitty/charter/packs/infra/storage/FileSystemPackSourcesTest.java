@@ -217,8 +217,10 @@ class FileSystemPackSourcesTest {
      * had before this mission. Captured on {@code main} at 90de8f9 with a throwaway test in a scratch {@code git
      * worktree} of that commit: it printed {@code PackFileSet.digested(dir)} and
      * {@code new FileSystemPackSources(() -> List.of(new PackLocation(name, PackLevel.ORG, dir))).fingerprint()} for
-     * each fixture below, and the fingerprint of all three locations in this order. The fixtures are byte-identical on
-     * 90de8f9 and on this branch.
+     * each fixture below, and the fingerprint of all three locations in this order. The fixtures were byte-identical on
+     * 90de8f9 and on this branch until 2026-11-03, when the {@code pack_id} of pack-a and pack-descriptor-only became
+     * valid ULIDs (FR-003); their two fingerprints and the combined one were re-captured from the unchanged digest
+     * code, so the pin still guards the digest scheme.
      */
     private static final List<PinnedPack> PINNED = List.of(
             new PinnedPack(
@@ -229,12 +231,12 @@ class FileSystemPackSourcesTest {
                             "alpha-tactic.tactic.yaml",
                             "beta-tactic.tactic.yaml",
                             "broken-tactic.tactic.yaml"),
-                    "sha256:b1b6a8c40896b5f5a769e37c41c90d4fb9185062e6ea0da9cf74a727128f9a58"),
+                    "sha256:1113dfc82113a09f82beff426ab6c98f386090d948240074ce7805ee6b5ed4af"),
             new PinnedPack(
                     "pack-descriptor-only",
                     "/roundtrip-fixtures/pack-descriptor-only",
                     List.of("pack.yaml"),
-                    "sha256:ded97480fbaeab435de330a315be5c06c60544d7d61aa4b876cbfd490c65b47b"),
+                    "sha256:8778fb74bad78996a3e1d8d280a965bea99ae3bf886558a8aa33405b874b32fc"),
             new PinnedPack(
                     "shards-and-fragment",
                     "/load-fixtures/shards-and-fragment-merge-their-nodes/files",
@@ -242,7 +244,7 @@ class FileSystemPackSourcesTest {
                     "sha256:731c25459783e328fb650111f46747f0b9bdc84f80f96388a9e6cfff682ffa44"));
 
     /** The fingerprint of the three {@link #PINNED} locations together, in that order (captured as above). */
-    private static final String PINNED_ALL = "sha256:f3c3fc76bb4d5b7b2a319e41d6b507b9fbb0f44fc109ee131ee6cb22ec7c3aa7";
+    private static final String PINNED_ALL = "sha256:659183f270b0a3511a97df724b96dcca0cdf4ff6064aded6b59136e031d62e52";
 
     private record PinnedPack(String name, String resource, List<String> digested, String fingerprint) {}
 

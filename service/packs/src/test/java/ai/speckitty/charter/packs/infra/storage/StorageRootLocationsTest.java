@@ -36,11 +36,14 @@ class StorageRootLocationsTest {
         packs = Files.createDirectories(host.resolve("config/packs"));
     }
 
+    /** Every pack of these tests declares this id; the tests never put two packs in one compose. */
+    private static final String PACK_ID = "01ARWG13C000000000000000QA";
+
     private void pack(String name, String level) throws IOException {
         Files.createDirectories(packs.resolve(name));
         Files.writeString(
                 packs.resolve(name + "/pack.yaml"),
-                "pack_id: " + name + "\npack_version: 1.0.0\nname: " + name + "\npack_level: " + level + "\n");
+                "pack_id: " + PACK_ID + "\npack_version: 1.0.0\nname: " + name + "\npack_level: " + level + "\n");
     }
 
     @Test
@@ -88,7 +91,7 @@ class StorageRootLocationsTest {
         pack("qa", "org");
         Path target = elsewhere.resolve("real-name");
         Files.createDirectories(target);
-        Files.writeString(target.resolve("pack.yaml"), "pack_id: external\npack_level: project\n");
+        Files.writeString(target.resolve("pack.yaml"), "pack_id: 01ARWG13C000000000EXTERNA1\npack_level: project\n");
         link(packs.resolve("external"), target);
 
         assertThat(new StorageRootLocations(packs).all())
@@ -336,7 +339,7 @@ class StorageRootLocationsTest {
         Files.createDirectories(target);
         Files.writeString(
                 target.resolve("pack.yaml"),
-                "pack_id: external\npack_version: 1.0.0\nname: external\npack_level: project\n");
+                "pack_id: 01ARWG13C000000000EXTERNA1\npack_version: 1.0.0\nname: external\npack_level: project\n");
         link(packs.resolve("external"), target);
         DomainRepositoryService store =
                 new DomainRepositoryService(new StorageRootLocations(packs), new YamlSerializationStrategy());
@@ -426,7 +429,7 @@ class StorageRootLocationsTest {
 
         store.save(qa, store.get(qa));
 
-        assertThat(store.get(qa).packId()).isEqualTo("qa");
+        assertThat(store.get(qa).packId()).isEqualTo(PACK_ID);
         assertThat(packs.resolve("qa/pack.yaml")).exists();
     }
 

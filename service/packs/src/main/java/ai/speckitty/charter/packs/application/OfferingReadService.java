@@ -4,21 +4,27 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.packs.application.PackCompositionResolver.Failure;
+import ai.speckitty.charter.packs.application.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import java.util.Arrays;
-import java.util.Comparator;
+import ai.speckitty.charter.packs.domain.PackRefinementRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * The offering (ADR-0020 D1): the packs the service is configured with, in the merge order, each with its configured
- * level and the name and version its descriptor gives. Merging is not applied yet (#10, #11): the offering lists the
- * packs, not a merged result.
+ * The offering (ADR-0020 D1): the packs the service is configured with, in the compose's resolved order (dependencies
+ * before the packs that need them, then the merge order across levels), each with its configured level and the name
+ * and version its descriptor gives. Merging is not applied yet (#10, #11): the offering lists the packs, not a merged
+ * result.
  *
  * <p>It is one read verified by {@link ConsistentRead}: the catalog and every descriptor are read between two
  * digests, so the list and its fingerprint name the same inputs. A pack whose descriptor cannot be read refuses the
@@ -28,57 +34,70 @@ import org.springframework.stereotype.Service;
 @Service
 public final class OfferingReadService {
 
-    /**
-     * The merge order: by configured level in {@link PackLevel}'s declaration order (built-in, org, project), then by
-     * pack id in code-point order, so a supplementary character sorts after {@code U+FB01}, as no UTF-16 order does.
-     */
-    static final Comparator<OfferingEntry> ORDER = Comparator.comparing(OfferingEntry::level)
-            .thenComparing(entry -> entry.id().value().codePoints().toArray(), Arrays::compare);
-
     private static final String STALE = "The inputs changed while the offering was read; read it again.";
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
+    private final PackRefinementRepository refinements;
     private final ConsistentRead read;
 
     /**
      * One configured pack as the offering names it.
      *
      * @param id the configured identifier of the pack
+     * @param descriptorPackId the {@code pack_id} its descriptor declares, the identity a dependency edge names
      * @param level the level the pack is configured at
      * @param name the name its descriptor gives
      * @param version the version its descriptor gives
+     * @param dependencies the dependency edges its descriptor declared, each with the range and the satisfying version
+     *     the compose resolved (FR-020); empty when it declares none
      */
-    public record OfferingEntry(PackIdentifier id, PackLevel level, String name, String version) {
+    public record OfferingEntry(
+            PackIdentifier id,
+            String descriptorPackId,
+            PackLevel level,
+            String name,
+            String version,
+            List<ResolvedEdge> dependencies) {
 
         /**
          * An entry.
          *
          * @param id the configured identifier
+         * @param descriptorPackId the descriptor's {@code pack_id}
          * @param level the configured level
          * @param name the descriptor's name
          * @param version the descriptor's version
+         * @param dependencies the resolved edges the descriptor declares
          */
         public OfferingEntry {
             Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(descriptorPackId, "descriptorPackId");
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(version, "version");
+            Objects.requireNonNull(dependencies, "dependencies");
+            dependencies = List.copyOf(dependencies);
         }
     }
 
     /**
-     * A service over the catalog and the descriptors.
+     * A service over the catalog, the descriptors and the refinements.
      *
      * @param catalog the port that lists the configured packs
      * @param descriptors the port that looks each pack's descriptor up
+     * @param refinements the port that reads the artifacts each pack's graphs say it changes
      * @param read the verifier that digests the inputs before and after the read
      */
     @Autowired
     public OfferingReadService(
-            PackCatalogRepository catalog, PackDescriptorRepository descriptors, ConsistentRead read) {
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            PackRefinementRepository refinements,
+            ConsistentRead read) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
+        this.refinements = Objects.requireNonNull(refinements, "refinements");
         this.read = Objects.requireNonNull(read, "read");
     }
 
@@ -91,19 +110,135 @@ public final class OfferingReadService {
      *     when the inputs changed while the offering was read
      */
     public ConsistentRead.Verified<List<OfferingEntry>> offering() {
-        return read.read(
-                STALE,
-                () -> catalog.configured().stream()
-                        .map(this::entry)
-                        .sorted(ORDER)
-                        .toList());
+        return read.read(STALE, this::entries);
     }
 
-    private OfferingEntry entry(ConfiguredPack pack) {
-        PackDescriptor descriptor = descriptors
+    /**
+     * The offering, in the compose's resolved order: dependencies before the packs that need them, and the merge
+     * order across levels. A graph the resolver refuses refuses the offering, so a broken compose is never served
+     * partially — two siblings changing one artifact among them, unless a pack of the compose settles it with an
+     * {@code overrides} edge (FR-012), and so is a graph reference that breaks the pack-qualification rule (FR-015,
+     * FR-017). Each entry carries the dependency edges its descriptor declared, with the range
+     * and the satisfying version the compose resolved (FR-020).
+     *
+     * @return the entries
+     */
+    private List<OfferingEntry> entries() {
+        List<PackUnderResolution> closure = composeOf();
+        Map<String, String> heldVersions = new HashMap<>();
+        for (PackUnderResolution pack : closure) {
+            heldVersions.put(pack.descriptor().packId(), pack.descriptor().packVersion());
+        }
+        return closure.stream()
+                .map(pack -> new OfferingEntry(
+                        pack.configured().id(),
+                        pack.descriptor().packId(),
+                        pack.configured().level(),
+                        pack.descriptor().name(),
+                        pack.descriptor().packVersion(),
+                        dependenciesOf(pack, heldVersions)))
+                .toList();
+    }
+
+    /**
+     * The edges one pack's descriptor declared, each paired with the target's held version from the closure. The
+     * resolver already refused a compose whose declared target is absent or whose range the held version misses, so
+     * every declared edge resolves here.
+     *
+     * @param pack the pack under resolution
+     * @param heldVersions the closure's {@code pack_id} to held {@code pack_version}
+     * @return the resolved edges, in the descriptor's declared order
+     */
+    private static List<ResolvedEdge> dependenciesOf(PackUnderResolution pack, Map<String, String> heldVersions) {
+        return pack.descriptor().dependencies().stream()
+                .map(dependency -> new ResolvedEdge(
+                        pack.descriptor().packId(),
+                        dependency.packId(),
+                        dependency.range(),
+                        Objects.requireNonNull(
+                                heldVersions.get(dependency.packId()), "the resolver guarantees the target is held")))
+                .toList();
+    }
+
+    /**
+     * The compose the offering resolves — the closure in the resolver's order, each pack with its descriptor — with
+     * the digest of the inputs it was read from. The reference-resolution paths consume it read-only to look a
+     * pack-qualified reference's pack up by name (FR-013): this is the closure the offering already resolved, never a
+     * second resolution of it, so the two graphs stay unmerged (research: the component resolution and the pack
+     * composition are two graphs).
+     *
+     * @return the compose's closure, dependencies first, each pack once, and the verified fingerprint
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read, a configured pack's directory
+     *     is missing or it has no readable descriptor (none, or one that cannot be read), or with {@code STALE_INPUT}
+     *     when the inputs changed while the compose was read
+     */
+    public ConsistentRead.Verified<List<PackUnderResolution>> compose() {
+        return read.read(STALE, this::composeOf);
+    }
+
+    private List<PackUnderResolution> composeOf() {
+        try {
+            List<PackUnderResolution> closure = PackCompositionResolver.resolve(catalog.configured().stream()
+                    .map(pack ->
+                            new PackUnderResolution(pack, descriptorOf(pack), refinements.refinedArtifacts(pack.id())))
+                    .toList());
+            for (PackUnderResolution pack : closure) {
+                PackCompositionResolver.checkReferences(
+                        closure, pack.descriptor().packId(), referencesOf(pack, closure));
+            }
+            return closure;
+        } catch (PackCompositionResolver.Refusal refusal) {
+            throw new CharterRefusal(codeOf(refusal.failure()), refusal.detail());
+        }
+    }
+
+    /**
+     * The references one pack's graphs write, each with the pack that holds what it names (FR-013 to FR-017): a bare
+     * reference is held by the pack itself when it holds the artifact, else by the first other pack of the compose
+     * that does; a bare reference nothing holds resolves nowhere and refuses nothing, as an unwired kind does.
+     */
+    private List<PackCompositionResolver.ResolvedReference> referencesOf(
+            PackUnderResolution pack, List<PackUnderResolution> closure) {
+        List<PackCompositionResolver.ResolvedReference> resolved = new ArrayList<>();
+        for (String written : refinements.referencesOf(pack.configured().id())) {
+            PackQualifiedReference reference = PackQualifiedReference.parse(written);
+            if (reference.qualified()) {
+                resolved.add(new PackCompositionResolver.ResolvedReference(
+                        reference, pack.descriptor().packId()));
+                continue;
+            }
+            if (refinements.holds(pack.configured().id(), reference.urn())) {
+                continue;
+            }
+            closure.stream()
+                    .filter(other -> !other.equals(pack))
+                    .filter(other -> refinements.holds(other.configured().id(), reference.urn()))
+                    .findFirst()
+                    .ifPresent(holder -> resolved.add(new PackCompositionResolver.ResolvedReference(
+                            reference, holder.descriptor().packId())));
+        }
+        return resolved;
+    }
+
+    private PackDescriptor descriptorOf(ConfiguredPack pack) {
+        return descriptors
                 .find(pack.id())
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " has no pack.yaml"));
-        return new OfferingEntry(pack.id(), pack.level(), descriptor.name(), descriptor.packVersion());
+    }
+
+    private static RefusalCode codeOf(Failure failure) {
+        return switch (failure) {
+            case CYCLE -> RefusalCode.PACK_DEPENDENCY_CYCLE;
+            case UNKNOWN_DEPENDENCY -> RefusalCode.PACK_DEPENDENCY_UNKNOWN;
+            case OUT_OF_RANGE -> RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE;
+            case PARENT_UNRESOLVED -> RefusalCode.PACK_PARENT_UNRESOLVED;
+            case LEVEL_VIOLATION -> RefusalCode.PACK_LEVEL_VIOLATION;
+            case NAME_CONFLICT -> RefusalCode.PACK_NAME_CONFLICT;
+            case DUPLICATE_ID -> RefusalCode.PACK_DUPLICATE_ID;
+            case SIBLING_CONFLICT -> RefusalCode.PACK_SIBLING_REFINEMENT_CONFLICT;
+            case REFERENCE_UNQUALIFIED -> RefusalCode.PACK_REFERENCE_UNQUALIFIED;
+            case REFERENCE_PACK_MISSING -> RefusalCode.PACK_REFERENCE_PACK_MISSING;
+        };
     }
 }

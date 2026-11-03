@@ -323,10 +323,11 @@ class PackCommitStoreTest {
      * The revision {@code CommitStorePackWriteStore.currentRevision} reported for the unmodified {@code pack-a}
      * fixture on {@code main} at 90de8f9, when it still read every digested file as UTF-8 text. Captured by a
      * throwaway test printing {@code currentRevision} on this lane's base before the change (its revision readers
-     * and the fixture were byte-identical to 90de8f9's); pinned so reading bytes does not move an existing ETag.
+     * and the fixture were byte-identical to 90de8f9's); re-captured on 2026-11-03 from the unchanged revision code after the
+     * fixture's {@code pack_id} became a valid ULID (FR-003); pinned so reading bytes does not move an existing ETag.
      */
     private static final String PACK_A_REVISION_ON_MAIN =
-            "sha256:b220d430031fc948dbdd597b9ab9d88297a68b6588537e87fadc68f4d648c711";
+            "sha256:453b87b4217d5a74ff81c31c65019d06f2bac46a16c53a2db364b8be69ea0c92";
 
     /** A root graph shard, which {@link PackFileSet#digested} covers, written with bytes that are not UTF-8. */
     private static final String NON_UTF8_SHARD = "binary.graph.yaml";

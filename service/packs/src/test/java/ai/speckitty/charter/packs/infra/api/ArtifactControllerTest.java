@@ -14,8 +14,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
+import ai.speckitty.charter.packs.application.CompositeComponentResolver;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.DirectiveReadService;
+import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackRevisions;
 import ai.speckitty.charter.packs.application.ParadigmReadService;
@@ -32,6 +34,7 @@ import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -143,7 +146,14 @@ class ArtifactControllerTest {
                 new DirectiveReadService(store, store, read, revisions),
                 new StyleguideReadService(store, store, read, revisions),
                 new ParadigmReadService(store, store, read, revisions),
-                new ToolguideReadService(store, store, read, revisions));
+                new ToolguideReadService(store, store, read, revisions),
+                new CompositeComponentResolver(
+                        new DirectiveReadService(store, store, read, revisions),
+                        new StyleguideReadService(store, store, read, revisions),
+                        new ParadigmReadService(store, store, read, revisions),
+                        new ToolguideReadService(store, store, read, revisions),
+                        new TacticReadService(store, store, read),
+                        new OfferingReadService(store, store, store, read)));
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 
@@ -377,7 +387,8 @@ class ArtifactControllerTest {
                     ParadigmRepository,
                     ToolguideRepository,
                     PackCatalogRepository,
-                    PackDescriptorRepository {
+                    PackDescriptorRepository,
+                    PackRefinementRepository {
 
         @Override
         public Pack load(PackIdentifier asked) {
@@ -405,6 +416,12 @@ class ArtifactControllerTest {
         @Override
         public void save(PackIdentifier asked, PackDescriptor descriptor) {
             throw new UnsupportedOperationException();
+        }
+
+        /** No route this controller serves resolves a reference, so the fixture's packs refine none. */
+        @Override
+        public List<String> refinedArtifacts(PackIdentifier asked) {
+            return List.of();
         }
 
         @Override

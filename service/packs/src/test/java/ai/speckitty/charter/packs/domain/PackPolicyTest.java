@@ -27,7 +27,9 @@ class PackPolicyTest {
 
     private static FileRead<PackDescriptor> descriptor(String name, Optional<PackLevel> declared) {
         return new FileRead.Read<>(
-                "pack.yaml", new PackDescriptor("01ABC", "1.0.0", Optional.empty(), name, declared, Optional.empty()));
+                "pack.yaml",
+                new PackDescriptor(
+                        "01ARWG13C00000000000001ABC", "1.0.0", Optional.empty(), name, declared, Optional.empty()));
     }
 
     private static PackContents contents(

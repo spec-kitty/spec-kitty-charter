@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.api.OfferingApi;
 import ai.speckitty.charter.api.model.Offering;
 import ai.speckitty.charter.api.model.OfferingPack;
+import ai.speckitty.charter.api.model.ResolvedDependency;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +48,13 @@ public class OfferingController implements OfferingApi {
         String id = entry.id().value();
         return new OfferingPack(
                 id,
+                entry.descriptorPackId(),
                 OfferingPack.LevelEnum.fromValue(entry.level().token()),
                 entry.name(),
                 entry.version(),
+                entry.dependencies().stream()
+                        .map(edge -> new ResolvedDependency(edge.to(), edge.range(), edge.version()))
+                        .toList(),
                 Hypermedia.wire(Map.of(Relation.ARTIFACTS, links.link("packs", id, "artifacts"))));
     }
 }

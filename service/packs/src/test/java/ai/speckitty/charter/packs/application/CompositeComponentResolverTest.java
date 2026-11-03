@@ -2,19 +2,28 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDependency;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -30,6 +39,9 @@ import ai.speckitty.charter.packs.domain.TacticStep;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +50,10 @@ import org.junit.jupiter.api.Test;
  * dispatches a neighbour URN on its kind to that kind's read path and fetches only that one component. A target of an
  * unwired, out-of-scope or external kind resolves empty (research Decision 6) so a walk continues past it, and an absent
  * in-scope component resolves empty too; the resolver never throws for an unresolvable kind.
+ *
+ * <p>The pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017) resolves through the same resolver against
+ * the compose closure the offering already resolved: a qualified reference reads the pack it names, a bare reference
+ * reads only the referring pack, and the two refusals name their packs.
  */
 class CompositeComponentResolverTest {
 
@@ -47,6 +63,9 @@ class CompositeComponentResolverTest {
     };
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
+
+    /** The second pack of the shared two-pack fixture (SC-004): bravo, holding directive SHARED_1. */
+    private static final PackIdentifier PACK_B = new PackIdentifier("pack-b");
 
     private final Directive directive = Directive.builder()
             .id(new DirectiveIdentifier("DIRECTIVE_1"))
@@ -94,7 +113,8 @@ class CompositeComponentResolverTest {
                     new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
                     new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
                     new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
-                    new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()))
+                    new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()),
+                    noOffering())
             .forPack(PACK);
 
     @Test
@@ -136,6 +156,61 @@ class CompositeComponentResolverTest {
         }
     }
 
+    // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
+
+    @Test
+    void aPackQualifiedReferenceResolvesThroughTheNamedPackOfTheClosure() {
+        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("bravo::directive:SHARED_1", PACK);
+
+        assertThat(resolved).isPresent();
+        assertThat(resolved.get().packId()).isEqualTo(PACK_B);
+        assertThat(resolved.get().localId()).isEqualTo("SHARED_1");
+    }
+
+    @Test
+    void aPackQualifiedReferenceToTheReferringPackItselfResolves() {
+        // FR-013: the pack's own artifacts are reachable both bare and qualified.
+        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("alpha::directive:OWN_1", PACK);
+
+        assertThat(resolved).isPresent();
+        assertThat(resolved.get().packId()).isEqualTo(PACK);
+        assertThat(resolved.get().localId()).isEqualTo("OWN_1");
+    }
+
+    @Test
+    void aBareReferenceResolvesOnlyInsideTheReferringPack() {
+        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("directive:OWN_1", PACK);
+
+        assertThat(resolved).isPresent();
+        assertThat(resolved.get().packId()).isEqualTo(PACK);
+    }
+
+    @Test
+    void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
+        assertThatThrownBy(() -> twoPackResolver().resolveReference("directive:SHARED_1", PACK))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
+                    assertThat(refused.getMessage()).contains("bravo").contains("pack-qualified");
+                });
+    }
+
+    @Test
+    void aQualifiedReferenceToAPackOutsideTheClosureIsRefusedNamingTheMissingPack() {
+        // The id exists in the referring pack, yet a name the closure does not hold is FR-017's refusal, never a
+        // fallback to the referring pack.
+        assertThatThrownBy(() -> twoPackResolver().resolveReference("charlie::directive:OWN_1", PACK))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+                    assertThat(refused.getMessage()).contains("charlie").contains("does not hold");
+                });
+    }
+
+    @Test
+    void aBareReferenceThatResolvesNowhereKeepsTheEmptyAnswerOfTheWalk() {
+        assertThat(twoPackResolver().resolveReference("directive:NOWHERE", PACK))
+                .isEmpty();
+    }
+
     private void assertResolvesTo(Urn urn, ArtifactKind kind, String localId) {
         Optional<CharterArtifact> resolved = resolver.resolve(urn);
         assertThat(resolved).as("resolving %s", urn).isPresent();
@@ -146,6 +221,106 @@ class CompositeComponentResolverTest {
 
     private static ConsistentRead fixedDigest() {
         return new ConsistentRead(() -> "sha256:" + "a".repeat(64));
+    }
+
+    /** An offering over no packs: the in-pack resolution tests never consult the closure. */
+    private static OfferingReadService noOffering() {
+        return new OfferingReadService(
+                List::of,
+                new PackDescriptorRepository() {
+                    @Override
+                    public PackDescriptor get(PackIdentifier pack) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public Optional<PackDescriptor> find(PackIdentifier pack) {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public void save(PackIdentifier pack, PackDescriptor descriptor) {
+                        throw new UnsupportedOperationException();
+                    }
+                },
+                pack -> List.of(),
+                fixedDigest());
+    }
+
+    /**
+     * The shared two-pack fixture of the grammar (SC-004): alpha ({@code pack-a}, directive {@code OWN_1}) and bravo
+     * ({@code pack-b}, directive {@code SHARED_1}) in one compose closure, resolved through the offering.
+     */
+    private CompositeComponentResolver twoPackResolver() {
+        DirectivesByPack directives = new DirectivesByPack();
+        directives.held.put(PACK, directiveIn(PACK, "OWN_1"));
+        directives.held.put(PACK_B, directiveIn(PACK_B, "SHARED_1"));
+        return new CompositeComponentResolver(
+                new DirectiveReadService(new UnusedPacks(), directives, fixedDigest(), NO_REVISION),
+                new StyleguideReadService(new UnusedPacks(), new FixedStyleguides(), fixedDigest(), NO_REVISION),
+                new ParadigmReadService(new UnusedPacks(), new FixedParadigms(), fixedDigest(), NO_REVISION),
+                new ToolguideReadService(new UnusedPacks(), new FixedToolguides(), fixedDigest(), NO_REVISION),
+                new TacticReadService(new UnusedPacks(), new FixedTactics(), fixedDigest()),
+                new OfferingReadService(
+                        () -> List.of(
+                                new ConfiguredPack(PACK, PackLevel.ORG), new ConfiguredPack(PACK_B, PackLevel.ORG)),
+                        new NamedDescriptors(),
+                        pack -> List.of(),
+                        fixedDigest()));
+    }
+
+    private static Directive directiveIn(PackIdentifier pack, String id) {
+        return Directive.builder()
+                .id(new DirectiveIdentifier(id))
+                .packId(pack)
+                .schemaVersion("1.0")
+                .title("Title of " + id)
+                .intent("intent")
+                .enforcement(Enforcement.REQUIRED)
+                .build();
+    }
+
+    /** The directives each pack of the two-pack fixture holds, by pack. */
+    private static final class DirectivesByPack implements DirectiveRepository {
+        private final Map<PackIdentifier, Directive> held = new LinkedHashMap<>();
+
+        @Override
+        public void save(Directive value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Directive> load(PackIdentifier pack, DirectiveIdentifier id) {
+            return Optional.ofNullable(held.get(pack))
+                    .filter(directive -> directive.id().equals(id));
+        }
+    }
+
+    /** The descriptors of the two-pack compose: {@code pack-a} is alpha, {@code pack-b} is bravo. */
+    private static final class NamedDescriptors implements PackDescriptorRepository {
+        @Override
+        public PackDescriptor get(PackIdentifier pack) {
+            return find(pack).orElseThrow();
+        }
+
+        @Override
+        public Optional<PackDescriptor> find(PackIdentifier pack) {
+            return Optional.of(new PackDescriptor(
+                    pack.value(),
+                    "1.0.0",
+                    Optional.empty(),
+                    pack.equals(PACK_B) ? "bravo" : "alpha",
+                    Optional.of(PackLevel.ORG),
+                    Optional.empty(),
+                    PackPaths.none(),
+                    // alpha relies on bravo, so bravo is in alpha's own closure
+                    pack.equals(PACK_B) ? List.of() : List.of(new PackDependency(PACK_B.value(), ">=1.0"))));
+        }
+
+        @Override
+        public void save(PackIdentifier pack, PackDescriptor descriptor) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /** A pack port the single-component read path never consults; the list path is not exercised here. */

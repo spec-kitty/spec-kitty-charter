@@ -4,9 +4,12 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -18,11 +21,13 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -74,6 +79,7 @@ public final class DomainRepositoryService
                 ParadigmRepository,
                 PackDescriptorRepository,
                 PackCatalogRepository,
+                PackRefinementRepository,
                 PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
@@ -277,6 +283,121 @@ public final class DomainRepositoryService
         return locations.all().stream()
                 .map(location -> new ConfiguredPack(new PackIdentifier(location.name()), location.level()))
                 .toList();
+    }
+
+    // ---- PackRefinementRepository -------------------------------------------------------------------------------
+
+    /**
+     * The artifacts the pack's graph documents say it changes: the distinct targets of its {@code enhances} and
+     * {@code overrides} relations, in first-seen order. A graph document that cannot be read refuses the answer
+     * rather than letting the offering judge a partial graph, where the whole-pack load reports it as a violation.
+     */
+    @Override
+    public List<String> refinedArtifacts(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        if (!graphs.violations().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        }
+        List<String> refined = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                if (refines(edge.relation()) && !refined.contains(edge.target())) {
+                    refined.add(edge.target());
+                }
+            }
+        }
+        return List.copyOf(refined);
+    }
+
+    /**
+     * The references the pack writes: the targets of its graph edges, then the typed references of its artifacts
+     * (tactics with their steps, directives, paradigms, procedures and mission types with their steps), each as
+     * {@code [<pack-name>::]<kind>:<id>}. A qualifier is split off the reference id by {@link PackQualifiedReference}.
+     * Artifact files that cannot be read are skipped here, as every lenient kind read skips them; the whole-pack load
+     * reports them.
+     */
+    @Override
+    public List<String> referencesOf(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        if (!graphs.violations().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        }
+        Set<String> references = new java.util.LinkedHashSet<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                references.add(edge.target());
+            }
+        }
+        for (Tactic tactic : read(resolved, pack, TacticBinding.INSTANCE)) {
+            tactic.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
+            tactic.steps()
+                    .forEach(step -> step.references().forEach(ref -> references.add(written(ref.type(), ref.id()))));
+        }
+        for (Directive directive : read(resolved, pack, DirectiveBinding.INSTANCE)) {
+            directive.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
+        }
+        for (Paradigm paradigm : read(resolved, pack, ParadigmBinding.INSTANCE)) {
+            paradigm.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
+        }
+        for (Procedure procedure : read(resolved, pack, ProcedureBinding.INSTANCE)) {
+            procedure
+                    .references()
+                    .forEach(ref -> references.add(written(ref.type().token(), ref.id())));
+        }
+        for (MissionType missionType : read(resolved, pack, MissionTypeBinding.INSTANCE)) {
+            missionType
+                    .references()
+                    .forEach(ref -> references.add(written(ref.type().token(), ref.id())));
+            missionType
+                    .steps()
+                    .forEach(step -> step.references()
+                            .forEach(ref -> references.add(written(ref.type().token(), ref.id()))));
+        }
+        return List.copyOf(references);
+    }
+
+    private <D, E extends CharterArtifact> List<E> read(
+            Resolved resolved, PackIdentifier pack, KindBinding<D, E> kind) {
+        return resolved.store.readAll(resolved.key, kind).stream()
+                .flatMap(dso -> entity(pack, kind, dso).stream())
+                .toList();
+    }
+
+    /** A typed reference as the graph-edge path writes it: {@code [<pack-name>::]<kind>:<id>}. */
+    private static String written(String type, String id) {
+        PackQualifiedReference reference = PackQualifiedReference.parse(id);
+        return reference.packName().map(name -> name + "::").orElse("") + type + ":" + reference.urn();
+    }
+
+    @Override
+    public boolean holds(PackIdentifier pack, String urn) {
+        Optional<Urn> parsed = Urn.parse(urn);
+        if (parsed.isEmpty()) {
+            return false;
+        }
+        String id = parsed.get().id();
+        try {
+            return switch (parsed.get().kind()) {
+                case DIRECTIVE -> load(pack, new DirectiveIdentifier(id)).isPresent();
+                case STYLEGUIDE -> load(pack, new StyleguideIdentifier(id)).isPresent();
+                case PARADIGM -> load(pack, new ParadigmIdentifier(id)).isPresent();
+                case TOOLGUIDE -> load(pack, new ToolguideIdentifier(id)).isPresent();
+                case TACTIC -> load(pack, new TacticIdentifier(id)).isPresent();
+                default -> false;
+            };
+        } catch (ConstraintBreachException malformed) {
+            return false;
+        }
+    }
+
+    /** Whether a relation changes its target: a field-merge into it ({@code enhances}) or a full replacement of it. */
+    private static boolean refines(String relation) {
+        return RelationType.ENHANCES.token().equals(relation)
+                || RelationType.OVERRIDES.token().equals(relation);
     }
 
     // ---- PackRepository --------------------------------------------------------------------

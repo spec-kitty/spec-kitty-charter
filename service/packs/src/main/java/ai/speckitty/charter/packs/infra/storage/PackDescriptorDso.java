@@ -1,8 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -21,6 +24,8 @@ import java.util.Optional;
  * @param requiresCore the {@code requires_core} text as written, when stated
  * @param activeCharter the {@code active_charter} path, when stated
  * @param packDrg the {@code pack_drg} path, when stated
+ * @param dependencies the {@code depends_on} entries, in file order
+ * @param overrides the {@code overrides} entries, in file order
  */
 record PackDescriptorDso(
         String packId,
@@ -30,7 +35,9 @@ record PackDescriptorDso(
         Optional<String> packLevel,
         Optional<String> requiresCore,
         Optional<String> activeCharter,
-        Optional<String> packDrg) {
+        Optional<String> packDrg,
+        List<PackDependency> dependencies,
+        List<PackOverride> overrides) {
 
     /**
      * Checks the fields.
@@ -43,6 +50,8 @@ record PackDescriptorDso(
      * @param requiresCore the core requirement
      * @param activeCharter the active charter path
      * @param packDrg the pack DRG path
+     * @param dependencies the declared dependencies
+     * @param overrides the declared contests this pack settles
      */
     PackDescriptorDso {
         Objects.requireNonNull(packId, "packId");
@@ -53,6 +62,10 @@ record PackDescriptorDso(
         Objects.requireNonNull(requiresCore, "requiresCore");
         Objects.requireNonNull(activeCharter, "activeCharter");
         Objects.requireNonNull(packDrg, "packDrg");
+        Objects.requireNonNull(dependencies, "dependencies");
+        Objects.requireNonNull(overrides, "overrides");
+        dependencies = List.copyOf(dependencies);
+        overrides = List.copyOf(overrides);
     }
 
     /**
@@ -70,7 +83,9 @@ record PackDescriptorDso(
                 descriptor.declaredLevel().map(PackLevel::token),
                 descriptor.requiresCore(),
                 descriptor.paths().activeCharter(),
-                descriptor.paths().packDrg());
+                descriptor.paths().packDrg(),
+                descriptor.dependencies(),
+                descriptor.overrides());
     }
 
     /**
@@ -86,6 +101,8 @@ record PackDescriptorDso(
                 name,
                 packLevel.flatMap(PackLevel::fromToken),
                 requiresCore,
-                new PackPaths(activeCharter, packDrg));
+                new PackPaths(activeCharter, packDrg),
+                dependencies,
+                overrides);
     }
 }

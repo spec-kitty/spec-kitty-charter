@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Directionality;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -56,12 +57,24 @@ final class ArtifactEdges {
         for (TypedRef ref : typed) {
             NodeKind kind = NodeKind.of(ArtifactKind.fromToken(ref.type()).orElseThrow());
             relationships.add(
-                    new Relationship(owner, new Urn(kind, ref.id()), RelationType.SUGGESTS, ref.when(), ref.reason()));
+                    new Relationship(owner, target(kind, ref.id()), RelationType.SUGGESTS, ref.when(), ref.reason()));
         }
         for (String id : bare) {
             relationships.add(Relationship.of(owner, new Urn(bareTargetKind, id), RelationType.REQUIRES));
         }
         return effectiveOrigin(owner, relationships);
+    }
+
+    /**
+     * The URN a typed reference names: a reference id may carry the {@code <pack-name>::} qualifier of a cross-pack
+     * reference (ADR-0053 decision 7), which {@link PackQualifiedReference}, the one parser, splits off, so the target
+     * carries the pack and its id never holds a {@code ::}.
+     *
+     * @throws IllegalArgumentException when the qualifier is malformed; the schemas refuse such an id on read
+     */
+    static Urn target(NodeKind kind, String id) {
+        PackQualifiedReference reference = PackQualifiedReference.parse(id);
+        return new Urn(kind, reference.urn(), reference.packName());
     }
 
     /**

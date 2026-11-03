@@ -22,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A skill round-trips through the YAML format and the store, with its body (#192)")
 class SkillYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5YVECSKILLPACKFIXTURE0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5YVECSK111PACKF1XTVRE0A");
 
     /** Every declared field of the prompt form, each optional one written with a non-default value. */
     private static final String PROMPT = """
@@ -220,7 +220,7 @@ class SkillYamlTest {
     private static Path pack(Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("skill-pack"));
         write(pack.resolve("pack.yaml"), """
-                pack_id: 01M5YVECSKILLPACKFIXTURE0A
+                pack_id: 01M5YVECSK111PACKF1XTVRE0A
                 pack_version: 1.0.0
                 name: skill-pack
                 pack_level: org

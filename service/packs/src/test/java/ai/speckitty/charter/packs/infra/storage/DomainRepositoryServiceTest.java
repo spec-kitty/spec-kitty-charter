@@ -36,7 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class DomainRepositoryServiceTest {
 
-    private static final PackIdentifier BY_ID = new PackIdentifier("01M5DEH8ROUNDTRIPFIXTURE0A");
+    private static final PackIdentifier BY_ID = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A");
     private static final PackIdentifier BY_NAME = new PackIdentifier("pack-a");
     private static final TacticIdentifier ALPHA = new TacticIdentifier("alpha-tactic");
 
@@ -247,7 +247,7 @@ class DomainRepositoryServiceTest {
                         new PackLocation("pack-a", PackLevel.ORG, decoy),
                         new PackLocation("pack-descriptor-only", PackLevel.PROJECT, target)),
                 counting);
-        PackIdentifier targetId = new PackIdentifier("01M5DEH8ROUNDTRIPFIXTURE0B");
+        PackIdentifier targetId = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0B");
 
         assertThat(counted.get(targetId).name()).isEqualTo("roundtrip-descriptor-only");
         assertThat(tacticFilesOpened)
@@ -375,7 +375,7 @@ class DomainRepositoryServiceTest {
         Path declaresOrg = Files.createDirectories(host.resolve("project/local"));
         Files.writeString(
                 declaresOrg.resolve("pack.yaml"),
-                "pack_id: local\npack_version: 1.0.0\nname: local\npack_level: org\n");
+                "pack_id: 01ARWG13C00000000000010CA1\npack_version: 1.0.0\nname: local\npack_level: org\n");
         Path bare = Files.createDirectories(host.resolve("built-in/bare"));
         DomainRepositoryService catalog = new DomainRepositoryService(
                 () -> List.of(
@@ -414,7 +414,8 @@ class DomainRepositoryServiceTest {
     @Test
     void anInvalidPackYamlIsRefusedUnreadable(@TempDir Path host) throws IOException {
         Path broken = Files.createDirectories(host.resolve("broken"));
-        Files.writeString(broken.resolve("pack.yaml"), "pack_id: broken\npack_version: [unclosed\n");
+        Files.writeString(
+                broken.resolve("pack.yaml"), "pack_id: 01ARWG13C00000000000BR0KEN\npack_version: [unclosed\n");
 
         assertUnreadable(overOne("broken", broken), "broken");
     }
@@ -431,6 +432,46 @@ class DomainRepositoryServiceTest {
     @Test
     void aMissingPackDirectoryIsRefusedUnreadable(@TempDir Path host) {
         assertUnreadable(overOne("gone", host.resolve("gone")), "gone");
+    }
+
+    // ---- PackRefinementRepository ---------------------------------------------------------------------
+
+    /**
+     * FR-012: the refined artifacts are the distinct targets of a pack's {@code enhances} and {@code overrides}
+     * relations, in first-seen order; a {@code requires} relation refines nothing.
+     */
+    @Test
+    void refinedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-a", host);
+        Files.writeString(pack.resolve("refinements.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: enhances}
+                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: overrides}
+                - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
+                """);
+
+        assertThat(overOne("pack-a", pack).refinedArtifacts(BY_NAME)).containsExactly("directive:DIRECTIVE_009");
+    }
+
+    /** A pack with no graph documents refines nothing: the empty answer, not a refusal. */
+    @Test
+    void aPackWithoutGraphDocumentsRefinesNothing() {
+        assertThat(service.refinedArtifacts(BY_NAME)).isEmpty();
+    }
+
+    /** The offering judges a partial graph never: a graph document that cannot be read refuses the refinements. */
+    @Test
+    void aPackWithAnUnreadableGraphDocumentRefusesItsRefinements(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-a", host);
+        Files.writeString(pack.resolve("refinements.graph.yaml"), "edges: [\n");
+
+        assertThatThrownBy(() -> overOne("pack-a", pack).refinedArtifacts(BY_NAME))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     private static DomainRepositoryService overOne(String name, Path directory) {

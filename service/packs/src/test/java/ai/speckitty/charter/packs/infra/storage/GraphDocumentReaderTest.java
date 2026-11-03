@@ -420,7 +420,7 @@ class GraphDocumentReaderTest {
         assertThat(violation.keyword()).isEqualTo("pattern");
         assertThat(violation.pointer()).containsExactly("edges", "0", "source");
         assertThat(violation.value()).contains("QA_404");
-        assertThat(violation.args().get("0")).startsWith("^(directive|tactic|");
+        assertThat(violation.args().get("0")).contains("(directive|tactic|");
         assertThat(details(bad)).containsExactly("qa/drg/fragment.yaml: edge endpoint 'QA_404' is not a URN");
     }
 

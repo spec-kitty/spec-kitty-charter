@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Pep440;
@@ -224,10 +225,11 @@ public final class PackPolicy {
     }
 
     private static final String REQUIRES_CORE = "requires_core";
+    private static final String DEPENDS_ON = "depends_on";
 
     /**
-     * {@code requires_core} must be a PEP 440 specifier set (R3). An undeclared key never reaches here: the closed schema
-     * makes its file unreadable (ADR-0036 decision 3).
+     * {@code requires_core} and every {@code depends_on[].range} must be a PEP 440 specifier set (R3, FR-002). An
+     * undeclared key never reaches here: the closed schema makes its file unreadable (ADR-0036 decision 3).
      */
     private static List<PackFinding> descriptorRules(String name, PackDescriptor descriptor) {
         List<PackFinding> findings = new ArrayList<>();
@@ -239,6 +241,18 @@ public final class PackPolicy {
                     List.of(REQUIRES_CORE),
                     "pack.yaml of " + name + ": requires_core '" + requiresCore.get()
                             + "' is not a PEP 440 version specifier"));
+        }
+        List<PackDependency> dependencies = descriptor.dependencies();
+        for (int i = 0; i < dependencies.size(); i++) {
+            String range = dependencies.get(i).range();
+            if (!Pep440.isValidSpecifierSet(range)) {
+                findings.add(new PackFinding(
+                        PackFindingCode.DEPENDENCY_RANGE_INVALID,
+                        PACK_YAML,
+                        List.of(DEPENDS_ON, Integer.toString(i), "range"),
+                        "pack.yaml of " + name + ": depends_on[" + i + "] range '" + range
+                                + "' is not a PEP 440 version specifier"));
+            }
         }
         return findings;
     }
@@ -501,7 +515,7 @@ public final class PackPolicy {
 
     private static Optional<DrgNode> shardNode(RawNode node) {
         return Urn.parse(node.ref())
-                .filter(urn -> urn.kind().authoredInGraphs())
+                .filter(urn -> urn.pack().isEmpty() && urn.kind().authoredInGraphs())
                 .map(urn -> boundNode(urn, node));
     }
 
@@ -522,7 +536,7 @@ public final class PackPolicy {
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
         return switch (shape) {
             case SHARD ->
-                Urn.parse(node.ref()).isPresent()
+                Urn.parse(node.ref()).filter(urn -> urn.pack().isEmpty()).isPresent()
                         ? origin + ": " + NOT_AUTHORED + "'" + node.ref() + "'"
                         : origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
             case FRAGMENT ->

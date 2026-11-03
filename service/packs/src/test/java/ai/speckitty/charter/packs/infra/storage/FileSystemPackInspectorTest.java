@@ -65,7 +65,10 @@ class FileSystemPackInspectorTest {
 
     @Test
     void aPackIsReadAsItsDescriptorItsShardsInNameOrderAndItsFragment(@TempDir Path dir) throws IOException {
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(dir, "b.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");
         write(dir, "a.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");
         write(dir, "readme.md", "# not read\n");
@@ -89,7 +92,10 @@ class FileSystemPackInspectorTest {
 
     @Test
     void aSourceShardNamedLikeTheRegistrationShardIsRefusedButTheStoresOwnIsRead(@TempDir Path dir) throws IOException {
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(
                 dir,
                 "registered.graph.yaml",
@@ -201,7 +207,10 @@ class FileSystemPackInspectorTest {
     @Test
     void theFullScopeEntersAPackRootThatIsALinkAndNoDirectoryLinkBelowIt(@TempDir Path dir) throws IOException {
         Path real = dir.resolve("checkout/qa");
-        write(real, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                real,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(real, "tactics/x.tactic.yaml", TACTIC.formatted("x"));
         write(real, "notes.yaml", "no: rule\n");
         Path outside = dir.resolve("outside");
@@ -224,7 +233,10 @@ class FileSystemPackInspectorTest {
 
     @Test
     void theFullScopeReadsThePackFilesOfTheLoadPathAsTheLoadPathDoes(@TempDir Path dir) throws IOException {
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\nmystery: 1\n");
         write(dir, "a.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");
         write(dir, "b.graph.yaml", "nodes: [\n");
         write(dir, "drg/fragment.yaml", "nodes: []\nedges: []\n");
@@ -244,7 +256,7 @@ class FileSystemPackInspectorTest {
 
     @Test
     void everyYamlFileIsClassifiedInPathOrderAndAnUnclassifiedOneIsLeftOut(@TempDir Path dir) throws IOException {
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\n");
+        write(dir, "pack.yaml", "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\n");
         write(dir, "a.graph.yaml", "schema_version: '1.0'\ngenerated_at: S\nnodes: []\nedges: []\n");
         write(dir, "drg/fragment.yaml", "nodes: []\nedges: []\n");
         write(dir, "org-charter.yaml", "schema_version: 2\n");
@@ -517,7 +529,10 @@ class FileSystemPackInspectorTest {
     @Test
     void aSidecarWhosePayloadThePackDoesNotHoldIsRefusedAsTheLoadRefusesIt(@TempDir Path host) throws IOException {
         Path dir = host.resolve("qa");
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(dir, "assets/a.asset.yaml", ASSET.formatted("a", "text/markdown", "a.md"));
         write(dir, "assets/a.md", "# a\n");
         write(dir, "assets/b.asset.yaml", ASSET.formatted("b", "text/markdown", "b.md"));
@@ -564,7 +579,10 @@ class FileSystemPackInspectorTest {
     void anAssetFileTheLoadDoesNotHoldIsRefusedAndNamesNoPayload(@TempDir Path host) throws IOException {
         SymbolicLinks.requireSupport(host);
         Path dir = host.resolve("qa");
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         write(dir, "assets/f.asset.yaml", ASSET.formatted("f", "image/png", "out.png"));
         write(host, "outside.png", "png");
         SymbolicLinks.create(dir.resolve("assets/out.png"), host.resolve("outside.png"));
@@ -608,17 +626,15 @@ class FileSystemPackInspectorTest {
 
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
-        // #195: main at 90de8f9 found nothing. The pinned presets and manifest are now schema-mapped, and their shape
-        // is not the sanitized one (ADR-0042): each is reported, as an artifact schema error (ADR-0036 decision 3),
-        // until
-        // open-packs fixes them (OP-1, OP-2). Every other file still has no finding.
+        // OP-1 and OP-2 landed (open-packs 213a059, cfc9971): the presets and the manifest are in the sanitized
+        // shape (ADR-0042), so main at 90de8f9's "no findings" is back for them. Only the six #75 sidecars the load
+        // refuses (known-failures.yaml, open-packs#75) are found, each as an artifact schema error (ADR-0036
+        // decision 3) naming a payload that does not exist.
         assertThat(verdict.findings())
+                .hasSize(6)
                 .allSatisfy(f -> assertThat(f.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR))
                 .extracting(PackFinding::file)
                 .containsOnly(
-                        "pack-manifest.yaml",
-                        "presets/default.yaml",
-                        "presets/minimal.yaml",
                         "assets/docs_structural_lint.py.asset.yaml",
                         "assets/audiences/agentic-framework-core-team.md.asset.yaml",
                         "assets/audiences/automation_agent.md.asset.yaml",
@@ -626,64 +642,19 @@ class FileSystemPackInspectorTest {
                         "assets/audiences/nontech_educator.md.asset.yaml",
                         "assets/audiences/software_engineer.md.asset.yaml");
         assertThat(verdict.findings())
-                .filteredOn(f -> f.place().isEmpty() && !f.detail().contains("provenance_path"))
                 .extracting(PackFinding::detail)
                 .containsExactlyInAnyOrder(
-                        "built-in/pack-manifest.yaml: unknown key 'charter'",
-                        "built-in/pack-manifest.yaml: unknown key 'fetched_at'",
-                        "built-in/pack-manifest.yaml: unknown key 'generated_at'",
-                        "built-in/pack-manifest.yaml: unknown key 'generated_by'",
-                        "built-in/pack-manifest.yaml: unknown key 'source_type'",
-                        "built-in/pack-manifest.yaml: unknown key 'source_url'",
-                        "built-in/presets/default.yaml: missing 'id'",
-                        "built-in/presets/default.yaml: missing 'schema_version'",
-                        "built-in/presets/default.yaml: unknown key 'mission_type_activations'",
-                        "built-in/presets/default.yaml: unknown key 'name'",
-                        "built-in/presets/minimal.yaml: missing 'id'",
-                        "built-in/presets/minimal.yaml: missing 'schema_version'",
-                        "built-in/presets/minimal.yaml: unknown key 'mission_type_activations'",
-                        "built-in/presets/minimal.yaml: unknown key 'name'",
                         "built-in/assets/docs_structural_lint.py.asset.yaml payload assets/assets/docs_structural_lint.py does not exist",
                         "built-in/assets/audiences/agentic-framework-core-team.md.asset.yaml payload assets/assets/audiences/agentic-framework-core-team.md does not exist",
                         "built-in/assets/audiences/automation_agent.md.asset.yaml payload assets/assets/audiences/automation_agent.md does not exist",
                         "built-in/assets/audiences/line_manager.md.asset.yaml payload assets/assets/audiences/line_manager.md does not exist",
                         "built-in/assets/audiences/nontech_educator.md.asset.yaml payload assets/assets/audiences/nontech_educator.md does not exist",
                         "built-in/assets/audiences/software_engineer.md.asset.yaml payload assets/assets/audiences/software_engineer.md does not exist");
-        assertThat(verdict.findings())
-                .filteredOn(
-                        f -> f.file().equals("pack-manifest.yaml") && !f.place().isEmpty())
-                .as("schema_version '1', provenance_path on every constituent, and name on every preset entry")
-                .extracting(PackFinding::detail)
-                .containsOnly(
-                        "built-in/pack-manifest.yaml: 'schema_version' has an unsupported value '1'",
-                        "built-in/pack-manifest.yaml: unknown key 'provenance_path'",
-                        "built-in/pack-manifest.yaml: unknown key 'name'",
-                        "built-in/pack-manifest.yaml: missing 'id'");
-        assertThat(verdict.findings())
-                .filteredOn(f ->
-                        f.file().equals("presets/minimal.yaml") && !f.place().isEmpty())
-                .as("minimal.yaml's items are bare strings, not {id} objects")
-                .extracting(PackFinding::detail)
-                .containsExactlyInAnyOrder(
-                        "built-in/presets/minimal.yaml: '/activated_directives/0' breaks schema keyword 'type'",
-                        "built-in/presets/minimal.yaml: '/activated_directives/1' breaks schema keyword 'type'",
-                        "built-in/presets/minimal.yaml: '/activated_directives/2' breaks schema keyword 'type'",
-                        "built-in/presets/minimal.yaml: '/activated_directives/3' breaks schema keyword 'type'",
-                        "built-in/presets/minimal.yaml: '/activated_directives/4' breaks schema keyword 'type'",
-                        "built-in/presets/minimal.yaml: '/activated_tactics/0' breaks schema keyword 'type'");
-        assertThat(verdict.findings())
-                .filteredOn(f -> f.detail().endsWith("unknown key 'provenance_path'"))
-                .as("one per constituent of the pinned manifest")
-                .hasSize(272);
-        assertThat(verdict.findings())
-                .as("283 for the manifest (272 provenance_path, six root keys, schema_version, two preset entries keyed"
-                        + " name without id), 10 for minimal.yaml, 4 for default.yaml, and (#251) one for each of the"
-                        + " six sidecars the load refuses (known-failures.yaml, open-packs#75)")
-                .hasSize(297 + 6);
-        // 386 at the previous pin, 5df92a5d; the mission-type migration (#194, open-packs#95) retired 74 YAML files of
-        // the pack and added its 4 mission-type files.
-        // #251: and every payload and template the store holds is listed, whatever its extension: the 7 asset payloads
-        // and 27 templates the whole-pack census counts, less the YAML payload this walk listed already.
+        // Unchanged from the previous pin: 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
+        // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever
+        // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
+        // this walk listed already). The pin f85cf23 adds four mission step prompts (open-packs 7963b62), all under
+        // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified.
         assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1));
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
@@ -845,7 +816,10 @@ class FileSystemPackInspectorTest {
      */
     @Test
     void aPresetWhoseIdIsNotItsStemIsRefusedInValidateModeAndByTheLoad(@TempDir Path dir) throws IOException {
-        write(dir, "pack.yaml", "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
+        write(
+                dir,
+                "pack.yaml",
+                "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\npack_level: org\n");
         String preset = "schema_version: '1.0'\nid: minimal\ndescription: d\n";
         write(dir, "presets/minimal.yaml", preset);
         write(dir, "presets/other.yaml", preset);

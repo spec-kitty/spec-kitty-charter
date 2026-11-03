@@ -313,7 +313,7 @@ class RelationshipRegistrationServiceTest {
             write(
                     pack,
                     "pack.yaml",
-                    "pack_id: 01M5DEH8RELATIONSHIPASSET0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n");
+                    "pack_id: 01M5DEH8RE1AT10NSH1PASSET0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n");
             write(pack, "assets/debrief/logo.png.asset.yaml", "id: logo\nmime: image/png\npath: debrief/logo.png\n");
             Files.write(
                     pack.resolve("assets/debrief/logo.png"), new byte[] {(byte) 0x89, 'P', 'N', 'G', 0, '\r', '\n'});

@@ -159,7 +159,7 @@ class WholePackStoreTest {
         WholePackStore.LoadedPack loaded = store.load(richPack(host));
 
         assertThat(loaded.pack().violations()).isEmpty();
-        assertThat(loaded.pack().id().value()).isEqualTo("01M5DEH8ROUNDTRIPFIXTURE0A");
+        assertThat(loaded.pack().id().value()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
         assertThat(loaded.pack().tactics()).hasSize(3);
         assertThat(loaded.pack().directives()).hasSize(1);
         assertThat(loaded.layout().paths()).containsEntry(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_043"), DIRECTIVE_FILE);

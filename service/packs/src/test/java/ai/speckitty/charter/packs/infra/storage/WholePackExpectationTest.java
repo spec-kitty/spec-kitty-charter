@@ -308,6 +308,8 @@ class WholePackExpectationTest {
                     "spec-kitty/spec-kitty-open-packs#12 and more",
                     "spec-kitty/spec-kitty-open-packs#TBD-other-shape",
                     "spec-kitty/spec-kitty-open-packs#TBD-",
+                    "spec-kitty/spec-kitty-open-packs#TBD-preset-shape",
+                    "spec-kitty/spec-kitty-open-packs#TBD-manifest-shape",
                     "spec-kitty/spec-kitty-charter#TBD-preset-shape"
                 })
         void anEntryWithoutAnOpenPacksIssueFailsToLoad(String issue) {
@@ -319,15 +321,10 @@ class WholePackExpectationTest {
                     .hasMessageContaining("expected spec-kitty/spec-kitty-open-packs#<number>");
         }
 
-        @ParameterizedTest
-        @ValueSource(
-                strings = {
-                    "spec-kitty/spec-kitty-open-packs#12",
-                    "spec-kitty/spec-kitty-open-packs#TBD-preset-shape",
-                    "spec-kitty/spec-kitty-open-packs#TBD-manifest-shape"
-                })
-        void anOpenPacksIssueOrOneOfThePendingDraftsLoads(String issue) {
-            String yaml = known(A, "steps[2].title", issue);
+        @Test
+        void anOpenPacksIssueLoads() {
+            // The #195 pending drafts are gone: OP-1 and OP-2 landed, so every entry names a filed issue.
+            String yaml = known(A, "steps[2].title", OPEN_PACKS_ISSUE);
 
             assertThatCode(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
                     .doesNotThrowAnyException();
@@ -376,6 +373,36 @@ class WholePackExpectationTest {
             assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, twice))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("lists 'tactics/a.tactic.yaml' twice");
+        }
+
+        @Test
+        void aRoundTripOnlyEntryLoadsFlaggedAndAnUnflaggedOneDefaultsToFalse() {
+            String flagged = known(A, "refused: a.tactic.yaml holds two documents", OPEN_PACKS_ISSUE)
+                    .replace("    reason:", "    round_trip_only: true\n    reason:");
+
+            assertThat(WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, flagged)
+                            .knownFailures())
+                    .containsExactly(new WholePackExpectation.KnownFailure(
+                            A,
+                            "refused: a.tactic.yaml holds two documents",
+                            "The pack file holds two YAML documents.",
+                            OPEN_PACKS_ISSUE,
+                            true));
+            assertThat(WholePackExpectation.load(
+                                    MATCHING_RED, MATCHING_EXCLUSIONS, known(A, "steps[2].title", OPEN_PACKS_ISSUE))
+                            .knownFailures())
+                    .first()
+                    .satisfies(failure -> assertThat(failure.roundTripOnly()).isFalse());
+        }
+
+        @Test
+        void aRoundTripOnlyFlagThatIsNeitherTrueNorFalseIsRefused() {
+            String yaml = known(A, "steps[2].title", OPEN_PACKS_ISSUE)
+                    .replace("    reason:", "    round_trip_only: maybe\n    reason:");
+
+            assertThatThrownBy(() -> WholePackExpectation.load(MATCHING_RED, MATCHING_EXCLUSIONS, yaml))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("round_trip_only 'maybe'");
         }
 
         @ParameterizedTest
@@ -794,7 +821,7 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void theBundledListPinsExactlyTheSixBuiltInSidecarsTheTwoBuiltInPresetsAndTheManifestAsKnownFailures() {
+        void theBundledListPinsExactlyTheSixBuiltInSidecarsAndTheRoundTripOnlyManifest() {
             WholePackExpectation bundled = WholePackExpectation.fromClasspath();
 
             assertThat(bundled.knownFailures())
@@ -810,26 +837,24 @@ class WholePackExpectationTest {
                     .hasSize(6);
             assertThat(bundled.knownFailures())
                     .filteredOn(failure -> failure.path().startsWith("assets/"))
-                    .allSatisfy(
-                            failure -> assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75"));
-            // #195: the two built-in presets and the manifest are not in the sanitized shapes until the pending
-            // upstream drafts land.
-            assertThat(bundled.knownFailures())
-                    .filteredOn(failure -> failure.path().startsWith("presets/"))
                     .allSatisfy(failure -> {
-                        assertThat(failure.at()).startsWith("refused: ");
-                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#TBD-preset-shape");
-                    })
-                    .extracting(WholePackExpectation.KnownFailure::path)
-                    .containsExactly("presets/default.yaml", "presets/minimal.yaml");
+                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75");
+                        assertThat(failure.roundTripOnly()).isFalse();
+                    });
+            // OP-1 and OP-2 landed (open-packs 213a059, cfc9971): the presets and the manifest are sanitized and load
+            // clean, so no entry pins them as load refusals. The manifest is refused only by the round trip: it lists
+            // the six #75 sidecars, which the round trip does not write.
             assertThat(bundled.knownFailures())
-                    .filteredOn(failure -> !failure.path().startsWith("assets/")
-                            && !failure.path().startsWith("presets/"))
+                    .filteredOn(failure -> !failure.path().startsWith("assets/"))
                     .singleElement()
                     .satisfies(failure -> {
                         assertThat(failure.path()).isEqualTo("pack-manifest.yaml");
-                        assertThat(failure.at()).startsWith("refused: const violated at /schema_version; ");
-                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#TBD-manifest-shape");
+                        assertThat(failure.at())
+                                .isEqualTo(
+                                        "refused: pack-manifest.yaml lists assets/docs_structural_lint.py.asset.yaml,"
+                                                + " which the round trip did not write");
+                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75");
+                        assertThat(failure.roundTripOnly()).isTrue();
                     });
         }
 

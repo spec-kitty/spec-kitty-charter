@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class DoctrineValidationParityTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5DEH8ROUNDTRIPFIXTURE0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A");
 
     // ---- one fixture per kind, each field overridable so a case differs from its control in exactly one value ----
 

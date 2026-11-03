@@ -23,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A glossary pack round-trips through the YAML format and the store (#192)")
 class GlossaryPackYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5YVECGLOSSARYPACKFIXT0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5YVECG10SSARYPACKF1XT0A");
 
     /** Every declared field, each optional one written, terms deliberately unsorted. */
     private static final String FULL = """
@@ -221,7 +221,7 @@ class GlossaryPackYamlTest {
     private static Path pack(Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("glossary-pack-fixture"));
         write(pack.resolve("pack.yaml"), """
-                pack_id: 01M5YVECGLOSSARYPACKFIXT0A
+                pack_id: 01M5YVECG10SSARYPACKF1XT0A
                 pack_version: 1.0.0
                 name: glossary-pack-fixture
                 pack_level: org
