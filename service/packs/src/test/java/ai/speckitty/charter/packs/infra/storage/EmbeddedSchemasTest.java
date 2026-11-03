@@ -53,7 +53,7 @@ class EmbeddedSchemasTest {
                     .as(uncompilable)
                     .singleElement()
                     .asString()
-                    .startsWith("it does not compile offline (an unknown keyword or a $ref outside the document): ");
+                    .startsWith("it does not compile offline (an unknown keyword, or a pattern RE2 cannot run): ");
         }
         for (String reference : List.of(
                 "{$ref: 'https://example.com/evil.schema.json'}",
