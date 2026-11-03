@@ -79,6 +79,20 @@ public record PackQualifiedReference(Optional<String> packName, String urn) {
     }
 
     /**
+     * Parses the id of a typed reference ({@code {type, id}}), whose id may carry the qualifier, into the reference it
+     * writes: the qualifier of the id, and the URN {@code <type>:<bare id>}.
+     *
+     * @param kindToken the node-kind token of the reference's type, for example {@code tactic}
+     * @param id the reference's id, for example {@code writing::tdd}
+     * @return the reference as the artifact writes it, for example {@code writing::tactic:tdd}
+     * @throws IllegalArgumentException when the id's qualifier is malformed
+     */
+    public static PackQualifiedReference typed(String kindToken, String id) {
+        PackQualifiedReference parsed = parse(id);
+        return new PackQualifiedReference(parsed.packName(), kindToken + ":" + parsed.urn());
+    }
+
+    /**
      * The URN part as a bare {@link Urn}.
      *
      * @return the URN; empty when the URN part is not a URN of a known node kind

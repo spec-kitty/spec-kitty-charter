@@ -213,12 +213,12 @@ public final class OfferingReadService {
                         reference, pack.descriptor().packId()));
                 continue;
             }
-            if (refinements.holds(pack.configured().id(), reference.urn())) {
+            if (pack.holds(reference.urn())) {
                 continue;
             }
             closure.stream()
                     .filter(other -> !other.equals(pack))
-                    .filter(other -> refinements.holds(other.configured().id(), reference.urn()))
+                    .filter(other -> other.holds(reference.urn()))
                     .findFirst()
                     .ifPresent(holder -> resolved.add(new PackCompositionResolver.ResolvedReference(
                             reference, holder.descriptor().packId())));

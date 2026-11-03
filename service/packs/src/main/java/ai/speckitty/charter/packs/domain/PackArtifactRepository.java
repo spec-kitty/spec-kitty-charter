@@ -23,39 +23,33 @@ public interface PackArtifactRepository {
     List<String> changedArtifacts(PackIdentifier pack);
 
     /**
-     * The artifacts the pack itself holds, as bare URNs ({@code <kind>:<id>}) of the kinds the service serves. Two packs
-     * of one level that hold the same artifact contest it, and the resolver refuses them unless an {@code overrides}
-     * edge settles it.
+     * The artifacts the pack itself holds, as bare URNs ({@code <kind>:<id>}), of every kind a reference can name. It is
+     * the one answer to whether a pack holds an artifact: two packs of one level that hold the same artifact contest
+     * it, and a reference is held by the pack whose list names it (see
+     * {@link ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution#holds}).
      *
      * @param pack the pack's identity
      * @return the held artifacts' URNs, in a stable order; empty when the pack holds none (the default, for a storage
      *     with no artifacts)
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a file of the pack
+     *     cannot be read: a partial list is never judged, so the caller fails closed
      */
     default List<String> definedArtifacts(PackIdentifier pack) {
         return List.of();
     }
 
     /**
-     * The references the pack's graph documents write: the distinct edge targets of every relation, as written —
-     * bare ({@code <urn>}) or pack-qualified ({@code <pack-name>::<urn>}) — in first-seen order.
+     * The references the pack writes: both endpoints of every edge of its graph documents, and what each of its
+     * artifacts writes, as written — bare ({@code <urn>}) or pack-qualified ({@code <pack-name>::<urn>}) — in
+     * first-seen order. An artifact's references are the ones the walk follows plus those a kind keeps without an
+     * edge, so the check and the walk cannot disagree.
      *
      * @param pack the pack's identity
-     * @return the references; empty when the pack's graphs write none (the default, for a storage with no graphs)
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when one of the pack's
-     *     graph documents cannot be read
+     * @return the references; empty when the pack writes none (the default, for a storage with no graphs)
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a graph document or an
+     *     artifact file of the pack cannot be read: a partial list is never judged, so the caller fails closed
      */
     default List<String> referencesOf(PackIdentifier pack) {
         return List.of();
-    }
-
-    /**
-     * Whether the pack holds the artifact a bare URN names.
-     *
-     * @param pack the pack's identity
-     * @param urn the URN ({@code <kind>:<id>}); a kind the service does not serve is held by no pack
-     * @return {@code true} when the pack holds the artifact (the default is {@code false})
-     */
-    default boolean holds(PackIdentifier pack, String urn) {
-        return false;
     }
 }

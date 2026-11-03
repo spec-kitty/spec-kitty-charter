@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -159,6 +160,20 @@ public final class Procedure implements CharterArtifact {
     @Override
     public List<Relationship> relationships() {
         return List.of();
+    }
+
+    /**
+     * The references the procedure writes: kept though no relationship is minted from them, so the compose's reference
+     * check still covers them.
+     *
+     * @return the references, bare or pack-qualified
+     */
+    @Override
+    public List<PackQualifiedReference> writtenReferences() {
+        return references.stream()
+                .map(ref -> PackQualifiedReference.typed(ref.type().token(), ref.id()))
+                .distinct()
+                .toList();
     }
 
     /**

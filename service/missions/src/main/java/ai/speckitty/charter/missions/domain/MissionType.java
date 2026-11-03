@@ -3,6 +3,7 @@ package ai.speckitty.charter.missions.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
@@ -142,6 +143,20 @@ public final class MissionType implements CharterArtifact {
     @Override
     public List<Relationship> relationships() {
         return List.of();
+    }
+
+    /**
+     * The references the mission type and its steps write: kept though no relationship is minted from them, so the
+     * compose's reference check still covers them.
+     *
+     * @return the references, bare or pack-qualified
+     */
+    @Override
+    public List<PackQualifiedReference> writtenReferences() {
+        return Stream.concat(references.stream(), steps.stream().flatMap(step -> step.references().stream()))
+                .map(ref -> PackQualifiedReference.typed(ref.type().token(), ref.id()))
+                .distinct()
+                .toList();
     }
 
     /**

@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
@@ -10,7 +9,6 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
-import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -28,7 +26,6 @@ import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Preset;
-import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -46,6 +43,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -313,11 +311,15 @@ public final class DomainRepositoryService
     }
 
     /**
-     * The references the pack writes: the targets of its graph edges, then the typed references of its artifacts
-     * (tactics with their steps, directives, paradigms, procedures and mission types with their steps), each as
-     * {@code [<pack-name>::]<kind>:<id>}. A qualifier is split off the reference id by {@link PackQualifiedReference}.
-     * Artifact files that cannot be read are skipped here, as every lenient kind read skips them; the whole-pack load
-     * reports them.
+     * The references the pack writes, as written — {@code [<pack-name>::]<kind>:<id>}: both endpoints of every edge of
+     * its graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
+     * is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
+     * references a kind keeps without minting an edge). A qualifier is split off by {@link PackQualifiedReference}.
+     *
+     * <p>The answer fails closed: a graph document or an artifact file that cannot be read refuses it
+     * {@code pack_unreadable}, since the references of a file that cannot be read cannot be judged, and a compose that
+     * skipped it would pass a reference it never saw. The whole-pack load and the pack-scoped reads still answer for
+     * such a pack, so its author can inspect it.
      */
     @Override
     public List<String> referencesOf(PackIdentifier pack) {
@@ -327,92 +329,44 @@ public final class DomainRepositoryService
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
-        Set<String> references = new java.util.LinkedHashSet<>();
+        Set<String> references = new LinkedHashSet<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
+                references.add(edge.source());
                 references.add(edge.target());
             }
         }
-        for (Tactic tactic : read(resolved, pack, TacticBinding.INSTANCE)) {
-            tactic.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
-            tactic.steps()
-                    .forEach(step -> step.references().forEach(ref -> references.add(written(ref.type(), ref.id()))));
-        }
-        for (Directive directive : read(resolved, pack, DirectiveBinding.INSTANCE)) {
-            directive.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
-        }
-        for (Paradigm paradigm : read(resolved, pack, ParadigmBinding.INSTANCE)) {
-            paradigm.references().forEach(ref -> references.add(written(ref.type(), ref.id())));
-        }
-        for (Procedure procedure : read(resolved, pack, ProcedureBinding.INSTANCE)) {
-            procedure
-                    .references()
-                    .forEach(ref -> references.add(written(ref.type().token(), ref.id())));
-        }
-        for (MissionType missionType : read(resolved, pack, MissionTypeBinding.INSTANCE)) {
-            missionType
-                    .references()
-                    .forEach(ref -> references.add(written(ref.type().token(), ref.id())));
-            missionType
-                    .steps()
-                    .forEach(step -> step.references()
-                            .forEach(ref -> references.add(written(ref.type().token(), ref.id()))));
+        for (CharterArtifact artifact : readable(pack).artifacts()) {
+            artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
         }
         return List.copyOf(references);
     }
 
     /**
-     * The artifacts the pack holds, as bare URNs, kind by kind in the order the service serves them. Files that cannot
-     * be read are skipped here as in every lenient kind read; the whole-pack load reports them.
+     * The artifacts the pack holds, as bare URNs, of every kind a reference can name, in the order the pack lists them.
+     * It is the one answer to "does this pack hold this artifact": the compose reads it once per pack and both the
+     * contest rule and the reference checks ask the pack's held list. Fails closed like {@link #referencesOf}.
      */
     @Override
     public List<String> definedArtifacts(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        List<String> defined = new ArrayList<>();
-        urns(defined, NodeKind.TACTIC, read(resolved, pack, TacticBinding.INSTANCE));
-        urns(defined, NodeKind.DIRECTIVE, read(resolved, pack, DirectiveBinding.INSTANCE));
-        urns(defined, NodeKind.PARADIGM, read(resolved, pack, ParadigmBinding.INSTANCE));
-        urns(defined, NodeKind.STYLEGUIDE, read(resolved, pack, StyleguideBinding.INSTANCE));
-        urns(defined, NodeKind.TOOLGUIDE, read(resolved, pack, ToolguideBinding.INSTANCE));
-        return List.copyOf(defined);
-    }
-
-    private static void urns(List<String> into, NodeKind kind, List<? extends CharterArtifact> artifacts) {
-        artifacts.forEach(artifact -> into.add(new Urn(kind, artifact.localId()).toString()));
-    }
-
-    private <D, E extends CharterArtifact> List<E> read(
-            Resolved resolved, PackIdentifier pack, KindBinding<D, E> kind) {
-        return resolved.store.readAll(resolved.key, kind).stream()
-                .flatMap(dso -> entity(pack, kind, dso).stream())
+        return readable(pack).artifacts().stream()
+                .map(artifact -> artifact.urn())
+                .filter(urn -> urn.kind().authoredInGraphs())
+                .map(Urn::toString)
+                .distinct()
                 .toList();
     }
 
-    /** A typed reference as the graph-edge path writes it: {@code [<pack-name>::]<kind>:<id>}. */
-    private static String written(String type, String id) {
-        PackQualifiedReference reference = PackQualifiedReference.parse(id);
-        return reference.packName().map(name -> name + "::").orElse("") + type + ":" + reference.urn();
-    }
-
-    @Override
-    public boolean holds(PackIdentifier pack, String urn) {
-        Optional<Urn> parsed = Urn.parse(urn);
-        if (parsed.isEmpty()) {
-            return false;
+    /** The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. */
+    private Pack readable(PackIdentifier pack) {
+        Pack assembled = assemble(pack);
+        if (!assembled.violations().isEmpty()) {
+            PackElementViolation first = assembled.violations().getFirst();
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    "the file " + first.file() + " of " + pack.value() + " cannot be read: " + first.reason());
         }
-        String id = parsed.get().id();
-        try {
-            return switch (parsed.get().kind()) {
-                case DIRECTIVE -> load(pack, new DirectiveIdentifier(id)).isPresent();
-                case STYLEGUIDE -> load(pack, new StyleguideIdentifier(id)).isPresent();
-                case PARADIGM -> load(pack, new ParadigmIdentifier(id)).isPresent();
-                case TOOLGUIDE -> load(pack, new ToolguideIdentifier(id)).isPresent();
-                case TACTIC -> load(pack, new TacticIdentifier(id)).isPresent();
-                default -> false;
-            };
-        } catch (ConstraintBreachException malformed) {
-            return false;
-        }
+        return assembled;
     }
 
     /** Whether a relation changes its target: a field-merge into it ({@code enhances}) or a full replacement of it. */

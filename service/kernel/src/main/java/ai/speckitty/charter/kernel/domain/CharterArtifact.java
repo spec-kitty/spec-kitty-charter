@@ -64,6 +64,21 @@ public interface CharterArtifact {
     List<Relationship> relationships();
 
     /**
+     * Every reference this artefact writes, bare or pack-qualified: the one list the compose's reference check reads.
+     * It is the target of each {@linkplain #relationships() relationship} the walk follows, so by default the check and
+     * the walk cannot disagree; a kind that keeps references it mints no relationship for (a procedure or a mission
+     * type, pending #189) adds them here, and the check then covers them too.
+     *
+     * @return the references, in the artefact's order; empty when it writes none
+     */
+    default List<PackQualifiedReference> writtenReferences() {
+        return relationships().stream()
+                .map(Relationship::toReference)
+                .distinct()
+                .toList();
+    }
+
+    /**
      * The artefact's DRG node identity.
      *
      * @return {@code <kind>:<localId>}
