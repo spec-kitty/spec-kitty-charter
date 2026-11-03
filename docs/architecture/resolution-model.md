@@ -73,7 +73,7 @@ flowchart LR
 
    > **Partly built:** for sibling packs at one level,
    > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that change
-   > the same artifact are refused with `pack_sibling_refinement_conflict` unless a pack of the compose declares the
+   > the same artifact are refused with `pack_sibling_conflict` unless a pack of the compose declares the
    > settling `overrides` edge, so siblings leave no "last loaded wins". The layer merge across levels keeps the
    > rule above; the split's remaining moves are the open-packs work, not this page's pipeline.
 3. **Activate.** A per-kind activation key that is absent means what the kind's

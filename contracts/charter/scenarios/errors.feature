@@ -209,6 +209,6 @@ Feature: Failures outside the charter's refusals
       | pack_level_violation        |
       | pack_name_conflict          |
       | pack_duplicate_id           |
-      | pack_sibling_refinement_conflict |
+      | pack_sibling_conflict |
       | pack_reference_unqualified  |
       | pack_reference_pack_missing |

@@ -49,14 +49,14 @@ public final class PackCompositionResolver {
      *
      * @param configured the configured pack and its level
      * @param descriptor what its {@code pack.yaml} states
-     * @param refinedArtifacts the artifacts its graph documents say it changes (an {@code enhances} or
+     * @param changedArtifacts the artifacts its graph documents say it changes (an {@code enhances} or
      *     {@code overrides} relation on the artifact); empty when they name none
      * @param definedArtifacts the artifacts the pack itself holds, as bare URNs; empty when it holds none
      */
     public record PackUnderResolution(
             ConfiguredPack configured,
             PackDescriptor descriptor,
-            List<String> refinedArtifacts,
+            List<String> changedArtifacts,
             List<String> definedArtifacts) {
 
         /**
@@ -64,15 +64,15 @@ public final class PackCompositionResolver {
          *
          * @param configured the configured pack
          * @param descriptor its descriptor
-         * @param refinedArtifacts the artifacts it changes
+         * @param changedArtifacts the artifacts it changes
          * @param definedArtifacts the artifacts it holds
          */
         public PackUnderResolution {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptor, "descriptor");
-            Objects.requireNonNull(refinedArtifacts, "refinedArtifacts");
+            Objects.requireNonNull(changedArtifacts, "changedArtifacts");
             Objects.requireNonNull(definedArtifacts, "definedArtifacts");
-            refinedArtifacts = List.copyOf(refinedArtifacts);
+            changedArtifacts = List.copyOf(changedArtifacts);
             definedArtifacts = List.copyOf(definedArtifacts);
         }
 
@@ -81,11 +81,11 @@ public final class PackCompositionResolver {
          *
          * @param configured the configured pack
          * @param descriptor its descriptor
-         * @param refinedArtifacts the artifacts it changes
+         * @param changedArtifacts the artifacts it changes
          */
         public PackUnderResolution(
-                ConfiguredPack configured, PackDescriptor descriptor, List<String> refinedArtifacts) {
-            this(configured, descriptor, refinedArtifacts, List.of());
+                ConfiguredPack configured, PackDescriptor descriptor, List<String> changedArtifacts) {
+            this(configured, descriptor, changedArtifacts, List.of());
         }
 
         /**
@@ -369,7 +369,7 @@ public final class PackCompositionResolver {
      * {@code overrides.artifact} names where it is read, not which artifact it is.
      */
     private static void refuseSiblingContests(List<PackUnderResolution> ordered) {
-        refuseContests(ordered, PackUnderResolution::refinedArtifacts, "change");
+        refuseContests(ordered, PackUnderResolution::changedArtifacts, "change");
         refuseContests(ordered, PackUnderResolution::definedArtifacts, "define");
     }
 

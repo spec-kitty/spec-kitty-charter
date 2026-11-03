@@ -6,15 +6,15 @@ description: >-
 type: object
 additionalProperties: false
 required:
-  - packId
+  - descriptorPackId
   - range
   - version
 properties:
-  packId:
+  descriptorPackId:
     type: string
     minLength: 1
     maxLength: 64
-    description: The depended-on pack's pack_id, as the depending pack.yaml's depends_on names it.
+    description: The depended-on pack's pack_id, as the depending pack.yaml's depends_on names it. The same identity as descriptorPackId of the offering entry it points at, so a client joins an edge to its entry by equal values.
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
       symbol: ResolvedEdge.to

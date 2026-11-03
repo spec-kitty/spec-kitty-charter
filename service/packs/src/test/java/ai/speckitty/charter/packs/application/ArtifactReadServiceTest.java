@@ -19,9 +19,9 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
-import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -657,7 +657,7 @@ class ArtifactReadServiceTest {
                     ToolguideRepository,
                     PackCatalogRepository,
                     PackDescriptorRepository,
-                    PackRefinementRepository {
+                    PackArtifactRepository {
 
         /** The aggregate needs pack.yaml: {@link #BARE} has none, so it cannot be assembled. */
         @Override
@@ -704,7 +704,7 @@ class ArtifactReadServiceTest {
 
         /** No pack of the fixture refines an artifact, so the compose holds no sibling contest. */
         @Override
-        public List<String> refinedArtifacts(PackIdentifier pack) {
+        public List<String> changedArtifacts(PackIdentifier pack) {
             return List.of();
         }
 

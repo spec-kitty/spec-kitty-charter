@@ -16,7 +16,7 @@ value:
       name: qa-house-rules
       version: 1.2.0
       dependsOn:
-        - packId: 01M4P01D5TWB5FKZGNNQG3943R
+        - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
           range: '>=4.0.0'
           version: 4.0.0
       _links:
@@ -28,7 +28,7 @@ value:
       name: my-project
       version: 0.1.0
       dependsOn:
-        - packId: 01M4P01D5TWB5FKZGNNQG3943R
+        - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
           range: '>=4.0.0'
           version: 4.0.0
       _links:

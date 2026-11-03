@@ -30,7 +30,7 @@ properties:
     minLength: 1
     maxLength: 64
     description: >-
-      The pack_id (ULID) the pack's pack.yaml declares, the identity that dependsOn[].packId names. packId is
+      The pack_id (ULID) the pack's pack.yaml declares, the identity that dependsOn[].descriptorPackId names. packId is
       the configured identifier and is not the pack_id, so a client joins a dependency edge to the offering
       entry it points at by descriptorPackId.
     x-source:
