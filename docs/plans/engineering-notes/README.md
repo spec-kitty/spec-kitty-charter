@@ -1,0 +1,24 @@
+---
+okf_version: "0.2"
+title: Engineering notes
+description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
+doc_status: draft
+updated: 2026-11-03T00:00:00Z
+type: Plan
+kind: Hub
+audience:
+  - profile: charter-service-contributor
+    guidance_text: Read a note for the evidence behind a recommendation; the decision it feeds lands in an ADR or an issue.
+  - profile: governance-lead
+    guidance_text: Read these for dated assessments and the operator rulings recorded in them.
+---
+
+# Engineering notes
+
+Dated, point-in-time assessments. Each note records what was measured, on which revision, and what
+it recommends. Decisions it feeds land in a [decision record](/adr/) or an issue. A note is not
+updated as the code moves on; a later assessment gets its own note.
+
+- [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/) —
+  how good the test suite is against the packs' testing rubric, and the five weaknesses ranked by
+  risk. It also gives the SonarCloud recommendation (nightly, reported only) and the operator's rulings.

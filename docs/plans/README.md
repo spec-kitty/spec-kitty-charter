@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Plans
 description: Forward-looking work for the charter service — the bootstrap roadmap and the questions still open.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -34,3 +34,5 @@ Future work for this repository. The target design lives in
   given a milestone after the pack-ecosystem rulings, with the decisions left to the operator.
 - [Re-scope proposals, triage 2026-11-02](/plans/triage-2026-11-02-rescopes/) — the proposed new scope of each
   issue the triage marked for re-scoping, for the operator to approve before any issue body changes.
+- [Engineering notes](/plans/engineering-notes/) — dated, point-in-time assessments that feed decisions and
+  issues, starting with the [test suite assessment of 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/).
