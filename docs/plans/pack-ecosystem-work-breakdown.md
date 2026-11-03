@@ -117,8 +117,9 @@ From the census of spec-kitty-open-packs at `1060bfc`. The operator adopted it a
 ## Core follow-up list (post-cutover unless marked)
 
 From a read of spec-kitty/spec-kitty at `9aed3a8`. No core PR is opened from this repository. Each follow-up is filed
-as a task under the 4.x cutover epic #69 (2026-11-02); C1 and C12 are in the "4.x cutover" milestone, the rest in
-"Post-cutover". C9 was rewritten after ADR-0054.
+as a task on 2026-11-02. C1 and C12 are in the "4.x cutover" milestone, under the cutover epic #69. C2 to C11 are
+in "Post-cutover", under the epic #361 (core adopts the pack-ecosystem design, operator 2026-11-03). C9 was rewritten
+after ADR-0054.
 
 | # | Follow-up | Driven by | Size | After | Issue |
 |---|---|---|---|---|---|
@@ -148,7 +149,8 @@ E4), and agreement there on who owns the lane names (ADR-0050 decision 21).
 6. **Generic step events** (spec-kitty-events): the notes' E4.
 7. **Open-packs: named-packs split, mission-type bundles, stack packs, curation pass, glossary contexts, lifecycle
    and registry** (spec-kitty-open-packs, P1 to P6).
-8. ~~**Core C1 to C12**~~ filed 2026-11-02 as #332 to #343 under the 4.x cutover epic #69.
+8. ~~**Core C1 to C12**~~ filed 2026-11-02 as #332 to #343: C1 and C12 under the cutover epic #69, C2 to C11 under
+   the epic #361.
 
 {#open-decisions-and-recommended-defaults}
 

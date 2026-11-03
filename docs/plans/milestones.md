@@ -34,7 +34,7 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 
 | Milestone | Done when |
 |---|---|
-| **4.0 GA (contract adopted)** | What core's 4.0 GA needs from this repository (core epic spec-kitty#6518). Contract 0.1.0 and the activation minor (#125) are released. Core's generated client and routing proxy run with every operation still on core's Python ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)). The service answers the first offering reads against open-packs on the canonical `Pack` model, with the artifact kinds and edge relations modelled here ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)). |
+| **4.0 GA (contract adopted)** | What core's 4.0 GA needs from this repository (core epic spec-kitty#6518). Contract 0.1.0 and the activation minor (#125) are released. Core's integration, the generated client and the routing proxy of [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/), is no longer part of GA: core changes its integration once the service is built, in the 4.x cutover ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1). The service answers the first offering reads against open-packs on the canonical `Pack` model, with the artifact kinds and edge relations modelled here ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)). |
 | **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. The service is built first, then core's integration, and the `depends_on` resolver ([#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145), [#146](https://github.com/spec-kitty/spec-kitty-charter/issues/146)) is on the cutover path ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)). |
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Infra & Enablers** | Not a delivery target either, and never on the release critical path: background work, enablers, automation and deployment concerns. An item whose outcome can change the contract before 1.0.0 moves to the milestone that needs it. |
@@ -71,7 +71,8 @@ Delivered so far: issues #120 and #173, by PR #177 (every read answers with the 
 it verified). PR #180 delivered the toolguide half of #168: directive, styleguide, paradigm and
 toolguide can be read and registered. PR #198 fixed #119 (one generated model per schema) and built
 the publishing workflow of #45. ADR-0035 settled #171 (the shared artifact interface lives in the
-kernel).
+kernel). The [2026-11-02 triage](/plans/triage-2026-11-02/) closed #168, #169, #175 and #176 as delivered,
+merged #167 into #240, and moved #13 to the 4.x cutover (ADR-0055 D1).
 
 **Release 0.1.0 is held** (operator, 2026-10-27): the workflow is ready, and no tag is cut yet. When
 it is cut, the tag ruleset (#196) comes first. Numbering of the next minor (operator, 2026-10-27):
@@ -82,16 +83,10 @@ the activation set (#125) is 0.2.0, and an additive change that is ready earlier
 |---|---|---|
 | #45 | Contract release publishing | Built (PR #198); open until 0.1.0 is cut, which is held |
 | #125 | The activation set, as a 0.x minor | Core's activation alignment (spec-kitty#6518) types against it ([ADR-0020](/adr/0020-offering-and-activations/)) |
-| #13 | Core ingests the contract: generated client and routing proxy | The contract is core's seam from 0.1.0 (ADR-0021) |
 | #126 | Offering reads under `/offering`, the API root, `_links`, and the generic artifact routes | The reads PR #139 removed come back on the canonical `Pack` model ([ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/)) |
 | #131 | `charter.schema.json` lacks `activated_glossary_packs` | The activation mapping needs the schema to match what core writes |
-| #169 | Charter-kinds adapter tidy-ups (kind registry) | Extracted after two or three more kinds are built, not before them ([ADR-0024](/adr/0024-doctrine-artifact-family-contract/), Amendment 2026-10-26) |
 | #240 | Re-evaluate the artifact fields that mint relationships | The graph documents (CRG) are the authoritative copy of an edge (operator, 2026-10-27); the registration bodies' `relationships` may change before 1.0.0 |
 | #186 | Epic: whole-pack round trip, children #187 to #195 | Reading every pack file into the domain and writing it back proves the service's basic read and write paths; #171 comes first |
-| #167 | Own the charter-artifact edge-relation table here | The relations each field creates are this repository's to define |
-| #168 | Toolguide and procedure as first-class pack artifacts | Toolguide delivered by PR #180; procedure waits on #150 |
-| #175 | Contract: no fingerprint declaration on refusals; the fingerprint required on artifact 200s | A contract shape change, so it belongs before 1.0.0 |
-| #176 | `OfferingUnreadable`'s examples name codes the service never raises | The contract must describe what the built reads answer |
 | #174 | A pack root configured through a symlink loads as an empty pack | A symlinked open-packs checkout would silently serve nothing |
 
 ### 4.x cutover
@@ -99,7 +94,8 @@ the activation set (#125) is 0.2.0, and an additive change that is ready earlier
 The cutover path, the work that keeps the contract releasable, and the conformance net.
 Delivered so far: issues #7 and #8 (contract and build), #34 (storage behind repository ports,
 in PRs #137 and #139), #44 (decided by ADR-0020), #48 (pack-level policy), #53, #113 (reserved
-surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
+surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129). The
+[2026-11-02 triage](/plans/triage-2026-11-02/) merged #46 into #128 and closed #115 as not planned.
 
 | Issue | Title | Why it is here |
 |---|---|---|
@@ -111,18 +107,17 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
 | #145, #146 | Pack-composition resolver: the `depends_on` and `parent_pack` checks, and the dependency resolver | Roadmap step 3a. Moved here from Post-cutover on 2026-11-03: the layer merge is built on it, so it lands before #10 and #11 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2) |
 | #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5. Accepted against the design-derived packs (ADR-0055 D3) |
+| #13 | Core ingests the contract: generated client and routing proxy | Phase 2: core vendors the client once the service is built ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1). Moved from 4.0 GA on 2026-11-03 |
 | #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
-| #46 | `x-stability-level` for provisional operations | Under review: no provisional operation remains, and the 0.x rule may cover the need |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
 | #50 | Build structure follow-ups | Generate `charter-api` from the released bundle, so only one parser resolves `$ref` |
 | #51 | Supply-chain and CI hygiene | The wrapper checksum and signature ruling belong before the first release |
 | #29 | Epic: behavior-first overhaul (P1 to P3) | The scenarios are the conformance net the cutover relies on |
-| #30, #31, #32, #33 | P1: boundary scenarios, Layer-B harness, charter in force, docsite rendering | The P1 outcome |
+| #30, #31, #33 | P1: boundary scenarios, Layer-B harness, docsite rendering | The P1 outcome; #32 (charter in force) closed as delivered on 2026-11-02 |
 | #15 | Nightly acceptance tests with Allure | The evidence trail for the shadow |
 | #38 | Pack-validate CI guard | The "healthy" claim has to be checked before the packs govern anything |
 | #68 | Validate scenario responses against the contract bundle | Keeps the scenario net honest against the released contract |
-| #115 | Pack doctor parity on open-packs | The first pack goal: Java verdicts match core's validator |
-| #62 to #64, #66, #67 | Persistent deactivation, core side | Fixed in core now, ahead of the cutover, so the corpus records the fixed answers |
+| #67 | Persistent deactivation, core side | The required half is fixed in core; #62 to #64 and #66 closed as delivered in core on 2026-11-02 |
 
 #### Stages 3 and 4
 
