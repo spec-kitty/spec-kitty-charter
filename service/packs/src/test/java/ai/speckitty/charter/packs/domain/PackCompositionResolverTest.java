@@ -151,7 +151,17 @@ class PackCompositionResolverTest {
                 "<2|>=2|1.5.0|false",
                 "==1.2.*|>=1.3|1.2.4|false",
                 ">=1.0,<3|>=2.0|2.5.0|true",
-                "~=1.4.5|>=1.4|1.4.7|true"
+                "~=1.4.5|>=1.4|1.4.7|true",
+                // a wildcard exclusion leaves the versions past the prefix: 2.0 satisfies both
+                "!=1.*|>=1.0|2.0.0|true",
+                // a prerelease of 1.0 sits above 1.0rc1 and below 1.0, as admits orders them
+                ">1.0rc1|<1.0|1.0rc2|true",
+                // an epoch outranks the release, so no epoch-0 version reaches it
+                ">=1!1|<5|1.0.0|false",
+                // an identity clause names one text, which no ordering clause can admit
+                "===foo|>=1|1.5.0|false",
+                // numbers of any size are numbers, not an error
+                ">=1,<99999999999|<5|2.0.0|true"
             })
     void rangesNoVersionSatisfiesTogetherAreRefusedNamingBothPacksBeforeTheHeldVersionIsChecked(
             String firstRange, String secondRange, String held, boolean resolves) {
@@ -174,6 +184,38 @@ class PackCompositionResolverTest {
                             .contains("01ONE", "01TWO", firstRange, secondRange)
                             .contains("no version satisfies together")
                             .doesNotContain("held version");
+                });
+    }
+
+    /** A malformed range beside another declaration is refused naming its declarer, never thrown past the resolver. */
+    @ParameterizedTest
+    @ValueSource(strings = {">=2,banana", "~=1"})
+    void aMalformedRangeBesideAnotherDeclarationIsRefusedNamingItsDeclarer(String malformed) {
+        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution first =
+                pack("01ONE", "one", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", malformed)));
+        PackUnderResolution second =
+                pack("01TWO", "two", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1")));
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(second, first, base)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.OUT_OF_RANGE);
+                    assertThat(refusal.packId()).isEqualTo("01ONE");
+                    assertThat(refusal.detail()).contains("not a PEP 440 range");
+                });
+    }
+
+    @Test
+    void aTargetVersionThatIsNoPep440VersionIsRefusedNamingTheTargetNotTheDeclarersRange() {
+        PackUnderResolution base = pack("01BASE", "base", "1.0.0-alpha.beta", PackLevel.BUILT_IN);
+        PackUnderResolution dependent =
+                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1.0")));
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(dependent, base)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.OUT_OF_RANGE);
+                    assertThat(refusal.packId()).isEqualTo("01BASE");
+                    assertThat(refusal.detail()).contains("1.0.0-alpha.beta", "not a PEP 440 version");
                 });
     }
 

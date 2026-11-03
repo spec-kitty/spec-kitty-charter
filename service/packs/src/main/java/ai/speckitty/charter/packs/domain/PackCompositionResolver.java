@@ -287,7 +287,7 @@ public final class PackCompositionResolver {
         Map<String, List<Declared>> byTarget = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
             for (PackDependency dependency : pack.descriptor().dependencies()) {
-                if (byId.containsKey(dependency.packId()) && wellFormed(dependency.range())) {
+                if (byId.containsKey(dependency.packId()) && Pep440Range.isWellFormed(dependency.range())) {
                     byTarget.computeIfAbsent(dependency.packId(), key -> new ArrayList<>())
                             .add(new Declared(pack.descriptor().packId(), dependency.range()));
                 }
@@ -309,15 +309,6 @@ public final class PackCompositionResolver {
                     }
                 }
             }
-        }
-    }
-
-    private static boolean wellFormed(String range) {
-        try {
-            Pep440Range.admits(range, "0");
-            return true;
-        } catch (IllegalArgumentException malformed) {
-            return false;
         }
     }
 
@@ -430,6 +421,15 @@ public final class PackCompositionResolver {
                         pack.descriptor().packId(),
                         "pack " + pack.descriptor().packId() + " depends on " + targetId
                                 + ", which no configured pack declares");
+            }
+            if (!Pep440Range.isVersion(target.descriptor().packVersion())) {
+                throw new Refusal(
+                        Failure.OUT_OF_RANGE,
+                        targetId,
+                        "pack " + targetId + " has pack_version "
+                                + target.descriptor().packVersion()
+                                + ", which is not a PEP 440 version, so the range " + dependency.range()
+                                + " of pack " + pack.descriptor().packId() + " cannot be decided against it");
             }
             if (!admits(pack, dependency, target)) {
                 throw new Refusal(

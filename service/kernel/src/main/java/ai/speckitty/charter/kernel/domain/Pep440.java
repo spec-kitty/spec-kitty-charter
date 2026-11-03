@@ -1,5 +1,8 @@
 package ai.speckitty.charter.kernel.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -61,6 +64,48 @@ public final class Pep440 {
 
     private Pep440() {}
 
+    /** The operators, longest first, so a clause is split at the longest one it starts with. */
+    private static final List<String> OPERATORS = List.of("===", "==", "!=", "~=", "<=", ">=", "<", ">");
+
+    /**
+     * One clause of a specifier set, split at its operator.
+     *
+     * @param operator one of {@code ===}, {@code ==}, {@code !=}, {@code ~=}, {@code <=}, {@code >=}, {@code <},
+     *     {@code >}
+     * @param operand what follows the operator, with the whitespace around it removed; for {@code ==} and
+     *     {@code !=} it may end in {@code .*}
+     */
+    public record Clause(String operator, String operand) {}
+
+    /**
+     * Parses a text as a PEP 440 specifier set: the one grammar, owned here. {@link Pep440Range} reads its clauses
+     * from this result, so what the grammar accepts and what a range decides on cannot drift apart.
+     *
+     * @param text the text, for example {@code >=4.0.0rc7,<5}
+     * @return the clauses in the order written (none for the empty set); empty when {@code packaging} would refuse
+     *     the text
+     */
+    public static Optional<List<Clause>> parse(String text) {
+        List<Clause> clauses = new ArrayList<>();
+        int start = 0;
+        while (start <= text.length()) {
+            int comma = text.indexOf(',', start);
+            int end = comma < 0 ? text.length() : comma;
+            String clause = strip(text.substring(start, end));
+            if (!clause.isEmpty()) {
+                if (!CLAUSE.matcher(clause).matches()) {
+                    return Optional.empty();
+                }
+                clauses.add(split(clause));
+            }
+            if (comma < 0) {
+                break;
+            }
+            start = comma + 1;
+        }
+        return Optional.of(List.copyOf(clauses));
+    }
+
     /**
      * Whether a text is a PEP 440 specifier set.
      *
@@ -68,20 +113,16 @@ public final class Pep440 {
      * @return whether {@code packaging.specifiers.SpecifierSet(text)} accepts it
      */
     public static boolean isValidSpecifierSet(String text) {
-        int start = 0;
-        while (start <= text.length()) {
-            int comma = text.indexOf(',', start);
-            int end = comma < 0 ? text.length() : comma;
-            String clause = strip(text.substring(start, end));
-            if (!clause.isEmpty() && !CLAUSE.matcher(clause).matches()) {
-                return false;
+        return parse(text).isPresent();
+    }
+
+    private static Clause split(String clause) {
+        for (String operator : OPERATORS) {
+            if (clause.startsWith(operator)) {
+                return new Clause(operator, strip(clause.substring(operator.length())));
             }
-            if (comma < 0) {
-                break;
-            }
-            start = comma + 1;
         }
-        return true;
+        throw new IllegalStateException("a clause matched the grammar but starts with no operator: " + clause);
     }
 
     private static String strip(String text) {

@@ -74,6 +74,13 @@ class Pep440Test {
         assertThat(Pep440.isValidSpecifierSet(row.input())).isEqualTo(row.valid());
     }
 
+    @ParameterizedTest
+    @MethodSource("corpus")
+    void theRangeReadsExactlyTheSetsTheGrammarAccepts(Row row) {
+        // One owner: Pep440Range takes its clauses from Pep440, so no set parses in one and not the other.
+        assertThat(Pep440Range.isWellFormed(row.input())).isEqualTo(row.valid());
+    }
+
     @Test
     void coreRealValueIsValid() {
         assertThat(Pep440.isValidSpecifierSet(">=4.0.0rc7,<5")).isTrue();
